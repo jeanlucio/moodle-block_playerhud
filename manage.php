@@ -305,31 +305,4 @@ document.addEventListener("DOMContentLoaded", function() {
 JS;
 echo $copyscript;
 
-$jstitle = json_encode(get_string('confirmation', 'admin'));
-$jsmessage = json_encode(get_string('confirm_delete', 'block_playerhud'));
-$jsyes = json_encode(get_string('yes'));
-$jscancel = json_encode(get_string('cancel'));
-
-$jscode = <<<JS
-require(['jquery', 'core/notification'], function($, Notification) {
-    $('body').on('click', '.js-delete-btn', function(e) {
-        e.preventDefault();
-        var btn = $(this);
-        var targetUrl = btn.attr('href');
-        var message = btn.attr('data-confirm-msg') || $jsmessage;
-        Notification.confirm(
-            $jstitle,
-            message,
-            $jsyes,
-            $jscancel,
-            function() {
-                window.location.href = targetUrl;
-            }
-        );
-    });
-});
-JS;
-
-$PAGE->requires->js_amd_inline($jscode);
-
 echo $OUTPUT->footer();
