@@ -135,15 +135,27 @@ if ($isoptin) {
     // --- MAIN HUD INTERFACE (Logged in and Playing) ---
     echo '<div class="playerhud-container">';
 
-    // Admin Button (Only visible to teachers).
+echo '<div class="playerhud-container">';
+
+    // Botão Voltar ao Curso (Novo)
+    $courseurl = new moodle_url('/course/view.php', ['id' => $courseid]);
+    echo '<div class="mb-3 d-flex justify-content-between align-items-center">';
+    echo \html_writer::link(
+        $courseurl,
+        '<i class="fa fa-arrow-left"></i> ' . get_string('back_to_course', 'block_playerhud'),
+        ['class' => 'btn btn-outline-secondary btn-sm shadow-sm']
+    );
+    
+    // Botão Admin (Se for professor) - Mantivemos a lógica existente, só ajustamos o layout
     if ($isteacher) {
         $manageurl = new moodle_url('/blocks/playerhud/manage.php', ['id' => $courseid, 'instanceid' => $instanceid]);
-        echo '<div class="d-flex justify-content-end mb-3">
-                <a href="' . $manageurl->out() . '" class="btn btn-outline-secondary btn-sm">
-                    <i class="fa fa-cogs" aria-hidden="true"></i> ' . get_string('master_panel', 'block_playerhud') . '
-                </a>
-              </div>';
+        echo \html_writer::link(
+            $manageurl,
+            '<i class="fa fa-cogs"></i> ' . get_string('master_panel', 'block_playerhud'),
+            ['class' => 'btn btn-primary btn-sm shadow-sm']
+        );
     }
+    echo '</div>'; // Fim da barra de topo
 
     // Render Header (XP Bar, Level).
     // Uses the class provided by the block structure.

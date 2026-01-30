@@ -63,10 +63,20 @@ class block_playerhud extends block_base {
             $player = \block_playerhud\game::get_player($this->instance->id, $USER->id);
             
             // 2. Prepare data for the template.
+            // Carrega configurações para calcular stats
+            $config = unserialize(base64_decode($this->instance->configdata));
+            if (!$config) $config = new stdClass();
+
+            $stats = \block_playerhud\game::get_game_stats($config, $this->instance->id, $player->currentxp);
+
+            // Prepara dados para o Mustache
             $renderdata = [
-                'username' => fullname($USER),
-                'xp'       => $player->currentxp ?? 0,
-                'viewurl'  => new moodle_url('/blocks/playerhud/view.php', [
+                'username'    => fullname($USER),
+                'userpicture' => $OUTPUT->user_picture($USER, ['size' => 60, 'class' => 'rounded-circle border']),
+                'xp'          => $player->currentxp,
+                'level'       => $stats['level'],
+                'progress'    => $stats['progress'],
+                'viewurl'     => new moodle_url('/blocks/playerhud/view.php', [
                     'id' => $COURSE->id, 
                     'instanceid' => $this->instance->id
                 ])
