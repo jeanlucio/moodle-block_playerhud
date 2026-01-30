@@ -107,11 +107,16 @@ class generator {
             $drop->itemid = $itemid;
             $drop->code = $dropcode;
             $drop->name = $data['location_name'] ?? 'Generated Location';
-            $drop->usage_limit = 0;
-            $drop->usage_count = 0;
-            $drop->expires_at = 0;
-            $drop->enabled = 1;
+            
+            // Configurações padrão seguras
+            $drop->maxusage = 0;       // Ilimitado
+            $drop->respawntime = 0;    // Sem espera
+            
+            // Datas
             $drop->timecreated = time();
+            $drop->timemodified = time(); 
+            
+            // Inserção segura (apenas colunas que existem no banco)
             $DB->insert_record('block_playerhud_drops', $drop);
         }
 

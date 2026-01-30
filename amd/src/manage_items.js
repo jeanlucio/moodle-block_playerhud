@@ -3,6 +3,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
     return {
         init: function(config) {
 
+            $('#phAiModal').appendTo('body');
             // 1. Delete Confirmation
             $('body').on('click', '.js-delete-btn', function(e) {
                 e.preventDefault();

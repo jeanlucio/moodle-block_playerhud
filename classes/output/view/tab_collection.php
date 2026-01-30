@@ -243,10 +243,15 @@ class tab_collection implements renderable {
                 border-top: 1px solid #f1f1f1; width: 100%; text-align: center; padding-top: 3px;">' . $datestr . '</div>';
         }
 
-        // Dados para o Modal JS via data-attributes
+        // Adicionamos role="button" e tabindex="0" para acessibilidade
+        // Se o item não for clicável (ex: missing), tabindex pode ser -1, mas vamos manter simples por enquanto.
+        $tabindex = ($count > 0) ? '0' : '-1'; 
+
         return '
         <div class="playerhud-item-card card ' . $class . ' ' . $trigger . '" 
              style="' . $style . ' width: 100%; position: relative; overflow: visible;"
+             role="button" 
+             tabindex="' . $tabindex . '"
              data-id="' . $item->id . '"
              data-name="' . s($name) . '"
              data-xp="' . $xptext . '"

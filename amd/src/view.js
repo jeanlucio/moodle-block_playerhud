@@ -15,6 +15,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
          * @param {Object} config The configuration object passed from PHP.
          */
         init: function(config) {
+            $('#phItemModalView').appendTo('body');
 
             // 1. Disable HUD Confirmation.
             $('.js-disable-hud').on('click', function(e) {
@@ -33,6 +34,13 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 );
             });
 
+            $(document).on('keydown', '.ph-item-trigger', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    $(this).click();
+                }
+
+            });
             // 2. Item Details Modal Logic.
             /**
              * Helper to open/close bootstrap modal safely.
