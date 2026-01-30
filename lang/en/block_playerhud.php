@@ -268,6 +268,7 @@ $string['mysteryitem'] = 'Mystery Item';
 $string['new_class'] = 'New Class: {$a}';
 $string['new_item_badge'] = 'NEW!';
 $string['next'] = 'Next';
+$string['next_collection_in'] = 'Next collection in:';
 $string['no_description'] = '- No description -';
 $string['no_groups_data'] = 'This course has no groups defined for competition.';
 $string['no_ranking_data'] = 'No ranking data yet.';

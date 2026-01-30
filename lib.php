@@ -17,11 +17,8 @@
 /**
  * Library of functions for the PlayerHUD block.
  *
- * This file mainly handles file serving via the pluginfile API.
- * Most logic should be placed in classes within the /classes directory.
- *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @copyright  2026 Jean Lúcio
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -49,7 +46,6 @@ function block_playerhud_pluginfile($course, $birecord, $context, $filearea, $ar
     require_login($course);
 
     // 3. Validate File Areas.
-    // Allow 'item_image' and 'class_image_1' through '5'.
     $validareas = ['item_image'];
     for ($i = 1; $i <= 5; $i++) {
         $validareas[] = 'class_image_' . $i;
@@ -60,12 +56,10 @@ function block_playerhud_pluginfile($course, $birecord, $context, $filearea, $ar
     }
 
     // 4. Retrieve File.
-    // The first argument is the Item ID or Class ID.
     $itemid = (int)array_shift($args);
 
     $fs = get_file_storage();
     
-    // Get files from the block_playerhud component in the specific block instance context.
     $files = $fs->get_area_files(
         $context->id,
         'block_playerhud',
@@ -75,14 +69,12 @@ function block_playerhud_pluginfile($course, $birecord, $context, $filearea, $ar
         false // Exclude directories
     );
 
-    // Get the first valid file found.
     $filetoserve = null;
     foreach ($files as $f) {
         $filetoserve = $f;
         break;
     }
 
-    // If no file found, return false (Moodle will show broken image or 404).
     if (!$filetoserve) {
         return false;
     }
@@ -92,12 +84,48 @@ function block_playerhud_pluginfile($course, $birecord, $context, $filearea, $ar
 }
 
 /**
- * Standard upgrade function to support Moodle upgrades.
+ * Helper function used by Text Filters to fetch Drop details efficiently.
+ * This avoids the filter needing to do complex JOINs manually.
  *
- * @param int $oldversion
- * @param object $block
+ * @param int $dropid The ID of the drop.
+ * @return stdClass|false The drop object with item details mixed in, or false.
+ */
+function block_playerhud_get_drop_details_for_filter($dropid) {
+    global $DB;
+
+    $sql = "SELECT d.id as dropid, d.maxusage, d.respawntime, d.blockinstanceid,
+                   i.id as itemid, i.name as itemname, i.image, i.xp, i.description, 
+                   i.secret, i.required_class_id
+              FROM {block_playerhud_drops} d
+              JOIN {block_playerhud_items} i ON d.itemid = i.id
+             WHERE d.id = :dropid 
+               AND i.enabled = 1"; // Only enabled items
+
+    return $DB->get_record_sql($sql, ['dropid' => $dropid]);
+}
+
+/**
+ * Checks if content (item or quest) is visible for the user's class.
+ *
+ * @param string $requiredclassids IDs of allowed classes (e.g. "1,2" or "0").
+ * @param int $userclassid Current user class ID.
+ * @return bool True if visible.
+ */
+function block_playerhud_is_visible_for_class($requiredclassids, $userclassid) {
+    // Empty or '0' means Public (All Classes)
+    if (empty($requiredclassids) || $requiredclassids === '0') {
+        return true;
+    }
+
+    $allowedarray = explode(',', $requiredclassids);
+    
+    // Check if '0' is in array (explicit public) or user class is in array
+    return (in_array('0', $allowedarray) || in_array((string)$userclassid, $allowedarray));
+}
+
+/**
+ * Standard upgrade function.
  */
 function block_playerhud_upgrade($oldversion, $block) {
-    // Upgrade logic goes here if needed in the future.
     return true;
 }
