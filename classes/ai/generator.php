@@ -40,7 +40,7 @@ class generator {
         }
 
         if (empty($geminikey) && empty($groqkey)) {
-            throw new \moodle_exception('error_no_api_keys', 'block_playerhud');
+            throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
         }
 
         // 2. Build Prompt

@@ -296,7 +296,7 @@ echo '<div class="playerhud-container">';
     $strclose = get_string('close', 'block_playerhud');
 
     echo '
-    <div class="modal fade" id="phItemModalView" tabindex="-1" aria-hidden="true" style="z-index: 10500;">
+    <div class="modal fade" id="phItemModalView" tabindex="-1" aria-labelledby="phModalTitleView" aria-hidden="true" style="z-index: 10500;">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
           <div class="modal-header d-flex justify-content-between align-items-center">

@@ -348,7 +348,9 @@ class tab_items implements renderable {
                 'great' => get_string('great', 'block_playerhud'),
                 'confirm_title' => get_string('confirmation', 'admin'),
                 'yes' => get_string('yes'),
-                'cancel' => get_string('cancel')
+                'cancel' => get_string('cancel'),
+                'ai_creating' => get_string('ai_creating', 'block_playerhud'), // "Conjurando item..."
+                'success_title' => get_string('success', 'core'), // "Sucesso!" (Usando string padrão do Moodle)
             ]
         ];
         

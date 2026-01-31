@@ -46,9 +46,11 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     return;
                 }
 
+                // --- MUDANÇA 1: Texto de Carregamento Personalizado ---
                 var originalText = btn.text();
-                btn.prop('disabled', true).text('...');
-                btn.attr('aria-busy', 'true'); // Acessibilidade: Indica processamento
+                // Usa a string 'ai_creating' ("Conjurando item...") passada pelo PHP
+                btn.prop('disabled', true).text(config.strings.ai_creating);
+                btn.attr('aria-busy', 'true');
 
                 $.ajax({
                     url: M.cfg.wwwroot + '/blocks/playerhud/ajax_ai.php',
@@ -70,35 +72,35 @@ define(['jquery', 'core/notification'], function($, Notification) {
                             var modalFooter = $('#phAiModal .modal-footer');
                             var modalTitle = $('#phAiModalLabel');
 
-                            // 1. Atualiza o Título do Modal (Ex: "Espada Mágica")
-                            // Usamos o nome do item gerado para dar feedback claro
-                            modalTitle.text(resp.item_name);
+                            // --- MUDANÇA 2: Layout do Modal de Sucesso ---
 
-                            // 2. Constrói HTML de Sucesso Acessível e SEM texto chumbado
-                            // tabindex="-1" permite focar via JS
+                            // Título genérico "Sucesso!" no topo
+                            modalTitle.text(config.strings.success_title);
+
+                            // Conteúdo centralizado
                             // eslint-disable-next-line max-len
                             var successHtml = '<div id="ph-success-container" tabindex="-1" class="text-center py-3 animate__animated animate__fadeIn" style="outline: none;">';
 
-                            // Ícone decorativo (aria-hidden)
+                            // Ícone
                             // eslint-disable-next-line max-len
                             successHtml += '<div class="mb-3" style="font-size: 3rem; color: #28a745;" aria-hidden="true"><i class="fa fa-check-circle"></i></div>';
 
-                            // Mensagem de sucesso vinda do PHP ('Item criado com sucesso!')
-                            successHtml += '<h3 class="fw-bold h4">' + config.strings.success + '</h3>';
+                            // Nome do Item (DESTAQUE NO CENTRO)
+                            successHtml += '<h2 class="fw-bold text-primary mb-3">' + resp.item_name + '</h2>';
+
+                            // Mensagem "Item criado com sucesso!" logo abaixo
+                            successHtml += '<p class="lead text-muted">' + config.strings.success + '</p>';
 
                             if (resp.drop_code) {
-                                successHtml += '<div class="mt-3 p-3 bg-light border rounded">';
-                                successHtml += '<label class="small text-muted mb-1">' + config.strings.copy + '</label>';
-                                successHtml += '<h4 class="text-primary font-monospace select-all">' + resp.drop_code + '</h4>';
+                                successHtml += '<div class="mt-4 p-3 bg-light border rounded mx-auto" style="max-width: 80%;">';
+                                successHtml += '<label class="small text-muted mb-1 d-block">' + config.strings.copy + '</label>';
+                                successHtml += '<h4 class="font-monospace select-all m-0">' + resp.drop_code + '</h4>';
                                 successHtml += '</div>';
                             }
                             successHtml += '</div>';
 
-                            // 3. Substitui o conteúdo
                             modalBody.html(successHtml);
 
-                            // 4. Cria botão de Reload usando a string 'great' ('Legal!')
-                            // E removemos o texto hardcoded "OK, Atualizar Página"
                             // eslint-disable-next-line max-len
                             var btnReload = $('<button class="btn btn-success w-100 py-2 fw-bold">' + config.strings.great + '</button>');
                             btnReload.on('click', function() {
@@ -107,19 +109,41 @@ define(['jquery', 'core/notification'], function($, Notification) {
 
                             modalFooter.empty().append(btnReload);
 
-                            // 5. ACESSIBILIDADE: Gerenciamento de Foco
-                            // Move o foco para o container de sucesso para o leitor de tela narrar o resultado
                             setTimeout(function() {
                                 $('#ph-success-container').focus();
                             }, 100);
 
                         } else {
+                            // Caso o PHP retorne sucesso=false mas status 200 (raro na sua config atual)
                             Notification.alert('Error', resp.message, 'OK');
                         }
                     },
                     error: function(xhr, status, error) {
                         btn.prop('disabled', false).text(originalText).removeAttr('aria-busy');
-                        Notification.exception(error);
+
+                        // --- MUDANÇA 3: Correção do Erro "Undefined" ---
+
+                        // O PHP envia um JSON com 'message' mesmo no erro 400.
+                        // Precisamos ler o responseJSON em vez de passar o objeto de erro cru.
+                        var errorMsg = error; // Fallback
+
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            // Pega a mensagem amigável enviada pelo PHP (Ex: "Nenhuma chave configurada...")
+                            errorMsg = xhr.responseJSON.message;
+                        } else if (xhr.responseText) {
+                             // Tenta fazer parse manual se responseJSON falhar
+                            try {
+                                var r = JSON.parse(xhr.responseText);
+                                if (r.message) {
+                                    errorMsg = r.message;
+                                }
+                            } catch (e) {
+                                // Se não for JSON, mantém o erro padrão
+                            }
+                        }
+
+                        // Agora usamos Alert normal em vez de Exception, pois temos uma mensagem de texto limpa
+                        Notification.alert('Ops!', errorMsg, 'OK');
                     }
                 });
             });
