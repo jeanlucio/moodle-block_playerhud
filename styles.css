@@ -8,3 +8,114 @@
     border: 3px solid #fff;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
+/* Estilos para o Gerador de Shortcode (Manage Drops) */
+.block_playerhud .ph-gen-preview-card {
+    padding: 15px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 15px;
+    border: 2px dashed #0f6cbf;
+    background-color: #f8f9fa;
+    text-align: left;
+}
+
+.block_playerhud .ph-gen-preview-wrapper-img {
+    cursor: pointer;
+    filter: drop-shadow(0 4px 2px rgba(0,0,0,0.1));
+    text-align: center;
+}
+
+.block_playerhud .ph-gen-img-sm {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.block_playerhud .ph-gen-img-lg {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+}
+
+.block_playerhud .ph-gen-emoji-sm {
+    font-size: 30px;
+    line-height: 1;
+}
+
+.block_playerhud .ph-gen-emoji-lg {
+    font-size: 40px;
+    line-height: 1;
+}
+
+.block_playerhud .ph-text-link {
+    text-decoration: underline !important;
+}
+/* ... conteúdo anterior ... */
+
+/* Ajuste para cards compactos (usados no Filtro/Shortcode) para remover espaço extra */
+.ph-card-compact {
+    min-height: 0 !important;
+    height: auto !important;
+}
+/* --- Ajustes para o Gerador de Shortcode (Manage Drops) --- */
+
+/* Nota: Usamos #codeGenModal em vez de .block_playerhud 
+   porque o modal é movido para o body via JS.
+*/
+
+#codeGenModal .ph-gen-preview-real-card {
+    width: 160px !important; /* Força a largura do card do filtro */
+    background-color: #fff;
+    border: 1px solid rgba(0,0,0,.125);
+    border-radius: 0.25rem;
+    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+    padding: 1rem !important;
+    margin: 0 auto;
+    text-align: center;
+    position: relative;
+    box-sizing: border-box; /* Garante que o padding não aumente a largura */
+}
+
+/* Garante que a imagem nunca estoure o container */
+#codeGenModal .ph-gen-preview-real-card img {
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 60px; /* Altura máxima da área de ícone */
+    object-fit: contain;
+}
+
+/* Estilos para o modo 'Apenas Imagem' */
+#codeGenModal .ph-gen-preview-wrapper-img {
+    cursor: pointer;
+    filter: drop-shadow(0 4px 2px rgba(0,0,0,0.1));
+    text-align: center;
+    display: inline-block; /* Centraliza corretamente */
+}
+
+/* Estilos auxiliares para tamanhos */
+#codeGenModal .ph-gen-img-sm {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+#codeGenModal .ph-gen-img-lg {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+}
+
+#codeGenModal .ph-gen-emoji-sm {
+    font-size: 30px;
+    line-height: 1;
+}
+
+#codeGenModal .ph-gen-emoji-lg {
+    font-size: 40px;
+    line-height: 1;
+}
+
+#codeGenModal .ph-text-link {
+    text-decoration: underline !important;
+}

@@ -235,15 +235,37 @@ $PAGE->set_pagelayout('incourse');
 
 echo $OUTPUT->header();
 
-// Header.
+// --- INÍCIO DA SUBSTITUIÇÃO ---
+
+// Header Container
 echo \html_writer::start_div('d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom');
+
+// Título
 echo \html_writer::tag('h2', get_string('master_panel', 'block_playerhud'), ['class' => 'm-0']);
+
+// Grupo de Botões
+echo \html_writer::start_div('d-flex gap-2');
+
+// Botão 1: Voltar à Mochila (View.php) - Estilo Primário
+$backpackurl = new moodle_url('/blocks/playerhud/view.php', ['id' => $courseid, 'instanceid' => $instanceid]);
 echo \html_writer::link(
-    new moodle_url('/course/view.php', ['id' => $courseid]),
-    '<i class="fa fa-arrow-left"></i> ' . get_string('back'),
-    ['class' => 'btn btn-outline-secondary px-3']
+    $backpackurl,
+    '<i class="fa fa-gamepad" aria-hidden="true"></i> ' . get_string('openbackpack', 'block_playerhud'),
+    ['class' => 'btn btn-primary shadow-sm']
 );
-echo \html_writer::end_div();
+
+// Botão 2: Voltar ao Curso - Estilo Secundário
+$courseurl = new moodle_url('/course/view.php', ['id' => $courseid]);
+echo \html_writer::link(
+    $courseurl,
+    '<i class="fa fa-arrow-left" aria-hidden="true"></i> ' . get_string('back_to_course', 'block_playerhud'),
+    ['class' => 'btn btn-outline-secondary shadow-sm']
+);
+
+echo \html_writer::end_div(); // Fim do grupo de botões
+echo \html_writer::end_div(); // Fim do container do header
+
+// --- FIM DA SUBSTITUIÇÃO ---
 
 // Tabs Navigation.
 $tabs = [

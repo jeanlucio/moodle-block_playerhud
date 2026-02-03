@@ -168,7 +168,6 @@ class drops {
                     'class' => 'btn btn-sm btn-primary me-1 shadow-sm'
                 ]);
                 
-                // NOTA: A classe js-delete-btn está aqui e o data-confirm-msg também
                 $actions .= html_writer::link($deleteurl, '<i class="fa fa-trash"></i> ' . get_string('delete'), [
                     'class' => 'btn btn-sm btn-danger shadow-sm js-delete-btn',
                     'data-confirm-msg' => $safeconfirm
@@ -191,9 +190,8 @@ class drops {
 
         $output .= html_writer::end_div();
 
-        // --- HTML DO MODAL (Mantido igual) ---
-        // (Omiti o HTML longo aqui para brevidade, mas ele deve estar no arquivo, 
-        //  incluindo as divs #codeGenModal e #finalCode como no código anterior)
+        // --- HTML DO MODAL ---
+        
         $strgentitle = get_string('gen_title', 'block_playerhud');
         $strgenstyle = get_string('gen_style', 'block_playerhud');
         $strgencard = get_string('gen_style_card', 'block_playerhud');
@@ -237,6 +235,22 @@ class drops {
                                       <label class="form-check-label" for="modeImage"><strong>' . $strgenimage . '</strong><br><small class="text-muted">' . $strgenimagedesc . '</small></label>
                                   </div>
                               </div>
+
+                              <div id="cardCustomOptions" class="mt-3 pt-3 border-top">
+                                  <label class="form-label fw-bold small text-uppercase text-muted mb-2">' . get_string('visual_content', 'block_playerhud') . '</label>
+                                  
+                                  <div class="mb-2">
+                                      <label for="customBtnText" class="form-label small mb-1">' . get_string('choice_text', 'block_playerhud') . '</label>
+                                      <input type="text" class="form-control form-control-sm" id="customBtnText" placeholder="' . get_string('take', 'block_playerhud') . '">
+                                  </div>
+
+                                  <div class="mb-2">
+                                      <label for="customBtnEmoji" class="form-label small mb-1">Emoji (Opcional)</label>
+                                      <input type="text" class="form-control form-control-sm" id="customBtnEmoji" value="🖐" maxlength="4" style="width: 80px;">
+                                      <div class="form-text" style="font-size: 0.7rem;">Ícone decorativo (aria-hidden).</div>
+                                  </div>
+                              </div>
+
                               <div class="mb-3 mt-4" id="textInputGroup" style="display:none; background:#fff3cd; padding:10px; border-radius:5px; border:1px solid #ffeeba;">
                                   <label class="fw-bold text-dark">' . $strgenlinklabel . '</label>
                                   <input type="text" class="form-control" id="customText" value="' . $strgenlinkph . '">
@@ -244,9 +258,9 @@ class drops {
                               </div>
                           </form>
                       </div>
-                      <div class="col-md-7 text-center d-flex flex-column justify-content-center align-items-center bg-light rounded">
-                          <h6 class="text-muted text-uppercase mb-4 mt-3" style="font-size:0.8rem; letter-spacing:1px;">' . $strgenpreview . '</h6>
-                          <div id="previewContainer" class="p-4 w-100 d-flex justify-content-center align-items-center" style="min-height: 200px;"></div>
+                      <div class="col-md-7 text-center d-flex flex-column justify-content-center align-items-center bg-light rounded p-3" style="min-height: 140px;">
+                          <h6 class="text-muted text-uppercase mb-3 mt-2" style="font-size:0.7rem; letter-spacing:1px;">' . $strgenpreview . '</h6>
+                          <div id="previewContainer" class="w-100 d-flex justify-content-center align-items-center"></div>
                       </div>
                   </div>
                   <div class="row mt-4 pt-3 border-top">
@@ -266,7 +280,6 @@ class drops {
           </div>
         </div>';
 
-        // --- CHAMADA AMD CORRIGIDA (Adicionadas strings de confirmação) ---
         $jsconfig = [
             'item' => [
                 'name' => format_string($item->name),
@@ -293,7 +306,6 @@ class drops {
         return $output;
     }
 
-    // (Métodos handle_edit_form e save_drop continuam abaixo, pode mantê-los como estavam)
     public function handle_edit_form() {
         global $DB, $PAGE, $OUTPUT, $COURSE, $CFG;
         require_once($CFG->dirroot . '/blocks/playerhud/classes/form/edit_drop_form.php');

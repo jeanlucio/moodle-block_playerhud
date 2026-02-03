@@ -276,16 +276,31 @@ class tab_items implements renderable {
         );
         $html .= '</div>';
 
-        // 3. Tabela (Código padrão mantido)
+        // 3. Tabela
         $html .= '<div class="card shadow-sm border-0"><div class="card-body p-0">';
-        $html .= '<table class="table table-hover table-striped mb-0">';
-        $html .= '<thead class="bg-light border-bottom"><tr>';
-        $html .= '<th style="width: 60px;">' . get_string('item_image', 'block_playerhud') . '</th>';
-        $html .= '<th>' . $this->get_sort_link('name', get_string('item_name', 'block_playerhud'), $baseurl) . '</th>';
-        $html .= '<th style="width: 100px;">' . $this->get_sort_link('xp', get_string('item_xp', 'block_playerhud'), $baseurl) . '</th>';
-        $html .= '<th style="width: 140px;">' . $this->get_sort_link('enabled', get_string('enabled', 'block_playerhud'), $baseurl) . '</th>';
-        $html .= '<th style="width: 160px;">' . get_string('drops', 'block_playerhud') . '</th>';
-        $html .= '<th class="text-end" style="width: 200px;">' . get_string('actions') . '</th>';
+        $html .= '<table class="table table-hover table-striped mb-0 align-middle">'; // Adicionado align-middle para centralizar verticalmente
+        
+        // CORREÇÃO: Adicionada classe 'text-nowrap' na TR para evitar quebra de linha
+        $html .= '<thead class="bg-light border-bottom"><tr class="text-nowrap">';
+        
+        // Coluna 1: Aumentei para min-width 80px para caber o texto "Ícone / Emoji" e adicionei scope="col"
+        $html .= '<th scope="col" style="min-width: 80px;">' . get_string('item_image', 'block_playerhud') . '</th>';
+        
+        // Coluna 2: Nome (Sem largura fixa para ocupar o espaço restante)
+        $html .= '<th scope="col">' . $this->get_sort_link('name', get_string('item_name', 'block_playerhud'), $baseurl) . '</th>';
+        
+        // Coluna 3: XP
+        $html .= '<th scope="col" style="width: 100px;">' . $this->get_sort_link('xp', get_string('item_xp', 'block_playerhud'), $baseurl) . '</th>';
+        
+        // Coluna 4: Ativo
+        $html .= '<th scope="col" style="width: 140px;">' . $this->get_sort_link('enabled', get_string('enabled', 'block_playerhud'), $baseurl) . '</th>';
+        
+        // Coluna 5: Drops
+        $html .= '<th scope="col" style="width: 160px;">' . get_string('drops', 'block_playerhud') . '</th>';
+        
+        // Coluna 6: Ações (text-end já estava correto)
+        $html .= '<th scope="col" class="text-end" style="width: 200px;">' . get_string('actions') . '</th>';
+        
         $html .= '</tr></thead>';
         $html .= '<tbody>';
 
