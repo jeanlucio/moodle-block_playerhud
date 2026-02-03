@@ -21,10 +21,18 @@
         <div class="progress-bar bg-primary" role="progressbar" 
              style="width: {{progress}}%; border-radius: 4px;" 
              aria-valuenow="{{progress}}" aria-valuemin="0" aria-valuemax="100">
+            <span class="visually-hidden">{{progress}}% Complete</span>
         </div>
     </div>
 
     <div class="d-grid gap-2">
+        {{! Botão do Mestre (Visível apenas para quem tem permissão) }}
+        {{#isteacher}}
+        <a href="{{{manageurl}}}" class="btn btn-outline-dark btn-sm shadow-sm mb-1">
+            <i class="fa fa-cogs" aria-hidden="true"></i> {{#str}} master_panel, block_playerhud {{/str}}
+        </a>
+        {{/isteacher}}
+
         <a href="{{{viewurl}}}" class="btn btn-primary btn-sm shadow-sm">
             <i class="fa fa-briefcase" aria-hidden="true"></i> {{#str}} openbackpack, block_playerhud {{/str}}
         </a>

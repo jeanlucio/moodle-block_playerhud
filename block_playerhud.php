@@ -41,33 +41,41 @@ class block_playerhud extends block_base {
      *
      * @return stdClass|string
      */
-    public function get_content() {
+public function get_content() {
         if ($this->content !== null) {
             return $this->content;
         }
 
         global $USER, $COURSE, $OUTPUT;
 
-        $this->content = new stdClass();
+        $this->content = new \stdClass();
         $this->content->text = '';
         $this->content->footer = '';
 
-        // Only show content if user is logged in and not a guest.
         if (!isloggedin() || isguestuser()) {
             return $this->content;
         }
 
-        // 1. Load user data via the refactored game class.
-        // In blocks, instance->id is the unique identifier for specific settings.
         try {
+            $context = \context_block::instance($this->instance->id);
             $player = \block_playerhud\game::get_player($this->instance->id, $USER->id);
             
-            // 2. Prepare data for the template.
-            // Carrega configurações para calcular stats
             $config = unserialize(base64_decode($this->instance->configdata));
-            if (!$config) $config = new stdClass();
+            if (!$config) $config = new \stdClass();
 
             $stats = \block_playerhud\game::get_game_stats($config, $this->instance->id, $player->currentxp);
+
+            // --- LÓGICA DO PROFESSOR (NOVO) ---
+            $isteacher = has_capability('block/playerhud:manage', $context);
+            $manageurl = '';
+            
+            if ($isteacher) {
+                $url = new \moodle_url('/blocks/playerhud/manage.php', [
+                    'id' => $COURSE->id, 
+                    'instanceid' => $this->instance->id
+                ]);
+                $manageurl = $url->out();
+            }
 
             // Prepara dados para o Mustache
             $renderdata = [
@@ -76,18 +84,21 @@ class block_playerhud extends block_base {
                 'xp'          => $player->currentxp,
                 'level'       => $stats['level'],
                 'progress'    => $stats['progress'],
-                'viewurl'     => new moodle_url('/blocks/playerhud/view.php', [
+                'viewurl'     => new \moodle_url('/blocks/playerhud/view.php', [
                     'id' => $COURSE->id, 
                     'instanceid' => $this->instance->id
-                ])
+                ]),
+                // Dados novos passados para o template
+                'isteacher'   => $isteacher,
+                'manageurl'   => $manageurl
             ];
 
-            // 3. Render the sidebar mustache template.
             $this->content->text = $OUTPUT->render_from_template('block_playerhud/sidebar_view', $renderdata);
 
         } catch (\Exception $e) {
-            // Silently fail or log if the game class is not yet fully migrated.
-            $this->content->text = get_string('error_loading_player', 'block_playerhud');
+            if (debugging()) {
+                $this->content->text = 'Error: ' . $e->getMessage();
+            }
         }
 
         return $this->content;
