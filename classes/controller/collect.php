@@ -48,15 +48,13 @@ class collect {
             $message = get_string('collected_msg', 'block_playerhud', $msgParams);
 
             // --- DADOS PARA O FRONTEND (AJAX) ---
-            $game_data = null;
+          $game_data = null;
             $cooldown_deadline = 0;
+            $limit_reached = false; // Novo flag
 
             if ($isajax) {
-                // A. Dados do Jogador (XP/Level atualizados pós-transação)
-                // Precisamos recarregar para pegar o XP novo
+                // A. Dados do Jogador
                 $player = \block_playerhud\game::get_player($instanceid, $USER->id);
-                
-                // Carrega config para cálculo exato dos níveis
                 $bi = $DB->get_record('block_instances', ['id' => $instanceid]);
                 $config = unserialize(base64_decode($bi->configdata));
                 if (!$config) $config = new \stdClass();
@@ -70,22 +68,24 @@ class collect {
                     'total_game_xp' => $stats['total_game_xp']
                 ];
 
-                // B. Cálculo do Próximo Cooldown (Para o Timer)
-                // Se o drop tem tempo de respawn definido...
-                if ($drop->respawntime > 0) {
-                     // Verifica se o usuário ainda pode pegar mais (limite de uso)
-                     $count = $DB->count_records('block_playerhud_inventory', ['userid' => $USER->id, 'dropid' => $drop->id]);
-                     
-                     // Se for infinito (0) OU ainda não atingiu o limite máximo
-                     if ($drop->maxusage == 0 || $count < $drop->maxusage) {
-                         // O próximo tempo será AGORA + tempo de espera
-                         $cooldown_deadline = time() + $drop->respawntime;
-                     }
+                // B. Verificação de Limites e Cooldown
+                // Conta quantas vezes o usuário JÁ coletou (incluindo a atual)
+                $count = $DB->count_records('block_playerhud_inventory', ['userid' => $USER->id, 'dropid' => $drop->id]);
+                
+                // Define se atingiu o limite
+                if ($drop->maxusage > 0 && $count >= $drop->maxusage) {
+                    $limit_reached = true;
+                }
+
+                // Cálculo do Timer (apenas se não atingiu limite e tem respawn configurado)
+                if (!$limit_reached && $drop->respawntime > 0) {
+                     $cooldown_deadline = time() + $drop->respawntime;
                 }
             }
             // ------------------------------------
 
-            $this->respond($isajax, true, $message, $returnurl, $game_data, $cooldown_deadline);
+            // Passamos o novo parâmetro $limit_reached
+            $this->respond($isajax, true, $message, $returnurl, $game_data, $cooldown_deadline, $limit_reached);
 
         } catch (\Exception $e) {
             $this->respond($isajax, false, $e->getMessage(), $returnurl);
@@ -157,18 +157,18 @@ class collect {
     /**
      * Envia a resposta (JSON ou Redirect).
      */
-    private function respond($ajax, $success, $message, $url, $data = null, $cooldown_deadline = 0) {
+    private function respond($ajax, $success, $message, $url, $data = null, $cooldown_deadline = 0, $limit_reached = false) {
         if ($ajax) {
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 'success' => $success, 
                 'message' => $message,
-                'game_data' => $data,               // Dados para atualizar HUD
-                'cooldown_deadline' => $cooldown_deadline // Dados para iniciar Timer
+                'game_data' => $data,
+                'cooldown_deadline' => $cooldown_deadline,
+                'limit_reached' => $limit_reached // Novo campo
             ]);
             die();
         } else {
-            // Fallback para redirect clássico
             redirect($url, $message, $success ? \core\output\notification::NOTIFY_SUCCESS : \core\output\notification::NOTIFY_ERROR);
         }
     }
