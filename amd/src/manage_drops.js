@@ -9,22 +9,21 @@ define(['jquery', 'core/notification'], function($, Notification) {
             var langStrings = config.strings;
             var currentDropCode = 0;
 
-            // Elementos
+            // Elementos DOM.
             var inputCode = document.getElementById('finalCode');
-            // Var inputText = document.getElementById('customText'); // Removido pois é redeclarado abaixo como inputLinkText
             var previewBox = document.getElementById('previewContainer');
 
-            // Inputs de Personalização
-            var groupTextLink = document.getElementById('textInputGroup'); // Grupo do modo Texto
-            var inputLinkText = document.getElementById('customText');// Input do modo Texto
+            // Inputs de Personalização.
+            var groupTextLink = document.getElementById('textInputGroup');
+            var inputLinkText = document.getElementById('customText');
 
-            var groupCardOptions = document.getElementById('cardCustomOptions'); // Grupo do modo Card (NOVO)
-            var inputBtnText = document.getElementById('customBtnText');// Input Texto Botão
-            var inputBtnEmoji = document.getElementById('customBtnEmoji');// Input Emoji Botão
+            var groupCardOptions = document.getElementById('cardCustomOptions');
+            var inputBtnText = document.getElementById('customBtnText');
+            var inputBtnEmoji = document.getElementById('customBtnEmoji');
 
             // --- Listeners ---
             document.body.addEventListener('click', function(e) {
-                // Delete
+                // Delete Button Logic.
                 var deleteBtn = e.target.closest('.js-delete-btn');
                 if (deleteBtn) {
                     e.preventDefault();
@@ -40,23 +39,24 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     return;
                 }
 
-                // Open Modal
+                // Open Modal Logic.
                 var trigger = e.target.closest('.js-open-gen-modal');
                 if (trigger) {
                     e.preventDefault();
                     currentDropCode = trigger.getAttribute('data-dropcode');
 
-                    // Reset inputs
+                    // Reset Inputs.
                     var radioCard = document.getElementById('modeCard');
                     if (radioCard) {
                         radioCard.checked = true;
                     }
 
+                    // Limpa valores para usar o placeholder/padrão.
                     if (inputLinkText) {
-                        inputLinkText.value = langStrings.defaultText;
+                        inputLinkText.value = '';
                     }
                     if (inputBtnText) {
-                        inputBtnText.value = langStrings.takeBtn;
+                        inputBtnText.value = '';
                     }
                     if (inputBtnEmoji) {
                         inputBtnEmoji.value = '';
@@ -74,7 +74,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     }
                 }
 
-                // Copy
+                // Copy Button Logic.
                 if (e.target.closest('#copyFinalCode')) {
                     if (inputCode) {
                         inputCode.select();
@@ -91,7 +91,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
             });
 
-            // Listeners de Input para atualização em tempo real
+            // Listeners de Input para atualização em tempo real.
             document.body.addEventListener('change', handleChange);
             document.body.addEventListener('input', handleChange);
 
@@ -118,10 +118,10 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 var mode = modeRadio ? modeRadio.value : 'card';
 
                 var param = isNaN(currentDropCode) ? 'code=' + currentDropCode : 'id=' + currentDropCode;
-                var code = '[PLAYERHUD_DROP ' + param + ']'; // Base code
+                var code = '[PLAYERHUD_DROP ' + param + ']'; // Base code.
                 var previewHtml = '';
 
-                // Visibilidade dos grupos de input
+                // Visibilidade dos grupos de input.
                 if (groupTextLink) {
                     groupTextLink.style.display = (mode === 'text') ? 'block' : 'none';
                 }
@@ -129,52 +129,53 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     groupCardOptions.style.display = (mode === 'card') ? 'block' : 'none';
                 }
 
-                // --- MODO TEXTO ---
                 if (mode === 'text') {
-                    var linkTxt = inputLinkText.value.trim() || langStrings.defaultText;
+                    // --- MODO TEXTO ---
+                    var linkTxt = (inputLinkText && inputLinkText.value.trim()) ?
+                        inputLinkText.value.trim() : langStrings.defaultText;
+
                     code = '[PLAYERHUD_DROP ' + param + ' mode=text text="' + linkTxt + '"]';
-                    previewHtml = '<a href="#" onclick="return false;" class="text-primary fw-bold text-decoration-underline">' +
+
+                    previewHtml = '<a href="#" onclick="return false;" ' +
+                        'class="text-primary fw-bold text-decoration-underline">' +
                         linkTxt + '</a>';
-                    // eslint-disable-next-line brace-style
-                    }
-                // --- MODO IMAGEM ---
-                else if (mode === 'image') {
+
+                } else if (mode === 'image') {
+                    // --- MODO IMAGEM ---
                     code = '[PLAYERHUD_DROP ' + param + ' mode=image]';
 
-                    var imgContent = currentItem.isImage
-                        ? '<img src="' + currentItem.url + '" style="width:50px; height:50px; object-fit:contain;" alt="">'
-                        : '<span style="font-size:40px;" aria-hidden="true">' + currentItem.content + '</span>';
+                    var imgContent = currentItem.isImage ?
+                        '<img src="' + currentItem.url + '" style="width:50px; height:50px; object-fit:contain;" alt="">' :
+                        '<span style="font-size:40px;" aria-hidden="true">' + currentItem.content + '</span>';
 
                     previewHtml = '<div style="cursor:pointer; filter: drop-shadow(0 4px 2px rgba(0,0,0,0.1));">' +
                         imgContent + '</div>';
-                // eslint-disable-next-line brace-style
-                }
-                // --- MODO CARD (Padrão) ---
-                else {
-                    // Captura personalizações
-                    var btnTxt = (inputBtnText && inputBtnText.value.trim()) ? inputBtnText.value.trim() : langStrings.takeBtn;
-                    var btnEmo = (inputBtnEmoji && inputBtnEmoji.value.trim()) ? inputBtnEmoji.value.trim() : '';
 
-                    // Constrói shortcode com atributos opcionais
+                } else {
+                    // --- MODO CARD (Padrão) ---
+                    var userTxt = (inputBtnText && inputBtnText.value.trim()) ? inputBtnText.value.trim() : '';
+                    var userEmo = (inputBtnEmoji && inputBtnEmoji.value.trim()) ? inputBtnEmoji.value.trim() : '';
+
+                    var previewTxt = userTxt || langStrings.takeBtn;
+                    var previewEmo = userEmo || '🖐';
+
                     var extraAttrs = '';
-                    if (btnTxt !== langStrings.takeBtn) {
-                        extraAttrs += ' button_text="' + btnTxt + '"';
+                    if (userTxt !== '') {
+                        extraAttrs += ' button_text="' + userTxt + '"';
                     }
-                    if (btnEmo !== '') {
-                        extraAttrs += ' button_emoji="' + btnEmo + '"';
+                    if (userEmo !== '') {
+                        extraAttrs += ' button_emoji="' + userEmo + '"';
                     }
 
                     code = '[PLAYERHUD_DROP ' + param + extraAttrs + ']';
 
-                    // Constrói Prévia Fiel (Usando a estrutura do Filtro e a nova classe CSS)
-                    var iconHtml = currentItem.isImage
-                        ? '<img src="' + currentItem.url + '" alt="">' // CSS controla tamanho
-                        : '<div style="font-size:2.5em; line-height:1;">' + currentItem.content + '</div>';
+                    var iconHtml = currentItem.isImage ?
+                        '<img src="' + currentItem.url + '" alt="">' :
+                        '<div style="font-size:2.5em; line-height:1;">' + currentItem.content + '</div>';
 
-                    // HTML do Botão
-                    var btnContent = btnTxt;
-                    if (btnEmo) {
-                        btnContent = '<span aria-hidden="true" class="me-1">' + btnEmo + '</span> ' + btnTxt;
+                    var btnContent = previewTxt;
+                    if (previewEmo) {
+                        btnContent = '<span aria-hidden="true" class="me-1">' + previewEmo + '</span> ' + previewTxt;
                     }
 
                     previewHtml =

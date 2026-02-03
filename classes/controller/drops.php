@@ -41,13 +41,12 @@ class drops {
     public function view_manage_page() {
         global $DB, $PAGE, $OUTPUT, $COURSE, $CFG;
 
+        // ... (código inicial de permissões e setup mantém igual) ...
         $instanceid = required_param('instanceid', PARAM_INT);
         $courseid   = required_param('id', PARAM_INT);
         $itemid     = required_param('itemid', PARAM_INT);
         $action     = optional_param('action', '', PARAM_ALPHA);
         $dropid     = optional_param('dropid', 0, PARAM_INT);
-        
-        // Parâmetros de Ordenação
         $sort = optional_param('sort', 'id', PARAM_ALPHA);
         $dir  = optional_param('dir', 'DESC', PARAM_ALPHA);
 
@@ -55,7 +54,6 @@ class drops {
         $context = \context_block::instance($instanceid);
         require_capability('block/playerhud:manage', $context);
 
-        // URL Base para paginação/ordenação
         $baseurl = new moodle_url('/blocks/playerhud/manage_drops.php', [
             'instanceid' => $instanceid, 
             'id' => $courseid, 
@@ -65,11 +63,9 @@ class drops {
         $PAGE->set_url($baseurl);
         $PAGE->set_context($context);
         $PAGE->set_heading($COURSE->fullname);
-        
-        // Layout 'incourse' para ocupar a largura total
         $PAGE->set_pagelayout('incourse'); 
 
-        // Handle Delete Action
+        // Handle Delete
         if ($action === 'delete' && $dropid && confirm_sesskey()) {
             $DB->delete_records('block_playerhud_drops', ['id' => $dropid]);
             redirect($baseurl, get_string('deleted', 'block_playerhud'), \core\output\notification::NOTIFY_SUCCESS);
@@ -77,18 +73,14 @@ class drops {
 
         $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], '*', MUST_EXIST);
         
-        // Busca com ordenação dinâmica
         $allowedsorts = ['id', 'name', 'maxusage', 'respawntime'];
         if (!in_array($sort, $allowedsorts)) $sort = 'id';
         $drops = $DB->get_records('block_playerhud_drops', ['itemid' => $itemid], "$sort $dir");
 
-        // Preparar dados de imagem para o JS (Modal Generator)
         require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
         $mediadata = \block_playerhud\utils::get_item_display_data($item, $context);
         
         $output = $OUTPUT->header();
-
-        // Container Fluido
         $output .= html_writer::start_div('container-fluid p-0 animate__animated animate__fadeIn');
 
         // --- HEADER DO ITEM ---
@@ -117,7 +109,7 @@ class drops {
             </div>
         </div>';
 
-        // --- TABELA ---
+        // --- TABELA DE DROPS ---
         if ($drops) {
             $output .= '<div class="card shadow-sm border-0"><div class="card-body p-0">';
             $output .= '<table class="table table-hover table-striped mb-0">';
@@ -131,8 +123,8 @@ class drops {
             $output .= '<th class="text-end" style="width: 200px;">' . get_string('actions') . '</th>';
             $output .= '</tr></thead><tbody>';
 
-            $strgen = get_string('gen_btn', 'block_playerhud');
             $strgentitle = get_string('gen_title', 'block_playerhud');
+            $strgen = get_string('gen_btn', 'block_playerhud');
             $strinf = get_string('infinite', 'block_playerhud');
             $strimm = get_string('drops_immediate', 'block_playerhud');
 
@@ -140,34 +132,22 @@ class drops {
                 $editurl = new moodle_url('/blocks/playerhud/edit_drop.php', ['instanceid' => $instanceid, 'courseid' => $courseid, 'itemid' => $itemid, 'dropid' => $drop->id]);
                 $deleteurl = new moodle_url($baseurl, ['action' => 'delete', 'dropid' => $drop->id, 'sesskey' => sesskey()]);
                 
-                // Badges
-                if ($drop->maxusage == 0) {
-                    $qtdhtml = '<span class="badge bg-success"><i class="fa fa-infinity"></i> ' . $strinf . '</span>';
-                } else {
-                    $qtdhtml = '<span class="badge bg-light text-dark border border-secondary">Max: ' . $drop->maxusage . '</span>';
-                }
+                $qtdhtml = ($drop->maxusage == 0) 
+                    ? '<span class="badge bg-success"><i class="fa fa-infinity"></i> ' . $strinf . '</span>'
+                    : '<span class="badge bg-light text-dark border border-secondary">Max: ' . $drop->maxusage . '</span>';
 
-                if ($drop->respawntime > 0) {
-                    $timestr = format_time($drop->respawntime);
-                    $timehtml = '<span class="badge bg-info text-dark" title="' . $drop->respawntime . 's"><i class="fa fa-clock-o"></i> ' . $timestr . '</span>';
-                } else {
-                    $timehtml = '<small class="text-muted">' . $strimm . '</small>';
-                }
+                $timehtml = ($drop->respawntime > 0)
+                    ? '<span class="badge bg-info text-dark" title="' . $drop->respawntime . 's"><i class="fa fa-clock-o"></i> ' . format_time($drop->respawntime) . '</span>'
+                    : '<small class="text-muted">' . $strimm . '</small>';
 
-                // Botão Gerar Código
                 $display_code = !empty($drop->code) ? $drop->code : $drop->id;
                 $btncode = '<button type="button" class="btn btn-outline-dark btn-sm js-open-gen-modal w-100"
                                 data-dropcode="' . $display_code . '" title="' . $strgentitle . '">
                                 <i class="fa fa-code"></i> ' . $strgen . '
                              </button>';
 
-                // Botões de Ação
                 $safeconfirm = s(get_string('drops_confirm_delete', 'block_playerhud'));
-                
-                $actions = html_writer::link($editurl, '<i class="fa fa-pencil"></i> ' . get_string('edit'), [
-                    'class' => 'btn btn-sm btn-primary me-1 shadow-sm'
-                ]);
-                
+                $actions = html_writer::link($editurl, '<i class="fa fa-pencil"></i> ' . get_string('edit'), ['class' => 'btn btn-sm btn-primary me-1 shadow-sm']);
                 $actions .= html_writer::link($deleteurl, '<i class="fa fa-trash"></i> ' . get_string('delete'), [
                     'class' => 'btn btn-sm btn-danger shadow-sm js-delete-btn',
                     'data-confirm-msg' => $safeconfirm
@@ -190,9 +170,8 @@ class drops {
 
         $output .= html_writer::end_div();
 
-        // --- HTML DO MODAL ---
+        // --- MODAL DE GERAÇÃO DE CÓDIGO (Layout Ajustado: Coluna do Form maior) ---
         
-        $strgentitle = get_string('gen_title', 'block_playerhud');
         $strgenstyle = get_string('gen_style', 'block_playerhud');
         $strgencard = get_string('gen_style_card', 'block_playerhud');
         $strgencarddesc = get_string('gen_style_card_desc', 'block_playerhud');
@@ -207,6 +186,10 @@ class drops {
         $strgencodelabel = get_string('gen_code_label', 'block_playerhud');
         $strgencopy = get_string('gen_copy', 'block_playerhud');
         $strgencopied = get_string('gen_copied', 'block_playerhud');
+        
+        // Strings atualizadas (Agora 'take' vem limpo do arquivo de idioma)
+        $strbtntxt = get_string('choice_text', 'block_playerhud'); 
+        $strtake = get_string('take', 'block_playerhud'); 
 
         $output .= '
         <div class="modal fade" id="codeGenModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 10500;">
@@ -218,15 +201,15 @@ class drops {
               </div>
               <div class="modal-body">
                   <div class="row">
-                      <div class="col-md-5 border-end">
+                      <div class="col-md-7 border-end">
                           <form>
                               <div class="mb-3">
                                   <label class="fw-bold text-dark mb-3">' . $strgenstyle . '</label>
-                                  <div class="form-check mb-3">
+                                  <div class="form-check mb-2">
                                       <input type="radio" id="modeCard" name="codeMode" class="form-check-input js-mode-trigger" value="card" checked>
                                       <label class="form-check-label" for="modeCard"><strong>' . $strgencard . '</strong><br><small class="text-muted">' . $strgencarddesc . '</small></label>
                                   </div>
-                                  <div class="form-check mb-3">
+                                  <div class="form-check mb-2">
                                       <input type="radio" id="modeText" name="codeMode" class="form-check-input js-mode-trigger" value="text">
                                       <label class="form-check-label" for="modeText"><strong>' . $strgentext . '</strong><br><small class="text-muted">' . $strgentextdesc . '</small></label>
                                   </div>
@@ -238,32 +221,36 @@ class drops {
 
                               <div id="cardCustomOptions" class="mt-3 pt-3 border-top">
                                   <label class="form-label fw-bold small text-uppercase text-muted mb-2">' . get_string('visual_content', 'block_playerhud') . '</label>
-                                  
-                                  <div class="mb-2">
-                                      <label for="customBtnText" class="form-label small mb-1">' . get_string('choice_text', 'block_playerhud') . '</label>
-                                      <input type="text" class="form-control form-control-sm" id="customBtnText" placeholder="' . get_string('take', 'block_playerhud') . '">
+                                  <div class="row">
+                                      <div class="col-8">
+                                          <label for="customBtnText" class="form-label small mb-1">' . $strbtntxt . '</label>
+                                          <input type="text" class="form-control form-control-sm" id="customBtnText" placeholder="' . $strtake . '">
+                                      </div>
+                                      <div class="col-4">
+                                          <label for="customBtnEmoji" class="form-label small mb-1">Emoji</label>
+                                          <input type="text" class="form-control form-control-sm text-center" id="customBtnEmoji" placeholder="🖐" maxlength="4">
+                                      </div>
                                   </div>
-
-                                  <div class="mb-2">
-                                      <label for="customBtnEmoji" class="form-label small mb-1">Emoji (Opcional)</label>
-                                      <input type="text" class="form-control form-control-sm" id="customBtnEmoji" value="🖐" maxlength="4" style="width: 80px;">
-                                      <div class="form-text" style="font-size: 0.7rem;">Ícone decorativo (aria-hidden).</div>
-                                  </div>
+                                  <div class="form-text mt-1" style="font-size: 0.7rem;">Deixe vazio para usar o padrão.</div>
                               </div>
 
                               <div class="mb-3 mt-4" id="textInputGroup" style="display:none; background:#fff3cd; padding:10px; border-radius:5px; border:1px solid #ffeeba;">
                                   <label class="fw-bold text-dark">' . $strgenlinklabel . '</label>
-                                  <input type="text" class="form-control" id="customText" value="' . $strgenlinkph . '">
+                                  <input type="text" class="form-control" id="customText" placeholder="' . $strgenlinkph . '">
                                   <small class="text-muted">' . $strgenlinkhelp . '</small>
                               </div>
                           </form>
                       </div>
-                      <div class="col-md-7 text-center d-flex flex-column justify-content-center align-items-center bg-light rounded p-3" style="min-height: 140px;">
-                          <h6 class="text-muted text-uppercase mb-3 mt-2" style="font-size:0.7rem; letter-spacing:1px;">' . $strgenpreview . '</h6>
-                          <div id="previewContainer" class="w-100 d-flex justify-content-center align-items-center"></div>
+
+                      <div class="col-md-5 d-flex flex-column bg-light rounded-end">
+                          <div class="text-center p-3 flex-grow-1 d-flex flex-column justify-content-center align-items-center">
+                              <h6 class="text-muted text-uppercase mb-4" style="font-size:0.7rem; letter-spacing:1px;">' . $strgenpreview . '</h6>
+                              <div id="previewContainer" class="w-100 d-flex justify-content-center align-items-center"></div>
+                          </div>
                       </div>
                   </div>
-                  <div class="row mt-4 pt-3 border-top">
+
+                  <div class="row mt-3 pt-3 border-top">
                       <div class="col-12">
                          <label class="fw-bold text-success">' . $strgencodelabel . '</label>
                           <div class="input-group input-group-lg">
@@ -290,10 +277,8 @@ class drops {
             ],
             'strings' => [
                 'defaultText' => get_string('gen_link_placeholder', 'block_playerhud'),
-                'takeBtn' => get_string('take', 'block_playerhud'),
+                'takeBtn' => $strtake, // Agora envia "Pegar" limpo
                 'yours' => get_string('gen_yours', 'block_playerhud'),
-                
-                // STRINGS QUE FALTAVAM PARA O DELETE FUNCIONAR:
                 'confirm_title' => get_string('confirmation', 'admin'),
                 'yes' => get_string('yes'),
                 'cancel' => get_string('cancel')

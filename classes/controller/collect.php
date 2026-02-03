@@ -115,7 +115,7 @@ class collect {
             $readytime = $lastcollected->timecreated + $drop->respawntime;
             if (time() < $readytime) {
                 $minutesleft = ceil(($readytime - time()) / 60);
-                throw new \moodle_exception('waitmore', 'block_playerhud', $minutesleft);
+                throw new \moodle_exception('waitmore', 'block_playerhud', '', $minutesleft);
             }
         }
     }
