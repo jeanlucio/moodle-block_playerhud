@@ -204,8 +204,7 @@ class tab_items implements renderable {
     protected function render_list_view($baseurl) {
         global $DB, $PAGE;
 
-        // 1. O Modal Completo (Bootstrap 5 Structure)
-        // Agora escrevemos o HTML completo do modal, não apenas o corpo.
+// 1. O Modal Completo (Bootstrap 5 Structure) - EXPANDIDO
         $modalhtml = '
         <div class="modal fade" id="phAiModal" tabindex="-1" aria-labelledby="phAiModalLabel" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
@@ -221,13 +220,37 @@ class tab_items implements renderable {
                         <input type="text" class="form-control" id="ai-theme" placeholder="' . get_string('ai_theme_placeholder', 'block_playerhud') . '">
                     </div>
                     <div class="mb-3">
-                        <label for="ai-xp" class="form-label">' . get_string('ai_placeholder_xp', 'block_playerhud') . '</label>
-                        <input type="number" class="form-control" id="ai-xp" placeholder="100">
+                        <label for="ai-xp" class="form-label">' . get_string('xp', 'block_playerhud') . '</label>
+                        <input type="number" class="form-control" id="ai-xp" placeholder="' . get_string('ai_rnd_xp', 'block_playerhud') . '">
                     </div>
-                    <div class="form-check">
+                    
+                    <div class="form-check mb-3">
                         <input type="checkbox" class="form-check-input" id="ai-drop">
-                        <label class="form-check-label" for="ai-drop">' . get_string('ai_create_drop', 'block_playerhud') . '</label>
+                        <label class="form-check-label fw-bold" for="ai-drop">' . get_string('ai_create_drop', 'block_playerhud') . '</label>
                     </div>
+
+                    <div id="ai-drop-options" class="p-3 bg-light border rounded mb-3" style="display:none;">
+                        <h6 class="border-bottom pb-2 mb-3">' . get_string('ai_drop_settings', 'block_playerhud') . '</h6>
+                        
+                        <div class="mb-3">
+                            <label for="ai-location" class="form-label small">' . get_string('drop_name_label', 'block_playerhud') . '</label>
+                            <input type="text" class="form-control form-control-sm" id="ai-location" placeholder="Ex: Biblioteca">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <label for="ai-maxusage" class="form-label small">' . get_string('drop_max_qty', 'block_playerhud') . '</label>
+                                <input type="number" class="form-control form-control-sm" id="ai-maxusage" value="0">
+                                <small class="text-muted" style="font-size:0.7rem;">0 = ' . get_string('unlimited', 'block_playerhud') . '</small>
+                            </div>
+                            <div class="col-6">
+                                <label for="ai-respawn" class="form-label small">' . get_string('drop_interval', 'block_playerhud') . ' (min)</label>
+                                <input type="number" class="form-control form-control-sm" id="ai-respawn" value="0">
+                                <small class="text-muted" style="font-size:0.7rem;">0 = ' . get_string('drops_immediate', 'block_playerhud') . '</small>
+                            </div>
+                        </div>
+                    </div>
+
                 </form>
               </div>
               <div class="modal-footer">

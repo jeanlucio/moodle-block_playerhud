@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_playerhud'; // Mandatory name for block plugins. [cite: 187]
-$plugin->version   = 2026012902;        // The current module version (Date: YYYYMMDDXX). 
+$plugin->version   = 2026020301; // Data de hoje (YYYYMMDDXX) + 01 
 $plugin->requires  = 2022112800;        // Requires Moodle 4.1+. [cite: 187]
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release   = 'v1.0 (Block Migration)';
+$plugin->release   = 'v1.1 (Drop Codes)';

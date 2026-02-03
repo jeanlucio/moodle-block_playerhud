@@ -105,6 +105,27 @@ function block_playerhud_get_drop_details_for_filter($dropid) {
 }
 
 /**
+ * Busca detalhes do Drop usando o CÓDIGO hash (para o novo shortcode).
+ *
+ * @param string $code O código alfanumérico (ex: 3C815F).
+ * @return stdClass|false O objeto drop detalhado ou false.
+ */
+function block_playerhud_get_drop_details_by_code($code) {
+    global $DB;
+
+    // Nota: Adicionamos a cláusula WHERE d.code = :code
+    $sql = "SELECT d.id as dropid, d.maxusage, d.respawntime, d.blockinstanceid,
+                   i.id as itemid, i.name as itemname, i.image, i.xp, i.description, 
+                   i.secret, i.required_class_id
+              FROM {block_playerhud_drops} d
+              JOIN {block_playerhud_items} i ON d.itemid = i.id
+             WHERE d.code = :code 
+               AND i.enabled = 1";
+
+    return $DB->get_record_sql($sql, ['code' => $code]);
+}
+
+/**
  * Checks if content (item or quest) is visible for the user's class.
  *
  * @param string $requiredclassids IDs of allowed classes (e.g. "1,2" or "0").

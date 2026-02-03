@@ -19,6 +19,11 @@ $mode       = optional_param('mode', 'item', PARAM_ALPHA);
 $xp         = optional_param('xp', 0, PARAM_INT);
 $createdrop = optional_param('create_drop', 0, PARAM_BOOL);
 
+// NOVOS PARÂMETROS (Configuração personalizada do Drop)
+$droploc    = optional_param('drop_location', '', PARAM_TEXT);
+$dropmax    = optional_param('drop_max', 0, PARAM_INT);
+$droptime   = optional_param('drop_time', 0, PARAM_INT); // Vem em minutos do JS
+
 // 2. Security.
 require_login($courseid);
 require_sesskey();
@@ -31,7 +36,16 @@ try {
     // 3. Delegate Logic to Class.
     // This respects Moodle standards: Logic is in classes/ai/generator.php
     $generator = new \block_playerhud\ai\generator($instanceid);
-    $result = $generator->generate($mode, $theme, $xp, $createdrop);
+
+    // Empacota as configs extras num array para passar limpo
+    $extraoptions = [
+        'drop_location' => $droploc,
+        'drop_max' => $dropmax,
+        'drop_time' => $droptime
+    ];
+
+    // Chamada atualizada com o novo argumento $extraoptions
+    $result = $generator->generate($mode, $theme, $xp, $createdrop, $extraoptions);
 
     echo json_encode($result);
 

@@ -56,7 +56,6 @@ class tab_collection implements renderable {
     public function display() {
         global $DB, $CFG;
         
-        // Garante que a lib está carregada para usar as funções auxiliares
         require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
 
         // 1. Buscar Inventário do Usuário
@@ -67,22 +66,16 @@ class tab_collection implements renderable {
         $inventorybyitem = [];
         if ($rawinventory) {
             foreach ($rawinventory as $inv) {
-                // Filtra apenas se o item pertencer a este bloco (verificação via join seria melhor, mas array filter serve)
-                // Vamos assumir que a renderização dos itens abaixo já filtra pelo instanceid
                 $inventorybyitem[$inv->itemid][] = $inv;
             }
         }
 
-        // 2. Buscar Todos os Itens do Bloco
+        // 2. Buscar TODOS os Itens (Sem filtro 'enabled')
         $allitems = $DB->get_records('block_playerhud_items', [
-            'blockinstanceid' => $this->instanceid, 
-            'enabled' => 1
+            'blockinstanceid' => $this->instanceid
         ], 'xp ASC');
 
-        // 3. Buscar Classe do Jogador (para regras de visibilidade)
-        // Nota: Se a tabela de progresso RPG ainda não foi migrada para bloco, ajuste o nome da tabela aqui.
-        // Assumindo estrutura nova: block_playerhud_rpg_progress? Ou usando tabela antiga se compartilhado?
-        // Vou assumir que o RPG também é por bloco agora, mas se não houver tabela, define classe 0.
+        // 3. Buscar Classe do Jogador
         $myclassid = 0; 
         if ($DB->get_manager()->table_exists('block_playerhud_rpg_progress')) {
              $prog = $DB->get_record('block_playerhud_rpg_progress', [
@@ -101,10 +94,18 @@ class tab_collection implements renderable {
         if ($allitems) {
             foreach ($allitems as $item) {
                 $usercopies = isset($inventorybyitem[$item->id]) ? $inventorybyitem[$item->id] : [];
+                $count = count($usercopies);
+                
+                // --- LÓGICA LEGACY ---
+                if (!$item->enabled) {
+                    // Se não tem o item e está desativado, pula.
+                    if ($count == 0) {
+                        continue;
+                    }
+                }
 
-                // REGRA DE VISIBILIDADE:
-                // Se o aluno NÃO tem o item E o item é restrito a outra classe, esconde totalmente.
-                if (empty($usercopies)) {
+                // Regra de Visibilidade de Classe (Se não tiver o item)
+                if ($count == 0) {
                     if (!block_playerhud_is_visible_for_class($item->required_class_id, $myclassid)) {
                         continue;
                     }
@@ -113,7 +114,6 @@ class tab_collection implements renderable {
                 $mediadata = \block_playerhud\utils::get_item_display_data($item, $context);
                 $deschtml = !empty($item->description) ? format_text($item->description, FORMAT_HTML) : "";
 
-                // Verifica se é infinito (baseado nos drops associados)
                 $isinfinite = false;
                 $dropscheck = $DB->get_records('block_playerhud_drops', ['itemid' => $item->id]);
                 foreach ($dropscheck as $d) {
@@ -122,19 +122,12 @@ class tab_collection implements renderable {
                     }
                 }
 
-                if (empty($usercopies)) {
-                    // --- ITEM FALTANTE (Missing) ---
-                    // Se não tiver drops configurados e não tiver o item, talvez nem deva aparecer (opcional)
-                    if (!$dropscheck && !$item->secret) {
-                        // continue; // Descomente se quiser esconder itens impossíveis de pegar
-                    }
-
-                    // Se for secreto e não tem, mostra "???"
+                if ($count == 0) {
+                    // --- ITEM FALTANTE ---
                     $name = $item->secret ? get_string('secret_name', 'block_playerhud') : format_string($item->name);
                     $xplabel = $item->secret ? get_string('secret_name', 'block_playerhud') : "+{$item->xp} XP";
                     $displaydesc = $item->secret ? get_string('secret_help', 'block_playerhud') : $deschtml;
 
-                    // Se for secreto, esconde a imagem real
                     if ($item->secret) {
                         $mediadata['is_image'] = false;
                         $mediadata['content'] = '<span aria-hidden="true">❓</span>';
@@ -147,31 +140,42 @@ class tab_collection implements renderable {
                     $hasitems = true;
 
                 } else {
-                    // --- ITEM OBTIDO (Owned) ---
-                    $stacktotal = count($usercopies);
+                    // --- ITEM OBTIDO ---
+                    $stacktotal = $count;
                     $lastdatets = 0;
                     $countmap = 0; $countshop = 0; $countquest = 0; $countlegacy = 0;
 
                     foreach ($usercopies as $copy) {
                         if ($copy->timecreated > $lastdatets) $lastdatets = $copy->timecreated;
-                        
                         $src = $copy->source ?? '';
                         if ($src == 'map') $countmap++;
                         else if ($src == 'shop') $countshop++;
                         else if ($src == 'quest') $countquest++;
-                        else $countlegacy++; // Drop legado ou inserção manual
+                        else $countlegacy++;
                     }
 
-                    // Badge "NOVO!"
                     $lastview = $this->player->last_inventory_view ?? 0;
                     $isnew = ($lastdatets > $lastview);
-                    $newbadge = $isnew ? '<span class="ph-new-badge">' . get_string('new_item_badge', 'block_playerhud') . '</span>' : '';
+                    $badgeshtml = '';
+
+                    if ($isnew) {
+                        $badgeshtml .= '<span class="ph-new-badge">' . get_string('new_item_badge', 'block_playerhud') . '</span>';
+                    }
+
+                    $cardstyle = "cursor: pointer;";
                     
+                    // --- CORREÇÃO AQUI: Usando get_string ---
+                    if (!$item->enabled) {
+                        $strarchived = get_string('item_archived', 'block_playerhud');
+                        $badgeshtml .= '<span class="badge bg-secondary position-absolute shadow-sm" style="top: -5px; left: -5px; font-size: 0.65rem; z-index: 5;">' . $strarchived . '</span>';
+                        $cardstyle .= " opacity: 0.85; filter: grayscale(30%); border: 1px dashed #ccc;";
+                    }
+
                     $datestr = ($lastdatets > 0) ? userdate($lastdatets, get_string('strftimedatefullshort', 'langconfig')) : "";
 
                     $cardshtml .= $this->render_card(
-                        $item, format_string($item->name), "+{$item->xp} XP", "ph-owned", "cursor: pointer;", "ph-item-trigger",
-                        $stacktotal, $newbadge, $datestr, $deschtml, $mediadata,
+                        $item, format_string($item->name), "+{$item->xp} XP", "ph-owned", $cardstyle, "ph-item-trigger",
+                        $stacktotal, $badgeshtml, $datestr, $deschtml, $mediadata,
                         $countmap, $countshop, $countquest, $countlegacy, $lastdatets, $isinfinite
                     );
                     $hasitems = true;

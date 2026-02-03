@@ -28,7 +28,7 @@ class generator {
     /**
      * Main entry point to generate content.
      */
-    public function generate($mode, $theme, $xp, $createdrop) {
+    public function generate($mode, $theme, $xp, $createdrop, $extraoptions = []) {
         global $DB;
 
         // 1. Get Keys
@@ -41,6 +41,11 @@ class generator {
 
         if (empty($geminikey) && empty($groqkey)) {
             throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
+        }
+
+        // CORREÇÃO: Se o XP for 0 ou vazio, gera um valor aleatório entre 10 e 500
+        if ($xp <= 0) {
+            $xp = rand(10, 500); 
         }
 
         // 2. Build Prompt
@@ -62,6 +67,7 @@ class generator {
 
         // 4. Parse JSON
         $jsonraw = $result['data'];
+        // Limpa blocos de código markdown se houver
         $cleanjson = preg_replace('/^`{3}json|`{3}$/m', '', $jsonraw);
         $aidata = json_decode($cleanjson, true);
 
@@ -71,13 +77,14 @@ class generator {
 
         // 5. Save Item
         if ($mode === 'item') {
-            return $this->save_item($aidata, $xp, $createdrop, $result['provider']);
+            // Passamos as opções extras (local, limites) para a função de salvar
+            return $this->save_item($aidata, $xp, $createdrop, $result['provider'], $extraoptions);
         }
 
         return ['success' => false, 'message' => 'Unknown mode'];
     }
 
-    protected function save_item($data, $targetxp, $createdrop, $provider) {
+    protected function save_item($data, $targetxp, $createdrop, $provider, $options = []) {
         global $DB;
 
         $item = new \stdClass();
@@ -85,9 +92,9 @@ class generator {
         $item->name = $data['name'];
         $item->description = $data['description'];
         $item->image = $data['emoji'];
-        $item->xp = (int)($data['xp'] ?? $targetxp);
-        if ($item->xp <= 0) $item->xp = 100;
+        $item->xp = $targetxp; // Usa o XP definido (ou o aleatório gerado no PHP)
         
+        // Defaults do item
         $item->enabled = 1;
         $item->maxusage = 1;
         $item->respawntime = 0;
@@ -106,17 +113,20 @@ class generator {
             $drop->blockinstanceid = $this->instanceid;
             $drop->itemid = $itemid;
             $drop->code = $dropcode;
-            $drop->name = $data['location_name'] ?? 'Generated Location';
             
-            // Configurações padrão seguras
-            $drop->maxusage = 0;       // Ilimitado
-            $drop->respawntime = 0;    // Sem espera
+            // LÓGICA DO DROP: Prioriza o que o professor digitou
+            $drop->name = !empty($options['drop_location']) ? $options['drop_location'] : ($data['location_name'] ?? 'Drop Gerado');
             
-            // Datas
+            // Configurações de limite
+            $drop->maxusage = (int)($options['drop_max'] ?? 0);
+            
+            // Tempo de recarga: O form envia MINUTOS, convertemos para SEGUNDOS
+            $minutes = (int)($options['drop_time'] ?? 0);
+            $drop->respawntime = $minutes * 60;
+            
             $drop->timecreated = time();
             $drop->timemodified = time(); 
             
-            // Inserção segura (apenas colunas que existem no banco)
             $DB->insert_record('block_playerhud_drops', $drop);
         }
 
@@ -130,13 +140,18 @@ class generator {
 
     protected function build_prompt($mode, $theme, $xp) {
         if ($mode === 'item') {
-            $prompt = "Create a RPG item based on theme: '{$theme}'. Return JSON: name, description, emoji, xp (approx {$xp}), location_name.";
-            if (get_string_manager()->string_exists('ai_prompt_item', 'block_playerhud')) {
-                $a = new \stdClass();
-                $a->theme = $theme;
-                $a->xp = $xp > 0 ? $xp : 100;
-                $prompt = get_string('ai_prompt_item', 'block_playerhud', $a);
-            }
+            // Prompt ajustado para pedir descrições reais/curiosidades
+            $prompt = "Act as a Gamification Designer. Theme: '{$theme}'. Create an item. 
+            Return ONLY JSON: 
+            {
+                \"name\": \"Item Name\", 
+                \"description\": \"A short description related to the theme (educational fact, trivia or historical context). Avoid generic RPG fantasy lore.\", 
+                \"emoji\": \"🔮\", 
+                \"xp\": {$xp}, 
+                \"location_name\": \"Location Suggestion\"
+            }. 
+            Reply in Portuguese.";
+            
             return $prompt;
         }
         return "";
