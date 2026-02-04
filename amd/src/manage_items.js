@@ -1,11 +1,25 @@
+// eslint-disable-next-line no-redeclare
+/* global M */
 define(['jquery', 'core/notification'], function($, Notification) {
 
+    /**
+     * Manage Items module.
+     *
+     * @module     block_playerhud/manage_items
+     * @copyright  2026 Jean Lúcio
+     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+     */
     return {
+        /**
+         * Initialize the module.
+         *
+         * @param {Object} config The configuration object passed from PHP.
+         */
         init: function(config) {
 
             $('#phAiModal').appendTo('body');
 
-            // 1. Toggle Drop Options
+            // 1. Toggle Drop Options.
             $('#ai-drop').on('change', function() {
                 if ($(this).is(':checked')) {
                     $('#ai-drop-options').slideDown();
@@ -14,7 +28,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
             });
 
-            // 2. Delete Confirmation
+            // 2. Delete Confirmation.
             $('body').on('click', '.js-delete-btn', function(e) {
                 e.preventDefault();
                 var btn = $(this);
@@ -37,7 +51,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 $('#ph-btn-conjure').click();
             });
 
-            // 3. AI Logic
+            // 3. AI Logic.
             $('#ph-btn-conjure').click(function(e) {
                 e.preventDefault();
                 var btn = $(this);
@@ -48,6 +62,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
 
                 var theme = $('#ai-theme').val();
                 var xp = $('#ai-xp').val();
+                var amount = $('#ai-amount').val() || 1;
                 var createDrop = $('#ai-drop').is(':checked');
 
                 var locName = $('#ai-location').val();
@@ -72,10 +87,15 @@ define(['jquery', 'core/notification'], function($, Notification) {
                         id: config.courseid,
                         theme: theme,
                         xp: xp ? xp : 0,
-                        'create_drop': createDrop ? 1 : 0,
-                        'drop_location': locName,
-                        'drop_max': maxUsage,
-                        'drop_time': respawn,
+                        amount: amount,
+                        // eslint-disable-next-line camelcase
+                        create_drop: createDrop ? 1 : 0,
+                        // eslint-disable-next-line camelcase
+                        drop_location: locName,
+                        // eslint-disable-next-line camelcase
+                        drop_max: maxUsage,
+                        // eslint-disable-next-line camelcase
+                        drop_time: respawn,
                         sesskey: M.cfg.sesskey
                     },
                     success: function(resp) {
@@ -86,63 +106,74 @@ define(['jquery', 'core/notification'], function($, Notification) {
                             var modalFooter = $('#phAiModal .modal-footer');
                             var modalTitle = $('#phAiModalLabel');
 
+                            // --- CORREÇÃO AQUI ---
+                            // Adiciona um gatilho único: Se o modal fechar (X, ESC, ou clique fora), recarrega a página.
+                            // Usamos .one() para garantir que execute apenas uma vez para este sucesso específico.
+                            $('#phAiModal').one('hidden.bs.modal', function() {
+                                window.location.reload();
+                            });
+
                             // --- LAYOUT DE SUCESSO ---
                             modalTitle.text(config.strings.success_title);
 
-                            // 1. Início do HTML
-                            // eslint-disable-next-line max-len
-                            var successHtml = '<div id="ph-success-container" tabindex="-1" class="text-center py-3 animate__animated animate__fadeIn" style="outline: none;">';
+                            var successHtml = '<div id="ph-success-container" tabindex="-1" ' +
+                                'class="text-center py-3 animate__animated animate__fadeIn" style="outline: none;">';
 
-                            // 2. Ícone
-                            // eslint-disable-next-line max-len
-                            successHtml += '<div class="mb-3" style="font-size: 3rem; color: #28a745;" aria-hidden="true"><i class="fa fa-check-circle"></i></div>';
+                            successHtml += '<div class="mb-3" style="font-size: 3rem; color: #28a745;" aria-hidden="true">' +
+                                '<i class="fa fa-check-circle"></i></div>';
 
-                            // 3. Nome do Item
-                            successHtml += '<h2 class="fw-bold text-primary mb-3">' + resp.item_name + '</h2>';
+                            // Tratamento para múltiplos itens.
+                            var itemsList = Array.isArray(resp.created_items) ? resp.created_items.join(', ') : resp.item_name;
+                            var count = Array.isArray(resp.created_items) ? resp.created_items.length : 1;
 
-                            // 4. LÓGICA DE AVISO (CORRIGIDO: INSERIDO AQUI)
+                            successHtml += '<h2 class="fw-bold text-primary mb-3">' + count + 'x Itens Criados!</h2>';
+                            successHtml += '<p class="text-muted">' + itemsList + '</p>';
+
+                            // Avisos de Balanceamento.
                             if (resp.warning_msg) {
-                                // eslint-disable-next-line max-len
-                                successHtml += '<div class="alert alert-warning small mb-3"><i class="fa fa-exclamation-triangle"></i> ' + resp.warning_msg + '</div>';
+                                successHtml += '<div class="alert alert-warning small mb-3">' +
+                                    '<i class="fa fa-exclamation-triangle"></i> ' + resp.warning_msg + '</div>';
                             } else if (resp.info_msg) {
-                                // eslint-disable-next-line max-len
-                                successHtml += '<div class="alert alert-success small mb-3"><i class="fa fa-check-circle"></i> ' + resp.info_msg + '</div>';
+                                successHtml += '<div class="alert alert-success small mb-3">' +
+                                    '<i class="fa fa-check-circle"></i> ' + resp.info_msg + '</div>';
                             }
 
                             successHtml += '<p class="lead text-muted mb-4">' + config.strings.success + '</p>';
 
-                            // 5. Bloco do Shortcode (Drop)
-                            if (resp.drop_code) {
+                            // Bloco do Shortcode (Drop) - Apenas se for 1 item.
+                            if (count === 1 && resp.drop_code) {
                                 var fullShortcode = '[PLAYERHUD_DROP code=' + resp.drop_code + ']';
 
                                 successHtml += '<div class="card bg-light border-0 p-3 mx-auto" style="max-width: 90%;">';
-                                // eslint-disable-next-line max-len
-                                successHtml += '<label class="small text-muted mb-2 fw-bold text-start w-100" for="ph-gen-code-input">' + config.strings.copy + ':</label>';
+                                successHtml += '<label class="small text-muted mb-2 fw-bold text-start w-100" ' +
+                                    'for="ph-gen-code-input">' + config.strings.copy + ':</label>';
 
                                 successHtml += '<div class="input-group">';
-                                // eslint-disable-next-line max-len
-                                successHtml += '<input type="text" class="form-control font-monospace text-center" value="' + fullShortcode + '" id="ph-gen-code-input" readonly>';
-                                // eslint-disable-next-line max-len
-                                successHtml += '<button class="btn btn-primary" type="button" id="ph-btn-copy-code"><i class="fa fa-copy"></i></button>';
-                                successHtml += '</div>';
-                                successHtml += '</div>';
+                                successHtml += '<input type="text" class="form-control font-monospace text-center" ' +
+                                    'value="' + fullShortcode + '" id="ph-gen-code-input" readonly>';
+                                successHtml += '<button class="btn btn-primary" type="button" id="ph-btn-copy-code">' +
+                                    '<i class="fa fa-copy"></i></button>';
+                                successHtml += '</div></div>';
+                            } else if (count > 1 && createDrop) {
+                                successHtml += '<div class="alert alert-info">Os drops foram criados. ' +
+                                    'Use o botão "Gerar Código" na lista para pegar cada um.</div>';
                             }
+
                             successHtml += '</div>';
 
-                            // 6. RENDERIZAÇÃO NO DOM (Agora o successHtml está completo)
                             modalBody.html(successHtml);
 
-                            // Footer Buttons
-                            // eslint-disable-next-line max-len
-                            var btnReload = $('<button class="btn btn-success w-100 py-2 fw-bold">' + config.strings.great + '</button>');
+                            var btnReload = $('<button class="btn btn-success w-100 py-2 fw-bold">' +
+                                config.strings.great + '</button>');
+
+                            // Mantemos o clique no botão explicitamente recarregando também
                             btnReload.on('click', function() {
                                 window.location.reload();
                             });
 
                             modalFooter.empty().append(btnReload);
 
-                            // Lógica do Botão Copiar
-                            if (resp.drop_code) {
+                            if (count === 1 && resp.drop_code) {
                                 setTimeout(function() {
                                     $('#ph-btn-copy-code').on('click', function() {
                                         var copyText = document.getElementById("ph-gen-code-input");
@@ -152,7 +183,8 @@ define(['jquery', 'core/notification'], function($, Notification) {
 
                                         var $btn = $(this);
                                         var originalIcon = '<i class="fa fa-copy"></i>';
-                                        $btn.removeClass('btn-primary').addClass('btn-success').html('<i class="fa fa-check"></i>');
+                                        $btn.removeClass('btn-primary').addClass('btn-success')
+                                            .html('<i class="fa fa-check"></i>');
                                         setTimeout(function() {
                                             $btn.removeClass('btn-success').addClass('btn-primary').html(originalIcon);
                                         }, 2000);
@@ -176,7 +208,9 @@ define(['jquery', 'core/notification'], function($, Notification) {
                                 if (r.message) {
                                     errorMsg = r.message;
                                 }
-                            } catch (e) { /* Empty */ }
+                            } catch (e) {
+                                /* Empty */
+                            }
                         }
                         Notification.alert('Ops!', errorMsg, 'OK');
                     }

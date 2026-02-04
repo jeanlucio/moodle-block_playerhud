@@ -83,8 +83,8 @@ class tab_config implements renderable {
         // --- LÓGICA DE BALANCEAMENTO (HEALTH CHECK) ---
         
         // Valores configurados (com defaults de segurança)
-        $xp_per_level = isset($config->config_xp_per_level) ? (int)$config->config_xp_per_level : 100;
-        $max_levels   = isset($config->config_max_levels) ? (int)$config->config_max_levels : 20;
+        $xp_per_level = isset($config->xp_per_level) ? (int)$config->xp_per_level : 100;
+        $max_levels   = isset($config->max_levels) ? (int)$config->max_levels : 20;
         $xp_ceiling   = $xp_per_level * $max_levels; // O "Zerar o jogo"
 
         // Calcular XP Total disponível no Jogo
@@ -97,10 +97,11 @@ class tab_config implements renderable {
                 $drops = $DB->get_records('block_playerhud_drops', ['itemid' => $item->id]);
                 if ($drops) {
                     foreach ($drops as $drop) {
-                        // Se for infinito (0), contamos como 1 para estimativa conservadora
-                        // Se tiver limite (ex: 5), multiplicamos o XP do item por 5
-                        $mult = ($drop->maxusage > 0) ? $drop->maxusage : 1; 
-                        $total_items_xp += ($item->xp * $mult);
+                        // MUDANÇA: Se for infinito (0), não soma na economia do jogo.
+                        // Só contamos drops que acabam (finitos).
+                        if ($drop->maxusage > 0) {
+                            $total_items_xp += ($item->xp * $drop->maxusage);
+                        }
                     }
                 } else {
                     // Item sem drop no mapa (talvez recompensa de quest ou loja), conta 1 vez
@@ -130,9 +131,9 @@ class tab_config implements renderable {
             $str_message = get_string('bal_msg_hard', 'block_playerhud', $a);
             $alert_class = 'alert-warning'; // Amarelo
             $icon = 'fa-exclamation-triangle';
-        } elseif ($ratio > 150) {
+        } elseif ($ratio > 100) {
             $str_message = get_string('bal_msg_easy', 'block_playerhud', $a);
-            $alert_class = 'alert-warning'; // Amarelo
+            $alert_class = 'alert-danger'; // Vermelho
             $icon = 'fa-exclamation-triangle';
         } else {
             $str_message = get_string('bal_msg_perfect', 'block_playerhud', $a);

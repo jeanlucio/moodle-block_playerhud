@@ -22,6 +22,7 @@ $createdrop = optional_param('create_drop', 0, PARAM_BOOL);
 $droploc    = optional_param('drop_location', '', PARAM_TEXT);
 $dropmax    = optional_param('drop_max', 0, PARAM_INT);
 $droptime   = optional_param('drop_time', 0, PARAM_INT);
+$amount     = optional_param('amount', 1, PARAM_INT);
 
 // 2. Security.
 require_login($courseid);
@@ -32,19 +33,17 @@ require_capability('block/playerhud:manage', $context);
 header('Content-Type: application/json; charset=utf-8');
 
 try {
-    // 3. CÁLCULO DE BALANCEAMENTO (Game Health Check)
-    // Antes de chamar a IA, vamos entender o estado atual do jogo.
-    
-    // A. Carrega Configurações
+    // 3. Balanceamento
     $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
     $config = unserialize(base64_decode($bi->configdata));
     if (!$config) $config = new \stdClass();
 
-    $xp_per_level = isset($config->config_xp_per_level) ? (int)$config->config_xp_per_level : 100;
-    $max_levels   = isset($config->config_max_levels) ? (int)$config->config_max_levels : 20;
-    $xp_ceiling   = $xp_per_level * $max_levels; // Meta total do jogo
+    // CORREÇÃO: Removemos o prefixo 'config_' pois o Moodle salva sem ele
+    $xp_per_level = isset($config->xp_per_level) ? (int)$config->xp_per_level : 100;
+    $max_levels   = isset($config->max_levels) ? (int)$config->max_levels : 20;
+    
+    $xp_ceiling   = $xp_per_level * $max_levels;
 
-    // B. Calcula XP Existente
     $current_total_xp = 0;
     $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $instanceid, 'enabled' => 1]);
     if ($items) {
@@ -52,8 +51,10 @@ try {
             $drops = $DB->get_records('block_playerhud_drops', ['itemid' => $it->id]);
             if ($drops) {
                 foreach ($drops as $d) {
-                    $mult = ($d->maxusage > 0) ? $d->maxusage : 1; 
-                    $current_total_xp += ($it->xp * $mult);
+                    // Ignora drops infinitos na conta do saldo
+                    if ($d->maxusage > 0) {
+                        $current_total_xp += ($it->xp * $d->maxusage);
+                    }
                 }
             } else {
                 $current_total_xp += $it->xp;
@@ -61,31 +62,37 @@ try {
         }
     }
 
-    // C. Define Contexto para a IA
     $balance_context = [
         'current_xp' => $current_total_xp,
         'target_xp'  => $xp_ceiling,
-        'gap'        => $xp_ceiling - $current_total_xp
+        'gap'        => $xp_ceiling - $current_total_xp,
+        'qty'        => $amount
     ];
 
-    // 4. Delegate Logic to Class.
+    // 4. Delegate Logic
     $generator = new \block_playerhud\ai\generator($instanceid);
 
     $extraoptions = [
         'drop_location' => $droploc,
         'drop_max' => $dropmax,
         'drop_time' => $droptime,
-        'balance_context' => $balance_context // Passamos o contexto aqui
+        'balance_context' => $balance_context
     ];
 
-    $result = $generator->generate($mode, $theme, $xp, $createdrop, $extraoptions);
+    $result = $generator->generate($mode, $theme, $xp, $createdrop, $extraoptions, $amount);
 
     echo json_encode($result);
 
-} catch (Exception $e) {
-    http_response_code(400);
+} catch (\Throwable $e) { 
+    if (ob_get_length()) ob_clean();
+    
+    // Log detalhado para o admin
+    debugging('PlayerHUD AI Error: ' . $e->getMessage(), DEBUG_DEVELOPER);
+    
+    http_response_code(200); 
     echo json_encode([
         'success' => false,
+        // Mensagem limpa para o usuário (sem link de arquivo)
         'message' => $e->getMessage()
     ]);
 }

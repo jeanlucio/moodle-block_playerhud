@@ -204,7 +204,7 @@ class tab_items implements renderable {
     protected function render_list_view($baseurl) {
         global $DB, $PAGE;
 
-// 1. O Modal Completo (Bootstrap 5 Structure) - EXPANDIDO
+// 1. O Modal Completo (Bootstrap 5 Structure) - EXPANDIDO E ATUALIZADO
         $modalhtml = '
         <div class="modal fade" id="phAiModal" tabindex="-1" aria-labelledby="phAiModalLabel" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
@@ -219,9 +219,16 @@ class tab_items implements renderable {
                         <label for="ai-theme" class="form-label">' . get_string('ai_prompt_theme_item', 'block_playerhud') . '</label>
                         <input type="text" class="form-control" id="ai-theme" placeholder="' . get_string('ai_theme_placeholder', 'block_playerhud') . '">
                     </div>
-                    <div class="mb-3">
-                        <label for="ai-xp" class="form-label">' . get_string('xp', 'block_playerhud') . '</label>
-                        <input type="number" class="form-control" id="ai-xp" placeholder="' . get_string('ai_rnd_xp', 'block_playerhud') . '">
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="ai-xp" class="form-label">' . get_string('xp', 'block_playerhud') . '</label>
+                            <input type="number" class="form-control" id="ai-xp" placeholder="' . get_string('ai_rnd_xp', 'block_playerhud') . '">
+                        </div>
+                        <div class="col-6">
+                            <label for="ai-amount" class="form-label">' . get_string('qty', 'block_playerhud') . '</label>
+                            <input type="number" class="form-control" id="ai-amount" value="1" min="1" max="5">
+                        </div>
                     </div>
                     
                     <div class="form-check mb-3">
