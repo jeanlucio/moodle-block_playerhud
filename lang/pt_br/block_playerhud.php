@@ -477,3 +477,14 @@ $string['xp_per_level'] = 'XP por Nível';
 $string['xp_per_level_help'] = 'Quantos pontos de XP o aluno precisa acumular para ganhar 1 nível. (Padrão: 100)';
 $string['xp_warning_msg'] = 'Itens trocáveis não podem conceder XP para evitar fraudes. O valor será definido como 0.';
 $string['yours'] = 'Possui: {$a}';
+// ... (no final do arquivo)
+$string['game_balance'] = 'Saúde da Economia (Balanceamento)';
+$string['total_items_xp'] = 'Total XP em Itens';
+$string['xp_required_max'] = 'XP para o Nível Máximo';
+$string['bal_msg_empty'] = 'O jogo está vazio. Crie itens para começar.';
+$string['bal_msg_hard'] = 'Difícil! Há apenas <strong>{$a->total} XP</strong> disponíveis, mas o aluno precisa de <strong>{$a->req} XP</strong> para zerar.';
+$string['bal_msg_easy'] = 'Fácil demais! Há <strong>{$a->total} XP</strong> disponíveis. O aluno chegará ao topo muito rápido.';
+$string['bal_msg_perfect'] = 'Excelente! O jogo está balanceado ({$a->ratio}% de cobertura).';
+// ... final do arquivo
+$string['ai_warn_overflow'] = '⚠️ Atenção: Com este item, o jogo tem {$a}% a mais de XP do que o necessário. Ficou muito fácil!';
+$string['ai_tip_balanced'] = '✅ Este item ajuda a balancear a economia do jogo.';

@@ -57,9 +57,9 @@ class tab_config implements renderable {
      * @return string
      */
     public function display() {
-        global $DB;
+        global $DB, $OUTPUT;
 
-        // 1. Strings (Verificadas no arquivo block_playerhud.php enviado)
+        // 1. Strings Gerais
         $titlewidget = get_string('widget_code_title', 'block_playerhud');
         $descwidget = get_string('widget_code_desc', 'block_playerhud');
         $tipwidget = get_string('widget_code_tip', 'block_playerhud');
@@ -72,7 +72,7 @@ class tab_config implements renderable {
         $strsave = get_string('save_keys', 'block_playerhud');
         $strplaceholder = get_string('api_key_placeholder', 'block_playerhud');
 
-        // 2. Load Block Config
+        // 2. Load Block Config & Setup
         $bi = $DB->get_record('block_instances', ['id' => $this->instanceid], '*', MUST_EXIST);
         $config = unserialize(base64_decode($bi->configdata));
         
@@ -80,10 +80,72 @@ class tab_config implements renderable {
             $config = new \stdClass();
         }
 
+        // --- LÓGICA DE BALANCEAMENTO (HEALTH CHECK) ---
+        
+        // Valores configurados (com defaults de segurança)
+        $xp_per_level = isset($config->config_xp_per_level) ? (int)$config->config_xp_per_level : 100;
+        $max_levels   = isset($config->config_max_levels) ? (int)$config->config_max_levels : 20;
+        $xp_ceiling   = $xp_per_level * $max_levels; // O "Zerar o jogo"
+
+        // Calcular XP Total disponível no Jogo
+        $total_items_xp = 0;
+        $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid, 'enabled' => 1]);
+        
+        if ($items) {
+            foreach ($items as $item) {
+                // Se o item tem drops, verificamos os limites
+                $drops = $DB->get_records('block_playerhud_drops', ['itemid' => $item->id]);
+                if ($drops) {
+                    foreach ($drops as $drop) {
+                        // Se for infinito (0), contamos como 1 para estimativa conservadora
+                        // Se tiver limite (ex: 5), multiplicamos o XP do item por 5
+                        $mult = ($drop->maxusage > 0) ? $drop->maxusage : 1; 
+                        $total_items_xp += ($item->xp * $mult);
+                    }
+                } else {
+                    // Item sem drop no mapa (talvez recompensa de quest ou loja), conta 1 vez
+                    $total_items_xp += $item->xp;
+                }
+            }
+        }
+
+        // Razão de Cobertura
+        $ratio = ($xp_ceiling > 0) ? ($total_items_xp / $xp_ceiling) * 100 : 0;
+        $ratio_display = number_format($ratio, 1);
+
+        // Definição da Mensagem e Cor
+        $alert_class = 'alert-info';
+        $icon = 'fa-info-circle';
+        $str_message = '';
+        
+        $a = new \stdClass();
+        $a->total = $total_items_xp;
+        $a->req = $xp_ceiling;
+        $a->ratio = $ratio_display;
+
+        if ($total_items_xp == 0) {
+            $str_message = get_string('bal_msg_empty', 'block_playerhud');
+            $alert_class = 'alert-secondary';
+        } elseif ($ratio < 80) {
+            $str_message = get_string('bal_msg_hard', 'block_playerhud', $a);
+            $alert_class = 'alert-warning'; // Amarelo
+            $icon = 'fa-exclamation-triangle';
+        } elseif ($ratio > 150) {
+            $str_message = get_string('bal_msg_easy', 'block_playerhud', $a);
+            $alert_class = 'alert-warning'; // Amarelo
+            $icon = 'fa-exclamation-triangle';
+        } else {
+            $str_message = get_string('bal_msg_perfect', 'block_playerhud', $a);
+            $alert_class = 'alert-success'; // Verde
+            $icon = 'fa-check-circle';
+        }
+
+        // --- INÍCIO DO RENDER ---
+
+        // Configurações de API (Valores)
         $valgemini = isset($config->apikey_gemini) ? $config->apikey_gemini : '';
         $valgroq   = isset($config->apikey_groq) ? $config->apikey_groq : '';
-
-        // 3. Action URL
+        
         $actionurl = new moodle_url(
             '/blocks/playerhud/manage.php',
             [
@@ -96,7 +158,39 @@ class tab_config implements renderable {
 
         $html = '<div class="row">';
 
-        // Column 1: Widget (Visual Code).
+        // 1. CARD DE BALANCEAMENTO (Novo)
+        // Definimos a cor da borda com base no alerta
+        $borderClass = (strpos($alert_class, 'success') !== false) ? 'border-success' : 
+                      ((strpos($alert_class, 'warning') !== false) ? 'border-warning' : 'border-secondary');
+
+        $html .= '
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm ' . $borderClass . '">
+                <div class="card-header bg-white fw-bold">
+                    <i class="fa fa-balance-scale"></i> ' . get_string('game_balance', 'block_playerhud') . '
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 text-center border-end">
+                            <h3 class="m-0 text-primary">' . $total_items_xp . '</h3>
+                            <small class="text-muted text-uppercase" style="font-size:0.7rem;">' . get_string('total_items_xp', 'block_playerhud') . '</small>
+                        </div>
+                        <div class="col-md-3 text-center border-end">
+                            <h3 class="m-0 text-dark">' . $xp_ceiling . '</h3>
+                            <small class="text-muted text-uppercase" style="font-size:0.7rem;">' . get_string('xp_required_max', 'block_playerhud') . '</small>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert ' . $alert_class . ' m-0 d-flex align-items-center">
+                                <i class="fa ' . $icon . ' fa-2x me-3" aria-hidden="true"></i>
+                                <div>' . $str_message . '</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>';
+
+        // 2. CARD DO WIDGET
         $html .= '
         <div class="col-md-6">
             <div class="card border-primary mb-4 h-100 shadow-sm">
@@ -122,7 +216,7 @@ class tab_config implements renderable {
             </div>
         </div>';
 
-        // Column 2: API Manager (Personal Keys).
+        // 3. CARD DAS APIs
         $html .= '
         <div class="col-md-6">
             <div class="card border-dark mb-4 h-100 shadow-sm">

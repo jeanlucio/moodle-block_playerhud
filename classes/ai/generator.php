@@ -3,13 +3,6 @@ namespace block_playerhud\ai;
 
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * AI Generation Logic for PlayerHUD.
- *
- * @package    block_playerhud
- * @copyright  2026 Jean Lúcio
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 class generator {
 
     protected $instanceid;
@@ -25,12 +18,8 @@ class generator {
         }
     }
 
-    /**
-     * Main entry point to generate content.
-     */
     public function generate($mode, $theme, $xp, $createdrop, $extraoptions = []) {
-        global $DB;
-
+        
         // 1. Get Keys
         $geminikey = trim($this->config->apikey_gemini ?? '');
         $groqkey   = trim($this->config->apikey_groq ?? '');
@@ -43,15 +32,29 @@ class generator {
             throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
         }
 
-        // CORREÇÃO: Se o XP for 0 ou vazio, gera um valor aleatório entre 10 e 500
-        if ($xp <= 0) {
-            $xp = rand(10, 500); 
+        // 2. Lógica Inteligente de XP
+        $balance = $extraoptions['balance_context'] ?? null;
+        
+        if ($xp <= 0 && $balance) {
+            // Se falta muito XP (Gap grande), sugere itens valiosos (100-300).
+            // Se falta pouco ou já passou (Gap <= 0), sugere itens decorativos/bônus (10-50).
+            if ($balance['gap'] > 2000) {
+                $xp = rand(150, 300); // Item Épico
+            } elseif ($balance['gap'] > 500) {
+                $xp = rand(80, 150);  // Item Raro
+            } elseif ($balance['gap'] > 0) {
+                $xp = rand(30, 80);   // Item Comum
+            } else {
+                $xp = rand(10, 30);   // Item Bônus (Jogo já está zerável)
+            }
+        } elseif ($xp <= 0) {
+            $xp = rand(10, 200); // Fallback aleatório
         }
 
-        // 2. Build Prompt
-        $prompt = $this->build_prompt($mode, $theme, $xp);
+        // 3. Build Prompt (Com contexto de economia)
+        $prompt = $this->build_prompt($mode, $theme, $xp, $balance);
 
-        // 3. Call API
+        // 4. Call API
         $result = ['success' => false, 'message' => 'Init'];
 
         if (!empty($geminikey)) {
@@ -65,9 +68,8 @@ class generator {
             throw new \moodle_exception('error_ai_offline', 'block_playerhud', '', $result['message']);
         }
 
-        // 4. Parse JSON
+        // 5. Parse JSON
         $jsonraw = $result['data'];
-        // Limpa blocos de código markdown se houver
         $cleanjson = preg_replace('/^`{3}json|`{3}$/m', '', $jsonraw);
         $aidata = json_decode($cleanjson, true);
 
@@ -75,10 +77,24 @@ class generator {
             throw new \moodle_exception('error_ai_parsing', 'block_playerhud');
         }
 
-        // 5. Save Item
+        // 6. Save & Analyze Balance Impact
         if ($mode === 'item') {
-            // Passamos as opções extras (local, limites) para a função de salvar
-            return $this->save_item($aidata, $xp, $createdrop, $result['provider'], $extraoptions);
+            $saveResult = $this->save_item($aidata, $xp, $createdrop, $result['provider'], $extraoptions);
+            
+            // Adiciona aviso de balanceamento no retorno
+            if ($balance) {
+                $new_total = $balance['current_xp'] + $xp; // Aproximação (considerando drop x1)
+                $ratio = ($balance['target_xp'] > 0) ? ($new_total / $balance['target_xp']) * 100 : 0;
+                
+                if ($ratio > 120) { // Se passar de 120% da meta
+                    $excess = round($ratio - 100);
+                    $saveResult['warning_msg'] = get_string('ai_warn_overflow', 'block_playerhud', $excess);
+                } else {
+                    $saveResult['info_msg'] = get_string('ai_tip_balanced', 'block_playerhud');
+                }
+            }
+            
+            return $saveResult;
         }
 
         return ['success' => false, 'message' => 'Unknown mode'];
@@ -92,9 +108,8 @@ class generator {
         $item->name = $data['name'];
         $item->description = $data['description'];
         $item->image = $data['emoji'];
-        $item->xp = $targetxp; // Usa o XP definido (ou o aleatório gerado no PHP)
+        $item->xp = $targetxp;
         
-        // Defaults do item
         $item->enabled = 1;
         $item->maxusage = 1;
         $item->respawntime = 0;
@@ -113,20 +128,12 @@ class generator {
             $drop->blockinstanceid = $this->instanceid;
             $drop->itemid = $itemid;
             $drop->code = $dropcode;
-            
-            // LÓGICA DO DROP: Prioriza o que o professor digitou
             $drop->name = !empty($options['drop_location']) ? $options['drop_location'] : ($data['location_name'] ?? 'Drop Gerado');
-            
-            // Configurações de limite
             $drop->maxusage = (int)($options['drop_max'] ?? 0);
-            
-            // Tempo de recarga: O form envia MINUTOS, convertemos para SEGUNDOS
             $minutes = (int)($options['drop_time'] ?? 0);
             $drop->respawntime = $minutes * 60;
-            
             $drop->timecreated = time();
             $drop->timemodified = time(); 
-            
             $DB->insert_record('block_playerhud_drops', $drop);
         }
 
@@ -138,14 +145,22 @@ class generator {
         ];
     }
 
-    protected function build_prompt($mode, $theme, $xp) {
+    protected function build_prompt($mode, $theme, $xp, $balance = null) {
         if ($mode === 'item') {
-            // Prompt ajustado para pedir descrições reais/curiosidades
-            $prompt = "Act as a Gamification Designer. Theme: '{$theme}'. Create an item. 
+            $context = "";
+            if ($balance) {
+                if ($balance['gap'] > 0) {
+                    $context = "Context: This is an educational RPG. We need items to help students reach the level cap.";
+                } else {
+                    $context = "Context: The game is already full of XP. This should be a bonus/flavor item, not essential for progression.";
+                }
+            }
+
+            $prompt = "Act as a Gamification Designer. Theme: '{$theme}'. Create an item. {$context}
             Return ONLY JSON: 
             {
                 \"name\": \"Item Name\", 
-                \"description\": \"A short description related to the theme (educational fact, trivia or historical context). Avoid generic RPG fantasy lore.\", 
+                \"description\": \"A short description related to the theme (educational fact, trivia or historical context).\", 
                 \"emoji\": \"🔮\", 
                 \"xp\": {$xp}, 
                 \"location_name\": \"Location Suggestion\"
@@ -179,7 +194,7 @@ class generator {
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Prod: true
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         $res = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);

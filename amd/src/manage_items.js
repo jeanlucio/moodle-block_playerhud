@@ -86,44 +86,53 @@ define(['jquery', 'core/notification'], function($, Notification) {
                             var modalFooter = $('#phAiModal .modal-footer');
                             var modalTitle = $('#phAiModalLabel');
 
-                            // --- LAYOUT DE SUCESSO MELHORADO ---
+                            // --- LAYOUT DE SUCESSO ---
                             modalTitle.text(config.strings.success_title);
 
+                            // 1. Início do HTML
                             // eslint-disable-next-line max-len
                             var successHtml = '<div id="ph-success-container" tabindex="-1" class="text-center py-3 animate__animated animate__fadeIn" style="outline: none;">';
 
-                            // Ícone de Sucesso
+                            // 2. Ícone
                             // eslint-disable-next-line max-len
                             successHtml += '<div class="mb-3" style="font-size: 3rem; color: #28a745;" aria-hidden="true"><i class="fa fa-check-circle"></i></div>';
 
-                            // Nome do Item
+                            // 3. Nome do Item
                             successHtml += '<h2 class="fw-bold text-primary mb-3">' + resp.item_name + '</h2>';
+
+                            // 4. LÓGICA DE AVISO (CORRIGIDO: INSERIDO AQUI)
+                            if (resp.warning_msg) {
+                                // eslint-disable-next-line max-len
+                                successHtml += '<div class="alert alert-warning small mb-3"><i class="fa fa-exclamation-triangle"></i> ' + resp.warning_msg + '</div>';
+                            } else if (resp.info_msg) {
+                                // eslint-disable-next-line max-len
+                                successHtml += '<div class="alert alert-success small mb-3"><i class="fa fa-check-circle"></i> ' + resp.info_msg + '</div>';
+                            }
+
                             successHtml += '<p class="lead text-muted mb-4">' + config.strings.success + '</p>';
 
-                            // Se houve drop criado, exibe o shortcode completo com botão de copiar
+                            // 5. Bloco do Shortcode (Drop)
                             if (resp.drop_code) {
-                                // Monta o código completo
                                 var fullShortcode = '[PLAYERHUD_DROP code=' + resp.drop_code + ']';
 
                                 successHtml += '<div class="card bg-light border-0 p-3 mx-auto" style="max-width: 90%;">';
                                 // eslint-disable-next-line max-len
                                 successHtml += '<label class="small text-muted mb-2 fw-bold text-start w-100" for="ph-gen-code-input">' + config.strings.copy + ':</label>';
 
-                                // Input Group do Bootstrap para juntar Input + Botão
                                 successHtml += '<div class="input-group">';
                                 // eslint-disable-next-line max-len
                                 successHtml += '<input type="text" class="form-control font-monospace text-center" value="' + fullShortcode + '" id="ph-gen-code-input" readonly>';
                                 // eslint-disable-next-line max-len
                                 successHtml += '<button class="btn btn-primary" type="button" id="ph-btn-copy-code"><i class="fa fa-copy"></i></button>';
                                 successHtml += '</div>';
-
                                 successHtml += '</div>';
                             }
                             successHtml += '</div>';
 
+                            // 6. RENDERIZAÇÃO NO DOM (Agora o successHtml está completo)
                             modalBody.html(successHtml);
 
-                            // Botão "Legal" para fechar/recarregar
+                            // Footer Buttons
                             // eslint-disable-next-line max-len
                             var btnReload = $('<button class="btn btn-success w-100 py-2 fw-bold">' + config.strings.great + '</button>');
                             btnReload.on('click', function() {
@@ -132,32 +141,22 @@ define(['jquery', 'core/notification'], function($, Notification) {
 
                             modalFooter.empty().append(btnReload);
 
-                            // --- LÓGICA DO BOTÃO COPIAR ---
+                            // Lógica do Botão Copiar
                             if (resp.drop_code) {
                                 setTimeout(function() {
                                     $('#ph-btn-copy-code').on('click', function() {
                                         var copyText = document.getElementById("ph-gen-code-input");
-
-                                        // Seleciona o texto
                                         copyText.select();
-                                        copyText.setSelectionRange(0, 99999); // Mobile
-
-                                        // Copia para a área de transferência
+                                        copyText.setSelectionRange(0, 99999);
                                         document.execCommand("copy");
 
-                                        // Feedback Visual no Botão
                                         var $btn = $(this);
                                         var originalIcon = '<i class="fa fa-copy"></i>';
-
                                         $btn.removeClass('btn-primary').addClass('btn-success').html('<i class="fa fa-check"></i>');
-
-                                        // Volta ao normal após 2 segundos
                                         setTimeout(function() {
                                             $btn.removeClass('btn-success').addClass('btn-primary').html(originalIcon);
                                         }, 2000);
                                     });
-
-                                    // Foca no container para acessibilidade
                                     $('#ph-success-container').focus();
                                 }, 200);
                             }
@@ -177,9 +176,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                                 if (r.message) {
                                     errorMsg = r.message;
                                 }
-                            } catch (e) {
-                                /* Empty */
-                            }
+                            } catch (e) { /* Empty */ }
                         }
                         Notification.alert('Ops!', errorMsg, 'OK');
                     }

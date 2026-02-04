@@ -477,3 +477,14 @@ $string['xp_per_level'] = 'XP per Level';
 $string['xp_per_level_help'] = 'How many XP points the student needs to accumulate to gain 1 level. (Default: 100)';
 $string['xp_warning_msg'] = 'Tradable items cannot grant XP to prevent fraud. The value will be set to 0.';
 $string['yours'] = 'Owned: {$a}';
+// ... (at the end of the file)
+$string['game_balance'] = 'Game Economy Balance';
+$string['total_items_xp'] = 'Total XP in Items';
+$string['xp_required_max'] = 'XP for Max Level';
+$string['bal_msg_empty'] = 'The game is empty. Create items to start.';
+$string['bal_msg_hard'] = 'Hard! There is only <strong>{$a->total} XP</strong> available, but student needs <strong>{$a->req} XP</strong> to max out.';
+$string['bal_msg_easy'] = 'Too easy! There is <strong>{$a->total} XP</strong> available. Students will max out too fast.';
+$string['bal_msg_perfect'] = 'Balanced! The game economy is healthy ({$a->ratio}% coverage).';
+// ... final do arquivo
+$string['ai_warn_overflow'] = '⚠️ Warning: With this item, the game has {$a}% more XP than needed. It became too easy!';
+$string['ai_tip_balanced'] = '✅ This item helps balance the game economy.';
