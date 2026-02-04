@@ -123,14 +123,23 @@ class tab_collection implements renderable {
                 }
 
                 if ($count == 0) {
-                    // --- ITEM FALTANTE ---
-                    $name = $item->secret ? get_string('secret_name', 'block_playerhud') : format_string($item->name);
-                    $xplabel = $item->secret ? get_string('secret_name', 'block_playerhud') : "+{$item->xp} XP";
-                    $displaydesc = $item->secret ? get_string('secret_help', 'block_playerhud') : $deschtml;
-
+                    // --- ITEM FALTANTE (Lógica Secreta) ---
+                    
+                    // Se for secreto, esconde Nome, XP e Descrição Real
                     if ($item->secret) {
+                        $name = get_string('secret_name', 'block_playerhud');
+                        $xplabel = "???";
+                        // CORREÇÃO: Usando a nova descrição imersiva
+                        $displaydesc = get_string('secret_desc', 'block_playerhud');
+                        
+                        // Força ícone de mistério
                         $mediadata['is_image'] = false;
                         $mediadata['content'] = '<span aria-hidden="true">❓</span>';
+                    } else {
+                        // Item normal não coletado
+                        $name = format_string($item->name);
+                        $xplabel = "+{$item->xp} XP";
+                        $displaydesc = $deschtml;
                     }
 
                     $cardshtml .= $this->render_card(

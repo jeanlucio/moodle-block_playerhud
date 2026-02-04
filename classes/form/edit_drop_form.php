@@ -13,11 +13,14 @@ class edit_drop_form extends \moodleform {
         // --- Header e Nome ---
         $mform->addElement('header', 'general', get_string('drop_config_header', 'block_playerhud', $this->_customdata['itemname']));
 
-        $mform->addElement('text', 'name', get_string('drop_name_label', 'block_playerhud'));
+        // CORREÇÃO: O texto de exemplo agora é passado como atributo 'placeholder' (4º argumento)
+        $mform->addElement('text', 'name', get_string('drop_name_label', 'block_playerhud'), [
+            'placeholder' => get_string('drop_name_default', 'block_playerhud')
+        ]);
+        
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
-        $mform->setDefault('name', get_string('drop_name_default', 'block_playerhud'));
-
+        
         // --- Regras de Coleta ---
         $mform->addElement('header', 'rules', get_string('drop_rules_header', 'block_playerhud'));
 

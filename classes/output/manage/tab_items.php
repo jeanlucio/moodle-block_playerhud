@@ -7,15 +7,12 @@
 // (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY;
-// without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-// See the
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.
-// If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Items tab management for Block PlayerHUD.
@@ -60,7 +57,6 @@ class tab_items implements renderable {
 
     /**
      * Processa a lógica do formulário e redirecionamentos.
-     * Deve ser chamado ANTES do $OUTPUT->header() no manage.php.
      */
     public function process() {
         global $DB;
@@ -74,23 +70,17 @@ class tab_items implements renderable {
             'tab' => 'items'
         ]);
 
-        // Verifica se estamos no modo de Edição ou Adição
         if ($action === 'add' || ($action === 'edit' && $editid)) {
-            
             $actionurl = new moodle_url($baseurl, [
                 'action' => $editid ? 'edit' : 'add',
                 'itemid' => $editid
             ]);
 
-            // Instancia o formulário com a URL de ação correta
             $this->mform = new edit_item_form($actionurl->out(false), ['instanceid' => $this->instanceid]);
 
-            // 1. Caso Cancelar
             if ($this->mform->is_cancelled()) {
                 redirect($baseurl);
-            } 
-            // 2. Caso Salvar (Submissão válida)
-            else if ($data = $this->mform->get_data()) {
+            } else if ($data = $this->mform->get_data()) {
                 $itemid = isset($data->itemid) ? (int)$data->itemid : 0;
 
                 $record = new \stdClass();
@@ -104,21 +94,17 @@ class tab_items implements renderable {
                 $record->enabled = $data->enabled;
                 $record->secret = $data->secret;
                 $record->description = $data->description['text'];
-                
-                // Defaults
                 $record->tradable = 1;
                 $record->maxusage = 1;
                 $record->respawntime = 0;
                 $record->timemodified = time();
 
-                // Tratamento de array para string (Classes)
                 if (!empty($data->required_class_id) && is_array($data->required_class_id)) {
                     $record->required_class_id = implode(',', $data->required_class_id);
                 } else {
                     $record->required_class_id = '0';
                 }
 
-                // Insert ou Update
                 if ($itemid > 0) {
                     $DB->update_record('block_playerhud_items', $record);
                     $newitemid = $itemid;
@@ -127,21 +113,17 @@ class tab_items implements renderable {
                     $newitemid = $DB->insert_record('block_playerhud_items', $record);
                 }
 
-                // Salvar arquivo de imagem (File API)
                 $context = \context_block::instance($this->instanceid);
                 file_save_draft_area_files($data->image_file, $context->id, 'block_playerhud', 'item_image', $newitemid, ['subdirs' => 0]);
 
-                // Redireciona (Aqui é seguro pois o header ainda não foi enviado)
                 redirect($baseurl, get_string('changessaved'), \core\output\notification::NOTIFY_SUCCESS);
             }
 
-            // 3. Caso Carregar Dados Iniciais (Apenas visualizando o form pela primeira vez)
             if ($editid && !$this->mform->is_submitted()) {
                 $item = $DB->get_record('block_playerhud_items', ['id' => $editid, 'blockinstanceid' => $this->instanceid]);
                 if ($item) {
                     $data = (array)$item;
                     $data['itemid'] = $item->id;
-
                     if (!empty($item->required_class_id) && $item->required_class_id !== '0') {
                         $data['required_class_id'] = explode(',', $item->required_class_id);
                     } else {
@@ -149,7 +131,6 @@ class tab_items implements renderable {
                     }
                     $data['description'] = ['text' => $item->description, 'format' => FORMAT_HTML];
                     
-                    // Prepara área de rascunho para arquivos existentes
                     $draftitemid = file_get_submitted_draft_itemid('image_file');
                     $context = \context_block::instance($this->instanceid);
                     file_prepare_draft_area($draftitemid, $context->id, 'block_playerhud', 'item_image', $item->id);
@@ -158,16 +139,12 @@ class tab_items implements renderable {
                     $this->mform->set_data($data);
                 }
             } else if (!$editid && !$this->mform->is_submitted()) {
-                // Novo item: prepara área de rascunho vazia
                 $draftitemid = file_get_unused_draft_itemid();
                 $this->mform->set_data(['image_file' => $draftitemid, 'itemid' => 0]);
             }
         }
     }
 
-    /**
-     * Render the tab content.
-     */
     public function display() {
         $baseurl = new moodle_url('/blocks/playerhud/manage.php', [
             'id' => $this->courseid,
@@ -175,43 +152,30 @@ class tab_items implements renderable {
             'tab' => 'items'
         ]);
 
-        // Se o formulário foi instanciado no process(), exibimos ele.
         if ($this->mform !== null) {
             return $this->render_form();
         }
-
-        // Caso contrário, exibe a lista.
         return $this->render_list_view($baseurl);
     }
 
-    /**
-     * Render the Add/Edit form.
-     */
     protected function render_form() {
         global $OUTPUT;
-        
         $editid = optional_param('itemid', 0, PARAM_INT);
-        $title = $editid ? 
-            (get_string('edit') . ' ' . get_string('item', 'block_playerhud')) : 
-            get_string('item_new', 'block_playerhud');
-            
+        $title = $editid ? (get_string('edit') . ' ' . get_string('item', 'block_playerhud')) : get_string('item_new', 'block_playerhud');
         return $OUTPUT->heading($title) . $this->mform->render();
     }
 
-    /**
-     * Render the main table view with Native Bootstrap Modal.
-     */
     protected function render_list_view($baseurl) {
-        global $DB, $PAGE;
+        global $DB, $PAGE, $OUTPUT;
 
-// 1. O Modal Completo (Bootstrap 5 Structure) - EXPANDIDO E ATUALIZADO
+        // --- 1. MODAL IA (Mantido) ---
         $modalhtml = '
         <div class="modal fade" id="phAiModal" tabindex="-1" aria-labelledby="phAiModalLabel" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title" id="phAiModalLabel">' . get_string('ai_btn_create', 'block_playerhud') . '</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="' . get_string('close', 'block_playerhud') . '"></button>
               </div>
               <div class="modal-body">
                 <form id="ph-ai-form">
@@ -219,7 +183,6 @@ class tab_items implements renderable {
                         <label for="ai-theme" class="form-label">' . get_string('ai_prompt_theme_item', 'block_playerhud') . '</label>
                         <input type="text" class="form-control" id="ai-theme" placeholder="' . get_string('ai_theme_placeholder', 'block_playerhud') . '">
                     </div>
-                    
                     <div class="row mb-3">
                         <div class="col-6">
                             <label for="ai-xp" class="form-label">' . get_string('xp', 'block_playerhud') . '</label>
@@ -230,20 +193,16 @@ class tab_items implements renderable {
                             <input type="number" class="form-control" id="ai-amount" value="1" min="1" max="5">
                         </div>
                     </div>
-                    
                     <div class="form-check mb-3">
                         <input type="checkbox" class="form-check-input" id="ai-drop">
                         <label class="form-check-label fw-bold" for="ai-drop">' . get_string('ai_create_drop', 'block_playerhud') . '</label>
                     </div>
-
                     <div id="ai-drop-options" class="p-3 bg-light border rounded mb-3" style="display:none;">
                         <h6 class="border-bottom pb-2 mb-3">' . get_string('ai_drop_settings', 'block_playerhud') . '</h6>
-                        
                         <div class="mb-3">
                             <label for="ai-location" class="form-label small">' . get_string('drop_name_label', 'block_playerhud') . '</label>
                             <input type="text" class="form-control form-control-sm" id="ai-location" placeholder="Ex: Biblioteca">
                         </div>
-                        
                         <div class="row">
                             <div class="col-6">
                                 <label for="ai-maxusage" class="form-label small">' . get_string('drop_max_qty', 'block_playerhud') . '</label>
@@ -257,7 +216,6 @@ class tab_items implements renderable {
                             </div>
                         </div>
                     </div>
-
                 </form>
               </div>
               <div class="modal-footer">
@@ -268,56 +226,121 @@ class tab_items implements renderable {
           </div>
         </div>';
 
-        // 2. Barra de Botões
-        $html = '<div class="d-flex justify-content-end mb-3">';
-        // Nota: O botão agora usa atributos data-bs para abrir o modal sem precisar de JS complexo
-        $html .= '<button type="button" class="btn btn-info text-white shadow-sm me-2" data-bs-toggle="modal" data-bs-target="#phAiModal">
+        // --- 2. MODAL DE DETALHES (Preview) ---
+        $strdetails = get_string('details', 'block_playerhud');
+        $strclose = get_string('close', 'block_playerhud');
+        
+        $modalhtml .= '
+        <div class="modal fade" id="phItemModalView" tabindex="-1" aria-labelledby="phModalTitleView" aria-hidden="true" style="z-index: 10550;">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+              <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title fw-bold m-0" id="phModalTitleView">' . $strdetails . '</h5>
+                <button type="button" class="btn-close ph-modal-close-view ms-auto"
+                        data-bs-dismiss="modal" aria-label="' . $strclose . '"></button>
+              </div>
+              <div class="modal-body">
+                <div class="d-flex align-items-start">
+                    <div id="phModalImageContainerView" class="me-4 text-center" style="min-width: 100px;"></div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center flex-wrap mb-3">
+                            <h4 id="phModalNameView" class="m-0 me-2" style="font-weight: bold;"></h4>
+                            <span id="phModalXPView" class="badge bg-info text-dark ph-badge-count">XP</span>
+                        </div>
+                        <div id="phModalDescView" class="text-muted text-break"></div>
+                    </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">' . $strclose . '</button>
+              </div>
+            </div>
+          </div>
+        </div>';
+
+        // --- 3. DADOS DE CONTAGEM E RESUMO ---
+        $total_items = $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]);
+        
+        // Query para contar todos os drops desta instância
+        $sql_drops = "SELECT COUNT(d.id) 
+                        FROM {block_playerhud_drops} d 
+                        JOIN {block_playerhud_items} i ON d.itemid = i.id 
+                       WHERE i.blockinstanceid = ?";
+        $total_drops = $DB->count_records_sql($sql_drops, [$this->instanceid]);
+
+        $summary_text = get_string('summary_stats', 'block_playerhud', [
+            'items' => $total_items,
+            'drops' => $total_drops
+        ]);
+
+        // --- 4. BARRA DE TOPO (Com Sumário) ---
+        $html = '<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 p-3 bg-light rounded border shadow-sm">';
+        $html .= '<div class="d-flex align-items-center">';
+        $html .= '<i class="fa fa-info-circle text-primary me-2 fa-lg" aria-hidden="true"></i>';
+        $html .= '<span class="fw-bold text-dark">' . $summary_text . '</span>';
+        $html .= '</div>';
+        
+        $html .= '<div class="d-flex gap-2">';
+        $html .= '<button type="button" class="btn btn-info text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#phAiModal">
                     <i class="fa fa-magic" aria-hidden="true"></i> ' .
                     get_string('ai_btn_create', 'block_playerhud') . '
                   </button>';
-        
         $html .= \html_writer::link(
             new moodle_url($baseurl, ['action' => 'add']), 
             '<i class="fa fa-plus-circle" aria-hidden="true"></i> ' . get_string('item_new', 'block_playerhud'), 
             ['class' => 'btn btn-primary shadow-sm']
         );
-        $html .= '</div>';
+        $html .= '</div></div>';
 
-        // 3. Tabela
-        $html .= '<div class="card shadow-sm border-0"><div class="card-body p-0">';
-        $html .= '<table class="table table-hover table-striped mb-0 align-middle">'; // Adicionado align-middle para centralizar verticalmente
+        // --- 5. PREPARAÇÃO DA PAGINAÇÃO ---
+        $page    = optional_param('page', 0, PARAM_INT);
+        $perpage = 30; // Limite por página
         
-        // CORREÇÃO: Adicionada classe 'text-nowrap' na TR para evitar quebra de linha
+        $allowedsorts = ['name', 'xp', 'enabled'];
+        if (!in_array($this->sort, $allowedsorts)) $this->sort = 'xp';
+
+        $items = $DB->get_records(
+            'block_playerhud_items', 
+            ['blockinstanceid' => $this->instanceid], 
+            "{$this->sort} {$this->dir}",
+            '*',
+            $page * $perpage,
+            $perpage
+        );
+
+        // --- 6. TABELA DE ITENS ---
+        $html .= html_writer::start_tag('form', [
+            'action' => $baseurl->out(), 
+            'method' => 'post', 
+            'id' => 'bulk-action-form'
+        ]);
+        $html .= html_writer::input_hidden_params($baseurl);
+        $html .= '<input type="hidden" name="action" value="bulk_delete">';
+        $html .= '<input type="hidden" name="sesskey" value="' . sesskey() . '">';
+
+        $html .= '<div class="card shadow-sm border-0"><div class="card-body p-0">';
+        $html .= '<div class="table-responsive">';
+        $html .= '<table class="table table-hover table-striped mb-0 align-middle">'; 
+        
         $html .= '<thead class="bg-light border-bottom"><tr class="text-nowrap">';
         
-        // Coluna 1: Aumentei para min-width 80px para caber o texto "Ícone / Emoji" e adicionei scope="col"
+        $html .= '<th scope="col" style="width: 40px;" class="text-center">
+                    <label class="visually-hidden" for="ph-select-all">' . get_string('selectall') . '</label>
+                    <input type="checkbox" id="ph-select-all" class="form-check-input">
+                  </th>';
+
+        // Coluna N. (Substituindo #)
+        $html .= '<th scope="col" style="width: 50px;" class="text-center">N.</th>';
+
         $html .= '<th scope="col" style="min-width: 80px;">' . get_string('item_image', 'block_playerhud') . '</th>';
-        
-        // Coluna 2: Nome (Sem largura fixa para ocupar o espaço restante)
         $html .= '<th scope="col">' . $this->get_sort_link('name', get_string('item_name', 'block_playerhud'), $baseurl) . '</th>';
-        
-        // Coluna 3: XP
         $html .= '<th scope="col" style="width: 100px;">' . $this->get_sort_link('xp', get_string('item_xp', 'block_playerhud'), $baseurl) . '</th>';
-        
-        // Coluna 4: Ativo
         $html .= '<th scope="col" style="width: 140px;">' . $this->get_sort_link('enabled', get_string('enabled', 'block_playerhud'), $baseurl) . '</th>';
-        
-        // Coluna 5: Drops
         $html .= '<th scope="col" style="width: 160px;">' . get_string('drops', 'block_playerhud') . '</th>';
-        
-        // Coluna 6: Ações (text-end já estava correto)
-        $html .= '<th scope="col" class="text-end" style="width: 200px;">' . get_string('actions') . '</th>';
+        $html .= '<th scope="col" class="text-end" style="width: 220px;">' . get_string('actions') . '</th>';
         
         $html .= '</tr></thead>';
         $html .= '<tbody>';
-
-        $allowedsorts = ['name', 'xp', 'enabled'];
-        if (!in_array($this->sort, $allowedsorts)) $this->sort = 'xp';
-        
-        $items = $DB->get_records('block_playerhud_items', 
-            ['blockinstanceid' => $this->instanceid], 
-            "{$this->sort} {$this->dir}"
-        );
 
         if ($items) {
             $context = \context_block::instance($this->instanceid);
@@ -327,62 +350,104 @@ class tab_items implements renderable {
             $strinactive = get_string('no');
             $strconfirm = get_string('confirm_delete', 'block_playerhud');
             
+            require_once($GLOBALS['CFG']->dirroot . '/blocks/playerhud/lib.php');
+
+            $counter = ($page * $perpage) + 1;
+
             foreach ($items as $item) {
                 $mediadata = \block_playerhud\utils::get_item_display_data($item, $context);
+                $desc_html = !empty($item->description) ? format_text($item->description, FORMAT_HTML) : "";
+                
+                $preview_attrs = " data-name='" . s($item->name) . "' " .
+                                 " data-xp='+{$item->xp} XP' " .
+                                 " data-image='" . ($mediadata['is_image'] ? $mediadata['url'] : strip_tags($mediadata['content'])) . "' " .
+                                 " data-isimage='" . ($mediadata['is_image'] ? 1 : 0) . "'";
+                
+                $desc_hidden_id = 'desc_hidden_' . $item->id;
+                $desc_hidden = "<div id='{$desc_hidden_id}' class='d-none'>{$desc_html}</div>";
+
                 if ($mediadata['is_image']) {
                     $icon = "<img src='{$mediadata['url']}' style='width:32px; height:32px; object-fit:contain;' alt=''>";
                 } else {
                     $icon = "<span style='font-size:24px;'>{$mediadata['content']}</span>";
                 }
 
+                $icon_link = "<a href='#' class='ph-preview-trigger text-decoration-none d-block' {$preview_attrs} data-desc-target='{$desc_hidden_id}'>{$icon}</a>";
+                
                 $namehtml = "<strong>" . format_string($item->name) . "</strong>";
-                if ($item->secret) $namehtml .= ' <i class="fa fa-user-secret text-warning" title="' . get_string('secret', 'block_playerhud') . '"></i>';
+                $name_link = "<a href='#' class='ph-preview-trigger text-dark text-decoration-none' {$preview_attrs} data-desc-target='{$desc_hidden_id}'>{$namehtml}</a>";
+                
+                if ($item->secret) $name_link .= ' <i class="fa fa-user-secret text-warning" title="' . get_string('secret', 'block_playerhud') . '"></i>';
 
                 $xphtml = "<span class='badge bg-primary'>+{$item->xp} XP</span>";
                 
-                $toggleurl = new moodle_url($baseurl, ['action' => 'toggle', 'itemid' => $item->id, 'sesskey' => sesskey(), 'sort' => $this->sort, 'dir' => $this->dir]);
+                $toggleurl = new moodle_url($baseurl, ['action' => 'toggle', 'itemid' => $item->id, 'sesskey' => sesskey(), 'sort' => $this->sort, 'dir' => $this->dir, 'page' => $page]);
                 $editurl = new moodle_url($baseurl, ['action' => 'edit', 'itemid' => $item->id]);
                 $deleteurl = new moodle_url($baseurl, ['action' => 'delete', 'itemid' => $item->id, 'sesskey' => sesskey(), 'sort' => $this->sort, 'dir' => $this->dir]);
                 $managedropurl = new moodle_url('/blocks/playerhud/manage_drops.php', ['instanceid' => $this->instanceid, 'itemid' => $item->id, 'id' => $this->courseid]);
                 
                 $dropscount = $DB->count_records('block_playerhud_drops', ['itemid' => $item->id]);
                 $btnclass = ($dropscount > 0) ? 'btn-info text-white' : 'btn-outline-secondary';
-                $locationshtml = '<a href="' . $managedropurl->out() . '" class="btn btn-sm ' . $btnclass . ' w-100"><i class="fa fa-map-marker"></i> Drops: <strong>' . $dropscount . '</strong></a>';
+                $locationshtml = '<a href="' . $managedropurl->out() . '" class="btn btn-sm ' . $btnclass . ' w-100" aria-label="'.get_string('manage_drops_title', 'block_playerhud', format_string($item->name)).'"><i class="fa fa-map-marker" aria-hidden="true"></i> Drops: <strong>' . $dropscount . '</strong></a>';
 
                 if ($item->enabled) {
                     $statuslabel = '<span class="badge bg-success">' . $stractive . '</span>';
-                    $eyebtn = '<a href="' . $toggleurl . '" class="btn btn-sm btn-light border ms-1"><i class="fa fa-eye text-success"></i></a>';
+                    $eyebtn = '<a href="' . $toggleurl . '" class="btn btn-sm btn-light border ms-1" aria-label="' . get_string('click_to_hide', 'block_playerhud') . '"><i class="fa fa-eye text-success" aria-hidden="true"></i></a>';
                     $opacity = '';
                 } else {
                     $statuslabel = '<span class="badge bg-secondary">' . $strinactive . '</span>';
-                    $eyebtn = '<a href="' . $toggleurl . '" class="btn btn-sm btn-warning ms-1"><i class="fa fa-eye-slash"></i></a>';
+                    $eyebtn = '<a href="' . $toggleurl . '" class="btn btn-sm btn-warning ms-1" aria-label="' . get_string('click_to_show', 'block_playerhud') . '"><i class="fa fa-eye-slash" aria-hidden="true"></i></a>';
                     $opacity = 'opacity: 0.5;';
                 }
 
                 $safeconfirmmsg = s($strconfirm . " '" . format_string($item->name) . "'?");
                 
+                // Botões com Texto Restaurados
+                $btnEdit = "<a href='{$editurl}' class='btn btn-sm btn-primary me-1 shadow-sm' aria-label='{$stredit}'><i class='fa fa-pencil' aria-hidden='true'></i> {$stredit}</a>";
+                $btnDelete = "<a href='{$deleteurl}' class='btn btn-sm btn-danger shadow-sm js-delete-btn' aria-label='{$strdelete}' data-confirm-msg=\"{$safeconfirmmsg}\"><i class='fa fa-trash' aria-hidden='true'></i> {$strdelete}</a>";
+
                 $html .= "<tr style='{$opacity}'>
-                        <td class='align-middle text-center'>{$icon}</td>
-                        <td class='align-middle'>{$namehtml}</td>
+                        <td class='align-middle text-center'>
+                            <label class='visually-hidden' for='chk-{$item->id}'>" . get_string('select') . " " . s($item->name) . "</label>
+                            <input type='checkbox' name='bulk_ids[]' value='{$item->id}' id='chk-{$item->id}' class='form-check-input ph-bulk-check'>
+                        </td>
+                        <td class='align-middle text-center text-muted small'>{$counter}</td>
+                        <td class='align-middle text-center position-relative'>
+                            {$icon_link}
+                        </td>
+                        <td class='align-middle'>
+                            {$name_link}
+                            {$desc_hidden}
+                        </td>
                         <td class='align-middle'>{$xphtml}</td>
                         <td class='align-middle'>{$statuslabel} {$eyebtn}</td>
                         <td class='align-middle'>{$locationshtml}</td>
                         <td class='align-middle text-end'>
-                            <a href='{$editurl}' class='btn btn-sm btn-primary me-1 shadow-sm'><i class='fa fa-pencil'></i> {$stredit}</a>
-                            <a href='{$deleteurl}' class='btn btn-sm btn-danger shadow-sm js-delete-btn' data-confirm-msg=\"{$safeconfirmmsg}\"><i class='fa fa-trash'></i> {$strdelete}</a>
+                            {$btnEdit}
+                            {$btnDelete}
                         </td>
                     </tr>";
+                
+                $counter++;
             }
         } else {
-            $html .= "<tr><td colspan='6' class='text-center py-5 text-muted'>" . get_string('items_none', 'block_playerhud') . "</td></tr>";
+            $html .= "<tr><td colspan='8' class='text-center py-5 text-muted'>" . get_string('items_none', 'block_playerhud') . "</td></tr>";
         }
 
         $html .= '</tbody></table></div></div>';
 
-        // 4. Injeta o HTML do Modal no final
+        $html .= '<div class="mt-3">
+                    <button type="submit" class="btn btn-danger shadow-sm disabled" id="ph-btn-bulk-delete" disabled>
+                        <i class="fa fa-trash"></i> ' . get_string('delete_selected', 'block_playerhud') . '
+                    </button>
+                  </div>';
+
+        $html .= html_writer::end_tag('form');
+
+        $html .= $OUTPUT->paging_bar($total_items, $page, $perpage, $baseurl, 'page');
+
         $html .= $modalhtml;
 
-        // 5. Chamada JavaScript Simplificada
         $jsvars = [
             'courseid' => $this->courseid,
             'instanceid' => $this->instanceid,
@@ -394,8 +459,12 @@ class tab_items implements renderable {
                 'confirm_title' => get_string('confirmation', 'admin'),
                 'yes' => get_string('yes'),
                 'cancel' => get_string('cancel'),
-                'ai_creating' => get_string('ai_creating', 'block_playerhud'), // "Conjurando item..."
-                'success_title' => get_string('success', 'core'), // "Sucesso!" (Usando string padrão do Moodle)
+                'ai_creating' => get_string('ai_creating', 'block_playerhud'),
+                'success_title' => get_string('success', 'core'),
+                'no_desc' => get_string('no_description', 'block_playerhud'),
+                'delete_selected' => get_string('delete_selected', 'block_playerhud'),
+                'delete_n_items' => get_string('delete_n_items', 'block_playerhud'), 
+                'confirm_bulk' => get_string('confirm_bulk_delete', 'block_playerhud'),
             ]
         ];
         

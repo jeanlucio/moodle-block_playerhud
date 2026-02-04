@@ -86,13 +86,17 @@ if ($action == 'toggle_quest' && $questid && confirm_sesskey()) {
     }
 }
 
-// Action: Delete Item.
-if ($action == 'delete' && $itemid && confirm_sesskey()) {
+// Action: Delete Item (Single).
+if ($action === 'delete' && $itemid && confirm_sesskey()) {
     $item = $DB->get_record('block_playerhud_items', ['id' => $itemid, 'blockinstanceid' => $instanceid]);
     if ($item) {
         // 1. Remove XP from users holding this item.
-        $sql = "SELECT userid, COUNT(id) as qtd FROM {block_playerhud_inventory} WHERE itemid = ? GROUP BY userid";
+        $sql = "SELECT userid, COUNT(id) as qtd 
+                  FROM {block_playerhud_inventory} 
+                 WHERE itemid = ? 
+              GROUP BY userid";
         $holders = $DB->get_records_sql($sql, [$itemid]);
+        
         foreach ($holders as $holder) {
             $xptoremove = $item->xp * $holder->qtd;
             $DB->execute(
@@ -114,10 +118,68 @@ if ($action == 'delete' && $itemid && confirm_sesskey()) {
         $fs->delete_area_files($context->id, 'block_playerhud', 'item_image', $itemid);
         $DB->delete_records('block_playerhud_items', ['id' => $itemid]);
 
+        // Redirect preserving sort parameters.
         redirect(
-            new moodle_url($baseurl, ['tab' => 'items']),
+            new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
             get_string('deleted', 'block_playerhud'),
             \core\output\notification::NOTIFY_SUCCESS
+        );
+    }
+}
+
+// Action: Bulk Delete Items (Multiple).
+if ($action === 'bulk_delete' && confirm_sesskey()) {
+    $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
+    
+    if (!empty($bulkids)) {
+        $fs = get_file_storage();
+        $deletedcount = 0;
+
+        foreach ($bulkids as $delid) {
+            $item = $DB->get_record('block_playerhud_items', ['id' => $delid, 'blockinstanceid' => $instanceid]);
+            if ($item) {
+                // 1. Remove XP from users.
+                $sql = "SELECT userid, COUNT(id) as qtd 
+                          FROM {block_playerhud_inventory} 
+                         WHERE itemid = ? 
+                      GROUP BY userid";
+                $holders = $DB->get_records_sql($sql, [$delid]);
+                
+                foreach ($holders as $holder) {
+                    $xptoremove = $item->xp * $holder->qtd;
+                    $DB->execute(
+                        "UPDATE {block_playerhud_user} 
+                            SET currentxp = GREATEST(0, currentxp - ?) 
+                          WHERE userid = ? AND blockinstanceid = ?",
+                        [$xptoremove, $holder->userid, $instanceid]
+                    );
+                }
+
+                // 2. Delete dependencies.
+                $DB->delete_records('block_playerhud_inventory', ['itemid' => $delid]);
+                $DB->delete_records('block_playerhud_drops', ['itemid' => $delid]);
+                $DB->delete_records('block_playerhud_trade_reqs', ['itemid' => $delid]); 
+                $DB->delete_records('block_playerhud_trade_rewards', ['itemid' => $delid]);
+                
+                // 3. Delete files and record.
+                $fs->delete_area_files($context->id, 'block_playerhud', 'item_image', $delid);
+                $DB->delete_records('block_playerhud_items', ['id' => $delid]);
+                
+                $deletedcount++;
+            }
+        }
+
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
+            get_string('deleted_bulk', 'block_playerhud', $deletedcount),
+            \core\output\notification::NOTIFY_SUCCESS
+        );
+    } else {
+        // If no items were selected.
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
+            get_string('no_items_selected', 'block_playerhud'), // Certifique-se de adicionar esta string se desejar feedback de erro
+            \core\output\notification::NOTIFY_WARNING
         );
     }
 }

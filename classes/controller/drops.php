@@ -41,7 +41,6 @@ class drops {
     public function view_manage_page() {
         global $DB, $PAGE, $OUTPUT, $COURSE, $CFG;
 
-        // ... (código inicial de permissões e setup mantém igual) ...
         $instanceid = required_param('instanceid', PARAM_INT);
         $courseid   = required_param('id', PARAM_INT);
         $itemid     = required_param('itemid', PARAM_INT);
@@ -80,6 +79,9 @@ class drops {
         require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
         $mediadata = \block_playerhud\utils::get_item_display_data($item, $context);
         
+        // --- CORREÇÃO: Definida aqui para uso global (Tabela e Modal) ---
+        $strgentitle = get_string('gen_title', 'block_playerhud');
+
         $output = $OUTPUT->header();
         $output .= html_writer::start_div('container-fluid p-0 animate__animated animate__fadeIn');
 
@@ -123,7 +125,6 @@ class drops {
             $output .= '<th class="text-end" style="width: 200px;">' . get_string('actions') . '</th>';
             $output .= '</tr></thead><tbody>';
 
-            $strgentitle = get_string('gen_title', 'block_playerhud');
             $strgen = get_string('gen_btn', 'block_playerhud');
             $strinf = get_string('infinite', 'block_playerhud');
             $strimm = get_string('drops_immediate', 'block_playerhud');
@@ -170,7 +171,7 @@ class drops {
 
         $output .= html_writer::end_div();
 
-        // --- MODAL DE GERAÇÃO DE CÓDIGO (Layout Ajustado: Coluna do Form maior) ---
+        // --- MODAL DE GERAÇÃO DE CÓDIGO ---
         
         $strgenstyle = get_string('gen_style', 'block_playerhud');
         $strgencard = get_string('gen_style_card', 'block_playerhud');
@@ -187,7 +188,6 @@ class drops {
         $strgencopy = get_string('gen_copy', 'block_playerhud');
         $strgencopied = get_string('gen_copied', 'block_playerhud');
         
-        // Strings atualizadas (Agora 'take' vem limpo do arquivo de idioma)
         $strbtntxt = get_string('choice_text', 'block_playerhud'); 
         $strtake = get_string('take', 'block_playerhud'); 
 
@@ -277,7 +277,7 @@ class drops {
             ],
             'strings' => [
                 'defaultText' => get_string('gen_link_placeholder', 'block_playerhud'),
-                'takeBtn' => $strtake, // Agora envia "Pegar" limpo
+                'takeBtn' => $strtake,
                 'yours' => get_string('gen_yours', 'block_playerhud'),
                 'confirm_title' => get_string('confirmation', 'admin'),
                 'yes' => get_string('yes'),
