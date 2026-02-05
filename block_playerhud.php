@@ -114,11 +114,17 @@ class block_playerhud extends block_base {
                 $manageurl = $url->out();
             }
 
+            // --- CÁLCULO CORRIGIDO: XP Atual / Total Geral do Jogo ---
+            $xp_total_game = isset($stats['total_game_xp']) ? $stats['total_game_xp'] : 0;
+            
+            // Formato: "150 / 2000 XP"
+            $xp_display = $player->currentxp . ' / ' . $xp_total_game . ' XP';
+
             $renderdata = [
                 'username'    => fullname($USER),
                 'userpicture' => $OUTPUT->user_picture($USER, ['size' => 100, 'class' => 'rounded-circle border shadow-sm']),
-                'xp'          => $player->currentxp,
-                'level'       => $stats['level'],
+                'xp'          => $xp_display,
+                'level'       => $stats['level'] . ' / ' . $stats['max_levels'],
                 'level_class' => $stats['level_class'],
                 'progress'    => $stats['progress'],
                 'viewurl'     => new \moodle_url('/blocks/playerhud/view.php', [

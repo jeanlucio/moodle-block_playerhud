@@ -117,12 +117,12 @@ define(['jquery', 'core/notification'], function($, Notification) {
         }
     };
 
-/**
- * Atualiza o HUD principal (Widget) e o Bloco Lateral (Sidebar).
- *
- * @param {Object} data Dados gerais do jogo (XP, Nível).
- * @param {Object|null} itemData Dados do item recém coletado (opcional).
- */
+    /**
+     * Atualiza o HUD principal (Widget) e o Bloco Lateral (Sidebar).
+     *
+     * @param {Object} data Dados gerais do jogo (XP, Nível, Progresso).
+     * @param {Object|null} itemData Dados do item recém coletado (opcional).
+     */
     var updateHud = function(data, itemData) {
         // --- 1. Atualiza Barras de Progresso e Textos (Widget + Sidebar) ---
         var containers = $('.playerhud-widget-container, .block_playerhud_sidebar');
@@ -130,25 +130,39 @@ define(['jquery', 'core/notification'], function($, Notification) {
         containers.each(function() {
             var container = $(this);
 
-            // Barra.
+            // Atualiza a barra de progresso.
             container.find('.progress-bar')
                 .css('width', data.progress + '%')
                 .attr('aria-valuenow', data.progress);
 
-            // Textos Genéricos (XP e Nível).
-            // A busca é feita por texto para evitar dependência de classes específicas de layout.
+            // Atualiza Textos Genéricos (XP e Nível) buscando por conteúdo.
+            // A busca é feita por nós de texto para evitar dependência de classes de layout.
             container.find('span, div, strong').each(function() {
                 var el = $(this);
                 // Verifica se é apenas um nó de texto direto para não alterar filhos.
                 if (el.children().length === 0) {
                     var txt = el.text();
+
+                    // Lógica para XP: "Atual/Alvo XP"
                     if (txt.indexOf('XP') > -1) {
-                        // Atualiza número mantendo o sufixo XP.
-                        el.text(data.currentxp + ' XP');
+                        var xpString = data.currentxp;
+                        // Verifica se o backend enviou o alvo (xp_target) para formatar "100/1000"
+                        if (typeof data.xp_target !== 'undefined' && data.xp_target > 0) {
+                            xpString += '/' + data.xp_target;
+                        }
+                        el.text(xpString + ' XP');
                     }
+
+                    // Lógica para Nível: "Nível X/Y"
                     if (txt.indexOf('Level') > -1 || txt.indexOf('Nível') > -1) {
-                        var parts = txt.split(' ');
-                        el.text(parts[0] + ' ' + data.level);
+                        // Preserva o idioma original (Inglês ou Português)
+                        var label = (txt.indexOf('Nível') > -1) ? 'Nível' : 'Level';
+                        var lvlString = data.level;
+                        // Verifica se o backend enviou o nível máximo para formatar "5/10"
+                        if (typeof data.max_levels !== 'undefined' && data.max_levels > 0) {
+                            lvlString += '/' + data.max_levels;
+                        }
+                        el.text(label + ' ' + lvlString);
                     }
                 }
             });
@@ -161,7 +175,8 @@ define(['jquery', 'core/notification'], function($, Notification) {
 
             stashes.each(function() {
                 var stash = $(this);
-                var wrapper = stash.closest('.ph-stash-wrapper'); // Apenas sidebar tem wrapper.
+                // Mostra o wrapper pai (caso estivesse oculto por estar vazio)
+                var wrapper = stash.closest('.ph-stash-wrapper');
                 if (wrapper.length) {
                     wrapper.show();
                 }
@@ -169,11 +184,11 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 // Remove placeholder de "vazio" se existir.
                 stash.find('.text-muted').remove();
 
-                // Monta o HTML do item (Imagem ou Emoji).
+                // Monta o HTML do conteúdo (Imagem ou Emoji).
                 var contentHtml = '';
-                if (itemData.isimage == 1) {
-                    // Widget usa 100% width/height, Sidebar usa max-width.
-                    // Usamos estilo inline compatível com ambos (object-fit faz a mágica).
+                // Conversão segura para string para comparação
+                if (String(itemData.isimage) === '1') {
+                    // Estilo inline para garantir object-fit em ambos os containers (widget/sidebar)
                     contentHtml = '<img src="' + itemData.image + '" alt="" ' +
                         'style="width: 100%; height: 100%; object-fit: contain;">';
                 } else {
@@ -181,12 +196,13 @@ define(['jquery', 'core/notification'], function($, Notification) {
                         'style="font-size:1.2rem; line-height: 1;">' + itemData.image + '</span>';
                 }
 
-                // Cria o elemento novo.
+                // Cria o elemento novo com as classes globais atualizadas.
                 var classes = 'ph-mini-item ph-item-trigger border bg-white rounded ' +
                     'd-flex align-items-center justify-content-center overflow-hidden position-relative shadow-sm';
+
                 var newItem = $('<div class="' + classes + '" role="button" tabindex="0"></div>');
 
-                // Define tamanho fixo via CSS inline para consistência.
+                // Define tamanho fixo via CSS inline para consistência imediata.
                 newItem.css({
                     'width': '34px',
                     'height': '34px',
@@ -195,27 +211,31 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     'margin-bottom': '2px'
                 });
 
+                // Atributos de dados para o Modal
                 newItem.attr('data-name', itemData.name);
                 newItem.attr('data-xp', itemData.xp);
                 newItem.attr('data-image', itemData.image);
                 newItem.attr('data-isimage', itemData.isimage);
                 newItem.attr('data-date', itemData.date);
                 newItem.attr('title', itemData.name);
+                // Acessibilidade: Label para leitores de tela
+                newItem.attr('aria-label', itemData.name);
 
+                // Conteúdo oculto da descrição e o visual
                 newItem.append('<div class="d-none ph-item-description-content">' + itemData.description + '</div>');
                 newItem.append(contentHtml);
 
-                // Remove duplicata (efeito de mover para o início).
+                // Remove duplicata (se o item já existir, remove o antigo para mover o novo para o início).
                 stash.children().filter(function() {
                     return $(this).attr('data-name') === itemData.name;
                 }).remove();
 
-                // Insere no início.
+                // Insere no início com efeito de fade.
                 newItem.hide();
                 stash.prepend(newItem);
                 newItem.fadeIn();
 
-                // Limite (Sidebar = 6, Widget = 14).
+                // Limite visual de itens (Sidebar = 6, Widget = 14).
                 var limit = stash.hasClass('ph-widget-stash') ? 14 : 6;
                 var items = stash.children('.ph-mini-item');
                 if (items.length > limit) {

@@ -62,13 +62,17 @@ class collect {
 
                 $stats = \block_playerhud\game::get_game_stats($config, $instanceid, $player->currentxp);
                 
+                // CORREÇÃO AQUI: Enviamos o total_game_xp como 'xp_target' para o JS
                 $game_data = [
                     'currentxp' => $player->currentxp,
                     'level' => $stats['level'],
+                    'max_levels' => $stats['max_levels'],
+                    'xp_target' => $stats['total_game_xp'], // Agora aponta para o Total Geral
                     'progress' => $stats['progress'],
                     'total_game_xp' => $stats['total_game_xp']
                 ];
 
+                // ... (restante do código permanece igual)
                 // B. Verificação de Limites e Cooldown
                 $count = $DB->count_records('block_playerhud_inventory', ['userid' => $USER->id, 'dropid' => $drop->id]);
                 if ($drop->maxusage > 0 && $count >= $drop->maxusage) {
