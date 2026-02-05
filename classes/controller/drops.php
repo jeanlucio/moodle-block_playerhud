@@ -7,9 +7,6 @@ use html_table;
 
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * Controller class for Drop Management.
- */
 class drops {
 
     private function get_sort_link($colname, $label, $currentsort, $currentdir, $baseurl) {
@@ -45,7 +42,6 @@ class drops {
 
         require_login($courseid);
         $context = \context_block::instance($instanceid);
-        // Contexto do Curso é necessário para os filtros de Auto-link de atividades funcionarem
         $coursecontext = \context_course::instance($courseid); 
         
         require_capability('block/playerhud:manage', $context);
@@ -62,20 +58,16 @@ class drops {
         $PAGE->set_pagelayout('incourse'); 
 
         // --- AÇÕES ---
-
-        // 1. Delete Único
         if ($action === 'delete' && $dropid && confirm_sesskey()) {
             $DB->delete_records('block_playerhud_drops', ['id' => $dropid]);
             redirect($baseurl, get_string('deleted', 'block_playerhud'), \core\output\notification::NOTIFY_SUCCESS);
         }
 
-        // 2. Delete em Massa
         if ($action === 'bulk_delete' && confirm_sesskey()) {
             $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
             if (!empty($bulkids)) {
                 $count = 0;
                 foreach ($bulkids as $did) {
-                    // Segurança: garantir que o drop pertence a este item
                     $DB->delete_records('block_playerhud_drops', ['id' => $did, 'itemid' => $itemid]);
                     $count++;
                 }
@@ -101,14 +93,14 @@ class drops {
             ? "<img src='{$mediadata['url']}' style='width:50px; height:50px; object-fit:contain; margin-right:15px;' alt=''>"
             : "<span style='font-size:40px; margin-right:15px;' aria-hidden='true'>{$mediadata['content']}</span>";
 
-        // URL para voltar à "Biblioteca" (Lista de Itens)
+        $url_course = new moodle_url('/course/view.php', ['id' => $courseid]);
         $url_library = new moodle_url('/blocks/playerhud/manage.php', ['id' => $courseid, 'instanceid' => $instanceid, 'tab' => 'items']);
 
         $output .= '
         <div class="d-flex align-items-center mb-4 border-bottom pb-3">
-            <a href="' . $url_library . '" 
-               class="btn btn-outline-secondary me-3" aria-label="' . get_string('back', 'block_playerhud') . '">
-                <i class="fa fa-arrow-left" aria-hidden="true"></i>
+            <a href="' . $url_course . '" 
+               class="btn btn-outline-secondary me-3 shadow-sm">
+                <i class="fa fa-arrow-left" aria-hidden="true"></i> ' . get_string('back_to_course', 'block_playerhud') . '
             </a>
             <div class="d-flex align-items-center">
                 ' . $iconhtml . '
@@ -129,7 +121,6 @@ class drops {
             </div>
         </div>';
 
-        // Sumário
         $total_drops = count($drops);
         $summary_text = get_string('drops_summary', 'block_playerhud', $total_drops);
         $output .= '<div class="alert alert-light border shadow-sm d-flex align-items-center mb-3">
@@ -138,7 +129,6 @@ class drops {
                     </div>';
 
         // --- TABELA ---
-        // Formulário envolve a tabela e o botão de exclusão
         $output .= html_writer::start_tag('form', [
             'action' => $baseurl->out(), 
             'method' => 'post', 
@@ -159,10 +149,10 @@ class drops {
                         </th>';
             $output .= '<th scope="col" style="width: 50px;">N.</th>';
             $output .= '<th scope="col">' . $this->get_sort_link('name', get_string('drop_name_label', 'block_playerhud'), $sort, $dir, $baseurl) . '</th>';
-            $output .= '<th scope="col" style="width: 140px;">' . $this->get_sort_link('maxusage', get_string('drop_max_qty', 'block_playerhud'), $sort, $dir, $baseurl) . '</th>';
-            $output .= '<th scope="col" style="width: 160px;">' . $this->get_sort_link('respawntime', get_string('drop_interval', 'block_playerhud'), $sort, $dir, $baseurl) . '</th>';
-            $output .= '<th scope="col">' . get_string('drops_col_code', 'block_playerhud') . '</th>';
-            $output .= '<th scope="col" class="text-end" style="width: 200px;">' . get_string('actions') . '</th>';
+            $output .= '<th scope="col" style="width: 130px;">' . $this->get_sort_link('maxusage', get_string('drop_max_qty', 'block_playerhud'), $sort, $dir, $baseurl) . '</th>';
+            $output .= '<th scope="col" style="width: 150px;">' . $this->get_sort_link('respawntime', get_string('drop_interval', 'block_playerhud'), $sort, $dir, $baseurl) . '</th>';
+            $output .= '<th scope="col" style="width: 180px;">' . get_string('gen_title', 'block_playerhud') . '</th>';
+            $output .= '<th scope="col" class="text-end" style="width: 220px;">' . get_string('actions') . '</th>';
             $output .= '</tr></thead><tbody>';
 
             $strgen = get_string('gen_btn', 'block_playerhud');
@@ -175,23 +165,21 @@ class drops {
                 $editurl = new moodle_url('/blocks/playerhud/edit_drop.php', ['instanceid' => $instanceid, 'courseid' => $courseid, 'itemid' => $itemid, 'dropid' => $drop->id]);
                 $deleteurl = new moodle_url($baseurl, ['action' => 'delete', 'dropid' => $drop->id, 'sesskey' => sesskey()]);
                 
-                // Badge Infinito (Corrigido para 1 ícone)
                 $qtdhtml = ($drop->maxusage == 0) 
                     ? '<span class="badge bg-success"><i class="fa fa-infinity" aria-hidden="true"></i> ' . $strinf . '</span>'
                     : '<span class="badge bg-light text-dark border border-secondary">Max: ' . $drop->maxusage . '</span>';
 
-                // Badge Tempo (Contraste melhorado para "Imediato")
                 if ($drop->respawntime > 0) {
                     $timehtml = '<span class="badge bg-warning text-dark border border-warning" title="' . $drop->respawntime . 's"><i class="fa fa-clock-o" aria-hidden="true"></i> ' . format_time($drop->respawntime) . '</span>';
                 } else {
-                    // Usando bg-light, text-dark e border para contraste nítido e limpo
                     $timehtml = '<span class="badge bg-light text-dark border shadow-sm"><i class="fa fa-bolt text-warning" aria-hidden="true"></i> ' . $strimm . '</span>';
                 }
 
                 $display_code = !empty($drop->code) ? $drop->code : $drop->id;
+                
                 $btncode = '<button type="button" class="btn btn-outline-dark btn-sm js-open-gen-modal w-100"
                                 data-dropcode="' . $display_code . '" title="' . $strgentitle . '">
-                                <i class="fa fa-code" aria-hidden="true"></i> ' . $strgen . '
+                                <i class="fa fa-cogs" aria-hidden="true"></i> ' . $strgen . '
                              </button>';
 
                 $safeconfirm = s(get_string('drops_confirm_delete', 'block_playerhud'));
@@ -202,9 +190,6 @@ class drops {
                     'data-confirm-msg' => $safeconfirm
                 ]);
 
-                // AUTO-LINK CORRIGIDO
-                // Usamos format_text com contexto do CURSO para ativar filtros de atividade
-                // FORMAT_HTML garante que o Moodle parseie tags se houver
                 $drop_name_display = format_text($drop->name, FORMAT_HTML, ['context' => $coursecontext]);
 
                 $output .= "<tr>
@@ -223,9 +208,8 @@ class drops {
             }
             $output .= '</tbody></table></div></div>';
             
-            // Botão Excluir (DENTRO do form)
             $output .= '<div class="mt-3 mb-3">
-                        <button type="submit" class="btn btn-danger shadow-sm disabled" id="ph-btn-bulk-delete" disabled>
+                        <button type="button" class="btn btn-danger shadow-sm disabled" id="ph-btn-bulk-delete" disabled>
                             <i class="fa fa-trash" aria-hidden="true"></i> ' . get_string('delete_selected', 'block_playerhud') . '
                         </button>
                       </div>';
@@ -238,8 +222,7 @@ class drops {
         $output .= html_writer::end_tag('form');
         $output .= html_writer::end_div();
 
-        // --- 5. MODAL ---
-        // (Reinsira o bloco do modal aqui, idêntico ao arquivo anterior para não quebrar o JS)
+        // --- HTML DO MODAL GERADOR (Atualizado) ---
         $strgenstyle = get_string('gen_style', 'block_playerhud');
         $strgencard = get_string('gen_style_card', 'block_playerhud');
         $strgencarddesc = get_string('gen_style_card_desc', 'block_playerhud');
@@ -254,10 +237,10 @@ class drops {
         $strgencodelabel = get_string('gen_code_label', 'block_playerhud');
         $strgencopy = get_string('gen_copy', 'block_playerhud');
         $strgencopied = get_string('gen_copied', 'block_playerhud');
-        
         $strbtntxt = get_string('choice_text', 'block_playerhud'); 
         $strtake = get_string('take', 'block_playerhud'); 
 
+        // Botão de Copiar usando data-action="copytoclipboard"
         $output .= '
         <div class="modal fade" id="codeGenModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 10500;">
           <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -322,10 +305,13 @@ class drops {
                          <label class="fw-bold text-success">' . $strgencodelabel . '</label>
                           <div class="input-group input-group-lg">
                               <input type="text" class="form-control font-monospace" id="finalCode" readonly style="background:#f0f0f0; color:#d63384; font-size: 0.95rem; font-weight:bold;">
-                              <button class="btn btn-primary fw-bold shadow-sm" type="button" id="copyFinalCode"><i class="fa fa-copy" aria-hidden="true"></i> ' . $strgencopy . '</button>
-                          </div>
-                          <div style="min-height:20px;">
-                               <span id="copyFeedback" class="text-success small fw-bold mt-1" style="display:none;"><i class="fa fa-check" aria-hidden="true"></i> ' . $strgencopied . '</span>
+                              
+                              <button class="btn btn-primary fw-bold shadow-sm" type="button" 
+                                      id="copyFinalCode"
+                                      data-action="copytoclipboard" 
+                                      data-clipboard-target="#finalCode">
+                                  <i class="fa fa-copy" aria-hidden="true"></i> ' . $strgencopy . '
+                              </button>
                           </div>
                       </div>
                   </div>

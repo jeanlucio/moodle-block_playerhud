@@ -1,5 +1,6 @@
 /* global bootstrap */
-define(['jquery', 'core/notification'], function($, Notification) {
+// Importando core/copy_to_clipboard para que os botões com data-action funcionem automaticamente
+define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, Notification) {
 
     /**
      * Manage Drops module.
@@ -148,8 +149,8 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
             });
 
-            // Confirmação Bulk Delete
-            $('#ph-btn-bulk-delete').on('click', function(e) {
+            // Confirmação Bulk Delete (Com Delegação de Evento)
+            $('body').on('click', '#ph-btn-bulk-delete', function(e) {
                 e.preventDefault();
                 var count = $('.ph-bulk-check:checked').length;
                 if (count === 0) {
@@ -167,7 +168,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 );
             });
 
-            // --- 2. LISTENERS DO GERADOR E AÇÕES GERAIS ---
+            // --- 2. LISTENERS GERAIS ---
 
             $('body').on('click', function(e) {
                 var $target = $(e.target);
@@ -211,27 +212,9 @@ define(['jquery', 'core/notification'], function($, Notification) {
                         }
                     }
                 }
-
-                // C. Copiar Código
-                var $copyBtn = $target.closest('#copyFinalCode');
-                if ($copyBtn.length) {
-                    var inputEl = document.getElementById('finalCode');
-                    if (inputEl) {
-                        inputEl.select();
-                        inputEl.setSelectionRange(0, 99999);
-                        document.execCommand('copy');
-
-                        var $fb = $('#copyFeedback');
-                        $fb.show();
-                        setTimeout(function() {
-                            $fb.hide();
-                        }, 3000);
-                    }
-                }
             });
 
-            // Listeners de Input (Delegated to body for dynamic content or direct bind)
-            // Usamos bind direto pois os elementos do modal já existem no DOM (appendados no init)
+            // Listeners de Input
             $('body').on('change input', handleChange);
         }
     };
