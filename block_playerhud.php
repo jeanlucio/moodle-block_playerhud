@@ -114,16 +114,21 @@ class block_playerhud extends block_base {
                 $manageurl = $url->out();
             }
 
-            // --- CÁLCULO CORRIGIDO: XP Atual / Total Geral do Jogo ---
+            // --- CÁLCULO CORRIGIDO (ORDEM DO TROFÉU) ---
             $xp_total_game = isset($stats['total_game_xp']) ? $stats['total_game_xp'] : 0;
             
-            // Formato: "150 / 2000 XP"
+            // 1. Monta a string com " XP" incluído
             $xp_display = $player->currentxp . ' / ' . $xp_total_game . ' XP';
+
+            // 2. Adiciona o troféu DEPOIS do "XP" se ganhou
+            if ($player->currentxp >= $xp_total_game && $xp_total_game > 0) {
+                $xp_display .= ' 🏆';
+            }
 
             $renderdata = [
                 'username'    => fullname($USER),
                 'userpicture' => $OUTPUT->user_picture($USER, ['size' => 100, 'class' => 'rounded-circle border shadow-sm']),
-                'xp'          => $xp_display,
+                'xp'          => $xp_display, // Agora contém "500 / 500 XP 🏆"
                 'level'       => $stats['level'] . ' / ' . $stats['max_levels'],
                 'level_class' => $stats['level_class'],
                 'progress'    => $stats['progress'],

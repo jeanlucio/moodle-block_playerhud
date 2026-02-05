@@ -69,7 +69,9 @@ class collect {
                     'max_levels' => $stats['max_levels'],
                     'xp_target' => $stats['total_game_xp'], // Agora aponta para o Total Geral
                     'progress' => $stats['progress'],
-                    'total_game_xp' => $stats['total_game_xp']
+                    'total_game_xp' => $stats['total_game_xp'],
+                    'level_class' => $stats['level_class'], // A cor do nível
+                    'is_win' => ($player->currentxp >= $stats['total_game_xp'] && $stats['total_game_xp'] > 0) // Checa vitória
                 ];
 
                 // ... (restante do código permanece igual)
