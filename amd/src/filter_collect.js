@@ -117,58 +117,84 @@ define(['jquery', 'core/notification'], function($, Notification) {
         }
     };
 
-    /**
-     * Atualiza o HUD principal (Widget) e o Bloco Lateral (Sidebar).
-     *
-     * @param {Object} data Dados gerais do jogo (XP, Nível).
-     * @param {Object|null} itemData Dados do item recém coletado (opcional).
-     */
+/**
+ * Atualiza o HUD principal (Widget) e o Bloco Lateral (Sidebar).
+ *
+ * @param {Object} data Dados gerais do jogo (XP, Nível).
+ * @param {Object|null} itemData Dados do item recém coletado (opcional).
+ */
     var updateHud = function(data, itemData) {
-        // 1. Atualiza o Widget Principal (Topo) se existir na página
-        var widget = $('.playerhud-widget-container');
-        if (widget.length) {
-            widget.find('.progress-bar').css('width', data.progress + '%');
-        }
+        // --- 1. Atualiza Barras de Progresso e Textos (Widget + Sidebar) ---
+        var containers = $('.playerhud-widget-container, .block_playerhud_sidebar');
 
-        // 2. Atualiza o Bloco Lateral (Sidebar)
-        var sidebar = $('.block_playerhud_sidebar');
-        if (sidebar.length) {
-            // Atualiza Barra de XP
-            sidebar.find('.progress-bar')
-                   .css('width', data.progress + '%')
-                   .attr('aria-valuenow', data.progress);
+        containers.each(function() {
+            var container = $(this);
 
-            // Atualiza Texto de XP (procura qualquer span que contenha "XP")
-            sidebar.find('span').each(function() {
-                var txt = $(this).text();
-                if (txt.indexOf('XP') > -1) {
-                    $(this).text(data.currentxp + ' XP');
-                }
-                // Atualiza Nível mantendo o prefixo (Level/Nível)
-                if (txt.indexOf('Level') > -1 || txt.indexOf('Nível') > -1) {
-                    var prefix = txt.split(' ')[0];
-                    $(this).text(prefix + ' ' + data.level);
+            // Barra.
+            container.find('.progress-bar')
+                .css('width', data.progress + '%')
+                .attr('aria-valuenow', data.progress);
+
+            // Textos Genéricos (XP e Nível).
+            // A busca é feita por texto para evitar dependência de classes específicas de layout.
+            container.find('span, div, strong').each(function() {
+                var el = $(this);
+                // Verifica se é apenas um nó de texto direto para não alterar filhos.
+                if (el.children().length === 0) {
+                    var txt = el.text();
+                    if (txt.indexOf('XP') > -1) {
+                        // Atualiza número mantendo o sufixo XP.
+                        el.text(data.currentxp + ' XP');
+                    }
+                    if (txt.indexOf('Level') > -1 || txt.indexOf('Nível') > -1) {
+                        var parts = txt.split(' ');
+                        el.text(parts[0] + ' ' + data.level);
+                    }
                 }
             });
+        });
 
-            // 3. Atualiza Itens (Adiciona o novo item à lista)
-            if (itemData) {
-                var wrapper = sidebar.find('.ph-stash-wrapper');
-                var stash = sidebar.find('.ph-sidebar-stash');
+        // --- 2. Atualiza Itens (Sidebar + Widget Horizontal) ---
+        if (itemData) {
+            // Seleciona tanto o stash da sidebar quanto o do widget.
+            var stashes = $('.ph-sidebar-stash, .ph-widget-stash');
 
-                // Se o container estava oculto (primeira coleta), mostra ele
-                wrapper.show();
-
-                // Monta o HTML do item (Imagem ou Emoji)
-                var contentHtml = '';
-                if (itemData.isimage == 1) {
-                    contentHtml = '<img src="' + itemData.image + '" alt="' + itemData.name + '">';
-                } else {
-                    contentHtml = '<span class="ph-mini-emoji" aria-hidden="true">' + itemData.image + '</span>';
+            stashes.each(function() {
+                var stash = $(this);
+                var wrapper = stash.closest('.ph-stash-wrapper'); // Apenas sidebar tem wrapper.
+                if (wrapper.length) {
+                    wrapper.show();
                 }
 
-                // Cria o elemento com as classes e dados necessários para o Modal
-                var newItem = $('<div class="ph-mini-item ph-item-trigger" role="button" tabindex="0"></div>');
+                // Remove placeholder de "vazio" se existir.
+                stash.find('.text-muted').remove();
+
+                // Monta o HTML do item (Imagem ou Emoji).
+                var contentHtml = '';
+                if (itemData.isimage == 1) {
+                    // Widget usa 100% width/height, Sidebar usa max-width.
+                    // Usamos estilo inline compatível com ambos (object-fit faz a mágica).
+                    contentHtml = '<img src="' + itemData.image + '" alt="" ' +
+                        'style="width: 100%; height: 100%; object-fit: contain;">';
+                } else {
+                    contentHtml = '<span class="ph-mini-emoji" aria-hidden="true" ' +
+                        'style="font-size:1.2rem; line-height: 1;">' + itemData.image + '</span>';
+                }
+
+                // Cria o elemento novo.
+                var classes = 'ph-mini-item ph-item-trigger border bg-white rounded ' +
+                    'd-flex align-items-center justify-content-center overflow-hidden position-relative shadow-sm';
+                var newItem = $('<div class="' + classes + '" role="button" tabindex="0"></div>');
+
+                // Define tamanho fixo via CSS inline para consistência.
+                newItem.css({
+                    'width': '34px',
+                    'height': '34px',
+                    'min-width': '34px',
+                    'margin-right': '2px',
+                    'margin-bottom': '2px'
+                });
+
                 newItem.attr('data-name', itemData.name);
                 newItem.attr('data-xp', itemData.xp);
                 newItem.attr('data-image', itemData.image);
@@ -176,28 +202,26 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 newItem.attr('data-date', itemData.date);
                 newItem.attr('title', itemData.name);
 
-                // Adiciona descrição oculta (para o modal ler)
                 newItem.append('<div class="d-none ph-item-description-content">' + itemData.description + '</div>');
                 newItem.append(contentHtml);
 
-                // --- CORREÇÃO DE DUPLICAÇÃO ---
-                // Verifica se já existe um item com esse nome na lista e remove o antigo
-                // Isso garante que ele "salte" para a primeira posição
+                // Remove duplicata (efeito de mover para o início).
                 stash.children().filter(function() {
                     return $(this).attr('data-name') === itemData.name;
                 }).remove();
 
-                // Animação de entrada: oculta, insere no início, faz fade in
+                // Insere no início.
                 newItem.hide();
                 stash.prepend(newItem);
                 newItem.fadeIn();
 
-                // Mantém limite visual de 6 itens (remove o último se exceder)
+                // Limite (Sidebar = 6, Widget = 14).
+                var limit = stash.hasClass('ph-widget-stash') ? 14 : 6;
                 var items = stash.children('.ph-mini-item');
-                if (items.length > 6) {
+                if (items.length > limit) {
                     items.last().remove();
                 }
-            }
+            });
         }
     };
 

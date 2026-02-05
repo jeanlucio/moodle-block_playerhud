@@ -70,8 +70,8 @@ class block_playerhud extends block_base {
             $seen_items = []; // Array auxiliar para evitar duplicatas
             $rawinventory = \block_playerhud\game::get_inventory($USER->id, $this->instance->id);
             
-            // Limite de itens na linha (6)
-            $limit = 6;
+            // Limite de itens na linha (5)
+            $limit = 5;
             $count = 0;
             
             foreach ($rawinventory as $invitem) {
