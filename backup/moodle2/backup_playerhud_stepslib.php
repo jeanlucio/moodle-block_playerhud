@@ -3,32 +3,48 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Define the complete structure for backup of playerhud block.
+ *
+ * @package    block_playerhud
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class backup_playerhud_block_structure_step extends backup_block_structure_step { // <--- VOLTAR PARA ESTA CLASSE
+class backup_playerhud_block_structure_step extends backup_block_structure_step {
 
     protected function define_structure() {
-        // 1. Define o elemento raiz.
-        $playerhud = new backup_nested_element('playerhud', array('id'), null);
+        // 1. Root element.
+        $playerhud = new backup_nested_element('playerhud', ['id'], null);
 
-        // 2. Define a estrutura dos ITENS.
+        // 2. Items structure.
         $items = new backup_nested_element('items');
-        $item = new backup_nested_element('item', array('id'), array(
-            'name', 'description', 'image', 'xp', 'enabled', 
-            'maxusage', 'respawntime', 'tradable', 'secret', 
+        $item = new backup_nested_element('item', ['id'], [
+            'name', 'description', 'image', 'xp', 'enabled',
+            'maxusage', 'respawntime', 'tradable', 'secret',
             'required_class_id', 'timecreated', 'timemodified'
-        ));
+        ]);
 
-        // 3. Hierarquia.
+        // 3. Drops structure (New).
+        $drops = new backup_nested_element('drops');
+        $drop = new backup_nested_element('drop', ['id'], [
+            'itemid', 'code', 'name', 'maxusage', 'respawntime',
+            'timecreated', 'timemodified'
+        ]);
+
+        // 4. Hierarchy.
         $playerhud->add_child($items);
         $items->add_child($item);
 
-        // 4. Fontes de dados.
-        $item->set_source_table('block_playerhud_items', array('blockinstanceid' => backup::VAR_BLOCKID));
+        $playerhud->add_child($drops);
+        $drops->add_child($drop);
 
-        // 5. Arquivos.
+        // 5. Data sources.
+        $item->set_source_table('block_playerhud_items', ['blockinstanceid' => backup::VAR_BLOCKID]);
+        
+        // Define drop source. Note: We use blockinstanceid to filter drops belonging to this block.
+        $drop->set_source_table('block_playerhud_drops', ['blockinstanceid' => backup::VAR_BLOCKID]);
+
+        // 6. File annotations.
         $item->annotate_files('block_playerhud', 'item_image', 'id');
 
-        // Retorna usando o método especial que só existe na backup_block_structure_step
         return $this->prepare_block_structure($playerhud);
     }
 }

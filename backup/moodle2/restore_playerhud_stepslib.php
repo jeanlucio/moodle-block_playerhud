@@ -2,22 +2,27 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Structure step to restore one playerhud block.
+ * Structure step to restore playerhud block.
+ *
+ * @package    block_playerhud
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class restore_playerhud_block_structure_step extends restore_structure_step { // <--- CORREÇÃO AQUI
+class restore_playerhud_block_structure_step extends restore_structure_step {
 
     protected function define_structure() {
-        $paths = array();
+        $paths = [];
 
-        // O caminho deve bater com o XML gerado no backup.
-        // Se no backup for /block/playerhud/items/item, aqui deve ser igual.
         $paths[] = new restore_path_element('item', '/block/playerhud/items/item');
+        $paths[] = new restore_path_element('drop', '/block/playerhud/drops/drop');
 
         return $paths;
     }
 
     /**
-     * Processa cada <item> encontrado no XML.
+     * Process items.
+     *
+     * @param array $data
      */
     public function process_item($data) {
         global $DB;
@@ -25,19 +30,44 @@ class restore_playerhud_block_structure_step extends restore_structure_step { //
         $data = (object)$data;
         $oldid = $data->id;
 
-        // Atribuímos o NOVO ID da instância do bloco.
         $data->blockinstanceid = $this->task->get_blockid();
-        
-        // Remove o ID antigo.
         unset($data->id);
 
-        // Insere no banco.
         $newitemid = $DB->insert_record('block_playerhud_items', $data);
 
-        // Mapeamento para arquivos (imagens).
+        // Mapping for files and subsequent drops.
         $this->set_mapping('item', $oldid, $newitemid, true);
         
-        // Restaura as imagens.
         $this->add_related_files('block_playerhud', 'item_image', 'item', null, $oldid);
+    }
+
+    /**
+     * Process drops.
+     *
+     * @param array $data
+     */
+    public function process_drop($data) {
+        global $DB;
+
+        $data = (object)$data;
+        $oldid = $data->id;
+        $olditemid = $data->itemid;
+
+        $data->blockinstanceid = $this->task->get_blockid();
+        unset($data->id);
+
+        // Remap item ID to the newly restored item.
+        $newitemid = $this->get_mappingid('item', $olditemid);
+        
+        // Safety check: if item wasn't restored, we cannot create the drop.
+        if (!$newitemid) {
+            return;
+        }
+        
+        $data->itemid = $newitemid;
+
+        $DB->insert_record('block_playerhud_drops', $data);
+        
+        // No mapping needed for drops unless other tables refer to it (e.g. logs).
     }
 }

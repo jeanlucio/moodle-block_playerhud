@@ -105,24 +105,26 @@ function block_playerhud_get_drop_details_for_filter($dropid) {
 }
 
 /**
- * Busca detalhes do Drop usando o CÓDIGO hash (para o novo shortcode).
+ * Busca detalhes do Drop usando o CÓDIGO hash e o ID da instância.
  *
  * @param string $code O código alfanumérico (ex: 3C815F).
+ * @param int $blockinstanceid O ID da instância do bloco para garantir unicidade.
  * @return stdClass|false O objeto drop detalhado ou false.
  */
-function block_playerhud_get_drop_details_by_code($code) {
+function block_playerhud_get_drop_details_by_code($code, $blockinstanceid) {
     global $DB;
 
-    // Nota: Adicionamos a cláusula WHERE d.code = :code
+    // Adicionamos AND d.blockinstanceid = :bi para evitar colisão com backups restaurados
     $sql = "SELECT d.id as dropid, d.maxusage, d.respawntime, d.blockinstanceid,
                    i.id as itemid, i.name as itemname, i.image, i.xp, i.description, 
                    i.secret, i.required_class_id
               FROM {block_playerhud_drops} d
               JOIN {block_playerhud_items} i ON d.itemid = i.id
              WHERE d.code = :code 
+               AND d.blockinstanceid = :bi
                AND i.enabled = 1";
 
-    return $DB->get_record_sql($sql, ['code' => $code]);
+    return $DB->get_record_sql($sql, ['code' => $code, 'bi' => $blockinstanceid]);
 }
 
 /**
