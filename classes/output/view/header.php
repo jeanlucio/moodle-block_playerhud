@@ -46,7 +46,6 @@ class header implements renderable {
         global $OUTPUT, $PAGE;
 
         // 1. Calculate Stats
-        // Usamos a função estática que já existe no game.php
         $stats = \block_playerhud\game::get_game_stats(
             $this->config, 
             $this->player->blockinstanceid, 
@@ -57,19 +56,24 @@ class header implements renderable {
         $userpic = $OUTPUT->user_picture($this->user, ['size' => 100, 'class' => 'rounded-circle shadow-sm']);
         $fullname = fullname($this->user);
         
+        // Formato: "Nível 5 / 5"
         $levelLabel = get_string('level', 'block_playerhud') . ' ' . $stats['level'] . ' / ' . $stats['max_levels'];
-        $nextXpLabel = get_string('next', 'block_playerhud') . ': ' . $stats['xp_next'] . ' XP'; 
         
-        // Se estiver no nível máximo
-        if ($stats['is_max']) {
-            $nextXpLabel = 'MAX LEVEL';
+        // --- CÁLCULO UNIFICADO DE XP (Atual / Total 🏆) ---
+        $xp_total_game = isset($stats['total_game_xp']) ? $stats['total_game_xp'] : 0;
+        
+        $xp_display = $this->player->currentxp . ' / ' . $xp_total_game . ' XP';
+
+        // Adiciona Troféu se atingiu a meta
+        if ($this->player->currentxp >= $xp_total_game && $xp_total_game > 0) {
+            $xp_display .= ' 🏆';
         }
 
-        $currentXpLabel = get_string('currentxp', 'block_playerhud') . ': ' . $this->player->currentxp;
-
         // 3. Render HTML
-        // Vamos usar html_writer para manter limpo, ou string direta para facilitar o layout customizado
-        
+        // Definimos a cor baseada no tier (level_class)
+        // Se level_class não estiver definido, usa bg-primary como fallback
+        $colorClass = !empty($stats['level_class']) ? $stats['level_class'] : 'bg-primary';
+
         $html = '
         <div class="card shadow-sm mb-4 border-0" style="border-radius: 15px;">
             <div class="card-body p-4">
@@ -80,20 +84,21 @@ class header implements renderable {
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center mb-1">
                             <h2 class="m-0 fw-bold text-dark me-3">' . $fullname . '</h2>
-                            <span class="badge bg-light text-dark border shadow-sm px-3 py-2" style="font-size: 0.9rem;">
+                            
+                            <span class="badge ' . $colorClass . ' border shadow-sm px-3 py-2" style="font-size: 0.9rem;">
                                 ' . $levelLabel . '
                             </span>
                         </div>
                         
-                        <div class="d-flex justify-content-between small text-muted mb-1 mt-3">
-                            <span>' . $currentXpLabel . '</span>
-                            <span>' . $nextXpLabel . '</span>
+                        <div class="d-flex justify-content-end small fw-bold text-muted mb-1 mt-3">
+                            <span>' . $xp_display . '</span>
                         </div>
 
                         <div class="progress" style="height: 12px; border-radius: 6px; background-color: #e9ecef;">
-                            <div class="progress-bar bg-primary" role="progressbar" 
+                            <div class="progress-bar ' . $colorClass . '" role="progressbar" 
                                  style="width: ' . $stats['progress'] . '%; border-radius: 6px;" 
                                  aria-valuenow="' . $stats['progress'] . '" aria-valuemin="0" aria-valuemax="100">
+                                 <span class="visually-hidden">' . $stats['progress'] . '% Complete</span>
                             </div>
                         </div>
                     </div>
@@ -110,7 +115,6 @@ class header implements renderable {
 
     /**
      * Helper to show admin button only if needed inside the header area.
-     * (Currently unused as button is outside, but kept for future layout flexibility)
      */
     private function get_admin_button() {
         return ''; 
