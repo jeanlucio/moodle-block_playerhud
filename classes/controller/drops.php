@@ -35,7 +35,7 @@ class drops {
         $instanceid = required_param('instanceid', PARAM_INT);
         $courseid   = required_param('id', PARAM_INT);
         $itemid     = required_param('itemid', PARAM_INT);
-        $action     = optional_param('action', '', PARAM_ALPHA);
+        $action     = optional_param('action', '', PARAM_ALPHANUMEXT);
         $dropid     = optional_param('dropid', 0, PARAM_INT);
         $sort = optional_param('sort', 'id', PARAM_ALPHA);
         $dir  = optional_param('dir', 'DESC', PARAM_ALPHA);
