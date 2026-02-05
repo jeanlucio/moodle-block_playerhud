@@ -3,21 +3,25 @@
     Simplified view for the block sidebar with avatar and progress.
 }}
 <div class="block_playerhud_sidebar text-center">
-    <div class="mb-2">
-        <div class="mb-2">
+    
+    {{! Seção de Perfil }}
+    <div class="mb-3">
+        <div class="mb-2 ph-sidebar-avatar">
             {{{userpicture}}}
         </div>
-        <div class="fw-bold text-truncate" style="max-width: 100%;" title="{{username}}">
+        <div class="fw-bold text-truncate" style="max-width: 100%; font-size: 1.1rem;" title="{{username}}">
             {{username}}
         </div>
     </div>
 
+    {{! Barra de Stats }}
     <div class="d-flex justify-content-between align-items-center mb-1 small text-muted">
-        <span class="badge bg-light text-dark border">{{#str}} level, block_playerhud {{/str}} {{level}}</span>
+        {{! Badge com classe dinâmica de cor (level_class) }}
+        <span class="badge {{level_class}} border">{{#str}} level, block_playerhud {{/str}} {{level}}</span>
         <span>{{xp}} XP</span>
     </div>
 
-    <div class="progress mb-3" style="height: 8px; border-radius: 4px; background-color: #e9ecef;">
+    <div class="progress mb-4" style="height: 8px; border-radius: 4px; background-color: #e9ecef;">
         <div class="progress-bar bg-primary" role="progressbar" 
              style="width: {{progress}}%; border-radius: 4px;" 
              aria-valuenow="{{progress}}" aria-valuemin="0" aria-valuemax="100">
@@ -25,8 +29,38 @@
         </div>
     </div>
 
+    {{! Nova Seção: Últimos Itens (Mini Stash) }}
+    {{! O wrapper existe sempre, mas fica oculto (display:none) se não houver itens }}
+    <div class="mb-3 text-start ph-stash-wrapper" {{^has_items}}style="display:none;"{{/has_items}}>
+        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">{{#str}} latest_items, block_playerhud {{/str}}</small>
+        <div class="ph-sidebar-stash d-flex gap-1 mt-1 justify-content-center">
+            {{#items}}
+            <div class="ph-mini-item ph-item-trigger" 
+                 role="button" 
+                 tabindex="0"
+                 data-name="{{name}}"
+                 data-xp="{{xp}}"
+                 data-image="{{image}}"
+                 data-isimage="{{isimage}}"
+                 data-date="{{date}}"
+                 title="{{name}}">
+                 
+                 {{! Conteúdo oculto para o modal ler }}
+                 <div class="d-none ph-item-description-content">{{{description}}}</div>
+
+                 {{#isimage}}
+                    <img src="{{image}}" alt="{{name}}">
+                 {{/isimage}}
+                 {{#isemoji}}
+                    <span class="ph-mini-emoji" aria-hidden="true">{{image}}</span>
+                 {{/isemoji}}
+            </div>
+            {{/items}}
+        </div>
+    </div>
+
+    {{! Botões de Ação }}
     <div class="d-grid gap-2">
-        {{! Botão do Mestre (Visível apenas para quem tem permissão) }}
         {{#isteacher}}
         <a href="{{{manageurl}}}" class="btn btn-outline-dark btn-sm shadow-sm mb-1">
             <i class="fa fa-cogs" aria-hidden="true"></i> {{#str}} master_panel, block_playerhud {{/str}}

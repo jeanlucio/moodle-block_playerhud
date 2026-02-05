@@ -48,9 +48,10 @@ class collect {
             $message = get_string('collected_msg', 'block_playerhud', $msgParams);
 
             // --- DADOS PARA O FRONTEND (AJAX) ---
-          $game_data = null;
+            $game_data = null;
+            $item_data = null; // Dados visuais do item para a sidebar
             $cooldown_deadline = 0;
-            $limit_reached = false; // Novo flag
+            $limit_reached = false;
 
             if ($isajax) {
                 // A. Dados do Jogador
@@ -69,23 +70,33 @@ class collect {
                 ];
 
                 // B. Verificação de Limites e Cooldown
-                // Conta quantas vezes o usuário JÁ coletou (incluindo a atual)
                 $count = $DB->count_records('block_playerhud_inventory', ['userid' => $USER->id, 'dropid' => $drop->id]);
-                
-                // Define se atingiu o limite
                 if ($drop->maxusage > 0 && $count >= $drop->maxusage) {
                     $limit_reached = true;
                 }
-
-                // Cálculo do Timer (apenas se não atingiu limite e tem respawn configurado)
                 if (!$limit_reached && $drop->respawntime > 0) {
                      $cooldown_deadline = time() + $drop->respawntime;
                 }
+
+                // C. Preparar dados visuais do Item (para injetar na sidebar)
+                $context = \context_block::instance($instanceid);
+                $media = \block_playerhud\utils::get_item_display_data($item, $context);
+                $isimage = $media['is_image'] ? 1 : 0;
+                $imageurl = $media['is_image'] ? $media['url'] : strip_tags($media['content']);
+                $desc = !empty($item->description) ? format_text($item->description, FORMAT_HTML) : '';
+
+                $item_data = [
+                    'name' => format_string($item->name),
+                    'xp' => '+'.$item->xp.' XP',
+                    'image' => $imageurl,
+                    'isimage' => $isimage,
+                    'description' => $desc,
+                    'date' => userdate(time(), get_string('strftimedatefullshort', 'langconfig'))
+                ];
             }
             // ------------------------------------
 
-            // Passamos o novo parâmetro $limit_reached
-            $this->respond($isajax, true, $message, $returnurl, $game_data, $cooldown_deadline, $limit_reached);
+            $this->respond($isajax, true, $message, $returnurl, $game_data, $cooldown_deadline, $limit_reached, $item_data);
 
         } catch (\Exception $e) {
             $this->respond($isajax, false, $e->getMessage(), $returnurl);
@@ -103,14 +114,12 @@ class collect {
         ], 'timecreated DESC');
         
         $count = count($inventory);
-        $lastcollected = reset($inventory); // Pega o mais recente
+        $lastcollected = reset($inventory);
 
-        // Verifica Limite Máximo
         if ($drop->maxusage > 0 && $count >= $drop->maxusage) {
             throw new \moodle_exception('limitreached', 'block_playerhud');
         }
 
-        // Verifica Cooldown (Espera)
         if ($lastcollected && $drop->respawntime > 0) {
             $readytime = $lastcollected->timecreated + $drop->respawntime;
             if (time() < $readytime) {
@@ -128,7 +137,6 @@ class collect {
         $transaction = $DB->start_delegated_transaction();
         
         try {
-            // 1. Insere Inventário
             $newinv = new \stdClass();
             $newinv->userid = $userid;
             $newinv->itemid = $item->id;
@@ -137,7 +145,6 @@ class collect {
             $newinv->source = 'map';
             $DB->insert_record('block_playerhud_inventory', $newinv);
 
-            // 2. Atualiza XP do Jogador
             $xpgain = 0;
             if ($item->xp > 0) {
                 $xpgain = $item->xp;
@@ -157,15 +164,16 @@ class collect {
     /**
      * Envia a resposta (JSON ou Redirect).
      */
-    private function respond($ajax, $success, $message, $url, $data = null, $cooldown_deadline = 0, $limit_reached = false) {
+    private function respond($ajax, $success, $message, $url, $data = null, $cooldown_deadline = 0, $limit_reached = false, $item_data = null) {
         if ($ajax) {
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 'success' => $success, 
                 'message' => $message,
                 'game_data' => $data,
+                'item_data' => $item_data, // Novo campo
                 'cooldown_deadline' => $cooldown_deadline,
-                'limit_reached' => $limit_reached // Novo campo
+                'limit_reached' => $limit_reached
             ]);
             die();
         } else {

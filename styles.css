@@ -119,3 +119,110 @@
 #codeGenModal .ph-text-link {
     text-decoration: underline !important;
 }
+/* --- Sidebar & Mini Stash --- */
+
+/* Ajuste da foto para ser maior e responsiva */
+.block_playerhud .ph-sidebar-avatar img {
+    width: 90px;
+    height: 90px;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Container dos itens (Flexbox centralizado) */
+.block_playerhud .ph-sidebar-stash {
+    flex-wrap: wrap; /* Se quiser forçar 1 linha, mude para nowrap e overflow:hidden */
+    justify-content: center;
+}
+
+/* O item individual (quadradinho) */
+.block_playerhud .ph-mini-item {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.1s, border-color 0.1s;
+    overflow: hidden;
+}
+
+.block_playerhud .ph-mini-item:hover {
+    transform: translateY(-2px);
+    border-color: #0f6cbf;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.block_playerhud .ph-mini-item img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.block_playerhud .ph-mini-emoji {
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+/* --- Sidebar & Mini Stash --- */
+
+/* Ajuste da foto para ser REALMENTE maior */
+.block_playerhud .ph-sidebar-avatar img {
+    width: 110px !important;  /* Aumentado para 110px e forçado */
+    height: 110px !important; /* Mantém proporção quadrada */
+    max-width: none !important; /* Impede que o tema diminua a foto */
+    border: 3px solid #fff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    border-radius: 50%;
+}
+
+/* Container dos itens (Flexbox centralizado) */
+.block_playerhud .ph-sidebar-stash {
+    flex-wrap: wrap; 
+    justify-content: center;
+    gap: 4px !important; /* Gap pequeno para manter compacto */
+}
+
+/* O item individual (quadradinho) */
+.block_playerhud .ph-mini-item {
+    width: 40px; /* Tamanho confortável */
+    height: 40px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.1s, border-color 0.1s;
+    overflow: hidden;
+    flex-shrink: 0; /* Impede que esmaguem se o bloco for estreito */
+}
+
+.block_playerhud .ph-mini-item:hover {
+    transform: translateY(-2px);
+    border-color: #0f6cbf;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.block_playerhud .ph-mini-item img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.block_playerhud .ph-mini-emoji {
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+/* --- Cores de Nível (Tiers) --- */
+/* Certifique-se que estas classes existem */
+.ph-lvl-tier-1 { background-color: #6c757d !important; color: #fff; } /* Cinza */
+.ph-lvl-tier-2 { background-color: #28a745 !important; color: #fff; } /* Verde */
+.ph-lvl-tier-3 { background-color: #17a2b8 !important; color: #fff; } /* Azul */
+.ph-lvl-tier-4 { background-color: #6610f2 !important; color: #fff; } /* Roxo */
+.ph-lvl-tier-5 { background-color: #fd7e14 !important; color: #fff; } /* Laranja */
