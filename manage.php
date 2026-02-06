@@ -55,6 +55,15 @@ $baseurl = new moodle_url('/blocks/playerhud/manage.php', [
     'instanceid' => $instanceid
 ]);
 
+// --- MOVIDO: Configuração da Página (Antes de qualquer output ou lógica de render) ---
+// 2.1 Page Setup
+$PAGE->set_url($baseurl);
+$PAGE->set_context($context);
+$PAGE->set_pagelayout('incourse'); // Garante que a gaveta de blocos apareça
+$PAGE->set_title(get_string('pluginname', 'block_playerhud'));
+$PAGE->set_heading(format_string($course->fullname));
+// ---------------------------------------------------------------------------------
+
 // 3. Action processing (Global Controllers).
 
 // Action: Toggle Item Status.
@@ -309,15 +318,7 @@ if (class_exists($render_class)) {
     );
 }
 
-// 5. Page Render (Usando o Layout Mustache)
-$PAGE->set_url($baseurl);
-
-// CORREÇÃO FINAL: Usamos o CONTEXTO DO BLOCO e layout INCOURSE, igual ao view.php
-$PAGE->set_context($context);
-$PAGE->set_pagelayout('incourse');
-
-$PAGE->set_title(get_string('pluginname', 'block_playerhud'));
-$PAGE->set_heading(format_string($course->fullname));
+// (O Page Setup foi movido para o topo para garantir layout correto)
 
 echo $OUTPUT->header();
 
