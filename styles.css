@@ -487,3 +487,13 @@
 .ph-badge-hidden {
     display: none !important;
 }
+/* --- REFATORAÇÃO ETAPA 1 --- */
+.ph-text-xs {
+    font-size: 0.7rem;
+}
+
+.ph-code-input {
+    font-weight: bold;
+    color: #0f6cbf;
+    background-color: #f8f9fa;
+}

@@ -350,11 +350,19 @@ foreach ($tabs as $key => $data) {
 }
 echo \html_writer::end_tag('ul');
 
+// ... (início do arquivo mantém igual) ...
+
 // 6. Content render.
 echo \html_writer::start_div('container-fluid p-0 animate__animated animate__fadeIn');
 
 if ($renderer) {
-    echo $renderer->display();
+    if ($renderer instanceof \templatable) {
+        // CORREÇÃO: Forçamos o uso do template 'tab_config' explicitamente
+        // Certifique-se que o arquivo blocks/playerhud/templates/tab_config.mustache existe
+        echo $OUTPUT->render_from_template('block_playerhud/tab_config', $renderer->export_for_template($OUTPUT));
+    } else {
+        echo $renderer->display();
+    }
 } else {
     echo $OUTPUT->notification(
         get_string('tab_maintenance', 'block_playerhud', $tabs[$activetab]['text'] ?? $activetab),
@@ -364,29 +372,6 @@ if ($renderer) {
 
 echo \html_writer::end_div();
 
-// Javascript Section.
-$copyscript = <<<JS
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    var buttons = document.querySelectorAll(".copy-btn");
-    buttons.forEach(function(btn) {
-        btn.addEventListener("click", function() {
-            var targetId = this.getAttribute("data-target");
-            var input = document.getElementById(targetId);
-            if(input) {
-                input.select();
-                input.setSelectionRange(0, 99999);
-                document.execCommand("copy");
-                var originalHtml = this.innerHTML;
-                this.innerHTML = "<i class='fa fa-check text-success'></i>";
-                var that = this;
-                setTimeout(function(){ that.innerHTML = originalHtml; }, 2000);
-            }
-        });
-    });
-});
-</script>
-JS;
-echo $copyscript;
+// REMOVIDO: Bloco $copyscript e echo $copyscript (O JS injetado sai daqui)
 
 echo $OUTPUT->footer();

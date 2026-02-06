@@ -1,0 +1,99 @@
+<div class="row">
+    {{! --- Card de Balanceamento --- }}
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm {{alert_border_class}}">
+            <div class="card-header bg-white fw-bold">
+                <i class="fa fa-balance-scale" aria-hidden="true"></i> {{#str}} game_balance, block_playerhud {{/str}}
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-3 text-center border-end">
+                        <h3 class="m-0 text-primary">{{total_items_xp}}</h3>
+                        <small class="text-muted text-uppercase ph-text-xs">{{#str}} total_items_xp, block_playerhud {{/str}}</small>
+                    </div>
+                    <div class="col-md-3 text-center border-end">
+                        <h3 class="m-0 text-dark">{{xp_ceiling}}</h3>
+                        <small class="text-muted text-uppercase ph-text-xs">{{#str}} xp_required_max, block_playerhud {{/str}}</small>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert {{alert_class}} m-0 d-flex align-items-center">
+                            <i class="fa {{alert_icon}} fa-2x me-3" aria-hidden="true"></i>
+                            <div>{{{balance_message}}}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{! --- Card do Widget --- }}
+    <div class="col-md-6">
+        <div class="card border-primary mb-4 h-100 shadow-sm">
+            <div class="card-header bg-primary text-white fw-bold">
+                <i class="fa fa-code" aria-hidden="true"></i> {{#str}} widget_code_title, block_playerhud {{/str}}
+            </div>
+            <div class="card-body">
+                <p>{{#str}} widget_code_desc, block_playerhud {{/str}}</p>
+
+                <div class="input-group input-group-lg mb-3">
+                    <label for="widgetCode" class="visually-hidden">{{#str}} widget_code_title, block_playerhud {{/str}}</label>
+                    <input type="text" class="form-control font-monospace text-center ph-code-input"
+                           value="[PLAYERHUD_WIDGET]" readonly id="widgetCode">
+                    
+                    {{! PADRÃO NATIVO MOODLE AQUI }}
+                    <button class="btn btn-dark" type="button" 
+                            data-action="copytoclipboard" 
+                            data-clipboard-target="#widgetCode">
+                        <i class="fa fa-copy" aria-hidden="true"></i> {{#str}} gen_copy, block_playerhud {{/str}}
+                    </button>
+                </div>
+
+                <div class="alert alert-info small mb-0">
+                    <i class="fa fa-lightbulb-o" aria-hidden="true"></i> {{#str}} widget_code_tip, block_playerhud {{/str}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{! --- Card das APIs --- }}
+    <div class="col-md-6">
+        <div class="card border-dark mb-4 h-100 shadow-sm">
+            <div class="card-header bg-dark text-white fw-bold">
+                <i class="fa fa-key" aria-hidden="true"></i> {{#str}} api_settings_title, block_playerhud {{/str}}
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">{{#str}} api_settings_desc, block_playerhud {{/str}}</p>
+
+                <form action="{{action_url}}" method="post">
+                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+
+                    <div class="mb-3">
+                        <label class="fw-bold form-label" for="gemini_key">{{#str}} gemini_apikey, block_playerhud {{/str}}</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa fa-google" aria-hidden="true"></i></span>
+                            <input type="password" class="form-control" name="gemini_key" id="gemini_key"
+                                   value="{{val_gemini}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold form-label" for="groq_key">{{#str}} groq_apikey, block_playerhud {{/str}}</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa fa-bolt" aria-hidden="true"></i></span>
+                            <input type="password" class="form-control" name="groq_key" id="groq_key"
+                                   value="{{val_groq}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}">
+                        </div>
+                    </div>
+
+                    <hr>
+                    <button type="submit" class="btn btn-success w-100 shadow-sm">
+                        <i class="fa fa-save" aria-hidden="true"></i> {{#str}} save_keys, block_playerhud {{/str}}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{{#js}}
+require(['core/copy_to_clipboard']);
+{{/js}}
