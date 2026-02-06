@@ -520,3 +520,4 @@ $string['privacy:metadata:rpg:classid'] = 'The chosen character class.';
 $string['privacy:metadata:rpg:karma'] = 'The players current Karma (morality) value.';
 $string['privacy:metadata:rpg:nodes'] = 'History of visited scenes and choices made.';
 $string['privacy:metadata:rpg:chapters'] = 'List of completed chapters.';
+$string['drop_unlimited_xp_warning'] = '<strong>Note:</strong> Infinite drops do not grant XP. Even if this item has an XP value, <strong>this specific drop will award 0 XP</strong>.';

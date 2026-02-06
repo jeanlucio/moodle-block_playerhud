@@ -151,8 +151,15 @@ class collect {
             $newinv->source = 'map';
             $DB->insert_record('block_playerhud_inventory', $newinv);
 
+            // --- LÓGICA DE XP PROTEGIDA ---
             $xpgain = 0;
-            if ($item->xp > 0) {
+            
+            // Regra de Ouro: Se o drop for infinito (maxusage == 0), o XP ganho é FORÇADO a 0.
+            // Isso permite que o item tenha 100 XP (para drops finitos/quests), 
+            // mas não quebre o jogo em drops infinitos.
+            $is_infinite_drop = ((int)$drop->maxusage === 0);
+
+            if ($item->xp > 0 && !$is_infinite_drop) {
                 $xpgain = $item->xp;
                 $player = \block_playerhud\game::get_player($instanceid, $userid);
                 $newxp = $player->currentxp + $xpgain;

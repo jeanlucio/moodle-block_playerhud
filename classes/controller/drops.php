@@ -394,13 +394,17 @@ class drops {
 
     private function save_drop($data) {
         global $DB, $USER;
+        
         $record = new \stdClass();
         $record->blockinstanceid = $data->instanceid; 
         $record->itemid          = $data->itemid;
         $record->name            = $data->name;
         $record->respawntime     = $data->respawntime;
         $record->timemodified    = time();
-        $record->maxusage        = (!empty($data->unlimited)) ? 0 : max(1, (int)$data->maxusage);
+        
+        // Lógica de Ilimitado
+        $record->maxusage = (!empty($data->unlimited)) ? 0 : max(1, (int)$data->maxusage);
+
         if (!empty($data->id)) {
             $record->id = $data->id;
             $DB->update_record('block_playerhud_drops', $record);
