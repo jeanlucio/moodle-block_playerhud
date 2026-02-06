@@ -1,129 +1,26 @@
-/* Card arredondado e bonito */
-.block_playerhud .card {
-    border-radius: 12px;
+/**
+ * PlayerHUD Styles - Refactored & Accessible
+ */
+
+/* --- GLOBAL UTILS --- */
+.ph-shadow-sm {
+    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important;
 }
 
-/* Ajuste da foto do usuário */
+.ph-text-truncate-100 {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- BLOCK SIDEBAR (Contexto: .block_playerhud) --- */
+
 .block_playerhud .userpicture {
     border: 3px solid #fff;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* Estilos para o Gerador de Shortcode (Manage Drops) */
-.block_playerhud .ph-gen-preview-card {
-    padding: 15px;
-    border-radius: 8px;
-    display: inline-flex;
-    align-items: center;
-    gap: 15px;
-    border: 2px dashed #0f6cbf;
-    background-color: #f8f9fa;
-    text-align: left;
-}
-
-.block_playerhud .ph-gen-preview-wrapper-img {
-    cursor: pointer;
-    filter: drop-shadow(0 4px 2px rgba(0,0,0,0.1));
-    text-align: center;
-}
-
-.block_playerhud .ph-gen-img-sm {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-}
-
-.block_playerhud .ph-gen-img-lg {
-    width: 50px;
-    height: 50px;
-    object-fit: contain;
-}
-
-.block_playerhud .ph-gen-emoji-sm {
-    font-size: 30px;
-    line-height: 1;
-}
-
-.block_playerhud .ph-gen-emoji-lg {
-    font-size: 40px;
-    line-height: 1;
-}
-
-.block_playerhud .ph-text-link {
-    text-decoration: underline !important;
-}
-
-/* Ajuste para cards compactos (usados no Filtro/Shortcode) para remover espaço extra */
-.ph-card-compact {
-    min-height: 0 !important;
-    height: auto !important;
-}
-
-/* --- Ajustes para o Gerador de Shortcode (Manage Drops) --- */
-
-/* Nota: Usamos #codeGenModal em vez de .block_playerhud 
-   porque o modal é movido para o body via JS.
-*/
-
-#codeGenModal .ph-gen-preview-real-card {
-    width: 160px !important; /* Força a largura do card do filtro */
-    background-color: #fff;
-    border: 1px solid rgba(0,0,0,.125);
-    border-radius: 0.25rem;
-    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
-    padding: 1rem !important;
-    margin: 0 auto;
-    text-align: center;
-    position: relative;
-    box-sizing: border-box; /* Garante que o padding não aumente a largura */
-}
-
-/* Garante que a imagem nunca estoure o container */
-#codeGenModal .ph-gen-preview-real-card img {
-    max-width: 100% !important;
-    height: auto !important;
-    max-height: 60px; /* Altura máxima da área de ícone */
-    object-fit: contain;
-}
-
-/* Estilos para o modo 'Apenas Imagem' */
-#codeGenModal .ph-gen-preview-wrapper-img {
-    cursor: pointer;
-    filter: drop-shadow(0 4px 2px rgba(0,0,0,0.1));
-    text-align: center;
-    display: inline-block; /* Centraliza corretamente */
-}
-
-/* Estilos auxiliares para tamanhos */
-#codeGenModal .ph-gen-img-sm {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-}
-
-#codeGenModal .ph-gen-img-lg {
-    width: 50px;
-    height: 50px;
-    object-fit: contain;
-}
-
-#codeGenModal .ph-gen-emoji-sm {
-    font-size: 30px;
-    line-height: 1;
-}
-
-#codeGenModal .ph-gen-emoji-lg {
-    font-size: 40px;
-    line-height: 1;
-}
-
-#codeGenModal .ph-text-link {
-    text-decoration: underline !important;
-}
-
-/* --- Sidebar & Mini Stash (Unificado para Widget e Bloco) --- */
-
-/* Ajuste da foto para ser REALMENTE maior (Apenas na sidebar do bloco) */
 .block_playerhud .ph-sidebar-avatar img {
     width: 110px !important;
     height: 110px !important;
@@ -133,46 +30,222 @@
     border-radius: 50%;
 }
 
-/* Container dos itens (Flexbox centralizado) - Suporte para Widget e Sidebar */
-.ph-sidebar-stash, .ph-widget-stash {
-    flex-wrap: wrap; 
-    justify-content: center;
-    gap: 4px !important; /* Gap pequeno para manter compacto */
+.block_playerhud .ph-progress-container {
+    height: 10px;
+    background-color: rgba(0,0,0,0.05);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 1rem;
 }
 
-/* O item individual (quadradinho) - Global */
+.block_playerhud .ph-sidebar-stash {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+}
+
+/* --- WIDGET DO FILTRO (Contexto Global) --- */
+
+/* Container Principal do Widget */
+.playerhud-widget-container {
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    position: relative;
+    background-color: #fff;
+    border: 1px solid rgba(0,0,0,.125);
+    min-height: 100px;
+    /* Garante que a borda padrão exista, será sobrescrita pelas cores abaixo */
+    border-left: 5px solid #6c757d; 
+    transition: border-color 0.3s ease;
+}
+
+/* Coluna Esquerda (Avatar) */
+.ph-widget-left {
+    min-width: 110px;
+    width: 110px;
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #dee2e6;
+    padding: 1rem;
+}
+
+.ph-widget-avatar img {
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    width: 75px;
+    height: 75px;
+}
+
+/* Coluna Central (Stats) */
+.ph-widget-center {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1rem 1.5rem;
+    min-width: 0;
+}
+
+/* Coluna Direita (Botões) */
+.ph-widget-right {
+    min-width: 80px;
+    width: 80px;
+    background-color: #f8f9fa;
+    border-left: 1px solid #dee2e6;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+
+.ph-widget-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 10px !important;
+    /* Usamos !important para garantir que o Bootstrap não interfira */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    border: none; /* Remove bordas padrão de botão */
+}
+
+.ph-widget-btn-icon {
+    font-size: 1.4rem;
+    line-height: 1; /* Mantém a altura da linha compacta */
+    display: inline-block;   
+}
+
+/* --- ITENS (Compartilhado) --- */
+
+.ph-widget-stash {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 34px;
+    margin-top: 0.5rem;
+}
+
 .ph-mini-item {
-    width: 40px; 
-    height: 40px;
-    background: #f8f9fa;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    background: #fff;
     border: 1px solid #dee2e6;
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: transform 0.1s ease, border-color 0.1s ease, box-shadow 0.1s ease;
     overflow: hidden;
-    flex-shrink: 0;
     position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: transform 0.1s ease, border-color 0.1s ease;
 }
 
-/* Hover e Foco (Acessibilidade e Visual) */
 .ph-mini-item:hover, .ph-mini-item:focus {
-    transform: translateY(-3px) scale(1.05); /* Efeito "Pop" */
-    border-color: #0f6cbf !important; /* Azul Moodle */
-    box-shadow: 0 4px 8px rgba(15, 108, 191, 0.25) !important;
-    outline: none;
+    transform: translateY(-2px) scale(1.05);
+    border-color: #0f6cbf;
     z-index: 10;
 }
 
 .ph-mini-item img {
-    max-width: 100%;
-    max-height: 100%;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
 }
 
-.ph-mini-emoji {
-    font-size: 1.4rem;
+.ph-mini-item .ph-emoji {
+    font-size: 1.2rem;
     line-height: 1;
+}
+
+/* --- CORES E TIERS (CORRIGIDO E OTIMIZADO) --- */
+
+/* Barra de Progresso container */
+.playerhud-widget-container .ph-progress-container {
+    height: 12px;
+    background-color: #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 5px;
+    width: 100%;
+}
+
+.ph-progress-bar {
+    border-radius: 6px;
+    transition: width 0.6s ease;
+    height: 100%;
+    /* Remove degradês do Bootstrap para garantir a cor sólida */
+    background-image: none !important; 
+}
+
+/* TIER COLORS
+   Nota: Aplicamos !important para garantir sobreposição ao tema Boost 
+*/
+
+/* Tier 1 - Cinza/Padrão */
+.ph-lvl-tier-1 .progress-bar, 
+.progress-bar.ph-lvl-tier-1,
+.badge.ph-lvl-tier-1 { 
+    background-color: #6c757d !important; 
+    color: #fff !important; 
+}
+/* Seletor específico para garantir a borda lateral */
+.playerhud-widget-container.ph-lvl-tier-1 { border-left-color: #6c757d !important; }
+
+
+/* Tier 2 - Verde */
+.ph-lvl-tier-2 .progress-bar, 
+.progress-bar.ph-lvl-tier-2,
+.badge.ph-lvl-tier-2 { 
+    background-color: #208337 !important; 
+    color: #fff !important; 
+}
+.playerhud-widget-container.ph-lvl-tier-2 { border-left-color: #208337 !important; }
+
+
+/* Tier 3 - Azul */
+.ph-lvl-tier-3 .progress-bar, 
+.progress-bar.ph-lvl-tier-3,
+.badge.ph-lvl-tier-3 { 
+    background-color: #0b55c4 !important; 
+    color: #fff !important; 
+}
+.playerhud-widget-container.ph-lvl-tier-3 { border-left-color: #0b55c4 !important; }
+
+
+/* Tier 4 - Roxo */
+.ph-lvl-tier-4 .progress-bar, 
+.progress-bar.ph-lvl-tier-4,
+.badge.ph-lvl-tier-4 { 
+    background-color: #6f42c1 !important; 
+    color: #fff !important; 
+}
+.playerhud-widget-container.ph-lvl-tier-4 { border-left-color: #6f42c1 !important; }
+
+
+/* Tier 5 - Dourado/Amarelo */
+.ph-lvl-tier-5 .progress-bar, 
+.progress-bar.ph-lvl-tier-5,
+.badge.ph-lvl-tier-5 { 
+    /* Remove a cor sólida amarela e aplica um gradiente moderno */
+    background: linear-gradient(45deg, #0d6efd, #6610f2) !important; 
+    color: #fff !important; 
+    border: 1px solid rgba(255,255,255,0.2); /* Sutil borda para destacar */
+}
+
+/* A borda lateral fica com a cor predominante do gradiente (Azul) */
+.playerhud-widget-container.ph-lvl-tier-5 { 
+    border-left-color: #0d6efd !important; 
 }

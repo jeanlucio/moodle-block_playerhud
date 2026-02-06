@@ -130,29 +130,34 @@ define(['jquery', 'core/notification'], function($, Notification) {
         containers.each(function() {
             var container = $(this);
 
-            // A. Atualiza a barra de progresso
+            // CORREÇÃO: Só aplica a classe no container PAI se for o Widget (para a borda colorida).
+            // A Sidebar não deve receber essa classe no pai para evitar que o fundo fique todo colorido.
+            if (container.hasClass('playerhud-widget-container')) {
+                container.removeClass(function(index, className) {
+                    return (className.match(/(^|\s)ph-lvl-tier-\S+/g) || []).join(' ');
+                }).addClass(data.level_class);
+            }
+
+            // A. Atualiza a barra de progresso interna (Isso vale para ambos)
             var progressBar = container.find('.progress-bar');
             progressBar.css('width', data.progress + '%').attr('aria-valuenow', data.progress);
 
-            // Atualiza a cor da barra se o nível mudou
-            // Remove classes antigas de tier (ph-lvl-tier-X) e adiciona a nova
+            // Remove classes antigas e adiciona a nova na BARRA
             progressBar.removeClass(function(index, className) {
                 return (className.match(/(^|\s)ph-lvl-tier-\S+/g) || []).join(' ');
             }).addClass(data.level_class);
 
-            // B. Atualiza o Badge de Nível (Texto e Cor)
+            // B. Atualiza o Badge de Nível (Isso vale para ambos)
             var levelBadge = container.find('.badge').filter(function() {
-                // Filtra para pegar apenas badges que parecem ser de nível (contém 'Level', 'Nível' ou classe tier)
                 return $(this).text().match(/(Level|Nível)/) || $(this).attr('class').match(/ph-lvl-tier-/);
             });
 
             if (levelBadge.length) {
-                // Atualiza cor do badge
                 levelBadge.removeClass(function(index, className) {
                     return (className.match(/(^|\s)ph-lvl-tier-\S+/g) || []).join(' ');
                 }).addClass(data.level_class);
 
-                // Atualiza texto do nível "Nível 5/10"
+                // Atualiza texto do nível
                 var oldTxt = levelBadge.text();
                 var label = (oldTxt.indexOf('Nível') > -1) ? 'Nível' : 'Level';
                 var lvlString = data.level;
@@ -162,26 +167,18 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 levelBadge.text(label + ' ' + lvlString);
             }
 
-            // C. Atualiza Texto de XP e Adiciona Troféu
-            // Procura o elemento de texto que contém "XP"
+        // C. Atualiza Texto de XP e Adiciona Troféu
             container.find('span, div, strong').each(function() {
                 var el = $(this);
-                // Verifica nós de texto diretos para evitar alterar filhos
                 if (el.children().length === 0 && el.text().indexOf('XP') > -1) {
                     var xpString = data.currentxp;
-
-                    // Formato: Atual / Total
                     if (typeof data.xp_target !== 'undefined' && data.xp_target > 0) {
                         xpString += ' / ' + data.xp_target;
                     }
-
                     xpString += ' XP';
-
-                    // Adiciona Troféu se ganhou
                     if (data.is_win) {
                         xpString += ' 🏆';
                     }
-
                     el.text(xpString);
                 }
             });
