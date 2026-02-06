@@ -737,3 +737,41 @@
     font-size: 1.2rem;
     line-height: 1;
 }
+/* --- REFATORAÇÃO ETAPA 4: Gerenciamento de Drops --- */
+
+/* Imagem de cabeçalho na gestão de drops */
+.ph-header-img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    margin-right: 15px;
+}
+
+.ph-header-emoji {
+    font-size: 40px;
+    margin-right: 15px;
+    line-height: 1;
+}
+
+/* Colunas Específicas de Drop */
+.ph-col-qty { width: 130px; }
+.ph-col-time { width: 150px; }
+.ph-col-gen { width: 180px; }
+
+/* --- REFATORAÇÃO ETAPA 5: Coleção e Sidebar --- */
+
+/* Estado Vazio (Ícone gigante) */
+.ph-empty-state-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+}
+
+/* Cursor Pointer (Substitui style="cursor: pointer") */
+.ph-cursor-pointer {
+    cursor: pointer;
+}
+
+/* Sidebar Stash Wrapper (Garante comportamento correto quando vazio) */
+.ph-stash-wrapper.d-none {
+    display: none !important;
+}

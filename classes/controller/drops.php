@@ -9,38 +9,44 @@ defined('MOODLE_INTERNAL') || die();
 
 class drops {
 
-    private function get_sort_link($colname, $label, $currentsort, $currentdir, $baseurl) {
-        $icon = '<i class="fa fa-sort text-muted" style="opacity:0.3; margin-left:5px;" aria-hidden="true"></i>';
+    /**
+     * Helper para gerar dados de ordenação (HTML-free).
+     * Substitui o antigo get_sort_link.
+     */
+    private function get_sort_data($colname, $label, $currentsort, $currentdir, $baseurl) {
+        $icon = 'fa-sort text-muted opacity-25'; // Classe padrão do ícone (inativo)
         $nextdir = 'ASC';
 
         if ($currentsort == $colname) {
             if ($currentdir == 'ASC') {
-                $icon = '<i class="fa fa-sort-asc text-primary" style="margin-left:5px;" aria-hidden="true"></i>';
+                $icon = 'fa-sort-asc text-primary';
                 $nextdir = 'DESC';
             } else {
-                $icon = '<i class="fa fa-sort-desc text-primary" style="margin-left:5px;" aria-hidden="true"></i>';
+                $icon = 'fa-sort-desc text-primary';
                 $nextdir = 'ASC';
             }
         }
         
-        $url = new moodle_url($baseurl, ['sort' => $colname, 'dir' => $nextdir]);
-        return html_writer::link($url, $label . $icon, [
-            'class' => 'text-dark text-decoration-none fw-bold d-flex align-items-center'
-        ]);
+        return [
+            'url' => (new moodle_url($baseurl, ['sort' => $colname, 'dir' => $nextdir]))->out(false),
+            'label' => $label,
+            'icon_class' => $icon
+        ];
     }
 
     public function view_manage_page() {
         global $DB, $PAGE, $OUTPUT, $COURSE, $CFG;
 
-        // ... (Parâmetros e Verificações de segurança mantidos) ...
+        // 1. Parâmetros
         $instanceid = required_param('instanceid', PARAM_INT);
         $courseid   = required_param('id', PARAM_INT);
         $itemid     = required_param('itemid', PARAM_INT);
         $action     = optional_param('action', '', PARAM_ALPHANUMEXT);
         $dropid     = optional_param('dropid', 0, PARAM_INT);
-        $sort = optional_param('sort', 'id', PARAM_ALPHA);
-        $dir  = optional_param('dir', 'DESC', PARAM_ALPHA);
+        $sort       = optional_param('sort', 'id', PARAM_ALPHA);
+        $dir        = optional_param('dir', 'DESC', PARAM_ALPHA);
 
+        // 2. Segurança
         require_login($courseid);
         $context = \context_block::instance($instanceid);
         $coursecontext = \context_course::instance($courseid); 
@@ -57,7 +63,7 @@ class drops {
         $PAGE->set_heading($COURSE->fullname);
         $PAGE->set_pagelayout('incourse'); 
 
-        // --- AÇÕES (Delete) ---
+        // 3. Ações (Delete)
         if ($action === 'delete' && $dropid && confirm_sesskey()) {
             $DB->delete_records('block_playerhud_drops', ['id' => $dropid]);
             redirect($baseurl, get_string('deleted', 'block_playerhud'), \core\output\notification::NOTIFY_SUCCESS);
@@ -74,7 +80,7 @@ class drops {
             }
         }
 
-        // --- PREPARAÇÃO DE DADOS ---
+        // 4. Preparação de Dados
         $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], '*', MUST_EXIST);
         $drops = $DB->get_records('block_playerhud_drops', ['itemid' => $itemid], "$sort $dir");
 
@@ -98,11 +104,11 @@ class drops {
                     'respawntime' => $drop->respawntime,
                     'respawntime_fmt' => format_time($drop->respawntime),
                     'display_code' => !empty($drop->code) ? $drop->code : $drop->id,
-                    'confirm_msg' => s(get_string('drops_confirm_delete', 'block_playerhud')),
+                    'confirm_msg' => get_string('drops_confirm_delete', 'block_playerhud'),
                     'url_edit' => $editurl->out(false),
                     'url_delete' => $deleteurl->out(false),
                     
-                    // Strings internas do loop
+                    // Strings internas para o loop
                     'str_infinite' => get_string('infinite', 'block_playerhud'),
                     'str_immediate' => get_string('drops_immediate', 'block_playerhud'),
                     'str_gen_title' => get_string('gen_title', 'block_playerhud'),
@@ -117,6 +123,13 @@ class drops {
         $total_drops = count($drops);
         $summary_text = get_string('drops_summary', 'block_playerhud', $total_drops);
 
+        // --- NOVO: Cabeçalhos de Ordenação (Dados estruturados) ---
+        $headers = [
+            'name' => $this->get_sort_data('name', get_string('drop_name_label', 'block_playerhud'), $sort, $dir, $baseurl),
+            'qty'  => $this->get_sort_data('maxusage', get_string('drop_max_qty', 'block_playerhud'), $sort, $dir, $baseurl),
+            'time' => $this->get_sort_data('respawntime', get_string('drop_interval', 'block_playerhud'), $sort, $dir, $baseurl),
+        ];
+
         $template_data = [
             'base_url' => $baseurl->out(false),
             'sesskey' => sesskey(),
@@ -127,6 +140,7 @@ class drops {
             'url_new_drop' => (new moodle_url('/blocks/playerhud/edit_drop.php', ['instanceid' => $instanceid, 'courseid' => $courseid, 'itemid' => $itemid]))->out(false),
             'str_new_drop' => get_string('drops_btn_new', 'block_playerhud'),
             
+            // Dados da Mídia (Header da Página)
             'is_image' => $mediadata['is_image'],
             'media_url' => $mediadata['is_image'] ? $mediadata['url'] : '',
             'media_content' => $mediadata['is_image'] ? '' : strip_tags($mediadata['content']),
@@ -135,10 +149,8 @@ class drops {
             'item_name' => format_string($item->name),
             'summary_text' => $summary_text,
             
-            // Sorting Links
-            'link_sort_name' => $this->get_sort_link_html('name', get_string('drop_name_label', 'block_playerhud'), $sort, $dir, $baseurl),
-            'link_sort_qty' => $this->get_sort_link_html('maxusage', get_string('drop_max_qty', 'block_playerhud'), $sort, $dir, $baseurl),
-            'link_sort_time' => $this->get_sort_link_html('respawntime', get_string('drop_interval', 'block_playerhud'), $sort, $dir, $baseurl),
+            // Passamos os headers estruturados para o Template
+            'headers' => $headers,
             
             'drops' => $drops_data,
             'str_col_gen' => get_string('gen_title', 'block_playerhud'),
@@ -157,7 +169,7 @@ class drops {
                 'name' => format_string($item->name),
                 'isImage' => $mediadata['is_image'],
                 'url' => $mediadata['is_image'] ? $mediadata['url'] : '',
-                'content' => $mediadata['is_image'] ? '' : $mediadata['content'],
+                'content' => $mediadata['is_image'] ? '' : strip_tags($mediadata['content']),
                 'xp' => "+{$item->xp} XP",
             ],
             'strings' => [
@@ -181,42 +193,28 @@ class drops {
         return $output;
     }
 
-    // Helper de Sort (precisa estar na classe drops)
-    private function get_sort_link_html($colname, $label, $currentsort, $currentdir, $baseurl) {
-        $icon = '<i class="fa fa-sort text-muted ms-1 opacity-25" aria-hidden="true"></i>';
-        $nextdir = 'ASC';
-        if ($currentsort == $colname) {
-            if ($currentdir == 'ASC') {
-                $icon = '<i class="fa fa-sort-asc text-primary ms-1" aria-hidden="true"></i>';
-                $nextdir = 'DESC';
-            } else {
-                $icon = '<i class="fa fa-sort-desc text-primary ms-1" aria-hidden="true"></i>';
-                $nextdir = 'ASC';
-            }
-        }
-        $url = new moodle_url($baseurl, ['sort' => $colname, 'dir' => $nextdir]);
-        return '<a href="' . $url->out(false) . '" class="text-dark text-decoration-none fw-bold d-flex align-items-center">' . 
-               $label . $icon . '</a>';
-    }
-
-
     public function handle_edit_form() {
         global $DB, $PAGE, $OUTPUT, $COURSE, $CFG;
         require_once($CFG->dirroot . '/blocks/playerhud/classes/form/edit_drop_form.php');
+        
         $instanceid = required_param('instanceid', PARAM_INT);
         $courseid   = required_param('courseid', PARAM_INT);
         $itemid     = required_param('itemid', PARAM_INT);
         $dropid     = optional_param('dropid', 0, PARAM_INT);
+        
         require_login($courseid);
         $context = \context_block::instance($instanceid);
         require_capability('block/playerhud:manage', $context);
+        
         $url = new moodle_url('/blocks/playerhud/edit_drop.php', ['instanceid' => $instanceid, 'courseid' => $courseid, 'itemid' => $itemid]);
         $PAGE->set_url($url);
         $PAGE->set_context($context);
         $PAGE->set_heading($COURSE->fullname);
         $PAGE->set_pagelayout('standard');
+        
         $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], '*', MUST_EXIST);
         $mform = new \block_playerhud\form\edit_drop_form(null, ['itemname' => $item->name]);
+        
         if ($dropid && !$mform->is_submitted()) {
             $drop = $DB->get_record('block_playerhud_drops', ['id' => $dropid]);
             $data = (array)$drop;
@@ -228,6 +226,7 @@ class drops {
         } else if (!$mform->is_submitted()) {
             $mform->set_data(['instanceid' => $instanceid, 'courseid' => $courseid, 'itemid' => $itemid]);
         }
+        
         if ($mform->is_cancelled()) {
             redirect(new moodle_url('/blocks/playerhud/manage_drops.php', ['instanceid' => $instanceid, 'id' => $courseid, 'itemid' => $itemid]));
         } else if ($data = $mform->get_data()) {
@@ -238,6 +237,7 @@ class drops {
                 \core\output\notification::NOTIFY_SUCCESS
             );
         }
+        
         $output = $OUTPUT->header();
         $output .= $OUTPUT->heading(get_string('drop_new_title', 'block_playerhud'));
         $output .= $mform->render();

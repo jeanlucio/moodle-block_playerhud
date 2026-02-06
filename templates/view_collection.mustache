@@ -1,10 +1,10 @@
 {{#has_items}}
 <div class="playerhud-inventory-grid animate__animated animate__fadeIn">
     {{#items}}
-    <div class="playerhud-item-card card {{card_class}} ph-item-trigger" 
+    {{! CORREÇÃO: Adicionada classe ph-cursor-pointer e removido style="cursor:..." }}
+    <div class="playerhud-item-card card {{card_class}} ph-item-trigger ph-cursor-pointer" 
          role="button" 
          tabindex="{{tabindex}}"
-         style="cursor: {{cursor}};"
          data-id="{{id}}"
          data-name="{{name}}"
          data-xp="{{xp_text}}"
@@ -12,7 +12,6 @@
          data-date="{{date_str}}"
          data-image="{{data_image_payload}}" 
          data-isimage="{{is_image_bool}}"> 
-         {{! A linha acima corrige o modal: agora 'data-image' sempre tem valor (URL ou Emoji) }}
 
         {{#badge_new}}
             <span class="ph-new-badge">{{#str}} new_item_badge, block_playerhud {{/str}}</span>
@@ -47,7 +46,6 @@
             </div>
 
             <div class="text-center w-100 mb-3">
-                {{! CORREÇÃO 3: Substituímos 'text-truncate' por 'ph-card-title' }}
                 <div class="fw-bold ph-card-title mb-1 ph-text-md" title="{{name}}">{{name}}</div>
                 <span class="badge bg-primary ph-xp-badge mb-2">{{xp_text}}</span>
                 
@@ -73,7 +71,8 @@
 
 {{^has_items}}
 <div class="alert alert-light border text-center py-5">
-    <div style="font-size: 3rem; opacity: 0.3;" aria-hidden="true">📭</div>
+    {{! CORREÇÃO: style inline removido, classe ph-empty-state-icon adicionada }}
+    <div class="ph-empty-state-icon" aria-hidden="true">📭</div>
     <p class="mb-0 text-muted">{{#str}} empty, block_playerhud {{/str}}</p>
 </div>
 {{/has_items}}

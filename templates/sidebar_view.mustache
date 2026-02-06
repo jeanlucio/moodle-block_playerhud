@@ -29,7 +29,8 @@
     </div>
 
     {{! Mini Stash Section }}
-    <div class="mb-3 text-start ph-stash-wrapper" {{^has_items}}style="display:none;"{{/has_items}}>
+    {{! CORREÇÃO: style="display:none;" substituído por classe d-none condicional }}
+    <div class="mb-3 text-start ph-stash-wrapper {{^has_items}}d-none{{/has_items}}">
         <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">
             {{#str}} latest_items, block_playerhud {{/str}}
         </small>

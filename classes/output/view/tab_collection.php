@@ -81,7 +81,6 @@ class tab_collection implements renderable, templatable {
                     
                     // CORREÇÃO 2: Acessibilidade. Sempre navegável ('0'), mesmo se não coletado.
                     'tabindex' => '0', 
-                    'cursor' => 'pointer', // Sempre clicável para ver detalhes
                     
                     'badge_new' => false,
                     'badge_archived' => false,
