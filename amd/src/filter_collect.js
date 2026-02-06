@@ -2,12 +2,12 @@
 define(['jquery', 'core/notification'], function($, Notification) {
 
     /**
-     * Restaura o estado do botão em caso de erro ou necessidade.
+     * Restores the button state in case of error or completion.
      *
-     * @param {Object} btn O botão jQuery (trigger).
-     * @param {string} html O HTML original do botão.
-     * @param {string} mode O modo de exibição ('card', 'text', 'image').
-     * @param {string} width A largura original do botão (para modo card).
+     * @param {Object} btn The jQuery button element.
+     * @param {string} html The original HTML content of the button.
+     * @param {string} mode The display mode ('card', 'text', 'image').
+     * @param {string} width The original width of the button (for card mode).
      */
     var restaurar = function(btn, html, mode, width) {
         btn.html(html).removeClass('disabled');
@@ -19,15 +19,15 @@ define(['jquery', 'core/notification'], function($, Notification) {
     };
 
     /**
-     * Manipula o estado visual do modo Cartão (Card).
+     * Handles the visual state for Card Mode.
      *
-     * @param {Object} trigger O elemento jQuery clicado.
-     * @param {Object} card O elemento jQuery do cartão pai.
-     * @param {boolean} hasTimer Se existe cooldown ativo.
-     * @param {boolean} isLimit Se o limite de coleta foi atingido.
-     * @param {Object} resp A resposta do servidor contendo dados do cooldown.
-     * @param {Object} strings As strings de idioma traduzidas.
-     * @param {string} originalHtml O HTML original do botão.
+     * @param {Object} trigger The clicked jQuery element.
+     * @param {Object} card The parent card jQuery element.
+     * @param {boolean} hasTimer Whether the item is in cooldown.
+     * @param {boolean} isLimit Whether the collection limit is reached.
+     * @param {Object} resp The server response object.
+     * @param {Object} strings The language strings object.
+     * @param {string} originalHtml The original HTML of the trigger.
      */
     var handleCardMode = function(trigger, card, hasTimer, isLimit, resp, strings, originalHtml) {
         if (hasTimer) {
@@ -43,10 +43,10 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 .addClass('btn-success disabled')
                 .css('cursor', 'default').removeAttr('href')
                 .html('<i class="fa fa-check"></i> ' + strings.collected);
-            // Foca na imagem (trigger de detalhes) pois o botão morreu.
+            // Focus on the image detail trigger since button is disabled.
             card.find('.ph-item-details-trigger').focus();
         } else {
-            // Sucesso Rápido (Feedback verde).
+            // Quick success feedback.
             trigger.removeClass('btn-primary disabled').addClass('btn-success')
                 .html('<i class="fa fa-check"></i> ' + strings.collected).css('width', '');
             setTimeout(function() {
@@ -58,96 +58,107 @@ define(['jquery', 'core/notification'], function($, Notification) {
     };
 
     /**
-     * Manipula o estado visual dos modos Texto e Imagem.
+     * Handles the visual state for Text and Image modes.
      *
-     * @param {Object} trigger O elemento jQuery clicado.
-     * @param {string} mode O modo de exibição ('text' ou 'image').
-     * @param {boolean} hasTimer Se existe cooldown ativo.
-     * @param {boolean} isLimit Se o limite de coleta foi atingido.
-     * @param {Object} resp A resposta do servidor.
+     * @param {Object} trigger The clicked jQuery element.
+     * @param {string} mode The display mode ('text' or 'image').
+     * @param {boolean} hasTimer Whether the item is in cooldown.
+     * @param {boolean} isLimit Whether the collection limit is reached.
+     * @param {Object} resp The server response object.
      */
     var handleTextImageMode = function(trigger, mode, hasTimer, isLimit, resp) {
-        // Se entrou em cooldown ou limite, transformamos em "Visualizador de Detalhes".
         if (hasTimer || isLimit) {
-            // Remove href e classes de ação.
-            trigger.removeAttr('href').removeClass('ph-action-collect');
-            trigger.addClass('ph-item-details-trigger'); // Agora abre modal!
-            trigger.css('opacity', '1').css('pointer-events', 'auto').css('cursor', 'pointer');
 
             if (mode === 'text') {
+                // --- TEXT MODE ---
+                trigger.removeAttr('href').removeClass('ph-action-collect');
+                trigger.addClass('ph-item-details-trigger');
+                trigger.css('opacity', '1').css('pointer-events', 'auto').css('cursor', 'pointer');
+
                 if (isLimit) {
                     trigger.addClass('text-success')
                         .html('<i class="fa fa-check"></i> ' + trigger.text());
                 } else {
-                    // Cooldown Texto: Nome + Timer.
+                    // Text with Timer.
                     trigger.addClass('text-muted')
                         .html('⏳ ' + trigger.text() +
                         ' <small class="ph-timer" data-deadline="' +
                         resp.cooldown_deadline + '">...</small>');
                 }
+
             } else {
-                // Image Mode.
+                // --- IMAGE MODE ---
+                // Trigger is the <a> overlay. Container holds image and badges.
+                var container = trigger.closest('.ph-drop-image-container');
+                var imgWrapper = container.find('> div').first();
+
+                // 1. Remove action link.
+                trigger.remove();
+
+                // 2. Transform container into details trigger.
+                container.addClass('ph-item-details-trigger')
+                         .attr('tabindex', '0')
+                         .attr('role', 'button')
+                         .css('cursor', 'pointer');
+
+                // 3. Apply visual states via CSS Classes.
                 if (isLimit) {
-                    // Adiciona badge de check.
-                    trigger.css('position', 'relative');
-                    trigger.append('<span class="badge bg-success rounded-circle" ' +
-                        'style="position:absolute; bottom:-5px; right:-5px; font-size:0.6rem;">' +
+                    imgWrapper.addClass('ph-state-grayscale');
+                    // Badge Check.
+                    container.append('<span class="badge bg-success rounded-circle ph-badge-bottom-right">' +
                         '<i class="fa fa-check"></i></span>');
-                    trigger.find('img, span').css('filter', 'grayscale(100%)').css('opacity', '0.6');
                 } else {
-                    // Adiciona timer embaixo.
-                    trigger.css('position', 'relative');
-                    trigger.find('img, span').css('opacity', '0.6');
-                    var badgeStyle = 'position:absolute; bottom:-10px; left:50%; ' +
-                                     'transform:translateX(-50%); font-size:0.6rem;';
-                    trigger.append('<div class="ph-timer badge bg-light text-dark border shadow-sm" ' +
-                        'style="' + badgeStyle + '" ' +
-                        'data-deadline="' + resp.cooldown_deadline + '">...</div>');
+                    imgWrapper.addClass('ph-state-dimmed');
+                    // Badge Timer (With data-no-label to hide text).
+                    container.append('<div class="ph-timer badge bg-light text-dark border shadow-sm ph-badge-bottom-center" ' +
+                        'data-deadline="' + resp.cooldown_deadline + '" data-no-label="1">...</div>');
                 }
             }
+
         } else {
-            // Coleta rápida (sem cooldown): Feedback visual breve.
-            trigger.css('opacity', '1').css('pointer-events', 'auto');
-            // Piscar verde.
-            var oldColor = trigger.css('color');
-            trigger.css('color', '#28a745');
-            setTimeout(function() {
-                trigger.css('color', oldColor);
-            }, 1000);
+            // Visual feedback for successful collection without cooldown.
+            if (mode === 'text') {
+                trigger.css('opacity', '1').css('pointer-events', 'auto');
+                var oldColor = trigger.css('color');
+                trigger.css('color', '#28a745');
+                setTimeout(function() {
+                    trigger.css('color', oldColor);
+                }, 1000);
+            } else {
+                // Image mode: just remove loading opacity.
+                trigger.css('opacity', '1').css('pointer-events', 'auto');
+            }
         }
     };
 
     /**
-     * Atualiza o HUD principal (Widget) e o Bloco Lateral (Sidebar).
+     * Updates the main Widget and Sidebar HUDs.
      *
-     * @param {Object} data Dados gerais do jogo (XP, Nível, Progresso, Classes).
-     * @param {Object|null} itemData Dados do item recém coletado (opcional).
+     * @param {Object} data General game data (XP, Level, Progress).
+     * @param {Object|null} itemData Data of the collected item (optional).
      */
     var updateHud = function(data, itemData) {
-        // --- 1. Atualiza Barras de Progresso, Textos e Cores ---
         var containers = $('.playerhud-widget-container, .block_playerhud_sidebar');
 
         containers.each(function() {
             var container = $(this);
 
-            // CORREÇÃO: Só aplica a classe no container PAI se for o Widget (para a borda colorida).
-            // A Sidebar não deve receber essa classe no pai para evitar que o fundo fique todo colorido.
+            // Update parent class only for Widget (for left border color).
+            // Sidebar should not receive this class on parent to avoid full background color.
             if (container.hasClass('playerhud-widget-container')) {
                 container.removeClass(function(index, className) {
                     return (className.match(/(^|\s)ph-lvl-tier-\S+/g) || []).join(' ');
                 }).addClass(data.level_class);
             }
 
-            // A. Atualiza a barra de progresso interna (Isso vale para ambos)
+            // A. Update progress bar.
             var progressBar = container.find('.progress-bar');
             progressBar.css('width', data.progress + '%').attr('aria-valuenow', data.progress);
-
-            // Remove classes antigas e adiciona a nova na BARRA
             progressBar.removeClass(function(index, className) {
                 return (className.match(/(^|\s)ph-lvl-tier-\S+/g) || []).join(' ');
             }).addClass(data.level_class);
 
-            // B. Atualiza o Badge de Nível (Isso vale para ambos)
+            // B. Update Level Badge.
             var levelBadge = container.find('.badge').filter(function() {
                 return $(this).text().match(/(Level|Nível)/) || $(this).attr('class').match(/ph-lvl-tier-/);
             });
@@ -157,7 +168,6 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     return (className.match(/(^|\s)ph-lvl-tier-\S+/g) || []).join(' ');
                 }).addClass(data.level_class);
 
-                // Atualiza texto do nível
                 var oldTxt = levelBadge.text();
                 var label = (oldTxt.indexOf('Nível') > -1) ? 'Nível' : 'Level';
                 var lvlString = data.level;
@@ -167,7 +177,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 levelBadge.text(label + ' ' + lvlString);
             }
 
-        // C. Atualiza Texto de XP e Adiciona Troféu
+            // C. Update XP Text.
             container.find('span, div, strong').each(function() {
                 var el = $(this);
                 if (el.children().length === 0 && el.text().indexOf('XP') > -1) {
@@ -184,7 +194,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
             });
         });
 
-        // --- 2. Atualiza Itens (Sidebar + Widget Horizontal) ---
+        // --- Update Item Stash ---
         if (itemData) {
             var stashes = $('.ph-sidebar-stash, .ph-widget-stash');
 
@@ -247,6 +257,11 @@ define(['jquery', 'core/notification'], function($, Notification) {
     };
 
     return {
+        /**
+         * Initialize the module.
+         *
+         * @param {Object} strings Language strings.
+         */
         init: function(strings) {
 
             var $modal = $('#phItemModalFilter');
@@ -254,7 +269,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 $modal.appendTo('body');
             }
 
-            // 1. Modal de Detalhes (Unificado para Card, Texto e Imagem).
+            // 1. Details Modal Trigger (Unified for all modes).
             $('body').on('click keydown', '.ph-item-details-trigger', function(e) {
                 if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') {
                     return;
@@ -262,8 +277,8 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 e.preventDefault();
 
                 var trigger = $(this);
-                // Dados podem estar no próprio elemento ou num pai (card).
-                var container = trigger.closest('.playerhud-item-card');
+                // Look for data in self or parent container.
+                var container = trigger.closest('.playerhud-item-card, .ph-drop-image-container');
                 if (container.length === 0) {
                     container = trigger;
                 }
@@ -301,7 +316,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
             });
 
-            // 2. Coleta AJAX.
+            // 2. Collect Action (AJAX).
             $('body').on('click', '.ph-action-collect', function(e) {
                 e.preventDefault();
                 var trigger = $(this);
@@ -311,7 +326,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     return;
                 }
 
-                // Feedback visual de "Carregando"
+                // Visual loading feedback.
                 var originalHtml = trigger.html();
                 var originalWidth = trigger.css('width');
 
@@ -331,26 +346,26 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     dataType: 'json',
                     success: function(resp) {
                         if (resp.success) {
-                            // Atualiza Badge do Card (se existir)
+                            // Update Card Badge if exists.
                             var card = trigger.closest('.playerhud-item-card');
                             if (card.length) {
                                 var badge = card.find('.ph-badge-count');
                                 var currentCount = parseInt(badge.text().replace('x', ''), 10) || 0;
-                                badge.text('x' + (currentCount + 1)).show();
+                                badge.text('x' + (currentCount + 1)).removeClass('d-none').show();
                             }
 
-                            // Variáveis de estado
+                            // State variables.
                             var hasTimer = (resp.cooldown_deadline && resp.cooldown_deadline > 0);
                             var isLimit = resp.limit_reached;
 
-                            // Atualiza o estado do botão/link no texto
+                            // Update UI state.
                             if (mode === 'text' || mode === 'image') {
                                 handleTextImageMode(trigger, mode, hasTimer, isLimit, resp);
                             } else {
                                 handleCardMode(trigger, card, hasTimer, isLimit, resp, strings, originalHtml);
                             }
 
-                            // ATUALIZAÇÃO DA SIDEBAR (Barra, Nível e Lista de Itens)
+                            // Update Sidebar/Widget.
                             if (resp.game_data) {
                                 updateHud(resp.game_data, resp.item_data);
                             }

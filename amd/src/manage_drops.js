@@ -43,7 +43,7 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                 var code = '[PLAYERHUD_DROP ' + param + ']';
                 var previewHtml = '';
 
-                // Visibilidade dos grupos.
+                // Visibilidade dos grupos
                 if (mode === 'text') {
                     $groupTextLink.show();
                     $groupCardOptions.hide();
@@ -52,6 +52,8 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                         $inputLinkText.val().trim() : langStrings.defaultText;
 
                     code = '[PLAYERHUD_DROP ' + param + ' mode=text text="' + linkTxt + '"]';
+
+                    // MUDANÇA: Classes Bootstrap em vez de style inline
                     previewHtml = '<a href="#" onclick="return false;" ' +
                         'class="text-primary fw-bold text-decoration-underline">' + linkTxt + '</a>';
 
@@ -60,18 +62,22 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                     $groupCardOptions.hide();
 
                     code = '[PLAYERHUD_DROP ' + param + ' mode=image]';
-                    var imgContent = currentItem.isImage ?
-                        '<img src="' + currentItem.url + '" style="width:50px; height:50px; object-fit:contain;" alt="">' :
-                        '<span style="font-size:40px;" aria-hidden="true">' + currentItem.content + '</span>';
 
-                    previewHtml = '<div style="cursor:pointer; filter: drop-shadow(0 4px 2px rgba(0,0,0,0.1));">' +
+                    // MUDANÇA: Uso das novas classes CSS .ph-gen-*
+                    var imgContent = currentItem.isImage ?
+                        '<img src="' + currentItem.url + '" class="ph-gen-img-lg" alt="">' :
+                        '<span class="ph-gen-emoji-lg" aria-hidden="true">' + currentItem.content + '</span>';
+
+                    // Wrapper com classe
+                    previewHtml = '<div class="ph-gen-preview-wrapper-img">' +
                         imgContent + '</div>';
 
                 } else {
-                    // Mode Card.
+                    // Mode Card
                     $groupTextLink.hide();
                     $groupCardOptions.show();
 
+                    // ... (lógica de texto/emoji do botão permanece igual) ...
                     var userTxt = ($inputBtnText.val() && $inputBtnText.val().trim()) ? $inputBtnText.val().trim() : '';
                     var userEmo = ($inputBtnEmoji.val() && $inputBtnEmoji.val().trim()) ? $inputBtnEmoji.val().trim() : '';
                     var previewTxt = userTxt || langStrings.takeBtn;
@@ -87,16 +93,23 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
 
                     code = '[PLAYERHUD_DROP ' + param + extraAttrs + ']';
 
+                    // HTML do Ícone no Card (Também limpo de estilos inline complexos)
+                    // Note que usamos classes utilitárias ou herdamos o estilo do card
+                    // MUDANÇA: Substituímos style="..." pela classe .ph-icon-contain criada no CSS
                     var iconHtml = currentItem.isImage ?
-                        '<img src="' + currentItem.url + '" alt="">' :
+                        '<img src="' + currentItem.url + '" class="ph-icon-contain" alt="">' :
                         '<div style="font-size:2.5em; line-height:1;">' + currentItem.content + '</div>';
+                    // Nota: Mantive um style mínimo acima apenas para garantir o fit dentro do container flex de 60px do card,
+                    // eslint-disable-next-line max-len
+                    // pois criar classes para cada div interna pode ser excessivo, mas o ideal seria .ph-card-icon-container img {} no CSS.
 
                     var btnContent = previewTxt;
                     if (previewEmo) {
                         btnContent = '<span aria-hidden="true" class="me-1">' + previewEmo + '</span> ' + previewTxt;
                     }
 
-                    previewHtml = '<div class="ph-gen-preview-real-card">' +
+                    // MUDANÇA: Removido style="width: 160px..." e adicionada classe ph-gen-preview-real-card
+                    previewHtml = '<div class="ph-gen-preview-real-card card p-2 border shadow-sm">' +
                         '<span class="badge bg-info text-dark rounded-pill position-absolute" ' +
                         'style="top:5px; right:5px; font-size:0.7rem;">' + langStrings.yours + '</span>' +
                         '<div class="mb-2 d-flex align-items-center justify-content-center" style="height:60px;">' +

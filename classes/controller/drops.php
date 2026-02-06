@@ -240,9 +240,9 @@ class drops {
         $strbtntxt = get_string('choice_text', 'block_playerhud'); 
         $strtake = get_string('take', 'block_playerhud'); 
 
-        // Botão de Copiar usando data-action="copytoclipboard"
+       // Botão de Copiar usando data-action="copytoclipboard"
         $output .= '
-        <div class="modal fade" id="codeGenModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 10500;">
+        <div class="modal fade ph-modal-codegen" id="codeGenModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 10500;">
           <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-lg">
               <div class="modal-header bg-primary text-white d-flex justify-content-between align-items-center">

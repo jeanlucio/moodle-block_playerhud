@@ -47,7 +47,11 @@ define(['jquery'], function($) {
                         var s = diff % 60;
                         var timeString = m + 'm ' + (s < 10 ? '0' : '') + s + 's';
 
-                        var label = strings.label ? strings.label + ' ' : '';
+                        // Lógica Atualizada: Verifica se deve esconder o rótulo "Próxima coleta..."
+                        // Se o atributo data-no-label existir, usamos string vazia.
+                        var showLabel = !el.attr('data-no-label');
+                        var label = (showLabel && strings.label) ? strings.label + ' ' : '';
+
                         el.text(label + timeString);
                     }
                 });
