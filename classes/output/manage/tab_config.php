@@ -26,7 +26,6 @@ namespace block_playerhud\output\manage;
 
 use renderable;
 use templatable;
-use renderer_base;
 use moodle_url;
 
 defined('MOODLE_INTERNAL') || die();
@@ -52,8 +51,9 @@ class tab_config implements renderable, templatable {
 
     /**
      * Export data for the Mustache template.
+     * * @param mixed $output The renderer instance.
      */
-    public function export_for_template(renderer_base $output) {
+    public function export_for_template($output) {
         global $DB;
 
         // 1. Carregar Configurações

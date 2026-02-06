@@ -7,15 +7,12 @@
 // (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY;
-// without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-// See the
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.
-// If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Main management page for PlayerHUD Block.
@@ -47,6 +44,8 @@ $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
 $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
 
 require_login($course);
+
+// Definimos o contexto do BLOCO, igual ao view.php
 $context = context_block::instance($instanceid);
 require_capability('block/playerhud:manage', $context);
 
@@ -118,7 +117,6 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
         $fs->delete_area_files($context->id, 'block_playerhud', 'item_image', $itemid);
         $DB->delete_records('block_playerhud_items', ['id' => $itemid]);
 
-        // Redirect preserving sort parameters.
         redirect(
             new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
             get_string('deleted', 'block_playerhud'),
@@ -175,10 +173,9 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
             \core\output\notification::NOTIFY_SUCCESS
         );
     } else {
-        // If no items were selected.
         redirect(
             new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
-            get_string('no_items_selected', 'block_playerhud'), // Certifique-se de adicionar esta string se desejar feedback de erro
+            get_string('no_items_selected', 'block_playerhud'),
             \core\output\notification::NOTIFY_WARNING
         );
     }
@@ -254,7 +251,7 @@ if ($action == 'delete_chapter') {
     }
 }
 
-// Action: Save API Keys (Block Config).
+// Action: Save API Keys.
 if ($action == 'save_keys' && confirm_sesskey()) {
     $gkey = optional_param('gemini_key', '', PARAM_TEXT);
     $qkey = optional_param('groq_key', '', PARAM_TEXT);
@@ -267,7 +264,6 @@ if ($action == 'save_keys' && confirm_sesskey()) {
     $bi->configdata = base64_encode(serialize((object)$config));
     $DB->update_record('block_instances', $bi);
     
-    // CORREÇÃO: Usar 'changessaved' que existe no arquivo de idioma
     redirect(
         new moodle_url($baseurl, ['tab' => 'config']),
         get_string('changessaved', 'block_playerhud'),
@@ -276,61 +272,57 @@ if ($action == 'save_keys' && confirm_sesskey()) {
 }
 
 // 4. PRE-RENDER LOGIC (Controller Strategy)
+$content_html = '';
+
+// Tenta carregar o controlador da aba
 $render_class = "\\block_playerhud\\output\\manage\\tab_{$activetab}";
-$renderer = null;
 
 if (class_exists($render_class)) {
+    // Instancia o renderizador da aba
     $renderer = new $render_class($instanceid, $courseid, $sort, $dir);
     
+    // Se tiver lógica de processamento de formulário (ex: items/add)
     if (method_exists($renderer, 'process')) {
         $renderer->process();
     }
+
+    // Renderiza o conteúdo da aba
+    if ($renderer instanceof \templatable) {
+        // Render via Mustache (Padrão Novo)
+        if (method_exists($renderer, 'display')) {
+             $content_html = $renderer->display();
+        } else {
+             // Fallback para templates padrão
+             $content_html = $OUTPUT->render_from_template("block_playerhud/tab_{$activetab}", $renderer->export_for_template($OUTPUT));
+        }
+    } else {
+        // Fallback para classes antigas (display manual, se houver)
+        if (method_exists($renderer, 'display')) {
+            $content_html = $renderer->display();
+        }
+    }
+} else {
+    // Aba não implementada ou arquivo faltando
+    $content_html = $OUTPUT->notification(
+        get_string('tab_maintenance', 'block_playerhud', ucfirst($activetab)),
+        'info'
+    );
 }
 
-// 5. Page render (View).
-
+// 5. Page Render (Usando o Layout Mustache)
 $PAGE->set_url($baseurl);
+
+// CORREÇÃO FINAL: Usamos o CONTEXTO DO BLOCO e layout INCOURSE, igual ao view.php
 $PAGE->set_context($context);
+$PAGE->set_pagelayout('incourse');
+
 $PAGE->set_title(get_string('pluginname', 'block_playerhud'));
 $PAGE->set_heading(format_string($course->fullname));
-$PAGE->set_pagelayout('incourse');
 
 echo $OUTPUT->header();
 
-// --- INÍCIO DA SUBSTITUIÇÃO ---
-
-// Header Container
-echo \html_writer::start_div('d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom');
-
-// Título
-echo \html_writer::tag('h2', get_string('master_panel', 'block_playerhud'), ['class' => 'm-0']);
-
-// Grupo de Botões
-echo \html_writer::start_div('d-flex gap-2');
-
-// Botão 1: Voltar à Mochila (View.php) - Estilo Primário
-$backpackurl = new moodle_url('/blocks/playerhud/view.php', ['id' => $courseid, 'instanceid' => $instanceid]);
-echo \html_writer::link(
-    $backpackurl,
-    '<i class="fa fa-gamepad" aria-hidden="true"></i> ' . get_string('openbackpack', 'block_playerhud'),
-    ['class' => 'btn btn-primary shadow-sm']
-);
-
-// Botão 2: Voltar ao Curso - Estilo Secundário
-$courseurl = new moodle_url('/course/view.php', ['id' => $courseid]);
-echo \html_writer::link(
-    $courseurl,
-    '<i class="fa fa-arrow-left" aria-hidden="true"></i> ' . get_string('back_to_course', 'block_playerhud'),
-    ['class' => 'btn btn-outline-secondary shadow-sm']
-);
-
-echo \html_writer::end_div(); // Fim do grupo de botões
-echo \html_writer::end_div(); // Fim do container do header
-
-// --- FIM DA SUBSTITUIÇÃO ---
-
-// Tabs Navigation.
-$tabs = [
+// Definição das Abas
+$tabs_def = [
     'items' => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
     'classes' => ['icon' => '🦸', 'text' => get_string('tab_classes', 'block_playerhud')],
     'chapters' => ['icon' => '📖', 'text' => get_string('tab_chapters', 'block_playerhud')],
@@ -340,38 +332,27 @@ $tabs = [
     'config' => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
 ];
 
-echo \html_writer::start_tag('ul', ['class' => 'nav nav-tabs mb-4']);
-foreach ($tabs as $key => $data) {
-    $active = ($activetab == $key) ? 'active' : '';
-    $url = new moodle_url($baseurl, ['tab' => $key]);
-    $icon = '<span aria-hidden="true" class="me-2">' . $data['icon'] . '</span>';
-    $link = \html_writer::link($url, $icon . $data['text'], ['class' => 'nav-link ' . $active]);
-    echo \html_writer::tag('li', $link, ['class' => 'nav-item']);
-}
-echo \html_writer::end_tag('ul');
-
-// ... (início do arquivo mantém igual) ...
-
-// 6. Content render.
-echo \html_writer::start_div('container-fluid p-0 animate__animated animate__fadeIn');
-
-if ($renderer) {
-    if ($renderer instanceof \templatable) {
-        // CORREÇÃO: Forçamos o uso do template 'tab_config' explicitamente
-        // Certifique-se que o arquivo blocks/playerhud/templates/tab_config.mustache existe
-        echo $OUTPUT->render_from_template('block_playerhud/tab_config', $renderer->export_for_template($OUTPUT));
-    } else {
-        echo $renderer->display();
-    }
-} else {
-    echo $OUTPUT->notification(
-        get_string('tab_maintenance', 'block_playerhud', $tabs[$activetab]['text'] ?? $activetab),
-        'info'
-    );
+$tabs_data = [];
+foreach ($tabs_def as $key => $data) {
+    $tabs_data[] = [
+        'active' => ($activetab == $key),
+        'url' => (new moodle_url($baseurl, ['tab' => $key]))->out(false),
+        'icon' => $data['icon'],
+        'text' => $data['text']
+    ];
 }
 
-echo \html_writer::end_div();
+// Dados para o Layout
+$layout_data = [
+    'str_title' => get_string('master_panel', 'block_playerhud'),
+    'url_backpack' => (new moodle_url('/blocks/playerhud/view.php', ['id' => $courseid, 'instanceid' => $instanceid]))->out(false),
+    'str_backpack' => get_string('openbackpack', 'block_playerhud'),
+    'url_course' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
+    'str_back_course' => get_string('back_to_course', 'block_playerhud'),
+    'tabs' => $tabs_data,
+    'content_html' => $content_html
+];
 
-// REMOVIDO: Bloco $copyscript e echo $copyscript (O JS injetado sai daqui)
+echo $OUTPUT->render_from_template('block_playerhud/manage_layout', $layout_data);
 
 echo $OUTPUT->footer();
