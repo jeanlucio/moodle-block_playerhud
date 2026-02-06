@@ -1,0 +1,25 @@
+{{!
+    @template block_playerhud/optin
+    Welcome screen for user opt-in.
+}}
+<div class="container text-center py-5 animate__animated animate__fadeIn">
+    <div class="card shadow-lg mx-auto ph-optin-card">
+        <div class="card-body p-5">
+            <div class="mb-4">
+                {{{userpicture}}}
+            </div>
+            <h2 class="mb-3">{{title}}</h2>
+            <p class="text-muted mb-4 ph-optin-text">
+                {{message}}
+            </p>
+            <div class="d-grid gap-2">
+                <a href="{{url_yes}}" class="btn btn-primary btn-lg btn-block shadow-sm">
+                    {{str_yes}}
+                </a>
+                <button class="btn btn-link text-muted btn-sm mt-3" onclick="history.back()">
+                    {{str_no}}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

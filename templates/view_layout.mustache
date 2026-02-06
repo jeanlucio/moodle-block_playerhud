@@ -1,0 +1,49 @@
+{{!
+    @template block_playerhud/view_layout
+    Main layout for the student view with tabs.
+}}
+<div class="playerhud-container">
+    {{! Header Navigation }}
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <a href="{{url_course}}" class="btn btn-outline-secondary btn-sm shadow-sm">
+            <i class="fa fa-arrow-left" aria-hidden="true"></i> {{str_back_course}}
+        </a>
+        
+        {{#is_teacher}}
+        <a href="{{url_manage}}" class="btn btn-primary btn-sm shadow-sm">
+            <i class="fa fa-cogs" aria-hidden="true"></i> {{str_manage}}
+        </a>
+        {{/is_teacher}}
+    </div>
+
+    {{! Gamification Header (Level Bar) }}
+    {{{header_html}}}
+
+    {{! Navigation Tabs }}
+    <ul class="nav nav-pills mb-4 ph-nav-pills" id="ph-student-tabs" role="tablist">
+        {{#tabs}}
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {{#active}}active{{/active}}" href="{{url}}">
+                <span aria-hidden="true" class="me-2">{{icon}}</span> {{text}}
+            </a>
+        </li>
+        {{/tabs}}
+    </ul>
+
+    {{! Tab Content Area }}
+    <div class="tab-content mt-3 ph-tab-content-wrapper">
+        {{{tab_content_html}}}
+    </div>
+
+    {{! Footer Actions }}
+    <div class="text-center mt-4 mb-3 pt-3 border-top text-muted small">
+        {{str_status_active}}
+        <a href="{{url_disable}}" class="text-danger ms-2 js-disable-hud text-decoration-underline"
+           data-confirm-msg="{{str_confirm_disable}}">
+            {{str_disable}}
+        </a>
+    </div>
+</div>
+
+{{! Includes the Modal Template }}
+{{> block_playerhud/modal_item }}

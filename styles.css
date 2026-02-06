@@ -628,3 +628,50 @@
     min-height: 2.4em; 
     line-height: 1.2;
 }
+/* --- REFATORAÇÃO ETAPA 1: Classes Semânticas (Zero Inline) --- */
+
+/* Opt-in Screen */
+.ph-optin-card {
+    max-width: 500px;
+    border-radius: 15px;
+    border: none;
+}
+
+.ph-optin-text {
+    font-size: 1.1rem;
+}
+
+/* Layout Geral */
+.ph-tab-content-wrapper {
+    min-height: 300px;
+}
+
+/* Modais */
+.ph-modal-zindex {
+    z-index: 10550; /* Garante que fique acima de outros elementos */
+}
+
+.ph-modal-img-container {
+    min-width: 100px;
+}
+
+.ph-modal-img-large {
+    max-width: 120px;
+    max-height: 120px;
+    object-fit: contain;
+}
+
+.ph-modal-emoji-large {
+    font-size: 80px;
+    line-height: 1;
+}
+
+/* Utilitários de Cursor e Display */
+.ph-cursor-pointer {
+    cursor: pointer;
+}
+
+.ph-empty-state-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+}
