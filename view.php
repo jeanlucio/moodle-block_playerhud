@@ -219,7 +219,7 @@ echo '<div class="playerhud-container">';
     echo '</ul>';
 
     // Render Tab Content.
-    echo '<div class="tab-content bg-white p-3 rounded shadow-sm" style="min-height: 300px;">';
+    echo '<div class="tab-content mt-3" style="min-height: 300px;">';
     
     // We use class_exists to ensure the page loads even if some tab classes are missing during migration.
     switch ($tab) {
