@@ -675,3 +675,65 @@
     font-size: 3rem;
     opacity: 0.3;
 }
+/* --- REFATORAÇÃO ETAPA 3: Tabelas e Utilitários (Zero Inline) --- */
+
+/* Larguras de Coluna para Tabelas de Gerenciamento */
+.ph-col-xs { width: 40px; }
+.ph-col-sm { width: 50px; }
+.ph-col-md { width: 80px; }
+.ph-col-lg { width: 100px; }
+.ph-col-xl { width: 140px; }
+.ph-col-xxl { width: 160px; }
+.ph-col-actions { width: 220px; }
+
+/* Modais e Overlays */
+.ph-z-index-high { z-index: 10500; }
+
+/* Alertas e Inputs Customizados no Modal */
+.ph-alert-warning-box {
+    background-color: #fff3cd;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ffeeba;
+}
+
+.ph-input-code-readonly {
+    background-color: #f0f0f0 !important;
+    color: #d63384 !important; /* Rosa Bootstrap forçado */
+    font-size: 0.85rem !important; /* Reduzido levemente */
+    font-weight: bold !important;
+    font-family: monospace !important; /* Garante fonte de código */
+}
+
+/* Tamanhos de Fonte Específicos (Substituindo font-size inline) */
+.ph-font-size-24 { font-size: 24px; }
+.ph-font-size-40 { font-size: 40px; }
+.ph-font-size-50 { font-size: 50px; }
+.ph-font-size-60 { font-size: 60px; }
+.ph-font-size-80 { font-size: 80px; }
+
+/* Utilitários de Imagem */
+.ph-img-xs { width: 32px; height: 32px; object-fit: contain; }
+.ph-img-sm { width: 50px; height: 50px; object-fit: contain; }
+.ph-img-md { max-width: 80px; max-height: 80px; object-fit: contain; }
+.ph-img-lg { max-width: 120px; max-height: 120px; object-fit: contain; }
+
+/* Espaçamento */
+.ph-gap-15 { margin-right: 15px; }
+
+/* --- REFATORAÇÃO FINAL: Utilitários de Ranking --- */
+
+/* Largura da coluna de Rank */
+.ph-col-rank { width: 60px; }
+
+/* Badge "Oculto" bem pequeno */
+.ph-badge-tiny { font-size: 0.65rem; }
+
+/* Opacidade para estado vazio */
+.ph-opacity-low { opacity: 0.3; }
+
+/* Ajuste para o Emoji de Medalha no texto */
+.ph-rank-medal {
+    font-size: 1.2rem;
+    line-height: 1;
+}

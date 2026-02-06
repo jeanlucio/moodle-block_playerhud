@@ -88,11 +88,11 @@ class utils {
             ];
         } else {
             // 3. If not a link, it is an Emoji or Text.
-            // Accessibility fix: Wrap emojis in aria-hidden span to prevent screen readers from reading them.
+            // CORREÇÃO: Retorna o emoji puro. O template Mustache cuidará do HTML.
             return [
                 'url' => null,
                 'is_image' => false,
-                'content' => '<span aria-hidden="true">' . $item->image . '</span>',
+                'content' => $item->image, 
             ];
         }
     }

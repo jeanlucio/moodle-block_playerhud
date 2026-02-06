@@ -521,3 +521,6 @@ $string['privacy:metadata:rpg:karma'] = 'The players current Karma (morality) va
 $string['privacy:metadata:rpg:nodes'] = 'History of visited scenes and choices made.';
 $string['privacy:metadata:rpg:chapters'] = 'List of completed chapters.';
 $string['drop_unlimited_xp_warning'] = '<strong>Note:</strong> Infinite drops do not grant XP. Even if this item has an XP value, <strong>this specific drop will award 0 XP</strong>.';
+$string['ranking_disable'] = 'Disable Ranking';
+$string['ranking_hidden_help'] = 'Click on <strong>{$a}</strong> above to join the competition again.';
+

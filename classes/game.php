@@ -252,12 +252,14 @@ class game {
             $usr->rank = $rankcounter++;
             $usr->fullname = fullname($usr);
 
+            $usr->medal_emoji = null;
             if ($usr->rank == 1) {
-                $usr->medal = '<span aria-hidden="true">🥇</span>';
+                $usr->medal_emoji = '🥇';
             } else if ($usr->rank == 2) {
-                $usr->medal = '<span aria-hidden="true">🥈</span>';
+                $usr->medal_emoji = '🥈';
             } else if ($usr->rank == 3) {
-                $usr->medal = '<span aria-hidden="true">🥉</span>';
+                $usr->medal_emoji = '🥉';
+            
             } else {
                 $usr->medal = null;
             }
@@ -310,9 +312,7 @@ class game {
             $grank = 1;
             foreach ($groupranking as &$g) {
                 $g->rank = $grank++;
-                if ($g->rank == 1) {
-                    $g->medal = '<span aria-hidden="true">🏆</span>';
-                }
+                $g->medal_emoji = ($g->rank == 1) ? '🏆' : null;
             }
         }
 

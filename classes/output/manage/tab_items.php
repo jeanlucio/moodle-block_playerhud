@@ -279,10 +279,12 @@ class tab_items implements renderable {
             }
         }
 
-        // 5. Links de Ordenação
-        $link_sort_name = $this->get_sort_link_html('name', $str['col_name'], $baseurl);
-        $link_sort_xp = $this->get_sort_link_html('xp', $str['col_xp'], $baseurl);
-        $link_sort_enabled = $this->get_sort_link_html('enabled', $str['col_enabled'], $baseurl);
+       // 5. Links de Ordenação (Agora retornamos DADOS, não HTML)
+        $headers = [
+            'name' => $this->get_sort_data('name', $str['col_name'], $baseurl),
+            'xp' => $this->get_sort_data('xp', $str['col_xp'], $baseurl),
+            'enabled' => $this->get_sort_data('enabled', $str['col_enabled'], $baseurl),
+        ];
 
         // 6. Dados Finais para o Mustache
         $template_data = [
@@ -293,10 +295,8 @@ class tab_items implements renderable {
             'items' => $items_data,
             'paging_bar' => $OUTPUT->paging_bar($total_items, $page, $perpage, $baseurl, 'page'),
             
-            // Sorting Links (HTML)
-            'link_sort_name' => $link_sort_name,
-            'link_sort_xp' => $link_sort_xp,
-            'link_sort_enabled' => $link_sort_enabled,
+            // Passamos o objeto headers estruturado
+            'headers' => $headers,
 
             // Strings Globais
             'str_ai_create' => $str['ai_create'],
@@ -308,7 +308,7 @@ class tab_items implements renderable {
             'str_empty' => $str['empty'],
             'str_delete_selected' => $str['delete_selected'],
             
-            // Modais (Injetados via Renderização de Template)
+            // Modais
             'modal_ai_html' => $OUTPUT->render_from_template('block_playerhud/modal_ai', []),
             'modal_preview_html' => $OUTPUT->render_from_template('block_playerhud/modal_item', [])
         ];
@@ -339,22 +339,29 @@ class tab_items implements renderable {
     }
 
     /**
-     * Helper para gerar o link de sort (HTML).
+     * Helper para gerar dados de ordenação (Separando HTML do PHP).
      */
-    private function get_sort_link_html($colname, $label, $baseurl) {
-        $icon = '<i class="fa fa-sort text-muted ms-1 opacity-25" aria-hidden="true"></i>';
+    private function get_sort_data($colname, $label, $baseurl) {
+        $icon = 'fa-sort text-muted opacity-25'; // Classe padrão
         $nextdir = 'ASC';
+        $active = false;
+
         if ($this->sort == $colname) {
+            $active = true;
             if ($this->dir == 'ASC') {
-                $icon = '<i class="fa fa-sort-asc text-primary ms-1" aria-hidden="true"></i>';
+                $icon = 'fa-sort-asc text-primary';
                 $nextdir = 'DESC';
             } else {
-                $icon = '<i class="fa fa-sort-desc text-primary ms-1" aria-hidden="true"></i>';
+                $icon = 'fa-sort-desc text-primary';
                 $nextdir = 'ASC';
             }
         }
-        $url = new moodle_url($baseurl, ['sort' => $colname, 'dir' => $nextdir]);
-        return '<a href="' . $url->out(false) . '" class="text-dark text-decoration-none fw-bold d-flex align-items-center">' . 
-               $label . $icon . '</a>';
+        
+        return [
+            'url' => (new moodle_url($baseurl, ['sort' => $colname, 'dir' => $nextdir]))->out(false),
+            'label' => $label,
+            'icon_class' => $icon,
+            'active' => $active
+        ];
     }
 }

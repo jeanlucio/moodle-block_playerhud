@@ -28,17 +28,32 @@
                 <table class="table table-hover table-striped mb-0 align-middle">
                     <thead class="bg-light border-bottom">
                         <tr class="text-nowrap">
-                            <th scope="col" style="width: 40px;" class="text-center">
+                            <th scope="col" class="ph-col-xs text-center">
                                 <label class="visually-hidden" for="ph-select-all">{{str_select_all}}</label>
                                 <input type="checkbox" id="ph-select-all" class="form-check-input">
                             </th>
-                            <th scope="col" style="width: 50px;" class="text-center">N.</th>
-                            <th scope="col" style="min-width: 80px;" class="text-center">{{str_col_image}}</th>
-                            <th scope="col">{{{link_sort_name}}}</th>
-                            <th scope="col" style="width: 100px;">{{{link_sort_xp}}}</th>
-                            <th scope="col" style="width: 140px;">{{{link_sort_enabled}}}</th>
-                            <th scope="col" style="width: 160px;">{{str_col_drops}}</th>
-                            <th scope="col" class="text-end" style="width: 220px;">{{str_actions}}</th>
+                            <th scope="col" class="ph-col-sm text-center">N.</th>
+                            <th scope="col" class="ph-col-md text-center">{{str_col_image}}</th>
+                            
+                            {{! CORREÇÃO: Headers dinâmicos via dados }}
+                            <th scope="col">
+                                <a href="{{headers.name.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
+                                    {{headers.name.label}} <i class="fa {{headers.name.icon_class}} ms-1" aria-hidden="true"></i>
+                                </a>
+                            </th>
+                            <th scope="col" class="ph-col-lg">
+                                <a href="{{headers.xp.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
+                                    {{headers.xp.label}} <i class="fa {{headers.xp.icon_class}} ms-1" aria-hidden="true"></i>
+                                </a>
+                            </th>
+                            <th scope="col" class="ph-col-xl">
+                                <a href="{{headers.enabled.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
+                                    {{headers.enabled.label}} <i class="fa {{headers.enabled.icon_class}} ms-1" aria-hidden="true"></i>
+                                </a>
+                            </th>
+                            
+                            <th scope="col" class="ph-col-xxl">{{str_col_drops}}</th>
+                            <th scope="col" class="text-end ph-col-actions">{{str_actions}}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -53,10 +68,10 @@
                                 <a href="#" class="ph-preview-trigger text-decoration-none d-block" 
                                    {{{preview_attributes}}} data-desc-target="desc_hidden_{{id}}">
                                     {{#is_image}}
-                                        <img src="{{image_url}}" style="width:32px; height:32px; object-fit:contain;" alt="">
+                                        <img src="{{image_url}}" class="ph-img-xs" alt="">
                                     {{/is_image}}
                                     {{^is_image}}
-                                        <span style="font-size:24px;" aria-hidden="true">{{image_content}}</span>
+                                        <span class="ph-font-size-24" aria-hidden="true">{{image_content}}</span>
                                     {{/is_image}}
                                 </a>
                             </td>

@@ -1,0 +1,162 @@
+{{! @template block_playerhud/view_ranking }}
+
+<div class="container-fluid p-0 animate__animated animate__fadeIn">
+
+    {{! --- PRIVACY CONTROL BAR --- }}
+    <div class="card mb-4 border-light shadow-sm bg-light">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-center p-3">
+            <div class="mb-2 mb-md-0">
+                <div class="d-flex align-items-center mb-1">
+                    <strong class="me-2">{{str_privacy_title}}</strong>
+                    {{#privacy_visible}}
+                        <span class="badge bg-success"><i class="fa fa-eye"></i> {{str_visible}}</span>
+                    {{/privacy_visible}}
+                    {{^privacy_visible}}
+                        <span class="badge bg-secondary"><i class="fa fa-eye-slash"></i> {{str_hidden}}</span>
+                    {{/privacy_visible}}
+                </div>
+                
+                <div class="text-muted small">
+                    {{#privacy_visible}} {{str_visible_desc}} {{/privacy_visible}}
+                    {{^privacy_visible}} {{str_hidden_desc}} {{/privacy_visible}}
+                </div>
+            </div>
+
+            {{! Botão Dinâmico }}
+            <a href="{{url_toggle_privacy}}" class="btn {{btn_toggle_class}} btn-sm shadow-sm text-nowrap">
+                <i class="fa {{btn_toggle_icon}}"></i> {{str_btn_toggle}}
+            </a>
+        </div>
+    </div>
+
+    {{! --- CONTENT AREA --- }}
+    {{#show_content}}
+        <ul class="nav nav-tabs mb-3" id="rankingTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold" id="individual-tab" data-bs-toggle="tab" 
+                        data-bs-target="#individual" type="button" role="tab" aria-selected="true">
+                    <i class="fa fa-user me-2"></i> {{str_tab_individual}}
+                </button>
+            </li>
+            {{#has_groups}}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold" id="groups-tab" data-bs-toggle="tab" 
+                        data-bs-target="#groups" type="button" role="tab" aria-selected="false">
+                    <i class="fa fa-users me-2"></i> {{str_tab_groups}}
+                </button>
+            </li>
+            {{/has_groups}}
+        </ul>
+
+        <div class="tab-content" id="rankingTabsContent">
+            
+            {{! --- 1. INDIVIDUAL RANKING --- }}
+            <div class="tab-pane fade show active" id="individual" role="tabpanel" aria-labelledby="individual-tab">
+                {{#has_players}}
+                <div class="card shadow-sm border-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    {{! CORREÇÃO: style removido, classe adicionada }}
+                                    <th scope="col" class="text-center ph-col-rank">{{str_col_rank}}</th>
+                                    <th scope="col">{{str_col_player}}</th>
+                                    <th scope="col" class="text-center">{{str_col_xp}}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#individual}}
+                                <tr class="{{#is_me}}table-warning border-start border-warning border-4{{/is_me}}">
+                                    <td class="text-center fw-bold lead">
+                                        {{#medal_emoji}}<span class="ph-rank-medal" role="img" aria-label="Rank {{rank}}">{{medal_emoji}}</span>{{/medal_emoji}}
+                                        {{^medal_emoji}}{{rank}}{{/medal_emoji}}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {{{userpicture}}}
+                                            <div class="ms-3">
+                                                <div class="fw-bold {{#is_me}}text-primary{{/is_me}}">{{fullname}}</div>
+                                                {{#is_hidden_marker}}
+                                                    {{! CORREÇÃO: style removido, classe adicionada }}
+                                                    <span class="badge bg-secondary ph-badge-tiny">
+                                                        <i class="fa fa-eye-slash"></i> {{str_hidden}}
+                                                    </span>
+                                                {{/is_hidden_marker}}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary rounded-pill px-3 py-2">{{currentxp}} XP</span>
+                                    </td>
+                                </tr>
+                                {{/individual}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {{/has_players}}
+                {{^has_players}}
+                    <div class="alert alert-info text-center">
+                        <i class="fa fa-info-circle fa-2x mb-3 d-block"></i>
+                        {{no_ranking_data}}
+                    </div>
+                {{/has_players}}
+            </div>
+
+            {{! --- 2. GROUP RANKING --- }}
+            {{#has_groups}}
+            <div class="tab-pane fade" id="groups" role="tabpanel" aria-labelledby="groups-tab">
+                <div class="card shadow-sm border-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    {{! CORREÇÃO: style removido, classe adicionada }}
+                                    <th scope="col" class="text-center ph-col-rank">{{str_col_rank}}</th>
+                                    <th scope="col">{{str_col_group}}</th>
+                                    <th scope="col" class="text-center">{{str_col_members}}</th>
+                                    <th scope="col" class="text-center">{{str_col_avg}}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#groups}}
+                                <tr class="{{#is_my_group}}table-info border-start border-info border-4{{/is_my_group}}">
+                                    <td class="text-center fw-bold lead">
+                                        {{#medal_emoji}}<span class="ph-rank-medal" role="img" aria-label="Rank {{rank}}">{{medal_emoji}}</span>{{/medal_emoji}}
+                                        {{^medal_emoji}}{{rank}}{{/medal_emoji}}
+                                    </td>
+                                    <td class="fw-bold text-dark">{{name}}</td>
+                                    <td class="text-center"><span class="badge bg-light text-dark border">{{member_count}}</span></td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success rounded-pill px-3">{{average_xp}} XP</span>
+                                    </td>
+                                </tr>
+                                {{/groups}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {{/has_groups}}
+
+        </div>
+    {{/show_content}}
+    
+    {{! --- EMPTY STATE IF HIDDEN --- }}
+    {{^show_content}}
+        <div class="text-center py-5">
+            {{! CORREÇÃO 1: Emoji decorativo com aria-hidden="true" }}
+            <div class="mb-3 display-4 text-muted ph-opacity-low" aria-hidden="true">🙈</div>
+            
+            <h4 class="text-muted">{{str_hidden}}</h4>
+            
+            <p class="text-muted small">
+                {{str_hidden_desc}}<br>
+                
+                {{! CORREÇÃO 2: Texto dinâmico vindo do PHP (use 3 chaves pois contém HTML <strong>) }}
+                {{{str_hidden_help}}}
+            </p>
+        </div>
+    {{/show_content}}
+
+</div>
