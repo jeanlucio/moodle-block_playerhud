@@ -1,0 +1,87 @@
+{{! @template block_playerhud/modal_generator }}
+<div class="modal fade ph-modal-codegen" id="codeGenModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 10500;">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="modal-title m-0 fw-bold">{{#str}} gen_title, block_playerhud {{/str}}</h5>
+        <button type="button" class="btn-close btn-close-white js-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+          <div class="row">
+              <div class="col-md-7 border-end">
+                  <form>
+                      <div class="mb-3">
+                          <label class="fw-bold text-dark mb-3">{{#str}} gen_style, block_playerhud {{/str}}</label>
+                          <div class="form-check mb-2">
+                              <input type="radio" id="modeCard" name="codeMode" class="form-check-input js-mode-trigger" value="card" checked>
+                              <label class="form-check-label" for="modeCard">
+                                  <strong>{{#str}} gen_style_card, block_playerhud {{/str}}</strong><br>
+                                  <small class="text-muted">{{#str}} gen_style_card_desc, block_playerhud {{/str}}</small>
+                              </label>
+                          </div>
+                          <div class="form-check mb-2">
+                              <input type="radio" id="modeText" name="codeMode" class="form-check-input js-mode-trigger" value="text">
+                              <label class="form-check-label" for="modeText">
+                                  <strong>{{#str}} gen_style_text, block_playerhud {{/str}}</strong><br>
+                                  <small class="text-muted">{{#str}} gen_style_text_desc, block_playerhud {{/str}}</small>
+                              </label>
+                          </div>
+                          <div class="form-check">
+                              <input type="radio" id="modeImage" name="codeMode" class="form-check-input js-mode-trigger" value="image">
+                              <label class="form-check-label" for="modeImage">
+                                  <strong>{{#str}} gen_style_image, block_playerhud {{/str}}</strong><br>
+                                  <small class="text-muted">{{#str}} gen_style_image_desc, block_playerhud {{/str}}</small>
+                              </label>
+                          </div>
+                      </div>
+
+                      <div id="cardCustomOptions" class="mt-3 pt-3 border-top">
+                          <label class="form-label fw-bold small text-uppercase text-muted mb-2">{{#str}} visual_content, block_playerhud {{/str}}</label>
+                          <div class="row">
+                              <div class="col-8">
+                                  <label for="customBtnText" class="form-label small mb-1">{{#str}} choice_text, block_playerhud {{/str}}</label>
+                                  <input type="text" class="form-control form-control-sm" id="customBtnText" placeholder="{{#str}} take, block_playerhud {{/str}}">
+                              </div>
+                              <div class="col-4">
+                                  <label for="customBtnEmoji" class="form-label small mb-1">Emoji</label>
+                                  <input type="text" class="form-control form-control-sm text-center" id="customBtnEmoji" placeholder="🖐" maxlength="4">
+                              </div>
+                          </div>
+                          <div class="form-text mt-1" style="font-size: 0.7rem;">Deixe vazio para usar o padrão.</div>
+                      </div>
+
+                      <div class="mb-3 mt-4" id="textInputGroup" style="display:none; background:#fff3cd; padding:10px; border-radius:5px; border:1px solid #ffeeba;">
+                          <label class="fw-bold text-dark">{{#str}} gen_link_label, block_playerhud {{/str}}</label>
+                          <input type="text" class="form-control" id="customText" placeholder="{{#str}} gen_link_placeholder, block_playerhud {{/str}}">
+                          <small class="text-muted">{{#str}} gen_link_help, block_playerhud {{/str}}</small>
+                      </div>
+                  </form>
+              </div>
+
+              <div class="col-md-5 d-flex flex-column bg-light rounded-end">
+                  <div class="text-center p-3 flex-grow-1 d-flex flex-column justify-content-center align-items-center">
+                      <h6 class="text-muted text-uppercase mb-4" style="font-size:0.7rem; letter-spacing:1px;">{{#str}} gen_preview, block_playerhud {{/str}}</h6>
+                      <div id="previewContainer" class="w-100 d-flex justify-content-center align-items-center"></div>
+                  </div>
+              </div>
+          </div>
+
+          <div class="row mt-3 pt-3 border-top">
+              <div class="col-12">
+                 <label class="fw-bold text-success">{{#str}} gen_code_label, block_playerhud {{/str}}</label>
+                  <div class="input-group input-group-lg">
+                      <input type="text" class="form-control font-monospace" id="finalCode" readonly style="background:#f0f0f0; color:#d63384; font-size: 0.95rem; font-weight:bold;">
+                      
+                      <button class="btn btn-primary fw-bold shadow-sm" type="button" 
+                              id="copyFinalCode"
+                              data-action="copytoclipboard" 
+                              data-clipboard-target="#finalCode">
+                          <i class="fa fa-copy" aria-hidden="true"></i> {{#str}} gen_copy, block_playerhud {{/str}}
+                      </button>
+                  </div>
+              </div>
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
