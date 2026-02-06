@@ -497,3 +497,134 @@
     color: #0f6cbf;
     background-color: #f8f9fa;
 }
+/* --- REFATORAÇÃO ETAPA 2 (View) --- */
+
+.ph-card-rounded {
+    border-radius: 15px;
+}
+
+.ph-text-sm {
+    font-size: 0.9rem;
+}
+
+.ph-text-md {
+    font-size: 1rem;
+}
+
+.ph-card-count-badge {
+    position: absolute; 
+    top: -8px; 
+    right: -8px; 
+    background-color: #343a40; 
+    color: #fff; 
+    border-radius: 50%; 
+    width: 24px; 
+    height: 24px; 
+    font-size: 0.75rem; 
+    font-weight: bold; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    border: 2px solid #fff; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+    z-index: 5;
+}
+
+.ph-infinite-badge {
+    position: absolute; 
+    top: 5px; 
+    left: 5px; 
+    color: #17a2b8; 
+    font-size: 0.9rem; 
+    z-index: 4; 
+    opacity: 0.8;
+}
+
+.ph-new-badge {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    background-color: #dc3545;
+    color: white;
+    font-size: 0.65rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 6;
+    animation: phPulse 2s infinite;
+}
+
+.ph-badge-archived {
+    top: -5px; 
+    left: -5px; 
+    font-size: 0.65rem; 
+    z-index: 5;
+}
+
+.ph-item-archived {
+    opacity: 0.85; 
+    filter: grayscale(30%); 
+    border: 1px dashed #ccc !important;
+}
+
+.ph-card-origins {
+    font-size: 0.75rem; 
+    color: #6c757d; 
+    background: #f8f9fa; 
+    padding: 2px 8px; 
+    border-radius: 10px; 
+    display: inline-block; 
+    border: 1px solid #e9ecef;
+}
+
+.ph-text-gold {
+    color: #856404;
+}
+
+.ph-card-date {
+    font-size: 0.65rem; 
+    color: #adb5bd; 
+    margin-top: 5px; 
+    border-top: 1px solid #f1f1f1; 
+    width: 100%; 
+    text-align: center; 
+    padding-top: 3px;
+}
+
+.ph-card-icon-container {
+    height: 80px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+}
+
+.ph-card-img {
+    max-height: 60px; 
+    width: auto;
+}
+
+.ph-card-emoji {
+    font-size: 3rem; 
+    line-height: 1;
+}
+
+@keyframes phPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+/* --- CORREÇÃO DE TEXTO CARD --- */
+.ph-card-title {
+    /* Exibe até 2 linhas e corta com ... se passar disso */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2; /* Adicionado para compatibilidade padrão e silenciar o linter */
+    -webkit-box-orient: vertical;
+    /* box-orient é não-padrão, mas necessário. Alguns linters reclamam, mas é essencial aqui */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    
+    /* Garante altura mínima para alinhamento dos cards */
+    min-height: 2.4em; 
+    line-height: 1.2;
+}

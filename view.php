@@ -161,7 +161,7 @@ echo '<div class="playerhud-container">';
     // Uses the class provided by the block structure.
     if (class_exists('\block_playerhud\output\view\header')) {
         $header = new \block_playerhud\output\view\header($config, $player, $USER);
-        echo $header->display();
+        echo $OUTPUT->render_from_template('block_playerhud/view_header', $header->export_for_template($OUTPUT));
     } else {
         // Fallback header (Development safety).
         $stats = \block_playerhud\game::get_game_stats($config, $instanceid, $player->currentxp);
@@ -225,8 +225,8 @@ echo '<div class="playerhud-container">';
     switch ($tab) {
         case 'collection':
             if (class_exists('\block_playerhud\output\view\tab_collection')) {
-                $render = new \block_playerhud\output\view\tab_collection($config, $player, $instanceid);
-                echo $render->display();
+            $render = new \block_playerhud\output\view\tab_collection($config, $player, $instanceid);
+            echo $OUTPUT->render_from_template('block_playerhud/view_collection', $render->export_for_template($OUTPUT));
             } else {
                 echo $OUTPUT->notification(get_string('tab_maintenance', 'block_playerhud', 'Collection'), 'info');
             }

@@ -1,0 +1,30 @@
+<div class="card shadow-sm mb-4 border-0 ph-card-rounded">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-center">
+            <div class="flex-shrink-0 me-4">
+                {{{userpicture}}}
+            </div>
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-1">
+                    <h2 class="m-0 fw-bold text-dark me-3">{{fullname}}</h2>
+                    
+                    <span class="badge {{level_class}} border shadow-sm px-3 py-2 ph-text-sm">
+                        {{#str}} level, block_playerhud {{/str}} {{level_display}}
+                    </span>
+                </div>
+                
+                <div class="d-flex justify-content-end small fw-bold text-muted mb-1 mt-3">
+                    <span>{{xp_display}}</span>
+                </div>
+
+                <div class="progress ph-progress-container">
+                    <div class="progress-bar {{level_class}} ph-progress-bar" role="progressbar" 
+                         style="width: {{progress}}%;" 
+                         aria-valuenow="{{progress}}" aria-valuemin="0" aria-valuemax="100">
+                         <span class="visually-hidden">{{progress}}% {{#str}} completed, core {{/str}}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

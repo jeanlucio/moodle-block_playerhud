@@ -1,0 +1,79 @@
+{{#has_items}}
+<div class="playerhud-inventory-grid animate__animated animate__fadeIn">
+    {{#items}}
+    <div class="playerhud-item-card card {{card_class}} ph-item-trigger" 
+         role="button" 
+         tabindex="{{tabindex}}"
+         style="cursor: {{cursor}};"
+         data-id="{{id}}"
+         data-name="{{name}}"
+         data-xp="{{xp_text}}"
+         data-count="{{count}}"
+         data-date="{{date_str}}"
+         data-image="{{data_image_payload}}" 
+         data-isimage="{{is_image_bool}}"> 
+         {{! A linha acima corrige o modal: agora 'data-image' sempre tem valor (URL ou Emoji) }}
+
+        {{#badge_new}}
+            <span class="ph-new-badge">{{#str}} new_item_badge, block_playerhud {{/str}}</span>
+        {{/badge_new}}
+
+        {{#badge_archived}}
+            <span class="badge bg-secondary position-absolute shadow-sm ph-badge-archived">
+                {{#str}} item_archived, block_playerhud {{/str}}
+            </span>
+        {{/badge_archived}}
+
+        {{#count}}
+            <div class="ph-card-count-badge">x{{count}}</div>
+        {{/count}}
+
+        {{#is_infinite}}
+            <div class="ph-infinite-badge" title="{{#str}} infinite_item_title, block_playerhud {{/str}}">
+                <i class="fa fa-infinity" aria-hidden="true"></i>
+            </div>
+        {{/is_infinite}}
+
+        <div class="d-none ph-item-description-content">{{{description}}}</div>
+
+        <div class="card-body p-2 d-flex flex-column align-items-center justify-content-between">
+            <div class="my-3 text-center ph-card-icon-container">
+                 {{#is_image}}
+                    <img src="{{image_url}}" class="ph-modal-img ph-card-img" alt="" aria-hidden="true">
+                 {{/is_image}}
+                 {{^is_image}}
+                    <div class="ph-modal-emoji ph-card-emoji" aria-hidden="true">{{{image_content}}}</div>
+                 {{/is_image}}
+            </div>
+
+            <div class="text-center w-100 mb-3">
+                {{! CORREÇÃO 3: Substituímos 'text-truncate' por 'ph-card-title' }}
+                <div class="fw-bold ph-card-title mb-1 ph-text-md" title="{{name}}">{{name}}</div>
+                <span class="badge bg-primary ph-xp-badge mb-2">{{xp_text}}</span>
+                
+                {{#has_origins}}
+                <br>
+                <div class="ph-card-origins mt-1">
+                    {{#origin_map}}<span class="me-2" title="{{#str}} source_map, block_playerhud {{/str}}"><i class="fa fa-map-o text-info" aria-hidden="true"></i> {{origin_map}}</span>{{/origin_map}}
+                    {{#origin_shop}}<span class="me-2" title="{{#str}} source_shop, block_playerhud {{/str}}"><i class="fa fa-shopping-cart text-success" aria-hidden="true"></i> {{origin_shop}}</span>{{/origin_shop}}
+                    {{#origin_quest}}<span class="me-2" title="{{#str}} source_quest, block_playerhud {{/str}}"><i class="fa fa-scroll ph-text-gold" aria-hidden="true"></i> {{origin_quest}}</span>{{/origin_quest}}
+                    {{#origin_legacy}}<span title="{{#str}} source_special, block_playerhud {{/str}}"><i class="fa fa-star text-warning" aria-hidden="true"></i> {{origin_legacy}}</span>{{/origin_legacy}}
+                </div>
+                {{/has_origins}}
+            </div>
+
+            {{#date_str}}
+            <div class="ph-card-date">{{date_str}}</div>
+            {{/date_str}}
+        </div>
+    </div>
+    {{/items}}
+</div>
+{{/has_items}}
+
+{{^has_items}}
+<div class="alert alert-light border text-center py-5">
+    <div style="font-size: 3rem; opacity: 0.3;" aria-hidden="true">📭</div>
+    <p class="mb-0 text-muted">{{#str}} empty, block_playerhud {{/str}}</p>
+</div>
+{{/has_items}}

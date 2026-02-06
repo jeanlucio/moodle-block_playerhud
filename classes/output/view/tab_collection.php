@@ -1,68 +1,30 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
-//
-// Moodle is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Moodle is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
-/**
- * Collection tab view for PlayerHUD Block.
- *
- * @package    block_playerhud
- * @copyright  2026 Jean Lúcio
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 namespace block_playerhud\output\view;
 
 use renderable;
-use moodle_url;
+use templatable;
+use renderer_base;
 
 defined('MOODLE_INTERNAL') || die();
 
-class tab_collection implements renderable {
+class tab_collection implements renderable, templatable {
 
     protected $config;
     protected $player;
     protected $instanceid;
 
-    /**
-     * Constructor.
-     *
-     * @param object $config Block instance config.
-     * @param object $player Player record.
-     * @param int $instanceid Block instance ID.
-     */
     public function __construct($config, $player, $instanceid) {
         $this->config = $config;
         $this->player = $player;
         $this->instanceid = $instanceid;
     }
 
-    /**
-     * Render the tab.
-     *
-     * @return string
-     */
-    public function display() {
+    public function export_for_template(renderer_base $output) {
         global $DB, $CFG;
-        
         require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
 
-        // 1. Buscar Inventário do Usuário
-        $rawinventory = $DB->get_records('block_playerhud_inventory', [
-            'userid' => $this->player->userid
-        ]);
-        
+        // 1. Fetch Inventory & Items
+        $rawinventory = $DB->get_records('block_playerhud_inventory', ['userid' => $this->player->userid]);
         $inventorybyitem = [];
         if ($rawinventory) {
             foreach ($rawinventory as $inv) {
@@ -70,228 +32,131 @@ class tab_collection implements renderable {
             }
         }
 
-        // 2. Buscar TODOS os Itens (Sem filtro 'enabled')
-        $allitems = $DB->get_records('block_playerhud_items', [
-            'blockinstanceid' => $this->instanceid
-        ], 'xp ASC');
-
-        // 3. Buscar Classe do Jogador
+        $allitems = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid], 'xp ASC');
+        
+        // Check Class Visibility
         $myclassid = 0; 
         if ($DB->get_manager()->table_exists('block_playerhud_rpg_progress')) {
              $prog = $DB->get_record('block_playerhud_rpg_progress', [
                 'userid' => $this->player->userid, 
                 'blockinstanceid' => $this->instanceid
             ]);
-            if ($prog) {
-                $myclassid = $prog->classid;
-            }
+            if ($prog) $myclassid = $prog->classid;
         }
 
+        $items_data = [];
         $context = \context_block::instance($this->instanceid);
-        $cardshtml = '';
-        $hasitems = false;
 
         if ($allitems) {
             foreach ($allitems as $item) {
                 $usercopies = isset($inventorybyitem[$item->id]) ? $inventorybyitem[$item->id] : [];
                 $count = count($usercopies);
+
+                // Visibility Rules
+                if ($count == 0) {
+                    if (!$item->enabled) continue;
+                    if (!block_playerhud_is_visible_for_class($item->required_class_id, $myclassid)) continue;
+                }
+
+            $media = \block_playerhud\utils::get_item_display_data($item, $context);
                 
-                // --- LÓGICA LEGACY ---
-                if (!$item->enabled) {
-                    // Se não tem o item e está desativado, pula.
-                    if ($count == 0) {
-                        continue;
-                    }
-                }
+                // Infinite Check
+                $isinfinite = $DB->record_exists('block_playerhud_drops', ['itemid' => $item->id, 'maxusage' => 0]);
 
-                // Regra de Visibilidade de Classe (Se não tiver o item)
-                if ($count == 0) {
-                    if (!block_playerhud_is_visible_for_class($item->required_class_id, $myclassid)) {
-                        continue;
-                    }
-                }
+                // CORREÇÃO 1: Preparar o payload para o JS (data-image).
+                // Se for imagem, usa URL. Se for emoji, usa o conteúdo limpo (sem tags HTML).
+                $js_payload = $media['is_image'] ? $media['url'] : strip_tags($media['content']);
 
-                $mediadata = \block_playerhud\utils::get_item_display_data($item, $context);
-                $deschtml = !empty($item->description) ? format_text($item->description, FORMAT_HTML) : "";
-
-                $isinfinite = false;
-                $dropscheck = $DB->get_records('block_playerhud_drops', ['itemid' => $item->id]);
-                foreach ($dropscheck as $d) {
-                    if ($d->maxusage == 0) {
-                        $isinfinite = true;
-                    }
-                }
-
-                if ($count == 0) {
-                    // --- ITEM FALTANTE (Lógica Secreta) ---
+                $itemObj = [
+                    'id' => $item->id,
+                    'count' => $count,
+                    'is_infinite' => $isinfinite,
+                    'is_image' => $media['is_image'],
+                    'image_url' => $media['is_image'] ? $media['url'] : '',
+                    'image_content' => $media['is_image'] ? '' : $media['content'],
                     
-                    // Se for secreto, esconde Nome, XP e Descrição Real
+                    // Dados para o Modal (JS)
+                    'data_image_payload' => $js_payload, 
+                    'is_image_bool' => $media['is_image'] ? 1 : 0,
+                    
+                    // CORREÇÃO 2: Acessibilidade. Sempre navegável ('0'), mesmo se não coletado.
+                    'tabindex' => '0', 
+                    'cursor' => 'pointer', // Sempre clicável para ver detalhes
+                    
+                    'badge_new' => false,
+                    'badge_archived' => false,
+                    'has_origins' => false,
+                    'origin_map' => 0,
+                    'origin_shop' => 0,
+                    'origin_quest' => 0,
+                    'origin_legacy' => 0,
+                    'date_str' => ''
+                ];
+
+                if ($count == 0) {
+                    // MISSING ITEM
+                    $itemObj['card_class'] = 'ph-missing';
+                    
                     if ($item->secret) {
-                        $name = get_string('secret_name', 'block_playerhud');
-                        $xplabel = "???";
-                        // CORREÇÃO: Usando a nova descrição imersiva
-                        $displaydesc = get_string('secret_desc', 'block_playerhud');
+                        $itemObj['name'] = get_string('secret_name', 'block_playerhud');
+                        $itemObj['xp_text'] = "???";
+                        $itemObj['description'] = get_string('secret_desc', 'block_playerhud');
                         
-                        // Força ícone de mistério
-                        $mediadata['is_image'] = false;
-                        $mediadata['content'] = '<span aria-hidden="true">❓</span>';
+                        // Override para segredo
+                        $itemObj['is_image'] = false;
+                        $itemObj['image_content'] = '❓';
+                        $itemObj['data_image_payload'] = '❓'; // Modal mostra interrogação
                     } else {
-                        // Item normal não coletado
-                        $name = format_string($item->name);
-                        $xplabel = "+{$item->xp} XP";
-                        $displaydesc = $deschtml;
+                        $itemObj['name'] = format_string($item->name);
+                        $itemObj['xp_text'] = "+{$item->xp} XP";
+                        $itemObj['description'] = format_text($item->description, FORMAT_HTML);
                     }
+                    } else {
+                    // OWNED ITEM
+                    $itemObj['card_class'] = 'ph-owned';
+                    $itemObj['name'] = format_string($item->name);
+                    $itemObj['xp_text'] = "+{$item->xp} XP";
+                    $itemObj['description'] = format_text($item->description, FORMAT_HTML);
 
-                    $cardshtml .= $this->render_card(
-                        $item, $name, $xplabel, "ph-missing", "cursor: help;", "ph-item-trigger",
-                        0, "", "", $displaydesc, $mediadata, 0, 0, 0, 0, 0, $isinfinite
-                    );
-                    $hasitems = true;
-
-                } else {
-                    // --- ITEM OBTIDO ---
-                    $stacktotal = $count;
-                    $lastdatets = 0;
-                    $countmap = 0; $countshop = 0; $countquest = 0; $countlegacy = 0;
-
+                    // Stats logic
+                    $lastts = 0;
                     foreach ($usercopies as $copy) {
-                        if ($copy->timecreated > $lastdatets) $lastdatets = $copy->timecreated;
+                        if ($copy->timecreated > $lastts) $lastts = $copy->timecreated;
                         $src = $copy->source ?? '';
-                        if ($src == 'map') $countmap++;
-                        else if ($src == 'shop') $countshop++;
-                        else if ($src == 'quest') $countquest++;
-                        else $countlegacy++;
+                        if ($src == 'map') $itemObj['origin_map']++;
+                        elseif ($src == 'shop') $itemObj['origin_shop']++;
+                        elseif ($src == 'quest') $itemObj['origin_quest']++;
+                        else $itemObj['origin_legacy']++;
                     }
-
-                    $lastview = $this->player->last_inventory_view ?? 0;
-                    $isnew = ($lastdatets > $lastview);
-                    $badgeshtml = '';
-
-                    if ($isnew) {
-                        $badgeshtml .= '<span class="ph-new-badge">' . get_string('new_item_badge', 'block_playerhud') . '</span>';
-                    }
-
-                    $cardstyle = "cursor: pointer;";
                     
-                    // --- CORREÇÃO AQUI: Usando get_string ---
-                    if (!$item->enabled) {
-                        $strarchived = get_string('item_archived', 'block_playerhud');
-                        $badgeshtml .= '<span class="badge bg-secondary position-absolute shadow-sm" style="top: -5px; left: -5px; font-size: 0.65rem; z-index: 5;">' . $strarchived . '</span>';
-                        $cardstyle .= " opacity: 0.85; filter: grayscale(30%); border: 1px dashed #ccc;";
+                    if ($itemObj['origin_map'] || $itemObj['origin_shop'] || $itemObj['origin_quest'] || $itemObj['origin_legacy']) {
+                        $itemObj['has_origins'] = true;
                     }
 
-                    $datestr = ($lastdatets > 0) ? userdate($lastdatets, get_string('strftimedatefullshort', 'langconfig')) : "";
+                    // New Badge
+                    $lastview = $this->player->last_inventory_view ?? 0;
+                    if ($lastts > $lastview) {
+                        $itemObj['badge_new'] = true;
+                    }
 
-                    $cardshtml .= $this->render_card(
-                        $item, format_string($item->name), "+{$item->xp} XP", "ph-owned", $cardstyle, "ph-item-trigger",
-                        $stacktotal, $badgeshtml, $datestr, $deschtml, $mediadata,
-                        $countmap, $countshop, $countquest, $countlegacy, $lastdatets, $isinfinite
-                    );
-                    $hasitems = true;
+                    // Archived Badge
+                    if (!$item->enabled) {
+                        $itemObj['badge_archived'] = true;
+                        $itemObj['card_class'] .= ' ph-item-archived'; // Add opacity in CSS
+                    }
+
+                    if ($lastts > 0) {
+                        $itemObj['date_str'] = userdate($lastts, get_string('strftimedatefullshort', 'langconfig'));
+                    }
                 }
+
+                $items_data[] = $itemObj;
             }
         }
 
-        if (!$hasitems) {
-            return '<div class="alert alert-light border text-center py-5">
-                        <div style="font-size: 3rem; opacity: 0.3;" aria-hidden="true">📭</div>
-                        <p class="mb-0 text-muted">' . get_string('empty', 'block_playerhud') . '</p>
-                    </div>';
-        }
-
-        return '<div class="playerhud-inventory-grid animate__animated animate__fadeIn">' . $cardshtml . '</div>';
-    }
-
-    /**
-     * Helper para renderizar o ícone (Imagem ou Emoji).
-     */
-    private function render_icon($media) {
-        if ($media['is_image']) {
-            return '<img src="' . $media['url'] . '" class="ph-modal-img" alt="" style="max-height: 60px; width: auto;">';
-        }
-        // Emoji (Font size grande)
-        return '<div class="ph-modal-emoji" style="font-size: 3rem; line-height:1;">' . $media['content'] . '</div>';
-    }
-
-    /**
-     * Helper gigante para montar o HTML do card.
-     * Mantém o mesmo HTML/CSS do sistema legado para compatibilidade visual.
-     */
-    private function render_card(
-        $item, $name, $xptext, $class, $style, $trigger, $count, $badge, $datestr, 
-        $desc, $media, $countmap, $countshop, $countquest, $countlegacy, $datets, $isinfinite
-    ) {
-        $badgecount = '';
-        if ($count > 0) {
-            $badgecount = '<div class="ph-card-count-badge" style="position: absolute; top: -8px; right: -8px; 
-                background-color: #343a40; color: #fff; border-radius: 50%; width: 24px; height: 24px; 
-                font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; justify-content: center; 
-                border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 5;">x' . $count . '</div>';
-        }
-
-        $infiniteicon = '';
-        if ($isinfinite) {
-            $title = get_string('infinite_item_title', 'block_playerhud');
-            $infiniteicon = '<div class="ph-infinite-badge" style="position: absolute; top: 5px; left: 5px; 
-                color: #17a2b8; font-size: 0.9rem; z-index: 4; opacity: 0.8;" title="' . $title . '">
-                <i class="fa fa-infinity"></i></div>';
-        }
-
-        $originshtml = '';
-        if ($count > 0) {
-            $originshtml .= '<div class="ph-card-origins mt-1" style="font-size: 0.75rem; color: #6c757d; 
-                background: #f8f9fa; padding: 2px 8px; border-radius: 10px; display: inline-block; border: 1px solid #e9ecef;">';
-            
-            if ($countmap > 0) $originshtml .= '<span class="me-2" title="' . get_string('source_map', 'block_playerhud') . '"><i class="fa fa-map-o text-info"></i> ' . $countmap . '</span>';
-            if ($countshop > 0) $originshtml .= '<span class="me-2" title="' . get_string('source_shop', 'block_playerhud') . '"><i class="fa fa-shopping-cart text-success"></i> ' . $countshop . '</span>';
-            if ($countquest > 0) $originshtml .= '<span class="me-2" title="' . get_string('source_quest', 'block_playerhud') . '"><i class="fa fa-scroll" style="color: #856404;"></i> ' . $countquest . '</span>';
-            if ($countlegacy > 0) $originshtml .= '<span title="' . get_string('source_special', 'block_playerhud') . '"><i class="fa fa-star text-warning"></i> ' . $countlegacy . '</span>';
-            
-            $originshtml .= '</div>';
-        }
-
-        $footerdate = '';
-        if ($datestr) {
-            $footerdate = '<div class="ph-card-date" style="font-size: 0.65rem; color: #adb5bd; margin-top: 5px; 
-                border-top: 1px solid #f1f1f1; width: 100%; text-align: center; padding-top: 3px;">' . $datestr . '</div>';
-        }
-
-        // Adicionamos role="button" e tabindex="0" para acessibilidade
-        // Se o item não for clicável (ex: missing), tabindex pode ser -1, mas vamos manter simples por enquanto.
-        $tabindex = ($count > 0) ? '0' : '-1'; 
-
-        return '
-        <div class="playerhud-item-card card ' . $class . ' ' . $trigger . '" 
-             style="' . $style . ' width: 100%; position: relative; overflow: visible;"
-             role="button" 
-             tabindex="' . $tabindex . '"
-             data-id="' . $item->id . '"
-             data-name="' . s($name) . '"
-             data-xp="' . $xptext . '"
-             data-count="' . $count . '"
-             data-date="' . $datestr . '"
-             data-image="' . ($media['is_image'] ? $media['url'] : strip_tags($media['content'])) . '"
-             data-isimage="' . ($media['is_image'] ? 1 : 0) . '">
-
-             ' . $badge . '
-             ' . $badgecount . '
-             ' . $infiniteicon . '
-
-             <div class="d-none ph-item-description-content">' . $desc . '</div>
-
-            <div class="card-body p-2 d-flex flex-column align-items-center justify-content-between">
-                <div class="my-3 text-center" style="height: 80px; display:flex; align-items:center; justify-content:center;">
-                     ' . $this->render_icon($media) . '
-                </div>
-
-                <div class="text-center w-100 mb-3">
-                    <div class="fw-bold text-truncate mb-1" style="font-size: 1rem;">' . $name . '</div>
-                    <span class="badge bg-primary ph-xp-badge mb-2">' . $xptext . '</span>
-                    <br>' . $originshtml . '
-                </div>
-
-                ' . $footerdate . '
-            </div>
-        </div>';
+        return [
+            'items' => $items_data,
+            'has_items' => !empty($items_data)
+        ];
     }
 }
