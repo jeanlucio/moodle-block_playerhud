@@ -162,14 +162,23 @@ if ($isoptin) {
         $tab_content_html = $OUTPUT->notification(get_string('tab_maintenance', 'block_playerhud', ucfirst($tab)), 'info');
     }
 
-    // C. Navigation Data
+// C. Navigation Data (Reordenado: Coleção > Loja > Missões > História > Ranking)
     $tabslist = [];
     $tabs_def = [
+        // 1. Coleção (Base)
         'collection' => ['icon' => '🎒', 'text' => get_string('tab_collection', 'block_playerhud')],
-        'chapters' => ($config->enable_rpg) ? ['icon' => '📖', 'text' => get_string('tab_chapters', 'block_playerhud')] : null,
+        
+        // 2. Loja (Economia)
         'shop' => ['icon' => '⚖️', 'text' => get_string('tab_shop', 'block_playerhud')],
-        'ranking' => ($config->enable_ranking) ? ['icon' => '🏆', 'text' => get_string('leaderboard_title', 'block_playerhud')] : null,
+        
+        // 3. Missões (Objetivos)
         'quests' => ['icon' => '📜', 'text' => get_string('tab_quests', 'block_playerhud')],
+        
+        // 4. História (Narrativa - Se RPG ativado)
+        'chapters' => ($config->enable_rpg) ? ['icon' => '📖', 'text' => get_string('tab_chapters', 'block_playerhud')] : null,
+        
+        // 5. Ranking (Social - Se ativado)
+        'ranking' => ($config->enable_ranking) ? ['icon' => '🏆', 'text' => get_string('leaderboard_title', 'block_playerhud')] : null,
     ];
 
     foreach ($tabs_def as $key => $def) {

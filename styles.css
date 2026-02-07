@@ -96,8 +96,8 @@
 
 /* Coluna Direita (Botões) */
 .ph-widget-right {
-    min-width: 80px;
-    width: 80px;
+    min-width: 180px; /* Aumentado de 80px para 160px para caber 3 colunas */
+    width: 180px;     /* Aumentado de 80px para 160px */
     background-color: #f8f9fa;
     border-left: 1px solid #dee2e6;
     display: flex;
@@ -774,4 +774,246 @@
 /* Sidebar Stash Wrapper (Garante comportamento correto quando vazio) */
 .ph-stash-wrapper.d-none {
     display: none !important;
+}
+/* --- REFATORAÇÃO FINAL: Grid do Widget e Botões --- */
+
+/* Contêiner de Grid para os botões de ação no Widget */
+.ph-widget-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 colunas de largura igual */
+    gap: 4px; /* Espaçamento pequeno entre botões */
+    margin-top: auto; /* Empurra para baixo se houver espaço extra */
+}
+
+/* Garante que os botões ocupem a célula, mas com tamanho adequado */
+.ph-widget-actions-grid .btn {
+    width: 100%;
+    /* REMOVIDO: padding-left: 0; padding-right: 0; -> Deixa o Bootstrap controlar o padding */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem; /* Aumenta o tamanho dos emojis/ícones dentro do botão */
+    padding-top: 0.5rem;    /* Garante um pouco mais de altura */
+    padding-bottom: 0.5rem; /* Garante um pouco mais de altura */
+}
+
+/* Botão de Alto Contraste (Fundo Branco) para o Ranking */
+.btn-white-contrast {
+    background-color: #ffffff !important;
+    border: 1px solid #dee2e6 !important; /* Borda sutil do Bootstrap */
+    color: #212529 !important; /* Texto escuro */
+    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; /* Sombra suave */
+}
+
+.btn-white-contrast:hover {
+    background-color: #f8f9fa !important; /* Cinza muito claro ao passar o mouse */
+    border-color: #c6c7c8 !important;
+}
+/* --- REFATORAÇÃO VISUAL: Botões Harmônicos --- */
+
+/* Botão Padrão do Grid (Clean) */
+.btn-ph-tile {
+    background-color: #f8f9fa !important; /* Cinza muito claro */
+    border: 1px solid #e9ecef !important;
+    color: #495057 !important; /* Texto cinza escuro */
+    transition: all 0.2s ease;
+}
+
+.btn-ph-tile:hover {
+    background-color: #e9ecef !important; /* Um pouco mais escuro no hover */
+    transform: translateY(-1px); /* Leve efeito de elevação */
+    border-color: #ced4da !important;
+}
+
+/* Botão de Destaque (Ranking/Ouro) */
+.btn-ph-gold {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffecb5 100%) !important;
+    border: 1px solid #ffecb5 !important;
+    color: #856404 !important; /* Marrom dourado */
+}
+
+.btn-ph-gold:hover {
+    background: #ffe69c !important;
+    border-color: #ffe69c !important;
+}
+/* --- REFATORAÇÃO VISUAL: Botões RPG Soft (Pastéis) --- */
+
+/* Base para botões pastéis (Padding, Fonte, Transição) */
+.btn-ph-pastel {
+    border: 1px solid transparent !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 1.2rem;
+}
+
+.btn-ph-pastel:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+}
+
+/* Variação: Mochila (Azul Suave) */
+.btn-ph-pastel-blue {
+    background-color: #e7f1ff !important;
+    color: #0d6efd !important;
+    border-color: #cce5ff !important;
+}
+.btn-ph-pastel-blue:hover {
+    background-color: #dbeafe !important;
+    color: #0a58ca !important;
+}
+
+/* Variação: História (Ciano/Teal Suave) */
+.btn-ph-pastel-cyan {
+    background-color: #e0faff !important;
+    color: #0aa2c0 !important;
+    border-color: #bbf0fa !important;
+}
+.btn-ph-pastel-cyan:hover {
+    background-color: #cffafe !important;
+    color: #0891b2 !important;
+}
+
+/* Variação: Loja (Verde Suave) */
+.btn-ph-pastel-green {
+    background-color: #e6f8ec !important;
+    color: #198754 !important;
+    border-color: #d1e7dd !important;
+}
+.btn-ph-pastel-green:hover {
+    background-color: #d1e7dd !important;
+    color: #146c43 !important;
+}
+
+/* Variação: Missões (Vermelho/Rosa Suave) */
+.btn-ph-pastel-red {
+    background-color: #fff0f1 !important;
+    color: #dc3545 !important;
+    border-color: #f5c6cb !important;
+}
+.btn-ph-pastel-red:hover {
+    background-color: #ffebe9 !important;
+    color: #b02a37 !important;
+}
+
+/* Variação: Ranking (Dourado Suave - Mantido para destaque) */
+.btn-ph-pastel-gold {
+    background: linear-gradient(180deg, #fff9db 0%, #fff3cd 100%) !important;
+    color: #856404 !important;
+    border-color: #ffeeba !important;
+}
+.btn-ph-pastel-gold:hover {
+    background: #ffe69c !important;
+}
+/* --- REFATORAÇÃO VISUAL: Botões Outline com Cor do Nível --- */
+
+/* Classe base do botão (Estrutura e Transição) */
+.btn-ph-level-border {
+    background-color: #ffffff !important; /* Fundo sempre branco */
+    border: 1px solid #dee2e6 !important; /* Cor padrão (fallback) */
+    color: #495057 !important; /* Cor padrão */
+    font-weight: 700 !important; /* Negrito para destacar a cor */
+    
+    /* Layout */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 1.2rem;
+    
+    transition: all 0.2s ease-in-out;
+}
+
+/* Tier 1 (Cinza) */
+.ph-lvl-tier-1 .btn-ph-level-border {
+    border-color: #6c757d !important;
+    color: #6c757d !important;
+}
+.ph-lvl-tier-1 .btn-ph-level-border:hover {
+    background-color: #6c757d !important;
+    color: #ffffff !important;
+}
+
+/* Tier 2 (Verde) */
+.ph-lvl-tier-2 .btn-ph-level-border {
+    border-color: #208337 !important;
+    color: #208337 !important;
+}
+.ph-lvl-tier-2 .btn-ph-level-border:hover {
+    background-color: #208337 !important;
+    color: #ffffff !important;
+}
+
+/* Tier 3 (Azul) */
+.ph-lvl-tier-3 .btn-ph-level-border {
+    border-color: #0b55c4 !important;
+    color: #0b55c4 !important;
+}
+.ph-lvl-tier-3 .btn-ph-level-border:hover {
+    background-color: #0b55c4 !important;
+    color: #ffffff !important;
+}
+
+/* Tier 4 (Roxo) */
+.ph-lvl-tier-4 .btn-ph-level-border {
+    border-color: #6f42c1 !important;
+    color: #6f42c1 !important;
+}
+.ph-lvl-tier-4 .btn-ph-level-border:hover {
+    background-color: #6f42c1 !important;
+    color: #ffffff !important;
+}
+
+/* Tier 5 (Lendário/Gradiente) */
+.ph-lvl-tier-5 .btn-ph-level-border {
+    border-color: #0d6efd !important; /* Azul Royal sólido na borda */
+    color: #0d6efd !important;
+}
+.ph-lvl-tier-5 .btn-ph-level-border:hover {
+    /* No hover, usa o gradiente lendário */
+    background: linear-gradient(45deg, #0d6efd, #6610f2) !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
+}
+/* --- REFATORAÇÃO SIDEBAR: Correções Finais V2 --- */
+
+/* Garante que a imagem do usuário fique centralizada */
+.ph-sidebar-avatar-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+/* Grid da Sidebar (3 Colunas) */
+.ph-sidebar-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 colunas iguais */
+    gap: 6px; /* Espaçamento entre botões */
+    margin-bottom: 1rem;
+}
+
+/* Ajuste dos botões dentro da sidebar */
+.ph-sidebar-grid .btn {
+    padding: 6px 0; /* Altura compacta mas clicável */
+    font-size: 1.1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%; /* Ocupa a célula do grid */
+}
+/* --- CORREÇÃO FINAL: Grid Transparente --- */
+
+/* Força o fundo transparente no grid da sidebar para anular a cor da classe de nível */
+.ph-sidebar-grid {
+    background-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
 }

@@ -122,8 +122,10 @@ class block_playerhud extends block_base {
                     'label' => get_string('view_ranking', 'block_playerhud') // Usa a string existente
                 ];
             }
-            // -------------------------------
-
+          // --- NOVO: URLs para o Grid de Botões ---
+            $url_base = new \moodle_url('/blocks/playerhud/view.php', ['id' => $COURSE->id, 'instanceid' => $this->instance->id]);
+            
+            // Dados para o Template
             $renderdata = [
                 'username'    => fullname($USER),
                 'userpicture' => $OUTPUT->user_picture($USER, ['size' => 100]), 
@@ -131,12 +133,23 @@ class block_playerhud extends block_base {
                 'level'       => $stats['level'] . ' / ' . $stats['max_levels'],
                 'level_class' => $stats['level_class'],
                 'progress'    => $stats['progress'],
-                'viewurl'     => (new \moodle_url('/blocks/playerhud/view.php', ['id' => $COURSE->id, 'instanceid' => $this->instance->id]))->out(false),
+                
+                // URLs de Ação
+                'viewurl'     => $url_base->out(false), // Mochila (Coleção)
+                'url_shop'    => (new \moodle_url($url_base, ['tab' => 'shop']))->out(false),
+                'url_quests'  => (new \moodle_url($url_base, ['tab' => 'quests']))->out(false),
+                'url_story'   => (new \moodle_url($url_base, ['tab' => 'chapters']))->out(false),
+                
+                // Gestão
                 'isteacher'   => $isteacher,
                 'manageurl'   => $manageurl,
+                
+                // Coleção Recente
                 'has_items'   => !empty($recentitems),
                 'items'       => $recentitems,
-                'ranking'     => $rank_data // Passa os dados para o template
+                
+                // Ranking
+                'ranking'     => $rank_data
             ];
 
             $this->content->text = $OUTPUT->render_from_template('block_playerhud/sidebar_view', $renderdata);
