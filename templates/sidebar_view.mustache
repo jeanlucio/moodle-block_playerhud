@@ -20,7 +20,7 @@
         <span>{{xp}}</span>
     </div>
 
-    <div class="ph-progress-container mb-4">
+    <div class="ph-progress-container mb-3">
         <div class="progress-bar ph-progress-bar {{level_class}}" role="progressbar" 
              style="width: {{progress}}%;"
              aria-valuenow="{{progress}}" aria-valuemin="0" aria-valuemax="100">
@@ -28,8 +28,17 @@
         </div>
     </div>
 
+    {{! --- NOVO: Botão de Ranking --- }}
+    {{#ranking}}
+    <div class="mb-3">
+        <a href="{{url}}" class="btn btn-light btn-sm w-100 border shadow-sm fw-bold text-dark d-flex align-items-center justify-content-center">
+            <span class="me-2" style="font-size: 1.2rem;">🏆</span> 
+            <span>#{{rank}} - {{label}}</span>
+        </a>
+    </div>
+    {{/ranking}}
+
     {{! Mini Stash Section }}
-    {{! CORREÇÃO: style="display:none;" substituído por classe d-none condicional }}
     <div class="mb-3 text-start ph-stash-wrapper {{^has_items}}d-none{{/has_items}}">
         <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">
             {{#str}} latest_items, block_playerhud {{/str}}

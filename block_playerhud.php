@@ -41,7 +41,7 @@ class block_playerhud extends block_base {
      *
      * @return stdClass|string
      */
-public function get_content() {
+    public function get_content() {
         if ($this->content !== null) {
             return $this->content;
         }
@@ -63,9 +63,12 @@ public function get_content() {
             $config = unserialize(base64_decode($this->instance->configdata));
             if (!$config) $config = new \stdClass();
 
+            // Configurações padrão se não existirem
+            $config->enable_ranking = isset($config->enable_ranking) ? $config->enable_ranking : 1;
+
             $stats = \block_playerhud\game::get_game_stats($config, $this->instance->id, $player->currentxp);
 
-            // [Lógica de Itens Recentes Mantida igual ao original...]
+            // [Lógica de Itens Recentes Mantida...]
             $recentitems = [];
             $seen_items = [];
             $rawinventory = \block_playerhud\game::get_inventory($USER->id, $this->instance->id);
@@ -94,7 +97,7 @@ public function get_content() {
             $manageurl = '';
             if ($isteacher) {
                 $url = new \moodle_url('/blocks/playerhud/manage.php', ['id' => $COURSE->id, 'instanceid' => $this->instance->id]);
-                $manageurl = $url->out();
+                $manageurl = $url->out(false);
             }
 
             $xp_total_game = isset($stats['total_game_xp']) ? $stats['total_game_xp'] : 0;
@@ -103,6 +106,24 @@ public function get_content() {
                 $xp_display .= ' 🏆';
             }
 
+            // --- NOVO: Lógica de Ranking ---
+            $rank_data = null;
+            if (!empty($config->enable_ranking)) {
+                $rank = \block_playerhud\game::get_user_rank($this->instance->id, $USER->id, $player->currentxp);
+                $url_ranking = new \moodle_url('/blocks/playerhud/view.php', [
+                    'id' => $COURSE->id, 
+                    'instanceid' => $this->instance->id, 
+                    'tab' => 'ranking'
+                ]);
+                
+                $rank_data = [
+                    'rank' => $rank,
+                    'url' => $url_ranking->out(false),
+                    'label' => get_string('view_ranking', 'block_playerhud') // Usa a string existente
+                ];
+            }
+            // -------------------------------
+
             $renderdata = [
                 'username'    => fullname($USER),
                 'userpicture' => $OUTPUT->user_picture($USER, ['size' => 100]), 
@@ -110,17 +131,16 @@ public function get_content() {
                 'level'       => $stats['level'] . ' / ' . $stats['max_levels'],
                 'level_class' => $stats['level_class'],
                 'progress'    => $stats['progress'],
-                'viewurl'     => (new \moodle_url('/blocks/playerhud/view.php', ['id' => $COURSE->id, 'instanceid' => $this->instance->id]))->out(),
+                'viewurl'     => (new \moodle_url('/blocks/playerhud/view.php', ['id' => $COURSE->id, 'instanceid' => $this->instance->id]))->out(false),
                 'isteacher'   => $isteacher,
                 'manageurl'   => $manageurl,
                 'has_items'   => !empty($recentitems),
-                'items'       => $recentitems
+                'items'       => $recentitems,
+                'ranking'     => $rank_data // Passa os dados para o template
             ];
 
-            // Renderiza o Sidebar
             $this->content->text = $OUTPUT->render_from_template('block_playerhud/sidebar_view', $renderdata);
 
-            // JS Call
             $jsvars = [
                 'strings' => [
                     'confirm_title' => get_string('confirmation', 'admin'),
@@ -131,7 +151,6 @@ public function get_content() {
             ];
             $this->page->requires->js_call_amd('block_playerhud/view', 'init', [$jsvars]);
             
-            // Injeta o Modal via Template (Limpo!)
             $this->content->text .= $OUTPUT->render_from_template('block_playerhud/modal_item', []);
 
         } catch (\Exception $e) {
