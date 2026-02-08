@@ -1,12 +1,9 @@
 /**
- * PlayerHUD Styles - Refactored & Accessible
+ * PlayerHUD Styles - Moodle 4.x Compliant
+ * Optimized for Accessibility, RTL Support (Logical Properties), and Theme Variables.
  */
 
-/* --- GLOBAL UTILS --- */
-.ph-shadow-sm {
-    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important;
-}
-
+/* --- 1. UTILS & TYPOGRAPHY --- */
 .ph-text-truncate-100 {
     max-width: 100%;
     white-space: nowrap;
@@ -14,77 +11,92 @@
     text-overflow: ellipsis;
 }
 
-/* --- BLOCK SIDEBAR (Contexto: .block_playerhud) --- */
+.ph-cursor-pointer { cursor: pointer; }
+.ph-cursor-wait { cursor: wait; }
+.ph-cursor-help { cursor: help; }
 
+.ph-text-xs { font-size: 0.7rem; }
+.ph-text-sm { font-size: 0.9rem; }
+.ph-text-md { font-size: 1rem; }
+
+/* --- 2. BLOCK SIDEBAR SPECIFIC --- */
 .block_playerhud .userpicture {
-    border: 3px solid #fff;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border: 3px solid var(--light, #fff);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.block_playerhud .ph-sidebar-avatar-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
 }
 
 .block_playerhud .ph-sidebar-avatar img {
-    width: 110px !important;
-    height: 110px !important;
-    max-width: none !important;
-    border: 3px solid #fff;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    width: 110px;
+    height: 110px;
+    border: 3px solid var(--light, #fff);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     border-radius: 50%;
 }
 
-.block_playerhud .ph-progress-container {
-    height: 10px;
-    background-color: rgba(0,0,0,0.05);
-    border-radius: 5px;
-    overflow: hidden;
+/* Sidebar Grid - FIX FUNDO AZUL e Layout */
+.ph-sidebar-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
     margin-bottom: 1rem;
+    /* Simplificado: 'background: none' já remove cor e imagem de uma vez */
+    background: none !important;
+    box-shadow: none !important;
+    border: none !important;
 }
 
-.block_playerhud .ph-sidebar-stash {
+.ph-sidebar-grid .btn {
+    padding-block: 6px;
+    font-size: 1.1rem;
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
     justify-content: center;
+    align-items: center;
+    width: 100%;
 }
 
-/* --- WIDGET DO FILTRO (Contexto Global) --- */
-
-/* Container Principal do Widget */
+/* --- 3. WIDGET SPECIFIC --- */
 .playerhud-widget-container {
     border-radius: 12px;
     margin-bottom: 1.5rem;
-    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+    box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
     overflow: hidden;
     display: flex;
     align-items: stretch;
     position: relative;
-    background-color: #fff;
-    border: 1px solid rgba(0,0,0,.125);
+    background-color: var(--card-bg, #fff);
+    border: 1px solid rgba(0, 0, 0, .125);
     min-height: 100px;
-    /* Garante que a borda padrão exista, será sobrescrita pelas cores abaixo */
-    border-left: 5px solid #6c757d; 
+    /* RTL: Borda lógica na esquerda (start) */
+    border-inline-start: 5px solid var(--secondary, #6c757d);
     transition: border-color 0.3s ease;
 }
 
-/* Coluna Esquerda (Avatar) */
 .ph-widget-left {
     min-width: 110px;
     width: 110px;
-    background-color: #f8f9fa;
+    background-color: var(--gray-100, #f8f9fa);
     display: flex;
     align-items: center;
     justify-content: center;
-    border-right: 1px solid #dee2e6;
+    /* RTL: Borda lógica na direita (end) */
+    border-inline-end: 1px solid var(--gray-300, #dee2e6);
     padding: 1rem;
 }
 
 .ph-widget-avatar img {
     border-radius: 50%;
-    border: 3px solid #fff;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border: 3px solid var(--light, #fff);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     width: 75px;
     height: 75px;
 }
 
-/* Coluna Central (Stats) */
 .ph-widget-center {
     flex-grow: 1;
     display: flex;
@@ -94,12 +106,12 @@
     min-width: 0;
 }
 
-/* Coluna Direita (Botões) */
 .ph-widget-right {
-    min-width: 180px; /* Aumentado de 80px para 160px para caber 3 colunas */
-    width: 180px;     /* Aumentado de 80px para 160px */
-    background-color: #f8f9fa;
-    border-left: 1px solid #dee2e6;
+    min-width: 180px;
+    width: 180px;
+    background-color: var(--gray-100, #f8f9fa);
+    /* RTL: Borda lógica na esquerda (start) */
+    border-inline-start: 1px solid var(--gray-300, #dee2e6);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -108,89 +120,26 @@
     padding: 0.5rem;
 }
 
-.ph-widget-btn {
-    width: 45px;
-    height: 45px;
-    border-radius: 10px !important;
-    /* Usamos !important para garantir que o Bootstrap não interfira */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    border: none; /* Remove bordas padrão de botão */
-}
-
-.ph-widget-btn-icon {
-    font-size: 1.4rem;
-    line-height: 1; /* Mantém a altura da linha compacta */
-    display: inline-block;   
-}
-
-/* --- ITENS (Compartilhado) --- */
-
-.ph-widget-stash {
-    display: flex;
-    flex-wrap: wrap;
+.ph-widget-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 4px;
-    min-height: 34px;
-    margin-top: 0.5rem;
+    margin-top: auto;
 }
 
-.ph-mini-item {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    position: relative;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    cursor: pointer;
-    transition: transform 0.1s ease, border-color 0.1s ease;
-}
-
-.ph-mini-item:hover, .ph-mini-item:focus {
-    transform: translateY(-2px) scale(1.05);
-    border-color: #0f6cbf;
-    z-index: 10;
-}
-
-.ph-mini-item img {
+.ph-widget-actions-grid .btn {
     width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.ph-mini-item .ph-emoji {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     font-size: 1.2rem;
-    line-height: 1;
-}
-/* Ajuste Fino para Cards de Drop (Shortcode) */
-.ph-card-compact {
-    min-height: 0 !important;
-    height: auto !important;
-    /* Removemos qualquer display flex que possa estar esticando o pai */
-    align-self: flex-start; 
+    padding-block: 0.5rem;
 }
 
-/* Remove a cor de fundo do preview do gerador para usar a do Bootstrap 'card' */
-/* CORREÇÃO: Uso de classe em vez de ID para menor especificidade */
-.ph-modal-codegen .ph-gen-preview-real-card {
-    background-color: #fff; /* Garante fundo branco */
-    /* Removemos estilos que conflitam com as classes Bootstrap que adicionamos no JS */
-    border: 1px solid rgba(0,0,0,.125); 
-}
-
-/* --- CORES E TIERS (CORRIGIDO E OTIMIZADO) --- */
-
-/* Barra de Progresso container */
-.playerhud-widget-container .ph-progress-container {
+/* --- 4. GLOBAL TIER SYSTEM (Cores e Badges) --- */
+.ph-progress-container {
     height: 12px;
-    background-color: #e9ecef;
+    background-color: var(--gray-200, #e9ecef);
     border-radius: 6px;
     overflow: hidden;
     margin-top: 5px;
@@ -201,483 +150,402 @@
     border-radius: 6px;
     transition: width 0.6s ease;
     height: 100%;
-    /* Remove degradês do Bootstrap para garantir a cor sólida */
-    background-image: none !important; 
+    background-image: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* TIER COLORS
-   Nota: Aplicamos !important para garantir sobreposição ao tema Boost 
-*/
-
-/* Tier 1 - Cinza/Padrão */
-.ph-lvl-tier-1 .progress-bar, 
-.progress-bar.ph-lvl-tier-1,
-.badge.ph-lvl-tier-1 { 
-    background-color: #6c757d !important; 
-    color: #fff !important; 
+/* TIER 1 */
+.ph-lvl-tier-1.progress-bar,
+.ph-lvl-tier-1.badge,
+.playerhud-widget-container.ph-lvl-tier-1 .progress-bar {
+    background-color: var(--secondary, #6c757d);
+    color: var(--light, #fff) !important;
+    border-color: var(--secondary, #6c757d);
 }
-/* Seletor específico para garantir a borda lateral */
-.playerhud-widget-container.ph-lvl-tier-1 { border-left-color: #6c757d !important; }
+.playerhud-widget-container.ph-lvl-tier-1 { border-inline-start-color: var(--secondary, #6c757d); }
 
-
-/* Tier 2 - Verde */
-.ph-lvl-tier-2 .progress-bar, 
-.progress-bar.ph-lvl-tier-2,
-.badge.ph-lvl-tier-2 { 
-    background-color: #208337 !important; 
-    color: #fff !important; 
+/* TIER 2 */
+.ph-lvl-tier-2.progress-bar,
+.ph-lvl-tier-2.badge,
+.playerhud-widget-container.ph-lvl-tier-2 .progress-bar {
+    background-color: var(--success, #208337);
+    color: var(--light, #fff) !important;
+    border-color: var(--success, #208337);
 }
-.playerhud-widget-container.ph-lvl-tier-2 { border-left-color: #208337 !important; }
+.playerhud-widget-container.ph-lvl-tier-2 { border-inline-start-color: var(--success, #208337); }
 
-
-/* Tier 3 - Azul */
-.ph-lvl-tier-3 .progress-bar, 
-.progress-bar.ph-lvl-tier-3,
-.badge.ph-lvl-tier-3 { 
-    background-color: #0b55c4 !important; 
-    color: #fff !important; 
+/* TIER 3 */
+.ph-lvl-tier-3.progress-bar,
+.ph-lvl-tier-3.badge,
+.playerhud-widget-container.ph-lvl-tier-3 .progress-bar {
+    background-color: var(--primary, #0b55c4);
+    color: var(--light, #fff) !important;
+    border-color: var(--primary, #0b55c4);
 }
-.playerhud-widget-container.ph-lvl-tier-3 { border-left-color: #0b55c4 !important; }
+.playerhud-widget-container.ph-lvl-tier-3 { border-inline-start-color: var(--primary, #0b55c4); }
 
-
-/* Tier 4 - Roxo */
-.ph-lvl-tier-4 .progress-bar, 
-.progress-bar.ph-lvl-tier-4,
-.badge.ph-lvl-tier-4 { 
-    background-color: #6f42c1 !important; 
-    color: #fff !important; 
+/* TIER 4 */
+.ph-lvl-tier-4.progress-bar,
+.ph-lvl-tier-4.badge,
+.playerhud-widget-container.ph-lvl-tier-4 .progress-bar {
+    background-color: var(--purple, #6f42c1);
+    color: var(--light, #fff) !important;
+    border-color: var(--purple, #6f42c1);
 }
-.playerhud-widget-container.ph-lvl-tier-4 { border-left-color: #6f42c1 !important; }
+.playerhud-widget-container.ph-lvl-tier-4 { border-inline-start-color: var(--purple, #6f42c1); }
+
+/* TIER 5 (Legendary) */
+.ph-lvl-tier-5.progress-bar,
+.ph-lvl-tier-5.badge,
+.playerhud-widget-container.ph-lvl-tier-5 .progress-bar {
+    background: linear-gradient(45deg, var(--primary, #0d6efd), var(--purple, #6f42c1));
+    color: var(--light, #fff) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.playerhud-widget-container.ph-lvl-tier-5 { border-inline-start-color: var(--primary, #0d6efd); }
 
 
-/* Tier 5 - Dourado/Amarelo */
-.ph-lvl-tier-5 .progress-bar, 
-.progress-bar.ph-lvl-tier-5,
-.badge.ph-lvl-tier-5 { 
-    /* Remove a cor sólida amarela e aplica um gradiente moderno */
-    background: linear-gradient(45deg, #0d6efd, #6610f2) !important; 
-    color: #fff !important; 
-    border: 1px solid rgba(255,255,255,0.2); /* Sutil borda para destacar */
+/* --- 5. BUTTON STYLES --- */
+.btn-ph-level-border {
+    background-color: var(--card-bg, #fff);
+    border: 1px solid var(--gray-300, #dee2e6);
+    color: var(--gray-700, #495057);
+    font-weight: 700;
+    transition: all 0.2s ease-in-out;
 }
 
-/* A borda lateral fica com a cor predominante do gradiente (Azul) */
-.playerhud-widget-container.ph-lvl-tier-5 { 
-    border-left-color: #0d6efd !important; 
-}
-/* --- FIXES VISUAIS (Drops & Generator) --- */
+/* Tier Colors for Buttons */
+.ph-lvl-tier-1 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-1 .btn-ph-level-border { border-color: var(--secondary, #6c757d); color: var(--secondary, #6c757d); }
+.ph-lvl-tier-1 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-1 .btn-ph-level-border:hover { background-color: var(--secondary, #6c757d); color: var(--light, #fff); }
 
-/* 1. Correção do Modal Gerador (Imagem Gigante) */
-/* Restringe a imagem dentro do card de prévia para não estourar o modal */
-.ph-modal-codegen .ph-gen-preview-real-card img {
-    max-width: 100% !important;
-    max-height: 60px !important; /* Altura máxima igual ao ícone */
-    width: auto !important;
-    height: auto !important;
-    object-fit: contain;
-    margin: 0 auto;
+.ph-lvl-tier-2 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-2 .btn-ph-level-border { border-color: var(--success, #208337); color: var(--success, #208337); }
+.ph-lvl-tier-2 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-2 .btn-ph-level-border:hover { background-color: var(--success, #208337); color: var(--light, #fff); }
+
+.ph-lvl-tier-3 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-3 .btn-ph-level-border { border-color: var(--primary, #0b55c4); color: var(--primary, #0b55c4); }
+.ph-lvl-tier-3 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-3 .btn-ph-level-border:hover { background-color: var(--primary, #0b55c4); color: var(--light, #fff); }
+
+.ph-lvl-tier-4 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-4 .btn-ph-level-border { border-color: var(--purple, #6f42c1); color: var(--purple, #6f42c1); }
+.ph-lvl-tier-4 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-4 .btn-ph-level-border:hover { background-color: var(--purple, #6f42c1); color: var(--light, #fff); }
+
+.ph-lvl-tier-5 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-5 .btn-ph-level-border { border-color: var(--primary, #0d6efd); color: var(--primary, #0d6efd); }
+.ph-lvl-tier-5 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-5 .btn-ph-level-border:hover {
+    background: linear-gradient(45deg, var(--primary, #0d6efd), var(--purple, #6f42c1));
+    border-color: transparent;
+    color: var(--light, #fff);
+}
+
+/* --- 6. ITEM CARDS --- */
+.ph-card-rounded { border-radius: 15px; }
+.playerhud-item-card { position: relative; }
+
+.ph-card-count-badge {
+    position: absolute;
+    top: -8px;
+    /* RTL: 'right' -> 'inset-inline-end' */
+    inset-inline-end: -8px;
+    background-color: var(--dark, #343a40);
+    color: var(--light, #fff);
+    border-radius: 50%; width: 24px; height: 24px;
+    font-size: 0.75rem; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--card-bg, #fff);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 5;
+}
+.ph-new-badge {
+    position: absolute;
+    top: -5px;
+    inset-inline-start: -5px;
+    background-color: var(--danger, #dc3545);
+    color: var(--light, #fff);
+    font-size: 0.65rem; padding: 2px 5px; border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 6;
+    /* Atualizado para usar o novo nome da animação */
+    animation: ph-pulse 2s infinite;
+}
+.ph-infinite-badge {
+    position: absolute;
+    top: 5px;
+    /* RTL: 'left' -> 'inset-inline-start' */
+    inset-inline-start: 5px;
+    color: var(--info, #17a2b8);
+    font-size: 0.9rem; z-index: 4; opacity: 0.8;
+}
+.ph-badge-archived {
+    top: -5px;
+    /* RTL: 'left' -> 'inset-inline-start' */
+    inset-inline-start: -5px;
+    font-size: 0.65rem; z-index: 5;
+}
+
+.ph-item-archived { opacity: 0.85; filter: grayscale(30%); border: 1px dashed var(--gray-400, #ccc) !important; }
+.ph-missing { opacity: 0.6; border-style: dashed; }
+
+.ph-card-origins {
+    font-size: 0.75rem;
+    color: var(--gray-600, #6c757d);
+    background: var(--gray-100, #f8f9fa);
+    padding: 2px 8px;
+    border-radius: 10px;
+    display: inline-block;
+    border: 1px solid var(--gray-200, #e9ecef);
+}
+.ph-text-gold { color: #856404; } /* Esta cor custom pode ficar, ou usar variável se houver */
+.ph-card-date {
+    font-size: 0.65rem;
+    color: var(--gray-500, #adb5bd);
+    margin-top: 5px;
+    border-top: 1px solid var(--gray-100, #f1f1f1);
+    width: 100%;
+    text-align: center;
+    padding-top: 3px;
+}
+.ph-card-icon-container { height: 80px; display: flex; align-items: center; justify-content: center; }
+.ph-card-img { max-height: 60px; width: auto; }
+.ph-card-emoji { font-size: 3rem; line-height: 1; }
+
+/* CORREÇÃO PARA TÍTULOS LONGOS NA COLEÇÃO */
+.ph-card-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 4; 
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 2.4em; 
+    line-height: 1.2;
+    font-size: 0.85rem; 
+    margin-bottom: 0.5rem;
+}
+.playerhud-inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
+
+/* --- 7. STASH & MINI ITEMS (Fixed Shape & Fill) --- */
+.ph-widget-stash,
+.ph-sidebar-stash,
+.block_playerhud .ph-sidebar-stash {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    flex-direction: row !important;
+    gap: 4px;
+    min-height: 34px;
+    margin-top: 0.5rem;
+    justify-content: center;
+}
+
+.ph-mini-item {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--gray-300, #dee2e6);
+    border-radius: 6px !important; 
+    padding: 0 !important; 
+    overflow: hidden; 
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: transform 0.1s ease, border-color 0.1s ease;
+    margin: 0 !important;
+}
+
+.ph-mini-item:hover { 
+    transform: translateY(-2px) scale(1.05); 
+    border-color: var(--primary, #0f6cbf); 
+    z-index: 10; 
+}
+
+.ph-mini-item img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover;
     border-radius: 0 !important;
+    display: block;
 }
 
-/* Garante que o container da imagem no preview tenha altura fixa */
-.ph-modal-codegen .ph-gen-preview-real-card div[style*="height:60px"] {
-    overflow: hidden; /* Corta excessos se houver */
-}
+.ph-mini-item .ph-emoji { font-size: 1.2rem; line-height: 1; }
 
-/* 2. Correção do Drop Renderizado (Cantos e Tamanho) */
-/* Remove o arredondamento forçado e garante que a imagem caiba no card */
-.playerhud-item-card img {
-    border-radius: 0 !important; /* Remove cantos arredondados */
-    max-width: 100% !important;
-    max-height: 70px !important; /* Garante que não empurre o texto para fora */
-    width: auto !important;
+/* --- 8. DROPS & UTILS (Compact but Breathable) --- */
+
+/* Card Container */
+.ph-drop-card-container {
+    width: 160px;
+    display: inline-flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    vertical-align: top;
+    margin: 5px;
+    position: relative;
+    padding: 0.75rem !important;
     height: auto !important;
-    object-fit: contain;
+    min-height: 0 !important;
 }
-/* --- DROP MODO IMAGEM (Ajustes de Tamanho e Borda) --- */
 
-/* Imagem Grande (Modo Apenas Imagem) */
+/* Área clicável (Ícone + Texto) */
+.ph-drop-trigger-area {
+    cursor: pointer;
+    min-height: 0 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start !important;
+    flex-grow: 0 !important;
+    margin-bottom: 1rem !important; 
+}
+
+/* Container da Imagem/Emoji */
+.ph-drop-icon-wrapper {
+    height: auto !important;
+    min-height: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 1rem !important; 
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+/* A Imagem do Drop */
+.playerhud-item-card img {
+    border-radius: 0 !important;
+    max-width: 100%;
+    max-height: 80px; 
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+/* Texto do Nome */
+.ph-drop-trigger-area strong {
+    white-space: normal !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2 !important;
+    font-size: 0.9rem;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    height: auto !important;
+    flex-grow: 0 !important;
+}
+
+/* Botões dentro do Drop */
+.ph-drop-card-container .btn {
+    margin-top: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+/* --- Image Mode (Mantido) --- */
+.ph-drop-image-container {
+    display: inline-block;
+    position: relative;
+    text-align: center;
+    vertical-align: top;
+    margin-bottom: 14px;
+    /* RTL */
+    margin-inline-end: 5px;
+}
+
 .ph-drop-img-lg {
-    width: 80px;          /* Aumentado de 50px para 80px */
+    width: 80px;
     height: 80px;
     object-fit: contain;
-    border-radius: 0 !important; /* Remove cantos arredondados do tema */
+    border-radius: 0 !important;
     transition: transform 0.2s ease;
 }
 
-/* Emoji Grande (Modo Apenas Imagem) */
 .ph-drop-emoji-lg {
-    font-size: 60px;      /* Aumentado de 40px para 60px */
+    font-size: 60px;
     line-height: 1;
     display: inline-block;
     transition: transform 0.2s ease;
 }
 
-/* Efeito de Hover (Zoom leve ao passar o mouse) */
-.ph-action-collect:hover ~ div .ph-drop-img-lg,
-.ph-action-collect:hover ~ div .ph-drop-emoji-lg {
-    transform: scale(1.1);
-}
-/* --- ESTILOS DO GERADOR DE CÓDIGO (Modal) --- */
+/* Estados e Badges */
+.ph-state-dimmed { opacity: 0.5; }
+.ph-state-grayscale { filter: grayscale(100%); opacity: 0.6; }
 
-/* Wrapper do modo 'Apenas Imagem' */
-.ph-modal-codegen .ph-gen-preview-wrapper-img {
-    cursor: pointer;
-    filter: drop-shadow(0 4px 2px rgba(0,0,0,0.1));
-    text-align: center;
-    display: inline-block; /* Garante que o transform funcione */
-    transition: transform 0.2s ease;
-}
-
-.ph-modal-codegen .ph-gen-preview-wrapper-img:hover {
-    transform: scale(1.05);
-}
-
-/* Imagem Grande na Prévia (Igual ao Drop real: 80px) */
-.ph-modal-codegen .ph-gen-img-lg {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    border-radius: 0 !important;
-}
-
-/* Emoji Grande na Prévia (Igual ao Drop real: 60px) */
-.ph-modal-codegen .ph-gen-emoji-lg {
-    font-size: 60px;
-    line-height: 1;
-}
-
-/* Ajustes finos no Card da Prévia */
-.ph-modal-codegen .ph-gen-preview-real-card {
-    /* Define largura e margem via CSS, não inline */
-    width: 160px !important; 
-    margin: 0 auto !important;
-}
-/* --- CLASSES UTILITÁRIAS PARA O DROP (Remove Inline CSS) --- */
-
-/* Estados de Coleta */
-.ph-state-dimmed {
-    opacity: 0.5;
-}
-
-.ph-state-grayscale {
-    filter: grayscale(100%);
-    opacity: 0.6; /* Combina opacidade com grayscale */
-}
-
-/* Posicionamento de Badges (Check e Timer) */
 .ph-badge-bottom-right {
     position: absolute;
     bottom: -5px;
-    right: -5px;
+    /* RTL */
+    inset-inline-end: -5px;
     font-size: 0.6rem;
     z-index: 5;
 }
 
 .ph-badge-bottom-center {
     position: absolute;
-    bottom: -10px;
+    bottom: -18px;
+    /* Centralização com RTL compatível (left 50% é padrão de layout hack, mas aceitável) */
     left: 50%;
     transform: translateX(-50%);
-    font-size: 0.6rem;
+    font-size: 0.65rem;
     white-space: nowrap;
-    z-index: 5;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--gray-300, #dee2e6);
 }
 
 .ph-badge-top-right {
     position: absolute;
     top: 5px;
-    right: 5px;
+    /* RTL */
+    inset-inline-end: 5px;
     font-size: 0.7rem;
     z-index: 5;
 }
 
-/* Links de Ação (Overlay completo) */
 .ph-link-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 10;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
 }
-
-/* Ajustes do Card de Drop */
-.ph-drop-card-container {
-    width: 160px;
-    display: inline-block;
-    vertical-align: top;
-    margin: 5px;
-    position: relative;
-    /* Classes auxiliares do Bootstrap (p-2, card) já cuidam do resto */
-}
-
-.ph-drop-trigger-area {
-    cursor: pointer;
-    min-height: 85px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.ph-drop-icon-wrapper {
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    margin-bottom: 0.25rem;
-}
-
-/* Cursor de espera */
-.ph-cursor-wait {
-    cursor: wait !important;
-}
-
-.ph-cursor-help {
-    cursor: help !important;
-}
-/* --- FIXES FINAIS DE UI (Timer & Formato) --- */
-
-/* 1. Container do Drop Modo Imagem */
-.ph-drop-image-container {
-    display: inline-block;
-    position: relative;
-    text-align: center;
-    vertical-align: top;
-    /* MÁGICA: Reserva espaço embaixo para o timer não cortar/sobrepor */
-    margin-bottom: 14px; 
-    margin-right: 5px;
-}
-
-/* 2. Ajuste do Timer no Modo Imagem */
-/* Garante que o timer fique centralizado e legível */
-.ph-drop-image-container .ph-timer {
-    bottom: -18px !important; /* Empurra um pouco mais para baixo */
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.65rem;
-    white-space: nowrap;
-    z-index: 10;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-    border: 1px solid #dee2e6;
-}
-
-/* 3. Consistência dos Itens (Widget e Sidebar) */
-/* Garante que sejam Quadrados Arredondados, nunca Círculos */
-.ph-mini-item {
-    border-radius: 6px !important; /* Força o padrão Bootstrap rounded */
-}
-
-/* Garante que a imagem interna não tenha borda própria, respeitando o container */
-.ph-mini-item img {
-    border-radius: 0 !important; 
-}
-/* --- UTILITÁRIOS FINAIS (Zero Inline CSS) --- */
-
-/* Para imagens de ícones dentro de cards gerados via JS */
 .ph-icon-contain {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
+    max-width: 100%; max-height: 100%; object-fit: contain;
 }
 
-/* Garante que o badge de contagem suma se não tiver itens, 
-   caso a classe d-none falhe por especificidade */
-.ph-badge-hidden {
-    display: none !important;
+/* Modais & Tables */
+.ph-modal-zindex { z-index: 10550; }
+.ph-z-index-high { z-index: 10500; }
+.ph-modal-img-container { min-width: 100px; }
+.ph-modal-img { max-width: 120px; max-height: 120px; object-fit: contain; }
+.ph-modal-emoji { font-size: 3rem; line-height: 1; }
+.ph-alert-warning-box {
+    background-color: var(--warning-bg-subtle, #fff3cd); /* Fallback para var do Bootstrap */
+    padding: 10px; border-radius: 5px;
+    border: 1px solid var(--warning-border-subtle, #ffeeba);
 }
-/* --- REFATORAÇÃO ETAPA 1 --- */
-.ph-text-xs {
-    font-size: 0.7rem;
-}
-
-.ph-code-input {
-    font-weight: bold;
-    color: #0f6cbf;
-    background-color: #f8f9fa;
-}
-/* --- REFATORAÇÃO ETAPA 2 (View) --- */
-
-.ph-card-rounded {
-    border-radius: 15px;
-}
-
-.ph-text-sm {
-    font-size: 0.9rem;
-}
-
-.ph-text-md {
-    font-size: 1rem;
-}
-
-.ph-card-count-badge {
-    position: absolute; 
-    top: -8px; 
-    right: -8px; 
-    background-color: #343a40; 
-    color: #fff; 
-    border-radius: 50%; 
-    width: 24px; 
-    height: 24px; 
-    font-size: 0.75rem; 
+.ph-code-input, 
+.ph-input-code-readonly { 
+    /* !important necessário para vencer o estilo padrão de input[readonly] do Bootstrap */
+    background-color: var(--gray-200, #f0f0f0) !important; 
+    color: var(--pink, #d63384) !important; 
+    font-size: 0.85rem !important; 
     font-weight: bold; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    border: 2px solid #fff; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
-    z-index: 5;
+    font-family: monospace; 
+    opacity: 1 !important; /* Impede que alguns navegadores deixem o texto desbotado */
 }
+.ph-modal-codegen .ph-gen-preview-real-card {
+    background-color: var(--card-bg, #fff);
+    border: 1px solid rgba(0, 0, 0, .125);
+    width: 160px; margin: 0 auto;
+}
+.ph-modal-codegen .ph-gen-preview-real-card img { max-width: 100%; max-height: 60px; object-fit: contain; margin: 0 auto; }
+.ph-gen-img-lg { width: 80px; height: 80px; object-fit: contain; border-radius: 0; }
+.ph-gen-emoji-lg { font-size: 60px; line-height: 1; }
+.ph-gen-preview-wrapper-img { cursor: pointer; filter: drop-shadow(0 4px 2px rgba(0,0,0,0.1)); text-align: center; display: inline-block; transition: transform 0.2s ease; }
+.ph-gen-preview-wrapper-img:hover { transform: scale(1.05); }
 
-.ph-infinite-badge {
-    position: absolute; 
-    top: 5px; 
-    left: 5px; 
-    color: #17a2b8; 
-    font-size: 0.9rem; 
-    z-index: 4; 
-    opacity: 0.8;
-}
-
-.ph-new-badge {
-    position: absolute;
-    top: -5px;
-    left: -5px;
-    background-color: #dc3545;
-    color: white;
-    font-size: 0.65rem;
-    padding: 2px 5px;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    z-index: 6;
-    animation: phPulse 2s infinite;
-}
-
-.ph-badge-archived {
-    top: -5px; 
-    left: -5px; 
-    font-size: 0.65rem; 
-    z-index: 5;
-}
-
-.ph-item-archived {
-    opacity: 0.85; 
-    filter: grayscale(30%); 
-    border: 1px dashed #ccc !important;
-}
-
-.ph-card-origins {
-    font-size: 0.75rem; 
-    color: #6c757d; 
-    background: #f8f9fa; 
-    padding: 2px 8px; 
-    border-radius: 10px; 
-    display: inline-block; 
-    border: 1px solid #e9ecef;
-}
-
-.ph-text-gold {
-    color: #856404;
-}
-
-.ph-card-date {
-    font-size: 0.65rem; 
-    color: #adb5bd; 
-    margin-top: 5px; 
-    border-top: 1px solid #f1f1f1; 
-    width: 100%; 
-    text-align: center; 
-    padding-top: 3px;
-}
-
-.ph-card-icon-container {
-    height: 80px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-}
-
-.ph-card-img {
-    max-height: 60px; 
-    width: auto;
-}
-
-.ph-card-emoji {
-    font-size: 3rem; 
-    line-height: 1;
-}
-
-@keyframes phPulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-}
-/* --- CORREÇÃO DE TEXTO CARD --- */
-.ph-card-title {
-    /* Exibe até 2 linhas e corta com ... se passar disso */
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2; /* Adicionado para compatibilidade padrão e silenciar o linter */
-    -webkit-box-orient: vertical;
-    /* box-orient é não-padrão, mas necessário. Alguns linters reclamam, mas é essencial aqui */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    
-    /* Garante altura mínima para alinhamento dos cards */
-    min-height: 2.4em; 
-    line-height: 1.2;
-}
-/* --- REFATORAÇÃO ETAPA 1: Classes Semânticas (Zero Inline) --- */
-
-/* Opt-in Screen */
-.ph-optin-card {
-    max-width: 500px;
-    border-radius: 15px;
-    border: none;
-}
-
-.ph-optin-text {
-    font-size: 1.1rem;
-}
-
-/* Layout Geral */
-.ph-tab-content-wrapper {
-    min-height: 300px;
-}
-
-/* Modais */
-.ph-modal-zindex {
-    z-index: 10550; /* Garante que fique acima de outros elementos */
-}
-
-.ph-modal-img-container {
-    min-width: 100px;
-}
-
-.ph-modal-img-large {
-    max-width: 120px;
-    max-height: 120px;
-    object-fit: contain;
-}
-
-.ph-modal-emoji-large {
-    font-size: 80px;
-    line-height: 1;
-}
-
-/* Utilitários de Cursor e Display */
-.ph-cursor-pointer {
-    cursor: pointer;
-}
-
-.ph-empty-state-icon {
-    font-size: 3rem;
-    opacity: 0.3;
-}
-/* --- REFATORAÇÃO ETAPA 3: Tabelas e Utilitários (Zero Inline) --- */
-
-/* Larguras de Coluna para Tabelas de Gerenciamento */
+/* Column Widths */
 .ph-col-xs { width: 40px; }
 .ph-col-sm { width: 50px; }
 .ph-col-md { width: 80px; }
@@ -685,335 +553,31 @@
 .ph-col-xl { width: 140px; }
 .ph-col-xxl { width: 160px; }
 .ph-col-actions { width: 220px; }
-
-/* Modais e Overlays */
-.ph-z-index-high { z-index: 10500; }
-
-/* Alertas e Inputs Customizados no Modal */
-.ph-alert-warning-box {
-    background-color: #fff3cd;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ffeeba;
-}
-
-.ph-input-code-readonly {
-    background-color: #f0f0f0 !important;
-    color: #d63384 !important; /* Rosa Bootstrap forçado */
-    font-size: 0.85rem !important; /* Reduzido levemente */
-    font-weight: bold !important;
-    font-family: monospace !important; /* Garante fonte de código */
-}
-
-/* Tamanhos de Fonte Específicos (Substituindo font-size inline) */
-.ph-font-size-24 { font-size: 24px; }
-.ph-font-size-40 { font-size: 40px; }
-.ph-font-size-50 { font-size: 50px; }
-.ph-font-size-60 { font-size: 60px; }
-.ph-font-size-80 { font-size: 80px; }
-
-/* Utilitários de Imagem */
-.ph-img-xs { width: 32px; height: 32px; object-fit: contain; }
-.ph-img-sm { width: 50px; height: 50px; object-fit: contain; }
-.ph-img-md { max-width: 80px; max-height: 80px; object-fit: contain; }
-.ph-img-lg { max-width: 120px; max-height: 120px; object-fit: contain; }
-
-/* Espaçamento */
-.ph-gap-15 { margin-right: 15px; }
-
-/* --- REFATORAÇÃO FINAL: Utilitários de Ranking --- */
-
-/* Largura da coluna de Rank */
-.ph-col-rank { width: 60px; }
-
-/* Badge "Oculto" bem pequeno */
-.ph-badge-tiny { font-size: 0.65rem; }
-
-/* Opacidade para estado vazio */
-.ph-opacity-low { opacity: 0.3; }
-
-/* Ajuste para o Emoji de Medalha no texto */
-.ph-rank-medal {
-    font-size: 1.2rem;
-    line-height: 1;
-}
-/* --- REFATORAÇÃO ETAPA 4: Gerenciamento de Drops --- */
-
-/* Imagem de cabeçalho na gestão de drops */
-.ph-header-img {
-    width: 50px;
-    height: 50px;
-    object-fit: contain;
-    margin-right: 15px;
-}
-
-.ph-header-emoji {
-    font-size: 40px;
-    margin-right: 15px;
-    line-height: 1;
-}
-
-/* Colunas Específicas de Drop */
 .ph-col-qty { width: 130px; }
 .ph-col-time { width: 150px; }
 .ph-col-gen { width: 180px; }
-
-/* --- REFATORAÇÃO ETAPA 5: Coleção e Sidebar --- */
-
-/* Estado Vazio (Ícone gigante) */
-.ph-empty-state-icon {
-    font-size: 3rem;
-    opacity: 0.3;
+.ph-col-rank { width: 60px; }
+.ph-img-xs { width: 32px; height: 32px; object-fit: contain; }
+.ph-header-img {
+    width: 50px; height: 50px; object-fit: contain;
+    /* RTL */
+    margin-inline-end: 15px;
 }
-
-/* Cursor Pointer (Substitui style="cursor: pointer") */
-.ph-cursor-pointer {
-    cursor: pointer;
+.ph-header-emoji {
+    font-size: 40px;
+    /* RTL */
+    margin-inline-end: 15px;
+    line-height: 1;
 }
-
-/* Sidebar Stash Wrapper (Garante comportamento correto quando vazio) */
-.ph-stash-wrapper.d-none {
-    display: none !important;
+.ph-rank-medal { font-size: 1.2rem; line-height: 1; }
+.ph-badge-tiny { font-size: 0.65rem; }
+.ph-opacity-low { opacity: 0.3; }
+.ph-empty-state-icon { font-size: 3rem; opacity: 0.3; }
+@keyframes ph-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
-/* --- REFATORAÇÃO FINAL: Grid do Widget e Botões --- */
-
-/* Contêiner de Grid para os botões de ação no Widget */
-.ph-widget-actions-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 colunas de largura igual */
-    gap: 4px; /* Espaçamento pequeno entre botões */
-    margin-top: auto; /* Empurra para baixo se houver espaço extra */
-}
-
-/* Garante que os botões ocupem a célula, mas com tamanho adequado */
-.ph-widget-actions-grid .btn {
-    width: 100%;
-    /* REMOVIDO: padding-left: 0; padding-right: 0; -> Deixa o Bootstrap controlar o padding */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.2rem; /* Aumenta o tamanho dos emojis/ícones dentro do botão */
-    padding-top: 0.5rem;    /* Garante um pouco mais de altura */
-    padding-bottom: 0.5rem; /* Garante um pouco mais de altura */
-}
-
-/* Botão de Alto Contraste (Fundo Branco) para o Ranking */
-.btn-white-contrast {
-    background-color: #ffffff !important;
-    border: 1px solid #dee2e6 !important; /* Borda sutil do Bootstrap */
-    color: #212529 !important; /* Texto escuro */
-    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; /* Sombra suave */
-}
-
-.btn-white-contrast:hover {
-    background-color: #f8f9fa !important; /* Cinza muito claro ao passar o mouse */
-    border-color: #c6c7c8 !important;
-}
-/* --- REFATORAÇÃO VISUAL: Botões Harmônicos --- */
-
-/* Botão Padrão do Grid (Clean) */
-.btn-ph-tile {
-    background-color: #f8f9fa !important; /* Cinza muito claro */
-    border: 1px solid #e9ecef !important;
-    color: #495057 !important; /* Texto cinza escuro */
-    transition: all 0.2s ease;
-}
-
-.btn-ph-tile:hover {
-    background-color: #e9ecef !important; /* Um pouco mais escuro no hover */
-    transform: translateY(-1px); /* Leve efeito de elevação */
-    border-color: #ced4da !important;
-}
-
-/* Botão de Destaque (Ranking/Ouro) */
-.btn-ph-gold {
-    background: linear-gradient(135deg, #fff3cd 0%, #ffecb5 100%) !important;
-    border: 1px solid #ffecb5 !important;
-    color: #856404 !important; /* Marrom dourado */
-}
-
-.btn-ph-gold:hover {
-    background: #ffe69c !important;
-    border-color: #ffe69c !important;
-}
-/* --- REFATORAÇÃO VISUAL: Botões RPG Soft (Pastéis) --- */
-
-/* Base para botões pastéis (Padding, Fonte, Transição) */
-.btn-ph-pastel {
-    border: 1px solid transparent !important;
-    font-weight: 600 !important;
-    transition: all 0.2s ease-in-out;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    font-size: 1.2rem;
-}
-
-.btn-ph-pastel:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
-}
-
-/* Variação: Mochila (Azul Suave) */
-.btn-ph-pastel-blue {
-    background-color: #e7f1ff !important;
-    color: #0d6efd !important;
-    border-color: #cce5ff !important;
-}
-.btn-ph-pastel-blue:hover {
-    background-color: #dbeafe !important;
-    color: #0a58ca !important;
-}
-
-/* Variação: História (Ciano/Teal Suave) */
-.btn-ph-pastel-cyan {
-    background-color: #e0faff !important;
-    color: #0aa2c0 !important;
-    border-color: #bbf0fa !important;
-}
-.btn-ph-pastel-cyan:hover {
-    background-color: #cffafe !important;
-    color: #0891b2 !important;
-}
-
-/* Variação: Loja (Verde Suave) */
-.btn-ph-pastel-green {
-    background-color: #e6f8ec !important;
-    color: #198754 !important;
-    border-color: #d1e7dd !important;
-}
-.btn-ph-pastel-green:hover {
-    background-color: #d1e7dd !important;
-    color: #146c43 !important;
-}
-
-/* Variação: Missões (Vermelho/Rosa Suave) */
-.btn-ph-pastel-red {
-    background-color: #fff0f1 !important;
-    color: #dc3545 !important;
-    border-color: #f5c6cb !important;
-}
-.btn-ph-pastel-red:hover {
-    background-color: #ffebe9 !important;
-    color: #b02a37 !important;
-}
-
-/* Variação: Ranking (Dourado Suave - Mantido para destaque) */
-.btn-ph-pastel-gold {
-    background: linear-gradient(180deg, #fff9db 0%, #fff3cd 100%) !important;
-    color: #856404 !important;
-    border-color: #ffeeba !important;
-}
-.btn-ph-pastel-gold:hover {
-    background: #ffe69c !important;
-}
-/* --- REFATORAÇÃO VISUAL: Botões Outline com Cor do Nível --- */
-
-/* Classe base do botão (Estrutura e Transição) */
-.btn-ph-level-border {
-    background-color: #ffffff !important; /* Fundo sempre branco */
-    border: 1px solid #dee2e6 !important; /* Cor padrão (fallback) */
-    color: #495057 !important; /* Cor padrão */
-    font-weight: 700 !important; /* Negrito para destacar a cor */
-    
-    /* Layout */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    font-size: 1.2rem;
-    
-    transition: all 0.2s ease-in-out;
-}
-
-/* Tier 1 (Cinza) */
-.ph-lvl-tier-1 .btn-ph-level-border {
-    border-color: #6c757d !important;
-    color: #6c757d !important;
-}
-.ph-lvl-tier-1 .btn-ph-level-border:hover {
-    background-color: #6c757d !important;
-    color: #ffffff !important;
-}
-
-/* Tier 2 (Verde) */
-.ph-lvl-tier-2 .btn-ph-level-border {
-    border-color: #208337 !important;
-    color: #208337 !important;
-}
-.ph-lvl-tier-2 .btn-ph-level-border:hover {
-    background-color: #208337 !important;
-    color: #ffffff !important;
-}
-
-/* Tier 3 (Azul) */
-.ph-lvl-tier-3 .btn-ph-level-border {
-    border-color: #0b55c4 !important;
-    color: #0b55c4 !important;
-}
-.ph-lvl-tier-3 .btn-ph-level-border:hover {
-    background-color: #0b55c4 !important;
-    color: #ffffff !important;
-}
-
-/* Tier 4 (Roxo) */
-.ph-lvl-tier-4 .btn-ph-level-border {
-    border-color: #6f42c1 !important;
-    color: #6f42c1 !important;
-}
-.ph-lvl-tier-4 .btn-ph-level-border:hover {
-    background-color: #6f42c1 !important;
-    color: #ffffff !important;
-}
-
-/* Tier 5 (Lendário/Gradiente) */
-.ph-lvl-tier-5 .btn-ph-level-border {
-    border-color: #0d6efd !important; /* Azul Royal sólido na borda */
-    color: #0d6efd !important;
-}
-.ph-lvl-tier-5 .btn-ph-level-border:hover {
-    /* No hover, usa o gradiente lendário */
-    background: linear-gradient(45deg, #0d6efd, #6610f2) !important;
-    border-color: transparent !important;
-    color: #ffffff !important;
-}
-/* --- REFATORAÇÃO SIDEBAR: Correções Finais V2 --- */
-
-/* Garante que a imagem do usuário fique centralizada */
-.ph-sidebar-avatar-container {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-}
-
-/* Grid da Sidebar (3 Colunas) */
-.ph-sidebar-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 colunas iguais */
-    gap: 6px; /* Espaçamento entre botões */
-    margin-bottom: 1rem;
-}
-
-/* Ajuste dos botões dentro da sidebar */
-.ph-sidebar-grid .btn {
-    padding: 6px 0; /* Altura compacta mas clicável */
-    font-size: 1.1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%; /* Ocupa a célula do grid */
-}
-/* --- CORREÇÃO FINAL: Grid Transparente --- */
-
-/* Força o fundo transparente no grid da sidebar para anular a cor da classe de nível */
-.ph-sidebar-grid {
-    background-color: transparent !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
-}
+.ph-optin-card { max-width: 500px; border-radius: 15px; border: none; }
+.ph-optin-text { font-size: 1.1rem; }
+.ph-tab-content-wrapper { min-height: 300px; }

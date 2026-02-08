@@ -43,10 +43,8 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 .addClass('btn-success disabled')
                 .css('cursor', 'default').removeAttr('href')
                 .html('<i class="fa fa-check"></i> ' + strings.collected);
-            // Focus on the image detail trigger since button is disabled.
             card.find('.ph-item-details-trigger').focus();
         } else {
-            // Quick success feedback.
             trigger.removeClass('btn-primary disabled').addClass('btn-success')
                 .html('<i class="fa fa-check"></i> ' + strings.collected).css('width', '');
             setTimeout(function() {
@@ -68,9 +66,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
      */
     var handleTextImageMode = function(trigger, mode, hasTimer, isLimit, resp) {
         if (hasTimer || isLimit) {
-
             if (mode === 'text') {
-                // --- TEXT MODE ---
                 trigger.removeAttr('href').removeClass('ph-action-collect');
                 trigger.addClass('ph-item-details-trigger');
                 trigger.css('opacity', '1').css('pointer-events', 'auto').css('cursor', 'pointer');
@@ -79,44 +75,31 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     trigger.addClass('text-success')
                         .html('<i class="fa fa-check"></i> ' + trigger.text());
                 } else {
-                    // Text with Timer.
                     trigger.addClass('text-muted')
                         .html('⏳ ' + trigger.text() +
                         ' <small class="ph-timer" data-deadline="' +
                         resp.cooldown_deadline + '">...</small>');
                 }
-
             } else {
-                // --- IMAGE MODE ---
-                // Trigger is the <a> overlay. Container holds image and badges.
                 var container = trigger.closest('.ph-drop-image-container');
                 var imgWrapper = container.find('> div').first();
-
-                // 1. Remove action link.
                 trigger.remove();
-
-                // 2. Transform container into details trigger.
                 container.addClass('ph-item-details-trigger')
                          .attr('tabindex', '0')
                          .attr('role', 'button')
                          .css('cursor', 'pointer');
 
-                // 3. Apply visual states via CSS Classes.
                 if (isLimit) {
                     imgWrapper.addClass('ph-state-grayscale');
-                    // Badge Check.
                     container.append('<span class="badge bg-success rounded-circle ph-badge-bottom-right">' +
                         '<i class="fa fa-check"></i></span>');
                 } else {
                     imgWrapper.addClass('ph-state-dimmed');
-                    // Badge Timer (With data-no-label to hide text).
                     container.append('<div class="ph-timer badge bg-light text-dark border shadow-sm ph-badge-bottom-center" ' +
                         'data-deadline="' + resp.cooldown_deadline + '" data-no-label="1">...</div>');
                 }
             }
-
         } else {
-            // Visual feedback for successful collection without cooldown.
             if (mode === 'text') {
                 trigger.css('opacity', '1').css('pointer-events', 'auto');
                 var oldColor = trigger.css('color');
@@ -125,7 +108,6 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     trigger.css('color', oldColor);
                 }, 1000);
             } else {
-                // Image mode: just remove loading opacity.
                 trigger.css('opacity', '1').css('pointer-events', 'auto');
             }
         }
@@ -143,22 +125,29 @@ define(['jquery', 'core/notification'], function($, Notification) {
         containers.each(function() {
             var container = $(this);
 
-            // Update parent class only for Widget (for left border color).
-            // Sidebar should not receive this class on parent to avoid full background color.
+            // 1. Update Container Class (Only for Widget)
             if (container.hasClass('playerhud-widget-container')) {
                 container.removeClass(function(index, className) {
                     return (className.match(/(^|\s)ph-lvl-tier-\S+/g) || []).join(' ');
                 }).addClass(data.level_class);
             }
 
-            // A. Update progress bar.
+            // 2. Sidebar Grid Specific Update
+            var sidebarGrid = container.find('.ph-sidebar-grid');
+            if (sidebarGrid.length) {
+                sidebarGrid.removeClass(function(index, className) {
+                    return (className.match(/(^|\s)ph-lvl-tier-\S+/g) || []).join(' ');
+                }).addClass(data.level_class);
+            }
+
+            // 3. Update Progress Bar
             var progressBar = container.find('.progress-bar');
             progressBar.css('width', data.progress + '%').attr('aria-valuenow', data.progress);
             progressBar.removeClass(function(index, className) {
                 return (className.match(/(^|\s)ph-lvl-tier-\S+/g) || []).join(' ');
             }).addClass(data.level_class);
 
-            // B. Update Level Badge.
+            // 4. Update Level Badge
             var levelBadge = container.find('.badge').filter(function() {
                 return $(this).text().match(/(Level|Nível)/) || $(this).attr('class').match(/ph-lvl-tier-/);
             });
@@ -177,7 +166,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 levelBadge.text(label + ' ' + lvlString);
             }
 
-            // C. Update XP Text.
+            // 5. Update XP Text
             container.find('span, div, strong').each(function() {
                 var el = $(this);
                 if (el.children().length === 0 && el.text().indexOf('XP') > -1) {
@@ -194,7 +183,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
             });
         });
 
-        // --- Update Item Stash ---
+        // 6. Update Item Stash
         if (itemData) {
             var stashes = $('.ph-sidebar-stash, .ph-widget-stash');
 
@@ -260,16 +249,15 @@ define(['jquery', 'core/notification'], function($, Notification) {
         /**
          * Initialize the module.
          *
-         * @param {Object} strings Language strings.
+         * @param {Object} strings Language strings passed from PHP.
          */
         init: function(strings) {
-
             var $modal = $('#phItemModalFilter');
             if ($modal.length) {
                 $modal.appendTo('body');
             }
 
-            // 1. Details Modal Trigger (Unified for all modes).
+            // Details Modal Trigger
             $('body').on('click keydown', '.ph-item-details-trigger', function(e) {
                 if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') {
                     return;
@@ -277,7 +265,6 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 e.preventDefault();
 
                 var trigger = $(this);
-                // Look for data in self or parent container.
                 var container = trigger.closest('.playerhud-item-card, .ph-drop-image-container');
                 if (container.length === 0) {
                     container = trigger;
@@ -316,7 +303,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
             });
 
-            // 2. Collect Action (AJAX).
+            // Collect Action (AJAX)
             $('body').on('click', '.ph-action-collect', function(e) {
                 e.preventDefault();
                 var trigger = $(this);
@@ -326,7 +313,6 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     return;
                 }
 
-                // Visual loading feedback.
                 var originalHtml = trigger.html();
                 var originalWidth = trigger.css('width');
 
@@ -346,7 +332,6 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     dataType: 'json',
                     success: function(resp) {
                         if (resp.success) {
-                            // Update Card Badge if exists.
                             var card = trigger.closest('.playerhud-item-card');
                             if (card.length) {
                                 var badge = card.find('.ph-badge-count');
@@ -354,18 +339,15 @@ define(['jquery', 'core/notification'], function($, Notification) {
                                 badge.text('x' + (currentCount + 1)).removeClass('d-none').show();
                             }
 
-                            // State variables.
                             var hasTimer = (resp.cooldown_deadline && resp.cooldown_deadline > 0);
                             var isLimit = resp.limit_reached;
 
-                            // Update UI state.
                             if (mode === 'text' || mode === 'image') {
                                 handleTextImageMode(trigger, mode, hasTimer, isLimit, resp);
                             } else {
                                 handleCardMode(trigger, card, hasTimer, isLimit, resp, strings, originalHtml);
                             }
 
-                            // Update Sidebar/Widget.
                             if (resp.game_data) {
                                 updateHud(resp.game_data, resp.item_data);
                             }
