@@ -84,7 +84,7 @@ class block_playerhud extends block_base {
                 
                 $recentitems[] = [
                     'name' => format_string($invitem->name),
-                    'xp' => '+'.$invitem->xp.' XP',
+                    'xp' => $invitem->xp . ' XP',
                     'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
                     'isimage' => $media['is_image'],
                     'description' => !empty($invitem->description) ? format_text($invitem->description, FORMAT_HTML) : '',

@@ -93,7 +93,7 @@ class collect {
 
                 $item_data = [
                     'name' => format_string($item->name),
-                    'xp' => '+'.$item->xp.' XP',
+                    'xp' => $item->xp,
                     'image' => $imageurl,
                     'isimage' => $isimage,
                     'description' => $desc,

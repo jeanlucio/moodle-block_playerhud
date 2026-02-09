@@ -107,14 +107,14 @@ class tab_collection implements renderable, templatable {
                         $itemObj['data_image_payload'] = '❓'; // Modal mostra interrogação
                     } else {
                         $itemObj['name'] = format_string($item->name);
-                        $itemObj['xp_text'] = "+{$item->xp} XP";
+                        $itemObj['xp_text'] = "{$item->xp} XP";
                         $itemObj['description'] = format_text($item->description, FORMAT_HTML);
                     }
                     } else {
                     // OWNED ITEM
                     $itemObj['card_class'] = 'ph-owned';
                     $itemObj['name'] = format_string($item->name);
-                    $itemObj['xp_text'] = "+{$item->xp} XP";
+                    $itemObj['xp_text'] = "{$item->xp} XP";
                     $itemObj['description'] = format_text($item->description, FORMAT_HTML);
 
                     // Stats logic

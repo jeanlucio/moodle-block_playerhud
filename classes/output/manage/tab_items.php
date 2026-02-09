@@ -231,7 +231,7 @@ class tab_items implements renderable {
                 
                 // Atributos de Preview para o JS
                 $preview_attrs = 'data-name="' . s($item->name) . '" ' .
-                                 'data-xp="+' . $item->xp . ' XP" ' .
+                                 'data-xp="' . $item->xp . ' XP" ' .
                                  'data-image="' . ($mediadata['is_image'] ? $mediadata['url'] : strip_tags($mediadata['content'])) . '" ' .
                                  'data-isimage="' . ($mediadata['is_image'] ? 1 : 0) . '"';
 
