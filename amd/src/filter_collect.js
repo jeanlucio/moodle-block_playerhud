@@ -3,14 +3,18 @@ define(['jquery', 'core/notification'], function($, Notification) {
 
     /**
      * Helper to retrieve modal elements, prioritizing the Block's modal if present.
-     * This ensures strict visual standardization.
+     * This ensures strict visual standardization and centralized maintenance.
+     *
+     * @return {Object} An object containing jQuery references to modal elements.
      */
     var getModalElements = function() {
-        // 1. Tenta encontrar o Modal "Original" do Bloco
-        var root = $('#phItemModal');
-        var suffix = '';
+        // 1. Tenta encontrar o Modal "Original" do Bloco (Prioridade).
+        // IDs definidos em: blocks/playerhud/templates/modal_item.mustache.
+        var root = $('#phItemModalView');
+        var suffix = 'View';
 
-        // 2. Se não existir (ex: página sem blocos), usa o Modal do Filtro (Fallback)
+        // 2. Se não existir (ex: página sem blocos), usa o Modal do Filtro (Fallback).
+        // IDs definidos em: filter/playerhud/templates/modals.mustache.
         if (!root.length) {
             root = $('#phItemModalFilter');
             suffix = 'F';
@@ -18,12 +22,13 @@ define(['jquery', 'core/notification'], function($, Notification) {
 
         return {
             root: root,
-            // Seletores dinâmicos: tenta com ou sem o sufixo 'F'
+            // Seletores dinâmicos: adiciona o sufixo 'View' ou 'F' conforme o modal encontrado.
             title: $('#phModalTitle' + suffix),
             name: $('#phModalName' + suffix),
             desc: $('#phModalDesc' + suffix),
             imgContainer: $('#phModalImageContainer' + suffix),
-            xp: $('#phModalXp' + suffix),
+            xp: $('#phModalXP' + suffix),
+            countBadge: $('#phModalCountBadge' + suffix),
             date: $('#phModalDate' + suffix),
             dateContainer: $('#phModalDateContainer' + suffix)
         };
@@ -113,7 +118,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 var imgWrapper = container.find('> div').first();
                 trigger.remove();
 
-                // Transforma container em gatilho
+                // Transforma container em gatilho.
                 container.addClass('ph-item-details-trigger')
                          .attr('tabindex', '0')
                          .attr('role', 'button')
@@ -141,6 +146,78 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 trigger.css('opacity', '1').css('pointer-events', 'auto');
             }
         }
+    };
+
+    /**
+     * Updates the Stash (Recent Items) UI.
+     * Separated to reduce complexity.
+     *
+     * @param {Object} itemData Data of the collected item.
+     */
+    var updateStash = function(itemData) {
+        var stashes = $('.ph-sidebar-stash, .ph-widget-stash');
+
+        stashes.each(function() {
+            var stash = $(this);
+            var wrapper = stash.closest('.ph-stash-wrapper');
+            if (wrapper.length) {
+                wrapper.show();
+            }
+
+            stash.find('.text-muted').remove();
+            stash.find('span.small.text-muted').remove();
+
+            var contentHtml = '';
+            if (String(itemData.isimage) === '1') {
+                contentHtml = '<img src="' + itemData.image + '" alt="" ' +
+                    'style="width: 100%; height: 100%; object-fit: contain;">';
+            } else {
+                contentHtml = '<span class="ph-mini-emoji" aria-hidden="true" ' +
+                    'style="font-size:1.2rem; line-height: 1;">' + itemData.image + '</span>';
+            }
+
+            var classes = 'ph-mini-item ph-item-trigger border bg-white rounded ' +
+                'd-flex align-items-center justify-content-center overflow-hidden position-relative shadow-sm';
+
+            var newItem = $('<div class="' + classes + '" role="button" tabindex="0"></div>');
+
+            newItem.css({
+                'width': '34px',
+                'height': '34px',
+                'min-width': '34px',
+                'margin-right': '2px',
+                'margin-bottom': '2px'
+            });
+
+            // XP já vem formatado do PHP/Controller.
+            newItem.attr('data-name', itemData.name);
+            newItem.attr('data-xp', itemData.xp);
+            newItem.attr('data-image', itemData.image);
+            newItem.attr('data-isimage', itemData.isimage);
+
+            // Usa a data formatada do servidor para consistência.
+            newItem.attr('data-date', itemData.date);
+
+            newItem.attr('title', itemData.name);
+            newItem.attr('aria-label', itemData.name);
+
+            newItem.append('<div class="d-none ph-item-description-content">' + (itemData.description || '') + '</div>');
+            newItem.append(contentHtml);
+
+            stash.children().filter(function() {
+                return $(this).attr('data-name') === itemData.name;
+            }).remove();
+
+            newItem.hide();
+            stash.prepend(newItem);
+            newItem.fadeIn();
+
+            var limit = stash.hasClass('ph-widget-stash') ? 14 : 6;
+            var items = stash.children('.ph-mini-item');
+            if (items.length > limit) {
+                items.last().remove();
+            }
+        });
     };
 
     /**
@@ -183,8 +260,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     return (className.match(/(^|\s)ph-lvl-tier-\S+/g) || []).join(' ');
                 }).addClass(data.level_class);
 
-                var oldTxt = levelBadge.text();
-                var label = (oldTxt.indexOf('Nível') > -1) ? 'Nível' : 'Level';
+                var label = (levelBadge.text().indexOf('Nível') > -1) ? 'Nível' : 'Level';
                 var lvlString = data.level;
                 if (typeof data.max_levels !== 'undefined' && data.max_levels > 0) {
                     lvlString += '/' + data.max_levels;
@@ -209,77 +285,16 @@ define(['jquery', 'core/notification'], function($, Notification) {
         });
 
         if (itemData) {
-            var stashes = $('.ph-sidebar-stash, .ph-widget-stash');
-
-            stashes.each(function() {
-                var stash = $(this);
-                var wrapper = stash.closest('.ph-stash-wrapper');
-                if (wrapper.length) {
-                    wrapper.show();
-                }
-
-                stash.find('.text-muted').remove();
-                stash.find('span.small.text-muted').remove();
-
-                var contentHtml = '';
-                if (String(itemData.isimage) === '1') {
-                    contentHtml = '<img src="' + itemData.image + '" alt="" ' +
-                        'style="width: 100%; height: 100%; object-fit: contain;">';
-                } else {
-                    contentHtml = '<span class="ph-mini-emoji" aria-hidden="true" ' +
-                        'style="font-size:1.2rem; line-height: 1;">' + itemData.image + '</span>';
-                }
-
-                var classes = 'ph-mini-item ph-item-trigger border bg-white rounded ' +
-                    'd-flex align-items-center justify-content-center overflow-hidden position-relative shadow-sm';
-
-                var newItem = $('<div class="' + classes + '" role="button" tabindex="0"></div>');
-
-                newItem.css({
-                    'width': '34px',
-                    'height': '34px',
-                    'min-width': '34px',
-                    'margin-right': '2px',
-                    'margin-bottom': '2px'
-                });
-
-                // XP Formatado
-                var xpText = itemData.xp + ' XP';
-
-                newItem.attr('data-name', itemData.name);
-                newItem.attr('data-xp', xpText);
-                newItem.attr('data-image', itemData.image);
-                newItem.attr('data-isimage', itemData.isimage);
-
-                // Data Hoje (Feedback Imediato)
-                var today = new Date();
-                var dateStr = today.toLocaleDateString();
-                newItem.attr('data-date', dateStr);
-
-                newItem.attr('title', itemData.name);
-                newItem.attr('aria-label', itemData.name);
-
-                newItem.append('<div class="d-none ph-item-description-content">' + (itemData.description || '') + '</div>');
-                newItem.append(contentHtml);
-
-                stash.children().filter(function() {
-                    return $(this).attr('data-name') === itemData.name;
-                }).remove();
-
-                newItem.hide();
-                stash.prepend(newItem);
-                newItem.fadeIn();
-
-                var limit = stash.hasClass('ph-widget-stash') ? 14 : 6;
-                var items = stash.children('.ph-mini-item');
-                if (items.length > limit) {
-                    items.last().remove();
-                }
-            });
+            updateStash(itemData);
         }
     };
 
     return {
+        /**
+         * Initialize the collect script.
+         *
+         * @param {Object} strings Language strings.
+         */
         init: function(strings) {
             var $filterModal = $('#phItemModalFilter');
             if ($filterModal.length) {
@@ -287,6 +302,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
             }
 
             // --- CLICK: ABRIR DETALHES DO ITEM ---
+            // eslint-disable-next-line complexity
             $('body').on('click keydown', '.ph-item-details-trigger', function(e) {
                 if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') {
                     return;
@@ -307,26 +323,33 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 var xp = container.attr('data-xp');
                 var date = container.attr('data-date');
 
-                // OBTER ELEMENTOS DO MODAL (Prioriza o do Bloco)
+                // *** OBTENÇÃO INTELIGENTE DO MODAL ***
                 var modalEls = getModalElements();
 
-                // Se nenhum modal existir (erro grave), sai
+                // Se nenhum modal existir (erro grave), sai.
                 if (!modalEls.root.length) {
                     return;
                 }
 
-                // Preenche Campos
+                // Preenche Campos.
                 modalEls.title.text(name);
                 modalEls.name.text(name);
 
-                // Badge XP
+                // Badge XP.
                 if (xp && xp !== '0' && xp.indexOf('???') === -1) {
-                    modalEls.xp.text(xp).removeClass('d-none').show();
+                    // Adiciona " XP" apenas se for número puro (verificação de segurança).
+                    var xpText = ($.isNumeric(xp)) ? xp + ' XP' : xp;
+                    modalEls.xp.text(xpText).removeClass('d-none').show();
                 } else {
                     modalEls.xp.hide();
                 }
 
-                // Descrição
+                // Esconde contador no modal se não for relevante (padrão).
+                if (modalEls.countBadge && modalEls.countBadge.length) {
+                    modalEls.countBadge.hide();
+                }
+
+                // Descrição.
                 var descHtml = '...';
                 if (descDirect) {
                     descHtml = descDirect;
@@ -339,23 +362,48 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
                 modalEls.desc.html(descHtml);
 
-                // Data de Coleta
+                // Data de Coleta (Normalização entre os modais).
                 if (date) {
-                    modalEls.date.text(date);
-                    modalEls.dateContainer.removeClass('d-none');
+                    var fullDateText = (strings.last_collected ? strings.last_collected + ' ' : '') + date;
+
+                    // Modal do Bloco (View) tem estrutura diferente.
+                    if (modalEls.root.attr('id') === 'phItemModalView') {
+                        modalEls.date.find('span').text(fullDateText);
+                        modalEls.date.show();
+                    } else {
+                        // Modal do Filtro (F).
+                        $('#phModalDateF').text(fullDateText);
+                        if (modalEls.dateContainer) {
+                            modalEls.dateContainer.removeClass('d-none');
+                        }
+                    }
                 } else {
-                    modalEls.dateContainer.addClass('d-none');
+                    if (modalEls.root.attr('id') === 'phItemModalView') {
+                        modalEls.date.hide();
+                    } else {
+                        if (modalEls.dateContainer) {
+                            modalEls.dateContainer.addClass('d-none');
+                        }
+                    }
                 }
 
-                // Imagem
+                // Imagem.
                 modalEls.imgContainer.empty();
                 if (isImg == '1') {
-                    modalEls.imgContainer.append($('<img>', {src: img}));
+                    modalEls.imgContainer.append($('<img>', {
+                        src: img,
+                        'class': 'ph-modal-img',
+                        alt: ''
+                    }));
                 } else {
-                    modalEls.imgContainer.append($('<span>', {text: img}));
+                    modalEls.imgContainer.append($('<span>', {
+                        'class': 'ph-modal-emoji',
+                        'aria-hidden': 'true',
+                        text: img
+                    }));
                 }
 
-                // Show Modal (Bootstrap 5 Check)
+                // Show Modal (Bootstrap 5 Check).
                 var modalEl = modalEls.root[0];
                 if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                     bootstrap.Modal.getOrCreateInstance(modalEl).show();
@@ -393,6 +441,9 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     dataType: 'json',
                     success: function(resp) {
                         if (resp.success) {
+                            // Pega a data formatada enviada pelo PHP (ex: 09/02/26 ou 02/09/26 dependendo do idioma).
+                            var serverDate = (resp.item_data && resp.item_data.date) ? resp.item_data.date : '';
+
                             var card = trigger.closest('.playerhud-item-card');
 
                             if (card.length) {
@@ -404,14 +455,14 @@ define(['jquery', 'core/notification'], function($, Notification) {
                                     badge.text('x' + (currentCount + 1)).removeClass('d-none').show();
                                 }
 
-                                var today = new Date();
-                                card.attr('data-date', today.toLocaleDateString());
+                                // Atualiza a data com o formato do Moodle.
+                                card.attr('data-date', serverDate);
                             }
 
                             if (mode === 'image') {
                                 var imgContainer = trigger.closest('.ph-drop-image-container');
-                                var todayImg = new Date();
-                                imgContainer.attr('data-date', todayImg.toLocaleDateString());
+                                // Atualiza a data com o formato do Moodle.
+                                imgContainer.attr('data-date', serverDate);
                             }
 
                             var hasTimer = (resp.cooldown_deadline && resp.cooldown_deadline > 0);
