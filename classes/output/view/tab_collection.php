@@ -146,6 +146,7 @@ class tab_collection implements renderable, templatable {
 
                     if ($lastts > 0) {
                         $itemObj['date_str'] = userdate($lastts, get_string('strftimedatefullshort', 'langconfig'));
+                        $itemObj['timestamp'] = $lastts;
                     }
                 }
 

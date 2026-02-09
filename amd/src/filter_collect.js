@@ -189,14 +189,17 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 'margin-bottom': '2px'
             });
 
-            // XP já vem formatado do PHP/Controller.
+            // Atributos de dados
             newItem.attr('data-name', itemData.name);
             newItem.attr('data-xp', itemData.xp);
             newItem.attr('data-image', itemData.image);
             newItem.attr('data-isimage', itemData.isimage);
+            newItem.attr('data-date', itemData.date); // Texto fallback
 
-            // Usa a data formatada do servidor para consistência.
-            newItem.attr('data-date', itemData.date);
+            // [NOVO] Adiciona o timestamp para formatação correta
+            if (itemData.timestamp) {
+                newItem.attr('data-timestamp', itemData.timestamp);
+            }
 
             newItem.attr('title', itemData.name);
             newItem.attr('aria-label', itemData.name);
@@ -315,13 +318,15 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     container = trigger;
                 }
 
+                // Extração de Dados
                 var name = container.attr('data-name');
                 var descB64 = container.attr('data-desc-b64');
                 var descDirect = container.find('.ph-item-description-content').html();
                 var img = container.attr('data-image');
                 var isImg = container.attr('data-isimage');
                 var xp = container.attr('data-xp');
-                var date = container.attr('data-date');
+                var date = container.attr('data-date'); // Fallback (Texto PHP)
+                var timestamp = container.attr('data-timestamp'); // [NOVO] Timestamp numérico
 
                 // *** OBTENÇÃO INTELIGENTE DO MODAL ***
                 var modalEls = getModalElements();
@@ -335,18 +340,17 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 modalEls.title.text(name);
                 modalEls.name.text(name);
 
-                // Badge XP.
+               // Badge XP.
                 if (xp && xp !== '0' && xp.indexOf('???') === -1) {
-                    // Adiciona " XP" apenas se for número puro (verificação de segurança).
-                    var xpText = ($.isNumeric(xp)) ? xp + ' XP' : xp;
+                    // CORREÇÃO: Verificação mais robusta.
+                    // Se for apenas número, adiciona ' XP'. Se já vier com texto (do PHP novo), usa direto.
+                    var xpText = xp;
+                    if ($.isNumeric(xp)) {
+                        xpText = xp + ' XP';
+                    }
                     modalEls.xp.text(xpText).removeClass('d-none').show();
                 } else {
                     modalEls.xp.hide();
-                }
-
-                // Esconde contador no modal se não for relevante (padrão).
-                if (modalEls.countBadge && modalEls.countBadge.length) {
-                    modalEls.countBadge.hide();
                 }
 
                 // Descrição.
@@ -362,30 +366,53 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
                 modalEls.desc.html(descHtml);
 
-                // Data de Coleta (Normalização entre os modais).
-                if (date) {
-                    var fullDateText = (strings.last_collected ? strings.last_collected + ' ' : '') + date;
+                // --- Internacionalização da Data ---
+                var dateEl = (modalEls.root.attr('id') === 'phItemModalView') ? modalEls.date : $('#phModalDateF');
+                var dateContainer = (modalEls.root.attr('id') === 'phItemModalView') ?
+                    modalEls.date :
+                    modalEls.dateContainer;
 
-                    // Modal do Bloco (View) tem estrutura diferente.
-                    if (modalEls.root.attr('id') === 'phItemModalView') {
-                        modalEls.date.find('span').text(fullDateText);
-                        modalEls.date.show();
-                    } else {
-                        // Modal do Filtro (F).
-                        $('#phModalDateF').text(fullDateText);
-                        if (modalEls.dateContainer) {
-                            modalEls.dateContainer.removeClass('d-none');
-                        }
+                var formattedDate = '';
+
+                if (timestamp && timestamp > 0) {
+                    var lang = $('html').attr('lang') || 'en';
+                    lang = lang.replace('_', '-');
+                    try {
+                        formattedDate = new Date(parseInt(timestamp) * 1000).toLocaleDateString(lang, {
+                            day: '2-digit', month: '2-digit', year: '2-digit'
+                        });
+                    } catch (err) {
+                        formattedDate = date;
                     }
                 } else {
-                    if (modalEls.root.attr('id') === 'phItemModalView') {
-                        modalEls.date.hide();
-                    } else {
-                        if (modalEls.dateContainer) {
-                            modalEls.dateContainer.addClass('d-none');
+                    formattedDate = date; // Fallback
+                }
+
+                // Aplica a data formatada
+                if (formattedDate) {
+                    var prefix = (strings.last_collected ? strings.last_collected + ' ' : '');
+
+                    if (modalEls.root.attr('id') !== 'phItemModalView') {
+                        // Modal do Filtro (texto direto)
+                        dateEl.text(prefix + formattedDate);
+                        if (dateContainer) {
+                            dateContainer.removeClass('d-none');
                         }
+                    } else {
+                        // Modal do Bloco (span interno)
+                        dateEl.find('span').text(prefix + formattedDate);
+                        dateEl.show();
+                    }
+                } else {
+                    if (modalEls.root.attr('id') !== 'phItemModalView') {
+                        if (dateContainer) {
+                            dateContainer.addClass('d-none');
+                        }
+                    } else {
+                        dateEl.hide();
                     }
                 }
+                // -----------------------------------
 
                 // Imagem.
                 modalEls.imgContainer.empty();
@@ -441,8 +468,10 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     dataType: 'json',
                     success: function(resp) {
                         if (resp.success) {
-                            // Pega a data formatada enviada pelo PHP (ex: 09/02/26 ou 02/09/26 dependendo do idioma).
+                            // Pega os dados do servidor
                             var serverDate = (resp.item_data && resp.item_data.date) ? resp.item_data.date : '';
+                            // [NOVO] Pega o timestamp
+                            var serverTs = (resp.item_data && resp.item_data.timestamp) ? resp.item_data.timestamp : 0;
 
                             var card = trigger.closest('.playerhud-item-card');
 
@@ -455,14 +484,16 @@ define(['jquery', 'core/notification'], function($, Notification) {
                                     badge.text('x' + (currentCount + 1)).removeClass('d-none').show();
                                 }
 
-                                // Atualiza a data com o formato do Moodle.
+                                // [ATUALIZAÇÃO] Grava os dois formatos
                                 card.attr('data-date', serverDate);
+                                card.attr('data-timestamp', serverTs);
                             }
 
                             if (mode === 'image') {
                                 var imgContainer = trigger.closest('.ph-drop-image-container');
-                                // Atualiza a data com o formato do Moodle.
+                                // [ATUALIZAÇÃO] Grava os dois formatos
                                 imgContainer.attr('data-date', serverDate);
+                                imgContainer.attr('data-timestamp', serverTs);
                             }
 
                             var hasTimer = (resp.cooldown_deadline && resp.cooldown_deadline > 0);

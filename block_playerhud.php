@@ -88,7 +88,8 @@ class block_playerhud extends block_base {
                     'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
                     'isimage' => $media['is_image'],
                     'description' => !empty($invitem->description) ? format_text($invitem->description, FORMAT_HTML) : '',
-                    'date' => userdate($invitem->collecteddate, get_string('strftimedatefullshort', 'langconfig'))
+                    'date' => userdate($invitem->collecteddate, get_string('strftimedatefullshort', 'langconfig')),
+                    'timestamp' => $invitem->collecteddate
                 ];
                 $count++;
             }
@@ -159,7 +160,8 @@ class block_playerhud extends block_base {
                     'confirm_title' => get_string('confirmation', 'admin'),
                     'yes' => get_string('yes'),
                     'cancel' => get_string('cancel'),
-                    'no_desc' => get_string('no_description', 'block_playerhud')
+                    'no_desc' => get_string('no_description', 'block_playerhud'),
+                    'last_collected' => get_string('last_collected', 'block_playerhud')
                 ]
             ];
             $this->page->requires->js_call_amd('block_playerhud/view', 'init', [$jsvars]);

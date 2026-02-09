@@ -15,6 +15,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
          * @param {Object} config The configuration object passed from PHP.
          */
         init: function(config) {
+            // Move o modal para o final do body para evitar problemas de z-index
             $('#phItemModalView').appendTo('body');
 
             // 1. Disable HUD Confirmation.
@@ -34,13 +35,14 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 );
             });
 
+            // Acessibilidade: Permite abrir itens com Enter ou Espaço
             $(document).on('keydown', '.ph-item-trigger', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     $(this).click();
                 }
-
             });
+
             // 2. Item Details Modal Logic.
             /**
              * Helper to open/close bootstrap modal safely.
@@ -48,9 +50,10 @@ define(['jquery', 'core/notification'], function($, Notification) {
             function openItemModal() {
                 var el = document.getElementById('phItemModalView');
                 if (typeof $ !== 'undefined' && $.fn.modal) {
+                    // Bootstrap 4 (Tema Clássico)
                     $(el).modal('show');
                 } else {
-                    // Fallback for strict Moodle 4.x BS5.
+                    // Bootstrap 5 (Moodle 4.x Padrão)
                     try {
                         var m = bootstrap.Modal.getOrCreateInstance(el);
                         m.show();
@@ -71,7 +74,8 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 var xp = trigger.attr('data-xp');
                 var img = trigger.attr('data-image');
                 var isImg = trigger.attr('data-isimage'); // String "1" or "0".
-                var date = trigger.attr('data-date');
+                var date = trigger.attr('data-date'); // Fallback (Texto do PHP)
+                var timestamp = trigger.attr('data-timestamp'); // Timestamp Cru [NOVO]
                 var count = trigger.attr('data-count');
                 var desc = trigger.find('.ph-item-description-content').html();
 
@@ -114,14 +118,39 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     }));
                 }
 
-                // Date.
+                // --- Date Internationalization Logic (Igual ao filter_collect.js) ---
                 var dateEl = $('#phModalDateView');
-                if (date) {
-                    dateEl.find('span').text(date);
+                var formattedDate = '';
+
+                if (timestamp && timestamp > 0) {
+                    // Obtém o idioma do navegador ou do Moodle
+                    var lang = $('html').attr('lang') || 'en';
+                    lang = lang.replace('_', '-');
+
+                    try {
+                        formattedDate = new Date(parseInt(timestamp) * 1000).toLocaleDateString(lang, {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: '2-digit'
+                        });
+                    } catch (err) {
+                        formattedDate = date;
+                    }
+                } else {
+                    formattedDate = date;
+                }
+
+                if (formattedDate) {
+                    // Prefixo traduzido
+                    var prefix = (config.strings && config.strings.last_collected) ?
+                        config.strings.last_collected + ' ' : '';
+
+                    dateEl.find('span').text(prefix + formattedDate);
                     dateEl.show();
                 } else {
                     dateEl.hide();
                 }
+                // ---------------------------------------
 
                 openItemModal();
             });

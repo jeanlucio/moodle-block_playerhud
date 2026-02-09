@@ -89,15 +89,17 @@ class collect {
                 $media = \block_playerhud\utils::get_item_display_data($item, $context);
                 $isimage = $media['is_image'] ? 1 : 0;
                 $imageurl = $media['is_image'] ? $media['url'] : strip_tags($media['content']);
+                $str_xp = get_string('xp', 'block_playerhud');
                 $desc = !empty($item->description) ? format_text($item->description, FORMAT_HTML) : '';
 
                 $item_data = [
                     'name' => format_string($item->name),
-                    'xp' => $item->xp,
+                    'xp' => $item->xp . ' ' . $str_xp,
                     'image' => $imageurl,
                     'isimage' => $isimage,
                     'description' => $desc,
-                    'date' => userdate(time(), get_string('strftimedatefullshort', 'langconfig'))
+                    'date' => userdate(time(), get_string('strftimedatefullshort', 'langconfig')),
+                    'timestamp' => time()
                 ];
             }
             // ------------------------------------
