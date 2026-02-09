@@ -2,12 +2,40 @@
 define(['jquery', 'core/notification'], function($, Notification) {
 
     /**
+     * Helper to retrieve modal elements, prioritizing the Block's modal if present.
+     * This ensures strict visual standardization.
+     */
+    var getModalElements = function() {
+        // 1. Tenta encontrar o Modal "Original" do Bloco
+        var root = $('#phItemModal');
+        var suffix = '';
+
+        // 2. Se não existir (ex: página sem blocos), usa o Modal do Filtro (Fallback)
+        if (!root.length) {
+            root = $('#phItemModalFilter');
+            suffix = 'F';
+        }
+
+        return {
+            root: root,
+            // Seletores dinâmicos: tenta com ou sem o sufixo 'F'
+            title: $('#phModalTitle' + suffix),
+            name: $('#phModalName' + suffix),
+            desc: $('#phModalDesc' + suffix),
+            imgContainer: $('#phModalImageContainer' + suffix),
+            xp: $('#phModalXp' + suffix),
+            date: $('#phModalDate' + suffix),
+            dateContainer: $('#phModalDateContainer' + suffix)
+        };
+    };
+
+    /**
      * Restores the button state in case of error or completion.
      *
      * @param {Object} btn The jQuery button element.
-     * @param {string} html The original HTML content of the button.
-     * @param {string} mode The display mode ('card', 'text', 'image').
-     * @param {string} width The original width of the button (for card mode).
+     * @param {String} html The original HTML content of the button.
+     * @param {String} mode The display mode ('card', 'text', 'image').
+     * @param {String} width The original width of the button (for card mode).
      */
     var restaurar = function(btn, html, mode, width) {
         btn.html(html).removeClass('disabled');
@@ -23,30 +51,30 @@ define(['jquery', 'core/notification'], function($, Notification) {
      *
      * @param {Object} trigger The clicked jQuery element.
      * @param {Object} card The parent card jQuery element.
-     * @param {boolean} hasTimer Whether the item is in cooldown.
-     * @param {boolean} isLimit Whether the collection limit is reached.
+     * @param {Boolean} hasTimer Whether the item is in cooldown.
+     * @param {Boolean} isLimit Whether the collection limit is reached.
      * @param {Object} resp The server response object.
      * @param {Object} strings The language strings object.
-     * @param {string} originalHtml The original HTML of the trigger.
+     * @param {String} originalHtml The original HTML of the trigger.
      */
     var handleCardMode = function(trigger, card, hasTimer, isLimit, resp, strings, originalHtml) {
         if (hasTimer) {
             trigger.removeClass('btn-primary ph-action-collect').removeAttr('href');
             var tHtml = '⏳ <span class="ph-timer" data-deadline="' +
                 resp.cooldown_deadline + '">...</span>';
-            var tBtn = $('<div class="btn btn-light btn-sm w-100 text-muted" tabindex="0">' +
+            var tBtn = $('<div class="btn btn-light btn-sm w-100 ph-text-dimmed" tabindex="0">' +
                 tHtml + '</div>');
             trigger.replaceWith(tBtn);
             tBtn.focus();
         } else if (isLimit) {
             trigger.removeClass('btn-primary ph-action-collect')
-                .addClass('btn-success disabled')
+                .addClass('btn-light text-success disabled border-success')
                 .css('cursor', 'default').removeAttr('href')
-                .html('<i class="fa fa-check"></i> ' + strings.collected);
+                .html('<i class="fa fa-check" aria-hidden="true"></i> ' + strings.collected);
             card.find('.ph-item-details-trigger').focus();
         } else {
             trigger.removeClass('btn-primary disabled').addClass('btn-success')
-                .html('<i class="fa fa-check"></i> ' + strings.collected).css('width', '');
+                .html('<i class="fa fa-check" aria-hidden="true"></i> ' + strings.collected).css('width', '');
             setTimeout(function() {
                 trigger.removeClass('btn-success').addClass('btn-primary')
                     .html(originalHtml);
@@ -59,9 +87,9 @@ define(['jquery', 'core/notification'], function($, Notification) {
      * Handles the visual state for Text and Image modes.
      *
      * @param {Object} trigger The clicked jQuery element.
-     * @param {string} mode The display mode ('text' or 'image').
-     * @param {boolean} hasTimer Whether the item is in cooldown.
-     * @param {boolean} isLimit Whether the collection limit is reached.
+     * @param {String} mode The display mode ('text' or 'image').
+     * @param {Boolean} hasTimer Whether the item is in cooldown.
+     * @param {Boolean} isLimit Whether the collection limit is reached.
      * @param {Object} resp The server response object.
      */
     var handleTextImageMode = function(trigger, mode, hasTimer, isLimit, resp) {
@@ -72,11 +100,11 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 trigger.css('opacity', '1').css('pointer-events', 'auto').css('cursor', 'pointer');
 
                 if (isLimit) {
-                    trigger.addClass('text-success')
-                        .html('<i class="fa fa-check"></i> ' + trigger.text());
+                    trigger.addClass('text-success fw-bold')
+                        .html('<i class="fa fa-check" aria-hidden="true"></i> ' + trigger.text());
                 } else {
-                    trigger.addClass('text-muted')
-                        .html('⏳ ' + trigger.text() +
+                    trigger.addClass('ph-text-dimmed')
+                        .html('<span aria-hidden="true">⏳</span> ' + trigger.text() +
                         ' <small class="ph-timer" data-deadline="' +
                         resp.cooldown_deadline + '">...</small>');
                 }
@@ -84,6 +112,8 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 var container = trigger.closest('.ph-drop-image-container');
                 var imgWrapper = container.find('> div').first();
                 trigger.remove();
+
+                // Transforma container em gatilho
                 container.addClass('ph-item-details-trigger')
                          .attr('tabindex', '0')
                          .attr('role', 'button')
@@ -92,7 +122,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 if (isLimit) {
                     imgWrapper.addClass('ph-state-grayscale');
                     container.append('<span class="badge bg-success rounded-circle ph-badge-bottom-right">' +
-                        '<i class="fa fa-check"></i></span>');
+                        '<i class="fa fa-check" aria-hidden="true"></i></span>');
                 } else {
                     imgWrapper.addClass('ph-state-dimmed');
                     container.append('<div class="ph-timer badge bg-light text-dark border shadow-sm ph-badge-bottom-center" ' +
@@ -103,7 +133,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
             if (mode === 'text') {
                 trigger.css('opacity', '1').css('pointer-events', 'auto');
                 var oldColor = trigger.css('color');
-                trigger.css('color', '#28a745');
+                trigger.css('color', '#198754');
                 setTimeout(function() {
                     trigger.css('color', oldColor);
                 }, 1000);
@@ -125,14 +155,12 @@ define(['jquery', 'core/notification'], function($, Notification) {
         containers.each(function() {
             var container = $(this);
 
-            // 1. Update Container Class (Only for Widget)
             if (container.hasClass('playerhud-widget-container')) {
                 container.removeClass(function(index, className) {
                     return (className.match(/(^|\s)ph-lvl-tier-\S+/g) || []).join(' ');
                 }).addClass(data.level_class);
             }
 
-            // 2. Sidebar Grid Specific Update
             var sidebarGrid = container.find('.ph-sidebar-grid');
             if (sidebarGrid.length) {
                 sidebarGrid.removeClass(function(index, className) {
@@ -140,14 +168,12 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }).addClass(data.level_class);
             }
 
-            // 3. Update Progress Bar
             var progressBar = container.find('.progress-bar');
             progressBar.css('width', data.progress + '%').attr('aria-valuenow', data.progress);
             progressBar.removeClass(function(index, className) {
                 return (className.match(/(^|\s)ph-lvl-tier-\S+/g) || []).join(' ');
             }).addClass(data.level_class);
 
-            // 4. Update Level Badge
             var levelBadge = container.find('.badge').filter(function() {
                 return $(this).text().match(/(Level|Nível)/) || $(this).attr('class').match(/ph-lvl-tier-/);
             });
@@ -166,7 +192,6 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 levelBadge.text(label + ' ' + lvlString);
             }
 
-            // 5. Update XP Text
             container.find('span, div, strong').each(function() {
                 var el = $(this);
                 if (el.children().length === 0 && el.text().indexOf('XP') > -1) {
@@ -183,7 +208,6 @@ define(['jquery', 'core/notification'], function($, Notification) {
             });
         });
 
-        // 6. Update Item Stash
         if (itemData) {
             var stashes = $('.ph-sidebar-stash, .ph-widget-stash');
 
@@ -193,7 +217,9 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 if (wrapper.length) {
                     wrapper.show();
                 }
+
                 stash.find('.text-muted').remove();
+                stash.find('span.small.text-muted').remove();
 
                 var contentHtml = '';
                 if (String(itemData.isimage) === '1') {
@@ -217,15 +243,23 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     'margin-bottom': '2px'
                 });
 
+                // XP Formatado
+                var xpText = itemData.xp + ' XP';
+
                 newItem.attr('data-name', itemData.name);
-                newItem.attr('data-xp', itemData.xp);
+                newItem.attr('data-xp', xpText);
                 newItem.attr('data-image', itemData.image);
                 newItem.attr('data-isimage', itemData.isimage);
-                newItem.attr('data-date', itemData.date);
+
+                // Data Hoje (Feedback Imediato)
+                var today = new Date();
+                var dateStr = today.toLocaleDateString();
+                newItem.attr('data-date', dateStr);
+
                 newItem.attr('title', itemData.name);
                 newItem.attr('aria-label', itemData.name);
 
-                newItem.append('<div class="d-none ph-item-description-content">' + itemData.description + '</div>');
+                newItem.append('<div class="d-none ph-item-description-content">' + (itemData.description || '') + '</div>');
                 newItem.append(contentHtml);
 
                 stash.children().filter(function() {
@@ -246,18 +280,13 @@ define(['jquery', 'core/notification'], function($, Notification) {
     };
 
     return {
-        /**
-         * Initialize the module.
-         *
-         * @param {Object} strings Language strings passed from PHP.
-         */
         init: function(strings) {
-            var $modal = $('#phItemModalFilter');
-            if ($modal.length) {
-                $modal.appendTo('body');
+            var $filterModal = $('#phItemModalFilter');
+            if ($filterModal.length) {
+                $filterModal.appendTo('body');
             }
 
-            // Details Modal Trigger
+            // --- CLICK: ABRIR DETALHES DO ITEM ---
             $('body').on('click keydown', '.ph-item-details-trigger', function(e) {
                 if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') {
                     return;
@@ -265,45 +294,77 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 e.preventDefault();
 
                 var trigger = $(this);
-                var container = trigger.closest('.playerhud-item-card, .ph-drop-image-container');
+                var container = trigger.closest('.playerhud-item-card, .ph-drop-image-container, .ph-mini-item');
                 if (container.length === 0) {
                     container = trigger;
                 }
 
                 var name = container.attr('data-name');
                 var descB64 = container.attr('data-desc-b64');
+                var descDirect = container.find('.ph-item-description-content').html();
                 var img = container.attr('data-image');
                 var isImg = container.attr('data-isimage');
+                var xp = container.attr('data-xp');
+                var date = container.attr('data-date');
 
-                $('#phModalTitleF, #phModalNameF').text(name);
+                // OBTER ELEMENTOS DO MODAL (Prioriza o do Bloco)
+                var modalEls = getModalElements();
 
-                var descHtml = '';
-                try {
-                    descHtml = decodeURIComponent(escape(window.atob(descB64)));
-                } catch (err) {
-                    descHtml = '...';
+                // Se nenhum modal existir (erro grave), sai
+                if (!modalEls.root.length) {
+                    return;
                 }
-                $('#phModalDescF').html(descHtml);
 
-                var imgCont = $('#phModalImageContainerF');
-                imgCont.empty();
-                if (isImg == '1') {
-                    imgCont.append($('<img>', {src: img, style: 'max-width:80px;'}));
+                // Preenche Campos
+                modalEls.title.text(name);
+                modalEls.name.text(name);
+
+                // Badge XP
+                if (xp && xp !== '0' && xp.indexOf('???') === -1) {
+                    modalEls.xp.text(xp).removeClass('d-none').show();
                 } else {
-                    imgCont.append($('<span>', {style: 'font-size:50px;', text: img}));
+                    modalEls.xp.hide();
                 }
 
-                var modalEl = document.getElementById('phItemModalFilter');
-                if (modalEl) {
-                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                        bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                    } else {
-                        $(modalEl).modal('show');
+                // Descrição
+                var descHtml = '...';
+                if (descDirect) {
+                    descHtml = descDirect;
+                } else if (descB64) {
+                    try {
+                        descHtml = decodeURIComponent(escape(window.atob(descB64)));
+                    } catch (err) {
+                        descHtml = '...';
                     }
+                }
+                modalEls.desc.html(descHtml);
+
+                // Data de Coleta
+                if (date) {
+                    modalEls.date.text(date);
+                    modalEls.dateContainer.removeClass('d-none');
+                } else {
+                    modalEls.dateContainer.addClass('d-none');
+                }
+
+                // Imagem
+                modalEls.imgContainer.empty();
+                if (isImg == '1') {
+                    modalEls.imgContainer.append($('<img>', {src: img}));
+                } else {
+                    modalEls.imgContainer.append($('<span>', {text: img}));
+                }
+
+                // Show Modal (Bootstrap 5 Check)
+                var modalEl = modalEls.root[0];
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                } else {
+                    modalEls.root.modal('show');
                 }
             });
 
-            // Collect Action (AJAX)
+            // --- CLICK: COLETAR ITEM (AJAX) ---
             $('body').on('click', '.ph-action-collect', function(e) {
                 e.preventDefault();
                 var trigger = $(this);
@@ -333,10 +394,24 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     success: function(resp) {
                         if (resp.success) {
                             var card = trigger.closest('.playerhud-item-card');
+
                             if (card.length) {
                                 var badge = card.find('.ph-badge-count');
-                                var currentCount = parseInt(badge.text().replace('x', ''), 10) || 0;
-                                badge.text('x' + (currentCount + 1)).removeClass('d-none').show();
+                                var isUnique = card.attr('data-unique') === '1';
+
+                                if (!isUnique) {
+                                    var currentCount = parseInt(badge.text().replace('x', ''), 10) || 0;
+                                    badge.text('x' + (currentCount + 1)).removeClass('d-none').show();
+                                }
+
+                                var today = new Date();
+                                card.attr('data-date', today.toLocaleDateString());
+                            }
+
+                            if (mode === 'image') {
+                                var imgContainer = trigger.closest('.ph-drop-image-container');
+                                var todayImg = new Date();
+                                imgContainer.attr('data-date', todayImg.toLocaleDateString());
                             }
 
                             var hasTimer = (resp.cooldown_deadline && resp.cooldown_deadline > 0);

@@ -1,9 +1,7 @@
-// eslint-disable-next-line no-redeclare
-/* global bootstrap, M */
-define(['jquery', 'core/notification'], function($, Notification) {
+define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], function($, Notification, Ajax) {
 
     /**
-     * Manage Items module.
+     * Manage Items module for PlayerHUD.
      *
      * @module     block_playerhud/manage_items
      * @copyright  2026 Jean Lúcio
@@ -17,40 +15,37 @@ define(['jquery', 'core/notification'], function($, Notification) {
          */
         init: function(config) {
 
-            // Move modais para o body para evitar problemas de z-index/overflow
+            // Move modals to body to avoid z-index issues.
             $('#phAiModal').appendTo('body');
             $('#phItemModalView').appendTo('body');
 
-            // --- 1. LÓGICA DE AÇÕES EM MASSA (Bulk Actions) ---
+            // --- 1. BULK ACTIONS ---
 
-            // "Selecionar Todos"
+            // Select All Checkbox.
             $('#ph-select-all').on('change', function() {
                 var isChecked = $(this).is(':checked');
                 $('.ph-bulk-check').prop('checked', isChecked).trigger('change');
             });
 
-            // Atualiza estado do botão "Excluir Selecionados"
+            // Update "Delete Selected" button state.
             $('body').on('change', '.ph-bulk-check, #ph-select-all', function() {
                 var count = $('.ph-bulk-check:checked').length;
-                var btn = $('#ph-btn-bulk-delete');
+                var $btn = $('#ph-btn-bulk-delete');
 
                 if (count > 0) {
-                    btn.removeClass('disabled').removeAttr('disabled');
-                    // Substitui o placeholder %d pelo número
+                    $btn.removeClass('disabled').removeAttr('disabled');
                     var btnText = config.strings.delete_n_items.replace('%d', count);
-                    btn.html('<i class="fa fa-trash"></i> ' + btnText);
+                    $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + btnText);
                 } else {
-                    btn.addClass('disabled').attr('disabled', 'disabled');
-                    btn.html('<i class="fa fa-trash"></i> ' + config.strings.delete_selected);
+                    $btn.addClass('disabled').attr('disabled', 'disabled');
+                    $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + config.strings.delete_selected);
                 }
             });
 
-            // Confirmação de Exclusão em Massa
+            // Confirm Bulk Delete.
             $('#ph-btn-bulk-delete').on('click', function(e) {
                 e.preventDefault();
-                var count = $('.ph-bulk-check:checked').length;
-
-                if (count === 0) {
+                if ($('.ph-bulk-check:checked').length === 0) {
                     return;
                 }
 
@@ -65,82 +60,79 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 );
             });
 
-            // --- 2. LÓGICA DE VISUALIZAÇÃO (Preview Modal) ---
+            // --- 2. PREVIEW MODAL ---
 
             $('body').on('click', '.ph-preview-trigger', function(e) {
                 e.preventDefault();
                 var trigger = $(this);
 
-                // Extrair dados
+                // Extract data attributes.
                 var name = trigger.attr('data-name');
                 var xp = trigger.attr('data-xp');
                 var img = trigger.attr('data-image');
-                var isImg = trigger.attr('data-isimage'); // "1" ou "0"
-
-                // Descrição (buscada de div oculta para segurança HTML)
+                var isImg = trigger.attr('data-isimage'); // "1" or "0"
                 var descTarget = trigger.attr('data-desc-target');
-                var descHtml = '';
-                if (descTarget) {
-                    descHtml = $('#' + descTarget).html();
-                }
+                var descHtml = descTarget ? $('#' + descTarget).html() : '';
 
-                // Povoar Modal
+                // Populate Modal.
                 $('#phModalNameView, #phModalTitleView').text(name);
                 $('#phModalXPView').text(xp);
 
-                var descEl = $('#phModalDescView');
+                var $descEl = $('#phModalDescView');
                 if (descHtml && descHtml.trim() !== '') {
-                    descEl.html(descHtml);
+                    $descEl.html(descHtml);
                 } else {
-                    descEl.html('<i class="text-muted">' + config.strings.no_desc + '</i>');
+                    $descEl.html('<i class="text-muted">' + config.strings.no_desc + '</i>');
                 }
 
-                // Imagem / Emoji
-                var imgCont = $('#phModalImageContainerView');
-                imgCont.empty();
+                // Image Handling.
+                var $imgCont = $('#phModalImageContainerView');
+                $imgCont.empty();
 
                 if (isImg === '1') {
-                    imgCont.append($('<img>', {
+                    $imgCont.append($('<img>', {
                         src: img,
                         'class': 'ph-modal-img',
-                        alt: '',
-                        style: 'max-width:100px; max-height:100px; object-fit:contain;'
+                        alt: ''
                     }));
                 } else {
-                    imgCont.append($('<span>', {
+                    $imgCont.append($('<span>', {
                         'class': 'ph-modal-emoji',
                         'aria-hidden': 'true',
-                        style: 'font-size:60px; line-height:1;',
                         text: img
                     }));
                 }
 
-                // Abrir Modal (Compatibilidade BS5)
+                // Open Modal (Bootstrap 5 compatible).
                 var modalEl = document.getElementById('phItemModalView');
+                // eslint-disable-next-line no-undef
                 if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    // eslint-disable-next-line no-undef
                     bootstrap.Modal.getOrCreateInstance(modalEl).show();
                 } else {
+                    // Fallback for older themes.
                     $(modalEl).modal('show');
                 }
             });
 
-            // --- 3. LÓGICA EXISTENTE (Delete Único e IA) ---
+            // --- 3. AI GENERATION (EXTERNAL API) ---
 
-            // Toggle Opções Drop (IA)
+            // Toggle AI Drop Options visibility.
             $('#ai-drop').on('change', function() {
-                if ($(this).is(':checked')) {
+                var isChecked = $(this).is(':checked');
+                if (isChecked) {
                     $('#ai-drop-options').slideDown();
                 } else {
                     $('#ai-drop-options').slideUp();
                 }
             });
 
-            // Confirmação de Delete Único
+            // Single Item Delete Confirmation.
             $('body').on('click', '.js-delete-btn', function(e) {
                 e.preventDefault();
-                var btn = $(this);
-                var targetUrl = btn.attr('href');
-                var msg = btn.attr('data-confirm-msg');
+                var $btn = $(this);
+                var targetUrl = $btn.attr('href');
+                var msg = $btn.attr('data-confirm-msg');
 
                 Notification.confirm(
                     config.strings.confirm_title,
@@ -153,171 +145,132 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 );
             });
 
-            // Submissão do Form IA via Enter
+            // Submit AI form on Enter key.
             $('#ph-ai-form').on('submit', function(e) {
                 e.preventDefault();
                 $('#ph-btn-conjure').click();
             });
 
-            // Lógica AJAX da IA
+            // AI Logic using Core AJAX.
             $('#ph-btn-conjure').on('click', function(e) {
                 e.preventDefault();
-                var btn = $(this);
+                var $btn = $(this);
 
-                if (btn.prop('disabled')) {
+                if ($btn.prop('disabled')) {
                     return;
                 }
 
                 var theme = $('#ai-theme').val();
-                var xp = $('#ai-xp').val();
-                var amount = $('#ai-amount').val() || 1;
-                var createDrop = $('#ai-drop').is(':checked');
-
-                var locName = $('#ai-location').val();
-                var maxUsage = $('#ai-maxusage').val();
-                var respawn = $('#ai-respawn').val();
-
                 if (!theme) {
                     Notification.alert('Error', config.strings.err_theme, 'OK');
                     return;
                 }
 
-                var originalText = btn.text();
-                btn.prop('disabled', true).text(config.strings.ai_creating);
-                btn.attr('aria-busy', 'true');
+                var originalText = $btn.text();
+                $btn.prop('disabled', true).text(config.strings.ai_creating).attr('aria-busy', 'true');
 
-                $.ajax({
-                    url: M.cfg.wwwroot + '/blocks/playerhud/ajax_ai.php',
-                    method: 'POST',
-                    dataType: 'json',
-                    data: {
+                // Call Moodle External Function.
+                // We disable camelcase rule here because PHP External API uses snake_case keys.
+                /* eslint-disable camelcase */
+                var request = {
+                    methodname: 'block_playerhud_generate_ai_content',
+                    args: {
                         instanceid: config.instanceid,
-                        id: config.courseid,
+                        courseid: config.courseid,
                         theme: theme,
-                        xp: xp ? xp : 0,
-                        amount: amount,
-                        // eslint-disable-next-line camelcase
-                        create_drop: createDrop ? 1 : 0,
-                        // eslint-disable-next-line camelcase
-                        drop_location: locName,
-                        // eslint-disable-next-line camelcase
-                        drop_max: maxUsage,
-                        // eslint-disable-next-line camelcase
-                        drop_time: respawn,
-                        sesskey: M.cfg.sesskey
-                    },
-                    success: function(resp) {
-                        btn.prop('disabled', false).text(originalText).removeAttr('aria-busy');
-
-                        if (resp.success) {
-                            var modalBody = $('#phAiModal .modal-body');
-                            var modalFooter = $('#phAiModal .modal-footer');
-                            var modalTitle = $('#phAiModalLabel');
-
-                            // Recarregar ao fechar
-                            $('#phAiModal').one('hidden.bs.modal', function() {
-                                window.location.reload();
-                            });
-
-                            // Layout Sucesso
-                            modalTitle.text(config.strings.success_title);
-
-                            var successHtml = '<div id="ph-success-container" tabindex="-1" ' +
-                                'class="text-center py-3 animate__animated animate__fadeIn" style="outline: none;">';
-
-                            successHtml += '<div class="mb-3" style="font-size: 3rem; color: #28a745;" aria-hidden="true">' +
-                                '<i class="fa fa-check-circle"></i></div>';
-
-                            var itemsList = Array.isArray(resp.created_items) ? resp.created_items.join(', ') : resp.item_name;
-                            var count = Array.isArray(resp.created_items) ? resp.created_items.length : 1;
-
-                            successHtml += '<h2 class="fw-bold text-primary mb-3">' + count + 'x Itens Criados!</h2>';
-                            successHtml += '<p class="text-muted">' + itemsList + '</p>';
-
-                            if (resp.warning_msg) {
-                                successHtml += '<div class="alert alert-warning small mb-3">' +
-                                    '<i class="fa fa-exclamation-triangle"></i> ' + resp.warning_msg + '</div>';
-                            } else if (resp.info_msg) {
-                                successHtml += '<div class="alert alert-success small mb-3">' +
-                                    '<i class="fa fa-check-circle"></i> ' + resp.info_msg + '</div>';
-                            }
-
-                            successHtml += '<p class="lead text-muted mb-4">' + config.strings.success + '</p>';
-
-                            // Se criou apenas 1 drop, mostra o código para copiar
-                            if (count === 1 && resp.drop_code) {
-                                var fullShortcode = '[PLAYERHUD_DROP code=' + resp.drop_code + ']';
-
-                                successHtml += '<div class="card bg-light border-0 p-3 mx-auto" style="max-width: 90%;">';
-                                successHtml += '<label class="small text-muted mb-2 fw-bold text-start w-100" ' +
-                                    'for="ph-gen-code-input">' + config.strings.copy + ':</label>';
-
-                                successHtml += '<div class="input-group">';
-                                successHtml += '<input type="text" class="form-control font-monospace text-center" ' +
-                                    'value="' + fullShortcode + '" id="ph-gen-code-input" readonly>';
-                                // eslint-disable-next-line max-len
-                                successHtml += '<button class="btn btn-primary" type="button" id="ph-btn-copy-code" aria-label="' + config.strings.copy + '">' +
-                                    '<i class="fa fa-copy" aria-hidden="true"></i></button>';
-                                successHtml += '</div></div>';
-                            } else if (count > 1 && createDrop) {
-                                successHtml += '<div class="alert alert-info">Os drops foram criados. ' +
-                                    'Use o botão "Gerar Código" na lista para pegar cada um.</div>';
-                            }
-
-                            successHtml += '</div>';
-
-                            modalBody.html(successHtml);
-
-                            var btnReload = $('<button class="btn btn-success w-100 py-2 fw-bold">' +
-                                config.strings.great + '</button>');
-
-                            btnReload.on('click', function() {
-                                window.location.reload();
-                            });
-
-                            modalFooter.empty().append(btnReload);
-
-                            if (count === 1 && resp.drop_code) {
-                                setTimeout(function() {
-                                    $('#ph-btn-copy-code').on('click', function() {
-                                        var copyText = document.getElementById("ph-gen-code-input");
-                                        copyText.select();
-                                        copyText.setSelectionRange(0, 99999);
-                                        document.execCommand("copy");
-
-                                        var $btn = $(this);
-                                        var originalIcon = '<i class="fa fa-copy" aria-hidden="true"></i>';
-                                        $btn.removeClass('btn-primary').addClass('btn-success')
-                                            .html('<i class="fa fa-check" aria-hidden="true"></i>');
-                                        setTimeout(function() {
-                                            $btn.removeClass('btn-success').addClass('btn-primary').html(originalIcon);
-                                        }, 2000);
-                                    });
-                                    $('#ph-success-container').focus();
-                                }, 200);
-                            }
-
-                        } else {
-                            Notification.alert('Error', resp.message, 'OK');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        btn.prop('disabled', false).text(originalText).removeAttr('aria-busy');
-                        var errorMsg = error;
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMsg = xhr.responseJSON.message;
-                        } else if (xhr.responseText) {
-                            try {
-                                var r = JSON.parse(xhr.responseText);
-                                if (r.message) {
-                                    errorMsg = r.message;
-                                }
-                            } catch (e) {
-                                /* Empty */
-                            }
-                        }
-                        Notification.alert('Ops!', errorMsg, 'OK');
+                        xp: parseInt($('#ai-xp').val()) || 0,
+                        amount: parseInt($('#ai-amount').val()) || 1,
+                        create_drop: $('#ai-drop').is(':checked'),
+                        drop_location: $('#ai-location').val() || '',
+                        drop_max: parseInt($('#ai-maxusage').val()) || 0,
+                        drop_time: parseInt($('#ai-respawn').val()) || 0
                     }
+                };
+                /* eslint-enable camelcase */
+
+                Ajax.call([request])[0].done(function(resp) {
+                    $btn.prop('disabled', false).text(originalText).removeAttr('aria-busy');
+
+                    if (resp.success) {
+                        // Reload page on modal close.
+                        $('#phAiModal').one('hidden.bs.modal', function() {
+                            window.location.reload();
+                        });
+
+                        var $modalTitle = $('#phAiModalLabel');
+                        $modalTitle.text(config.strings.success_title);
+
+                        var successHtml = '<div id="ph-success-container" tabindex="-1" ';
+                        successHtml += 'class="text-center py-3 ph-animate-fadein" style="outline: none;">';
+                        successHtml += '<div class="mb-3 ph-success-icon" aria-hidden="true">';
+                        successHtml += '<i class="fa fa-check-circle"></i></div>';
+
+                        // Handle item list display.
+                        var items = resp.created_items || [];
+                        // Fallback if array is empty but single item name exists.
+                        if (items.length === 0 && resp.item_name) {
+                            items.push(resp.item_name);
+                        }
+                        var itemsList = items.join(', ');
+                        var count = items.length;
+
+                        successHtml += '<h2 class="fw-bold text-primary mb-3">' + count + 'x Itens Criados!</h2>';
+                        successHtml += '<p class="text-muted">' + itemsList + '</p>';
+
+                        // Warnings and Info messages.
+                        if (resp.warning_msg) {
+                            successHtml += '<div class="alert alert-warning small mb-3">';
+                            successHtml += '<i class="fa fa-exclamation-triangle" aria-hidden="true"></i> ';
+                            successHtml += resp.warning_msg + '</div>';
+                        } else if (resp.info_msg) {
+                            successHtml += '<div class="alert alert-success small mb-3">';
+                            successHtml += '<i class="fa fa-check-circle" aria-hidden="true"></i> ';
+                            successHtml += resp.info_msg + '</div>';
+                        }
+
+                        successHtml += '<p class="lead text-muted mb-4">' + config.strings.success + '</p>';
+
+                        // If single drop created, show copyable code.
+                        if (resp.drop_code && count === 1) {
+                            var fullCode = '[PLAYERHUD_DROP code=' + resp.drop_code + ']';
+
+                            successHtml += '<div class="card bg-light border-0 p-3 mx-auto" style="max-width: 90%;">';
+                            successHtml += '<label class="small text-muted mb-2 fw-bold text-start w-100" ';
+                            successHtml += 'for="ph-gen-code-input">' + config.strings.copy + ':</label>';
+                            successHtml += '<div class="input-group">';
+                            successHtml += '<input type="text" class="form-control font-monospace text-center ph-code-input" ';
+                            successHtml += 'value="' + fullCode + '" id="ph-gen-code-input" readonly>';
+                            // Use Moodle Core Copy API.
+                            successHtml += '<button class="btn btn-primary" type="button" ';
+                            successHtml += 'data-action="copytoclipboard" data-clipboard-target="#ph-gen-code-input">';
+                            successHtml += '<i class="fa fa-copy" aria-hidden="true"></i> ';
+                            successHtml += config.strings.copy + '</button>';
+                            successHtml += '</div></div>';
+                        }
+
+                        successHtml += '</div>';
+
+                        $('#phAiModal .modal-body').html(successHtml);
+
+                        var $btnReload = $('<button class="btn btn-success w-100 py-2 fw-bold">' +
+                             config.strings.great + '</button>');
+                        $btnReload.on('click', function() {
+                            window.location.reload();
+                        });
+
+                        $('#phAiModal .modal-footer').empty().append($btnReload);
+
+                        // Accessibility focus.
+                        setTimeout(function() {
+                            $('#ph-success-container').focus();
+                        }, 200);
+
+                    } else {
+                        Notification.alert('Error', resp.message, 'OK');
+                    }
+                }).fail(function(ex) {
+                    $btn.prop('disabled', false).text(originalText).removeAttr('aria-busy');
+                    Notification.exception(ex);
                 });
             });
         }
