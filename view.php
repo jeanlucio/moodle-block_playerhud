@@ -28,7 +28,7 @@ require_once('../../config.php');
 $courseid   = required_param('id', PARAM_INT);
 $instanceid = required_param('instanceid', PARAM_INT);
 $tab        = optional_param('tab', 'collection', PARAM_ALPHANUMEXT);
-$action     = optional_param('action', '', PARAM_ALPHA);
+$action     = optional_param('action', '', PARAM_ALPHANUMEXT);
 
 $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
 $bi     = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
