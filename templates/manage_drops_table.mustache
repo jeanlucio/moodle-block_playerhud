@@ -63,7 +63,9 @@
                             </a>
                         </th>
                         
+                        {{! Coluna de Código / Shortcode }}
                         <th scope="col" class="ph-col-gen">{{str_col_gen}}</th>
+
                         <th scope="col" class="text-end ph-col-actions">{{str_actions}}</th>
                     </tr>
                 </thead>
@@ -94,12 +96,32 @@
                                 </span>
                             {{/is_immediate}}
                         </td>
-                        <td class="align-middle">
-                            <button type="button" class="btn btn-outline-dark btn-sm js-open-gen-modal w-100"
-                                    data-dropcode="{{display_code}}" title="{{str_gen_title}}">
-                                <i class="fa fa-cogs" aria-hidden="true"></i> {{str_gen_btn}}
-                            </button>
+                        
+                        {{! 
+                            [ATUALIZAÇÃO] Grupo de Botões: Copiar Rápido e Personalizar 
+                            Substitui o botão único e largo por dois compactos.
+                        }}
+                        <td class="align-middle text-nowrap">
+                            <div class="d-flex gap-1 justify-content-start">
+                                {{! Botão 1: Copiar o código padrão imediatamente }}
+                                <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm"
+                                        data-action="copytoclipboard"
+                                        data-clipboard-text="{{full_default_code}}"
+                                        title="{{str_quick_copy}}"
+                                        aria-label="{{str_quick_copy}}">
+                                    <i class="fa fa-copy" aria-hidden="true"></i> {{str_quick_copy}}
+                                </button>
+
+                                {{! Botão 2: Abrir modal para customizar }}
+                                <button type="button" class="btn btn-outline-dark btn-sm js-open-gen-modal shadow-sm"
+                                        data-dropcode="{{display_code}}" 
+                                        title="{{str_gen_title}}"
+                                        aria-label="{{str_gen_title}}">
+                                    <i class="fa fa-magic" aria-hidden="true"></i> {{str_gen_title}}
+                                </button>
+                            </div>
                         </td>
+
                         <td class="align-middle text-end">
                             <a href="{{url_edit}}" class="btn btn-sm btn-primary me-1 shadow-sm">
                                 <i class="fa fa-pencil" aria-hidden="true"></i> {{str_edit}}

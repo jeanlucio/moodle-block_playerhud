@@ -25,7 +25,7 @@ class tab_collection implements renderable, templatable {
         require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
 
         // 1. Captura parâmetro de ordenação (Padrão: xp_asc)
-        $current_sort = optional_param('sort', 'xp_asc', PARAM_ALPHA);
+        $current_sort = optional_param('sort', 'xp_asc', PARAM_ALPHANUMEXT);
 
         // 2. Buscar Inventário do Banco
         // JOIN para saber se a origem é um drop infinito
@@ -166,7 +166,11 @@ class tab_collection implements renderable, templatable {
                 // Dados comuns para ordenação
                 $itemObj['id'] = $item->id;
                 $itemObj['sort_name'] = $sort_name;
-                $itemObj['raw_xp'] = (int)$item->xp;
+                if ($total_count == 0 && $item->secret) {
+                    $itemObj['raw_xp'] = -1; 
+                } else {
+                    $itemObj['raw_xp'] = (int)$item->xp;
+                }
                 $itemObj['count'] = $total_count;
                 $itemObj['timestamp'] = $lastts;
                 

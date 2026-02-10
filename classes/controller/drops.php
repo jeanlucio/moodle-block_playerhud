@@ -94,6 +94,9 @@ class drops {
                 $editurl = new moodle_url('/blocks/playerhud/edit_drop.php', ['instanceid' => $instanceid, 'courseid' => $courseid, 'itemid' => $itemid, 'dropid' => $drop->id]);
                 $deleteurl = new moodle_url($baseurl, ['action' => 'delete', 'dropid' => $drop->id, 'sesskey' => sesskey()]);
                 
+                // Lógica do código (existente)
+                $display_code = !empty($drop->code) ? $drop->code : $drop->id;
+
                 $drops_data[] = [
                     'id' => $drop->id,
                     'counter' => $counter++,
@@ -104,6 +107,7 @@ class drops {
                     'respawntime' => $drop->respawntime,
                     'respawntime_fmt' => format_time($drop->respawntime),
                     'display_code' => !empty($drop->code) ? $drop->code : $drop->id,
+                    'full_default_code' => '[PLAYERHUD_DROP code=' . $display_code . ']',
                     'confirm_msg' => get_string('drops_confirm_delete', 'block_playerhud'),
                     'url_edit' => $editurl->out(false),
                     'url_delete' => $deleteurl->out(false),
@@ -111,8 +115,8 @@ class drops {
                     // Strings internas para o loop
                     'str_infinite' => get_string('infinite', 'block_playerhud'),
                     'str_immediate' => get_string('drops_immediate', 'block_playerhud'),
-                    'str_gen_title' => get_string('gen_title', 'block_playerhud'),
-                    'str_gen_btn' => get_string('gen_btn', 'block_playerhud'),
+                    'str_gen_title' => get_string('gen_customize', 'block_playerhud'), // "Personalizar"
+                    'str_quick_copy' => get_string('gen_copy_short', 'block_playerhud'), // "Copiar"
                     'str_edit' => get_string('edit'),
                     'str_delete' => get_string('delete'),
                     'str_select' => get_string('select')
