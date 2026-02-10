@@ -562,3 +562,8 @@ $string['sort_acquired'] = 'Adquiridos Primeiro';
 $string['sort_missing'] = 'Faltantes Primeiro';
 $string['gen_customize'] = 'Personalizar';
 $string['gen_copy_short'] = 'Copiar';
+// --- Ranking Strings ---
+$string['ranking_filter_show'] = 'Mostrar Ocultos/Pausados';
+$string['ranking_filter_hide'] = 'Ocultar Inativos (Visão do Aluno)';
+$string['status_paused_title'] = 'Gamificação Desativada';
+$string['status_off'] = 'Desligado';

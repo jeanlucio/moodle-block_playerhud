@@ -239,11 +239,14 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                     // eslint-disable-next-line promise/always-return
                     navigator.clipboard.writeText(text).then(function() {
                         // Feedback Visual
+                        // Trecho Corrigido
                         var originalHtml = $btn.html();
-                        var originalWidth = $btn.outerWidth(); // Fixa largura para não pular
+                        var originalWidth = $btn.outerWidth();
 
                         // Estado de Sucesso
-                        $btn.css('width', originalWidth + 'px');
+                        // [CORREÇÃO] Adiciona 25px extras para acomodar o texto "Copiado" e o ícone sem cortar
+                        // ou usa 'min-width' para permitir expansão se o layout permitir.
+                        $btn.css('width', (originalWidth + 25) + 'px');
                         $btn.removeClass('btn-outline-secondary').addClass('btn-success');
                         $btn.html('<i class="fa fa-check"></i> ' + langStrings.gen_copied);
 

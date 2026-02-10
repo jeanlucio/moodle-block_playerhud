@@ -562,3 +562,8 @@ $string['sort_acquired'] = 'Owned First';
 $string['sort_missing'] = 'Missing First';
 $string['gen_customize'] = 'Customize';
 $string['gen_copy_short'] = 'Copy';
+// --- Ranking Strings ---
+$string['ranking_filter_show'] = 'Show Hidden/Paused';
+$string['ranking_filter_hide'] = 'Hide Inactive (Student View)';
+$string['status_paused_title'] = 'Gamification Disabled';
+$string['status_off'] = 'Off';

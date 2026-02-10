@@ -199,13 +199,22 @@ class game {
      * @param int $currentxp Current XP.
      * @return int The rank.
      */
-    public static function get_user_rank($blockinstanceid, $userid, $currentxp) {
+public static function get_user_rank($blockinstanceid, $userid, $currentxp) {
         global $DB;
+
+        // [CORREÇÃO] A contagem de "quem está na minha frente" deve considerar APENAS
+        // usuários que estão ativos E visíveis. Se um aluno oculto tem mais XP,
+        // ele não deve empurrar o meu ranking para baixo.
+        
         $sql = "SELECT COUNT(id)
                   FROM {block_playerhud_user}
-                 WHERE blockinstanceid = :pid AND currentxp > :xp";
+                 WHERE blockinstanceid = :pid 
+                   AND currentxp > :xp
+                   AND enable_gamification = 1
+                   AND ranking_visibility = 1";
 
         $betterplayers = $DB->count_records_sql($sql, ['pid' => $blockinstanceid, 'xp' => $currentxp]);
+        
         return $betterplayers + 1;
     }
 
@@ -218,9 +227,42 @@ class game {
      * @param bool $isteacher Is user teacher?
      * @return array
      */
-    public static function get_leaderboard($blockinstanceid, $courseid, $currentuserid, $isteacher) {
+/**
+     * Fetch complete Leaderboard for block instance.
+     *
+     * @param int $blockinstanceid The instance ID.
+     * @param int $courseid The course ID.
+     * @param int $currentuserid Current user ID.
+     * @param bool $isteacher Is user teacher?
+     * @return array
+     */
+/**
+     * Fetch complete Leaderboard for block instance.
+     *
+     * @param int $blockinstanceid The instance ID.
+     * @param int $courseid The course ID.
+     * @param int $currentuserid Current user ID.
+     * @param bool $isteacher Is user teacher?
+     * @return array
+     */
+public static function get_leaderboard($blockinstanceid, $courseid, $currentuserid, $isteacher) {
         global $DB;
 
+        // 1. [NOVO] Mapa de Grupos (Performance: 1 Query para todo o curso)
+        // Busca todos os vínculos de grupo deste curso de uma vez.
+        $user_groups_map = [];
+        $sql_groups = "SELECT gm.userid, g.name
+                         FROM {groups} g
+                         JOIN {groups_members} gm ON g.id = gm.groupid
+                        WHERE g.courseid = :courseid";
+        
+        $memberships = $DB->get_recordset_sql($sql_groups, ['courseid' => $courseid]);
+        foreach ($memberships as $rec) {
+            $user_groups_map[$rec->userid][] = format_string($rec->name);
+        }
+        $memberships->close();
+
+        // 2. Busca Usuários (Lógica Padrão)
         $userfieldsapi = \core_user\fields::for_userpic();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
 
@@ -228,7 +270,7 @@ class game {
                        pu.currentxp, pu.ranking_visibility, pu.enable_gamification
                   FROM {block_playerhud_user} pu
                   JOIN {user} u ON pu.userid = u.id
-                 WHERE pu.blockinstanceid = :pid AND pu.enable_gamification = 1
+                 WHERE pu.blockinstanceid = :pid
               ORDER BY pu.currentxp DESC, u.lastname ASC";
 
         $rawusers = $DB->get_records_sql($sql, ['pid' => $blockinstanceid]);
@@ -244,42 +286,52 @@ class game {
                 continue;
             }
 
-            if ($usr->ranking_visibility == 0 && !$isteacher && !$isme) {
+            // Status
+            $ispaused = ($usr->enable_gamification == 0);
+            $ishidden = ($usr->ranking_visibility == 0);
+            $iscompetitor = (!$ispaused && !$ishidden);
+            
+            // Filtro de Visualização
+            $shoulddisplay = ($iscompetitor || $isteacher || $isme);
+            if (!$shoulddisplay) {
                 continue;
             }
 
-            $usr->is_me = $isme;
-            $usr->rank = $rankcounter++;
-            $usr->fullname = fullname($usr);
-
+            // Cálculo do Rank
+            $usr->rank = '-';
             $usr->medal_emoji = null;
-            if ($usr->rank == 1) {
-                $usr->medal_emoji = '🥇';
-            } else if ($usr->rank == 2) {
-                $usr->medal_emoji = '🥈';
-            } else if ($usr->rank == 3) {
-                $usr->medal_emoji = '🥉';
-            
-            } else {
-                $usr->medal = null;
+
+            if ($iscompetitor) {
+                $usr->rank = $rankcounter++;
+                if ($usr->rank == 1) $usr->medal_emoji = '🥇';
+                else if ($usr->rank == 2) $usr->medal_emoji = '🥈';
+                else if ($usr->rank == 3) $usr->medal_emoji = '🥉';
             }
 
-            $usr->is_hidden_marker = ($usr->ranking_visibility == 0);
+            // [NOVO] Atribui o nome do grupo ao objeto do usuário
+            $my_groups = isset($user_groups_map[$usr->userid]) ? $user_groups_map[$usr->userid] : [];
+            $usr->group_name = empty($my_groups) ? '-' : implode(', ', $my_groups);
+
+            // Flags visuais
+            $usr->is_me = $isme;
+            $usr->is_paused = $ispaused;
+            $usr->is_hidden_marker = ($ishidden && !$ispaused);
+            $usr->fullname = fullname($usr);
+
             $individualranking[] = $usr;
         }
 
+        // ... (Lógica de Grupos abaixo continua inalterada)
         $groupranking = [];
         $groups = groups_get_all_groups($courseid);
 
         if ($groups) {
             foreach ($groups as $grp) {
                 $members = groups_get_members($grp->id, 'u.id');
-                if (!$members) {
-                    continue;
-                }
+                if (!$members) continue;
 
                 $memberids = array_keys($members);
-                [$insql, $inparams] = $DB->get_in_or_equal($memberids);
+                list($insql, $inparams) = $DB->get_in_or_equal($memberids);
 
                 $sqlgrp = "SELECT SUM(currentxp) as total, COUNT(id) as qtd
                              FROM {block_playerhud_user}
@@ -293,22 +345,16 @@ class game {
 
                 if ($grpstats && $grpstats->qtd > 0) {
                     $avg = floor($grpstats->total / $grpstats->qtd);
-
                     $gobj = new \stdClass();
                     $gobj->id = $grp->id;
                     $gobj->name = format_string($grp->name);
                     $gobj->average_xp = $avg;
                     $gobj->member_count = $grpstats->qtd;
                     $gobj->is_my_group = groups_is_member($grp->id, $currentuserid);
-
                     $groupranking[] = $gobj;
                 }
             }
-
-            usort($groupranking, function ($a, $b) {
-                return $b->average_xp <=> $a->average_xp;
-            });
-
+            usort($groupranking, function ($a, $b) { return $b->average_xp <=> $a->average_xp; });
             $grank = 1;
             foreach ($groupranking as &$g) {
                 $g->rank = $grank++;

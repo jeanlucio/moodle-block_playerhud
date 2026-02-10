@@ -22,10 +22,20 @@
                 </div>
             </div>
 
-            {{! Botão Dinâmico }}
-            <a href="{{url_toggle_privacy}}" class="btn {{btn_toggle_class}} btn-sm shadow-sm text-nowrap">
-                <i class="fa {{btn_toggle_icon}}"></i> {{str_btn_toggle}}
-            </a>
+            <div class="d-flex gap-2">
+                {{! CONTROLE DO PROFESSOR }}
+                {{#teacher_filter_active}}
+                    <a href="{{url_teacher_filter}}" class="btn {{btn_teacher_class}} btn-sm shadow-sm">
+                        <i class="fa fa-filter" aria-hidden="true"></i> {{str_teacher_filter}}
+                    </a>
+                {{/teacher_filter_active}}
+
+                {{! Botão Dinâmico (Aluno) }}
+                <a href="{{url_toggle_privacy}}" class="btn {{btn_toggle_class}} btn-sm shadow-sm text-nowrap">
+                    <i class="fa {{btn_toggle_icon}}" aria-hidden="true"></i> {{str_btn_toggle}}
+                </a>
+            </div>
+            
         </div>
     </div>
 
@@ -61,6 +71,7 @@
                                     {{! CORREÇÃO: style removido, classe adicionada }}
                                     <th scope="col" class="text-center ph-col-rank">{{str_col_rank}}</th>
                                     <th scope="col">{{str_col_player}}</th>
+                                    <th scope="col" class="text-center">{{str_col_group}}</th>
                                     <th scope="col" class="text-center">{{str_col_xp}}</th>
                                 </tr>
                             </thead>
@@ -71,19 +82,35 @@
                                         {{#medal_emoji}}<span class="ph-rank-medal" role="img" aria-label="Rank {{rank}}">{{medal_emoji}}</span>{{/medal_emoji}}
                                         {{^medal_emoji}}{{rank}}{{/medal_emoji}}
                                     </td>
-                                    <td>
+<td>
                                         <div class="d-flex align-items-center">
                                             {{{userpicture}}}
                                             <div class="ms-3">
-                                                <div class="fw-bold {{#is_me}}text-primary{{/is_me}}">{{fullname}}</div>
+                                                <div class="fw-bold {{#is_me}}text-primary{{/is_me}}">
+                                                    {{fullname}}
+                                                </div>
+                                                
+                                                {{! INDICADOR: ALUNO OCULTO (Privacidade) }}
                                                 {{#is_hidden_marker}}
-                                                    {{! CORREÇÃO: style removido, classe adicionada }}
-                                                    <span class="badge bg-secondary ph-badge-tiny">
-                                                        <i class="fa fa-eye-slash"></i> {{str_hidden}}
+                                                    <span class="badge bg-secondary ph-badge-tiny" title="{{str_hidden}}">
+                                                        <i class="fa fa-eye-slash" aria-hidden="true"></i> {{str_hidden}}
                                                     </span>
                                                 {{/is_hidden_marker}}
+
+                                                {{! INDICADOR: ALUNO PAUSADO (Opt-out) - Apenas Professor vê }}
+                                                {{#is_paused}}
+                                                    {{! [CORREÇÃO] Strings via Helper #str }}
+                                                    <span class="badge bg-danger ph-badge-tiny" 
+                                                          title="{{#str}} status_paused_title, block_playerhud {{/str}}">
+                                                        <i class="fa fa-pause-circle" aria-hidden="true"></i> 
+                                                        {{#str}} status_off, block_playerhud {{/str}}
+                                                    </span>
+                                                {{/is_paused}}
                                             </div>
                                         </div>
+                                    </td>
+                                    <td class="text-center text-muted small">
+                                        {{group_name}}
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-primary rounded-pill px-3 py-2">{{currentxp}} XP</span>
