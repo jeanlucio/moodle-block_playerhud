@@ -1,43 +1,69 @@
 {{#has_items}}
+
+{{! --- BARRA DE FERRAMENTAS / FILTRO --- }}
+{{#show_filter}}
+<div class="d-flex justify-content-end mb-3">
+    <div class="d-flex align-items-center">
+        <label for="ph-collection-sort" class="me-2 small text-muted fw-bold">
+            <i class="fa fa-filter" aria-hidden="true"></i> {{#str}} sort_by, block_playerhud {{/str}}
+        </label>
+        <select id="ph-collection-sort" class="form-select form-select-sm shadow-sm border-secondary" style="width: auto;" onchange="window.location.href=this.value">
+            {{#sort_options}}
+                <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+            {{/sort_options}}
+        </select>
+    </div>
+</div>
+{{/show_filter}}
+
 <div class="playerhud-inventory-grid animate__animated animate__fadeIn">
     {{#items}}
-    {{! CORREÇÃO: Adicionada classe ph-cursor-pointer e removido style="cursor:..." }}
-    <div class="playerhud-item-card card {{card_class}} ph-item-trigger ph-cursor-pointer" 
+    <div class="playerhud-item-card card {{card_class}} ph-item-trigger ph-cursor-pointer h-100" 
          role="button" 
          tabindex="{{tabindex}}"
          data-id="{{id}}"
          data-name="{{name}}"
          data-xp="{{xp_text}}"
          data-count="{{count}}"
-         data-date="{{date_str}}"
-         data-timestamp="{{timestamp}}"
          data-image="{{data_image_payload}}" 
          data-isimage="{{is_image_bool}}"> 
 
+        {{! --- BADGE NOVO --- }}
         {{#badge_new}}
             <span class="ph-new-badge">{{#str}} new_item_badge, block_playerhud {{/str}}</span>
         {{/badge_new}}
 
+        {{! --- BADGE ARQUIVADO (Restaurado aqui) --- }}
         {{#badge_archived}}
-            <span class="badge bg-secondary position-absolute shadow-sm ph-badge-archived">
+            <span class="ph-badge-archived">
                 {{#str}} item_archived, block_playerhud {{/str}}
             </span>
         {{/badge_archived}}
 
-        {{#count}}
-            <div class="ph-card-count-badge">x{{count}}</div>
-        {{/count}}
-
-        {{#is_infinite}}
-            <div class="ph-infinite-badge" title="{{#str}} infinite_item_title, block_playerhud {{/str}}">
+        {{! --- BADGE INFINITO (Esquerda) --- }}
+        {{#is_infinite_type}}
+            <div class="ph-badge-counter ph-badge-pos-left" title="{{#str}} infinite_item_title, block_playerhud {{/str}}">
                 <i class="fa fa-infinity" aria-hidden="true"></i>
+                {{#has_infinite_copies}}
+                    <span class="ph-counter-text ms-1">{{count_infinite}}</span>
+                {{/has_infinite_copies}}
             </div>
-        {{/is_infinite}}
+        {{/is_infinite_type}}
+
+        {{! --- BADGE FINITO (Direita) --- }}
+        {{#has_finite_copies}}
+            <div class="ph-badge-counter ph-badge-pos-right" title="Itens Finitos">
+                <i class="fa fa-hashtag" aria-hidden="true"></i> 
+                <span class="ph-counter-text ms-1">{{count_finite}}</span>
+            </div>
+        {{/has_finite_copies}}
 
         <div class="d-none ph-item-description-content">{{{description}}}</div>
 
-        <div class="card-body p-2 d-flex flex-column align-items-center justify-content-between">
-            <div class="my-3 text-center ph-card-icon-container">
+        <div class="card-body p-2 d-flex flex-column align-items-center">
+            
+            {{! 1. Ícone }}
+            <div class="mt-3 mb-2 text-center ph-card-icon-container">
                  {{#is_image}}
                     <img src="{{image_url}}" class="ph-modal-img ph-card-img" alt="" aria-hidden="true">
                  {{/is_image}}
@@ -46,24 +72,25 @@
                  {{/is_image}}
             </div>
 
-            <div class="text-center w-100 mb-3">
+            {{! 2. Nome e XP (Fixos no topo relativo) }}
+            <div class="text-center w-100 mb-2">
                 <div class="fw-bold ph-card-title mb-1 ph-text-md" title="{{name}}">{{name}}</div>
-                <span class="badge bg-primary ph-xp-badge mb-2">{{xp_text}}</span>
-                
-                {{#has_origins}}
-                <br>
-                <div class="ph-card-origins mt-1">
-                    {{#origin_map}}<span class="me-2" title="{{#str}} source_map, block_playerhud {{/str}}"><i class="fa fa-map-o text-info" aria-hidden="true"></i> {{origin_map}}</span>{{/origin_map}}
-                    {{#origin_shop}}<span class="me-2" title="{{#str}} source_shop, block_playerhud {{/str}}"><i class="fa fa-shopping-cart text-success" aria-hidden="true"></i> {{origin_shop}}</span>{{/origin_shop}}
-                    {{#origin_quest}}<span class="me-2" title="{{#str}} source_quest, block_playerhud {{/str}}"><i class="fa fa-scroll ph-text-gold" aria-hidden="true"></i> {{origin_quest}}</span>{{/origin_quest}}
-                    {{#origin_legacy}}<span title="{{#str}} source_special, block_playerhud {{/str}}"><i class="fa fa-star text-warning" aria-hidden="true"></i> {{origin_legacy}}</span>{{/origin_legacy}}
-                </div>
-                {{/has_origins}}
+                <span class="badge bg-primary ph-xp-badge">{{xp_text}}</span>
             </div>
 
-            {{#date_str}}
-            <div class="ph-card-date">{{date_str}}</div>
-            {{/date_str}}
+            {{! 3. Origens e Data (Rodapé do card) }}
+            <div class="mt-auto w-100 text-center">
+                {{#has_origins}}
+                <div class="ph-card-origins mb-1">
+                    {{#origin_map}}<span class="me-1"><i class="fa fa-map-o text-info" aria-hidden="true"></i> {{origin_map}}</span>{{/origin_map}}
+                    {{#origin_shop}}<span class="me-1"><i class="fa fa-shopping-cart text-success" aria-hidden="true"></i> {{origin_shop}}</span>{{/origin_shop}}
+                    {{#origin_quest}}<span class="me-1"><i class="fa fa-scroll ph-text-gold" aria-hidden="true"></i> {{origin_quest}}</span>{{/origin_quest}}
+                    {{#origin_legacy}}<span><i class="fa fa-star text-warning" aria-hidden="true"></i> {{origin_legacy}}</span>{{/origin_legacy}}
+                </div>
+                {{/has_origins}}
+
+                <div class="ph-card-date">{{{date_str}}}</div>
+            </div>
         </div>
     </div>
     {{/items}}
@@ -72,7 +99,6 @@
 
 {{^has_items}}
 <div class="alert alert-light border text-center py-5">
-    {{! CORREÇÃO: style inline removido, classe ph-empty-state-icon adicionada }}
     <div class="ph-empty-state-icon" aria-hidden="true">📭</div>
     <p class="mb-0 text-muted">{{#str}} empty, block_playerhud {{/str}}</p>
 </div>

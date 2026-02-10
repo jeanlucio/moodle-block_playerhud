@@ -238,22 +238,12 @@
 
 /* --- 6. ITEM CARDS --- */
 .ph-card-rounded { border-radius: 15px; }
-.playerhud-item-card { position: relative; }
-
-.ph-card-count-badge {
-    position: absolute;
-    top: -8px;
-    /* RTL: 'right' -> 'inset-inline-end' */
-    inset-inline-end: -8px;
-    background-color: var(--dark, #343a40);
-    color: var(--light, #fff);
-    border-radius: 50%; width: 24px; height: 24px;
-    font-size: 0.75rem; font-weight: bold;
-    display: flex; align-items: center; justify-content: center;
-    border: 2px solid var(--card-bg, #fff);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    z-index: 5;
+.playerhud-item-card { 
+    position: relative;     
+    height: 100%; 
+    min-height: 260px; /* Altura mínima para garantir uniformidade visual */
 }
+
 .ph-new-badge {
     position: absolute;
     top: -5px;
@@ -266,22 +256,39 @@
     /* Atualizado para usar o novo nome da animação */
     animation: ph-pulse 2s infinite;
 }
-.ph-infinite-badge {
-    position: absolute;
-    top: 5px;
-    /* RTL: 'left' -> 'inset-inline-start' */
-    inset-inline-start: 5px;
-    color: var(--info, #17a2b8);
-    font-size: 0.9rem; z-index: 4; opacity: 0.8;
-}
+
+/* --- Badge de Arquivado (Restaurado e Centralizado) --- */
 .ph-badge-archived {
-    top: -5px;
-    /* RTL: 'left' -> 'inset-inline-start' */
-    inset-inline-start: -5px;
-    font-size: 0.65rem; z-index: 5;
+    /* Posicionamento absoluto centralizado no topo */
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%); /* Garante o centro exato */
+    
+    /* Visual */
+    z-index: 20; /* Garante que fique acima dos outros badges */
+    background-color: var(--secondary, #6c757d); /* Fallback para cinza */
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 2px solid var(--card-bg, #fff); /* Borda branca para destacar do fundo */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    white-space: nowrap;
 }
 
-.ph-item-archived { opacity: 0.85; filter: grayscale(30%); border: 1px dashed var(--gray-400, #ccc) !important; }
+/* Suporte RTL (Para idiomas da direita para esquerda, como Árabe) */
+[dir="rtl"] .ph-badge-archived {
+    transform: translateX(50%);
+}
+
+/* Garante que o item arquivado fique visualmente "desativado" */
+.ph-item-archived { 
+    opacity: 0.85; 
+    filter: grayscale(100%); 
+    border: 1px dashed var(--gray-400, #ccc) !important; 
+}
+
 .ph-missing { opacity: 0.6; border-style: dashed; }
 
 .ph-card-origins {
@@ -308,17 +315,28 @@
 .ph-card-emoji { font-size: 3rem; line-height: 1; }
 
 /* CORREÇÃO PARA TÍTULOS LONGOS NA COLEÇÃO */
+/* Título do Card Unificado
+   - Altura fixa para garantir que todos os cards na linha tenham o mesmo alinhamento.
+   - Truncamento após 3 linhas.
+*/
 .ph-card-title {
     display: -webkit-box;
-    -webkit-line-clamp: 4; 
-    line-clamp: 4;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    min-height: 2.4em; 
+    
+    /* 3 linhas * 1.2 line-height = 3.6em de altura fixa */
+    height: 3.6em; 
     line-height: 1.2;
-    font-size: 0.85rem; 
+    
+    font-size: 0.9rem; /* Mantido do seu original (0.85rem era muito pequeno) */
     margin-bottom: 0.5rem;
+    
+    /* Centralização horizontal do texto */
+    text-align: center;
+    width: 100%;
 }
 .playerhud-inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
 
@@ -581,3 +599,43 @@
 .ph-optin-card { max-width: 500px; border-radius: 15px; border: none; }
 .ph-optin-text { font-size: 1.1rem; }
 .ph-tab-content-wrapper { min-height: 300px; }
+/* --- Badges de Contagem (Topo) --- */
+.ph-badge-counter {
+    position: absolute;
+    top: 8px;
+    background-color: var(--light, #f8f9fa);
+    color: var(--gray-700, #495057);
+    border: 1px solid var(--gray-300, #dee2e6);
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Posição Esquerda (Infinito) */
+.ph-badge-pos-left {
+    inset-inline-start: 8px; /* Compatível com RTL */
+    color: var(--info, #0dcaf0);
+    border-color: var(--info, #0dcaf0);
+    background-color: #fff;
+}
+
+/* Posição Direita (Finito) */
+.ph-badge-pos-right {
+    inset-inline-end: 8px; /* Compatível com RTL */
+    color: var(--dark, #212529);
+}
+
+.ph-counter-text {
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+/* Removemos estilos antigos conflitantes */
+.ph-card-count-badge { display: none; } /* Oculta o badge antigo */
+.ph-infinite-badge { display: none; } /* Oculta o badge antigo */

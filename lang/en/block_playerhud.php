@@ -549,3 +549,14 @@ $string['ai_ex_desc'] = 'Factual Description...';
 $string['ai_ex_loc'] = 'Location';
 // API Errors
 $string['error_service_code'] = '{$a->service} error {$a->code}';
+// ... Strings existentes ...
+$string['sort_by'] = 'Sort by...';
+$string['sort_name_asc'] = 'Name (A-Z)';
+$string['sort_name_desc'] = 'Name (Z-A)';
+$string['sort_xp_desc'] = 'Highest XP';
+$string['sort_xp_asc'] = 'Lowest XP';
+$string['sort_count_desc'] = 'Highest Quantity';
+$string['sort_count_asc'] = 'Lowest Quantity';
+$string['sort_recent'] = 'Most Recent';
+$string['sort_acquired'] = 'Owned First';
+$string['sort_missing'] = 'Missing First';
