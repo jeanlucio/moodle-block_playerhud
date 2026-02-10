@@ -176,7 +176,17 @@ public function get_content() {
                 'manageurl'   => $manageurl,
                 'has_items'   => !empty($recentitems),
                 'items'       => $recentitems,
-                'ranking'     => $rank_data
+                'ranking'     => $rank_data,
+                'url_disable' => (new \moodle_url('/blocks/playerhud/view.php', [
+                    'id' => $COURSE->id,
+                    'instanceid' => $this->instance->id,
+                    'action' => 'toggle_hud',
+                    'state' => 0,
+                    'sesskey' => sesskey(),
+                    'returnurl' => $this->page->url->out_as_local_url(false) // Retorna para a página atual
+                ]))->out(false),
+                'str_disable_gamification' => get_string('disable_exit', 'block_playerhud'),
+                'str_confirm_msg' => get_string('confirm_disable', 'block_playerhud'),
             ];
 
             $this->content->text = $OUTPUT->render_from_template('block_playerhud/sidebar_view', $renderdata);

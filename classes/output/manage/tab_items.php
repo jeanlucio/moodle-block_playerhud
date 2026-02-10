@@ -331,6 +331,7 @@ class tab_items implements renderable {
                 'delete_selected' => get_string('delete_selected', 'block_playerhud'),
                 'delete_n_items' => get_string('delete_n_items', 'block_playerhud'), 
                 'confirm_bulk' => get_string('confirm_bulk_delete', 'block_playerhud'),
+                'created_count' => get_string('ai_created_count', 'block_playerhud'),
             ]
         ];
         $PAGE->requires->js_call_amd('block_playerhud/manage_items', 'init', [$jsvars]);

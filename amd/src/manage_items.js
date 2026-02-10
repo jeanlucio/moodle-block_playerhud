@@ -191,56 +191,60 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                 Ajax.call([request])[0].done(function(resp) {
                     $btn.prop('disabled', false).text(originalText).removeAttr('aria-busy');
 
-                    if (resp.success) {
+if (resp.success) {
                         // Reload page on modal close.
                         $('#phAiModal').one('hidden.bs.modal', function() {
                             window.location.reload();
                         });
 
                         var $modalTitle = $('#phAiModalLabel');
-                        $modalTitle.text(config.strings.success_title);
+                        $modalTitle.text(config.strings.success_title); // "Sucesso!" do core
 
+                        // Container Principal
                         var successHtml = '<div id="ph-success-container" tabindex="-1" ';
                         successHtml += 'class="text-center py-3 ph-animate-fadein" style="outline: none;">';
-                        successHtml += '<div class="mb-3 ph-success-icon" aria-hidden="true">';
+
+                        // Ícone de Sucesso Animado (Visual Feedback)
+                        successHtml += '<div class="mb-3 text-success" style="font-size: 3rem;" aria-hidden="true">';
                         successHtml += '<i class="fa fa-check-circle"></i></div>';
 
                         // Handle item list display.
                         var items = resp.created_items || [];
-                        // Fallback if array is empty but single item name exists.
                         if (items.length === 0 && resp.item_name) {
                             items.push(resp.item_name);
                         }
                         var itemsList = items.join(', ');
                         var count = items.length;
 
-                        successHtml += '<h2 class="fw-bold text-primary mb-3">' + count + 'x Itens Criados!</h2>';
-                        successHtml += '<p class="text-muted">' + itemsList + '</p>';
+                        // TÍTULO: Quantidade Criada (Agora traduzido)
+                        var titleText = config.strings.created_count.replace('{$a}', count);
+                        successHtml += '<h5 class="text-muted text-uppercase small fw-bold mb-2">' + titleText + '</h5>';
 
-                        // Warnings and Info messages.
+                        // DESTAQUE: Nome dos Itens (Grande e Visível)
+                        successHtml += '<h2 class="fw-bold text-dark mb-4 display-6">' + itemsList + '</h2>';
+
+                        // Warnings and Info messages (Caixas coloridas)
                         if (resp.warning_msg) {
-                            successHtml += '<div class="alert alert-warning small mb-3">';
-                            successHtml += '<i class="fa fa-exclamation-triangle" aria-hidden="true"></i> ';
+                            successHtml += '<div class="alert alert-warning small mb-3 text-start">';
+                            successHtml += '<i class="fa fa-exclamation-triangle me-2" aria-hidden="true"></i> ';
                             successHtml += resp.warning_msg + '</div>';
                         } else if (resp.info_msg) {
-                            successHtml += '<div class="alert alert-success small mb-3">';
-                            successHtml += '<i class="fa fa-check-circle" aria-hidden="true"></i> ';
+                            // eslint-disable-next-line max-len
+                            successHtml += '<div class="alert alert-success small mb-3 text-start border-success bg-success-subtle text-success-emphasis">';
+                            successHtml += '<i class="fa fa-info-circle me-2" aria-hidden="true"></i> ';
                             successHtml += resp.info_msg + '</div>';
                         }
 
-                        successHtml += '<p class="lead text-muted mb-4">' + config.strings.success + '</p>';
-
-                        // If single drop created, show copyable code.
+                        // Drop Code (Se houver)
                         if (resp.drop_code && count === 1) {
                             var fullCode = '[PLAYERHUD_DROP code=' + resp.drop_code + ']';
 
-                            successHtml += '<div class="card bg-light border-0 p-3 mx-auto" style="max-width: 90%;">';
-                            successHtml += '<label class="small text-muted mb-2 fw-bold text-start w-100" ';
+                            successHtml += '<div class="card bg-light border-0 p-3 mx-auto mt-4" style="max-width: 90%;">';
+                            successHtml += '<label class="small text-muted mb-1 fw-bold text-start w-100" ';
                             successHtml += 'for="ph-gen-code-input">' + config.strings.copy + ':</label>';
                             successHtml += '<div class="input-group">';
                             successHtml += '<input type="text" class="form-control font-monospace text-center ph-code-input" ';
                             successHtml += 'value="' + fullCode + '" id="ph-gen-code-input" readonly>';
-                            // Use Moodle Core Copy API.
                             successHtml += '<button class="btn btn-primary" type="button" ';
                             successHtml += 'data-action="copytoclipboard" data-clipboard-target="#ph-gen-code-input">';
                             successHtml += '<i class="fa fa-copy" aria-hidden="true"></i> ';
@@ -252,6 +256,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
 
                         $('#phAiModal .modal-body').html(successHtml);
 
+                        // Botão de Fechar/Recarregar
                         var $btnReload = $('<button class="btn btn-success w-100 py-2 fw-bold">' +
                              config.strings.great + '</button>');
                         $btnReload.on('click', function() {

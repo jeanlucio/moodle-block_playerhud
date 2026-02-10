@@ -32,23 +32,21 @@ class generator {
         }
 
         if (empty($geminikey) && empty($groqkey)) {
+            // CORREÇÃO: Chave correta do arquivo de idioma (ai_error_no_keys)
             throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
         }
 
-        // 2. REGRA DO INFINITO (CORRIGIDA)
-        // Só é infinito SE estiver criando drop (createdrop=1) E a quantidade for 0 (ilimitado).
-        // Se createdrop for falso, ignoramos o valor de drop_max (pois o formulário manda 0 por padrão).
+        // 2. REGRA DO INFINITO
         $is_infinite_drop = $createdrop && isset($extraoptions['drop_max']) && ((int)$extraoptions['drop_max'] === 0);
         
         if ($is_infinite_drop) {
-            $xp = 0; // Força XP zero apenas se for drop infinito real
+            $xp = 0; 
         }
 
-        // 3. Lógica Inteligente de XP
+        // 3. Lógica de XP
         $balance = $extraoptions['balance_context'] ?? null;
         
         if ($xp <= 0 && !$is_infinite_drop && $balance) {
-            // Sugestão baseada no Gap
             if ($balance['gap'] > 2000) { $xp = rand(150, 300); } 
             elseif ($balance['gap'] > 500) { $xp = rand(80, 150); } 
             elseif ($balance['gap'] > 0) { $xp = rand(30, 80); } 
@@ -61,16 +59,21 @@ class generator {
         $prompt = $this->build_prompt($mode, $theme, $xp, $balance, $amount);
 
         // 5. Call API
-        $result = ['success' => false, 'message' => 'Init'];
+        $result = ['success' => false, 'message' => '']; 
+        
         if (!empty($geminikey)) {
             $result = $this->call_gemini($prompt, $geminikey);
         }
+        
+        // Tenta Groq apenas se Gemini falhou ou não estava configurado
         if ((!$result['success']) && !empty($groqkey)) {
             $result = $this->call_groq($prompt, $groqkey);
         }
 
         if (!$result['success']) {
-            throw new \moodle_exception('error_ai_offline', 'block_playerhud', '', $result['message']);
+            // A mensagem agora virá traduzida do curl_request ou será vazia se nenhuma chave configurada
+            $errormsg = !empty($result['message']) ? $result['message'] : get_string('ai_error_no_keys', 'block_playerhud');
+            throw new \moodle_exception('ai_error_offline', 'block_playerhud', '', $errormsg);
         }
 
         // 6. Parse JSON
@@ -79,7 +82,8 @@ class generator {
         $aidata = json_decode($cleanjson, true);
 
         if (!$aidata) {
-            throw new \moodle_exception('error_ai_parsing', 'block_playerhud');
+            // CORREÇÃO: Chave correta (ai_error_parsing)
+            throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
         }
 
         // Normalização
@@ -93,7 +97,7 @@ class generator {
             $items_to_save = [$aidata]; 
         }
 
-        // 7. Save Loop & Analyze
+        // 7. Save Loop
         if ($mode === 'item') {
             $created_names = [];
             $last_drop_code = '';
@@ -114,27 +118,22 @@ class generator {
                 'provider' => $result['provider']
             ];
 
-            // ANÁLISE DE BALANCEAMENTO (Lógica Refinada)
+            // Análise de Balanceamento
             if ($balance && !$is_infinite_drop) {
                 $total_added_xp = $xp * count($created_names);
                 
-                // Se criou drop...
                 if ($createdrop) {
                     $drop_mult = (int)($extraoptions['drop_max'] ?? 1);
-                    
                     if ($drop_mult <= 0) {
-                        // MUDANÇA: Se for infinito, zera o impacto no saldo (não conta para a meta)
                         $total_added_xp = 0; 
                     } else {
                         $total_added_xp *= $drop_mult;
                     }
                 }
                 
-                // Soma ao total atual
                 $new_total = $balance['current_xp'] + $total_added_xp;
                 $target = $balance['target_xp'];
 
-                // Só exibe aviso se realmente adicionou XP à economia (> 0) e passou da meta
                 if ($total_added_xp > 0 && $target > 0 && $new_total > $target) { 
                     $ratio = ($new_total / $target) * 100;
                     $excess = round($ratio - 100);
@@ -143,13 +142,14 @@ class generator {
                     $response['info_msg'] = get_string('ai_tip_balanced', 'block_playerhud');
                 }
             } else if ($is_infinite_drop) {
-                $response['info_msg'] = 'Itens infinitos foram criados com 0 XP para manter o equilíbrio.';
+                $response['info_msg'] = get_string('ai_info_infinite_xp', 'block_playerhud');
             }
             
             return $response;
         }
 
-        return ['success' => false, 'message' => 'Unknown mode'];
+        // CORREÇÃO: Internacionalização do erro de modo desconhecido
+        return ['success' => false, 'message' => get_string('error_unknown_mode', 'block_playerhud')];
     }
 
     protected function save_item($data, $targetxp, $createdrop, $provider, $options = []) {
@@ -180,7 +180,11 @@ class generator {
             $drop->blockinstanceid = $this->instanceid;
             $drop->itemid = $itemid;
             $drop->code = $dropcode;
-            $drop->name = !empty($options['drop_location']) ? $options['drop_location'] : ($data['location_name'] ?? 'Drop Gerado');
+            
+            // CORREÇÃO: Uso de 'default_drop_name' se 'location_name' não vier da IA
+            $fallback_name = $data['location_name'] ?? get_string('default_drop_name', 'block_playerhud');
+            $drop->name = !empty($options['drop_location']) ? $options['drop_location'] : $fallback_name;
+            
             $drop->maxusage = (int)($options['drop_max'] ?? 0);
             $minutes = (int)($options['drop_time'] ?? 0);
             $drop->respawntime = $minutes * 60;
@@ -198,35 +202,64 @@ class generator {
     }
 
     protected function build_prompt($mode, $theme, $xp, $balance = null, $amount = 1) {
+        $currentlang = get_string('thislanguage', 'langconfig');
+
         if ($mode === 'item') {
-            $context = "";
+            $context_str = "";
             if ($balance) {
                 if ($balance['gap'] > 0) {
-                    $context = "Context: Educational RPG. Items needed to reach level cap.";
+                    $context_str = get_string('ai_prompt_ctx_hard', 'block_playerhud');
                 } else {
-                    $context = "Context: Game full of XP. Create flavor/bonus items.";
+                    $context_str = get_string('ai_prompt_ctx_easy', 'block_playerhud');
                 }
             }
 
+            // Strings para o exemplo JSON (Internacionalizadas)
+            $ex_name = get_string('ai_ex_name', 'block_playerhud');
+            $ex_desc = get_string('ai_ex_desc', 'block_playerhud');
+            $ex_loc  = get_string('ai_ex_loc', 'block_playerhud');
+
             if ($amount > 1) {
-                $json_struct = "{ \"items\": [ { \"name\": \"Name 1\", \"description\": \"Desc...\", \"emoji\": \"🔮\", \"location_name\": \"Loc\" }, ... ] }";
-                $task = "Create {$amount} DISTINCT items";
+                $a = new \stdClass();
+                $a->count = $amount;
+                $a->theme = $theme;
+                $task_str = get_string('ai_task_multi', 'block_playerhud', $a);
+                
+                // CORREÇÃO: Exemplo JSON montado com strings
+                $json_struct = '{ "items": [ { "name": "'.$ex_name.'", "description": "'.$ex_desc.'", "emoji": "📦", "location_name": "'.$ex_loc.'" }, ... ] }';
             } else {
-                $json_struct = "{ \"name\": \"Name\", \"description\": \"Desc...\", \"emoji\": \"🔮\", \"location_name\": \"Loc\" }";
-                $task = "Create ONE item";
+                $task_str = get_string('ai_task_single', 'block_playerhud', $theme);
+                
+                // CORREÇÃO: Exemplo JSON montado com strings
+                $json_struct = '{ "name": "'.$ex_name.'", "description": "'.$ex_desc.'", "emoji": "📦", "location_name": "'.$ex_loc.'" }';
             }
 
-            $prompt = "Act as a Gamification Designer. Theme: '{$theme}'. {$task}. {$context}
-            XP Value will be {$xp} (do not include in JSON if 0).
-            Return ONLY JSON: 
-            {$json_struct}
-            Reply in Portuguese.";
+            $role_str = get_string('ai_role_item', 'block_playerhud');   
+            $rules_str = get_string('ai_rules_item', 'block_playerhud'); 
+            $tech_xp_str = get_string('ai_prompt_tech_xp', 'block_playerhud', $xp);
+            $json_inst = get_string('ai_json_instruction', 'block_playerhud');
+            $lang_inst = get_string('ai_reply_lang', 'block_playerhud', $currentlang);
+
+            $prompt = implode("\n\n", [
+                $role_str,
+                $task_str,
+                $rules_str,
+                $context_str,
+                $tech_xp_str,
+                $json_inst,
+                $json_struct,
+                $lang_inst
+            ]);
             
             return $prompt;
         }
+        
         return "";
     }
 
+    // ... (restante dos métodos auxiliares curl_request, call_gemini, etc. mantidos iguais) ...
+    // Vou incluí-los resumidamente para manter o arquivo completo.
+    
     protected function call_gemini($prompt, $key) {
         $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" . $key;
         $data = ["contents" => [["parts" => [["text" => $prompt]]]]];
@@ -255,17 +288,26 @@ class generator {
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
+        // CORREÇÃO 1: Tratamento de erro de rede cURL
+        if ($res === false) {
+             return ['success' => false, 'message' => $curlerror];
+        }
+
+        // CORREÇÃO 2: Internacionalização do erro HTTP
         if ($code !== 200) {
-            return ['success' => false, 'message' => "$source error $code"];
+            $msg = get_string('error_service_code', 'block_playerhud', ['service' => $source, 'code' => $code]);
+            return ['success' => false, 'message' => $msg];
         }
 
         $decoded = json_decode($res, true);
         $content = '';
+        
         if ($source === 'Gemini') {
             $content = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? '';
         } else {
             $content = $decoded['choices'][0]['message']['content'] ?? '';
         }
+        
         return ['success' => true, 'data' => $content, 'provider' => $source];
     }
 }

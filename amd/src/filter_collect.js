@@ -311,6 +311,23 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 $filterModal.appendTo('body');
             }
 
+            // --- NOVO: Confirmação de Desativação (Widget) ---
+            $('body').on('click', '.js-disable-hud', function(e) {
+                e.preventDefault();
+                var url = $(this).attr('href');
+                var msg = $(this).attr('data-confirm-msg');
+
+                Notification.confirm(
+                    strings.confirm_title,
+                    msg,
+                    strings.yes,
+                    strings.cancel,
+                    function() {
+                        window.location.href = url;
+                    }
+                );
+            });
+
             // --- CLICK: ABRIR DETALHES DO ITEM ---
             // eslint-disable-next-line complexity
             $('body').on('click keydown', '.ph-item-details-trigger', function(e) {

@@ -4,34 +4,47 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="phAiModalLabel">{{#str}} ai_btn_create, block_playerhud {{/str}}</h5>
+        {{!
+            CORREÇÃO: Alterado de 'core' para 'block_playerhud'.
+            A string 'close' já está definida no seu plugin.
+        }}
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{#str}} close, block_playerhud {{/str}}"></button>
       </div>
       <div class="modal-body">
         <form id="ph-ai-form">
+            {{! TEMA }}
             <div class="mb-3">
-                <label for="ai-theme" class="form-label">{{#str}} ai_prompt_theme_item, block_playerhud {{/str}}</label>
+                <label for="ai-theme" class="form-label fw-bold">{{#str}} ai_prompt_theme_item, block_playerhud {{/str}}</label>
                 <input type="text" class="form-control" id="ai-theme" placeholder="{{#str}} ai_theme_placeholder, block_playerhud {{/str}}">
             </div>
+
+            {{! XP e QUANTIDADE }}
             <div class="row mb-3">
                 <div class="col-6">
-                    <label for="ai-xp" class="form-label">{{#str}} xp, block_playerhud {{/str}}</label>
+                    <label for="ai-xp" class="form-label fw-bold">{{#str}} xp, block_playerhud {{/str}}</label>
                     <input type="number" class="form-control" id="ai-xp" placeholder="{{#str}} ai_rnd_xp, block_playerhud {{/str}}">
                 </div>
                 <div class="col-6">
-                    <label for="ai-amount" class="form-label">{{#str}} qty, block_playerhud {{/str}}</label>
-                    <input type="number" class="form-control" id="ai-amount" value="1" min="1" max="5">
+                    <label for="ai-amount" class="form-label fw-bold">{{#str}} qty, block_playerhud {{/str}}</label>
+                    <input type="number" class="form-control" id="ai-amount" value="1" min="1" max="10">
                 </div>
             </div>
+
+            {{! CHECKBOX DROP }}
             <div class="form-check mb-3">
                 <input type="checkbox" class="form-check-input" id="ai-drop">
                 <label class="form-check-label fw-bold" for="ai-drop">{{#str}} ai_create_drop, block_playerhud {{/str}}</label>
             </div>
+
+            {{! OPÇÕES DE DROP (Slide Down) }}
             <div id="ai-drop-options" class="p-3 bg-light border rounded mb-3" style="display:none;">
-                <h6 class="border-bottom pb-2 mb-3">{{#str}} ai_drop_settings, block_playerhud {{/str}}</h6>
+                <h6 class="border-bottom pb-2 mb-3 fw-bold">{{#str}} ai_drop_settings, block_playerhud {{/str}}</h6>
+                
                 <div class="mb-3">
                     <label for="ai-location" class="form-label small">{{#str}} drop_name_label, block_playerhud {{/str}}</label>
-                    <input type="text" class="form-control form-control-sm" id="ai-location" placeholder="Ex: Biblioteca">
+                    <input type="text" class="form-control form-control-sm" id="ai-location" placeholder="{{#str}} drop_name_default, block_playerhud {{/str}}">
                 </div>
+                
                 <div class="row">
                     <div class="col-6">
                         <label for="ai-maxusage" class="form-label small">{{#str}} drop_max_qty, block_playerhud {{/str}}</label>
@@ -48,8 +61,15 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{#str}} cancel {{/str}}</button>
-        <button type="button" class="btn btn-primary" id="ph-btn-conjure">{{#str}} ai_btn_conjure, block_playerhud {{/str}}</button>
+        {{!
+            Nota: 'cancel' geralmente existe no 'core'. Se der erro também,
+            teremos que adicionar $string['cancel'] = 'Cancelar'; no seu lang file.
+            Mas por enquanto, mantemos 'core' pois é padrão.
+        }}
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{#str}} cancel, core {{/str}}</button>
+        <button type="button" class="btn btn-primary fw-bold" id="ph-btn-conjure">
+            <i class="fa fa-magic me-1" aria-hidden="true"></i> {{#str}} ai_btn_conjure, block_playerhud {{/str}}
+        </button>
       </div>
     </div>
   </div>

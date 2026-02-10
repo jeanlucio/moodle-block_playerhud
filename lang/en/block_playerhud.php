@@ -28,15 +28,15 @@ $string['activities_none'] = 'No activities available';
 $string['add_cost_item'] = 'Add Cost Item';
 $string['add_reward_item'] = 'Add Reward Item';
 $string['ai_btn_class'] = 'Class Oracle';
-$string['ai_btn_conjure'] = 'Conjure Item!';
+$string['ai_btn_conjure'] = 'Conjure!';
 $string['ai_btn_create'] = 'Create Magic Item';
 $string['ai_btn_generate'] = 'Generate Script';
 $string['ai_btn_quest'] = 'Create Magic Quest';
 $string['ai_btn_summon'] = 'Summon Class';
 $string['ai_class_created'] = 'Class created successfully!';
 $string['ai_create_drop'] = 'Generate Drop location?';
-$string['ai_creating'] = 'Conjuring item...';
-$string['ai_drop_settings'] = 'Configurações do Drop';
+$string['ai_creating'] = 'Conjuring...';
+$string['ai_drop_settings'] = 'Drop Settings';
 $string['ai_error_apikey'] = 'Gemini API Key not configured in plugin settings.';
 $string['ai_error_no_keys'] = 'No AI key configured (neither by Teacher nor by Institution).';
 $string['ai_error_offline'] = 'AI Offline: {$a}';
@@ -60,7 +60,7 @@ $string['ai_quest_rew_lbl'] = '3. Reward (Optional):';
 $string['ai_quest_theme_lbl'] = '1. Mission Theme or Story';
 $string['ai_quest_val_lbl'] = 'Target Quantity / Value:';
 $string['ai_quest_xp_ph'] = 'XP Gained (Empty = AI decides)';
-$string['ai_rnd_xp'] = 'Deixe vazio para aleatório (10-500)';
+$string['ai_rnd_xp'] = 'Empty = Random';
 $string['ai_story_desc'] = 'The AI will write a full chapter for your story.';
 $string['ai_story_title'] = '✨ AI Storyteller';
 $string['ai_success'] = 'Item created successfully!';
@@ -487,8 +487,8 @@ $string['bal_msg_hard'] = 'Hard! There is only <strong>{$a->total} XP</strong> a
 $string['bal_msg_easy'] = 'Too easy! There is <strong>{$a->total} XP</strong> available. Students will max out too fast.';
 $string['bal_msg_perfect'] = 'Balanced! The game economy is healthy ({$a->ratio}% coverage).';
 // ... final do arquivo
-$string['ai_warn_overflow'] = '⚠️ Warning: With this item, the game has {$a}% more XP than needed. It became too easy!';
-$string['ai_tip_balanced'] = '✅ This item helps balance the game economy.';
+$string['ai_warn_overflow'] = 'Warning: With this item, the game has {$a}% more XP than needed. It became too easy!';
+$string['ai_tip_balanced'] = 'This item helps balance the game economy.';
 $string['confirm_bulk_delete'] = 'Are you sure you want to delete the selected items?';
 $string['delete_n_items'] = 'Delete %d items';
 $string['delete_selected'] = 'Delete selected';
@@ -524,3 +524,28 @@ $string['drop_unlimited_xp_warning'] = '<strong>Note:</strong> Infinite drops do
 $string['ranking_disable'] = 'Disable Ranking';
 $string['ranking_hidden_help'] = 'Click on <strong>{$a}</strong> above to join the competition again.';
 $string['last_collected'] = 'Last collected:';
+// --- AI PROMPTS (REALISTIC & EDUCATIONAL) ---
+$string['ai_role_item'] = 'Act as a Subject Matter Expert and Educator.';
+$string['ai_rules_item'] = 'IMPORTANT: Create a factual, realistic, and educational description of the item, as if for an encyclopedia or textbook. Do NOT invent fantasy stories, do not create fictional "lore", and do NOT mention XP, levels, or game mechanics in the text.';
+$string['ai_task_single'] = 'Create ONE real item related to the theme: \'{$a}\'.';
+$string['ai_task_multi'] = 'Create {$a->count} distinct real items related to the theme: \'{$a->theme}\'.';
+$string['ai_json_instruction'] = 'Return ONLY valid JSON following this structure:';
+$string['ai_reply_lang'] = 'Reply strictly in the language: {$a}.';
+// Technical Prompt Strings
+$string['ai_prompt_tech_xp'] = 'Technical Requirement: The internal XP value is {$a} (Do NOT write this number in the description, it is only for your assessment of item "value" or "rarity").';
+$string['ai_prompt_ctx_hard'] = 'Context: The game needs high-value (rare/complex) items.';
+$string['ai_prompt_ctx_easy'] = 'Context: The game needs common or introductory items.';
+// AI Success Strings
+$string['ai_created_count'] = '{$a} item(s) created!';
+$string['ai_item_list_label'] = 'Item(s):';
+$string['ai_info_infinite_xp'] = 'Infinite items were created with 0 XP to maintain balance.';
+// --- TECHNICAL CORRECTIONS (Generator) ---
+$string['error_unknown_mode'] = 'Unknown generation mode.';
+$string['default_drop_name'] = 'Generated Drop';
+
+// Prompt Examples (JSON)
+$string['ai_ex_name'] = 'Name';
+$string['ai_ex_desc'] = 'Factual Description...';
+$string['ai_ex_loc'] = 'Location';
+// API Errors
+$string['error_service_code'] = '{$a->service} error {$a->code}';

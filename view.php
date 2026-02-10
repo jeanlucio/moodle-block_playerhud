@@ -67,8 +67,12 @@ if ($isteacher && empty($player->enable_gamification)) {
 // Logic: Opt-in / Opt-out Actions.
 if ($action === 'toggle_hud' && confirm_sesskey()) {
     $target_state = optional_param('state', 0, PARAM_INT);
+    $returnurl = optional_param('returnurl', '', PARAM_LOCALURL);
+    
     \block_playerhud\game::toggle_gamification($instanceid, $USER->id, (bool)$target_state);
-    redirect($PAGE->url);
+    
+    // Redireciona para a URL de origem se fornecida, senão recarrega a view atual
+    redirect($returnurl ? new moodle_url($returnurl) : $PAGE->url);
 }
 
 // Logic: Privacy Toggle.
