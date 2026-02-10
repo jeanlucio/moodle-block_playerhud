@@ -160,12 +160,17 @@ define(['jquery', 'core/notification'], function($, Notification) {
         stashes.each(function() {
             var stash = $(this);
             var wrapper = stash.closest('.ph-stash-wrapper');
+
+            // [CORREÇÃO CRÍTICA]
+            // Se o wrapper existir (no caso do Bloco), removemos 'd-none'.
+            // Isso garante que se for o primeiro item, a área fique visível imediatamente.
             if (wrapper.length) {
-                wrapper.show();
+                wrapper.removeClass('d-none').show();
             }
 
+            // Remove mensagens de "Vazio" (se houver, especialmente no Widget)
             stash.find('.text-muted').remove();
-            stash.find('span.small.text-muted').remove();
+            stash.find('span.small').remove(); // Garante limpeza genérica
 
             var contentHtml = '';
             if (String(itemData.isimage) === '1') {
@@ -196,7 +201,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
             newItem.attr('data-isimage', itemData.isimage);
             newItem.attr('data-date', itemData.date); // Texto fallback
 
-            // [NOVO] Adiciona o timestamp para formatação correta
+            // Adiciona o timestamp para formatação correta
             if (itemData.timestamp) {
                 newItem.attr('data-timestamp', itemData.timestamp);
             }
@@ -207,6 +212,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
             newItem.append('<div class="d-none ph-item-description-content">' + (itemData.description || '') + '</div>');
             newItem.append(contentHtml);
 
+            // Remove duplicatas se o item já estiver na lista (atualiza a posição)
             stash.children().filter(function() {
                 return $(this).attr('data-name') === itemData.name;
             }).remove();
@@ -215,6 +221,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
             stash.prepend(newItem);
             newItem.fadeIn();
 
+            // Limita a quantidade de itens visíveis
             var limit = stash.hasClass('ph-widget-stash') ? 14 : 6;
             var items = stash.children('.ph-mini-item');
             if (items.length > limit) {
@@ -326,7 +333,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 var isImg = container.attr('data-isimage');
                 var xp = container.attr('data-xp');
                 var date = container.attr('data-date'); // Fallback (Texto PHP)
-                var timestamp = container.attr('data-timestamp'); // [NOVO] Timestamp numérico
+                var timestamp = container.attr('data-timestamp'); // Timestamp numérico
 
                 // *** OBTENÇÃO INTELIGENTE DO MODAL ***
                 var modalEls = getModalElements();
@@ -340,17 +347,17 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 modalEls.title.text(name);
                 modalEls.name.text(name);
 
-               // Badge XP.
+                // Badge XP.
                 if (xp && xp !== '0' && xp.indexOf('???') === -1) {
-                    // CORREÇÃO: Verificação mais robusta.
-                    // Se for apenas número, adiciona ' XP'. Se já vier com texto (do PHP novo), usa direto.
-                    var xpText = xp;
-                    if ($.isNumeric(xp)) {
-                        xpText = xp + ' XP';
-                    }
+                    var xpText = ($.isNumeric(xp)) ? xp + ' XP' : xp;
                     modalEls.xp.text(xpText).removeClass('d-none').show();
                 } else {
                     modalEls.xp.hide();
+                }
+
+                // Esconde contador no modal (padrão).
+                if (modalEls.countBadge && modalEls.countBadge.length) {
+                    modalEls.countBadge.hide();
                 }
 
                 // Descrição.
@@ -378,8 +385,11 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     var lang = $('html').attr('lang') || 'en';
                     lang = lang.replace('_', '-');
                     try {
+                        // Formato: 2 dígitos (07/02/26)
                         formattedDate = new Date(parseInt(timestamp) * 1000).toLocaleDateString(lang, {
-                            day: '2-digit', month: '2-digit', year: '2-digit'
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: '2-digit'
                         });
                     } catch (err) {
                         formattedDate = date;
@@ -470,7 +480,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                         if (resp.success) {
                             // Pega os dados do servidor
                             var serverDate = (resp.item_data && resp.item_data.date) ? resp.item_data.date : '';
-                            // [NOVO] Pega o timestamp
+                            // Pega o timestamp
                             var serverTs = (resp.item_data && resp.item_data.timestamp) ? resp.item_data.timestamp : 0;
 
                             var card = trigger.closest('.playerhud-item-card');
@@ -484,14 +494,13 @@ define(['jquery', 'core/notification'], function($, Notification) {
                                     badge.text('x' + (currentCount + 1)).removeClass('d-none').show();
                                 }
 
-                                // [ATUALIZAÇÃO] Grava os dois formatos
+                                // Atualiza os dados no card
                                 card.attr('data-date', serverDate);
                                 card.attr('data-timestamp', serverTs);
                             }
 
                             if (mode === 'image') {
                                 var imgContainer = trigger.closest('.ph-drop-image-container');
-                                // [ATUALIZAÇÃO] Grava os dois formatos
                                 imgContainer.attr('data-date', serverDate);
                                 imgContainer.attr('data-timestamp', serverTs);
                             }
