@@ -185,7 +185,8 @@ class drops {
                 'delete_selected' => get_string('delete_selected', 'block_playerhud'),
                 'delete_n_items' => get_string('delete_n_items', 'block_playerhud'),
                 'yes' => get_string('yes'),
-                'cancel' => get_string('cancel')
+                'cancel' => get_string('cancel'),
+                'gen_copied' => get_string('gen_copied', 'block_playerhud')
             ]
         ];
         $PAGE->requires->js_call_amd('block_playerhud/manage_drops', 'init', [$jsconfig]);

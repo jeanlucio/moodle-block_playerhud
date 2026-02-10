@@ -103,9 +103,8 @@
                         }}
                         <td class="align-middle text-nowrap">
                             <div class="d-flex gap-1 justify-content-start">
-                                {{! Botão 1: Copiar o código padrão imediatamente }}
-                                <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm"
-                                        data-action="copytoclipboard"
+                                {{! Botão 1: Copiar o código padrão (Manual Handler) }}
+                                <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm js-copy-code"
                                         data-clipboard-text="{{full_default_code}}"
                                         title="{{str_quick_copy}}"
                                         aria-label="{{str_quick_copy}}">
@@ -153,3 +152,6 @@
 </form>
 
 {{{modal_gen_html}}}
+{{#js}}
+require(['core/copy_to_clipboard']);
+{{/js}}

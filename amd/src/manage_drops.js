@@ -229,6 +229,39 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
 
             // Listeners de Input
             $('body').on('change input', handleChange);
+// --- 3. COPY TO CLIPBOARD MANUAL (Fallback robusto) ---
+            $('body').on('click', '.js-copy-code', function(e) {
+                e.preventDefault();
+                var $btn = $(this);
+                var text = $btn.attr('data-clipboard-text');
+
+                if (text && navigator.clipboard) {
+                    // eslint-disable-next-line promise/always-return
+                    navigator.clipboard.writeText(text).then(function() {
+                        // Feedback Visual
+                        var originalHtml = $btn.html();
+                        var originalWidth = $btn.outerWidth(); // Fixa largura para não pular
+
+                        // Estado de Sucesso
+                        $btn.css('width', originalWidth + 'px');
+                        $btn.removeClass('btn-outline-secondary').addClass('btn-success');
+                        $btn.html('<i class="fa fa-check"></i> ' + langStrings.gen_copied);
+
+                        // Restaura após 2 segundos
+                        setTimeout(function() {
+                            $btn.html(originalHtml);
+                            $btn.removeClass('btn-success').addClass('btn-outline-secondary');
+                            $btn.css('width', '');
+                        }, 2000);
+
+                    }).catch(function(err) {
+                        // Em caso de erro (ex: permissão), loga no console mas não quebra a UI
+                        // eslint-disable-next-line no-console
+                        console.error('Clipboard error:', err);
+                        Notification.alert('Erro', 'Não foi possível copiar automaticamente.', 'OK');
+                    });
+                }
+            });
         }
     };
 });
