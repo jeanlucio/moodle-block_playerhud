@@ -41,7 +41,12 @@ class block_playerhud extends block_base {
      *
      * @return stdClass|string
      */
-    public function get_content() {
+/**
+     * Get block content for display.
+     *
+     * @return stdClass|string
+     */
+public function get_content() {
         if ($this->content !== null) {
             return $this->content;
         }
@@ -58,17 +63,46 @@ class block_playerhud extends block_base {
 
         try {
             $context = \context_block::instance($this->instance->id);
-            $player = \block_playerhud\game::get_player($this->instance->id, $USER->id);
             
-            $config = unserialize(base64_decode($this->instance->configdata));
-            if (!$config) $config = new \stdClass();
+            // 1. Carrega o Jogador
+            $player = \block_playerhud\game::get_player($this->instance->id, $USER->id);
+            $isteacher = has_capability('block/playerhud:manage', $context);
 
-            // Configurações padrão se não existirem
+            // --- NOVO: Verifica se o aluno saiu da gamificação ---
+            // Se não for professor E a gamificação estiver desligada (0), mostra o botão de voltar.
+            if (!$isteacher && empty($player->enable_gamification)) {
+                $url_reactivate = new \moodle_url('/blocks/playerhud/view.php', [
+                    'id' => $COURSE->id,
+                    'instanceid' => $this->instance->id,
+                    'action' => 'toggle_hud', // Mesma ação usada no view.php
+                    'state' => 1,             // 1 = Ativar
+                    'sesskey' => sesskey()
+                ]);
+
+                $data = [
+                    'str_paused' => get_string('status_paused', 'block_playerhud'), // "Gamificação pausada"
+                    'str_reactivate' => get_string('optin_yes', 'block_playerhud'), // "Sim, quero participar"
+                    'url_reactivate' => $url_reactivate->out(false)
+                ];
+
+                // Renderiza o template de pausa e encerra por aqui
+                $this->content->text = $OUTPUT->render_from_template('block_playerhud/sidebar_rejoin', $data);
+                return $this->content;
+            }
+            // -----------------------------------------------------
+
+            // Continua a renderização normal do HUD (se estiver ativo) ...
+            $config = unserialize(base64_decode($this->instance->configdata));
+            if (!$config) {
+                $config = new \stdClass();
+            }
+
+            // Configurações padrão
             $config->enable_ranking = isset($config->enable_ranking) ? $config->enable_ranking : 1;
 
             $stats = \block_playerhud\game::get_game_stats($config, $this->instance->id, $player->currentxp);
 
-            // [Lógica de Itens Recentes Mantida...]
+            // Lógica de Itens Recentes (Stash)
             $recentitems = [];
             $seen_items = [];
             $rawinventory = \block_playerhud\game::get_inventory($USER->id, $this->instance->id);
@@ -94,7 +128,6 @@ class block_playerhud extends block_base {
                 $count++;
             }
 
-            $isteacher = has_capability('block/playerhud:manage', $context);
             $manageurl = '';
             if ($isteacher) {
                 $url = new \moodle_url('/blocks/playerhud/manage.php', ['id' => $COURSE->id, 'instanceid' => $this->instance->id]);
@@ -107,7 +140,7 @@ class block_playerhud extends block_base {
                 $xp_display .= ' 🏆';
             }
 
-            // --- NOVO: Lógica de Ranking ---
+            // Dados do Ranking
             $rank_data = null;
             if (!empty($config->enable_ranking)) {
                 $rank = \block_playerhud\game::get_user_rank($this->instance->id, $USER->id, $player->currentxp);
@@ -120,13 +153,14 @@ class block_playerhud extends block_base {
                 $rank_data = [
                     'rank' => $rank,
                     'url' => $url_ranking->out(false),
-                    'label' => get_string('view_ranking', 'block_playerhud') // Usa a string existente
+                    'label' => get_string('view_ranking', 'block_playerhud')
                 ];
             }
-          // --- NOVO: URLs para o Grid de Botões ---
+
+            // Links do Grid
             $url_base = new \moodle_url('/blocks/playerhud/view.php', ['id' => $COURSE->id, 'instanceid' => $this->instance->id]);
             
-            // Dados para o Template
+            // Dados Finais
             $renderdata = [
                 'username'    => fullname($USER),
                 'userpicture' => $OUTPUT->user_picture($USER, ['size' => 100]), 
@@ -134,27 +168,20 @@ class block_playerhud extends block_base {
                 'level'       => $stats['level'] . ' / ' . $stats['max_levels'],
                 'level_class' => $stats['level_class'],
                 'progress'    => $stats['progress'],
-                
-                // URLs de Ação
-                'viewurl'     => $url_base->out(false), // Mochila (Coleção)
+                'viewurl'     => $url_base->out(false),
                 'url_shop'    => (new \moodle_url($url_base, ['tab' => 'shop']))->out(false),
                 'url_quests'  => (new \moodle_url($url_base, ['tab' => 'quests']))->out(false),
                 'url_story'   => (new \moodle_url($url_base, ['tab' => 'chapters']))->out(false),
-                
-                // Gestão
                 'isteacher'   => $isteacher,
                 'manageurl'   => $manageurl,
-                
-                // Coleção Recente
                 'has_items'   => !empty($recentitems),
                 'items'       => $recentitems,
-                
-                // Ranking
                 'ranking'     => $rank_data
             ];
 
             $this->content->text = $OUTPUT->render_from_template('block_playerhud/sidebar_view', $renderdata);
 
+            // Inicializa JS (Modais, etc)
             $jsvars = [
                 'strings' => [
                     'confirm_title' => get_string('confirmation', 'admin'),
