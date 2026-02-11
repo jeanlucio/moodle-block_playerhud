@@ -395,9 +395,16 @@ export const init = (config) => {
         modalEls.title.text(data.name);
         modalEls.name.text(data.name);
 
-        if (data.xp && data.xp !== '0' && data.xp.indexOf('???') === -1) {
-            const xpText = $.isNumeric(data.xp) ? `${data.xp} XP` : data.xp;
-            modalEls.xp.text(xpText).removeClass('d-none').show();
+        // CORREÇÃO CRÍTICA: Convertendo XP para string antes de usar indexOf
+        // Isso previne o erro "data.xp.indexOf is not a function" quando XP é numérico.
+        if (data.xp && data.xp !== '0') {
+            const xpStr = String(data.xp);
+            if (xpStr.indexOf('???') === -1) {
+                const xpText = $.isNumeric(data.xp) ? `${data.xp} XP` : data.xp;
+                modalEls.xp.text(xpText).removeClass('d-none').show();
+            } else {
+                modalEls.xp.hide();
+            }
         } else {
             modalEls.xp.hide();
         }
@@ -479,13 +486,28 @@ export const init = (config) => {
         const originalHtml = trigger.html();
         toggleLoading(trigger, true);
 
-        // Extract params from URL. Expects: collect.php?instanceid=X&dropid=Y&courseid=Z
-        const urlObj = new URL(trigger.attr('href'), window.location.href);
+        // Extract params safely.
+        const href = trigger.attr('href');
+        if (!href) {
+            toggleLoading(trigger, false, originalHtml);
+            return;
+        }
+
+        const urlObj = new URL(href, window.location.href);
         const params = {
             instanceid: parseInt(urlObj.searchParams.get('instanceid')),
             dropid: parseInt(urlObj.searchParams.get('dropid')),
             courseid: parseInt(urlObj.searchParams.get('courseid'))
         };
+
+        // CORREÇÃO CRÍTICA: Validar parâmetros numéricos antes do Ajax
+        // Evita "Invalid parameter value detected"
+        if (isNaN(params.instanceid) || isNaN(params.dropid) || isNaN(params.courseid)) {
+            toggleLoading(trigger, false, originalHtml);
+            // eslint-disable-next-line no-console
+            console.error('PlayerHUD: Invalid collection parameters.', params);
+            return;
+        }
 
         Ajax.call([{
             methodname: 'block_playerhud_collect_item',
@@ -495,7 +517,6 @@ export const init = (config) => {
                 handleCollectionSuccess(trigger, resp, originalHtml, strings);
             } else {
                 toggleLoading(trigger, false, originalHtml);
-                // Use core strings for generic error/ok to satisfy internationalization rules.
                 // eslint-disable-next-line promise/no-nesting
                 Str.get_strings([
                     {key: 'error', component: 'core'},

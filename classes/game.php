@@ -158,7 +158,7 @@ class game {
             $isinfinitedrop = ((int)$drop->maxusage === 0);
 
             if ($item->xp > 0 && !$isinfinitedrop) {
-                $earnedxp = $item->xp;
+                $earnedxp = (int)$item->xp; // CAST para INT
                 $player = self::get_player($instanceid, $userid);
                 $player->currentxp += $earnedxp;
                 $player->timemodified = time();
@@ -191,7 +191,7 @@ class game {
         
         $itemdata = [
             'name' => format_string($item->name),
-            'xp' => $item->xp,
+            'xp' => (int)$item->xp, // CORREÇÃO: Cast para INT estrito para a API
             'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
             'isimage' => $media['is_image'] ? 1 : 0,
             'description' => !empty($item->description) ? format_text($item->description, FORMAT_HTML) : '',
@@ -203,7 +203,7 @@ class game {
         $cooldowndeadline = 0;
         $limitreached = false;
         
-        $newcount = $count + 1; // We just added one.
+        $newcount = $count + 1;
         if ($drop->maxusage > 0 && $newcount >= $drop->maxusage) {
             $limitreached = true;
         }
@@ -215,18 +215,18 @@ class game {
             'success' => true,
             'message' => $message,
             'game_data' => [
-                'currentxp' => $player->currentxp,
-                'level' => $stats['level'],
-                'max_levels' => $stats['max_levels'],
-                'xp_target' => $stats['total_game_xp'],
-                'progress' => $stats['progress'],
-                'total_game_xp' => $stats['total_game_xp'],
+                'currentxp' => (int)$player->currentxp,
+                'level' => (int)$stats['level'],
+                'max_levels' => (int)$stats['max_levels'],
+                'xp_target' => (int)$stats['total_game_xp'],
+                'progress' => (int)$stats['progress'],
+                'total_game_xp' => (int)$stats['total_game_xp'],
                 'level_class' => $stats['level_class'],
                 'is_win' => ($player->currentxp >= $stats['total_game_xp'] && $stats['total_game_xp'] > 0),
             ],
             'item_data' => $itemdata,
-            'cooldown_deadline' => $cooldowndeadline,
-            'limit_reached' => $limitreached,
+            'cooldown_deadline' => (int)$cooldowndeadline,
+            'limit_reached' => (bool)$limitreached,
         ];
     }
 
