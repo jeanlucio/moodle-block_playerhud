@@ -1,6 +1,11 @@
 {{!
     @template block_playerhud/manage_items_table
+
     Displays the list of items for management.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 }}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 p-3 bg-light rounded border shadow-sm">
     <div class="d-flex align-items-center">
@@ -35,7 +40,6 @@
                             <th scope="col" class="ph-col-sm text-center">N.</th>
                             <th scope="col" class="ph-col-md text-center">{{str_col_image}}</th>
                             
-                            {{! CORREÇÃO: Headers dinâmicos via dados }}
                             <th scope="col">
                                 <a href="{{headers.name.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
                                     {{headers.name.label}} <i class="fa {{headers.name.icon_class}} ms-1" aria-hidden="true"></i>
