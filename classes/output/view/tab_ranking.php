@@ -163,7 +163,8 @@ public function export_for_template(renderer_base $output) {
             'str_col_xp' => get_string('xp', 'block_playerhud'),
             'str_col_group' => get_string('group', 'group'),
             'str_col_members' => get_string('members', 'block_playerhud'),
-            'str_col_avg' => get_string('average', 'block_playerhud')
+            'str_col_avg' => get_string('average', 'block_playerhud'),
+            'str_col_date' => get_string('str_col_date', 'block_playerhud'),
         ];
     }
 }

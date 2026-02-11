@@ -137,6 +137,7 @@ class tab_config implements renderable, templatable {
             'alert_border_class' => $border_class,
             'alert_icon' => $icon,
             'balance_message' => $str_message,
+            'widget_code_tip_html' => get_string('widget_code_tip', 'block_playerhud'),
             'action_url' => $actionurl->out(false),
             'sesskey' => sesskey(),
             'val_gemini' => $config->apikey_gemini ?? '',

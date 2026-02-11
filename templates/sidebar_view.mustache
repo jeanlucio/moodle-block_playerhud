@@ -34,39 +34,15 @@
     </div>
     {{/isteacher}}
 
-    {{! 4. ACTIONS GRID}}
+{{! 4. ACTIONS GRID }}
     <div class="ph-sidebar-grid mb-4 {{level_class}}">
         
-        {{! A. Coleção }}
+        {{! A. Coleção / Mochila }}
         <a href="{{viewurl}}" 
            class="btn btn-ph-level-border shadow-sm" 
            data-bs-toggle="tooltip" data-bs-placement="top" 
            title="{{#str}} openbackpack, block_playerhud {{/str}}">
             <span aria-hidden="true">🎒</span>
-        </a>
-
-        {{! B. Loja }}
-        <a href="{{url_shop}}" 
-           class="btn btn-ph-level-border shadow-sm" 
-           data-bs-toggle="tooltip" data-bs-placement="top" 
-           title="{{#str}} tab_shop, block_playerhud {{/str}}">
-            <span aria-hidden="true">⚖️</span>
-        </a>
-
-        {{! C. Missões }}
-        <a href="{{url_quests}}" 
-           class="btn btn-ph-level-border shadow-sm" 
-           data-bs-toggle="tooltip" data-bs-placement="top" 
-           title="{{#str}} tab_quests, block_playerhud {{/str}}">
-            <span aria-hidden="true">📜</span>
-        </a>
-
-        {{! D. História }}
-        <a href="{{url_story}}" 
-           class="btn btn-ph-level-border shadow-sm" 
-           data-bs-toggle="tooltip" data-bs-placement="bottom" 
-           title="{{#str}} tab_chapters, block_playerhud {{/str}}">
-            <span aria-hidden="true">📖</span>
         </a>
 
         {{! E. Ranking }}
@@ -87,7 +63,7 @@
            title="{{str_disable_gamification}}"
            aria-label="{{str_disable_gamification}}">
             <span aria-hidden="true" class="text-danger">
-                <i class="fa fa-power-off"></i>
+                 <i class="fa fa-power-off"></i>
             </span>
         </a>
 

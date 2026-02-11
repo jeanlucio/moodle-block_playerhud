@@ -50,12 +50,15 @@ class block_playerhud_edit_form extends block_edit_form {
         $mform->setDefault('config_max_levels', 20);
         $mform->addHelpButton('config_max_levels', 'max_levels', 'block_playerhud');
 
-        // --- Seção 2: Modo RPG e História ---
-        $mform->addElement('header', 'config_rpg_hdr', get_string('rpg_settings', 'block_playerhud'));
-
-        $mform->addElement('selectyesno', 'config_enable_rpg', get_string('enable_rpg', 'block_playerhud'));
+        // --- Seção 2: Modo RPG e História (Oculto na V1.0) ---
+        // Mantemos a configuração 'enable_rpg' como 1 (Sim) via hidden para que
+        // o cálculo de Níveis e XP continue funcionando, mas sem expor a opção de História.
+        
+        $mform->addElement('hidden', 'config_enable_rpg');
+        $mform->setType('config_enable_rpg', PARAM_INT);
         $mform->setDefault('config_enable_rpg', 1);
-        $mform->addHelpButton('config_enable_rpg', 'enable_rpg', 'block_playerhud');
+        
+        // (Removemos o header visual e o HelpButton para limpar a interface)
 
         // --- Seção 3: Ranking ---
         $mform->addElement('header', 'config_ranking_hdr', get_string('ranking_hdr', 'block_playerhud'));

@@ -124,7 +124,7 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 4px;
-    margin-top: auto;
+    margin-top: 0;
 }
 
 .ph-widget-actions-grid .btn {

@@ -124,11 +124,7 @@ class tab_items implements renderable {
                 if ($item) {
                     $data = (array)$item;
                     $data['itemid'] = $item->id;
-                    if (!empty($item->required_class_id) && $item->required_class_id !== '0') {
-                        $data['required_class_id'] = explode(',', $item->required_class_id);
-                    } else {
-                        $data['required_class_id'] = [];
-                    }
+                    $data['required_class_id'] = '0';
                     $data['description'] = ['text' => $item->description, 'format' => FORMAT_HTML];
                     
                     $draftitemid = file_get_submitted_draft_itemid('image_file');

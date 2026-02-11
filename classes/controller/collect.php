@@ -164,8 +164,12 @@ class collect {
             if ($item->xp > 0 && !$is_infinite_drop) {
                 $xpgain = $item->xp;
                 $player = \block_playerhud\game::get_player($instanceid, $userid);
-                $newxp = $player->currentxp + $xpgain;
-                $DB->set_field('block_playerhud_user', 'currentxp', $newxp, ['id' => $player->id]);
+                
+                // [CORREÇÃO] Atualizar objeto completo para registrar o tempo do desempate
+                $player->currentxp += $xpgain;
+                $player->timemodified = time(); // Essencial para o ranking por tempo!
+                
+                $DB->update_record('block_playerhud_user', $player);
             }
 
             $transaction->allow_commit();

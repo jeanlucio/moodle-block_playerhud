@@ -73,25 +73,11 @@ class edit_item_form extends \moodleform {
         $mform->addElement('selectyesno', 'enabled', get_string('enabled', 'block_playerhud'));
         $mform->setDefault('enabled', 1);
 
-        // 7. Restrição de Classe
-        $instanceid = $this->_customdata['instanceid'] ?? 0;
-        $classesmenu = [];
-        
-        if ($instanceid > 0) {
-            $classesmenu = $DB->get_records_menu(
-                'block_playerhud_classes',
-                ['blockinstanceid' => $instanceid],
-                'name ASC',
-                'id, name'
-            );
-        }
-
-        $mform->addElement('select', 'required_class_id', get_string('class_restriction', 'block_playerhud'), $classesmenu, [
-            'multiple' => true,
-            'size' => 5,
-            'style' => 'width: 100%; max-width: 300px;'
-        ]);
-        $mform->addHelpButton('required_class_id', 'class_restriction', 'block_playerhud');
+        // 7. Restrição de Classe (Desativado para lançamento inicial v1.0)
+        // Definimos como '0' (Público) via hidden field para manter compatibilidade com o Controller.
+        $mform->addElement('hidden', 'required_class_id');
+        $mform->setType('required_class_id', PARAM_INT);
+        $mform->setDefault('required_class_id', 0);
 
         // 8. Secreto
         $mform->addElement('advcheckbox', 'secret', get_string('secret', 'block_playerhud'), get_string('secretdesc', 'block_playerhud'), [], [0, 1]);

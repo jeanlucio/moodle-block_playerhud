@@ -107,11 +107,13 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
         
         foreach ($holders as $holder) {
             $xptoremove = $item->xp * $holder->qtd;
+            // [CORREÇÃO] Atualizar timemodified para refletir a mudança de saldo
             $DB->execute(
                 "UPDATE {block_playerhud_user} 
-                    SET currentxp = GREATEST(0, currentxp - ?) 
+                    SET currentxp = GREATEST(0, currentxp - ?),
+                        timemodified = ?
                   WHERE userid = ? AND blockinstanceid = ?",
-                [$xptoremove, $holder->userid, $instanceid]
+                [$xptoremove, time(), $holder->userid, $instanceid]
             );
         }
 
@@ -154,11 +156,13 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
                 
                 foreach ($holders as $holder) {
                     $xptoremove = $item->xp * $holder->qtd;
+                    // [CORREÇÃO] Atualizar timemodified aqui também
                     $DB->execute(
                         "UPDATE {block_playerhud_user} 
-                            SET currentxp = GREATEST(0, currentxp - ?) 
+                            SET currentxp = GREATEST(0, currentxp - ?),
+                                timemodified = ?
                           WHERE userid = ? AND blockinstanceid = ?",
-                        [$xptoremove, $holder->userid, $instanceid]
+                        [$xptoremove, time(), $holder->userid, $instanceid]
                     );
                 }
 
@@ -192,13 +196,38 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
 
 // Action: Delete Quest.
 if ($action == 'delete_quest' && $questid && confirm_sesskey()) {
-    $DB->delete_records('block_playerhud_quest_log', ['questid' => $questid]);
-    $DB->delete_records('block_playerhud_quests', ['id' => $questid, 'blockinstanceid' => $instanceid]);
-    redirect(
-        new moodle_url($baseurl, ['tab' => 'quests']),
-        get_string('quest_deleted', 'block_playerhud'),
-        \core\output\notification::NOTIFY_SUCCESS
-    );
+    $quest = $DB->get_record('block_playerhud_quests', ['id' => $questid, 'blockinstanceid' => $instanceid]);
+    
+    if ($quest) {
+        // 1. [NOVO] Reverter XP dos alunos que completaram
+        if ($quest->reward_xp > 0) {
+            $completions = $DB->get_records('block_playerhud_quest_log', ['questid' => $questid]);
+            
+            // Usamos time() fixo para todos nessa transação
+            $now = time(); 
+
+            foreach ($completions as $log) {
+                // Remove o XP da recompensa e atualiza a data para o desempate
+                $DB->execute(
+                    "UPDATE {block_playerhud_user} 
+                        SET currentxp = GREATEST(0, currentxp - ?),
+                            timemodified = ?
+                      WHERE userid = ? AND blockinstanceid = ?",
+                    [$quest->reward_xp, $now, $log->userid, $instanceid]
+                );
+            }
+        }
+
+        // 2. Apagar registros
+        $DB->delete_records('block_playerhud_quest_log', ['questid' => $questid]);
+        $DB->delete_records('block_playerhud_quests', ['id' => $questid]);
+
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'quests']),
+            get_string('quest_deleted', 'block_playerhud'),
+            \core\output\notification::NOTIFY_SUCCESS
+        );
+    }
 }
 
 // Action: Delete Trade.
@@ -322,15 +351,19 @@ if (class_exists($render_class)) {
 
 echo $OUTPUT->header();
 
-// Definição das Abas
+// Definição das Abas (V1.0 - Funcionalidades em construção ocultas)
 $tabs_def = [
-    'items' => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
-    'classes' => ['icon' => '🦸', 'text' => get_string('tab_classes', 'block_playerhud')],
-    'chapters' => ['icon' => '📖', 'text' => get_string('tab_chapters', 'block_playerhud')],
-    'trades' => ['icon' => '⚖️', 'text' => get_string('tab_trades', 'block_playerhud')],
-    'quests' => ['icon' => '📜', 'text' => get_string('tab_quests', 'block_playerhud')],
-    'reports' => ['icon' => '📊', 'text' => get_string('tab_reports', 'block_playerhud')],
-    'config' => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
+    'items'    => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
+    
+    // --- Ocultos para lançamento ---
+    // 'trades'   => ['icon' => '⚖️', 'text' => get_string('tab_trades', 'block_playerhud')],
+    // 'quests'   => ['icon' => '📜', 'text' => get_string('tab_quests', 'block_playerhud')],
+    // 'chapters' => ['icon' => '📖', 'text' => get_string('tab_chapters', 'block_playerhud')],
+    // 'classes'  => ['icon' => '🦸', 'text' => get_string('tab_classes', 'block_playerhud')],
+    // 'reports'  => ['icon' => '📊', 'text' => get_string('tab_reports', 'block_playerhud')],
+    // ----------------------------
+
+    'config'   => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
 ];
 
 $tabs_data = [];

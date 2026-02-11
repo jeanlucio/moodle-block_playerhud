@@ -218,7 +218,10 @@ class quest {
             // XP Reward.
             if ($quest->reward_xp > 0) {
                 $player->currentxp += $quest->reward_xp;
+                // [CORREÇÃO] Atualiza o relógio para o desempate
+                $player->timemodified = time(); 
                 $DB->update_record('block_playerhud_user', $player);
+                
                 $rewardstxt[] = "+{$quest->reward_xp} XP";
             }
 
