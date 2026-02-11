@@ -28,6 +28,11 @@ import Ajax from 'core/ajax';
 import Str from 'core/str';
 
 /**
+ * Globals to hold config strings.
+ */
+let appStrings = {};
+
+/**
  * Get modal elements ensuring reusability.
  *
  * @return {Object} jQuery objects for modal elements.
@@ -52,70 +57,6 @@ const getModalElements = () => {
         date: $(`#phModalDate${suffix}`),
         dateContainer: $(`#phModalDateContainer${suffix}`)
     };
-};
-
-/**
- * Updates the Player HUD sidebar with new stats.
- *
- * @param {Object} data Game data from server.
- * @param {Object} itemData Collected item data.
- */
-const updateHud = (data, itemData) => {
-    const containers = $('.playerhud-widget-container, .block_playerhud_sidebar');
-
-    containers.each(function() {
-        const container = $(this);
-
-        // Update Level Classes.
-        const tierRegex = /(^|\s)ph-lvl-tier-\S+/g;
-        const removeTierClasses = (idx, className) => (className.match(tierRegex) || []).join(' ');
-
-        if (container.hasClass('playerhud-widget-container')) {
-            container.removeClass(removeTierClasses).addClass(data.level_class);
-        }
-
-        container.find('.ph-sidebar-grid, .progress-bar, .badge').each(function() {
-            $(this).removeClass(removeTierClasses).addClass(data.level_class);
-        });
-
-        // Update Progress Bar.
-        const progressBar = container.find('.progress-bar');
-        progressBar.css('width', `${data.progress}%`).attr('aria-valuenow', data.progress);
-
-        // Update Level Badge.
-        const levelBadge = container.find('.badge').filter(function() {
-            return $(this).text().match(/(Level|Nível)/) || $(this).attr('class').match(/ph-lvl-tier-/);
-        });
-
-        if (levelBadge.length) {
-            const labelText = (levelBadge.text().indexOf('Nível') > -1) ? 'Nível' : 'Level';
-            let lvlString = `${data.level}`;
-            if (data.max_levels > 0) {
-                lvlString += `/${data.max_levels}`;
-            }
-            levelBadge.text(`${labelText} ${lvlString}`);
-        }
-
-        // Update XP Text.
-        container.find('span, div, strong').each(function() {
-            const el = $(this);
-            if (el.children().length === 0 && el.text().indexOf('XP') > -1) {
-                let xpString = `${data.currentxp}`;
-                if (data.xp_target > 0) {
-                    xpString += ` / ${data.xp_target}`;
-                }
-                xpString += ' XP';
-                if (data.is_win) {
-                    xpString += ' 🏆';
-                }
-                el.text(xpString);
-            }
-        });
-    });
-
-    if (itemData) {
-        updateStash(itemData);
-    }
 };
 
 /**
@@ -171,6 +112,70 @@ const updateStash = (itemData) => {
 };
 
 /**
+ * Updates the Player HUD sidebar with new stats.
+ *
+ * @param {Object} data Game data from server.
+ * @param {Object|null} itemData Collected item data.
+ */
+const updateHud = (data, itemData) => {
+    const containers = $('.playerhud-widget-container, .block_playerhud_sidebar');
+
+    containers.each(function() {
+        const container = $(this);
+
+        // Update Level Classes.
+        const tierRegex = /(^|\s)ph-lvl-tier-\S+/g;
+        const removeTierClasses = (idx, className) => (className.match(tierRegex) || []).join(' ');
+
+        if (container.hasClass('playerhud-widget-container')) {
+            container.removeClass(removeTierClasses).addClass(data.level_class);
+        }
+
+        container.find('.ph-sidebar-grid, .progress-bar, .badge').each(function() {
+            $(this).removeClass(removeTierClasses).addClass(data.level_class);
+        });
+
+        // Update Progress Bar.
+        const progressBar = container.find('.progress-bar');
+        progressBar.css('width', `${data.progress}%`).attr('aria-valuenow', data.progress);
+
+        // Update Level Badge.
+        const levelBadge = container.find('.badge').filter(function() {
+            return $(this).attr('class').match(/ph-lvl-tier-/);
+        });
+
+        if (levelBadge.length) {
+            const labelText = appStrings.level || 'Level';
+            let lvlString = `${data.level}`;
+            if (data.max_levels > 0) {
+                lvlString += `/${data.max_levels}`;
+            }
+            levelBadge.text(`${labelText} ${lvlString}`);
+        }
+
+        // Update XP Text.
+        container.find('span, div, strong').each(function() {
+            const el = $(this);
+            if (el.children().length === 0 && el.text().indexOf('XP') > -1) {
+                let xpString = `${data.currentxp}`;
+                if (data.xp_target > 0) {
+                    xpString += ` / ${data.xp_target}`;
+                }
+                xpString += ' XP';
+                if (data.is_win) {
+                    xpString += ' 🏆';
+                }
+                el.text(xpString);
+            }
+        });
+    });
+
+    if (itemData) {
+        updateStash(itemData);
+    }
+};
+
+/**
  * Handles the collection button loading state.
  *
  * @param {Object} trigger jQuery element.
@@ -183,7 +188,6 @@ const toggleLoading = (trigger, isLoading, originalHtml = '') => {
     if (isLoading) {
         trigger.addClass('disabled').attr('aria-disabled', 'true');
         if (mode === 'card') {
-            // Set fixed width to prevent layout jump.
             trigger.css('width', trigger.outerWidth() + 'px');
             trigger.html('<i class="fa fa-spinner fa-spin" aria-hidden="true"></i>');
         } else {
@@ -210,6 +214,8 @@ const toggleLoading = (trigger, isLoading, originalHtml = '') => {
  * @param {Object} resp Response data.
  */
 const updateTextOrImageUi = (trigger, mode, hasTimer, isLimit, resp) => {
+    trigger.removeClass('disabled ph-opacity-50').removeAttr('aria-disabled').css('pointer-events', 'auto');
+
     if (hasTimer || isLimit) {
         if (mode === 'text') {
             trigger.removeAttr('href').removeClass('ph-action-collect').addClass('ph-item-details-trigger');
@@ -224,10 +230,9 @@ const updateTextOrImageUi = (trigger, mode, hasTimer, isLimit, resp) => {
                           `<small class="ph-timer" data-deadline="${resp.cooldown_deadline}">...</small>`);
             }
         } else {
-            // Image Mode.
             const container = trigger.closest('.ph-drop-image-container');
             const imgWrapper = container.find('> div').first();
-            trigger.remove(); // Remove link.
+            trigger.remove();
 
             container.addClass('ph-item-details-trigger ph-cursor-pointer')
                      .attr({'tabindex': '0', 'role': 'button'});
@@ -243,9 +248,8 @@ const updateTextOrImageUi = (trigger, mode, hasTimer, isLimit, resp) => {
             }
         }
     } else if (mode === 'text') {
-        // Success flash for text.
         const oldColor = trigger.css('color');
-        trigger.css('color', '#198754'); // Bootstrap success.
+        trigger.css('color', '#198754');
         setTimeout(() => trigger.css('color', oldColor), 1000);
     }
 };
@@ -258,9 +262,8 @@ const updateTextOrImageUi = (trigger, mode, hasTimer, isLimit, resp) => {
  * @param {Boolean} isLimit If limit reached.
  * @param {Object} resp Response data.
  * @param {String} originalHtml Original button HTML.
- * @param {Object} strings Localized strings.
  */
-const updateCardUi = (trigger, hasTimer, isLimit, resp, originalHtml, strings) => {
+const updateCardUi = (trigger, hasTimer, isLimit, resp, originalHtml) => {
     if (hasTimer) {
         trigger.removeClass('btn-primary ph-action-collect').removeAttr('href');
         const tHtml = `⏳ <span class="ph-timer" data-deadline="${resp.cooldown_deadline}">...</span>`;
@@ -268,17 +271,20 @@ const updateCardUi = (trigger, hasTimer, isLimit, resp, originalHtml, strings) =
         trigger.replaceWith(tBtn);
         tBtn.focus();
     } else if (isLimit) {
+        const collectedText = appStrings.collected || 'Collected';
         trigger.removeClass('btn-primary ph-action-collect')
             .addClass('btn-light text-success disabled border-success')
             .css('cursor', 'default').removeAttr('href')
-            .html(`<i class="fa fa-check" aria-hidden="true"></i> ${strings.collected}`);
+            .html(`<i class="fa fa-check" aria-hidden="true"></i> ${collectedText}`);
         trigger.closest('.playerhud-item-card').find('.ph-item-details-trigger').focus();
     } else {
+        const collectedText = appStrings.collected || 'Collected';
         trigger.removeClass('btn-primary disabled').addClass('btn-success')
-            .html(`<i class="fa fa-check" aria-hidden="true"></i> ${strings.collected}`).css('width', '');
+            .html(`<i class="fa fa-check" aria-hidden="true"></i> ${collectedText}`).css('width', '');
 
         setTimeout(() => {
             trigger.removeClass('btn-success').addClass('btn-primary').html(originalHtml);
+            trigger.removeAttr('aria-disabled');
             trigger.focus();
         }, 1500);
     }
@@ -297,7 +303,6 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
     const hasTimer = (resp.cooldown_deadline && resp.cooldown_deadline > 0);
     const isLimit = resp.limit_reached;
 
-    // Update item data on card attributes.
     if (resp.item_data) {
         const card = trigger.closest('.playerhud-item-card');
         if (card.length) {
@@ -308,17 +313,20 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
             }
             card.attr('data-date', resp.item_data.date);
             card.attr('data-timestamp', resp.item_data.timestamp);
+
+            // FIX: Atualizar o atributo XP no DOM para que o modal leia o novo valor (revelando "???" se necessário)
+            card.attr('data-xp', resp.item_data.xp);
         }
 
         if (mode === 'image') {
             trigger.closest('.ph-drop-image-container').attr({
                 'data-date': resp.item_data.date,
-                'data-timestamp': resp.item_data.timestamp
+                'data-timestamp': resp.item_data.timestamp,
+                'data-xp': resp.item_data.xp // Atualiza XP também no modo imagem
             });
         }
     }
 
-    // Call specific UI updaters to reduce complexity.
     if (mode === 'text' || mode === 'image') {
         updateTextOrImageUi(trigger, mode, hasTimer, isLimit, resp);
     } else {
@@ -331,38 +339,51 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
 };
 
 /**
+ * Helper to safely decode Base64 UTF-8 strings.
+ *
+ * @param {String} str Base64 string
+ * @return {String} Decoded string
+ */
+const safeB64Decode = (str) => {
+    try {
+        const binString = window.atob(str);
+        const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0));
+        return new TextDecoder().decode(bytes);
+    } catch (e) {
+        return '';
+    }
+};
+
+/**
  * Initialize.
  *
  * @param {Object} config Configuration object passed from PHP.
  */
 export const init = (config) => {
-    // Ensure strings are available.
-    const strings = config.strings;
+    appStrings = config.strings || {};
 
-    // Move modal to body.
     const $filterModal = $('#phItemModalFilter');
     if ($filterModal.length) {
         $filterModal.appendTo('body');
     }
 
-    // Disable HUD Confirmation.
     $('body').on('click', '.js-disable-hud', function(e) {
         e.preventDefault();
         const url = $(this).attr('href');
         const msg = $(this).attr('data-confirm-msg');
 
         Notification.confirm(
-            strings.confirm_title,
+            appStrings.confirm_title,
             msg,
-            strings.yes,
-            strings.cancel,
+            appStrings.yes,
+            appStrings.cancel,
             () => {
                 window.location.href = url;
             }
         );
     });
 
-    // Item Details Modal.
+    // Item Details Modal
     // eslint-disable-next-line complexity
     $('body').on('click keydown', '.ph-item-details-trigger', function(e) {
         if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') {
@@ -395,13 +416,17 @@ export const init = (config) => {
         modalEls.title.text(data.name);
         modalEls.name.text(data.name);
 
-        // CORREÇÃO CRÍTICA: Convertendo XP para string antes de usar indexOf
-        // Isso previne o erro "data.xp.indexOf is not a function" quando XP é numérico.
         if (data.xp && data.xp !== '0') {
             const xpStr = String(data.xp);
             if (xpStr.indexOf('???') === -1) {
-                const xpText = $.isNumeric(data.xp) ? `${data.xp} XP` : data.xp;
+                const isNum = !isNaN(parseFloat(data.xp)) && isFinite(data.xp);
+                // FIX: Garantir que o texto " XP" apareça se for apenas número
+                const xpText = isNum ? `${data.xp} XP` : data.xp;
+
                 modalEls.xp.text(xpText).removeClass('d-none').show();
+
+                // FIX: Forçar cor Azul (bg-primary) no modal do filtro, removendo cores antigas
+                modalEls.xp.removeClass('ph-bg-teal bg-info text-dark').addClass('bg-primary text-white');
             } else {
                 modalEls.xp.hide();
             }
@@ -417,13 +442,10 @@ export const init = (config) => {
         if (data.descDirect) {
             descHtml = data.descDirect;
         } else if (data.descB64) {
-            try {
-                descHtml = decodeURIComponent(escape(window.atob(data.descB64)));
-            } catch (err) { /* Ignore */ }
+            descHtml = safeB64Decode(data.descB64);
         }
         modalEls.desc.html(descHtml);
 
-        // Date Handling.
         let formattedDate = data.date;
         if (data.timestamp && data.timestamp > 0) {
             const lang = $('html').attr('lang').replace('_', '-') || 'en';
@@ -435,7 +457,7 @@ export const init = (config) => {
         }
 
         if (formattedDate) {
-            const prefix = strings.last_collected ? `${strings.last_collected} ` : '';
+            const prefix = appStrings.last_collected ? `${appStrings.last_collected} ` : '';
             if (modalEls.root.attr('id') === 'phItemModalView') {
                 modalEls.date.find('span').text(prefix + formattedDate);
                 modalEls.date.show();
@@ -453,7 +475,6 @@ export const init = (config) => {
             }
         }
 
-        // Image.
         modalEls.imgContainer.empty();
         if (String(data.isImg) === '1') {
             modalEls.imgContainer.append($('<img>', {src: data.img, 'class': 'ph-modal-img', alt: ''}));
@@ -465,7 +486,6 @@ export const init = (config) => {
             }));
         }
 
-        // Open Modal.
         const modalEl = modalEls.root[0];
         if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
@@ -486,7 +506,6 @@ export const init = (config) => {
         const originalHtml = trigger.html();
         toggleLoading(trigger, true);
 
-        // Extract params safely.
         const href = trigger.attr('href');
         if (!href) {
             toggleLoading(trigger, false, originalHtml);
@@ -500,12 +519,8 @@ export const init = (config) => {
             courseid: parseInt(urlObj.searchParams.get('courseid'))
         };
 
-        // CORREÇÃO CRÍTICA: Validar parâmetros numéricos antes do Ajax
-        // Evita "Invalid parameter value detected"
         if (isNaN(params.instanceid) || isNaN(params.dropid) || isNaN(params.courseid)) {
             toggleLoading(trigger, false, originalHtml);
-            // eslint-disable-next-line no-console
-            console.error('PlayerHUD: Invalid collection parameters.', params);
             return;
         }
 
@@ -514,19 +529,19 @@ export const init = (config) => {
             args: params
         }])[0].then((resp) => {
             if (resp.success) {
-                handleCollectionSuccess(trigger, resp, originalHtml, strings);
-            } else {
-                toggleLoading(trigger, false, originalHtml);
-                // eslint-disable-next-line promise/no-nesting
-                Str.get_strings([
-                    {key: 'error', component: 'core'},
-                    {key: 'ok', component: 'core'}
-                ]).then((strs) => {
-                    Notification.alert(strs[0], resp.message, strs[1]);
-                    return;
-                }).catch(() => { /* Ignore */ });
+                handleCollectionSuccess(trigger, resp, originalHtml, appStrings);
+                return;
             }
-            return;
+
+            toggleLoading(trigger, false, originalHtml);
+            // eslint-disable-next-line consistent-return, promise/no-nesting
+            return Str.get_strings([
+                {key: 'error', component: 'core'},
+                {key: 'ok', component: 'core'}
+            ]).then((strs) => {
+                return Notification.alert(strs[0], resp.message, strs[1]);
+            });
+
         }).catch((ex) => {
             toggleLoading(trigger, false, originalHtml);
             Notification.exception(ex);

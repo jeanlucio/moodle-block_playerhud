@@ -1,0 +1,185 @@
+# Moodle Block PlayerHUD
+
+![Moodle](https://img.shields.io/badge/Moodle-4.5%2B-orange?style=flat-square&logo=moodle&logoColor=white)
+![License](https://img.shields.io/badge/License-GPLv3-blue?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Stable-green?style=flat-square)
+
+[English](#english) | [Português](#português)
+
+---
+
+## English
+
+The **PlayerHUD Block** is a modular gamification system for Moodle that introduces structured progression mechanics based on **XP, Levels, Inventory, and Ranking**.
+
+It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing students to track their progress in real time while teachers configure engagement mechanics aligned with pedagogical objectives.
+
+---
+
+### ✨ Features
+
+* 🎮 **XP & Level System:** Automatic level progression based on earned XP.
+* 🏅 **Level Tiers:** Visual progression system.
+* 🎛 **Configurable Progression:** Teachers define the number of levels and XP required for each level.
+* 🎒 **Inventory System:** Collectible items with configurable **Cooldown (Recharge Time)** and usage limits.
+* 📍 **Drop System:** Place collectible items across course sections.
+* 🏆 **Ranking System:** Leaderboard with tie-breaker logic.
+* 🔐 **Optional Participation:** Students may choose to opt in or opt out of the gamification system.
+* ⚡ **Real-Time Updates:** AJAX-based collection using Moodle’s `core/ajax`.
+* 🤖 **AI Item Generator (Optional).**
+* 📱 **Mobile-Ready:** Compatible with Moodle web services.
+
+---
+
+### 🎓 Educational Purpose
+
+PlayerHUD is designed to:
+
+* Encourage active engagement
+* Reinforce mastery-based progression
+* Provide structured reward systems
+* Support competitive and cooperative learning dynamics
+* Allow voluntary participation in gamification
+
+Suitable for:
+
+* Gamified academic courses
+* Technical and vocational training
+* Certification pathways
+* Engagement reinforcement strategies
+
+---
+
+### 🔗 PlayerHUD Ecosystem
+
+PlayerHUD works together with complementary plugins:
+
+* **PlayerHUD Filter (Required):** Enables item drops via shortcodes inside course content.  
+  👉 https://github.com/jeanlucio/moodle-filter_playerhud
+
+* **PlayerHUD Availability Condition (Optional):** Allows restricting activities based on PlayerHUD level or collected items.  
+  👉 https://github.com/jeanlucio/moodle-availability_playerhud
+
+---
+
+### 📦 Requirements
+
+* **Moodle:** 4.5 or higher
+* **Required Dependency:** PlayerHUD Filter plugin  
+  https://github.com/jeanlucio/moodle-filter_playerhud
+* **Optional Dependency:** PlayerHUD Availability Condition plugin  
+  https://github.com/jeanlucio/moodle-availability_playerhud
+* **PHP:** Compatible with your Moodle version
+
+---
+
+### 🛠️ Installation
+
+1. Download the `.zip` file or clone this repository.
+2. Extract the folder into your Moodle `blocks/` directory.
+3. Rename the folder to `playerhud` (if necessary).  
+   Final path:
+   `your-moodle/blocks/playerhud/`
+4. Install the required **PlayerHUD Filter** plugin.
+5. Visit **Site administration > Notifications** to complete installation.
+6. Add the block to a course.
+
+---
+
+### 📖 Usage
+
+1. Add the **PlayerHUD Block** to your course.
+2. Access the **Management Panel** (Teacher role required).
+3. Configure:
+   * Items
+   * XP values
+   * Number of levels
+   * XP thresholds
+   * Drop placements
+   * Recharge time (Cooldown)
+   * Collection limits
+4. Students collect items directly within course sections.
+5. XP, levels, and ranking update automatically.
+
+---
+
+### 🔐 Security & Compliance
+
+* Capability-based access control
+* Server-side validation of recharge time and limits
+* `require_sesskey()` protection
+* Moodle External API compliant
+* Privacy-aware ranking participation
+
+---
+
+## Português
+
+O **Bloco PlayerHUD** é um sistema modular de gamificação para Moodle que introduz mecânicas estruturadas de progressão baseadas em **XP, Níveis, Inventário e Ranking**.
+
+Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo que os alunos acompanhem seu progresso em tempo real, enquanto o professor configura as mecânicas de engajamento de acordo com seus objetivos pedagógicos.
+
+---
+
+### ✨ Funcionalidades
+
+* 🎮 **Sistema de XP e Níveis:** Progressão automática baseada no XP acumulado.
+* 🏅 **Tiers de Nível:** Sistema visual de progressão.
+* 🎛 **Progressão Configurável:** O professor define a quantidade de níveis e o XP necessário para cada nível.
+* 🎒 **Sistema de Inventário:** Itens colecionáveis com **Tempo de Recarga (intervalo mínimo entre coletas)** e limite configurável.
+* 📍 **Sistema de Drops:** Posicione itens nas seções do curso.
+* 🏆 **Ranking:** Classificação com critério de desempate.
+* 🔐 **Participação Opcional:** O aluno pode escolher participar ou não da gamificação.
+* ⚡ **Atualização em Tempo Real:** Coleta via `core/ajax`.
+* 🤖 **Gerador de Itens com IA (Opcional).**
+* 📱 **Compatível com Mobile.**
+
+---
+
+### 🎓 Finalidade Educacional
+
+O PlayerHUD foi projetado para:
+
+* Estimular engajamento ativo
+* Reforçar progressão baseada em domínio
+* Criar sistemas estruturados de recompensa
+* Permitir dinâmicas competitivas e cooperativas
+* Garantir participação voluntária
+
+Indicado para:
+
+* Cursos gamificados
+* Formação técnica
+* Trilhas de certificação
+* Estratégias de reforço de engajamento
+
+---
+
+### 🔗 Ecossistema PlayerHUD
+
+O PlayerHUD funciona em conjunto com plugins complementares:
+
+* **Filtro PlayerHUD (Obrigatório):** Permite inserir drops de itens por meio de shortcodes no conteúdo do curso.  
+  👉 https://github.com/jeanlucio/moodle-filter_playerhud
+
+* **Restrição de Acesso PlayerHUD (Opcional):** Permite liberar atividades com base no nível do aluno ou na posse de itens.  
+  👉 https://github.com/jeanlucio/moodle-availability_playerhud
+
+---
+
+### 📦 Requisitos
+
+* **Moodle:** 4.5 ou superior
+* **Dependência Obrigatória:** Filtro PlayerHUD  
+  https://github.com/jeanlucio/moodle-filter_playerhud
+* **Dependência Opcional:** Plugin de Restrição PlayerHUD  
+  https://github.com/jeanlucio/moodle-availability_playerhud
+* **PHP:** Compatível com a versão do Moodle
+
+---
+
+## 📄 License / Licença
+
+This project is licensed under the **GNU General Public License v3 (GPLv3)**.
+
+**Copyright:** 2026 Jean Lúcio
