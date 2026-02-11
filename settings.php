@@ -25,15 +25,14 @@
 defined('MOODLE_INTERNAL') || die;
 
 if ($ADMIN->fulltree) {
-
-    // --- AI Settings Section ---
+    // AI Settings Section.
     $settings->add(new admin_setting_heading(
         'block_playerhud/aisettings',
         get_string('api_settings_title', 'block_playerhud'),
         get_string('api_settings_desc', 'block_playerhud')
     ));
 
-    // Gemini Key
+    // Gemini Key.
     $settings->add(new admin_setting_configtext(
         'block_playerhud/apikey_gemini',
         get_string('gemini_apikey', 'block_playerhud'),
@@ -42,7 +41,7 @@ if ($ADMIN->fulltree) {
         PARAM_TEXT
     ));
 
-    // Groq Key
+    // Groq Key.
     $settings->add(new admin_setting_configtext(
         'block_playerhud/apikey_groq',
         get_string('groq_apikey', 'block_playerhud'),

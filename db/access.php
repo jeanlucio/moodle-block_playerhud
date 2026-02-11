@@ -35,7 +35,7 @@ $capabilities = [
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW,
         ],
-        'clonepermissionsfrom' => 'moodle/site:manageblocks'
+        'clonepermissionsfrom' => 'moodle/site:manageblocks',
     ],
 
     // Ability to add a PlayerHUD block specifically to the My Moodle (Dashboard) page.
@@ -45,7 +45,7 @@ $capabilities = [
         'archetypes' => [
             'user' => CAP_ALLOW,
         ],
-        'clonepermissionsfrom' => 'moodle/my:manageblocks'
+        'clonepermissionsfrom' => 'moodle/my:manageblocks',
     ],
 
     // Ability to view the PlayerHUD content and interact with gamification features.
@@ -58,7 +58,7 @@ $capabilities = [
             'teacher' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW,
-        ]
+        ],
     ],
 
     // Ability to manage game content (items, quests, chapters) via the management panel.
@@ -69,6 +69,6 @@ $capabilities = [
         'archetypes' => [
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW,
-        ]
+        ],
     ],
 ];

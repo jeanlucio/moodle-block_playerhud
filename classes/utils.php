@@ -24,8 +24,6 @@
 
 namespace block_playerhud;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Class utils
  *
@@ -88,11 +86,10 @@ class utils {
             ];
         } else {
             // 3. If not a link, it is an Emoji or Text.
-            // CORREÇÃO: Retorna o emoji puro. O template Mustache cuidará do HTML.
             return [
                 'url' => null,
                 'is_image' => false,
-                'content' => $item->image, 
+                'content' => $item->image,
             ];
         }
     }

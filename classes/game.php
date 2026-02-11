@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace block_playerhud;
+
 /**
  * Game logic class for PlayerHUD block.
  *
@@ -21,16 +23,7 @@
  * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-namespace block_playerhud;
-
-defined('MOODLE_INTERNAL') || die();
-
-/**
- * Game logic class.
- */
 class game {
-
     /**
      * Get or create a player record.
      *
@@ -42,7 +35,7 @@ class game {
         global $DB;
         $player = $DB->get_record('block_playerhud_user', [
             'blockinstanceid' => $blockinstanceid,
-            'userid' => $userid
+            'userid' => $userid,
         ]);
 
         if (!$player) {
@@ -104,7 +97,7 @@ class game {
         global $DB;
         return $DB->record_exists('block_playerhud_inventory', [
             'userid' => $userid,
-            'itemid' => $itemid
+            'itemid' => $itemid,
         ]);
     }
 
@@ -126,7 +119,7 @@ class game {
         // Calculate Game Goal (Sum of finite items).
         $allitems = $DB->get_records('block_playerhud_items', [
             'blockinstanceid' => $blockinstanceid,
-            'enabled' => 1
+            'enabled' => 1,
         ]);
         $totalgamexp = 0;
 
@@ -191,7 +184,7 @@ class game {
         $DB->update_record('block_playerhud_user', $player);
     }
 
-/**
+    /**
      * Get the rank of a specific user considering tie-breakers.
      *
      * @param int $blockinstanceid Instance ID.
@@ -202,40 +195,40 @@ class game {
     public static function get_user_rank($blockinstanceid, $userid, $currentxp) {
         global $DB;
 
-        // Buscar o 'timemodified' do usuário atual para comparar
+        // Search for 'timemodified' of current user for tie-breaking.
         $usertime = $DB->get_field('block_playerhud_user', 'timemodified', [
             'blockinstanceid' => $blockinstanceid,
-            'userid' => $userid
+            'userid' => $userid,
         ]);
 
         if (!$usertime) {
-            $usertime = time(); // Fallback
+            $usertime = time(); // Fallback.
         }
 
-        // LÓGICA DE RANKING E DESEMPATE:
-        // Conta usuários que:
-        // 1. Têm MAIS XP que eu.
-        // 2. OU têm o MESMO XP, mas o registro é MAIS ANTIGO (timemodified menor = chegou primeiro).
-        
+        // RANKING LOGIC AND TIE-BREAKER:
+        // Count users who:
+        // 1. Have MORE XP than me.
+        // 2. OR have the SAME XP, but the record is OLDER (lower timemodified = arrived first).
+
         $sql = "SELECT COUNT(id)
                   FROM {block_playerhud_user}
-                 WHERE blockinstanceid = :pid 
+                 WHERE blockinstanceid = :pid
                    AND enable_gamification = 1
                    AND ranking_visibility = 1
                    AND (
-                       currentxp > :xp 
+                       currentxp > :xp
                        OR (currentxp = :xp_tie AND timemodified < :tm)
                    )";
 
         $params = [
-            'pid' => $blockinstanceid, 
-            'xp' => $currentxp, 
-            'xp_tie' => $currentxp, 
-            'tm' => $usertime
+            'pid' => $blockinstanceid,
+            'xp' => $currentxp,
+            'xp_tie' => $currentxp,
+            'tm' => $usertime,
         ];
 
         $betterplayers = $DB->count_records_sql($sql, $params);
-        
+
         return $betterplayers + 1;
     }
 
@@ -248,46 +241,28 @@ class game {
      * @param bool $isteacher Is user teacher?
      * @return array
      */
-/**
-     * Fetch complete Leaderboard for block instance.
-     *
-     * @param int $blockinstanceid The instance ID.
-     * @param int $courseid The course ID.
-     * @param int $currentuserid Current user ID.
-     * @param bool $isteacher Is user teacher?
-     * @return array
-     */
-/**
-     * Fetch complete Leaderboard for block instance.
-     *
-     * @param int $blockinstanceid The instance ID.
-     * @param int $courseid The course ID.
-     * @param int $currentuserid Current user ID.
-     * @param bool $isteacher Is user teacher?
-     * @return array
-     */
-public static function get_leaderboard($blockinstanceid, $courseid, $currentuserid, $isteacher) {
+    public static function get_leaderboard($blockinstanceid, $courseid, $currentuserid, $isteacher) {
         global $DB;
 
-        // 1. Mapa de Grupos
-        $user_groups_map = [];
-        $sql_groups = "SELECT gm.userid, g.name
-                         FROM {groups} g
-                         JOIN {groups_members} gm ON g.id = gm.groupid
-                        WHERE g.courseid = :courseid";
-        
-        $memberships = $DB->get_recordset_sql($sql_groups, ['courseid' => $courseid]);
+        // 1. Groups Map.
+        $usergroupsmap = [];
+        $sqlgroups = "SELECT gm.userid, g.name
+                        FROM {groups} g
+                        JOIN {groups_members} gm ON g.id = gm.groupid
+                       WHERE g.courseid = :courseid";
+
+        $memberships = $DB->get_recordset_sql($sqlgroups, ['courseid' => $courseid]);
         foreach ($memberships as $rec) {
-            $user_groups_map[$rec->userid][] = format_string($rec->name);
+            $usergroupsmap[$rec->userid][] = format_string($rec->name);
         }
         $memberships->close();
 
-        // 2. Busca Usuários
+        // 2. Search Users.
         $userfieldsapi = \core_user\fields::for_userpic();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
 
-        // [MODIFICAÇÃO SQL]
-        // Ordenar por XP (Decrescente) e depois por DATA (Crescente - quem fez primeiro ganha)
+        // SQL Modification:
+        // Sort by XP (Descending) and then by DATE (Ascending - first comes first wins).
         $sql = "SELECT $userfields, u.id as userid,
                        pu.currentxp, pu.ranking_visibility, pu.enable_gamification, pu.timemodified
                   FROM {block_playerhud_user} pu
@@ -300,11 +275,11 @@ public static function get_leaderboard($blockinstanceid, $courseid, $currentuser
         $individualranking = [];
         $coursecontext = \context_course::instance($courseid);
 
-        // Variáveis de controle para empate (Rank Compartilhado)
-        $rank_counter = 1;      // Contador absoluto (1, 2, 3, 4...)
-        $last_xp = -1;
-        $last_time = -1;
-        $current_display_rank = 1;
+        // Control variables for tie (Shared Rank).
+        $rankcounter = 1;
+        $lastxp = -1;
+        $lasttime = -1;
+        $currentdisplayrank = 1;
 
         foreach ($rawusers as $usr) {
             $isme = ($usr->userid == $currentuserid);
@@ -313,50 +288,51 @@ public static function get_leaderboard($blockinstanceid, $courseid, $currentuser
                 continue;
             }
 
-            // Status
+            // Status.
             $ispaused = ($usr->enable_gamification == 0);
             $ishidden = ($usr->ranking_visibility == 0);
             $iscompetitor = (!$ispaused && !$ishidden);
-            
+
             $shoulddisplay = ($iscompetitor || $isteacher || $isme);
             if (!$shoulddisplay) {
                 continue;
             }
 
-            // [LÓGICA DE EMPATE]
-            // Se for competidor, calculamos o rank. Se não, é traço.
+            // TIE LOGIC:
+            // If competitor, calculate rank. If not, dash.
             $usr->rank = '-';
             $usr->medal_emoji = null;
 
             if ($iscompetitor) {
-                // Se XP e Tempo forem IGUAIS ao anterior, mantém o mesmo rank.
-                // Caso contrário, assume o valor do contador absoluto.
-                if ($usr->currentxp == $last_xp && $usr->timemodified == $last_time) {
-                    // Empate exato: Mantém o rank anterior (Ex: 1, 1...)
-                    // O contador absoluto continua subindo, então o próximo será 3.
-                } else {
-                    $current_display_rank = $rank_counter;
+                // If XP and Time are DIFFERENT from previous, update display rank.
+                // Otherwise (exact tie), keep the previous display rank.
+                // Absolute counter always increments.
+                if ($usr->currentxp != $lastxp || $usr->timemodified != $lasttime) {
+                    $currentdisplayrank = $rankcounter;
                 }
 
-                $usr->rank = $current_display_rank;
+                $usr->rank = $currentdisplayrank;
 
-                // Medalhas baseadas no rank compartilhado
-                if ($usr->rank == 1) $usr->medal_emoji = '🥇';
-                else if ($usr->rank == 2) $usr->medal_emoji = '🥈';
-                else if ($usr->rank == 3) $usr->medal_emoji = '🥉';
+                // Medals based on shared rank.
+                if ($usr->rank == 1) {
+                    $usr->medal_emoji = '🥇';
+                } else if ($usr->rank == 2) {
+                    $usr->medal_emoji = '🥈';
+                } else if ($usr->rank == 3) {
+                    $usr->medal_emoji = '🥉';
+                }
 
-                // Atualiza referências para a próxima iteração
-                $last_xp = $usr->currentxp;
-                $last_time = $usr->timemodified;
-                $rank_counter++; 
+                // Update references for next iteration.
+                $lastxp = $usr->currentxp;
+                $lasttime = $usr->timemodified;
+                $rankcounter++;
             }
 
-            // Formatação de Dados
-            $my_groups = isset($user_groups_map[$usr->userid]) ? $user_groups_map[$usr->userid] : [];
-            $usr->group_name = empty($my_groups) ? '-' : implode(', ', $my_groups);
-            
-            // [NOVO] Data formatada para transparência
-            // Usamos strftimedatetimeshort para ser compacto
+            // Data Formatting.
+            $mygroups = isset($usergroupsmap[$usr->userid]) ? $usergroupsmap[$usr->userid] : [];
+            $usr->group_name = empty($mygroups) ? '-' : implode(', ', $mygroups);
+
+            // New: Formatted date for transparency.
             $usr->last_score_date = userdate($usr->timemodified, get_string('strftimedatetimeshort', 'langconfig'));
 
             $usr->is_me = $isme;
@@ -367,16 +343,18 @@ public static function get_leaderboard($blockinstanceid, $courseid, $currentuser
             $individualranking[] = $usr;
         }
 
-        // Grupos (Mantido inalterado pois a lógica de média já é justa)
+        // Groups logic.
         $groupranking = [];
         $groups = groups_get_all_groups($courseid);
 
         if ($groups) {
             foreach ($groups as $grp) {
                 $members = groups_get_members($grp->id, 'u.id');
-                if (!$members) continue;
+                if (!$members) {
+                    continue;
+                }
                 $memberids = array_keys($members);
-                list($insql, $inparams) = $DB->get_in_or_equal($memberids);
+                [$insql, $inparams] = $DB->get_in_or_equal($memberids);
                 $sqlgrp = "SELECT SUM(currentxp) as total, COUNT(id) as qtd
                              FROM {block_playerhud_user}
                             WHERE blockinstanceid = ?
@@ -396,7 +374,9 @@ public static function get_leaderboard($blockinstanceid, $courseid, $currentuser
                     $groupranking[] = $gobj;
                 }
             }
-            usort($groupranking, function ($a, $b) { return $b->average_xp <=> $a->average_xp; });
+            usort($groupranking, function ($a, $b) {
+                return $b->average_xp <=> $a->average_xp;
+            });
             $grank = 1;
             foreach ($groupranking as &$g) {
                 $g->rank = $grank++;

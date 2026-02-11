@@ -16,8 +16,6 @@
 
 namespace block_playerhud;
 
-defined('MOODLE_INTERNAL') || die();
-
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_value;
@@ -33,7 +31,6 @@ use context_block;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class external extends external_api {
-
     /**
      * Define parameters for generate_ai_content.
      *
@@ -49,26 +46,35 @@ class external extends external_api {
             'create_drop' => new external_value(PARAM_BOOL, 'Create drop location?', VALUE_DEFAULT, false),
             'drop_location' => new external_value(PARAM_TEXT, 'Drop location name', VALUE_DEFAULT, ''),
             'drop_max' => new external_value(PARAM_INT, 'Max usage count', VALUE_DEFAULT, 0),
-            'drop_time' => new external_value(PARAM_INT, 'Respawn time in minutes', VALUE_DEFAULT, 0)
+            'drop_time' => new external_value(PARAM_INT, 'Respawn time in minutes', VALUE_DEFAULT, 0),
         ]);
     }
 
     /**
      * Execute AI generation logic.
      *
-     * @param int $instanceid
-     * @param int $courseid
-     * @param string $theme
-     * @param int $xp
-     * @param int $amount
-     * @param bool $create_drop
-     * @param string $drop_location
-     * @param int $drop_max
-     * @param int $drop_time
-     * @return array
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param string $theme Theme text.
+     * @param int $xp XP value.
+     * @param int $amount Amount of items.
+     * @param bool $createdrop Create drop flag.
+     * @param string $droplocation Drop location name.
+     * @param int $dropmax Max usage.
+     * @param int $droptime Respawn time.
+     * @return array Result structure.
      */
-    public static function generate_ai_content($instanceid, $courseid, $theme, $xp = 0, $amount = 1,
-                                               $create_drop = false, $drop_location = '', $drop_max = 0, $drop_time = 0) {
+    public static function generate_ai_content(
+        $instanceid,
+        $courseid,
+        $theme,
+        $xp = 0,
+        $amount = 1,
+        $createdrop = false,
+        $droplocation = '',
+        $dropmax = 0,
+        $droptime = 0
+    ) {
         global $DB;
 
         // 1. Validation.
@@ -78,10 +84,10 @@ class external extends external_api {
             'theme' => $theme,
             'xp' => $xp,
             'amount' => $amount,
-            'create_drop' => $create_drop,
-            'drop_location' => $drop_location,
-            'drop_max' => $drop_max,
-            'drop_time' => $drop_time
+            'create_drop' => $createdrop,
+            'drop_location' => $droplocation,
+            'drop_max' => $dropmax,
+            'drop_time' => $droptime,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -100,7 +106,11 @@ class external extends external_api {
         $xpceiling = $xpperlevel * $maxlevels;
 
         $currenttotalxp = 0;
-        $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $params['instanceid'], 'enabled' => 1]);
+        $items = $DB->get_records('block_playerhud_items', [
+            'blockinstanceid' => $params['instanceid'],
+            'enabled' => 1,
+        ]);
+
         if ($items) {
             foreach ($items as $it) {
                 $drops = $DB->get_records('block_playerhud_drops', ['itemid' => $it->id]);
@@ -120,14 +130,14 @@ class external extends external_api {
             'current_xp' => $currenttotalxp,
             'target_xp' => $xpceiling,
             'gap' => $xpceiling - $currenttotalxp,
-            'qty' => $params['amount']
+            'qty' => $params['amount'],
         ];
 
         $extraoptions = [
             'drop_location' => $params['drop_location'],
             'drop_max' => $params['drop_max'],
             'drop_time' => $params['drop_time'],
-            'balance_context' => $balancecontext
+            'balance_context' => $balancecontext,
         ];
 
         // 3. Generation.
@@ -151,9 +161,8 @@ class external extends external_api {
                 'drop_code' => $result['drop_code'] ?? null,
                 'warning_msg' => $result['warning_msg'] ?? null,
                 'info_msg' => $result['info_msg'] ?? null,
-                'provider' => $result['provider'] ?? ''
+                'provider' => $result['provider'] ?? '',
             ];
-
         } catch (\Exception $e) {
             return [
                 'success' => false,
@@ -163,7 +172,7 @@ class external extends external_api {
                 'drop_code' => null,
                 'warning_msg' => null,
                 'info_msg' => null,
-                'provider' => ''
+                'provider' => '',
             ];
         }
     }
@@ -186,7 +195,7 @@ class external extends external_api {
             'drop_code' => new external_value(PARAM_TEXT, 'Drop code if created', VALUE_OPTIONAL),
             'warning_msg' => new external_value(PARAM_RAW, 'Warning message', VALUE_OPTIONAL),
             'info_msg' => new external_value(PARAM_RAW, 'Info message', VALUE_OPTIONAL),
-            'provider' => new external_value(PARAM_TEXT, 'AI Provider used', VALUE_OPTIONAL)
+            'provider' => new external_value(PARAM_TEXT, 'AI Provider used', VALUE_OPTIONAL),
         ]);
     }
 }

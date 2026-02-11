@@ -36,7 +36,7 @@ $bi     = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EX
 require_login($course);
 $context = context_block::instance($instanceid);
 
-// Check permissions. 
+// Check permissions.
 require_capability('block/playerhud:view', $context);
 
 // Load Block Configuration.
@@ -66,12 +66,12 @@ if ($isteacher && empty($player->enable_gamification)) {
 
 // Logic: Opt-in / Opt-out Actions.
 if ($action === 'toggle_hud' && confirm_sesskey()) {
-    $target_state = optional_param('state', 0, PARAM_INT);
+    $targetstate = optional_param('state', 0, PARAM_INT);
     $returnurl = optional_param('returnurl', '', PARAM_LOCALURL);
-    
-    \block_playerhud\game::toggle_gamification($instanceid, $USER->id, (bool)$target_state);
-    
-    // Redireciona para a URL de origem se fornecida, senão recarrega a view atual
+
+    \block_playerhud\game::toggle_gamification($instanceid, $USER->id, (bool)$targetstate);
+
+    // Redirect to source URL if provided, otherwise reload current view.
     redirect($returnurl ? new moodle_url($returnurl) : $PAGE->url);
 }
 
@@ -80,7 +80,11 @@ if ($tab == 'toggle_ranking_pref' && confirm_sesskey()) {
     $newvis = ($player->ranking_visibility == 1) ? 0 : 1;
     \block_playerhud\game::toggle_ranking_visibility($instanceid, $USER->id, $newvis);
     redirect(
-        new moodle_url('/blocks/playerhud/view.php', ['id' => $courseid, 'instanceid' => $instanceid, 'tab' => 'ranking']),
+        new moodle_url('/blocks/playerhud/view.php', [
+            'id' => $courseid,
+            'instanceid' => $instanceid,
+            'tab' => 'ranking',
+        ]),
         get_string('privacy_updated', 'block_playerhud'),
         \core\output\notification::NOTIFY_SUCCESS
     );
@@ -103,123 +107,139 @@ echo $OUTPUT->header();
 // 4. View Render.
 
 if ($isoptin) {
-    // --- OPT-IN SCREEN (Template Based) ---
+    // Opt-in Screen (Template Based).
     $activateurl = new moodle_url($PAGE->url, ['action' => 'toggle_hud', 'state' => 1, 'sesskey' => sesskey()]);
-    
+
     $data = [
         'userpicture' => $OUTPUT->user_picture($USER, ['size' => 100]),
         'title' => get_string('optin_hello', 'block_playerhud', fullname($USER)),
         'message' => get_string('optin_message', 'block_playerhud'),
         'url_yes' => $activateurl->out(false),
         'str_yes' => get_string('optin_yes', 'block_playerhud'),
-        'str_no' => get_string('optin_no', 'block_playerhud')
+        'str_no' => get_string('optin_no', 'block_playerhud'),
     ];
-    
-    echo $OUTPUT->render_from_template('block_playerhud/optin', $data);
 
+    echo $OUTPUT->render_from_template('block_playerhud/optin', $data);
 } else {
-    // --- MAIN HUD INTERFACE (Template Based) ---
-    
-    // A. Header Stats
-    $header_html = '';
+    // Main HUD Interface (Template Based).
+
+    // A. Header Stats.
+    $headerhtml = '';
     if (class_exists('\block_playerhud\output\view\header')) {
         $header = new \block_playerhud\output\view\header($config, $player, $USER);
-        $header_html = $OUTPUT->render_from_template('block_playerhud/view_header', $header->export_for_template($OUTPUT));
+        $headerhtml = $OUTPUT->render_from_template(
+            'block_playerhud/view_header',
+            $header->export_for_template($OUTPUT)
+        );
     }
 
-    // B. Tab Content
-    $tab_content_html = '';
+    // B. Tab Content.
+    $tabcontenthtml = '';
     switch ($tab) {
         case 'collection':
             if (class_exists('\block_playerhud\output\view\tab_collection')) {
                 $render = new \block_playerhud\output\view\tab_collection($config, $player, $instanceid);
-                $tab_content_html = $OUTPUT->render_from_template('block_playerhud/view_collection', $render->export_for_template($OUTPUT));
+                $tabcontenthtml = $OUTPUT->render_from_template(
+                    'block_playerhud/view_collection',
+                    $render->export_for_template($OUTPUT)
+                );
             }
             break;
         case 'chapters':
             if (class_exists('\block_playerhud\output\view\tab_chapters')) {
                 $render = new \block_playerhud\output\view\tab_chapters($config, $player, $instanceid);
-                $tab_content_html = $render->display(); // Refactor this class next!
+                $tabcontenthtml = $render->display();
             }
             break;
         case 'shop':
             if (class_exists('\block_playerhud\output\view\tab_shop')) {
                 $render = new \block_playerhud\output\view\tab_shop($config, $player, $instanceid, $courseid);
-                $tab_content_html = $render->display();
+                $tabcontenthtml = $render->display();
             }
             break;
         case 'ranking':
             if (class_exists('\block_playerhud\output\view\tab_ranking')) {
                 $render = new \block_playerhud\output\view\tab_ranking($config, $player, $instanceid, $courseid, $isteacher);
-                $tab_content_html = $render->display();
+                $tabcontenthtml = $render->display();
             }
             break;
         case 'quests':
             if (class_exists('\block_playerhud\output\view\tab_quests')) {
                 $render = new \block_playerhud\output\view\tab_quests($config, $player, $instanceid, $courseid);
-                $tab_content_html = $render->display();
+                $tabcontenthtml = $render->display();
             }
             break;
     }
 
-    if (empty($tab_content_html)) {
-        $tab_content_html = $OUTPUT->notification(get_string('tab_maintenance', 'block_playerhud', ucfirst($tab)), 'info');
+    if (empty($tabcontenthtml)) {
+        $tabcontenthtml = $OUTPUT->notification(
+            get_string('tab_maintenance', 'block_playerhud', ucfirst($tab)),
+            'info'
+        );
     }
 
-// C. Navigation Data
+    // C. Navigation Data.
     $tabslist = [];
-    $tabs_def = [
-        // 1. Coleção (Base)
+    $tabsdef = [
+        // 1. Collection (Base).
         'collection' => ['icon' => '🎒', 'text' => get_string('tab_collection', 'block_playerhud')],
-        
-        // --- Ocultos para lançamento V1.0 ---
-        // 'shop' => ['icon' => '⚖️', 'text' => get_string('tab_shop', 'block_playerhud')],
-        // 'quests' => ['icon' => '📜', 'text' => get_string('tab_quests', 'block_playerhud')],
-        // 'chapters' => ($config->enable_rpg) ? ['icon' => '📖', 'text' => get_string('tab_chapters', 'block_playerhud')] : null,
-        // ------------------------------------
-        
-        // 5. Ranking (Social - Se ativado nas configs)
-        'ranking' => ($config->enable_ranking) ? ['icon' => '🏆', 'text' => get_string('leaderboard_title', 'block_playerhud')] : null,
+
+        // Note: Features like Shop, Quests, and Chapters are hidden for version 1.0.
+
+        // 5. Ranking (Social - If enabled in configs).
+        'ranking' => ($config->enable_ranking) ? [
+            'icon' => '🏆',
+            'text' => get_string('leaderboard_title', 'block_playerhud'),
+        ] : null,
     ];
 
-    foreach ($tabs_def as $key => $def) {
+    foreach ($tabsdef as $key => $def) {
         if ($def) {
             $tabslist[] = [
                 'active' => ($tab == $key),
                 'url' => (new moodle_url($PAGE->url, ['tab' => $key]))->out(false),
                 'icon' => $def['icon'],
-                'text' => $def['text']
+                'text' => $def['text'],
             ];
         }
     }
 
-    // D. Render Main Layout
-    $layout_data = [
+    // D. Render Main Layout.
+    $urlmanage = $isteacher ? (new moodle_url('/blocks/playerhud/manage.php', [
+        'id' => $courseid,
+        'instanceid' => $instanceid,
+    ]))->out(false) : '';
+
+    $layoutdata = [
         'url_course' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
         'str_back_course' => get_string('back_to_course', 'block_playerhud'),
         'is_teacher' => $isteacher,
-        'url_manage' => $isteacher ? (new moodle_url('/blocks/playerhud/manage.php', ['id' => $courseid, 'instanceid' => $instanceid]))->out(false) : '',
+        'url_manage' => $urlmanage,
         'str_manage' => get_string('master_panel', 'block_playerhud'),
-        'header_html' => $header_html,
+        'header_html' => $headerhtml,
         'tabs' => $tabslist,
-        'tab_content_html' => $tab_content_html,
+        'tab_content_html' => $tabcontenthtml,
         'str_status_active' => get_string('status_active', 'block_playerhud'),
-        'url_disable' => (new moodle_url($PAGE->url, ['action' => 'toggle_hud', 'state' => 0, 'sesskey' => sesskey()]))->out(false),
+        'url_disable' => (new moodle_url($PAGE->url, [
+            'action' => 'toggle_hud',
+            'state' => 0,
+            'sesskey' => sesskey(),
+        ]))->out(false),
         'str_confirm_disable' => get_string('confirm_disable', 'block_playerhud'),
-        'str_disable' => get_string('disable_exit', 'block_playerhud')
+        'str_disable' => get_string('disable_exit', 'block_playerhud'),
     ];
 
-    echo $OUTPUT->render_from_template('block_playerhud/view_layout', $layout_data);
+    echo $OUTPUT->render_from_template('block_playerhud/view_layout', $layoutdata);
 
-    // E. Initialize JS
+    // E. Initialize JS.
     $jsvars = [
         'strings' => [
             'confirm_title' => get_string('confirmation', 'admin'),
             'yes' => get_string('yes'),
             'cancel' => get_string('cancel'),
             'no_desc' => get_string('no_description', 'block_playerhud'),
-            'last_collected' => get_string('last_collected', 'block_playerhud')
-        ]
+            'last_collected' => get_string('last_collected', 'block_playerhud'),
+        ],
     ];
     $PAGE->requires->js_call_amd('block_playerhud/view', 'init', [$jsvars]);
 }

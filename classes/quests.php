@@ -24,8 +24,6 @@
 
 namespace block_playerhud;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Class quest
  *
@@ -89,7 +87,7 @@ class quest {
 
             case self::TYPE_UNIQUE_ITEMS:
                 // Refactored to count only items from this specific block instance.
-                $sql = "SELECT COUNT(DISTINCT inv.itemid) 
+                $sql = "SELECT COUNT(DISTINCT inv.itemid)
                           FROM {block_playerhud_inventory} inv
                           JOIN {block_playerhud_items} it ON inv.itemid = it.id
                          WHERE inv.userid = ? AND it.blockinstanceid = ?";
@@ -181,11 +179,11 @@ class quest {
 
         // 3. Re-verify requirements (Anti-cheat mechanism).
         $player = \block_playerhud\game::get_player($blockinstanceid, $userid);
-        
+
         // Retrieve block configuration to calculate stats correctly.
         $blockinstance = $DB->get_record('block_instances', ['id' => $blockinstanceid]);
         $config = unserialize(base64_decode($blockinstance->configdata));
-        if (!$config) { 
+        if (!$config) {
             $config = new \stdClass(); // Fallback to defaults.
         }
 
@@ -218,10 +216,10 @@ class quest {
             // XP Reward.
             if ($quest->reward_xp > 0) {
                 $player->currentxp += $quest->reward_xp;
-                // [CORREÇÃO] Atualiza o relógio para o desempate
-                $player->timemodified = time(); 
+                // Correction: Update timestamp for tie-breaking.
+                $player->timemodified = time();
                 $DB->update_record('block_playerhud_user', $player);
-                
+
                 $rewardstxt[] = "+{$quest->reward_xp} XP";
             }
 

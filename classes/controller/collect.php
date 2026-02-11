@@ -1,126 +1,176 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 namespace block_playerhud\controller;
 
 use moodle_url;
 
-defined('MOODLE_INTERNAL') || die();
-
+/**
+ * Controller for handling item collection logic.
+ *
+ * @package    block_playerhud
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class collect {
-
     /**
-     * Executa a lógica principal de coleta.
+     * Executes the main collection logic.
      */
     public function execute() {
-        global $USER, $DB, $PAGE;
+        global $USER, $DB;
 
-        // 1. Parâmetros
+        // 1. Parameters.
         $instanceid = required_param('instanceid', PARAM_INT);
         $dropid     = required_param('dropid', PARAM_INT);
         $courseid   = required_param('courseid', PARAM_INT);
-        $isajax     = optional_param('ajax', 0, PARAM_INT); // Detecta se é via AJAX
+        $isajax     = optional_param('ajax', 0, PARAM_INT); // Detects if called via AJAX.
 
-        // 2. Segurança
+        // 2. Security.
         require_login($courseid);
         require_sesskey();
 
-        // URL de retorno (caso não seja AJAX)
+        // Return URL (if not AJAX).
         $returnurl = new moodle_url('/course/view.php', ['id' => $courseid]);
 
         try {
-            // Valida Drop e Item
-            $drop = $DB->get_record('block_playerhud_drops', ['id' => $dropid, 'blockinstanceid' => $instanceid], '*', MUST_EXIST);
-            $item = $DB->get_record('block_playerhud_items', ['id' => $drop->itemid], '*', MUST_EXIST);
+            // Validate Drop and Item.
+            $drop = $DB->get_record(
+                'block_playerhud_drops',
+                ['id' => $dropid, 'blockinstanceid' => $instanceid],
+                '*',
+                MUST_EXIST
+            );
+            $item = $DB->get_record(
+                'block_playerhud_items',
+                ['id' => $drop->itemid],
+                '*',
+                MUST_EXIST
+            );
 
             if (!$item->enabled) {
                 throw new \moodle_exception('itemnotfound', 'block_playerhud');
             }
 
-            // Verifica Regras do Jogo (Limites e Cooldown atual)
+            // Check Game Rules (Limits and Cooldown).
             $this->process_game_rules($drop, $USER->id);
 
-            // Executa a Transação (Dar item e XP)
-            $earned_xp = $this->process_transaction($drop, $item, $instanceid, $USER->id);
+            // Execute Transaction (Give item and XP).
+            $earnedxp = $this->process_transaction($drop, $item, $instanceid, $USER->id);
 
-            // Prepara Mensagem de Feedback
-            $msgParams = new \stdClass();
-            $msgParams->name = format_string($item->name);
-            $msgParams->xp = ($earned_xp > 0) ? " (+{$earned_xp} XP)" : "";
-            $message = get_string('collected_msg', 'block_playerhud', $msgParams);
+            // Prepare Feedback Message.
+            $msgparams = new \stdClass();
+            $msgparams->name = format_string($item->name);
+            $msgparams->xp = ($earnedxp > 0) ? " (+{$earnedxp} XP)" : "";
+            $message = get_string('collected_msg', 'block_playerhud', $msgparams);
 
-            // --- DADOS PARA O FRONTEND (AJAX) ---
-            $game_data = null;
-            $item_data = null; // Dados visuais do item para a sidebar
-            $cooldown_deadline = 0;
-            $limit_reached = false;
+            // Data for frontend (AJAX).
+            $gamedata = null;
+            $itemdata = null; // Visual item data for sidebar.
+            $cooldowndeadline = 0;
+            $limitreached = false;
 
             if ($isajax) {
-                // A. Dados do Jogador
+                // A. Player Data.
                 $player = \block_playerhud\game::get_player($instanceid, $USER->id);
                 $bi = $DB->get_record('block_instances', ['id' => $instanceid]);
                 $config = unserialize(base64_decode($bi->configdata));
-                if (!$config) $config = new \stdClass();
+                if (!$config) {
+                    $config = new \stdClass();
+                }
 
-                $stats = \block_playerhud\game::get_game_stats($config, $instanceid, $player->currentxp);
-                
-                // CORREÇÃO AQUI: Enviamos o total_game_xp como 'xp_target' para o JS
-                $game_data = [
+                $stats = \block_playerhud\game::get_game_stats(
+                    $config,
+                    $instanceid,
+                    $player->currentxp
+                );
+
+                // We send total_game_xp as 'xp_target' to JS.
+                $gamedata = [
                     'currentxp' => $player->currentxp,
                     'level' => $stats['level'],
                     'max_levels' => $stats['max_levels'],
-                    'xp_target' => $stats['total_game_xp'], // Agora aponta para o Total Geral
+                    'xp_target' => $stats['total_game_xp'], // Points to Grand Total.
                     'progress' => $stats['progress'],
                     'total_game_xp' => $stats['total_game_xp'],
-                    'level_class' => $stats['level_class'], // A cor do nível
-                    'is_win' => ($player->currentxp >= $stats['total_game_xp'] && $stats['total_game_xp'] > 0) // Checa vitória
+                    'level_class' => $stats['level_class'], // Level color.
+                    // Check win condition.
+                    'is_win' => ($player->currentxp >= $stats['total_game_xp'] && $stats['total_game_xp'] > 0),
                 ];
 
-                // ... (restante do código permanece igual)
-                // B. Verificação de Limites e Cooldown
-                $count = $DB->count_records('block_playerhud_inventory', ['userid' => $USER->id, 'dropid' => $drop->id]);
+                // B. Limits and Cooldown Check.
+                $count = $DB->count_records('block_playerhud_inventory', [
+                    'userid' => $USER->id,
+                    'dropid' => $drop->id,
+                ]);
+
                 if ($drop->maxusage > 0 && $count >= $drop->maxusage) {
-                    $limit_reached = true;
+                    $limitreached = true;
                 }
-                if (!$limit_reached && $drop->respawntime > 0) {
-                     $cooldown_deadline = time() + $drop->respawntime;
+                if (!$limitreached && $drop->respawntime > 0) {
+                    $cooldowndeadline = time() + $drop->respawntime;
                 }
 
-                // C. Preparar dados visuais do Item (para injetar na sidebar)
+                // C. Prepare visual Item data (to inject into sidebar).
                 $context = \context_block::instance($instanceid);
                 $media = \block_playerhud\utils::get_item_display_data($item, $context);
                 $isimage = $media['is_image'] ? 1 : 0;
                 $imageurl = $media['is_image'] ? $media['url'] : strip_tags($media['content']);
-                $str_xp = get_string('xp', 'block_playerhud');
+                $strxp = get_string('xp', 'block_playerhud');
                 $desc = !empty($item->description) ? format_text($item->description, FORMAT_HTML) : '';
 
-                $item_data = [
+                $itemdata = [
                     'name' => format_string($item->name),
-                    'xp' => $item->xp . ' ' . $str_xp,
+                    'xp' => $item->xp . ' ' . $strxp,
                     'image' => $imageurl,
                     'isimage' => $isimage,
                     'description' => $desc,
                     'date' => userdate(time(), get_string('strftimedatefullshort', 'langconfig')),
-                    'timestamp' => time()
+                    'timestamp' => time(),
                 ];
             }
-            // ------------------------------------
 
-            $this->respond($isajax, true, $message, $returnurl, $game_data, $cooldown_deadline, $limit_reached, $item_data);
-
+            $this->respond(
+                $isajax,
+                true,
+                $message,
+                $returnurl,
+                $gamedata,
+                $cooldowndeadline,
+                $limitreached,
+                $itemdata
+            );
         } catch (\Exception $e) {
             $this->respond($isajax, false, $e->getMessage(), $returnurl);
         }
     }
 
     /**
-     * Verifica se o usuário pode coletar (Cooldown e Limites).
+     * Checks if the user can collect the item (Cooldown and Limits).
+     *
+     * @param \stdClass $drop The drop object.
+     * @param int $userid The user ID.
+     * @throws \moodle_exception If limits are reached or cooldown is active.
      */
     private function process_game_rules($drop, $userid) {
         global $DB;
         $inventory = $DB->get_records('block_playerhud_inventory', [
-            'userid' => $userid, 
-            'dropid' => $drop->id
+            'userid' => $userid,
+            'dropid' => $drop->id,
         ], 'timecreated DESC');
-        
+
         $count = count($inventory);
         $lastcollected = reset($inventory);
 
@@ -138,12 +188,19 @@ class collect {
     }
 
     /**
-     * Insere no inventário e dá XP.
+     * Inserts into inventory and awards XP.
+     *
+     * @param \stdClass $drop The drop object.
+     * @param \stdClass $item The item object.
+     * @param int $instanceid The block instance ID.
+     * @param int $userid The user ID.
+     * @return int The amount of XP earned.
+     * @throws \Exception If transaction fails.
      */
     private function process_transaction($drop, $item, $instanceid, $userid) {
         global $DB;
         $transaction = $DB->start_delegated_transaction();
-        
+
         try {
             $newinv = new \stdClass();
             $newinv->userid = $userid;
@@ -153,22 +210,22 @@ class collect {
             $newinv->source = 'map';
             $DB->insert_record('block_playerhud_inventory', $newinv);
 
-            // --- LÓGICA DE XP PROTEGIDA ---
+            // XP Logic Protected.
             $xpgain = 0;
-            
-            // Regra de Ouro: Se o drop for infinito (maxusage == 0), o XP ganho é FORÇADO a 0.
-            // Isso permite que o item tenha 100 XP (para drops finitos/quests), 
-            // mas não quebre o jogo em drops infinitos.
-            $is_infinite_drop = ((int)$drop->maxusage === 0);
 
-            if ($item->xp > 0 && !$is_infinite_drop) {
+            // Golden Rule: If drop is infinite (maxusage == 0), XP gain is FORCED to 0.
+            // This allows the item to have 100 XP (for finite drops/quests),
+            // but not break the game on infinite drops.
+            $isinfinitedrop = ((int)$drop->maxusage === 0);
+
+            if ($item->xp > 0 && !$isinfinitedrop) {
                 $xpgain = $item->xp;
                 $player = \block_playerhud\game::get_player($instanceid, $userid);
-                
-                // [CORREÇÃO] Atualizar objeto completo para registrar o tempo do desempate
+
+                // Update full object to register tie-breaker time.
                 $player->currentxp += $xpgain;
-                $player->timemodified = time(); // Essencial para o ranking por tempo!
-                
+                $player->timemodified = time(); // Essential for time-based ranking!
+
                 $DB->update_record('block_playerhud_user', $player);
             }
 
@@ -181,22 +238,45 @@ class collect {
     }
 
     /**
-     * Envia a resposta (JSON ou Redirect).
+     * Sends the response (JSON or Redirect).
+     *
+     * @param int $ajax Whether it is an AJAX request.
+     * @param bool $success Success status.
+     * @param string $message Feedback message.
+     * @param moodle_url $url Return URL.
+     * @param array|null $data Game data.
+     * @param int $cooldowndeadline Timestamp when cooldown ends.
+     * @param bool $limitreached Whether limit is reached.
+     * @param array|null $itemdata Visual item data.
      */
-    private function respond($ajax, $success, $message, $url, $data = null, $cooldown_deadline = 0, $limit_reached = false, $item_data = null) {
+    private function respond(
+        $ajax,
+        $success,
+        $message,
+        $url,
+        $data = null,
+        $cooldowndeadline = 0,
+        $limitreached = false,
+        $itemdata = null
+    ) {
         if ($ajax) {
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
-                'success' => $success, 
+                'success' => $success,
                 'message' => $message,
                 'game_data' => $data,
-                'item_data' => $item_data, // Novo campo
-                'cooldown_deadline' => $cooldown_deadline,
-                'limit_reached' => $limit_reached
+                'item_data' => $itemdata, // New field.
+                'cooldown_deadline' => $cooldowndeadline,
+                'limit_reached' => $limitreached,
             ]);
             die();
         } else {
-            redirect($url, $message, $success ? \core\output\notification::NOTIFY_SUCCESS : \core\output\notification::NOTIFY_ERROR);
+            if ($success) {
+                $type = \core\output\notification::NOTIFY_SUCCESS;
+            } else {
+                $type = \core\output\notification::NOTIFY_ERROR;
+            }
+            redirect($url, $message, $type);
         }
     }
 }

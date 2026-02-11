@@ -1,7 +1,20 @@
 <?php
-namespace block_playerhud\privacy;
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-defined('MOODLE_INTERNAL') || die();
+namespace block_playerhud\privacy;
 
 use core_privacy\local\metadata\collection;
 use core_privacy\local\request\approved_contextlist;
@@ -20,27 +33,29 @@ use core_privacy\local\request\approved_userlist;
  */
 class provider implements
     \core_privacy\local\metadata\provider,
-    \core_privacy\local\request\plugin\provider,
-    \core_privacy\local\request\core_userlist_provider {
-
+    \core_privacy\local\request\core_userlist_provider,
+    \core_privacy\local\request\plugin\provider {
     /**
-     * 1. METADADOS: Define quais tabelas guardam dados pessoais.
+     * Returns metadata about the data stored by this plugin.
+     *
+     * @param collection $collection The collection object.
+     * @return collection The collection with added metadata.
      */
     public static function get_metadata(collection $collection): collection {
-        // Dados Principais
+        // Main User Data.
         $collection->add_database_table('block_playerhud_user', [
             'currentxp' => 'privacy:metadata:playerhud_user:currentxp',
             'ranking_visibility' => 'privacy:metadata:playerhud_user:ranking_visibility',
             'timecreated' => 'privacy:metadata:timecreated',
         ], 'privacy:metadata:playerhud_user');
 
-        // Inventário
+        // Inventory.
         $collection->add_database_table('block_playerhud_inventory', [
             'itemid' => 'privacy:metadata:inventory:itemid',
             'timecreated' => 'privacy:metadata:timecreated',
         ], 'privacy:metadata:inventory');
 
-        // Progresso RPG (Karma, Classes, História)
+        // RPG Progress (Karma, Classes, Story).
         $collection->add_database_table('block_playerhud_rpg_progress', [
             'classid' => 'privacy:metadata:rpg:classid',
             'karma' => 'privacy:metadata:rpg:karma',
@@ -48,7 +63,7 @@ class provider implements
             'completed_chapters' => 'privacy:metadata:rpg:chapters',
         ], 'privacy:metadata:rpg');
 
-        // Logs
+        // Logs.
         $collection->add_database_table('block_playerhud_quest_log', [
             'questid' => 'privacy:metadata:quest_log:questid',
             'timecreated' => 'privacy:metadata:timecreated',
@@ -68,24 +83,29 @@ class provider implements
     }
 
     /**
-     * 2. CONTEXTOS: Encontra onde o usuário tem dados.
+     * Get the list of contexts where a user has data.
+     *
+     * @param int $userid The user ID.
+     * @return contextlist The list of contexts.
      */
     public static function get_contexts_for_userid(int $userid): contextlist {
         $contextlist = new contextlist();
-        
+
         $sql = "SELECT ctx.id
                   FROM {block_playerhud_user} u
                   JOIN {block_instances} bi ON u.blockinstanceid = bi.id
                   JOIN {context} ctx ON (ctx.instanceid = bi.id AND ctx.contextlevel = :blocklevel)
                  WHERE u.userid = :userid";
-        
+
         $contextlist->add_from_sql($sql, ['userid' => $userid, 'blocklevel' => CONTEXT_BLOCK]);
 
         return $contextlist;
     }
 
     /**
-     * 3. USERLIST: Encontra QUAIS usuários têm dados em um contexto específico.
+     * Get the list of users who have data within a specific context.
+     *
+     * @param userlist $userlist The userlist object.
      */
     public static function get_users_in_context(userlist $userlist) {
         $context = $userlist->get_context();
@@ -96,21 +116,23 @@ class provider implements
 
         $params = ['instanceid' => $context->instanceid];
 
-        // Usuários com perfil
+        // Users with profile.
         $sql = "SELECT userid FROM {block_playerhud_user} WHERE blockinstanceid = :instanceid";
         $userlist->add_from_sql('userid', $sql, $params);
 
-        // Usuários com progresso RPG
-        $sql_rpg = "SELECT userid FROM {block_playerhud_rpg_progress} WHERE blockinstanceid = :instanceid";
-        $userlist->add_from_sql('userid', $sql_rpg, $params);
+        // Users with RPG progress.
+        $sqlrpg = "SELECT userid FROM {block_playerhud_rpg_progress} WHERE blockinstanceid = :instanceid";
+        $userlist->add_from_sql('userid', $sqlrpg, $params);
 
-        // Usuários com logs de IA
-        $sql_ai = "SELECT userid FROM {block_playerhud_ai_logs} WHERE blockinstanceid = :instanceid";
-        $userlist->add_from_sql('userid', $sql_ai, $params);
+        // Users with AI logs.
+        $sqlai = "SELECT userid FROM {block_playerhud_ai_logs} WHERE blockinstanceid = :instanceid";
+        $userlist->add_from_sql('userid', $sqlai, $params);
     }
 
     /**
-     * 4. EXPORTAÇÃO: Exporta os dados para o zip do GDPR.
+     * Export all user data for the specified approved contextlist.
+     *
+     * @param approved_contextlist $contextlist The approved contextlist.
      */
     public static function export_user_data(approved_contextlist $contextlist) {
         global $DB;
@@ -125,7 +147,7 @@ class provider implements
 
             $instanceid = $context->instanceid;
 
-            // A. Perfil Geral
+            // A. General Profile.
             $player = $DB->get_record('block_playerhud_user', ['blockinstanceid' => $instanceid, 'userid' => $userid]);
             if ($player) {
                 writer::with_context($context)->export_data(
@@ -138,8 +160,11 @@ class provider implements
                 );
             }
 
-            // B. Progresso RPG
-            $rpg = $DB->get_record('block_playerhud_rpg_progress', ['blockinstanceid' => $instanceid, 'userid' => $userid]);
+            // B. RPG Progress.
+            $rpg = $DB->get_record('block_playerhud_rpg_progress', [
+                'blockinstanceid' => $instanceid,
+                'userid' => $userid,
+            ]);
             if ($rpg) {
                 writer::with_context($context)->export_data(
                     [get_string('pluginname', 'block_playerhud'), 'RPG Progress'],
@@ -147,23 +172,23 @@ class provider implements
                         'class_id' => $rpg->classid,
                         'karma' => $rpg->karma,
                         'history' => $rpg->current_nodes,
-                        'completed_chapters' => $rpg->completed_chapters
+                        'completed_chapters' => $rpg->completed_chapters,
                     ]
                 );
             }
 
-            // C. Inventário
+            // C. Inventory.
             $sql = "SELECT inv.* FROM {block_playerhud_inventory} inv
                       JOIN {block_playerhud_items} it ON inv.itemid = it.id
                      WHERE inv.userid = :userid AND it.blockinstanceid = :instanceid";
-            
+
             $inventory = $DB->get_records_sql($sql, ['userid' => $userid, 'instanceid' => $instanceid]);
 
             $data = [];
             foreach ($inventory as $inv) {
                 $data[] = [
                     'item_id' => $inv->itemid,
-                    'collected_on' => transform::datetime($inv->timecreated)
+                    'collected_on' => transform::datetime($inv->timecreated),
                 ];
             }
             if (!empty($data)) {
@@ -176,7 +201,9 @@ class provider implements
     }
 
     /**
-     * 5. EXCLUSÃO TOTAL: Apaga tudo de um contexto (Curso/Bloco apagado).
+     * Delete all data for all users in the specified context.
+     *
+     * @param \context $context The context to delete data from.
      */
     public static function delete_data_for_all_users_in_context(\context $context) {
         global $DB;
@@ -185,43 +212,45 @@ class provider implements
         }
         $instanceid = $context->instanceid;
 
-        // Apaga tabelas diretas
+        // Delete direct tables.
         $DB->delete_records('block_playerhud_user', ['blockinstanceid' => $instanceid]);
         $DB->delete_records('block_playerhud_rpg_progress', ['blockinstanceid' => $instanceid]);
         $DB->delete_records('block_playerhud_ai_logs', ['blockinstanceid' => $instanceid]);
-        
-        // Apaga inventário (Busca itens do bloco)
+
+        // Delete inventory (Fetch block items).
         $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $instanceid], '', 'id');
         if ($items) {
             $itemids = array_keys($items);
-            list($insql, $inparams) = $DB->get_in_or_equal($itemids);
+            [$insql, $inparams] = $DB->get_in_or_equal($itemids);
             $DB->delete_records_select('block_playerhud_inventory', "itemid $insql", $inparams);
         }
 
-        // Apaga logs de Quests
+        // Delete Quest logs.
         $quests = $DB->get_records('block_playerhud_quests', ['blockinstanceid' => $instanceid], '', 'id');
         if ($quests) {
             $questids = array_keys($quests);
-            list($qinsql, $qinparams) = $DB->get_in_or_equal($questids);
+            [$qinsql, $qinparams] = $DB->get_in_or_equal($questids);
             $DB->delete_records_select('block_playerhud_quest_log', "questid $qinsql", $qinparams);
         }
-        
-        // Apaga logs de Trades
+
+        // Delete Trade logs.
         $trades = $DB->get_records('block_playerhud_trades', ['blockinstanceid' => $instanceid], '', 'id');
         if ($trades) {
             $tradeids = array_keys($trades);
-            list($tinsql, $tinparams) = $DB->get_in_or_equal($tradeids);
+            [$tinsql, $tinparams] = $DB->get_in_or_equal($tradeids);
             $DB->delete_records_select('block_playerhud_trade_log', "tradeid $tinsql", $tinparams);
         }
     }
 
     /**
-     * 6. EXCLUSÃO INDIVIDUAL: Apaga dados de um único usuário.
+     * Delete all user data for the specified user in the specified contexts.
+     *
+     * @param approved_contextlist $contextlist The approved contextlist.
      */
     public static function delete_data_for_user(approved_contextlist $contextlist) {
         $userid = $contextlist->get_userid();
         $userids = [$userid];
-        
+
         foreach ($contextlist->get_contexts() as $context) {
             if ($context->contextlevel == CONTEXT_BLOCK) {
                 self::delete_data_for_user_list_in_context($context->instanceid, $userids);
@@ -230,7 +259,9 @@ class provider implements
     }
 
     /**
-     * 7. EXCLUSÃO EM MASSA: Apaga dados de VÁRIOS usuários.
+     * Delete multiple users within a single context.
+     *
+     * @param approved_userlist $userlist The approved userlist.
      */
     public static function delete_data_for_users(approved_userlist $userlist) {
         $context = $userlist->get_context();
@@ -241,7 +272,10 @@ class provider implements
     }
 
     /**
-     * HELPER: Função interna para exclusão por lista de IDs.
+     * Helper function to delete data for a list of users in a context.
+     *
+     * @param int $instanceid The block instance ID.
+     * @param array $userids The list of user IDs.
      */
     protected static function delete_data_for_user_list_in_context(int $instanceid, array $userids) {
         global $DB;
@@ -250,44 +284,56 @@ class provider implements
             return;
         }
 
-        list($usql, $uparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
+        [$usql, $uparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
         $params = array_merge(['instanceid' => $instanceid], $uparams);
 
-        // 1. Apaga tabelas principais
-        $DB->delete_records_select('block_playerhud_user', "blockinstanceid = :instanceid AND userid $usql", $params);
-        $DB->delete_records_select('block_playerhud_rpg_progress', "blockinstanceid = :instanceid AND userid $usql", $params);
-        $DB->delete_records_select('block_playerhud_ai_logs', "blockinstanceid = :instanceid AND userid $usql", $params);
+        // 1. Delete main tables.
+        $DB->delete_records_select(
+            'block_playerhud_user',
+            "blockinstanceid = :instanceid AND userid $usql",
+            $params
+        );
+        $DB->delete_records_select(
+            'block_playerhud_rpg_progress',
+            "blockinstanceid = :instanceid AND userid $usql",
+            $params
+        );
+        $DB->delete_records_select(
+            'block_playerhud_ai_logs',
+            "blockinstanceid = :instanceid AND userid $usql",
+            $params
+        );
 
-        // 2. Apaga Inventário (JOIN com Items)
-        $sql_inv = "SELECT inv.id FROM {block_playerhud_inventory} inv
+        // 2. Delete Inventory (JOIN with Items).
+        $sqlinv = "SELECT inv.id FROM {block_playerhud_inventory} inv
                     JOIN {block_playerhud_items} it ON inv.itemid = it.id
                     WHERE it.blockinstanceid = :instanceid AND inv.userid $usql";
-        $inv_records = $DB->get_records_sql($sql_inv, $params);
-        if ($inv_records) {
-            $inv_ids = array_keys($inv_records);
-            list($delsql, $delparams) = $DB->get_in_or_equal($inv_ids);
+        $invrecords = $DB->get_records_sql($sqlinv, $params);
+        if ($invrecords) {
+            $invids = array_keys($invrecords);
+            [$delsql, $delparams] = $DB->get_in_or_equal($invids);
             $DB->delete_records_select('block_playerhud_inventory', "id $delsql", $delparams);
         }
 
-        // 3. Apaga Logs de Quest
-        $sql_quest = "SELECT ql.id FROM {block_playerhud_quest_log} ql
+        // 3. Delete Quest Logs.
+        $sqlquest = "SELECT ql.id FROM {block_playerhud_quest_log} ql
                       JOIN {block_playerhud_quests} q ON ql.questid = q.id
                       WHERE q.blockinstanceid = :instanceid AND ql.userid $usql";
-        $quest_records = $DB->get_records_sql($sql_quest, $params);
-        if ($quest_records) {
-            $ql_ids = array_keys($quest_records);
-            list($qdelsql, $qdelparams) = $DB->get_in_or_equal($ql_ids);
+        $questrecords = $DB->get_records_sql($sqlquest, $params);
+        if ($questrecords) {
+            $qlids = array_keys($questrecords);
+            [$qdelsql, $qdelparams] = $DB->get_in_or_equal($qlids);
             $DB->delete_records_select('block_playerhud_quest_log', "id $qdelsql", $qdelparams);
         }
 
-        // 4. Apaga Logs de Trade
-        $sql_trade = "SELECT tl.id FROM {block_playerhud_trade_log} tl
+        // 4. Delete Trade Logs.
+        $sqltrade = "SELECT tl.id FROM {block_playerhud_trade_log} tl
                       JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
                       WHERE t.blockinstanceid = :instanceid AND tl.userid $usql";
-        $trade_records = $DB->get_records_sql($sql_trade, $params);
-        if ($trade_records) {
-            $tl_ids = array_keys($trade_records);
-            list($tdelsql, $tdelparams) = $DB->get_in_or_equal($tl_ids);
+        $traderecords = $DB->get_records_sql($sqltrade, $params);
+        if ($traderecords) {
+            $tlids = array_keys($traderecords);
+            [$tdelsql, $tdelparams] = $DB->get_in_or_equal($tlids);
             $DB->delete_records_select('block_playerhud_trade_log', "id $tdelsql", $tdelparams);
         }
     }

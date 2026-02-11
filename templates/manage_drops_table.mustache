@@ -1,4 +1,12 @@
-{{! @template block_playerhud/manage_drops_table }}
+{{!
+    @template block_playerhud/manage_drops_table
+
+    Manage drops table template.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
 <div class="d-flex align-items-center mb-4 border-bottom pb-3">
     <a href="{{url_course}}" class="btn btn-outline-secondary me-3 shadow-sm">
         <i class="fa fa-arrow-left" aria-hidden="true"></i> {{str_back_course}}
@@ -63,8 +71,7 @@
                         </th>
                         
                         <th scope="col" class="ph-col-gen">{{str_col_gen}}</th>
-
-                        {{! Regra 1: Substituição de text-right por text-end }}
+                        {{! Use text-end for right alignment in Bootstrap 5 (Moodle 4.x) }}
                         <th scope="col" class="text-end ph-col-actions">{{str_actions}}</th>
                     </tr>
                 </thead>
@@ -97,7 +104,7 @@
                         </td>
                         
                         <td class="align-middle text-nowrap">
-                            <div class="d-flex gap-1 justify-content-start">
+                             <div class="d-flex gap-1 justify-content-start">
                                 <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm js-copy-code"
                                         data-clipboard-text="{{full_default_code}}"
                                         title="{{str_quick_copy}}"
@@ -111,10 +118,10 @@
                                         aria-label="{{str_gen_title}}">
                                     <i class="fa fa-magic" aria-hidden="true"></i> {{str_gen_title}}
                                 </button>
-                            </div>
+                             </div>
                         </td>
 
-                        {{! Regra 1: Substituição de text-right por text-end }}
+                        {{! Use text-end for right alignment in Bootstrap 5 }}
                         <td class="align-middle text-end">
                             <a href="{{url_edit}}" class="btn btn-sm btn-primary me-1 shadow-sm">
                                 <i class="fa fa-pencil" aria-hidden="true"></i> {{str_edit}}

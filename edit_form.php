@@ -18,49 +18,56 @@
  * Block configuration form.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
+/**
+ * Block configuration form class.
+ *
+ * @package    block_playerhud
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class block_playerhud_edit_form extends block_edit_form {
-
+    /**
+     * Define specific block settings.
+     *
+     * @param MoodleQuickForm $mform The form object.
+     */
     protected function specific_definition($mform) {
 
-        // --- Seção 1: Configurações de Nível e XP ---
+        // Section 1: Level and XP Settings.
         $mform->addElement('header', 'config_level_hdr', get_string('level_settings', 'block_playerhud'));
 
-        // XP por Nível (Padrão 100)
+        // XP per Level (Default 100).
         $mform->addElement('text', 'config_xp_per_level', get_string('xp_per_level', 'block_playerhud'));
         $mform->setType('config_xp_per_level', PARAM_INT);
         $mform->setDefault('config_xp_per_level', 100);
         $mform->addHelpButton('config_xp_per_level', 'xp_per_level', 'block_playerhud');
 
-        // Nível Máximo (Dropdown 5, 10, 15, 20, 50, 99)
+        // Max Level (Dropdown 5, 10, 15, 20, 50, 100).
         $levels = [
             5 => 5,
             10 => 10,
             15 => 15,
             20 => 20,
             50 => 50,
-            99 => 99
+            100 => 100,
         ];
         $mform->addElement('select', 'config_max_levels', get_string('max_levels', 'block_playerhud'), $levels);
         $mform->setDefault('config_max_levels', 20);
         $mform->addHelpButton('config_max_levels', 'max_levels', 'block_playerhud');
 
-        // --- Seção 2: Modo RPG e História (Oculto na V1.0) ---
-        // Mantemos a configuração 'enable_rpg' como 1 (Sim) via hidden para que
-        // o cálculo de Níveis e XP continue funcionando, mas sem expor a opção de História.
-        
+        // Section 2: RPG Mode and Story (Hidden in V1.0).
+        // We keep 'enable_rpg' as 1 (Yes) via hidden so Level/XP calculations continue working,
+        // but without exposing Story options.
+
         $mform->addElement('hidden', 'config_enable_rpg');
         $mform->setType('config_enable_rpg', PARAM_INT);
         $mform->setDefault('config_enable_rpg', 1);
-        
-        // (Removemos o header visual e o HelpButton para limpar a interface)
 
-        // --- Seção 3: Ranking ---
+        // Section 3: Ranking.
         $mform->addElement('header', 'config_ranking_hdr', get_string('ranking_hdr', 'block_playerhud'));
 
         $mform->addElement('selectyesno', 'config_enable_ranking', get_string('enable_ranking', 'block_playerhud'));

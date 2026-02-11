@@ -45,24 +45,22 @@ $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST)
 
 require_login($course);
 
-// Definimos o contexto do BLOCO, igual ao view.php
+// Set block context.
 $context = context_block::instance($instanceid);
 require_capability('block/playerhud:manage', $context);
 
 // Base URL for redirects.
 $baseurl = new moodle_url('/blocks/playerhud/manage.php', [
     'id' => $courseid,
-    'instanceid' => $instanceid
+    'instanceid' => $instanceid,
 ]);
 
-// --- MOVIDO: Configuração da Página (Antes de qualquer output ou lógica de render) ---
-// 2.1 Page Setup
+// Page Setup.
 $PAGE->set_url($baseurl);
 $PAGE->set_context($context);
-$PAGE->set_pagelayout('incourse'); // Garante que a gaveta de blocos apareça
+$PAGE->set_pagelayout('incourse'); // Ensures block drawer appears.
 $PAGE->set_title(get_string('pluginname', 'block_playerhud'));
 $PAGE->set_heading(format_string($course->fullname));
-// ---------------------------------------------------------------------------------
 
 // 3. Action processing (Global Controllers).
 
@@ -99,17 +97,17 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
     $item = $DB->get_record('block_playerhud_items', ['id' => $itemid, 'blockinstanceid' => $instanceid]);
     if ($item) {
         // 1. Remove XP from users holding this item.
-        $sql = "SELECT userid, COUNT(id) as qtd 
-                  FROM {block_playerhud_inventory} 
-                 WHERE itemid = ? 
+        $sql = "SELECT userid, COUNT(id) as qtd
+                  FROM {block_playerhud_inventory}
+                 WHERE itemid = ?
               GROUP BY userid";
         $holders = $DB->get_records_sql($sql, [$itemid]);
-        
+
         foreach ($holders as $holder) {
             $xptoremove = $item->xp * $holder->qtd;
-            // [CORREÇÃO] Atualizar timemodified para refletir a mudança de saldo
+            // Update timemodified to reflect balance change.
             $DB->execute(
-                "UPDATE {block_playerhud_user} 
+                "UPDATE {block_playerhud_user}
                     SET currentxp = GREATEST(0, currentxp - ?),
                         timemodified = ?
                   WHERE userid = ? AND blockinstanceid = ?",
@@ -120,9 +118,9 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
         // 2. Delete dependencies.
         $DB->delete_records('block_playerhud_inventory', ['itemid' => $itemid]);
         $DB->delete_records('block_playerhud_drops', ['itemid' => $itemid]);
-        $DB->delete_records('block_playerhud_trade_reqs', ['itemid' => $itemid]); 
+        $DB->delete_records('block_playerhud_trade_reqs', ['itemid' => $itemid]);
         $DB->delete_records('block_playerhud_trade_rewards', ['itemid' => $itemid]);
-        
+
         // 3. Delete the item files and record.
         $fs = get_file_storage();
         $fs->delete_area_files($context->id, 'block_playerhud', 'item_image', $itemid);
@@ -139,7 +137,7 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
 // Action: Bulk Delete Items (Multiple).
 if ($action === 'bulk_delete' && confirm_sesskey()) {
     $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
-    
+
     if (!empty($bulkids)) {
         $fs = get_file_storage();
         $deletedcount = 0;
@@ -148,17 +146,17 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
             $item = $DB->get_record('block_playerhud_items', ['id' => $delid, 'blockinstanceid' => $instanceid]);
             if ($item) {
                 // 1. Remove XP from users.
-                $sql = "SELECT userid, COUNT(id) as qtd 
-                          FROM {block_playerhud_inventory} 
-                         WHERE itemid = ? 
+                $sql = "SELECT userid, COUNT(id) as qtd
+                          FROM {block_playerhud_inventory}
+                         WHERE itemid = ?
                       GROUP BY userid";
                 $holders = $DB->get_records_sql($sql, [$delid]);
-                
+
                 foreach ($holders as $holder) {
                     $xptoremove = $item->xp * $holder->qtd;
-                    // [CORREÇÃO] Atualizar timemodified aqui também
+                    // Update timemodified here too.
                     $DB->execute(
-                        "UPDATE {block_playerhud_user} 
+                        "UPDATE {block_playerhud_user}
                             SET currentxp = GREATEST(0, currentxp - ?),
                                 timemodified = ?
                           WHERE userid = ? AND blockinstanceid = ?",
@@ -169,13 +167,13 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
                 // 2. Delete dependencies.
                 $DB->delete_records('block_playerhud_inventory', ['itemid' => $delid]);
                 $DB->delete_records('block_playerhud_drops', ['itemid' => $delid]);
-                $DB->delete_records('block_playerhud_trade_reqs', ['itemid' => $delid]); 
+                $DB->delete_records('block_playerhud_trade_reqs', ['itemid' => $delid]);
                 $DB->delete_records('block_playerhud_trade_rewards', ['itemid' => $delid]);
-                
+
                 // 3. Delete files and record.
                 $fs->delete_area_files($context->id, 'block_playerhud', 'item_image', $delid);
                 $DB->delete_records('block_playerhud_items', ['id' => $delid]);
-                
+
                 $deletedcount++;
             }
         }
@@ -197,19 +195,19 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
 // Action: Delete Quest.
 if ($action == 'delete_quest' && $questid && confirm_sesskey()) {
     $quest = $DB->get_record('block_playerhud_quests', ['id' => $questid, 'blockinstanceid' => $instanceid]);
-    
+
     if ($quest) {
-        // 1. [NOVO] Reverter XP dos alunos que completaram
+        // 1. Revert XP for students who completed.
         if ($quest->reward_xp > 0) {
             $completions = $DB->get_records('block_playerhud_quest_log', ['questid' => $questid]);
-            
-            // Usamos time() fixo para todos nessa transação
-            $now = time(); 
+
+            // Use fixed time() for all updates in transaction.
+            $now = time();
 
             foreach ($completions as $log) {
-                // Remove o XP da recompensa e atualiza a data para o desempate
+                // Remove XP reward and update timemodified for tie-breaking.
                 $DB->execute(
-                    "UPDATE {block_playerhud_user} 
+                    "UPDATE {block_playerhud_user}
                         SET currentxp = GREATEST(0, currentxp - ?),
                             timemodified = ?
                       WHERE userid = ? AND blockinstanceid = ?",
@@ -218,7 +216,7 @@ if ($action == 'delete_quest' && $questid && confirm_sesskey()) {
             }
         }
 
-        // 2. Apagar registros
+        // 2. Delete records.
         $DB->delete_records('block_playerhud_quest_log', ['questid' => $questid]);
         $DB->delete_records('block_playerhud_quests', ['id' => $questid]);
 
@@ -298,10 +296,10 @@ if ($action == 'save_keys' && confirm_sesskey()) {
     $config = (array) unserialize(base64_decode($bi->configdata));
     $config['apikey_gemini'] = trim($gkey);
     $config['apikey_groq'] = trim($qkey);
-    
+
     $bi->configdata = base64_encode(serialize((object)$config));
     $DB->update_record('block_instances', $bi);
-    
+
     redirect(
         new moodle_url($baseurl, ['tab' => 'config']),
         get_string('changessaved', 'block_playerhud'),
@@ -309,84 +307,82 @@ if ($action == 'save_keys' && confirm_sesskey()) {
     );
 }
 
-// 4. PRE-RENDER LOGIC (Controller Strategy)
-$content_html = '';
+// 4. PRE-RENDER LOGIC (Controller Strategy).
+$contenthtml = '';
 
-// Tenta carregar o controlador da aba
-$render_class = "\\block_playerhud\\output\\manage\\tab_{$activetab}";
+// Try to load the tab controller.
+$renderclass = "\\block_playerhud\\output\\manage\\tab_{$activetab}";
 
-if (class_exists($render_class)) {
-    // Instancia o renderizador da aba
-    $renderer = new $render_class($instanceid, $courseid, $sort, $dir);
-    
-    // Se tiver lógica de processamento de formulário (ex: items/add)
+if (class_exists($renderclass)) {
+    // Instantiate the tab renderer.
+    $renderer = new $renderclass($instanceid, $courseid, $sort, $dir);
+
+    // If it has form processing logic (e.g. items/add).
     if (method_exists($renderer, 'process')) {
         $renderer->process();
     }
 
-    // Renderiza o conteúdo da aba
+    // Render tab content.
     if ($renderer instanceof \templatable) {
-        // Render via Mustache (Padrão Novo)
+        // Render via Mustache (New Standard).
         if (method_exists($renderer, 'display')) {
-             $content_html = $renderer->display();
+            $contenthtml = $renderer->display();
         } else {
-             // Fallback para templates padrão
-             $content_html = $OUTPUT->render_from_template("block_playerhud/tab_{$activetab}", $renderer->export_for_template($OUTPUT));
+            // Fallback to standard templates.
+            $contenthtml = $OUTPUT->render_from_template(
+                "block_playerhud/tab_{$activetab}",
+                $renderer->export_for_template($OUTPUT)
+            );
         }
     } else {
-        // Fallback para classes antigas (display manual, se houver)
+        // Fallback for old classes (manual display, if any).
         if (method_exists($renderer, 'display')) {
-            $content_html = $renderer->display();
+            $contenthtml = $renderer->display();
         }
     }
 } else {
-    // Aba não implementada ou arquivo faltando
-    $content_html = $OUTPUT->notification(
+    // Tab not implemented or missing file.
+    $contenthtml = $OUTPUT->notification(
         get_string('tab_maintenance', 'block_playerhud', ucfirst($activetab)),
         'info'
     );
 }
 
-// (O Page Setup foi movido para o topo para garantir layout correto)
+// Page Setup was moved to the top to ensure correct layout.
 
 echo $OUTPUT->header();
 
-// Definição das Abas (V1.0 - Funcionalidades em construção ocultas)
-$tabs_def = [
+// Tab Definitions (V1.0 - Features under construction hidden).
+$tabsdef = [
     'items'    => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
-    
-    // --- Ocultos para lançamento ---
-    // 'trades'   => ['icon' => '⚖️', 'text' => get_string('tab_trades', 'block_playerhud')],
-    // 'quests'   => ['icon' => '📜', 'text' => get_string('tab_quests', 'block_playerhud')],
-    // 'chapters' => ['icon' => '📖', 'text' => get_string('tab_chapters', 'block_playerhud')],
-    // 'classes'  => ['icon' => '🦸', 'text' => get_string('tab_classes', 'block_playerhud')],
-    // 'reports'  => ['icon' => '📊', 'text' => get_string('tab_reports', 'block_playerhud')],
-    // ----------------------------
-
+    // Future tabs: trades, quests, chapters, classes, reports.
     'config'   => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
 ];
 
-$tabs_data = [];
-foreach ($tabs_def as $key => $data) {
-    $tabs_data[] = [
+$tabsdata = [];
+foreach ($tabsdef as $key => $data) {
+    $tabsdata[] = [
         'active' => ($activetab == $key),
         'url' => (new moodle_url($baseurl, ['tab' => $key]))->out(false),
         'icon' => $data['icon'],
-        'text' => $data['text']
+        'text' => $data['text'],
     ];
 }
 
-// Dados para o Layout
-$layout_data = [
+// Data for Layout.
+$layoutdata = [
     'str_title' => get_string('master_panel', 'block_playerhud'),
-    'url_backpack' => (new moodle_url('/blocks/playerhud/view.php', ['id' => $courseid, 'instanceid' => $instanceid]))->out(false),
+    'url_backpack' => (new moodle_url('/blocks/playerhud/view.php', [
+        'id' => $courseid,
+        'instanceid' => $instanceid,
+    ]))->out(false),
     'str_backpack' => get_string('openbackpack', 'block_playerhud'),
     'url_course' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
     'str_back_course' => get_string('back_to_course', 'block_playerhud'),
-    'tabs' => $tabs_data,
-    'content_html' => $content_html
+    'tabs' => $tabsdata,
+    'content_html' => $contenthtml,
 ];
 
-echo $OUTPUT->render_from_template('block_playerhud/manage_layout', $layout_data);
+echo $OUTPUT->render_from_template('block_playerhud/manage_layout', $layoutdata);
 
 echo $OUTPUT->footer();

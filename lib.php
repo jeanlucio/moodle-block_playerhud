@@ -22,8 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Serves module files (images for items, classes, etc).
  *
@@ -59,14 +57,14 @@ function block_playerhud_pluginfile($course, $birecord, $context, $filearea, $ar
     $itemid = (int)array_shift($args);
 
     $fs = get_file_storage();
-    
+
     $files = $fs->get_area_files(
         $context->id,
         'block_playerhud',
         $filearea,
         $itemid,
         'sortorder DESC, id DESC',
-        false // Exclude directories
+        false // Exclude directories.
     );
 
     $filetoserve = null;
@@ -94,33 +92,33 @@ function block_playerhud_get_drop_details_for_filter($dropid) {
     global $DB;
 
     $sql = "SELECT d.id as dropid, d.maxusage, d.respawntime, d.blockinstanceid,
-                   i.id as itemid, i.name as itemname, i.image, i.xp, i.description, 
+                   i.id as itemid, i.name as itemname, i.image, i.xp, i.description,
                    i.secret, i.required_class_id
               FROM {block_playerhud_drops} d
               JOIN {block_playerhud_items} i ON d.itemid = i.id
-             WHERE d.id = :dropid 
-               AND i.enabled = 1"; // Only enabled items
+             WHERE d.id = :dropid
+               AND i.enabled = 1"; // Only enabled items.
 
     return $DB->get_record_sql($sql, ['dropid' => $dropid]);
 }
 
 /**
- * Busca detalhes do Drop usando o CÓDIGO hash e o ID da instância.
+ * Fetches Drop details using the hash CODE and instance ID.
  *
- * @param string $code O código alfanumérico (ex: 3C815F).
- * @param int $blockinstanceid O ID da instância do bloco para garantir unicidade.
- * @return stdClass|false O objeto drop detalhado ou false.
+ * @param string $code The alphanumeric code (e.g. 3C815F).
+ * @param int $blockinstanceid The block instance ID to ensure uniqueness.
+ * @return stdClass|false The detailed drop object or false.
  */
 function block_playerhud_get_drop_details_by_code($code, $blockinstanceid) {
     global $DB;
 
-    // Adicionamos AND d.blockinstanceid = :bi para evitar colisão com backups restaurados
+    // We add AND d.blockinstanceid = :bi to avoid collision with restored backups.
     $sql = "SELECT d.id as dropid, d.maxusage, d.respawntime, d.blockinstanceid,
-                   i.id as itemid, i.name as itemname, i.image, i.xp, i.description, 
+                   i.id as itemid, i.name as itemname, i.image, i.xp, i.description,
                    i.secret, i.required_class_id
               FROM {block_playerhud_drops} d
               JOIN {block_playerhud_items} i ON d.itemid = i.id
-             WHERE d.code = :code 
+             WHERE d.code = :code
                AND d.blockinstanceid = :bi
                AND i.enabled = 1";
 
@@ -135,19 +133,23 @@ function block_playerhud_get_drop_details_by_code($code, $blockinstanceid) {
  * @return bool True if visible.
  */
 function block_playerhud_is_visible_for_class($requiredclassids, $userclassid) {
-    // Empty or '0' means Public (All Classes)
+    // Empty or '0' means Public (All Classes).
     if (empty($requiredclassids) || $requiredclassids === '0') {
         return true;
     }
 
     $allowedarray = explode(',', $requiredclassids);
-    
-    // Check if '0' is in array (explicit public) or user class is in array
+
+    // Check if '0' is in array (explicit public) or user class is in array.
     return (in_array('0', $allowedarray) || in_array((string)$userclassid, $allowedarray));
 }
 
 /**
  * Standard upgrade function.
+ *
+ * @param int $oldversion The version we are upgrading from.
+ * @param object $block The block object.
+ * @return bool True on success.
  */
 function block_playerhud_upgrade($oldversion, $block) {
     return true;
