@@ -29,10 +29,14 @@ use html_writer;
 use moodle_url;
 use block_playerhud\form\edit_item_form;
 
-defined('MOODLE_INTERNAL') || die();
-
+/**
+ * Items tab management for Block PlayerHUD.
+ *
+ * @package    block_playerhud
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class tab_items implements renderable {
-
     /** @var int Block Instance ID */
     protected $instanceid;
     /** @var int Course ID */
@@ -42,11 +46,16 @@ class tab_items implements renderable {
     /** @var string Sort direction */
     protected $dir;
 
-    /** @var edit_item_form|null Formulário instanciado (se houver ação de edição/adição) */
+    /** @var edit_item_form|null Instantiated form (if there is an edit/add action) */
     protected $mform = null;
 
     /**
      * Constructor.
+     *
+     * @param int $instanceid The block instance ID.
+     * @param int $courseid The course ID.
+     * @param string $sort The column to sort by.
+     * @param string $dir The sort direction.
      */
     public function __construct($instanceid, $courseid, $sort = 'xp', $dir = 'ASC') {
         $this->instanceid = $instanceid;
@@ -56,24 +65,24 @@ class tab_items implements renderable {
     }
 
     /**
-     * Processa a lógica do formulário e redirecionamentos.
+     * Process form logic and redirects.
      */
     public function process() {
         global $DB;
 
         $action = optional_param('action', '', PARAM_ALPHA);
         $editid = optional_param('itemid', 0, PARAM_INT);
-        
+
         $baseurl = new moodle_url('/blocks/playerhud/manage.php', [
             'id' => $this->courseid,
             'instanceid' => $this->instanceid,
-            'tab' => 'items'
+            'tab' => 'items',
         ]);
 
         if ($action === 'add' || ($action === 'edit' && $editid)) {
             $actionurl = new moodle_url($baseurl, [
                 'action' => $editid ? 'edit' : 'add',
-                'itemid' => $editid
+                'itemid' => $editid,
             ]);
 
             $this->mform = new edit_item_form($actionurl->out(false), ['instanceid' => $this->instanceid]);
@@ -114,7 +123,14 @@ class tab_items implements renderable {
                 }
 
                 $context = \context_block::instance($this->instanceid);
-                file_save_draft_area_files($data->image_file, $context->id, 'block_playerhud', 'item_image', $newitemid, ['subdirs' => 0]);
+                file_save_draft_area_files(
+                    $data->image_file,
+                    $context->id,
+                    'block_playerhud',
+                    'item_image',
+                    $newitemid,
+                    ['subdirs' => 0]
+                );
 
                 redirect($baseurl, get_string('changessaved'), \core\output\notification::NOTIFY_SUCCESS);
             }
@@ -126,7 +142,7 @@ class tab_items implements renderable {
                     $data['itemid'] = $item->id;
                     $data['required_class_id'] = '0';
                     $data['description'] = ['text' => $item->description, 'format' => FORMAT_HTML];
-                    
+
                     $draftitemid = file_get_submitted_draft_itemid('image_file');
                     $context = \context_block::instance($this->instanceid);
                     file_prepare_draft_area($draftitemid, $context->id, 'block_playerhud', 'item_image', $item->id);
@@ -141,11 +157,16 @@ class tab_items implements renderable {
         }
     }
 
+    /**
+     * Display the tab content.
+     *
+     * @return string HTML content.
+     */
     public function display() {
         $baseurl = new moodle_url('/blocks/playerhud/manage.php', [
             'id' => $this->courseid,
             'instanceid' => $this->instanceid,
-            'tab' => 'items'
+            'tab' => 'items',
         ]);
 
         if ($this->mform !== null) {
@@ -154,17 +175,29 @@ class tab_items implements renderable {
         return $this->render_list_view($baseurl);
     }
 
+    /**
+     * Render the editing form.
+     *
+     * @return string HTML content.
+     */
     protected function render_form() {
         global $OUTPUT;
         $editid = optional_param('itemid', 0, PARAM_INT);
-        $title = $editid ? (get_string('edit') . ' ' . get_string('item', 'block_playerhud')) : get_string('item_new', 'block_playerhud');
+        $title = $editid ? (get_string('edit') . ' ' . get_string('item', 'block_playerhud'))
+            : get_string('item_new', 'block_playerhud');
         return $OUTPUT->heading($title) . $this->mform->render();
     }
 
+    /**
+     * Render the list of items.
+     *
+     * @param moodle_url $baseurl The base URL for the page.
+     * @return string HTML content.
+     */
     protected function render_list_view($baseurl) {
         global $DB, $PAGE, $OUTPUT;
 
-        // 1. Strings para o Template
+        // 1. Template Strings.
         $str = [
             'summary_stats' => get_string('summary_stats', 'block_playerhud'),
             'ai_create' => get_string('ai_btn_create', 'block_playerhud'),
@@ -184,84 +217,105 @@ class tab_items implements renderable {
             'show' => get_string('click_to_show', 'block_playerhud'),
             'edit' => get_string('edit'),
             'delete' => get_string('delete'),
-            'manage_drops' => get_string('manage_drops_title', 'block_playerhud', ''), 
+            'manage_drops' => get_string('manage_drops_title', 'block_playerhud', ''),
             'empty' => get_string('items_none', 'block_playerhud'),
-            'delete_selected' => get_string('delete_selected', 'block_playerhud')
+            'delete_selected' => get_string('delete_selected', 'block_playerhud'),
         ];
 
-        // 2. Estatísticas
-        $total_items = $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]);
-        $sql_drops = "SELECT COUNT(d.id) 
-                        FROM {block_playerhud_drops} d 
-                        JOIN {block_playerhud_items} i ON d.itemid = i.id 
-                       WHERE i.blockinstanceid = ?";
-        $total_drops = $DB->count_records_sql($sql_drops, [$this->instanceid]);
-        $summary_text = get_string('summary_stats', 'block_playerhud', ['items' => $total_items, 'drops' => $total_drops]);
+        // 2. Statistics.
+        $totalitems = $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]);
+        $sqldrops = "SELECT COUNT(d.id)
+                       FROM {block_playerhud_drops} d
+                       JOIN {block_playerhud_items} i ON d.itemid = i.id
+                      WHERE i.blockinstanceid = ?";
+        $totaldrops = $DB->count_records_sql($sqldrops, [$this->instanceid]);
+        $summarytext = get_string('summary_stats', 'block_playerhud', ['items' => $totalitems, 'drops' => $totaldrops]);
 
-        // 3. Paginação e Busca
+        // 3. Pagination and Search.
         $page    = optional_param('page', 0, PARAM_INT);
         $perpage = 30;
-        
+
         $allowedsorts = ['name', 'xp', 'enabled'];
-        if (!in_array($this->sort, $allowedsorts)) $this->sort = 'xp';
+        if (!in_array($this->sort, $allowedsorts)) {
+            $this->sort = 'xp';
+        }
 
         $items = $DB->get_records(
-            'block_playerhud_items', 
-            ['blockinstanceid' => $this->instanceid], 
+            'block_playerhud_items',
+            ['blockinstanceid' => $this->instanceid],
             "{$this->sort} {$this->dir}",
             '*',
             $page * $perpage,
             $perpage
         );
 
-        // 4. Prepara Dados para o Template
-        $items_data = [];
+        // 4. Prepare Data for Template.
+        $itemsdata = [];
         $context = \context_block::instance($this->instanceid);
         $counter = ($page * $perpage) + 1;
 
         if ($items) {
             require_once($GLOBALS['CFG']->dirroot . '/blocks/playerhud/lib.php');
-            
+
             foreach ($items as $item) {
                 $mediadata = \block_playerhud\utils::get_item_display_data($item, $context);
-                
-                // Atributos de Preview para o JS
-                $preview_attrs = 'data-name="' . s($item->name) . '" ' .
+
+                // Preview attributes for JS.
+                $previewattrs = 'data-name="' . s($item->name) . '" ' .
                                  'data-xp="' . $item->xp . ' XP" ' .
-                                 'data-image="' . ($mediadata['is_image'] ? $mediadata['url'] : strip_tags($mediadata['content'])) . '" ' .
+                                 'data-image="' . ($mediadata['is_image'] ?
+                                        $mediadata['url'] :
+                                        strip_tags($mediadata['content'])) . '" ' .
                                  'data-isimage="' . ($mediadata['is_image'] ? 1 : 0) . '"';
 
                 $dropscount = $DB->count_records('block_playerhud_drops', ['itemid' => $item->id]);
-                
-                $items_data[] = [
+
+                $itemsdata[] = [
                     'id' => $item->id,
                     'counter' => $counter++,
                     'name' => format_string($item->name),
                     'xp' => $item->xp,
                     'enabled' => (bool)$item->enabled,
                     'secret' => (bool)$item->secret,
-                    
-                    // Imagem
+
+                    // Image.
                     'is_image' => $mediadata['is_image'],
                     'image_url' => $mediadata['is_image'] ? $mediadata['url'] : '',
                     'image_content' => $mediadata['is_image'] ? '' : strip_tags($mediadata['content']),
-                    
-                    // Descrição (HTML Seguro)
+
+                    // Description (Safe HTML).
                     'description_html' => !empty($item->description) ? format_text($item->description, FORMAT_HTML) : "",
-                    'preview_attributes' => $preview_attrs,
-                    
-                    // Drops & Botões
+                    'preview_attributes' => $previewattrs,
+
+                    // Drops & Buttons.
                     'drops_count' => $dropscount,
                     'btn_drops_class' => ($dropscount > 0) ? 'btn-info text-white' : 'btn-outline-secondary',
                     'confirm_msg' => s(get_string('confirm_delete', 'block_playerhud') . " '" . format_string($item->name) . "'?"),
-                    
-                    // URLs
-                    'url_toggle' => (new moodle_url($baseurl, ['action' => 'toggle', 'itemid' => $item->id, 'sesskey' => sesskey(), 'sort' => $this->sort, 'dir' => $this->dir, 'page' => $page]))->out(false),
+
+                    // URLs.
+                    'url_toggle' => (new moodle_url($baseurl, [
+                        'action' => 'toggle',
+                        'itemid' => $item->id,
+                        'sesskey' => sesskey(),
+                        'sort' => $this->sort,
+                        'dir' => $this->dir,
+                        'page' => $page,
+                    ]))->out(false),
                     'url_edit' => (new moodle_url($baseurl, ['action' => 'edit', 'itemid' => $item->id]))->out(false),
-                    'url_delete' => (new moodle_url($baseurl, ['action' => 'delete', 'itemid' => $item->id, 'sesskey' => sesskey(), 'sort' => $this->sort, 'dir' => $this->dir]))->out(false),
-                    'url_drops' => (new moodle_url('/blocks/playerhud/manage_drops.php', ['instanceid' => $this->instanceid, 'itemid' => $item->id, 'id' => $this->courseid]))->out(false),
-                    
-                    // Strings específicas por item (para aria-labels e titles)
+                    'url_delete' => (new moodle_url($baseurl, [
+                        'action' => 'delete',
+                        'itemid' => $item->id,
+                        'sesskey' => sesskey(),
+                        'sort' => $this->sort,
+                        'dir' => $this->dir,
+                    ]))->out(false),
+                    'url_drops' => (new moodle_url('/blocks/playerhud/manage_drops.php', [
+                        'instanceid' => $this->instanceid,
+                        'itemid' => $item->id,
+                        'id' => $this->courseid,
+                    ]))->out(false),
+
+                    // Item specific strings.
                     'str_manage_drops' => get_string('manage_drops_title', 'block_playerhud', format_string($item->name)),
                     'str_secret' => $str['secret'],
                     'str_yes' => $str['yes'],
@@ -270,31 +324,31 @@ class tab_items implements renderable {
                     'str_show' => $str['show'],
                     'str_edit' => $str['edit'],
                     'str_delete' => $str['delete'],
-                    'str_select' => $str['select']
+                    'str_select' => $str['select'],
                 ];
             }
         }
 
-       // 5. Links de Ordenação (Agora retornamos DADOS, não HTML)
+        // 5. Sort Links (Returning Data, not HTML).
         $headers = [
             'name' => $this->get_sort_data('name', $str['col_name'], $baseurl),
             'xp' => $this->get_sort_data('xp', $str['col_xp'], $baseurl),
             'enabled' => $this->get_sort_data('enabled', $str['col_enabled'], $baseurl),
         ];
 
-        // 6. Dados Finais para o Mustache
-        $template_data = [
+        // 6. Final Data for Mustache.
+        $templatedata = [
             'base_url' => $baseurl->out(false),
             'sesskey' => sesskey(),
-            'summary_text' => $summary_text,
+            'summary_text' => $summarytext,
             'url_add' => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
-            'items' => $items_data,
-            'paging_bar' => $OUTPUT->paging_bar($total_items, $page, $perpage, $baseurl, 'page'),
-            
-            // Passamos o objeto headers estruturado
+            'items' => $itemsdata,
+            'paging_bar' => $OUTPUT->paging_bar($totalitems, $page, $perpage, $baseurl, 'page'),
+
+            // Structured headers object.
             'headers' => $headers,
 
-            // Strings Globais
+            // Global Strings.
             'str_ai_create' => $str['ai_create'],
             'str_add_item' => $str['add_item'],
             'str_select_all' => $str['select_all'],
@@ -303,13 +357,13 @@ class tab_items implements renderable {
             'str_actions' => $str['actions'],
             'str_empty' => $str['empty'],
             'str_delete_selected' => $str['delete_selected'],
-            
-            // Modais
+
+            // Modals.
             'modal_ai_html' => $OUTPUT->render_from_template('block_playerhud/modal_ai', []),
-            'modal_preview_html' => $OUTPUT->render_from_template('block_playerhud/modal_item', [])
+            'modal_preview_html' => $OUTPUT->render_from_template('block_playerhud/modal_item', []),
         ];
 
-        // 7. Inicialização do JS
+        // 7. JS Initialization.
         $jsvars = [
             'courseid' => $this->courseid,
             'instanceid' => $this->instanceid,
@@ -325,21 +379,27 @@ class tab_items implements renderable {
                 'success_title' => get_string('success', 'core'),
                 'no_desc' => get_string('no_description', 'block_playerhud'),
                 'delete_selected' => get_string('delete_selected', 'block_playerhud'),
-                'delete_n_items' => get_string('delete_n_items', 'block_playerhud'), 
+                'delete_n_items' => get_string('delete_n_items', 'block_playerhud'),
                 'confirm_bulk' => get_string('confirm_bulk_delete', 'block_playerhud'),
                 'created_count' => get_string('ai_created_count', 'block_playerhud'),
-            ]
+            ],
         ];
         $PAGE->requires->js_call_amd('block_playerhud/manage_items', 'init', [$jsvars]);
 
-        return $OUTPUT->render_from_template('block_playerhud/manage_items_table', $template_data);
+        return $OUTPUT->render_from_template('block_playerhud/manage_items_table', $templatedata);
     }
 
     /**
-     * Helper para gerar dados de ordenação (Separando HTML do PHP).
+     * Helper to generate sort data (HTML-free).
+     *
+     * @param string $colname Column name.
+     * @param string $label Column label.
+     * @param moodle_url $baseurl Base URL.
+     * @return array Sort data.
      */
     private function get_sort_data($colname, $label, $baseurl) {
-        $icon = 'fa-sort text-muted opacity-25'; // Classe padrão
+        // Default icon class.
+        $icon = 'fa-sort text-muted opacity-25';
         $nextdir = 'ASC';
         $active = false;
 
@@ -353,12 +413,12 @@ class tab_items implements renderable {
                 $nextdir = 'ASC';
             }
         }
-        
+
         return [
             'url' => (new moodle_url($baseurl, ['sort' => $colname, 'dir' => $nextdir]))->out(false),
             'label' => $label,
             'icon_class' => $icon,
-            'active' => $active
+            'active' => $active,
         ];
     }
 }

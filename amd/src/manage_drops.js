@@ -1,5 +1,4 @@
 /* global bootstrap */
-// Importando core/copy_to_clipboard para que os botões com data-action funcionem automaticamente
 define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, Notification) {
 
     /**
@@ -10,17 +9,12 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
      * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
      */
     return {
-        /**
-         * Initialize the module.
-         *
-         * @param {Object} config The configuration object passed from PHP.
-         */
         init: function(config) {
             var currentItem = config.item;
             var langStrings = config.strings;
             var currentDropCode = 0;
 
-            // Elementos DOM (Cacheados como jQuery objects para consistência).
+            // Elementos DOM
             var $inputCode = $('#finalCode');
             var $previewBox = $('#previewContainer');
             var $groupTextLink = $('#textInputGroup');
@@ -29,7 +23,6 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
             var $inputBtnText = $('#customBtnText');
             var $inputBtnEmoji = $('#customBtnEmoji');
 
-            // Move modal para o body.
             $('#codeGenModal').appendTo('body');
 
             /**
@@ -53,7 +46,6 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
 
                     code = '[PLAYERHUD_DROP ' + param + ' mode=text text="' + linkTxt + '"]';
 
-                    // MUDANÇA: Classes Bootstrap em vez de style inline
                     previewHtml = '<a href="#" onclick="return false;" ' +
                         'class="text-primary fw-bold text-decoration-underline">' + linkTxt + '</a>';
 
@@ -63,12 +55,11 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
 
                     code = '[PLAYERHUD_DROP ' + param + ' mode=image]';
 
-                    // MUDANÇA: Uso das novas classes CSS .ph-gen-*
+                    // Uso das classes ph-gen-* definidas no CSS
                     var imgContent = currentItem.isImage ?
                         '<img src="' + currentItem.url + '" class="ph-gen-img-lg" alt="">' :
                         '<span class="ph-gen-emoji-lg" aria-hidden="true">' + currentItem.content + '</span>';
 
-                    // Wrapper com classe
                     previewHtml = '<div class="ph-gen-preview-wrapper-img">' +
                         imgContent + '</div>';
 
@@ -77,7 +68,6 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                     $groupTextLink.hide();
                     $groupCardOptions.show();
 
-                    // ... (lógica de texto/emoji do botão permanece igual) ...
                     var userTxt = ($inputBtnText.val() && $inputBtnText.val().trim()) ? $inputBtnText.val().trim() : '';
                     var userEmo = ($inputBtnEmoji.val() && $inputBtnEmoji.val().trim()) ? $inputBtnEmoji.val().trim() : '';
                     var previewTxt = userTxt || langStrings.takeBtn;
@@ -93,28 +83,24 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
 
                     code = '[PLAYERHUD_DROP ' + param + extraAttrs + ']';
 
-                    // HTML do Ícone no Card (Também limpo de estilos inline complexos)
-                    // Note que usamos classes utilitárias ou herdamos o estilo do card
-                    // MUDANÇA: Substituímos style="..." pela classe .ph-icon-contain criada no CSS
+                    // CLEANUP: Substituído style="..." por classes utilitárias ou Bootstrap
+                    // fs-1 equivale a ~2.5rem
                     var iconHtml = currentItem.isImage ?
                         '<img src="' + currentItem.url + '" class="ph-icon-contain" alt="">' :
-                        '<div style="font-size:2.5em; line-height:1;">' + currentItem.content + '</div>';
-                    // Nota: Mantive um style mínimo acima apenas para garantir o fit dentro do container flex de 60px do card,
-                    // eslint-disable-next-line max-len
-                    // pois criar classes para cada div interna pode ser excessivo, mas o ideal seria .ph-card-icon-container img {} no CSS.
+                        '<div class="fs-1 lh-1">' + currentItem.content + '</div>';
 
                     var btnContent = previewTxt;
                     if (previewEmo) {
                         btnContent = '<span aria-hidden="true" class="me-1">' + previewEmo + '</span> ' + previewTxt;
                     }
 
-                    // MUDANÇA: Removido style="width: 160px..." e adicionada classe ph-gen-preview-real-card
-                    previewHtml = '<div class="ph-gen-preview-real-card card p-2 border shadow-sm">' +
-                        '<span class="badge bg-info text-dark rounded-pill position-absolute" ' +
-                        'style="top:5px; right:5px; font-size:0.7rem;">' + langStrings.yours + '</span>' +
-                        '<div class="mb-2 d-flex align-items-center justify-content-center" style="height:60px;">' +
+                    // CLEANUP: Estrutura sem estilos inline
+                    previewHtml = '<div class="ph-gen-preview-real-card card p-2 border shadow-sm position-relative">' +
+                        '<span class="badge bg-info text-dark rounded-pill ph-badge-preview-corner">' +
+                        langStrings.yours + '</span>' +
+                        '<div class="mb-2 d-flex align-items-center justify-content-center ph-h-60">' +
                         iconHtml + '</div>' +
-                        '<strong class="d-block mb-2 text-truncate" style="font-size:0.9rem;">' +
+                        '<strong class="d-block mb-2 text-truncate ph-fs-09">' +
                         currentItem.name + '</strong>' +
                         '<button class="btn btn-primary btn-sm w-100 shadow-sm">' + btnContent + '</button>' +
                         '</div>';
@@ -124,11 +110,6 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                 $previewBox.html(previewHtml);
             };
 
-            /**
-             * Handler para mudanças nos inputs do gerador.
-             *
-             * @param {Event} e Evento.
-             */
             var handleChange = function(e) {
                 var $target = $(e.target);
                 if ($target.hasClass('js-mode-trigger') ||
@@ -139,15 +120,12 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                 }
             };
 
-            // --- 1. LÓGICA DE AÇÕES EM MASSA ---
-
-            // "Selecionar Todos"
+            // Listeners
             $('#ph-select-all').on('change', function() {
                 var isChecked = $(this).is(':checked');
                 $('.ph-bulk-check').prop('checked', isChecked).trigger('change');
             });
 
-            // Habilitar/Desabilitar botão
             $('body').on('change', '.ph-bulk-check, #ph-select-all', function() {
                 var count = $('.ph-bulk-check:checked').length;
                 var $btn = $('#ph-btn-bulk-delete');
@@ -162,7 +140,6 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                 }
             });
 
-            // Confirmação Bulk Delete (Com Delegação de Evento)
             $('body').on('click', '#ph-btn-bulk-delete', function(e) {
                 e.preventDefault();
                 var count = $('.ph-bulk-check:checked').length;
@@ -180,8 +157,6 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                     }
                 );
             });
-
-            // --- 2. LISTENERS GERAIS ---
 
             $('body').on('click', function(e) {
                 var $target = $(e.target);
@@ -208,7 +183,6 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                     e.preventDefault();
                     currentDropCode = $trigger.attr('data-dropcode');
 
-                    // Reset Inputs
                     $('#modeCard').prop('checked', true);
                     $inputLinkText.val('');
                     $inputBtnText.val('');
@@ -227,9 +201,9 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                 }
             });
 
-            // Listeners de Input
             $('body').on('change input', handleChange);
-// --- 3. COPY TO CLIPBOARD MANUAL (Fallback robusto) ---
+
+            // Copy to Clipboard com Feedback Visual
             $('body').on('click', '.js-copy-code', function(e) {
                 e.preventDefault();
                 var $btn = $(this);
@@ -238,19 +212,13 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                 if (text && navigator.clipboard) {
                     // eslint-disable-next-line promise/always-return
                     navigator.clipboard.writeText(text).then(function() {
-                        // Feedback Visual
-                        // Trecho Corrigido
                         var originalHtml = $btn.html();
                         var originalWidth = $btn.outerWidth();
 
-                        // Estado de Sucesso
-                        // [CORREÇÃO] Adiciona 25px extras para acomodar o texto "Copiado" e o ícone sem cortar
-                        // ou usa 'min-width' para permitir expansão se o layout permitir.
                         $btn.css('width', (originalWidth + 25) + 'px');
                         $btn.removeClass('btn-outline-secondary').addClass('btn-success');
                         $btn.html('<i class="fa fa-check"></i> ' + langStrings.gen_copied);
 
-                        // Restaura após 2 segundos
                         setTimeout(function() {
                             $btn.html(originalHtml);
                             $btn.removeClass('btn-success').addClass('btn-outline-secondary');
@@ -258,7 +226,6 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                         }, 2000);
 
                     }).catch(function(err) {
-                        // Em caso de erro (ex: permissão), loga no console mas não quebra a UI
                         // eslint-disable-next-line no-console
                         console.error('Clipboard error:', err);
                         Notification.alert('Erro', 'Não foi possível copiar automaticamente.', 'OK');

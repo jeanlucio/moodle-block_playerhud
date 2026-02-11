@@ -161,18 +161,15 @@ define(['jquery', 'core/notification'], function($, Notification) {
             var stash = $(this);
             var wrapper = stash.closest('.ph-stash-wrapper');
 
-            // [CORREÇÃO CRÍTICA]
-            // Se o wrapper existir (no caso do Bloco), removemos 'd-none'.
-            // Isso garante que se for o primeiro item, a área fique visível imediatamente.
             if (wrapper.length) {
                 wrapper.removeClass('d-none').show();
             }
 
-            // Remove mensagens de "Vazio" (se houver, especialmente no Widget)
             stash.find('.text-muted').remove();
-            stash.find('span.small').remove(); // Garante limpeza genérica
+            stash.find('span.small').remove();
 
             var contentHtml = '';
+            // CLEANUP: Estilo inline movido para classes se possível, ou mantido apenas para object-fit essencial
             if (String(itemData.isimage) === '1') {
                 contentHtml = '<img src="' + itemData.image + '" alt="" ' +
                     'style="width: 100%; height: 100%; object-fit: contain;">';
@@ -181,27 +178,22 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     'style="font-size:1.2rem; line-height: 1;">' + itemData.image + '</span>';
             }
 
+            // CLEANUP: Classes Bootstrap e do Plugin
             var classes = 'ph-mini-item ph-item-trigger border bg-white rounded ' +
                 'd-flex align-items-center justify-content-center overflow-hidden position-relative shadow-sm';
 
             var newItem = $('<div class="' + classes + '" role="button" tabindex="0"></div>');
 
-            newItem.css({
-                'width': '34px',
-                'height': '34px',
-                'min-width': '34px',
-                'margin-right': '2px',
-                'margin-bottom': '2px'
-            });
+            // CLEANUP CRÍTICO: Removido bloco .css() com largura/altura fixa.
+            // A classe .ph-mini-item no styles.css já define width: 34px; height: 34px;
 
             // Atributos de dados
             newItem.attr('data-name', itemData.name);
             newItem.attr('data-xp', itemData.xp);
             newItem.attr('data-image', itemData.image);
             newItem.attr('data-isimage', itemData.isimage);
-            newItem.attr('data-date', itemData.date); // Texto fallback
+            newItem.attr('data-date', itemData.date);
 
-            // Adiciona o timestamp para formatação correta
             if (itemData.timestamp) {
                 newItem.attr('data-timestamp', itemData.timestamp);
             }
@@ -212,7 +204,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
             newItem.append('<div class="d-none ph-item-description-content">' + (itemData.description || '') + '</div>');
             newItem.append(contentHtml);
 
-            // Remove duplicatas se o item já estiver na lista (atualiza a posição)
+            // Remove duplicatas
             stash.children().filter(function() {
                 return $(this).attr('data-name') === itemData.name;
             }).remove();
@@ -221,7 +213,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
             stash.prepend(newItem);
             newItem.fadeIn();
 
-            // Limita a quantidade de itens visíveis
+            // Limita a quantidade
             var limit = stash.hasClass('ph-widget-stash') ? 14 : 6;
             var items = stash.children('.ph-mini-item');
             if (items.length > limit) {

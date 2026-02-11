@@ -97,33 +97,30 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     badgeEl.hide();
                 }
 
-                // Image Handling.
+                // Image Handling (CLEANUP: Classes CSS em vez de style inline)
                 var imgCont = $('#phModalImageContainerView');
                 imgCont.empty();
 
                 if (isImg == '1' || isImg === 'true') {
                     imgCont.append($('<img>', {
                         src: img,
-                        'class': 'ph-modal-img',
-                        alt: '',
-                        style: 'max-width:120px; max-height:120px; object-fit:contain;'
+                        'class': 'ph-modal-img ph-img-contain-120',
+                        alt: ''
                     }));
                 } else {
                     // Emoji.
                     imgCont.append($('<span>', {
-                        'class': 'ph-modal-emoji',
+                        'class': 'ph-modal-emoji ph-emoji-80',
                         'aria-hidden': 'true',
-                        style: 'font-size:80px; line-height:1;',
                         text: img
                     }));
                 }
 
-                // --- Date Internationalization Logic (Igual ao filter_collect.js) ---
+                // --- Date Internationalization Logic ---
                 var dateEl = $('#phModalDateView');
                 var formattedDate = '';
 
                 if (timestamp && timestamp > 0) {
-                    // Obtém o idioma do navegador ou do Moodle
                     var lang = $('html').attr('lang') || 'en';
                     lang = lang.replace('_', '-');
 
@@ -141,7 +138,6 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
 
                 if (formattedDate) {
-                    // Prefixo traduzido
                     var prefix = (config.strings && config.strings.last_collected) ?
                         config.strings.last_collected + ' ' : '';
 
@@ -150,7 +146,6 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 } else {
                     dateEl.hide();
                 }
-                // ---------------------------------------
 
                 openItemModal();
             });

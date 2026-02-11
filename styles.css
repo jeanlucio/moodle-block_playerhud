@@ -639,3 +639,46 @@
 /* Removemos estilos antigos conflitantes */
 .ph-card-count-badge { display: none; } /* Oculta o badge antigo */
 .ph-infinite-badge { display: none; } /* Oculta o badge antigo */
+
+/* ==============================================================================================
+   ATUALIZAÇÃO: Classes utilitárias para o Bloco (Gestão e JS Dinâmico)
+   ============================================================================================== */
+
+/* Usado nos modais gerados via JS (view.js e manage_items.js) */
+.ph-img-contain-120 {
+    max-width: 120px;
+    max-height: 120px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.ph-emoji-80 {
+    font-size: 80px;
+    line-height: 1;
+    display: inline-block;
+}
+
+/* Usado no gerador de códigos (manage_drops.js) */
+.ph-badge-preview-corner {
+    position: absolute;
+    top: 5px;
+    inset-inline-end: 5px; /* Propriedade Lógica para RTL */
+    font-size: 0.7rem;
+}
+
+.ph-h-60 {
+    height: 60px;
+}
+
+.ph-fs-09 {
+    font-size: 0.9rem;
+}
+
+/* Força classes de utilidade do Bootstrap 5 (caso o tema sobrescreva ou para garantir RTL) */
+.me-1 { margin-inline-end: 0.25rem !important; }
+.ms-1 { margin-inline-start: 0.25rem !important; }
+.me-2 { margin-inline-end: 0.5rem !important; }
+.ms-2 { margin-inline-start: 0.5rem !important; }
+.me-3 { margin-inline-end: 1rem !important; }
+.text-end { text-align: end !important; }

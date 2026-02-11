@@ -46,7 +46,6 @@
                         </th>
                         <th scope="col" class="ph-col-sm">N.</th>
                         
-                        {{! Headers Dinâmicos }}
                         <th scope="col">
                             <a href="{{headers.name.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
                                 {{headers.name.label}} <i class="fa {{headers.name.icon_class}} ms-1" aria-hidden="true"></i>
@@ -63,9 +62,9 @@
                             </a>
                         </th>
                         
-                        {{! Coluna de Código / Shortcode }}
                         <th scope="col" class="ph-col-gen">{{str_col_gen}}</th>
 
+                        {{! Regra 1: Substituição de text-right por text-end }}
                         <th scope="col" class="text-end ph-col-actions">{{str_actions}}</th>
                     </tr>
                 </thead>
@@ -97,13 +96,8 @@
                             {{/is_immediate}}
                         </td>
                         
-                        {{! 
-                            [ATUALIZAÇÃO] Grupo de Botões: Copiar Rápido e Personalizar 
-                            Substitui o botão único e largo por dois compactos.
-                        }}
                         <td class="align-middle text-nowrap">
                             <div class="d-flex gap-1 justify-content-start">
-                                {{! Botão 1: Copiar o código padrão (Manual Handler) }}
                                 <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm js-copy-code"
                                         data-clipboard-text="{{full_default_code}}"
                                         title="{{str_quick_copy}}"
@@ -111,7 +105,6 @@
                                     <i class="fa fa-copy" aria-hidden="true"></i> {{str_quick_copy}}
                                 </button>
 
-                                {{! Botão 2: Abrir modal para customizar }}
                                 <button type="button" class="btn btn-outline-dark btn-sm js-open-gen-modal shadow-sm"
                                         data-dropcode="{{display_code}}" 
                                         title="{{str_gen_title}}"
@@ -121,6 +114,7 @@
                             </div>
                         </td>
 
+                        {{! Regra 1: Substituição de text-right por text-end }}
                         <td class="align-middle text-end">
                             <a href="{{url_edit}}" class="btn btn-sm btn-primary me-1 shadow-sm">
                                 <i class="fa fa-pencil" aria-hidden="true"></i> {{str_edit}}
