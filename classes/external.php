@@ -51,6 +51,85 @@ class external extends external_api {
     }
 
     /**
+     * Define parameters for collect_item.
+     */
+    public static function collect_item_parameters() {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block Instance ID'),
+            'dropid' => new external_value(PARAM_INT, 'Drop ID'),
+            'courseid' => new external_value(PARAM_INT, 'Course ID'),
+        ]);
+    }
+
+    /**
+     * Collect an item via AJAX.
+     */
+    public static function collect_item($instanceid, $dropid, $courseid) {
+        global $USER;
+
+        // Validation.
+        $params = self::validate_parameters(self::collect_item_parameters(), [
+            'instanceid' => $instanceid,
+            'dropid' => $dropid,
+            'courseid' => $courseid,
+        ]);
+
+        $context = \context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:view', $context);
+
+        try {
+            // Call the centralized logic in Game class.
+            $result = \block_playerhud\game::process_collection(
+                $params['instanceid'],
+                $params['dropid'],
+                $USER->id
+            );
+            return $result;
+
+        } catch (\Exception $e) {
+            // Return failure structure but valid according to returns definition.
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                // Default values for optional fields to avoid warnings
+                'cooldown_deadline' => 0,
+                'limit_reached' => false
+            ];
+        }
+    }
+
+    /**
+     * Define return structure for collect_item.
+     */
+    public static function collect_item_returns() {
+        return new external_single_structure([
+            'success' => new external_value(PARAM_BOOL, 'Success status'),
+            'message' => new external_value(PARAM_RAW, 'Message'),
+            'cooldown_deadline' => new external_value(PARAM_INT, 'Timestamp for cooldown', VALUE_OPTIONAL),
+            'limit_reached' => new external_value(PARAM_BOOL, 'If drop limit reached', VALUE_OPTIONAL),
+            'game_data' => new external_single_structure([
+                'currentxp' => new external_value(PARAM_INT, 'Current XP', VALUE_OPTIONAL),
+                'level' => new external_value(PARAM_INT, 'Level', VALUE_OPTIONAL),
+                'max_levels' => new external_value(PARAM_INT, 'Max Levels', VALUE_OPTIONAL),
+                'xp_target' => new external_value(PARAM_INT, 'XP Target', VALUE_OPTIONAL),
+                'progress' => new external_value(PARAM_INT, 'Progress Percent', VALUE_OPTIONAL),
+                'level_class' => new external_value(PARAM_TEXT, 'CSS Class', VALUE_OPTIONAL),
+                'is_win' => new external_value(PARAM_BOOL, 'Is Win', VALUE_OPTIONAL),
+            ], 'Game Stats', VALUE_OPTIONAL),
+            'item_data' => new external_single_structure([
+                'name' => new external_value(PARAM_TEXT, 'Item Name', VALUE_OPTIONAL),
+                'xp' => new external_value(PARAM_INT, 'XP Value', VALUE_OPTIONAL),
+                'image' => new external_value(PARAM_RAW, 'Image URL or Emoji', VALUE_OPTIONAL),
+                'isimage' => new external_value(PARAM_INT, 'Is Image Flag', VALUE_OPTIONAL),
+                'description' => new external_value(PARAM_RAW, 'Description', VALUE_OPTIONAL),
+                'date' => new external_value(PARAM_TEXT, 'Date formatted', VALUE_OPTIONAL),
+                'timestamp' => new external_value(PARAM_INT, 'Timestamp', VALUE_OPTIONAL),
+            ], 'Item Details', VALUE_OPTIONAL),
+        ]);
+    }
+
+    /**
      * Execute AI generation logic.
      *
      * @param int $instanceid Block instance ID.

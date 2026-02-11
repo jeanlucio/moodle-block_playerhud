@@ -102,6 +102,135 @@ class game {
     }
 
     /**
+     * Process item collection logic (Shared between Controller and External API).
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $dropid Drop location ID.
+     * @param int $userid User ID.
+     * @return array Result data and game stats.
+     * @throws \moodle_exception
+     */
+    public static function process_collection($instanceid, $dropid, $userid) {
+        global $DB;
+
+        // 1. Validation.
+        $drop = $DB->get_record('block_playerhud_drops', ['id' => $dropid, 'blockinstanceid' => $instanceid], '*', MUST_EXIST);
+        $item = $DB->get_record('block_playerhud_items', ['id' => $drop->itemid], '*', MUST_EXIST);
+
+        if (!$item->enabled) {
+            throw new \moodle_exception('itemnotfound', 'block_playerhud');
+        }
+
+        // 2. Check Limits & Cooldown.
+        $inventory = $DB->get_records('block_playerhud_inventory', [
+            'userid' => $userid,
+            'dropid' => $drop->id,
+        ], 'timecreated DESC');
+
+        $count = count($inventory);
+        $lastcollected = reset($inventory);
+
+        if ($drop->maxusage > 0 && $count >= $drop->maxusage) {
+            throw new \moodle_exception('limitreached', 'block_playerhud');
+        }
+
+        if ($lastcollected && $drop->respawntime > 0) {
+            $readytime = $lastcollected->timecreated + $drop->respawntime;
+            if (time() < $readytime) {
+                $minutesleft = ceil(($readytime - time()) / 60);
+                throw new \moodle_exception('waitmore', 'block_playerhud', '', $minutesleft);
+            }
+        }
+
+        // 3. Transaction.
+        $earnedxp = 0;
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            $newinv = new \stdClass();
+            $newinv->userid = $userid;
+            $newinv->itemid = $item->id;
+            $newinv->dropid = $drop->id;
+            $newinv->timecreated = time();
+            $newinv->source = 'map';
+            $DB->insert_record('block_playerhud_inventory', $newinv);
+
+            // Infinite drops (0 maxusage) give 0 XP to prevent farming.
+            $isinfinitedrop = ((int)$drop->maxusage === 0);
+
+            if ($item->xp > 0 && !$isinfinitedrop) {
+                $earnedxp = $item->xp;
+                $player = self::get_player($instanceid, $userid);
+                $player->currentxp += $earnedxp;
+                $player->timemodified = time();
+                $DB->update_record('block_playerhud_user', $player);
+            }
+            $transaction->allow_commit();
+        } catch (\Exception $e) {
+            $transaction->rollback($e);
+            throw $e;
+        }
+
+        // 4. Prepare Response Data.
+        $msgparams = new \stdClass();
+        $msgparams->name = format_string($item->name);
+        $msgparams->xp = ($earnedxp > 0) ? " (+{$earnedxp} XP)" : "";
+        $message = get_string('collected_msg', 'block_playerhud', $msgparams);
+
+        // Calculate Stats for HUD update.
+        $player = self::get_player($instanceid, $userid);
+        $bi = $DB->get_record('block_instances', ['id' => $instanceid]);
+        $config = unserialize(base64_decode($bi->configdata));
+        if (!$config) {
+            $config = new \stdClass();
+        }
+        $stats = self::get_game_stats($config, $instanceid, $player->currentxp);
+
+        // Prepare Item Data for Stash update.
+        $context = \context_block::instance($instanceid);
+        $media = \block_playerhud\utils::get_item_display_data($item, $context);
+        
+        $itemdata = [
+            'name' => format_string($item->name),
+            'xp' => $item->xp,
+            'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
+            'isimage' => $media['is_image'] ? 1 : 0,
+            'description' => !empty($item->description) ? format_text($item->description, FORMAT_HTML) : '',
+            'date' => userdate(time(), get_string('strftimedatefullshort', 'langconfig')),
+            'timestamp' => time(),
+        ];
+
+        // Cooldown Calculation.
+        $cooldowndeadline = 0;
+        $limitreached = false;
+        
+        $newcount = $count + 1; // We just added one.
+        if ($drop->maxusage > 0 && $newcount >= $drop->maxusage) {
+            $limitreached = true;
+        }
+        if (!$limitreached && $drop->respawntime > 0) {
+            $cooldowndeadline = time() + $drop->respawntime;
+        }
+
+        return [
+            'success' => true,
+            'message' => $message,
+            'game_data' => [
+                'currentxp' => $player->currentxp,
+                'level' => $stats['level'],
+                'max_levels' => $stats['max_levels'],
+                'xp_target' => $stats['total_game_xp'],
+                'progress' => $stats['progress'],
+                'total_game_xp' => $stats['total_game_xp'],
+                'level_class' => $stats['level_class'],
+                'is_win' => ($player->currentxp >= $stats['total_game_xp'] && $stats['total_game_xp'] > 0),
+            ],
+            'item_data' => $itemdata,
+            'cooldown_deadline' => $cooldowndeadline,
+            'limit_reached' => $limitreached,
+        ];
+    }
+
+    /**
      * Calculate game statistics based on block settings.
      *
      * @param object $config The block instance configuration.

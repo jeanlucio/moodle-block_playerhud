@@ -34,4 +34,13 @@ $functions = [
         'loginrequired' => true,
         'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
+
+    'block_playerhud_collect_item' => [
+        'classname'   => 'block_playerhud\external',
+        'methodname'  => 'collect_item',
+        'description' => 'Collect an item via Drop',
+        'type'        => 'write',
+        'ajax'        => true,
+        'loginrequired' => true,
+    ],
 ];
