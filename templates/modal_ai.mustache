@@ -1,24 +1,42 @@
-{{! @template block_playerhud/modal_ai }}
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{! 
+    @template block_playerhud/modal_ai 
+
+    Modal for AI Item Generation.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
 <div class="modal fade" id="phAiModal" tabindex="-1" aria-labelledby="phAiModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="phAiModalLabel">{{#str}} ai_btn_create, block_playerhud {{/str}}</h5>
-        {{!
-            CORREÇÃO: Alterado de 'core' para 'block_playerhud'.
-            A string 'close' já está definida no seu plugin.
-        }}
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{#str}} close, block_playerhud {{/str}}"></button>
       </div>
       <div class="modal-body">
         <form id="ph-ai-form">
-            {{! TEMA }}
             <div class="mb-3">
                 <label for="ai-theme" class="form-label fw-bold">{{#str}} ai_prompt_theme_item, block_playerhud {{/str}}</label>
                 <input type="text" class="form-control" id="ai-theme" placeholder="{{#str}} ai_theme_placeholder, block_playerhud {{/str}}">
             </div>
 
-            {{! XP e QUANTIDADE }}
             <div class="row mb-3">
                 <div class="col-6">
                     <label for="ai-xp" class="form-label fw-bold">{{#str}} xp, block_playerhud {{/str}}</label>
@@ -30,14 +48,13 @@
                 </div>
             </div>
 
-            {{! CHECKBOX DROP }}
             <div class="form-check mb-3">
                 <input type="checkbox" class="form-check-input" id="ai-drop">
                 <label class="form-check-label fw-bold" for="ai-drop">{{#str}} ai_create_drop, block_playerhud {{/str}}</label>
             </div>
 
-            {{! OPÇÕES DE DROP (Slide Down) }}
-            <div id="ai-drop-options" class="p-3 bg-light border rounded mb-3" style="display:none;">
+            {{! CORREÇÃO: Usar classe CSS .ph-display-none em vez do atributo hidden para permitir slideDown }}
+            <div id="ai-drop-options" class="p-3 bg-light border rounded mb-3 ph-display-none">
                 <h6 class="border-bottom pb-2 mb-3 fw-bold">{{#str}} ai_drop_settings, block_playerhud {{/str}}</h6>
                 
                 <div class="mb-3">
@@ -49,24 +66,19 @@
                     <div class="col-6">
                         <label for="ai-maxusage" class="form-label small">{{#str}} drop_max_qty, block_playerhud {{/str}}</label>
                         <input type="number" class="form-control form-control-sm" id="ai-maxusage" value="0">
-                        <small class="text-muted" style="font-size:0.7rem;">0 = {{#str}} unlimited, block_playerhud {{/str}}</small>
+                        <small class="text-muted ph-text-xs">0 = {{#str}} unlimited, block_playerhud {{/str}}</small>
                     </div>
                     <div class="col-6">
                         <label for="ai-respawn" class="form-label small">{{#str}} drop_interval, block_playerhud {{/str}} (min)</label>
                         <input type="number" class="form-control form-control-sm" id="ai-respawn" value="0">
-                        <small class="text-muted" style="font-size:0.7rem;">0 = {{#str}} drops_immediate, block_playerhud {{/str}}</small>
+                        <small class="text-muted ph-text-xs">0 = {{#str}} drops_immediate, block_playerhud {{/str}}</small>
                     </div>
                 </div>
             </div>
         </form>
       </div>
       <div class="modal-footer">
-        {{!
-            Nota: 'cancel' geralmente existe no 'core'. Se der erro também,
-            teremos que adicionar $string['cancel'] = 'Cancelar'; no seu lang file.
-            Mas por enquanto, mantemos 'core' pois é padrão.
-        }}
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{#str}} cancel, core {{/str}}</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{#str}} cancel, block_playerhud {{/str}}</button>
         <button type="button" class="btn btn-primary fw-bold" id="ph-btn-conjure">
             <i class="fa fa-magic me-1" aria-hidden="true"></i> {{#str}} ai_btn_conjure, block_playerhud {{/str}}
         </button>

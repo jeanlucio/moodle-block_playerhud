@@ -115,6 +115,7 @@ if ($isoptin) {
         'title' => get_string('optin_hello', 'block_playerhud', fullname($USER)),
         'message' => get_string('optin_message', 'block_playerhud'),
         'url_yes' => $activateurl->out(false),
+        'url_no'  => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
         'str_yes' => get_string('optin_yes', 'block_playerhud'),
         'str_no' => get_string('optin_no', 'block_playerhud'),
     ];

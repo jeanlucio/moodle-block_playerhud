@@ -158,7 +158,7 @@ class game {
             $isinfinitedrop = ((int)$drop->maxusage === 0);
 
             if ($item->xp > 0 && !$isinfinitedrop) {
-                $earnedxp = (int)$item->xp; // CAST para INT
+                $earnedxp = (int)$item->xp;
                 $player = self::get_player($instanceid, $userid);
                 $player->currentxp += $earnedxp;
                 $player->timemodified = time();
@@ -188,10 +188,10 @@ class game {
         // Prepare Item Data for Stash update.
         $context = \context_block::instance($instanceid);
         $media = \block_playerhud\utils::get_item_display_data($item, $context);
-        
+
         $itemdata = [
             'name' => format_string($item->name),
-            'xp' => (int)$item->xp, // CORREÇÃO: Cast para INT estrito para a API
+            'xp' => (int)$item->xp,
             'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
             'isimage' => $media['is_image'] ? 1 : 0,
             'description' => !empty($item->description) ? format_text($item->description, FORMAT_HTML) : '',
@@ -202,7 +202,7 @@ class game {
         // Cooldown Calculation.
         $cooldowndeadline = 0;
         $limitreached = false;
-        
+
         $newcount = $count + 1;
         if ($drop->maxusage > 0 && $newcount >= $drop->maxusage) {
             $limitreached = true;

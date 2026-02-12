@@ -1,10 +1,34 @@
-{{! @template block_playerhud/modal_generator }}
-<div class="modal fade ph-modal-codegen ph-z-index-high" id="codeGenModal" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{! 
+    @template block_playerhud/modal_generator 
+
+    Modal for Shortcode Generation.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+<div class="modal fade ph-modal-codegen ph-z-index-high" id="codeGenModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
       <div class="modal-header bg-primary text-white d-flex justify-content-between align-items-center">
         <h5 class="modal-title m-0 fw-bold">{{#str}} gen_title, block_playerhud {{/str}}</h5>
-        <button type="button" class="btn-close btn-close-white js-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white js-modal-close" data-bs-dismiss="modal" aria-label="{{#str}} close, block_playerhud {{/str}}"></button>
       </div>
       <div class="modal-body">
           <div class="row">
@@ -21,16 +45,16 @@
                            </div>
                           <div class="form-check mb-2">
                               <input type="radio" id="modeText" name="codeMode" class="form-check-input js-mode-trigger" value="text">
-                              <label class="form-check-label" for="modeText">
+                               <label class="form-check-label" for="modeText">
                                   <strong>{{#str}} gen_style_text, block_playerhud {{/str}}</strong><br>
                                   <small class="text-muted">{{#str}} gen_style_text_desc, block_playerhud {{/str}}</small>
-                               </label>
+                              </label>
                           </div>
                           <div class="form-check">
                               <input type="radio" id="modeImage" name="codeMode" class="form-check-input js-mode-trigger" value="image">
                                <label class="form-check-label" for="modeImage">
                                   <strong>{{#str}} gen_style_image, block_playerhud {{/str}}</strong><br>
-                                  <small class="text-muted">{{#str}} gen_style_image_desc, block_playerhud {{/str}}</small>
+                                   <small class="text-muted">{{#str}} gen_style_image_desc, block_playerhud {{/str}}</small>
                               </label>
                           </div>
                       </div>
@@ -38,29 +62,31 @@
                        <div id="cardCustomOptions" class="mt-3 pt-3 border-top">
                           <label class="form-label fw-bold small text-uppercase text-muted mb-2">{{#str}} visual_content, block_playerhud {{/str}}</label>
                           <div class="row">
-                              <div class="col-8">
+                               <div class="col-8">
                                   <label for="customBtnText" class="form-label small mb-1">{{#str}} choice_text, block_playerhud {{/str}}</label>
                                   <input type="text" class="form-control form-control-sm" id="customBtnText" placeholder="{{#str}} take, block_playerhud {{/str}}">
-                             </div>
+                              </div>
                               <div class="col-4">
                                   <label for="customBtnEmoji" class="form-label small mb-1">Emoji</label>
-                                 <input type="text" class="form-control form-control-sm text-center" id="customBtnEmoji" placeholder="🖐" maxlength="4">
+                                  <input type="text" class="form-control form-control-sm text-center" id="customBtnEmoji" placeholder="🖐" maxlength="4">
                               </div>
                           </div>
-                           <div class="form-text mt-1 text-muted ph-text-xs">Deixe vazio para usar o padrão.</div>
+                          <div class="form-text mt-1 text-muted ph-text-xs">Deixe vazio para usar o padrão.</div>
                       </div>
 
-                      <div class="mb-3 mt-4 ph-alert-warning-box" id="textInputGroup" style="display:none;">
+                      {{! CORREÇÃO: Classe ph-display-none substitui style inline }}
+                      <div class="mb-3 mt-4 ph-alert-warning-box ph-display-none" id="textInputGroup">
                           <label class="fw-bold text-dark">{{#str}} gen_link_label, block_playerhud {{/str}}</label>
-                          <input type="text" class="form-control" id="customText" placeholder="{{#str}} gen_link_placeholder, block_playerhud {{/str}}">
+                           <input type="text" class="form-control" id="customText" placeholder="{{#str}} gen_link_placeholder, block_playerhud {{/str}}">
                           <small class="text-muted">{{#str}} gen_link_help, block_playerhud {{/str}}</small>
                       </div>
-                  </form>
+                 </form>
               </div>
 
               <div class="col-md-5 d-flex flex-column bg-light rounded-end">
                   <div class="text-center p-3 flex-grow-1 d-flex flex-column justify-content-center align-items-center">
-                       <h6 class="text-muted text-uppercase mb-4 ph-text-xs" style="letter-spacing:1px;">{{#str}} gen_preview, block_playerhud {{/str}}</h6>
+                       {{! CORREÇÃO: Classe ph-tracking-wide substitui style inline }}
+                       <h6 class="text-muted text-uppercase mb-4 ph-text-xs ph-tracking-wide">{{#str}} gen_preview, block_playerhud {{/str}}</h6>
                       <div id="previewContainer" class="w-100 d-flex justify-content-center align-items-center"></div>
                   </div>
               </div>

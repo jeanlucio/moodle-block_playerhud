@@ -41,8 +41,8 @@ class collect {
         // 2. Security.
         require_login($courseid);
         require_sesskey();
-        $context = \context_block::instance($instanceid); 
-        require_capability('block/playerhud:view', $context); 
+        $context = \context_block::instance($instanceid);
+        require_capability('block/playerhud:view', $context);
 
         // Return URL (if not AJAX).
         $returnurl = new moodle_url('/course/view.php', ['id' => $courseid]);

@@ -1,4 +1,20 @@
 {{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
     @template block_playerhud/manage_drops_table
 
     Manage drops table template.
@@ -69,9 +85,8 @@
                                 {{headers.time.label}} <i class="fa {{headers.time.icon_class}} ms-1" aria-hidden="true"></i>
                             </a>
                         </th>
-                        
+                       
                         <th scope="col" class="ph-col-gen">{{str_col_gen}}</th>
-                        {{! Use text-end for right alignment in Bootstrap 5 (Moodle 4.x) }}
                         <th scope="col" class="text-end ph-col-actions">{{str_actions}}</th>
                     </tr>
                 </thead>
@@ -104,7 +119,7 @@
                         </td>
                         
                         <td class="align-middle text-nowrap">
-                             <div class="d-flex gap-1 justify-content-start">
+                            <div class="d-flex gap-1 justify-content-start">
                                 <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm js-copy-code"
                                         data-clipboard-text="{{full_default_code}}"
                                         title="{{str_quick_copy}}"
@@ -118,10 +133,9 @@
                                         aria-label="{{str_gen_title}}">
                                     <i class="fa fa-magic" aria-hidden="true"></i> {{str_gen_title}}
                                 </button>
-                             </div>
+                            </div>
                         </td>
 
-                        {{! Use text-end for right alignment in Bootstrap 5 }}
                         <td class="align-middle text-end">
                             <a href="{{url_edit}}" class="btn btn-sm btn-primary me-1 shadow-sm">
                                 <i class="fa fa-pencil" aria-hidden="true"></i> {{str_edit}}
@@ -153,6 +167,3 @@
 </form>
 
 {{{modal_gen_html}}}
-{{#js}}
-require(['core/copy_to_clipboard']);
-{{/js}}

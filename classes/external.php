@@ -86,15 +86,14 @@ class external extends external_api {
                 $USER->id
             );
             return $result;
-
         } catch (\Exception $e) {
             // Return failure structure but valid according to returns definition.
             return [
                 'success' => false,
                 'message' => $e->getMessage(),
-                // Default values for optional fields to avoid warnings
+                // Default values for optional fields to avoid warnings.
                 'cooldown_deadline' => 0,
-                'limit_reached' => false
+                'limit_reached' => false,
             ];
         }
     }

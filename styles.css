@@ -692,3 +692,12 @@
 .ph-opacity-50 {
     opacity: 0.5;
 }
+/* Utilitário para compatibilidade com animações JS (jQuery slideDown) */
+/* Substitui o uso de 'hidden' ou 'style="display:none"' */
+.ph-display-none {
+    display: none;
+}
+/* Espaçamento de letras para títulos pequenos (substitui style="letter-spacing:1px") */
+.ph-tracking-wide {
+    letter-spacing: 1px;
+}
