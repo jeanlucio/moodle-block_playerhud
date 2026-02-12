@@ -1,13 +1,40 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/view_collection
+
+    Template for the collection/inventory tab in the PlayerHUD block.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
 {{#has_items}}
 
-{{! --- BARRA DE FERRAMENTAS / FILTRO --- }}
+{{! TOOLBAR / FILTER }}
 {{#show_filter}}
 <div class="d-flex justify-content-end mb-3">
     <div class="d-flex align-items-center">
         <label for="ph-collection-sort" class="me-2 small text-muted fw-bold">
             <i class="fa fa-filter" aria-hidden="true"></i> {{#str}} sort_by, block_playerhud {{/str}}
         </label>
-        <select id="ph-collection-sort" class="form-select form-select-sm shadow-sm border-secondary" style="width: auto;" onchange="window.location.href=this.value">
+        <select id="ph-collection-sort" class="form-select form-select-sm shadow-sm border-secondary w-auto"
+                onchange="window.location.href=this.value"
+                aria-label="{{#str}} sort_by, block_playerhud {{/str}}">
             {{#sort_options}}
                 <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
             {{/sort_options}}
@@ -18,29 +45,30 @@
 
 <div class="playerhud-inventory-grid animate__animated animate__fadeIn">
     {{#items}}
-    <div class="playerhud-item-card card {{card_class}} ph-item-trigger ph-cursor-pointer h-100" 
-         role="button" 
+    <div class="playerhud-item-card card {{card_class}} ph-item-trigger ph-cursor-pointer h-100"
+         role="button"
          tabindex="{{tabindex}}"
          data-id="{{id}}"
          data-name="{{name}}"
          data-xp="{{xp_text}}"
          data-count="{{count}}"
-         data-image="{{data_image_payload}}" 
-         data-isimage="{{is_image_bool}}"> 
+         data-image="{{data_image_payload}}"
+         data-isimage="{{is_image_bool}}"
+         aria-label="{{name}}">
 
-        {{! --- BADGE NOVO --- }}
+        {{! NEW BADGE }}
         {{#badge_new}}
             <span class="ph-new-badge">{{#str}} new_item_badge, block_playerhud {{/str}}</span>
         {{/badge_new}}
 
-        {{! --- BADGE ARQUIVADO (Restaurado aqui) --- }}
+        {{! ARCHIVED BADGE }}
         {{#badge_archived}}
             <span class="ph-badge-archived">
                 {{#str}} item_archived, block_playerhud {{/str}}
             </span>
         {{/badge_archived}}
 
-        {{! --- BADGE INFINITO (Esquerda) --- }}
+        {{! INFINITE BADGE (Left) }}
         {{#is_infinite_type}}
             <div class="ph-badge-counter ph-badge-pos-left" title="{{#str}} infinite_item_title, block_playerhud {{/str}}">
                 <i class="fa fa-infinity" aria-hidden="true"></i>
@@ -50,10 +78,10 @@
             </div>
         {{/is_infinite_type}}
 
-        {{! --- BADGE FINITO (Direita) --- }}
+        {{! FINITE BADGE (Right) }}
         {{#has_finite_copies}}
             <div class="ph-badge-counter ph-badge-pos-right" title="Itens Finitos">
-                <i class="fa fa-hashtag" aria-hidden="true"></i> 
+                <i class="fa fa-hashtag" aria-hidden="true"></i>
                 <span class="ph-counter-text ms-1">{{count_finite}}</span>
             </div>
         {{/has_finite_copies}}
@@ -61,8 +89,8 @@
         <div class="d-none ph-item-description-content">{{{description}}}</div>
 
         <div class="card-body p-2 d-flex flex-column align-items-center">
-            
-            {{! 1. Ícone }}
+
+            {{! 1. Icon }}
             <div class="mt-3 mb-2 text-center ph-card-icon-container">
                  {{#is_image}}
                     <img src="{{image_url}}" class="ph-modal-img ph-card-img" alt="" aria-hidden="true">
@@ -72,17 +100,17 @@
                  {{/is_image}}
             </div>
 
-            {{! 2. Nome e XP (Fixos no topo relativo) }}
+            {{! 2. Name and XP (Fixed relative top) }}
             <div class="text-center w-100 mb-2">
                 <div class="fw-bold ph-card-title mb-1 ph-text-md" title="{{name}}">{{name}}</div>
                 <span class="badge bg-primary ph-xp-badge">{{xp_text}}</span>
             </div>
 
-            {{! 3. Origens e Data (Rodapé do card) }}
+            {{! 3. Origins and Date (Card footer) }}
             <div class="mt-auto w-100 text-center">
                 {{#has_origins}}
                 <div class="ph-card-origins mb-1">
-                    {{#origin_map}}<span class="me-1"><i class="fa fa-map-o text-info" aria-hidden="true"></i> {{origin_map}}</span>{{/origin_map}}
+                    {{#origin_map}}<span class="me-1"><i class="fa fa-map-o text-primary" aria-hidden="true"></i> {{origin_map}}</span>{{/origin_map}}
                     {{#origin_shop}}<span class="me-1"><i class="fa fa-shopping-cart text-success" aria-hidden="true"></i> {{origin_shop}}</span>{{/origin_shop}}
                     {{#origin_quest}}<span class="me-1"><i class="fa fa-scroll ph-text-gold" aria-hidden="true"></i> {{origin_quest}}</span>{{/origin_quest}}
                     {{#origin_legacy}}<span><i class="fa fa-star text-warning" aria-hidden="true"></i> {{origin_legacy}}</span>{{/origin_legacy}}

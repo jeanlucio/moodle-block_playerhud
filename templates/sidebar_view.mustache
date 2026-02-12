@@ -1,6 +1,30 @@
-{{! @template block_playerhud/sidebar_view }}
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/sidebar_view
+
+    Main sidebar view for the PlayerHUD block.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
 <div class="block_playerhud_sidebar p-2">
-    
+
     {{! 1. PROFILE & AVATAR }}
     <div class="text-center mb-2">
         <div class="mb-2 ph-sidebar-avatar-container">
@@ -18,47 +42,49 @@
     </div>
 
     <div class="ph-progress-container mb-3">
-        <div class="progress-bar ph-progress-bar {{level_class}}" role="progressbar" 
+        <div class="progress-bar ph-progress-bar {{level_class}}" role="progressbar"
              style="width: {{progress}}%;"
              aria-valuenow="{{progress}}" aria-valuemin="0" aria-valuemax="100">
              <span class="visually-hidden">{{progress}}% {{#str}} completed, core {{/str}}</span>
         </div>
     </div>
 
-    {{! 3. MASTER PANEL (Agora posicionado entre a barra e o grid) }}
+    {{! 3. MASTER PANEL }}
     {{#isteacher}}
     <div class="mb-3">
         <a href="{{{manageurl}}}" class="btn btn-outline-dark btn-sm w-100 shadow-sm fw-bold">
-            <i class="fa fa-cogs" aria-hidden="true"></i> {{#str}} master_panel, block_playerhud {{/str}}
+            <i class="fa fa-cogs me-2" aria-hidden="true"></i> {{#str}} master_panel, block_playerhud {{/str}}
         </a>
     </div>
     {{/isteacher}}
 
-{{! 4. ACTIONS GRID }}
+    {{! 4. ACTIONS GRID }}
     <div class="ph-sidebar-grid mb-4 {{level_class}}">
-        
-        {{! A. Coleção / Mochila }}
-        <a href="{{viewurl}}" 
-           class="btn btn-ph-level-border shadow-sm" 
-           data-bs-toggle="tooltip" data-bs-placement="top" 
-           title="{{#str}} openbackpack, block_playerhud {{/str}}">
+
+        {{! A. Collection / Backpack }}
+        <a href="{{viewurl}}"
+           class="btn btn-ph-level-border shadow-sm"
+           data-bs-toggle="tooltip" data-bs-placement="top"
+           title="{{#str}} openbackpack, block_playerhud {{/str}}"
+           aria-label="{{#str}} openbackpack, block_playerhud {{/str}}">
             <span aria-hidden="true">🎒</span>
         </a>
 
-        {{! E. Ranking }}
+        {{! B. Ranking }}
         {{#ranking}}
-        <a href="{{url}}" 
-           class="btn btn-ph-level-border shadow-sm" 
-           data-bs-toggle="tooltip" data-bs-placement="bottom" 
-           title="{{tooltip}}">
+        <a href="{{url}}"
+           class="btn btn-ph-level-border shadow-sm"
+           data-bs-toggle="tooltip" data-bs-placement="bottom"
+           title="{{tooltip}}"
+           aria-label="{{label}}">
             <span aria-hidden="true">🏆</span>
         </a>
         {{/ranking}}
 
-        {{! F. Sair }}
-        <a href="{{url_disable}}" 
+        {{! C. Exit }}
+        <a href="{{url_disable}}"
            class="btn btn-ph-level-border shadow-sm js-disable-hud"
-           data-bs-toggle="tooltip" data-bs-placement="bottom" 
+           data-bs-toggle="tooltip" data-bs-placement="bottom"
            data-confirm-msg="{{str_confirm_msg}}"
            title="{{str_disable_gamification}}"
            aria-label="{{str_disable_gamification}}">
@@ -69,15 +95,15 @@
 
     </div>
 
-    {{! 5. LATEST ITEMS (Stash no final) }}
+    {{! 5. LATEST ITEMS }}
     <div class="ph-stash-wrapper {{^has_items}}d-none{{/has_items}}">
-        <small class="text-muted text-uppercase fw-bold border-bottom d-block mb-2 pb-1" style="font-size: 0.7rem;">
+        <small class="text-muted text-uppercase fw-bold border-bottom d-block mb-2 pb-1 ph-text-xs">
             {{#str}} latest_items, block_playerhud {{/str}}
         </small>
         <div class="ph-sidebar-stash mt-1 justify-content-center">
             {{#items}}
-            <div class="ph-mini-item ph-item-trigger" 
-                 role="button" 
+            <div class="ph-mini-item ph-item-trigger"
+                 role="button"
                  tabindex="0"
                  data-name="{{name}}"
                  data-xp="{{xp}}"
@@ -85,12 +111,13 @@
                  data-isimage="{{isimage}}"
                  data-date="{{date}}"
                  data-timestamp="{{timestamp}}"
-                 title="{{name}}">
-                 
+                 title="{{name}}"
+                 aria-label="{{name}}">
+
                  <div class="d-none ph-item-description-content">{{{description}}}</div>
 
                  {{#isimage}}
-                    <img src="{{image}}" alt="{{name}}">
+                    <img src="{{image}}" alt="" class="ph-mini-item-img">
                  {{/isimage}}
                  {{^isimage}}
                     <span class="ph-emoji" aria-hidden="true">{{image}}</span>
