@@ -16,15 +16,14 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
         init: function(config) {
 
             // Move modals to body to avoid z-index issues.
-            $('#phAiModal').appendTo('body');
-            $('#phItemModalView').appendTo('body');
+            // IDs atualizados para kebab-case conforme Stylelint
+            $('#ph-ai-modal').appendTo('body');
+            $('#ph-item-modal-view').appendTo('body');
 
             // --- FIXED: Explicitly handle AI Modal opening to ensure it works even if moved ---
             $('body').on('click', '#btn-open-ai-modal', function(e) {
                 e.preventDefault();
-                // If bootstrap data-toggle works, this might be redundant but safe.
-                // If it fails because of DOM move, this fixes it.
-                var modalEl = document.getElementById('phAiModal');
+                var modalEl = document.getElementById('ph-ai-modal'); // ID ATUALIZADO
                 if (modalEl) {
                     // eslint-disable-next-line no-undef
                     if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
@@ -32,7 +31,6 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                         var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
                         modal.show();
                     } else if ($(modalEl).modal) {
-                        // Fallback for older themes (Bootstrap 4)
                         $(modalEl).modal('show');
                     }
                 }
@@ -93,7 +91,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                 var descTarget = trigger.attr('data-desc-target');
                 var descHtml = descTarget ? $('#' + descTarget).html() : '';
 
-                // Populate Modal.
+                // Populate Modal (Internal IDs kept as camelCase in Mustache, so we use them here)
                 $('#phModalNameView, #phModalTitleView').text(name);
                 $('#phModalXPView').text(xp);
 
@@ -122,8 +120,10 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                     }));
                 }
 
-                // Open Modal (Bootstrap 5 compatible).
-                var modalEl = document.getElementById('phItemModalView');
+                // Open Modal (Bootstrap 5 compatible)
+                // CORREÇÃO: Usando o ID atualizado com hífen
+                var modalEl = document.getElementById('ph-item-modal-view');
+
                 // eslint-disable-next-line no-undef
                 if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                     // eslint-disable-next-line no-undef
@@ -189,7 +189,6 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                 $btn.prop('disabled', true).text(config.strings.ai_creating).attr('aria-busy', 'true');
 
                 // Call Moodle External Function.
-                // We disable camelcase rule here because PHP External API uses snake_case keys.
                 /* eslint-disable camelcase */
                 var request = {
                     methodname: 'block_playerhud_generate_ai_content',
@@ -212,18 +211,19 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
 
                     if (resp.success) {
                         // Reload page on modal close.
-                        $('#phAiModal').one('hidden.bs.modal', function() {
+                        // CORREÇÃO: ID atualizado
+                        $('#ph-ai-modal').one('hidden.bs.modal', function() {
                             window.location.reload();
                         });
 
                         var $modalTitle = $('#phAiModalLabel');
-                        $modalTitle.text(config.strings.success_title); // "Sucesso!" do core
+                        $modalTitle.text(config.strings.success_title);
 
                         // Container Principal
                         var successHtml = '<div id="ph-success-container" tabindex="-1" ';
                         successHtml += 'class="text-center py-3 ph-animate-fadein" style="outline: none;">';
 
-                        // Ícone de Sucesso Animado (Visual Feedback)
+                        // Ícone de Sucesso Animado
                         successHtml += '<div class="mb-3 text-success" style="font-size: 3rem;" aria-hidden="true">';
                         successHtml += '<i class="fa fa-check-circle"></i></div>';
 
@@ -235,14 +235,14 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                         var itemsList = items.join(', ');
                         var count = items.length;
 
-                        // TÍTULO: Quantidade Criada (Agora traduzido)
+                        // TÍTULO
                         var titleText = config.strings.created_count.replace('{$a}', count);
                         successHtml += '<h5 class="text-muted text-uppercase small fw-bold mb-2">' + titleText + '</h5>';
 
-                        // DESTAQUE: Nome dos Itens (Grande e Visível)
+                        // DESTAQUE
                         successHtml += '<h2 class="fw-bold text-dark mb-4 display-6">' + itemsList + '</h2>';
 
-                        // Warnings and Info messages (Caixas coloridas)
+                        // Warnings and Info messages
                         if (resp.warning_msg) {
                             successHtml += '<div class="alert alert-warning small mb-3 text-start">';
                             successHtml += '<i class="fa fa-exclamation-triangle me-2" aria-hidden="true"></i> ';
@@ -254,7 +254,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                             successHtml += resp.info_msg + '</div>';
                         }
 
-                        // Drop Code (Se houver)
+                        // Drop Code
                         if (resp.drop_code && count === 1) {
                             var fullCode = '[PLAYERHUD_DROP code=' + resp.drop_code + ']';
 
@@ -273,7 +273,8 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
 
                         successHtml += '</div>';
 
-                        $('#phAiModal .modal-body').html(successHtml);
+                        // CORREÇÃO: IDs atualizados
+                        $('#ph-ai-modal .modal-body').html(successHtml);
 
                         // Botão de Fechar/Recarregar
                         var $btnReload = $('<button class="btn btn-success w-100 py-2 fw-bold">' +
@@ -282,7 +283,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                             window.location.reload();
                         });
 
-                        $('#phAiModal .modal-footer').empty().append($btnReload);
+                        $('#ph-ai-modal .modal-footer').empty().append($btnReload);
 
                         // Accessibility focus.
                         setTimeout(function() {

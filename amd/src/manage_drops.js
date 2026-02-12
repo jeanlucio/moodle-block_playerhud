@@ -23,7 +23,7 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
             var $inputBtnText = $('#customBtnText');
             var $inputBtnEmoji = $('#customBtnEmoji');
 
-            $('#codeGenModal').appendTo('body');
+            $('#ph-codegen-modal').appendTo('body');
 
             /**
              * Atualiza o preview e o código gerado no modal.
@@ -190,7 +190,7 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
 
                     updateGenerator();
 
-                    var modalEl = document.getElementById('codeGenModal');
+                    var modalEl = document.getElementById('ph-codegen-modal');
                     if (modalEl) {
                         if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                             bootstrap.Modal.getOrCreateInstance(modalEl).show();

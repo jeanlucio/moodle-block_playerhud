@@ -16,7 +16,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
          */
         init: function(config) {
             // Move o modal para o final do body para evitar problemas de z-index
-            $('#phItemModalView').appendTo('body');
+            $('#ph-item-modal-view').appendTo('body');
 
             // 1. Disable HUD Confirmation.
             $('.js-disable-hud').on('click', function(e) {
@@ -48,7 +48,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
              * Helper to open/close bootstrap modal safely.
              */
             function openItemModal() {
-                var el = document.getElementById('phItemModalView');
+                var el = document.getElementById('ph-item-modal-view');
                 if (typeof $ !== 'undefined' && $.fn.modal) {
                     // Bootstrap 4 (Tema Clássico)
                     $(el).modal('show');

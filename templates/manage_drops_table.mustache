@@ -18,7 +18,6 @@
     @template block_playerhud/manage_drops_table
 
     Manage drops table template.
-
     @package    block_playerhud
     @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
     @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -39,12 +38,12 @@
             <h2 class="m-0">{{item_name}}</h2>
         </div>
     </div>
-    
-    <div class="ms-auto d-flex gap-2">
+
+    <div class="ms-auto d-flex gap-3">
         <a href="{{url_library}}" class="btn btn-outline-dark shadow-sm">
-            <i class="fa fa-book" aria-hidden="true"></i> {{str_back_lib}}
+             <i class="fa fa-book" aria-hidden="true"></i> {{str_back_lib}}
         </a>
-        <a href="{{url_new_drop}}" class="btn btn-success shadow-sm">
+        <a href="{{url_new_drop}}" class="btn btn-success shadow-sm ms-2">
             <i class="fa fa-plus" aria-hidden="true"></i> {{str_new_drop}}
         </a>
     </div>
@@ -64,12 +63,12 @@
             <table class="table table-hover table-striped mb-0 align-middle">
                 <thead class="bg-light">
                     <tr>
-                        <th scope="col" class="text-center ph-col-xs">
-                            <label class="visually-hidden" for="ph-select-all">{{str_select_all}}</label>
-                            <input type="checkbox" id="ph-select-all" class="form-check-input">
+                        <th scope="col" class="ph-col-select">
+                            <span class="accesshide">{{str_select_all}}</span>
+                            <input type="checkbox" id="ph-select-all" class="form-check-input" title="{{str_select_all}}">
                         </th>
                         <th scope="col" class="ph-col-sm">N.</th>
-                        
+
                         <th scope="col">
                             <a href="{{headers.name.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
                                 {{headers.name.label}} <i class="fa {{headers.name.icon_class}} ms-1" aria-hidden="true"></i>
@@ -85,7 +84,7 @@
                                 {{headers.time.label}} <i class="fa {{headers.time.icon_class}} ms-1" aria-hidden="true"></i>
                             </a>
                         </th>
-                       
+
                         <th scope="col" class="ph-col-gen">{{str_col_gen}}</th>
                         <th scope="col" class="text-end ph-col-actions">{{str_actions}}</th>
                     </tr>
@@ -93,15 +92,15 @@
                 <tbody>
                     {{#drops}}
                     <tr>
-                        <td class="align-middle text-center">
-                            <label class="visually-hidden" for="chk-{{id}}">{{str_select}}</label>
+                        <td class="ph-col-select">
+                            <label class="accesshide" for="chk-{{id}}">{{str_select}}</label>
                             <input type="checkbox" name="bulk_ids[]" value="{{id}}" id="chk-{{id}}" class="form-check-input ph-bulk-check">
                         </td>
                         <td class="align-middle text-muted small">{{counter}}</td>
                         <td class="align-middle fw-bold">{{{name}}}</td>
                         <td class="align-middle">
                             {{#is_infinite}}
-                                <span class="badge bg-success"><i class="fa fa-infinity" aria-hidden="true"></i> {{str_infinite}}</span>
+                                <span class="badge bg-success text-white"><i class="fa fa-infinity" aria-hidden="true"></i> {{str_infinite}}</span>
                             {{/is_infinite}}
                             {{^is_infinite}}
                                 <span class="badge bg-light text-dark border border-secondary">Max: {{maxusage}}</span>
@@ -117,10 +116,10 @@
                                 </span>
                             {{/is_immediate}}
                         </td>
-                        
+
                         <td class="align-middle text-nowrap">
-                            <div class="d-flex gap-1 justify-content-start">
-                                <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm js-copy-code"
+                            <div class="d-flex gap-2 justify-content-start">
+                                <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm js-copy-code me-1"
                                         data-clipboard-text="{{full_default_code}}"
                                         title="{{str_quick_copy}}"
                                         aria-label="{{str_quick_copy}}">
@@ -128,7 +127,7 @@
                                 </button>
 
                                 <button type="button" class="btn btn-outline-dark btn-sm js-open-gen-modal shadow-sm"
-                                        data-dropcode="{{display_code}}" 
+                                        data-dropcode="{{display_code}}"
                                         title="{{str_gen_title}}"
                                         aria-label="{{str_gen_title}}">
                                     <i class="fa fa-magic" aria-hidden="true"></i> {{str_gen_title}}
@@ -140,7 +139,7 @@
                             <a href="{{url_edit}}" class="btn btn-sm btn-primary me-1 shadow-sm">
                                 <i class="fa fa-pencil" aria-hidden="true"></i> {{str_edit}}
                             </a>
-                            <a href="{{url_delete}}" class="btn btn-sm btn-danger shadow-sm js-delete-btn" 
+                            <a href="{{url_delete}}" class="btn btn-sm btn-danger shadow-sm js-delete-btn"
                                data-confirm-msg="{{confirm_msg}}">
                                 <i class="fa fa-trash" aria-hidden="true"></i> {{str_delete}}
                             </a>

@@ -1,4 +1,28 @@
-{{! @template block_playerhud/view_ranking }}
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/view_ranking
+
+    Template for the leaderboard/ranking tab.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
 
 <div class="container-fluid p-0 animate__animated animate__fadeIn">
 
@@ -8,11 +32,16 @@
             <div class="mb-2 mb-md-0">
                 <div class="d-flex align-items-center mb-1">
                     <strong class="me-2">{{str_privacy_title}}</strong>
+                    
                     {{#privacy_visible}}
-                        <span class="badge bg-success"><i class="fa fa-eye"></i> {{str_visible}}</span>
+                        <span class="badge bg-success text-white shadow-sm">
+                            <i class="fa fa-eye me-1" aria-hidden="true"></i> {{str_visible}}
+                        </span>
                     {{/privacy_visible}}
                     {{^privacy_visible}}
-                        <span class="badge bg-secondary"><i class="fa fa-eye-slash"></i> {{str_hidden}}</span>
+                        <span class="badge bg-secondary text-white shadow-sm">
+                            <i class="fa fa-eye-slash me-1" aria-hidden="true"></i> {{str_hidden}}
+                        </span>
                     {{/privacy_visible}}
                 </div>
                 
@@ -21,18 +50,17 @@
                     {{^privacy_visible}} {{str_hidden_desc}} {{/privacy_visible}}
                 </div>
             </div>
-
-            <div class="d-flex gap-2">
-                {{! CONTROLE DO PROFESSOR }}
+            <div class="d-flex gap-3">
+                {{! TEACHER CONTROLS }}
                 {{#teacher_filter_active}}
                     <a href="{{url_teacher_filter}}" class="btn {{btn_teacher_class}} btn-sm shadow-sm">
-                        <i class="fa fa-filter" aria-hidden="true"></i> {{str_teacher_filter}}
+                        <i class="fa fa-filter me-1" aria-hidden="true"></i> {{str_teacher_filter}}
                     </a>
                 {{/teacher_filter_active}}
 
-                {{! Botão Dinâmico (Aluno) }}
-                <a href="{{url_toggle_privacy}}" class="btn {{btn_toggle_class}} btn-sm shadow-sm text-nowrap">
-                    <i class="fa {{btn_toggle_icon}}" aria-hidden="true"></i> {{str_btn_toggle}}
+                {{! STUDENT PRIVACY TOGGLE }}
+                <a href="{{url_toggle_privacy}}" class="btn {{btn_toggle_class}} btn-sm shadow-sm text-nowrap ms-2">
+                    <i class="fa {{btn_toggle_icon}} me-1" aria-hidden="true"></i> {{str_btn_toggle}}
                 </a>
             </div>
             
@@ -43,16 +71,24 @@
     {{#show_content}}
         <ul class="nav nav-tabs mb-3" id="rankingTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active fw-bold" id="individual-tab" data-bs-toggle="tab" 
-                        data-bs-target="#individual" type="button" role="tab" aria-selected="true">
-                    <i class="fa fa-user me-2"></i> {{str_tab_individual}}
+                {{! 
+                    CORREÇÃO 2: Atributos Híbridos para as Abas (BS4 e BS5)
+                    Adicionado data-toggle e data-target para Moodle 4.x
+                }}
+                <button class="nav-link active fw-bold" id="individual-tab" 
+                        data-bs-toggle="tab" data-toggle="tab"
+                        data-bs-target="#individual" data-target="#individual"
+                        type="button" role="tab" aria-selected="true">
+                     <i class="fa fa-user me-2" aria-hidden="true"></i> {{str_tab_individual}}
                 </button>
             </li>
             {{#has_groups}}
             <li class="nav-item" role="presentation">
-                <button class="nav-link fw-bold" id="groups-tab" data-bs-toggle="tab" 
-                        data-bs-target="#groups" type="button" role="tab" aria-selected="false">
-                    <i class="fa fa-users me-2"></i> {{str_tab_groups}}
+                <button class="nav-link fw-bold" id="groups-tab" 
+                        data-bs-toggle="tab" data-toggle="tab"
+                        data-bs-target="#groups" data-target="#groups"
+                        type="button" role="tab" aria-selected="false">
+                    <i class="fa fa-users me-2" aria-hidden="true"></i> {{str_tab_groups}}
                 </button>
             </li>
             {{/has_groups}}
@@ -68,24 +104,25 @@
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    {{! CORREÇÃO: style removido, classe adicionada }}
                                     <th scope="col" class="text-center ph-col-rank">{{str_col_rank}}</th>
                                     <th scope="col">{{str_col_player}}</th>
                                     <th scope="col" class="text-center">{{str_col_group}}</th>
                                     <th scope="col" class="text-center">{{str_col_xp}}</th>
                                     <th scope="col" class="text-center small text-muted font-monospace">
-                                        <i class="fa fa-clock-o" aria-hidden="true"></i> {{str_col_date}}
+                                        <i class="fa fa-clock-o me-1" aria-hidden="true"></i> {{str_col_date}}
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {{#individual}}
-                                <tr class="{{#is_me}}table-warning border-start border-warning border-4{{/is_me}}">
+                                <tr class="{{#is_me}}table-primary border-start border-primary border-4{{/is_me}}">
                                     <td class="text-center fw-bold lead">
-                                        {{#medal_emoji}}<span class="ph-rank-medal" role="img" aria-label="Rank {{rank}}">{{medal_emoji}}</span>{{/medal_emoji}}
+                                        {{#medal_emoji}}
+                                            <span class="ph-rank-medal" role="img" aria-label="Rank {{rank}}">{{medal_emoji}}</span>
+                                        {{/medal_emoji}}
                                         {{^medal_emoji}}{{rank}}{{/medal_emoji}}
                                     </td>
-<td>
+                                    <td>
                                         <div class="d-flex align-items-center">
                                             {{{userpicture}}}
                                             <div class="ms-3">
@@ -93,19 +130,18 @@
                                                     {{fullname}}
                                                 </div>
                                                 
-                                                {{! INDICADOR: ALUNO OCULTO (Privacidade) }}
+                                                {{! HIDDEN STUDENT INDICATOR }}
                                                 {{#is_hidden_marker}}
-                                                    <span class="badge bg-secondary ph-badge-tiny" title="{{str_hidden}}">
-                                                        <i class="fa fa-eye-slash" aria-hidden="true"></i> {{str_hidden}}
+                                                    <span class="badge bg-secondary text-white ph-badge-tiny" title="{{str_hidden}}">
+                                                        <i class="fa fa-eye-slash me-1" aria-hidden="true"></i> {{str_hidden}}
                                                     </span>
                                                 {{/is_hidden_marker}}
 
-                                                {{! INDICADOR: ALUNO PAUSADO (Opt-out) - Apenas Professor vê }}
+                                                {{! PAUSED STUDENT INDICATOR (TEACHER VIEW) }}
                                                 {{#is_paused}}
-                                                    {{! [CORREÇÃO] Strings via Helper #str }}
-                                                    <span class="badge bg-danger ph-badge-tiny" 
+                                                    <span class="badge bg-danger text-white ph-badge-tiny" 
                                                           title="{{#str}} status_paused_title, block_playerhud {{/str}}">
-                                                        <i class="fa fa-pause-circle" aria-hidden="true"></i> 
+                                                        <i class="fa fa-pause-circle me-1" aria-hidden="true"></i> 
                                                         {{#str}} status_off, block_playerhud {{/str}}
                                                     </span>
                                                 {{/is_paused}}
@@ -116,7 +152,7 @@
                                         {{group_name}}
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-primary rounded-pill px-3 py-2">{{currentxp}} XP</span>
+                                        <span class="badge bg-primary text-white rounded-pill px-3 py-2">{{currentxp}} XP</span>
                                     </td>
                                     <td class="text-center small text-muted font-monospace">
                                         {{last_score_date}}
@@ -128,9 +164,10 @@
                     </div>
                 </div>
                 {{/has_players}}
+                
                 {{^has_players}}
-                    <div class="alert alert-info text-center">
-                        <i class="fa fa-info-circle fa-2x mb-3 d-block"></i>
+                    <div class="alert alert-info text-center shadow-sm">
+                        <i class="fa fa-info-circle fa-2x mb-3 d-block" aria-hidden="true"></i>
                         {{no_ranking_data}}
                     </div>
                 {{/has_players}}
@@ -144,7 +181,6 @@
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    {{! CORREÇÃO: style removido, classe adicionada }}
                                     <th scope="col" class="text-center ph-col-rank">{{str_col_rank}}</th>
                                     <th scope="col">{{str_col_group}}</th>
                                     <th scope="col" class="text-center">{{str_col_members}}</th>
@@ -155,13 +191,17 @@
                                 {{#groups}}
                                 <tr class="{{#is_my_group}}table-info border-start border-info border-4{{/is_my_group}}">
                                     <td class="text-center fw-bold lead">
-                                        {{#medal_emoji}}<span class="ph-rank-medal" role="img" aria-label="Rank {{rank}}">{{medal_emoji}}</span>{{/medal_emoji}}
+                                        {{#medal_emoji}}
+                                            <span class="ph-rank-medal" role="img" aria-label="Rank {{rank}}">{{medal_emoji}}</span>
+                                        {{/medal_emoji}}
                                         {{^medal_emoji}}{{rank}}{{/medal_emoji}}
                                     </td>
                                     <td class="fw-bold text-dark">{{name}}</td>
-                                    <td class="text-center"><span class="badge bg-light text-dark border">{{member_count}}</span></td>
                                     <td class="text-center">
-                                        <span class="badge bg-success rounded-pill px-3">{{average_xp}} XP</span>
+                                        <span class="badge bg-light text-dark border">{{member_count}}</span>
+                                    </td>
+                                    <td class="text-center">
+                                         <span class="badge bg-success text-white rounded-pill px-3">{{average_xp}} XP</span>
                                     </td>
                                 </tr>
                                 {{/groups}}
@@ -178,15 +218,12 @@
     {{! --- EMPTY STATE IF HIDDEN --- }}
     {{^show_content}}
         <div class="text-center py-5">
-            {{! CORREÇÃO 1: Emoji decorativo com aria-hidden="true" }}
             <div class="mb-3 display-4 text-muted ph-opacity-low" aria-hidden="true">🙈</div>
             
             <h4 class="text-muted">{{str_hidden}}</h4>
             
             <p class="text-muted small">
                 {{str_hidden_desc}}<br>
-                
-                {{! CORREÇÃO 2: Texto dinâmico vindo do PHP (use 3 chaves pois contém HTML <strong>) }}
                 {{{str_hidden_help}}}
             </p>
         </div>

@@ -19,13 +19,13 @@
 .ph-text-sm { font-size: 0.9rem; }
 .ph-text-md { font-size: 1rem; }
 
-/* FIX: Forçar visual arredondado sobrepondo tema Moove */
+/* FIX: Forçar visual arredondado */
 body .block_playerhud .btn,
 body .block_playerhud table .btn,
 body .ph-manage-header .btn,
-body #ph-item-modal-view .btn,  /* ID Atualizado */
-body #ph-ai-modal .btn,         /* ID Atualizado */
-body #ph-codegen-modal .btn {   /* ID Atualizado */
+body #ph-item-modal-view .btn,
+body #ph-ai-modal .btn,
+body #ph-codegen-modal .btn {
     border-radius: 0.5rem !important;
 }
 
@@ -51,8 +51,8 @@ body .ph-manage-header .rounded-pill {
 
 /* FIX: Ensure modal close button visibility and reset */
 .block_playerhud .btn-close,
-#ph-item-modal-view .btn-close, /* ID Atualizado */
-#ph-ai-modal .btn-close {       /* ID Atualizado */
+#ph-item-modal-view .btn-close,
+#ph-ai-modal .btn-close {
     opacity: 1 !important;
     background: transparent !important;
     border: 0;
@@ -63,6 +63,32 @@ body .ph-manage-header .rounded-pill {
     text-shadow: 0 1px 0 #fff;
     padding: 0.5rem;
     margin: -0.5rem -0.5rem -0.5rem auto;
+}
+
+/* FIX ESPECÍFICO PARA O MODAL AZUL (GERADOR DE CÓDIGO) 
+   Essa regra resolve o problema de duplicação no Moodle 5 e sumiço no 4.5
+*/
+#ph-codegen-modal .btn-close {
+    /* 1. Remove a imagem de fundo (X do Bootstrap 5) para não duplicar */
+    background-image: none !important;
+    background-color: transparent !important;
+    
+    /* 2. Força a visibilidade do caractere textual */
+    opacity: 1 !important;
+    
+    /* 3. Estiliza o texto (&times;) para ser branco */
+    color: #fff !important;
+    font-size: 1.5rem;
+    line-height: 1;
+    border: 0;
+    
+    /* Remove filtros que podem inverter cores indesejadas */
+    filter: none !important; 
+}
+
+#ph-codegen-modal .btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(200%); /* Garante branco */
+    opacity: 1 !important;
 }
 
 /* FIX: Alinhamento da Coluna de Seleção */
