@@ -33,19 +33,7 @@ function xmldb_block_playerhud_upgrade($oldversion) {
 
     $dbman = $DB->get_manager();
 
-    // Add the 'code' field to the block_playerhud_drops table.
-    if ($oldversion < 2026020301) {
-        $table = new xmldb_table('block_playerhud_drops');
-        $field = new xmldb_field('code', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'itemid');
-
-        // Add the field if it does not exist.
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        // Upgrade savepoint.
-        upgrade_block_savepoint(true, 2026020301, 'playerhud');
-    }
+    // Past upgrade steps were merged into install.xml for the current baseline version.
 
     return true;
 }
