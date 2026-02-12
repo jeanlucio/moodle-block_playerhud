@@ -17,7 +17,6 @@
 {{!
     @template block_playerhud/manage_layout
     Main layout for the management area (Tabs + Content).
-
     @package    block_playerhud
     @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
     @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -27,12 +26,12 @@
     {{! Header }}
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <h2 class="m-0">{{str_title}}</h2>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-3">
             <a href="{{url_backpack}}" class="btn btn-primary shadow-sm">
-                <i class="fa fa-gamepad" aria-hidden="true"></i> {{str_backpack}}
+                <i class="fa fa-gamepad me-1" aria-hidden="true"></i> {{str_backpack}}
             </a>
-            <a href="{{url_course}}" class="btn btn-outline-secondary shadow-sm">
-                <i class="fa fa-arrow-left" aria-hidden="true"></i> {{str_back_course}}
+            <a href="{{url_course}}" class="btn btn-outline-secondary shadow-sm ms-2">
+                 <i class="fa fa-arrow-left me-1" aria-hidden="true"></i> {{str_back_course}}
             </a>
         </div>
     </div>

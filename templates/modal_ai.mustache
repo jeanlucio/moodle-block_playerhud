@@ -14,11 +14,10 @@
     You should have received a copy of the GNU General Public License
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
-{{! 
-    @template block_playerhud/modal_ai 
+{{!
+    @template block_playerhud/modal_ai
 
     Modal for AI Item Generation.
-
     @package    block_playerhud
     @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
     @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -28,7 +27,9 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="phAiModalLabel">{{#str}} ai_btn_create, block_playerhud {{/str}}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{#str}} close, block_playerhud {{/str}}"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="{{#str}} close, block_playerhud {{/str}}">
+            <span aria-hidden="true">&times;</span>
+        </button>
       </div>
       <div class="modal-body">
         <form id="ph-ai-form">
@@ -53,15 +54,14 @@
                 <label class="form-check-label fw-bold" for="ai-drop">{{#str}} ai_create_drop, block_playerhud {{/str}}</label>
             </div>
 
-            {{! CORREÇÃO: Usar classe CSS .ph-display-none em vez do atributo hidden para permitir slideDown }}
             <div id="ai-drop-options" class="p-3 bg-light border rounded mb-3 ph-display-none">
                 <h6 class="border-bottom pb-2 mb-3 fw-bold">{{#str}} ai_drop_settings, block_playerhud {{/str}}</h6>
-                
+
                 <div class="mb-3">
                     <label for="ai-location" class="form-label small">{{#str}} drop_name_label, block_playerhud {{/str}}</label>
                     <input type="text" class="form-control form-control-sm" id="ai-location" placeholder="{{#str}} drop_name_default, block_playerhud {{/str}}">
                 </div>
-                
+
                 <div class="row">
                     <div class="col-6">
                         <label for="ai-maxusage" class="form-label small">{{#str}} drop_max_qty, block_playerhud {{/str}}</label>
@@ -78,7 +78,7 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{#str}} cancel, block_playerhud {{/str}}</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-dismiss="modal">{{#str}} cancel, block_playerhud {{/str}}</button>
         <button type="button" class="btn btn-primary fw-bold" id="ph-btn-conjure">
             <i class="fa fa-magic me-1" aria-hidden="true"></i> {{#str}} ai_btn_conjure, block_playerhud {{/str}}
         </button>
@@ -86,3 +86,4 @@
     </div>
   </div>
 </div>
+

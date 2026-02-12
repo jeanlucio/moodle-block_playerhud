@@ -19,6 +19,66 @@
 .ph-text-sm { font-size: 0.9rem; }
 .ph-text-md { font-size: 1rem; }
 
+/* FIX: Forçar visual arredondado sobrepondo tema Moove */
+body .block_playerhud .btn,
+body .block_playerhud table .btn,
+body .ph-manage-header .btn,
+body #ph-item-modal-view .btn,  /* ID Atualizado */
+body #ph-ai-modal .btn,         /* ID Atualizado */
+body #ph-codegen-modal .btn {   /* ID Atualizado */
+    border-radius: 0.5rem !important;
+}
+
+/* Rounded Pill Style para botões específicos se desejar (ex: Drops) */
+/* Se quiser que o botão de drops seja 'pílula' (totalmente redondo), descomente abaixo:
+body .block_playerhud table .btn-info {
+    border-radius: 50rem !important;
+} */
+
+body .block_playerhud .rounded-pill,
+body .ph-manage-header .rounded-pill {
+    border-radius: 50rem !important;
+}
+
+/* FIX: Ensure white text contrast on Badges */
+.block_playerhud .badge.bg-primary,
+.block_playerhud .badge.bg-success,
+.block_playerhud .badge.bg-secondary,
+.block_playerhud .badge.bg-info,
+.block_playerhud .badge.bg-danger {
+    color: #fff !important;
+}
+
+/* FIX: Ensure modal close button visibility and reset */
+.block_playerhud .btn-close,
+#ph-item-modal-view .btn-close, /* ID Atualizado */
+#ph-ai-modal .btn-close {       /* ID Atualizado */
+    opacity: 1 !important;
+    background: transparent !important;
+    border: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #000;
+    text-shadow: 0 1px 0 #fff;
+    padding: 0.5rem;
+    margin: -0.5rem -0.5rem -0.5rem auto;
+}
+
+/* FIX: Alinhamento da Coluna de Seleção */
+.ph-col-select {
+    width: 60px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding-inline: 0 !important;
+}
+
+.ph-col-select input[type="checkbox"] {
+    margin: 0 auto !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+}
+
 /* --- 2. BLOCK SIDEBAR SPECIFIC --- */
 .block_playerhud .userpicture {
     border: 3px solid var(--light, #fff);
@@ -39,13 +99,12 @@
     border-radius: 50%;
 }
 
-/* Sidebar Grid - FIX FUNDO AZUL e Layout */
+/* Sidebar Grid */
 .ph-sidebar-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
     margin-bottom: 1rem;
-    /* Simplificado: 'background: none' já remove cor e imagem de uma vez */
     background: none !important;
     box-shadow: none !important;
     border: none !important;
@@ -72,7 +131,6 @@
     background-color: var(--card-bg, #fff);
     border: 1px solid rgba(0, 0, 0, .125);
     min-height: 100px;
-    /* RTL: Borda lógica na esquerda (start) */
     border-inline-start: 5px solid var(--secondary, #6c757d);
     transition: border-color 0.3s ease;
 }
@@ -84,7 +142,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* RTL: Borda lógica na direita (end) */
     border-inline-end: 1px solid var(--gray-300, #dee2e6);
     padding: 1rem;
 }
@@ -110,7 +167,6 @@
     min-width: 180px;
     width: 180px;
     background-color: var(--gray-100, #f8f9fa);
-    /* RTL: Borda lógica na esquerda (start) */
     border-inline-start: 1px solid var(--gray-300, #dee2e6);
     display: flex;
     flex-direction: column;
@@ -136,7 +192,7 @@
     padding-block: 0.5rem;
 }
 
-/* --- 4. GLOBAL TIER SYSTEM (Cores e Badges) --- */
+/* --- 4. GLOBAL TIER SYSTEM --- */
 .ph-progress-container {
     height: 12px;
     background-color: var(--gray-200, #e9ecef);
@@ -241,7 +297,7 @@
 .playerhud-item-card { 
     position: relative;     
     height: 100%; 
-    min-height: 260px; /* Altura mínima para garantir uniformidade visual */
+    min-height: 260px;
 }
 
 .ph-new-badge {
@@ -253,36 +309,27 @@
     font-size: 0.65rem; padding: 2px 5px; border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     z-index: 6;
-    /* Atualizado para usar o novo nome da animação */
     animation: ph-pulse 2s infinite;
 }
 
-/* --- Badge de Arquivado (Restaurado e Centralizado) --- */
 .ph-badge-archived {
-    /* Posicionamento absoluto centralizado no topo */
     position: absolute;
     top: -10px;
     left: 50%;
-    transform: translateX(-50%); /* Garante o centro exato */
-    
-    /* Visual */
-    z-index: 20; /* Garante que fique acima dos outros badges */
-    background-color: var(--secondary, #6c757d); /* Fallback para cinza */
+    transform: translateX(-50%);
+    z-index: 20;
+    background-color: var(--secondary, #6c757d);
     color: #fff;
     font-size: 0.7rem;
     padding: 4px 10px;
     border-radius: 12px;
-    border: 2px solid var(--card-bg, #fff); /* Borda branca para destacar do fundo */
+    border: 2px solid var(--card-bg, #fff);
     box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     white-space: nowrap;
 }
 
-/* Suporte RTL (Para idiomas da direita para esquerda, como Árabe) */
-[dir="rtl"] .ph-badge-archived {
-    transform: translateX(50%);
-}
+[dir="rtl"] .ph-badge-archived { transform: translateX(50%); }
 
-/* Garante que o item arquivado fique visualmente "desativado" */
 .ph-item-archived { 
     opacity: 0.85; 
     filter: grayscale(100%); 
@@ -300,7 +347,7 @@
     display: inline-block;
     border: 1px solid var(--gray-200, #e9ecef);
 }
-.ph-text-gold { color: #856404; } /* Esta cor custom pode ficar, ou usar variável se houver */
+.ph-text-gold { color: #856404; }
 .ph-card-date {
     font-size: 0.65rem;
     color: var(--gray-500, #adb5bd);
@@ -314,11 +361,6 @@
 .ph-card-img { max-height: 60px; width: auto; }
 .ph-card-emoji { font-size: 3rem; line-height: 1; }
 
-/* CORREÇÃO PARA TÍTULOS LONGOS NA COLEÇÃO */
-/* Título do Card Unificado
-   - Altura fixa para garantir que todos os cards na linha tenham o mesmo alinhamento.
-   - Truncamento após 3 linhas.
-*/
 .ph-card-title {
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -326,21 +368,16 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    
-    /* 3 linhas * 1.2 line-height = 3.6em de altura fixa */
     height: 3.6em; 
     line-height: 1.2;
-    
-    font-size: 0.9rem; /* Mantido do seu original (0.85rem era muito pequeno) */
+    font-size: 0.9rem;
     margin-bottom: 0.5rem;
-    
-    /* Centralização horizontal do texto */
     text-align: center;
     width: 100%;
 }
 .playerhud-inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
 
-/* --- 7. STASH & MINI ITEMS (Fixed Shape & Fill) --- */
+/* --- 7. STASH & MINI ITEMS --- */
 .ph-widget-stash,
 .ph-sidebar-stash,
 .block_playerhud .ph-sidebar-stash {
@@ -388,9 +425,7 @@
 
 .ph-mini-item .ph-emoji { font-size: 1.2rem; line-height: 1; }
 
-/* --- 8. DROPS & UTILS (Compact but Breathable) --- */
-
-/* Card Container */
+/* --- 8. DROPS & UTILS --- */
 .ph-drop-card-container {
     width: 160px;
     display: inline-flex !important;
@@ -404,7 +439,6 @@
     min-height: 0 !important;
 }
 
-/* Área clicável (Ícone + Texto) */
 .ph-drop-trigger-area {
     cursor: pointer;
     min-height: 0 !important;
@@ -416,7 +450,6 @@
     margin-bottom: 1rem !important; 
 }
 
-/* Container da Imagem/Emoji */
 .ph-drop-icon-wrapper {
     height: auto !important;
     min-height: 0 !important;
@@ -429,7 +462,6 @@
     flex-shrink: 0 !important;
 }
 
-/* A Imagem do Drop */
 .playerhud-item-card img {
     border-radius: 0 !important;
     max-width: 100%;
@@ -440,7 +472,6 @@
     display: block;
 }
 
-/* Texto do Nome */
 .ph-drop-trigger-area strong {
     white-space: normal !important;
     display: -webkit-box;
@@ -457,20 +488,17 @@
     flex-grow: 0 !important;
 }
 
-/* Botões dentro do Drop */
 .ph-drop-card-container .btn {
     margin-top: 0 !important;
     flex-shrink: 0 !important;
 }
 
-/* --- Image Mode (Mantido) --- */
 .ph-drop-image-container {
     display: inline-block;
     position: relative;
     text-align: center;
     vertical-align: top;
     margin-bottom: 14px;
-    /* RTL */
     margin-inline-end: 5px;
 }
 
@@ -496,7 +524,6 @@
 .ph-badge-bottom-right {
     position: absolute;
     bottom: -5px;
-    /* RTL */
     inset-inline-end: -5px;
     font-size: 0.6rem;
     z-index: 5;
@@ -505,7 +532,6 @@
 .ph-badge-bottom-center {
     position: absolute;
     bottom: -18px;
-    /* Centralização com RTL compatível (left 50% é padrão de layout hack, mas aceitável) */
     left: 50%;
     transform: translateX(-50%);
     font-size: 0.65rem;
@@ -518,7 +544,6 @@
 .ph-badge-top-right {
     position: absolute;
     top: 5px;
-    /* RTL */
     inset-inline-end: 5px;
     font-size: 0.7rem;
     z-index: 5;
@@ -538,19 +563,18 @@
 .ph-modal-img { max-width: 120px; max-height: 120px; object-fit: contain; }
 .ph-modal-emoji { font-size: 3rem; line-height: 1; }
 .ph-alert-warning-box {
-    background-color: var(--warning-bg-subtle, #fff3cd); /* Fallback para var do Bootstrap */
+    background-color: var(--warning-bg-subtle, #fff3cd);
     padding: 10px; border-radius: 5px;
     border: 1px solid var(--warning-border-subtle, #ffeeba);
 }
 .ph-code-input, 
 .ph-input-code-readonly { 
-    /* !important necessário para vencer o estilo padrão de input[readonly] do Bootstrap */
     background-color: var(--gray-200, #f0f0f0) !important; 
     color: var(--pink, #d63384) !important; 
     font-size: 0.85rem !important; 
     font-weight: bold; 
     font-family: monospace; 
-    opacity: 1 !important; /* Impede que alguns navegadores deixem o texto desbotado */
+    opacity: 1 !important; 
 }
 .ph-modal-codegen .ph-gen-preview-real-card {
     background-color: var(--card-bg, #fff);
@@ -563,8 +587,8 @@
 .ph-gen-preview-wrapper-img { cursor: pointer; filter: drop-shadow(0 4px 2px rgba(0,0,0,0.1)); text-align: center; display: inline-block; transition: transform 0.2s ease; }
 .ph-gen-preview-wrapper-img:hover { transform: scale(1.05); }
 
-/* Column Widths */
-.ph-col-xs { width: 40px; }
+/* Column Widths (Aumentado ph-col-xs e ph-col-sm) */
+.ph-col-xs { width: 50px; }
 .ph-col-sm { width: 50px; }
 .ph-col-md { width: 80px; }
 .ph-col-lg { width: 100px; }
@@ -578,12 +602,10 @@
 .ph-img-xs { width: 32px; height: 32px; object-fit: contain; }
 .ph-header-img {
     width: 50px; height: 50px; object-fit: contain;
-    /* RTL */
     margin-inline-end: 15px;
 }
 .ph-header-emoji {
     font-size: 40px;
-    /* RTL */
     margin-inline-end: 15px;
     line-height: 1;
 }
@@ -599,7 +621,8 @@
 .ph-optin-card { max-width: 500px; border-radius: 15px; border: none; }
 .ph-optin-text { font-size: 1.1rem; }
 .ph-tab-content-wrapper { min-height: 300px; }
-/* --- Badges de Contagem (Topo) --- */
+
+/* --- Badges de Contagem --- */
 .ph-badge-counter {
     position: absolute;
     top: 8px;
@@ -617,17 +640,15 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* Posição Esquerda (Infinito) */
 .ph-badge-pos-left {
-    inset-inline-start: 8px; /* Compatível com RTL */
+    inset-inline-start: 8px;
     color: var(--info, #0dcaf0);
     border-color: var(--info, #0dcaf0);
     background-color: #fff;
 }
 
-/* Posição Direita (Finito) */
 .ph-badge-pos-right {
-    inset-inline-end: 8px; /* Compatível com RTL */
+    inset-inline-end: 8px;
     color: var(--dark, #212529);
 }
 
@@ -636,15 +657,9 @@
     font-size: 0.85rem;
 }
 
-/* Removemos estilos antigos conflitantes */
-.ph-card-count-badge { display: none; } /* Oculta o badge antigo */
-.ph-infinite-badge { display: none; } /* Oculta o badge antigo */
+.ph-card-count-badge { display: none; }
+.ph-infinite-badge { display: none; }
 
-/* ==============================================================================================
-   ATUALIZAÇÃO: Classes utilitárias para o Bloco (Gestão e JS Dinâmico)
-   ============================================================================================== */
-
-/* Usado nos modais gerados via JS (view.js e manage_items.js) */
 .ph-img-contain-120 {
     max-width: 120px;
     max-height: 120px;
@@ -659,45 +674,30 @@
     display: inline-block;
 }
 
-/* Usado no gerador de códigos (manage_drops.js) */
 .ph-badge-preview-corner {
     position: absolute;
     top: 5px;
-    inset-inline-end: 5px; /* Propriedade Lógica para RTL */
+    inset-inline-end: 5px;
     font-size: 0.7rem;
 }
 
-.ph-h-60 {
-    height: 60px;
-}
+.ph-h-60 { height: 60px; }
+.ph-fs-09 { font-size: 0.9rem; }
 
-.ph-fs-09 {
-    font-size: 0.9rem;
-}
-
-/* Força classes de utilidade do Bootstrap 5 (caso o tema sobrescreva ou para garantir RTL) */
+/* Utilities */
 .me-1 { margin-inline-end: 0.25rem !important; }
 .ms-1 { margin-inline-start: 0.25rem !important; }
 .me-2 { margin-inline-end: 0.5rem !important; }
 .ms-2 { margin-inline-start: 0.5rem !important; }
 .me-3 { margin-inline-end: 1rem !important; }
 .text-end { text-align: end !important; }
-/* Para o filtro de coleta */
+
 .ph-mini-item-img {
     width: 100%;
     height: 100%;
     object-fit: contain;
 }
 
-.ph-opacity-50 {
-    opacity: 0.5;
-}
-/* Utilitário para compatibilidade com animações JS (jQuery slideDown) */
-/* Substitui o uso de 'hidden' ou 'style="display:none"' */
-.ph-display-none {
-    display: none;
-}
-/* Espaçamento de letras para títulos pequenos (substitui style="letter-spacing:1px") */
-.ph-tracking-wide {
-    letter-spacing: 1px;
-}
+.ph-opacity-50 { opacity: 0.5; }
+.ph-display-none { display: none; }
+.ph-tracking-wide { letter-spacing: 1px; }

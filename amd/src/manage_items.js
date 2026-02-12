@@ -19,6 +19,25 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
             $('#phAiModal').appendTo('body');
             $('#phItemModalView').appendTo('body');
 
+            // --- FIXED: Explicitly handle AI Modal opening to ensure it works even if moved ---
+            $('body').on('click', '#btn-open-ai-modal', function(e) {
+                e.preventDefault();
+                // If bootstrap data-toggle works, this might be redundant but safe.
+                // If it fails because of DOM move, this fixes it.
+                var modalEl = document.getElementById('phAiModal');
+                if (modalEl) {
+                    // eslint-disable-next-line no-undef
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        // eslint-disable-next-line no-undef
+                        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                        modal.show();
+                    } else if ($(modalEl).modal) {
+                        // Fallback for older themes (Bootstrap 4)
+                        $(modalEl).modal('show');
+                    }
+                }
+            });
+
             // --- 1. BULK ACTIONS ---
 
             // Select All Checkbox.
@@ -191,7 +210,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                 Ajax.call([request])[0].done(function(resp) {
                     $btn.prop('disabled', false).text(originalText).removeAttr('aria-busy');
 
-if (resp.success) {
+                    if (resp.success) {
                         // Reload page on modal close.
                         $('#phAiModal').one('hidden.bs.modal', function() {
                             window.location.reload();
