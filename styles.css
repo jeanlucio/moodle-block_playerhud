@@ -255,8 +255,11 @@ body .ph-manage-header .rounded-pill {
 /* TIER 1 */
 .ph-lvl-tier-1.progress-bar,
 .ph-lvl-tier-1.badge,
-.playerhud-widget-container.ph-lvl-tier-1 .progress-bar {
-    background-color: var(--secondary, #6c757d);
+.playerhud-widget-container.ph-lvl-tier-1 .progress-bar,
+.block_playerhud .ph-lvl-tier-1.progress-bar, /* Fix para Bloco */
+.playerhud-container .ph-lvl-tier-1.progress-bar /* Fix para Header */
+{
+    background-color: var(--secondary, #6c757d) !important;
     color: var(--light, #fff) !important;
     border-color: var(--secondary, #6c757d);
 }
@@ -265,8 +268,11 @@ body .ph-manage-header .rounded-pill {
 /* TIER 2 */
 .ph-lvl-tier-2.progress-bar,
 .ph-lvl-tier-2.badge,
-.playerhud-widget-container.ph-lvl-tier-2 .progress-bar {
-    background-color: var(--success, #208337);
+.playerhud-widget-container.ph-lvl-tier-2 .progress-bar,
+.block_playerhud .ph-lvl-tier-2.progress-bar,
+.playerhud-container .ph-lvl-tier-2.progress-bar
+{
+    background-color: var(--success, #208337) !important;
     color: var(--light, #fff) !important;
     border-color: var(--success, #208337);
 }
@@ -275,8 +281,11 @@ body .ph-manage-header .rounded-pill {
 /* TIER 3 */
 .ph-lvl-tier-3.progress-bar,
 .ph-lvl-tier-3.badge,
-.playerhud-widget-container.ph-lvl-tier-3 .progress-bar {
-    background-color: var(--primary, #0b55c4);
+.playerhud-widget-container.ph-lvl-tier-3 .progress-bar,
+.block_playerhud .ph-lvl-tier-3.progress-bar,
+.playerhud-container .ph-lvl-tier-3.progress-bar
+{
+    background-color: var(--primary, #0b55c4) !important;
     color: var(--light, #fff) !important;
     border-color: var(--primary, #0b55c4);
 }
@@ -285,8 +294,11 @@ body .ph-manage-header .rounded-pill {
 /* TIER 4 */
 .ph-lvl-tier-4.progress-bar,
 .ph-lvl-tier-4.badge,
-.playerhud-widget-container.ph-lvl-tier-4 .progress-bar {
-    background-color: var(--purple, #6f42c1);
+.playerhud-widget-container.ph-lvl-tier-4 .progress-bar,
+.block_playerhud .ph-lvl-tier-4.progress-bar,
+.playerhud-container .ph-lvl-tier-4.progress-bar
+{
+    background-color: var(--purple, #6f42c1) !important;
     color: var(--light, #fff) !important;
     border-color: var(--purple, #6f42c1);
 }
@@ -295,8 +307,11 @@ body .ph-manage-header .rounded-pill {
 /* TIER 5 (Legendary) */
 .ph-lvl-tier-5.progress-bar,
 .ph-lvl-tier-5.badge,
-.playerhud-widget-container.ph-lvl-tier-5 .progress-bar {
-    background: linear-gradient(45deg, var(--primary, #0d6efd), var(--purple, #6f42c1));
+.playerhud-widget-container.ph-lvl-tier-5 .progress-bar,
+.block_playerhud .ph-lvl-tier-5.progress-bar,
+.playerhud-container .ph-lvl-tier-5.progress-bar
+{
+    background: linear-gradient(45deg, var(--primary, #0d6efd), var(--purple, #6f42c1)) !important;
     color: var(--light, #fff) !important;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
