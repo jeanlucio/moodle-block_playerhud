@@ -376,7 +376,7 @@ class generator {
     }
 
     /**
-     * Executes a cURL request.
+     * Executes a HTTP request using Moodle's curl class.
      *
      * @param string $url The target URL.
      * @param string $payload The POST data.
@@ -385,24 +385,29 @@ class generator {
      * @return array Result array with success status and data.
      */
     protected function curl_request($url, $payload, $headers, $source) {
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        $res = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlerror = curl_error($ch);
-        curl_close($ch);
+        global $CFG;
+        require_once($CFG->libdir . '/filelib.php');
 
-        // Error handling for cURL network errors.
-        if ($res === false) {
+        $curl = new \curl();
+        
+        // Moodle curl class handles headers as an array.
+        $options = [
+            'CURLOPT_TIMEOUT' => 30,
+            'CURLOPT_HTTPHEADER' => $headers,
+            'CURLOPT_SSL_VERIFYPEER' => true, // Moodle standard is true unless necessary otherwise
+        ];
+
+        // Post request.
+        $res = $curl->post($url, $payload, $options);
+        $info = $curl->get_info();
+        $code = $info['http_code'];
+        $curlerror = $curl->get_errno() ? $curl->error : '';
+
+        // Error handling.
+        if ($curlerror) {
             return ['success' => false, 'message' => $curlerror];
         }
 
-        // Error handling for HTTP status codes.
         if ($code !== 200) {
             $msg = get_string(
                 'error_service_code',
