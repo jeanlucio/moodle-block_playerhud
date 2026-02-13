@@ -295,7 +295,8 @@ class game {
             'is_max' => $ismaxlevel,
             'level_class' => $levelclass,
             'total_game_xp' => $totalgamexp,
-            'progress' => round($visualprogress),
+            // CORREÇÃO: Forçar (int) para garantir número sem vírgula no CSS
+            'progress' => (int)round($visualprogress), 
         ];
     }
 
@@ -315,6 +316,7 @@ class game {
 
     /**
      * Get the rank of a specific user considering tie-breakers.
+     * EXCLUDES users with 'manage' capability (Teachers/Admins) from the count.
      *
      * @param int $blockinstanceid Instance ID.
      * @param int $userid User ID.
@@ -334,27 +336,58 @@ class game {
             $usertime = time(); // Fallback.
         }
 
-        // RANKING LOGIC AND TIE-BREAKER:
-        // Count users who:
-        // 1. Have MORE XP than me.
-        // 2. OR have the SAME XP, but the record is OLDER (lower timemodified = arrived first).
+        // Filtering Teachers.
+        // We must fetch the context to identify managers.
+        $bi = $DB->get_record('block_instances', ['id' => $blockinstanceid], 'parentcontextid', MUST_EXIST);
+        $context = \context::instance_by_id($bi->parentcontextid);
 
-        $sql = "SELECT COUNT(id)
-                  FROM {block_playerhud_user}
-                 WHERE blockinstanceid = :pid
-                   AND enable_gamification = 1
-                   AND ranking_visibility = 1
-                   AND (
-                       currentxp > :xp
-                       OR (currentxp = :xp_tie AND timemodified < :tm)
-                   )";
+        // Get IDs of users with capability 'block/playerhud:manage' (Teachers).
+        $managers = get_users_by_capability(
+            $context,
+            'block/playerhud:manage',
+            'u.id',
+            '',
+            '',
+            '',
+            '',
+            '',
+            false,
+            false,
+            true
+        );
+        $managerids = array_keys($managers);
 
+        // Build exclusion clause.
+        $excludeclause = "";
         $params = [
             'pid' => $blockinstanceid,
             'xp' => $currentxp,
             'xp_tie' => $currentxp,
             'tm' => $usertime,
         ];
+
+        if (!empty($managerids)) {
+            [$insql, $inparams] = $DB->get_in_or_equal($managerids, SQL_PARAMS_NAMED, 'ex', false); // False = NOT IN.
+            $excludeclause = "AND userid $insql";
+            $params = array_merge($params, $inparams);
+        }
+
+        // RANKING LOGIC:
+        // Count users who:
+        // 1. Have MORE XP than me.
+        // 2. OR have the SAME XP, but arrived earlier.
+        // 3. AND are NOT managers/teachers.
+
+        $sql = "SELECT COUNT(id)
+                  FROM {block_playerhud_user}
+                 WHERE blockinstanceid = :pid
+                   AND enable_gamification = 1
+                   AND ranking_visibility = 1
+                   $excludeclause
+                   AND (
+                       currentxp > :xp
+                       OR (currentxp = :xp_tie AND timemodified < :tm)
+                   )";
 
         $betterplayers = $DB->count_records_sql($sql, $params);
 

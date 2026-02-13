@@ -389,12 +389,12 @@ class generator {
         require_once($CFG->libdir . '/filelib.php');
 
         $curl = new \curl();
-        
+
         // Moodle curl class handles headers as an array.
         $options = [
             'CURLOPT_TIMEOUT' => 30,
             'CURLOPT_HTTPHEADER' => $headers,
-            'CURLOPT_SSL_VERIFYPEER' => true, // Moodle standard is true unless necessary otherwise
+            'CURLOPT_SSL_VERIFYPEER' => true, // Moodle standard is true unless necessary otherwise.
         ];
 
         // Post request.
