@@ -38,7 +38,13 @@
     {{! 2. STATS }}
     <div class="d-flex justify-content-between align-items-center mb-1 small text-muted px-1">
         <span class="badge {{level_class}} border">{{#str}} level, block_playerhud {{/str}} {{level}}</span>
-        <span>{{xp}}</span>
+        <div class="d-flex align-items-center gap-2">
+                <span>{{xp}}</span>
+                <a href="{{viewurl}}&tab=rules" class="ph-help-trigger" 
+                title="{{#str}} help_btn, block_playerhud {{/str}}" aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
+                    <i class="fa fa-question-circle" aria-hidden="true"></i>
+                </a>
+            </div>
     </div>
 
     <div class="progress ph-progress-container mb-3">

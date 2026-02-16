@@ -42,5 +42,6 @@ $functions = [
         'type'        => 'write',
         'ajax'        => true,
         'loginrequired' => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
 ];

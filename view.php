@@ -170,6 +170,18 @@ if ($isoptin) {
                 $tabcontenthtml = $render->display();
             }
             break;
+            case 'rules':
+        if (class_exists('\block_playerhud\output\view\tab_rules')) {
+            // Prepare config object for the renderer
+            $cleanconfig = new stdClass();
+            // Map the config_help_content (saved by form) to a generic property
+            $cleanconfig->help_content = isset($config->config_help_content) ? 
+                                         $config->config_help_content : null;
+
+            $render = new \block_playerhud\output\view\tab_rules($cleanconfig);
+            $tabcontenthtml = $render->display();
+        }
+        break;
     }
 
     if (empty($tabcontenthtml)) {
@@ -192,6 +204,7 @@ if ($isoptin) {
             'icon' => '🏆',
             'text' => get_string('leaderboard_title', 'block_playerhud'),
         ] : null,
+        'rules' => ['icon' => '❓', 'text' => get_string('tab_rules', 'block_playerhud')],
     ];
 
     foreach ($tabsdef as $key => $def) {

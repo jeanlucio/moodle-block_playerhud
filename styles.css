@@ -347,6 +347,7 @@ body .ph-manage-header .rounded-pill {
     color: var(--light, #fff);
 }
 
+
 /* --- 6. ITEM CARDS --- */
 .ph-card-rounded { border-radius: 15px; }
 .playerhud-item-card { 
@@ -756,3 +757,97 @@ body .ph-manage-header .rounded-pill {
 .ph-opacity-50 { opacity: 0.5; }
 .ph-display-none { display: none; }
 .ph-tracking-wide { letter-spacing: 1px; }
+/* ... (mantenha o conteúdo anterior) ... */
+
+/* --- GLOBAL DESKTOP FIXES --- */
+
+/* Nome no Widget (Desktop): Ocupa linha inteira, alinhado à esquerda */
+.ph-widget-name {
+    width: 100%;
+    margin-bottom: 0.25rem !important;
+    white-space: normal !important; /* Permite quebra se for muito longo */
+    overflow: visible !important;
+    text-align: left; /* Padrão Desktop */
+    line-height: 1.2;
+}
+
+/* Sidebar Specific: Ajuste para o bloco lateral */
+.block_playerhud .fw-bold.text-truncate {
+    white-space: normal !important;
+    text-overflow: clip !important;
+}
+
+/* --- MOBILE WEB & APP RESPONSIVENESS --- */
+
+/* WEB MOBILE: Transformar Widget em Bloco Vertical (< 768px) */
+@media (width <= 767.98px) {
+    .playerhud-widget-container {
+        flex-direction: column !important;
+        height: auto !important;
+        min-height: auto !important;
+        border-inline-start: 1px solid rgba(0, 0, 0, .125) !important;
+        border-top: 5px solid var(--secondary, #6c757d);
+    }
+
+    /* Cores de Tier no Topo */
+    .playerhud-widget-container.ph-lvl-tier-1 { border-top-color: var(--secondary, #6c757d); }
+    .playerhud-widget-container.ph-lvl-tier-2 { border-top-color: var(--success, #208337); }
+    .playerhud-widget-container.ph-lvl-tier-3 { border-top-color: var(--primary, #0b55c4); }
+    .playerhud-widget-container.ph-lvl-tier-4 { border-top-color: var(--purple, #6f42c1); }
+    .playerhud-widget-container.ph-lvl-tier-5 { border-top-color: var(--primary, #0d6efd); }
+
+    .ph-widget-left,
+    .ph-widget-center,
+    .ph-widget-right {
+        width: 100% !important;
+        min-width: 100% !important;
+        border-inline-end: none !important;
+        border-inline-start: none !important;
+        border-bottom: 1px solid var(--gray-300, #dee2e6);
+        padding: 1rem !important;
+    }
+
+    /* MOBILE: CENTRALIZAR NOME */
+    .ph-widget-center .ph-widget-name {
+        text-align: center !important; /* Centraliza o nome no Mobile */
+        margin-bottom: 0.75rem !important;
+        font-size: 1.2rem;
+    }
+
+    /* A linha de Nível/XP já usa 'justify-content-between', 
+       então o Nível vai para a esquerda e o XP para a direita automaticamente. */
+
+    .ph-widget-right {
+        background-color: var(--light, #f8f9fa);
+        border-bottom: none !important;
+    }
+
+    .ph-widget-actions-grid {
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 8px;
+    }
+    
+    .ph-widget-stash {
+        justify-content: center;
+    }
+}
+
+/* --- HELP BUTTON STYLE --- */
+.ph-help-trigger {
+    color: var(--primary, #0d6efd) !important; /* Usa a cor azul principal do Moodle */
+    font-size: 1.1rem;
+    line-height: 1;
+    opacity: 0.85;
+    transition: transform 0.2s ease, color 0.2s ease, opacity 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none !important;
+    cursor: pointer;
+}
+
+.ph-help-trigger:hover {
+    color: var(--info, #0dcaf0) !important; /* Fica Ciano/Claro ao passar o mouse */
+    opacity: 1;
+    transform: scale(1.2) rotate(10deg); /* Efeito de "pop" divertido */
+}
