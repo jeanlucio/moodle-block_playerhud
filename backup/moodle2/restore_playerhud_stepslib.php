@@ -29,9 +29,15 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
      */
     protected function define_structure() {
         $paths = [];
-
+        // Content.
         $paths[] = new restore_path_element('item', '/block/playerhud/items/item');
         $paths[] = new restore_path_element('drop', '/block/playerhud/drops/drop');
+        
+        // User Data (Verify if user data was included).
+        if ($this->task->get_setting_value('users')) {
+            $paths[] = new restore_path_element('player', '/block/playerhud/players/player');
+            $paths[] = new restore_path_element('inventory', '/block/playerhud/inventories/inventory');
+        }
 
         return $paths;
     }
@@ -43,7 +49,6 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
      */
     public function process_item($data) {
         global $DB;
-
         $data = (object)$data;
         $oldid = $data->id;
 
@@ -51,10 +56,9 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         unset($data->id);
 
         $newitemid = $DB->insert_record('block_playerhud_items', $data);
-
-        // Mapping for files and subsequent drops.
+        
+        // Mapping for files and subsequent drops/inventory.
         $this->set_mapping('item', $oldid, $newitemid, true);
-
         $this->add_related_files('block_playerhud', 'item_image', 'item', null, $oldid);
     }
 
@@ -65,7 +69,6 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
      */
     public function process_drop($data) {
         global $DB;
-
         $data = (object)$data;
         $oldid = $data->id;
         $olditemid = $data->itemid;
@@ -73,18 +76,87 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         $data->blockinstanceid = $this->task->get_blockid();
         unset($data->id);
 
-        // Remap item ID to the newly restored item.
+        // Remap item ID.
         $newitemid = $this->get_mappingid('item', $olditemid);
+        if (!$newitemid) {
+            return; // Skip if item parent not found.
+        }
+        $data->itemid = $newitemid;
 
-        // Safety check: if item wasn't restored, we cannot create the drop.
+        // Create new unique code to avoid collisions if needed, 
+        // but restoring same code is usually preferred for hardcoded links.
+        // We keep the original code from XML.
+
+        $newdropid = $DB->insert_record('block_playerhud_drops', $data);
+        $this->set_mapping('drop', $oldid, $newdropid);
+    }
+
+    /**
+     * Process player profile (XP, Level).
+     *
+     * @param array $data
+     */
+    public function process_player($data) {
+        global $DB;
+        $data = (object)$data;
+        $olduserid = $data->userid;
+
+        // Map User ID.
+        $newuserid = $this->get_mappingid('user', $olduserid);
+        if (!$newuserid) {
+            return; // User not included in restore.
+        }
+
+        $data->userid = $newuserid;
+        $data->blockinstanceid = $this->task->get_blockid();
+        unset($data->id);
+
+        // Avoid duplicate records if restore is run multiple times or merged.
+        if (!$DB->record_exists('block_playerhud_user', ['userid' => $newuserid, 'blockinstanceid' => $data->blockinstanceid])) {
+            $DB->insert_record('block_playerhud_user', $data);
+        }
+    }
+
+    /**
+     * Process inventory (Collected Items).
+     *
+     * @param array $data
+     */
+    public function process_inventory($data) {
+        global $DB;
+        $data = (object)$data;
+        $olduserid = $data->userid;
+        $olditemid = $data->itemid;
+        $olddropid = $data->dropid; // Can be 0 or ID.
+
+        // 1. Map User.
+        $newuserid = $this->get_mappingid('user', $olduserid);
+        if (!$newuserid) {
+            return;
+        }
+
+        // 2. Map Item.
+        $newitemid = $this->get_mappingid('item', $olditemid);
         if (!$newitemid) {
             return;
         }
 
+        // 3. Map Drop (Optional).
+        $newdropid = 0;
+        if (!empty($olddropid)) {
+            $newdropid = $this->get_mappingid('drop', $olddropid);
+            if (!$newdropid) {
+                // If drop wasn't restored (e.g. deleted), we still keep the item but set drop to 0.
+                $newdropid = 0; 
+            }
+        }
+
+        $data->userid = $newuserid;
         $data->itemid = $newitemid;
+        $data->dropid = $newdropid;
+        unset($data->id);
 
-        $DB->insert_record('block_playerhud_drops', $data);
-
-        // No mapping needed for drops unless other tables refer to it (e.g. logs).
+        // Insert inventory record.
+        $DB->insert_record('block_playerhud_inventory', $data);
     }
 }
