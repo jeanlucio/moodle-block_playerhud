@@ -158,36 +158,99 @@ $string['groq_apikey'] = 'Groq API Key';
 $string['groq_apikey_desc'] = 'Enter your Groq Cloud key for free redundancy.';
 $string['group'] = 'Group';
 $string['help_btn'] = 'Help';
-$string['help_content_desc'] = 'Customize the instructions students see in the Help tab. Clear this field or check the box below to restore the system default.';
 $string['help_content_label'] = 'Custom Help Content';
-$string['help_pagedefault'] = '
-<div class="alert alert-info shadow-sm mb-4">
+$string['help_content_label_help'] = 'Customize the instructions students see in the Help tab. Clear this field or check the box below to restore the system default.';
+$string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
     <div class="d-flex align-items-center">
-        <div class="me-3"><i class="fa fa-info-circle fa-2x" aria-hidden="true"></i></div>
+        <div class="me-3">
+            <i class="fa fa-gamepad fa-2x" aria-hidden="true"></i>
+        </div>
         <div>
-            <h5 class="alert-heading fw-bold m-0">Welcome, Adventurer!</h5>
-            <p class="mb-0">This course uses a gamification system to track your progress.</p>
+            <h5 class="alert-heading fw-bold m-0">Welcome to PlayerHUD!</h5>
+            <p class="mb-0">
+                This course uses a gamification system to track your progress,
+                reward your participation, and make your learning journey more engaging.
+            </p>
         </div>
     </div>
 </div>
-
 <div class="row">
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-cube fa-3x text-primary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Items & Drops</h5>
-                <p class="small text-muted">Find secret codes hidden in activities descriptions or complete tasks to collect items and fill your Backpack.</p>
+                <i class="fa fa-star fa-3x text-primary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">XP & Levels</h5>
+                <p class="small text-muted">
+                    By collecting items or completing challenges, you earn XP (Experience Points).
+                    As your XP increases, your level rises and your progress bar advances.
+                    Depending on the instructor\'s configuration, XP may or may not affect your final grade.
+                </p>
             </div>
         </div>
     </div>
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-trophy fa-3x text-warning mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Leaderboard</h5>
-                <p class="small text-muted">Earn XP to level up. Check the Leaderboard to see how you rank against your peers or other groups.</p>
+                <i class="fa fa-cube fa-3x text-success mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Items & Drops</h5>
+                <p class="small text-muted">
+                    Throughout the course, you may find items hidden inside activities,
+                    descriptions, or specific challenges. Some items may have collection limits
+                    or respawn timers (cooldowns).
+                </p>
             </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-clock fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Timers & Limits</h5>
+                <p class="small text-muted">
+                    If an item displays a timer, it means it is temporarily unavailable.
+                    Once the countdown ends, it may become collectible again,
+                    depending on the instructor’s settings.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-trophy fa-3x text-danger mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Leaderboard</h5>
+                <p class="small text-muted">
+                    The leaderboard shows your position compared to other participants.
+                    You may choose not to appear publicly.
+                    It is designed as a motivational tool, not a mandatory competition.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-pause-circle fa-3x text-secondary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Pause Gamification</h5>
+                <p class="small text-muted">
+                    You can temporarily disable your participation in the gamification system.
+                    Your progress will be paused and can be reactivated at any time.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="alert alert-light border shadow-sm mt-4">
+    <div class="d-flex align-items-center">
+        <div class="me-3">
+            <i class="fa fa-lightbulb fa-2x text-warning" aria-hidden="true"></i>
+        </div>
+        <div>
+            <h6 class="fw-bold m-0">Important Tip</h6>
+            <p class="mb-0 small text-muted">
+                Explore the course carefully, participate in activities, and engage with the content.
+                XP is a result of involvement — learning remains the true goal.
+            </p>
         </div>
     </div>
 </div>';

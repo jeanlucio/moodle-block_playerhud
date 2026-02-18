@@ -77,7 +77,7 @@ class block_playerhud_edit_form extends block_edit_form {
         // Help Content Editor.
         $mform->addElement('editor', 'config_help_content', get_string('help_content_label', 'block_playerhud'));
         $mform->setType('config_help_content', PARAM_RAW); // Allow HTML.
-        $mform->addHelpButton('config_help_content', 'help_content_desc', 'block_playerhud');
+        $mform->addHelpButton('config_help_content', 'help_content_label', 'block_playerhud');
 
         // Reset Checkbox.
         $mform->addElement('checkbox', 'config_reset_help', get_string('help_reset_checkbox', 'block_playerhud'));

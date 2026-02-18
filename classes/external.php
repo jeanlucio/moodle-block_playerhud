@@ -63,6 +63,11 @@ class external extends external_api {
 
     /**
      * Collect an item via AJAX.
+     *
+     * @param int $instanceid Block Instance ID.
+     * @param int $dropid Drop ID.
+     * @param int $courseid Course ID.
+     * @return array Result data structure.
      */
     public static function collect_item($instanceid, $dropid, $courseid) {
         global $USER;

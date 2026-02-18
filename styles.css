@@ -1,9 +1,43 @@
 /**
- * PlayerHUD Styles - Moodle 4.x Compliant
- * Optimized for Accessibility, RTL Support (Logical Properties), and Theme Variables.
+ * This file is part of Moodle - http://moodle.org/
+ *
+ * Moodle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Moodle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* --- 1. UTILS & TYPOGRAPHY --- */
+/**
+ * CSS styles for filter_playerhud.
+ *
+ * @package    filter_playerhud
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/**
+ * PlayerHUD Block Styles.
+ *
+ * Structure:
+ * 1.  Variables & Utilities
+ * 2.  Block Sidebar Layout
+ * 3.  Widget Container (Shared)
+ * 4.  Gamification Tiers (Colors)
+ * 5.  Items & Inventory Grid
+ * 6.  Management UI (Admin only)
+ * 7.  Modals & Overlays
+ * 8.  Responsiveness
+ */
+
+/* --- 1. VARIABLES & UTILITIES --- */
 .ph-text-truncate-100 {
     max-width: 100%;
     white-space: nowrap;
@@ -15,32 +49,36 @@
 .ph-cursor-wait { cursor: wait; }
 .ph-cursor-help { cursor: help; }
 
+/* Font sizes */
 .ph-text-xs { font-size: 0.7rem; }
 .ph-text-sm { font-size: 0.9rem; }
 .ph-text-md { font-size: 1rem; }
+.ph-fs-09 { font-size: 0.9rem; }
 
-/* FIX: Forçar visual arredondado */
-body .block_playerhud .btn,
-body .block_playerhud table .btn,
-body .ph-manage-header .btn,
-body #ph-item-modal-view .btn,
-body #ph-ai-modal .btn,
-body #ph-codegen-modal .btn {
+/* Opacity helpers */
+.ph-opacity-50 { opacity: 0.5; }
+.ph-opacity-low { opacity: 0.3; }
+
+/* Display helpers */
+.ph-display-none { display: none; }
+.ph-h-60 { height: 60px; }
+
+/* Bootstrap overrides for consistency */
+.block_playerhud .btn,
+.block_playerhud table .btn,
+.ph-manage-header .btn,
+#ph-item-modal-view .btn,
+#ph-ai-modal .btn,
+#ph-codegen-modal .btn {
     border-radius: 0.5rem !important;
 }
 
-/* Rounded Pill Style para botões específicos se desejar (ex: Drops) */
-/* Se quiser que o botão de drops seja 'pílula' (totalmente redondo), descomente abaixo:
-body .block_playerhud table .btn-info {
-    border-radius: 50rem !important;
-} */
-
-body .block_playerhud .rounded-pill,
-body .ph-manage-header .rounded-pill {
+.block_playerhud .rounded-pill,
+.ph-manage-header .rounded-pill {
     border-radius: 50rem !important;
 }
 
-/* FIX: Ensure white text contrast on Badges */
+/* Ensure text contrast on colored badges */
 .block_playerhud .badge.bg-primary,
 .block_playerhud .badge.bg-success,
 .block_playerhud .badge.bg-secondary,
@@ -49,7 +87,7 @@ body .ph-manage-header .rounded-pill {
     color: #fff !important;
 }
 
-/* FIX: Ensure modal close button visibility and reset */
+/* Close button fixes for Moodle 4.x/5.x */
 .block_playerhud .btn-close,
 #ph-item-modal-view .btn-close,
 #ph-ai-modal .btn-close {
@@ -63,46 +101,6 @@ body .ph-manage-header .rounded-pill {
     text-shadow: 0 1px 0 #fff;
     padding: 0.5rem;
     margin: -0.5rem -0.5rem -0.5rem auto;
-}
-
-/* FIX ESPECÍFICO PARA O MODAL AZUL (GERADOR DE CÓDIGO) 
-   Essa regra resolve o problema de duplicação no Moodle 5 e sumiço no 4.5
-*/
-#ph-codegen-modal .btn-close {
-    /* 1. Remove a imagem de fundo (X do Bootstrap 5) para não duplicar */
-    background-image: none !important;
-    background-color: transparent !important;
-    
-    /* 2. Força a visibilidade do caractere textual */
-    opacity: 1 !important;
-    
-    /* 3. Estiliza o texto (&times;) para ser branco */
-    color: #fff !important;
-    font-size: 1.5rem;
-    line-height: 1;
-    border: 0;
-    
-    /* Remove filtros que podem inverter cores indesejadas */
-    filter: none !important; 
-}
-
-#ph-codegen-modal .btn-close-white {
-    filter: invert(1) grayscale(100%) brightness(200%); /* Garante branco */
-    opacity: 1 !important;
-}
-
-/* FIX: Alinhamento da Coluna de Seleção */
-.ph-col-select {
-    width: 60px !important;
-    text-align: center !important;
-    vertical-align: middle !important;
-    padding-inline: 0 !important;
-}
-
-.ph-col-select input[type="checkbox"] {
-    margin: 0 auto !important;
-    display: inline-block !important;
-    vertical-align: middle !important;
 }
 
 /* --- 2. BLOCK SIDEBAR SPECIFIC --- */
@@ -125,7 +123,7 @@ body .ph-manage-header .rounded-pill {
     border-radius: 50%;
 }
 
-/* Sidebar Grid */
+/* Sidebar Grid Layout */
 .ph-sidebar-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -145,7 +143,7 @@ body .ph-manage-header .rounded-pill {
     width: 100%;
 }
 
-/* --- 3. WIDGET SPECIFIC --- */
+/* --- 3. WIDGET CONTAINER (Shared with Filter) --- */
 .playerhud-widget-container {
     border-radius: 12px;
     margin-bottom: 1.5rem;
@@ -189,6 +187,15 @@ body .ph-manage-header .rounded-pill {
     min-width: 0;
 }
 
+.ph-widget-name {
+    width: 100%;
+    margin-bottom: 0.25rem !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-align: left;
+    line-height: 1.2;
+}
+
 .ph-widget-right {
     min-width: 180px;
     width: 180px;
@@ -218,222 +225,7 @@ body .ph-manage-header .rounded-pill {
     padding-block: 0.5rem;
 }
 
-/* --- 4. GLOBAL TIER SYSTEM --- */
-.ph-progress-container {
-    height: 1.5rem; /* Aumentado de 12px para ~24px */
-    background-color: var(--gray-200, #e9ecef);
-    border-radius: 1rem;
-    overflow: hidden;
-    margin-top: 5px;
-    width: 100%;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1); /* Opcional: Profundidade */
-}
-
-.ph-progress-text {
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: #fff; /* Texto branco para contraste */
-    text-shadow: 0 1px 1px rgba(0,0,0,0.3); /* Sombra para leitura em cores claras */
-    white-space: nowrap;
-    padding-inline: 5px;
-    display: inline-block;
-}
-
-.ph-progress-bar {
-    border-radius: 0; /* Bootstrap controla o raio via container overflow */
-    transition: width 0.6s ease;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff; /* Texto sempre branco */
-    font-weight: bold;
-    font-size: 0.75rem;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-}
-
-/* TIER 1 */
-.ph-lvl-tier-1.progress-bar,
-.ph-lvl-tier-1.badge,
-.playerhud-widget-container.ph-lvl-tier-1 .progress-bar,
-.block_playerhud .ph-lvl-tier-1.progress-bar, /* Fix para Bloco */
-.playerhud-container .ph-lvl-tier-1.progress-bar /* Fix para Header */
-{
-    background-color: var(--secondary, #6c757d) !important;
-    color: var(--light, #fff) !important;
-    border-color: var(--secondary, #6c757d);
-}
-.playerhud-widget-container.ph-lvl-tier-1 { border-inline-start-color: var(--secondary, #6c757d); }
-
-/* TIER 2 */
-.ph-lvl-tier-2.progress-bar,
-.ph-lvl-tier-2.badge,
-.playerhud-widget-container.ph-lvl-tier-2 .progress-bar,
-.block_playerhud .ph-lvl-tier-2.progress-bar,
-.playerhud-container .ph-lvl-tier-2.progress-bar
-{
-    background-color: var(--success, #208337) !important;
-    color: var(--light, #fff) !important;
-    border-color: var(--success, #208337);
-}
-.playerhud-widget-container.ph-lvl-tier-2 { border-inline-start-color: var(--success, #208337); }
-
-/* TIER 3 */
-.ph-lvl-tier-3.progress-bar,
-.ph-lvl-tier-3.badge,
-.playerhud-widget-container.ph-lvl-tier-3 .progress-bar,
-.block_playerhud .ph-lvl-tier-3.progress-bar,
-.playerhud-container .ph-lvl-tier-3.progress-bar
-{
-    background-color: var(--primary, #0b55c4) !important;
-    color: var(--light, #fff) !important;
-    border-color: var(--primary, #0b55c4);
-}
-.playerhud-widget-container.ph-lvl-tier-3 { border-inline-start-color: var(--primary, #0b55c4); }
-
-/* TIER 4 */
-.ph-lvl-tier-4.progress-bar,
-.ph-lvl-tier-4.badge,
-.playerhud-widget-container.ph-lvl-tier-4 .progress-bar,
-.block_playerhud .ph-lvl-tier-4.progress-bar,
-.playerhud-container .ph-lvl-tier-4.progress-bar
-{
-    background-color: var(--purple, #6f42c1) !important;
-    color: var(--light, #fff) !important;
-    border-color: var(--purple, #6f42c1);
-}
-.playerhud-widget-container.ph-lvl-tier-4 { border-inline-start-color: var(--purple, #6f42c1); }
-
-/* TIER 5 (Legendary) */
-.ph-lvl-tier-5.progress-bar,
-.ph-lvl-tier-5.badge,
-.playerhud-widget-container.ph-lvl-tier-5 .progress-bar,
-.block_playerhud .ph-lvl-tier-5.progress-bar,
-.playerhud-container .ph-lvl-tier-5.progress-bar
-{
-    background: linear-gradient(45deg, var(--primary, #0d6efd), var(--purple, #6f42c1)) !important;
-    color: var(--light, #fff) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-.playerhud-widget-container.ph-lvl-tier-5 { border-inline-start-color: var(--primary, #0d6efd); }
-
-
-/* --- 5. BUTTON STYLES --- */
-.btn-ph-level-border {
-    background-color: var(--card-bg, #fff);
-    border: 1px solid var(--gray-300, #dee2e6);
-    color: var(--gray-700, #495057);
-    font-weight: 700;
-    transition: all 0.2s ease-in-out;
-}
-
-/* Tier Colors for Buttons */
-.ph-lvl-tier-1 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-1 .btn-ph-level-border { border-color: var(--secondary, #6c757d); color: var(--secondary, #6c757d); }
-.ph-lvl-tier-1 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-1 .btn-ph-level-border:hover { background-color: var(--secondary, #6c757d); color: var(--light, #fff); }
-
-.ph-lvl-tier-2 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-2 .btn-ph-level-border { border-color: var(--success, #208337); color: var(--success, #208337); }
-.ph-lvl-tier-2 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-2 .btn-ph-level-border:hover { background-color: var(--success, #208337); color: var(--light, #fff); }
-
-.ph-lvl-tier-3 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-3 .btn-ph-level-border { border-color: var(--primary, #0b55c4); color: var(--primary, #0b55c4); }
-.ph-lvl-tier-3 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-3 .btn-ph-level-border:hover { background-color: var(--primary, #0b55c4); color: var(--light, #fff); }
-
-.ph-lvl-tier-4 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-4 .btn-ph-level-border { border-color: var(--purple, #6f42c1); color: var(--purple, #6f42c1); }
-.ph-lvl-tier-4 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-4 .btn-ph-level-border:hover { background-color: var(--purple, #6f42c1); color: var(--light, #fff); }
-
-.ph-lvl-tier-5 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-5 .btn-ph-level-border { border-color: var(--primary, #0d6efd); color: var(--primary, #0d6efd); }
-.ph-lvl-tier-5 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-5 .btn-ph-level-border:hover {
-    background: linear-gradient(45deg, var(--primary, #0d6efd), var(--purple, #6f42c1));
-    border-color: transparent;
-    color: var(--light, #fff);
-}
-
-
-/* --- 6. ITEM CARDS --- */
-.ph-card-rounded { border-radius: 15px; }
-.playerhud-item-card { 
-    position: relative;     
-    height: 100%; 
-    min-height: 260px;
-}
-
-.ph-new-badge {
-    position: absolute;
-    top: -5px;
-    inset-inline-start: -5px;
-    background-color: var(--danger, #dc3545);
-    color: var(--light, #fff);
-    font-size: 0.65rem; padding: 2px 5px; border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    z-index: 6;
-    animation: ph-pulse 2s infinite;
-}
-
-.ph-badge-archived {
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 20;
-    background-color: var(--secondary, #6c757d);
-    color: #fff;
-    font-size: 0.7rem;
-    padding: 4px 10px;
-    border-radius: 12px;
-    border: 2px solid var(--card-bg, #fff);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-    white-space: nowrap;
-}
-
-[dir="rtl"] .ph-badge-archived { transform: translateX(50%); }
-
-.ph-item-archived { 
-    opacity: 0.85; 
-    filter: grayscale(100%); 
-    border: 1px dashed var(--gray-400, #ccc) !important; 
-}
-
-.ph-missing { opacity: 0.6; border-style: dashed; }
-
-.ph-card-origins {
-    font-size: 0.75rem;
-    color: var(--gray-600, #6c757d);
-    background: var(--gray-100, #f8f9fa);
-    padding: 2px 8px;
-    border-radius: 10px;
-    display: inline-block;
-    border: 1px solid var(--gray-200, #e9ecef);
-}
-.ph-text-gold { color: #856404; }
-.ph-card-date {
-    font-size: 0.65rem;
-    color: var(--gray-500, #adb5bd);
-    margin-top: 5px;
-    border-top: 1px solid var(--gray-100, #f1f1f1);
-    width: 100%;
-    text-align: center;
-    padding-top: 3px;
-}
-.ph-card-icon-container { height: 80px; display: flex; align-items: center; justify-content: center; }
-.ph-card-img { max-height: 60px; width: auto; }
-.ph-card-emoji { font-size: 3rem; line-height: 1; }
-
-.ph-card-title {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    height: 3.6em; 
-    line-height: 1.2;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-    text-align: center;
-    width: 100%;
-}
-.playerhud-inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
-
-/* --- 7. STASH & MINI ITEMS --- */
+/* Stash / Mini Items in Sidebar/Widget */
 .ph-widget-stash,
 .ph-sidebar-stash,
 .block_playerhud .ph-sidebar-stash {
@@ -452,9 +244,9 @@ body .ph-manage-header .rounded-pill {
     min-width: 34px;
     background: var(--card-bg, #fff);
     border: 1px solid var(--gray-300, #dee2e6);
-    border-radius: 6px !important; 
-    padding: 0 !important; 
-    overflow: hidden; 
+    border-radius: 6px !important;
+    padding: 0 !important;
+    overflow: hidden;
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
@@ -465,187 +257,253 @@ body .ph-manage-header .rounded-pill {
     margin: 0 !important;
 }
 
-.ph-mini-item:hover { 
-    transform: translateY(-2px) scale(1.05); 
-    border-color: var(--primary, #0f6cbf); 
-    z-index: 10; 
+.ph-mini-item:hover {
+    transform: translateY(-2px) scale(1.05);
+    border-color: var(--primary, #0f6cbf);
+    z-index: 10;
 }
 
-.ph-mini-item img { 
-    width: 100%; 
-    height: 100%; 
+.ph-mini-item-img {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     border-radius: 0 !important;
     display: block;
 }
 
-.ph-mini-item .ph-emoji { font-size: 1.2rem; line-height: 1; }
-
-/* --- 8. DROPS & UTILS --- */
-.ph-drop-card-container {
-    width: 160px;
-    display: inline-flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    vertical-align: top;
-    margin: 5px;
-    position: relative;
-    padding: 0.75rem !important;
-    height: auto !important;
-    min-height: 0 !important;
+.ph-emoji {
+    font-size: 1.2rem;
+    line-height: 1;
 }
 
-.ph-drop-trigger-area {
-    cursor: pointer;
-    min-height: 0 !important;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start !important;
-    flex-grow: 0 !important;
-    margin-bottom: 1rem !important; 
+/* --- 4. GAMIFICATION TIERS (Colors) --- */
+.ph-progress-container {
+    height: 1.5rem;
+    background-color: var(--gray-200, #e9ecef);
+    border-radius: 1rem;
+    overflow: hidden;
+    margin-top: 5px;
+    width: 100%;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.ph-drop-icon-wrapper {
-    height: auto !important;
-    min-height: 0 !important;
+.ph-progress-text {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+    padding-inline: 5px;
+    display: inline-block;
+}
+
+.ph-progress-bar {
+    border-radius: 0;
+    transition: width 0.6s ease;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #fff;
+    font-weight: bold;
+    font-size: 0.75rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Button style based on tiers */
+.btn-ph-level-border {
+    background-color: var(--card-bg, #fff);
+    border: 1px solid var(--gray-300, #dee2e6);
+    color: var(--gray-700, #495057);
+    font-weight: 700;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Tier 1 */
+.ph-lvl-tier-1.progress-bar,
+.ph-lvl-tier-1.badge,
+.playerhud-widget-container.ph-lvl-tier-1 .progress-bar,
+.block_playerhud .ph-lvl-tier-1.progress-bar {
+    background-color: var(--secondary, #6c757d) !important;
+    color: var(--light, #fff) !important;
+    border-color: var(--secondary, #6c757d);
+}
+.playerhud-widget-container.ph-lvl-tier-1 { border-inline-start-color: var(--secondary, #6c757d); }
+.ph-lvl-tier-1 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-1 .btn-ph-level-border { border-color: var(--secondary, #6c757d); color: var(--secondary, #6c757d); }
+.ph-lvl-tier-1 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-1 .btn-ph-level-border:hover { background-color: var(--secondary, #6c757d); color: var(--light, #fff); }
+
+/* Tier 2 */
+.ph-lvl-tier-2.progress-bar,
+.ph-lvl-tier-2.badge,
+.playerhud-widget-container.ph-lvl-tier-2 .progress-bar,
+.block_playerhud .ph-lvl-tier-2.progress-bar {
+    background-color: var(--success, #208337) !important;
+    color: var(--light, #fff) !important;
+    border-color: var(--success, #208337);
+}
+.playerhud-widget-container.ph-lvl-tier-2 { border-inline-start-color: var(--success, #208337); }
+.ph-lvl-tier-2 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-2 .btn-ph-level-border { border-color: var(--success, #208337); color: var(--success, #208337); }
+.ph-lvl-tier-2 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-2 .btn-ph-level-border:hover { background-color: var(--success, #208337); color: var(--light, #fff); }
+
+/* Tier 3 */
+.ph-lvl-tier-3.progress-bar,
+.ph-lvl-tier-3.badge,
+.playerhud-widget-container.ph-lvl-tier-3 .progress-bar,
+.block_playerhud .ph-lvl-tier-3.progress-bar {
+    background-color: var(--primary, #0b55c4) !important;
+    color: var(--light, #fff) !important;
+    border-color: var(--primary, #0b55c4);
+}
+.playerhud-widget-container.ph-lvl-tier-3 { border-inline-start-color: var(--primary, #0b55c4); }
+.ph-lvl-tier-3 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-3 .btn-ph-level-border { border-color: var(--primary, #0b55c4); color: var(--primary, #0b55c4); }
+.ph-lvl-tier-3 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-3 .btn-ph-level-border:hover { background-color: var(--primary, #0b55c4); color: var(--light, #fff); }
+
+/* Tier 4 */
+.ph-lvl-tier-4.progress-bar,
+.ph-lvl-tier-4.badge,
+.playerhud-widget-container.ph-lvl-tier-4 .progress-bar,
+.block_playerhud .ph-lvl-tier-4.progress-bar {
+    background-color: var(--purple, #6f42c1) !important;
+    color: var(--light, #fff) !important;
+    border-color: var(--purple, #6f42c1);
+}
+.playerhud-widget-container.ph-lvl-tier-4 { border-inline-start-color: var(--purple, #6f42c1); }
+.ph-lvl-tier-4 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-4 .btn-ph-level-border { border-color: var(--purple, #6f42c1); color: var(--purple, #6f42c1); }
+.ph-lvl-tier-4 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-4 .btn-ph-level-border:hover { background-color: var(--purple, #6f42c1); color: var(--light, #fff); }
+
+/* Tier 5 (Legendary) */
+.ph-lvl-tier-5.progress-bar,
+.ph-lvl-tier-5.badge,
+.playerhud-widget-container.ph-lvl-tier-5 .progress-bar,
+.block_playerhud .ph-lvl-tier-5.progress-bar {
+    background: linear-gradient(45deg, var(--primary, #0d6efd), var(--purple, #6f42c1)) !important;
+    color: var(--light, #fff) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.playerhud-widget-container.ph-lvl-tier-5 { border-inline-start-color: var(--primary, #0d6efd); }
+.ph-lvl-tier-5 .btn-ph-level-border, .playerhud-widget-container.ph-lvl-tier-5 .btn-ph-level-border { border-color: var(--primary, #0d6efd); color: var(--primary, #0d6efd); }
+.ph-lvl-tier-5 .btn-ph-level-border:hover, .playerhud-widget-container.ph-lvl-tier-5 .btn-ph-level-border:hover {
+    background: linear-gradient(45deg, var(--primary, #0d6efd), var(--purple, #6f42c1));
+    border-color: transparent;
+    color: var(--light, #fff);
+}
+
+/* --- 5. ITEMS & INVENTORY GRID --- */
+.ph-card-rounded { border-radius: 15px; }
+.playerhud-item-card {
+    position: relative;
+    height: 100%;
+    min-height: 260px;
+}
+
+.ph-new-badge {
+    position: absolute;
+    top: -5px;
+    inset-inline-start: -5px;
+    background-color: var(--danger, #dc3545);
+    color: var(--light, #fff);
+    font-size: 0.65rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 6;
+    animation: ph-pulse 2s infinite;
+}
+
+.ph-badge-archived {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    background-color: var(--secondary, #6c757d);
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 2px solid var(--card-bg, #fff);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+}
+[dir="rtl"] .ph-badge-archived { transform: translateX(50%); }
+
+.ph-item-archived {
+    opacity: 0.85;
+    filter: grayscale(100%);
+    border: 1px dashed var(--gray-400, #ccc) !important;
+}
+
+.ph-missing { opacity: 0.6; border-style: dashed; }
+
+.ph-card-origins {
+    font-size: 0.75rem;
+    color: var(--gray-600, #6c757d);
+    background: var(--gray-100, #f8f9fa);
+    padding: 2px 8px;
+    border-radius: 10px;
+    display: inline-block;
+    border: 1px solid var(--gray-200, #e9ecef);
+}
+
+.ph-text-gold { color: #856404; }
+
+.ph-card-date {
+    font-size: 0.65rem;
+    color: var(--gray-500, #adb5bd);
+    margin-top: 5px;
+    border-top: 1px solid var(--gray-100, #f1f1f1);
     width: 100%;
-    margin-bottom: 1rem !important; 
-    padding: 0 !important;
-    flex-shrink: 0 !important;
+    text-align: center;
+    padding-top: 3px;
 }
 
-.playerhud-item-card img {
-    border-radius: 0 !important;
-    max-width: 100%;
-    max-height: 80px; 
-    width: auto;
-    height: auto;
-    object-fit: contain;
-    display: block;
+.ph-card-icon-container {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.ph-drop-trigger-area strong {
-    white-space: normal !important;
+.ph-card-img { max-height: 60px; width: auto; }
+.ph-card-emoji { font-size: 3rem; line-height: 1; }
+
+.ph-card-title {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 1.2 !important;
+    height: 3.6em;
+    line-height: 1.2;
     font-size: 0.9rem;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    height: auto !important;
-    flex-grow: 0 !important;
-}
-
-.ph-drop-card-container .btn {
-    margin-top: 0 !important;
-    flex-shrink: 0 !important;
-}
-
-.ph-drop-image-container {
-    display: inline-block;
-    position: relative;
+    margin-bottom: 0.5rem;
     text-align: center;
-    vertical-align: top;
-    margin-bottom: 14px;
-    margin-inline-end: 5px;
+    width: 100%;
 }
 
-.ph-drop-img-lg {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    border-radius: 0 !important;
-    transition: transform 0.2s ease;
+.playerhud-inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
 }
 
-.ph-drop-emoji-lg {
-    font-size: 60px;
-    line-height: 1;
-    display: inline-block;
-    transition: transform 0.2s ease;
+/* --- 6. MANAGEMENT UI (Admin Only) --- */
+.ph-col-select {
+    width: 60px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding-inline: 0 !important;
 }
 
-/* Estados e Badges */
-.ph-state-dimmed { opacity: 0.5; }
-.ph-state-grayscale { filter: grayscale(100%); opacity: 0.6; }
-
-.ph-badge-bottom-right {
-    position: absolute;
-    bottom: -5px;
-    inset-inline-end: -5px;
-    font-size: 0.6rem;
-    z-index: 5;
+.ph-col-select input[type="checkbox"] {
+    margin: 0 auto !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
 }
 
-.ph-badge-bottom-center {
-    position: absolute;
-    bottom: -18px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.65rem;
-    white-space: nowrap;
-    z-index: 10;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--gray-300, #dee2e6);
-}
-
-.ph-badge-top-right {
-    position: absolute;
-    top: 5px;
-    inset-inline-end: 5px;
-    font-size: 0.7rem;
-    z-index: 5;
-}
-
-.ph-link-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
-}
-.ph-icon-contain {
-    max-width: 100%; max-height: 100%; object-fit: contain;
-}
-
-/* Modais & Tables */
-.ph-modal-zindex { z-index: 10550; }
-.ph-z-index-high { z-index: 10500; }
-.ph-modal-img-container { min-width: 100px; }
-.ph-modal-img { max-width: 120px; max-height: 120px; object-fit: contain; }
-.ph-modal-emoji { font-size: 3rem; line-height: 1; }
-.ph-alert-warning-box {
-    background-color: var(--warning-bg-subtle, #fff3cd);
-    padding: 10px; border-radius: 5px;
-    border: 1px solid var(--warning-border-subtle, #ffeeba);
-}
-.ph-code-input, 
-.ph-input-code-readonly { 
-    background-color: var(--gray-200, #f0f0f0) !important; 
-    color: var(--pink, #d63384) !important; 
-    font-size: 0.85rem !important; 
-    font-weight: bold; 
-    font-family: monospace; 
-    opacity: 1 !important; 
-}
-.ph-modal-codegen .ph-gen-preview-real-card {
-    background-color: var(--card-bg, #fff);
-    border: 1px solid rgba(0, 0, 0, .125);
-    width: 160px; margin: 0 auto;
-}
-.ph-modal-codegen .ph-gen-preview-real-card img { max-width: 100%; max-height: 60px; object-fit: contain; margin: 0 auto; }
-.ph-gen-img-lg { width: 80px; height: 80px; object-fit: contain; border-radius: 0; }
-.ph-gen-emoji-lg { font-size: 60px; line-height: 1; }
-.ph-gen-preview-wrapper-img { cursor: pointer; filter: drop-shadow(0 4px 2px rgba(0,0,0,0.1)); text-align: center; display: inline-block; transition: transform 0.2s ease; }
-.ph-gen-preview-wrapper-img:hover { transform: scale(1.05); }
-
-/* Column Widths (Aumentado ph-col-xs e ph-col-sm) */
-.ph-col-xs { width: 50px; }
-.ph-col-sm { width: 50px; }
+/* Column Widths */
+.ph-col-xs, .ph-col-sm { width: 50px; }
 .ph-col-md { width: 80px; }
 .ph-col-lg { width: 100px; }
 .ph-col-xl { width: 140px; }
@@ -655,9 +513,65 @@ body .ph-manage-header .rounded-pill {
 .ph-col-time { width: 150px; }
 .ph-col-gen { width: 180px; }
 .ph-col-rank { width: 60px; }
+
+/* Code generator specific */
+.ph-code-input,
+.ph-input-code-readonly {
+    background-color: var(--gray-200, #f0f0f0) !important;
+    color: var(--pink, #d63384) !important;
+    font-size: 0.85rem !important;
+    font-weight: bold;
+    font-family: monospace;
+    opacity: 1 !important;
+}
+
+.ph-modal-codegen .ph-gen-preview-real-card {
+    background-color: var(--card-bg, #fff);
+    border: 1px solid rgba(0, 0, 0, .125);
+    width: 160px;
+    margin: 0 auto;
+}
+
+.ph-gen-img-lg {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 0;
+}
+.ph-gen-emoji-lg { font-size: 60px; line-height: 1; }
+
+/* Generator close button fix */
+#ph-codegen-modal .btn-close {
+    background-image: none !important;
+    background-color: transparent !important;
+    opacity: 1 !important;
+    color: #fff !important;
+    font-size: 1.5rem;
+    line-height: 1;
+    border: 0;
+    filter: none !important;
+}
+#ph-codegen-modal .btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(200%);
+    opacity: 1 !important;
+}
+
+/* --- 7. MODALS & OVERLAYS --- */
+.ph-modal-zindex { z-index: 10550; }
+.ph-z-index-high { z-index: 10500; }
+
+.ph-modal-img-container { min-width: 100px; }
+.ph-modal-img {
+    max-width: 120px;
+    max-height: 120px;
+    object-fit: contain;
+}
+.ph-modal-emoji { font-size: 3rem; line-height: 1; }
+
 .ph-img-xs { width: 32px; height: 32px; object-fit: contain; }
 .ph-header-img {
-    width: 50px; height: 50px; object-fit: contain;
+    width: 50px; height: 50px;
+    object-fit: contain;
     margin-inline-end: 15px;
 }
 .ph-header-emoji {
@@ -665,20 +579,40 @@ body .ph-manage-header .rounded-pill {
     margin-inline-end: 15px;
     line-height: 1;
 }
+
 .ph-rank-medal { font-size: 1.2rem; line-height: 1; }
 .ph-badge-tiny { font-size: 0.65rem; }
-.ph-opacity-low { opacity: 0.3; }
 .ph-empty-state-icon { font-size: 3rem; opacity: 0.3; }
+
+/* Help Trigger */
+.ph-help-trigger {
+    color: var(--primary, #0d6efd) !important;
+    font-size: 1.1rem;
+    line-height: 1;
+    opacity: 0.85;
+    transition: transform 0.2s ease, color 0.2s ease, opacity 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none !important;
+    cursor: pointer;
+}
+.ph-help-trigger:hover {
+    color: var(--info, #0dcaf0) !important;
+    opacity: 1;
+    transform: scale(1.2) rotate(10deg);
+}
+
 @keyframes ph-pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.1); }
     100% { transform: scale(1); }
 }
+
 .ph-optin-card { max-width: 500px; border-radius: 15px; border: none; }
 .ph-optin-text { font-size: 1.1rem; }
 .ph-tab-content-wrapper { min-height: 300px; }
 
-/* --- Badges de Contagem --- */
 .ph-badge-counter {
     position: absolute;
     top: 8px;
@@ -693,7 +627,7 @@ body .ph-manage-header .rounded-pill {
     align-items: center;
     gap: 4px;
     z-index: 5;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .ph-badge-pos-left {
@@ -707,14 +641,6 @@ body .ph-manage-header .rounded-pill {
     inset-inline-end: 8px;
     color: var(--dark, #212529);
 }
-
-.ph-counter-text {
-    font-family: monospace;
-    font-size: 0.85rem;
-}
-
-.ph-card-count-badge { display: none; }
-.ph-infinite-badge { display: none; }
 
 .ph-img-contain-120 {
     max-width: 120px;
@@ -737,49 +663,13 @@ body .ph-manage-header .rounded-pill {
     font-size: 0.7rem;
 }
 
-.ph-h-60 { height: 60px; }
-.ph-fs-09 { font-size: 0.9rem; }
-
-/* Utilities */
-.me-1 { margin-inline-end: 0.25rem !important; }
-.ms-1 { margin-inline-start: 0.25rem !important; }
-.me-2 { margin-inline-end: 0.5rem !important; }
-.ms-2 { margin-inline-start: 0.5rem !important; }
-.me-3 { margin-inline-end: 1rem !important; }
-.text-end { text-align: end !important; }
-
-.ph-mini-item-img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.ph-opacity-50 { opacity: 0.5; }
-.ph-display-none { display: none; }
-.ph-tracking-wide { letter-spacing: 1px; }
-/* ... (mantenha o conteúdo anterior) ... */
-
-/* --- GLOBAL DESKTOP FIXES --- */
-
-/* Nome no Widget (Desktop): Ocupa linha inteira, alinhado à esquerda */
-.ph-widget-name {
-    width: 100%;
-    margin-bottom: 0.25rem !important;
-    white-space: normal !important; /* Permite quebra se for muito longo */
-    overflow: visible !important;
-    text-align: left; /* Padrão Desktop */
-    line-height: 1.2;
-}
-
-/* Sidebar Specific: Ajuste para o bloco lateral */
+/* Sidebar Specific text fix */
 .block_playerhud .fw-bold.text-truncate {
     white-space: normal !important;
     text-overflow: clip !important;
 }
 
-/* --- MOBILE WEB & APP RESPONSIVENESS --- */
-
-/* WEB MOBILE: Transformar Widget em Bloco Vertical (< 768px) */
+/* --- 8. RESPONSIVENESS --- */
 @media (width <= 767.98px) {
     .playerhud-widget-container {
         flex-direction: column !important;
@@ -789,7 +679,7 @@ body .ph-manage-header .rounded-pill {
         border-top: 5px solid var(--secondary, #6c757d);
     }
 
-    /* Cores de Tier no Topo */
+    /* Tier colors on top border for mobile */
     .playerhud-widget-container.ph-lvl-tier-1 { border-top-color: var(--secondary, #6c757d); }
     .playerhud-widget-container.ph-lvl-tier-2 { border-top-color: var(--success, #208337); }
     .playerhud-widget-container.ph-lvl-tier-3 { border-top-color: var(--primary, #0b55c4); }
@@ -807,15 +697,12 @@ body .ph-manage-header .rounded-pill {
         padding: 1rem !important;
     }
 
-    /* MOBILE: CENTRALIZAR NOME */
+    /* Center name on mobile */
     .ph-widget-center .ph-widget-name {
-        text-align: center !important; /* Centraliza o nome no Mobile */
+        text-align: center !important;
         margin-bottom: 0.75rem !important;
         font-size: 1.2rem;
     }
-
-    /* A linha de Nível/XP já usa 'justify-content-between', 
-       então o Nível vai para a esquerda e o XP para a direita automaticamente. */
 
     .ph-widget-right {
         background-color: var(--light, #f8f9fa);
@@ -823,31 +710,11 @@ body .ph-manage-header .rounded-pill {
     }
 
     .ph-widget-actions-grid {
-        grid-template-columns: repeat(2, 1fr); 
+        grid-template-columns: repeat(2, 1fr);
         gap: 8px;
     }
-    
+
     .ph-widget-stash {
         justify-content: center;
     }
-}
-
-/* --- HELP BUTTON STYLE --- */
-.ph-help-trigger {
-    color: var(--primary, #0d6efd) !important; /* Usa a cor azul principal do Moodle */
-    font-size: 1.1rem;
-    line-height: 1;
-    opacity: 0.85;
-    transition: transform 0.2s ease, color 0.2s ease, opacity 0.2s;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none !important;
-    cursor: pointer;
-}
-
-.ph-help-trigger:hover {
-    color: var(--info, #0dcaf0) !important; /* Fica Ciano/Claro ao passar o mouse */
-    opacity: 1;
-    transform: scale(1.2) rotate(10deg); /* Efeito de "pop" divertido */
 }
