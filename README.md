@@ -67,10 +67,6 @@ PlayerHUD works together with complementary plugins:
 ### 📦 Requirements
 
 * **Moodle:** 4.5 or higher
-* **Required Dependency:** PlayerHUD Filter plugin  
-  https://github.com/jeanlucio/moodle-filter_playerhud
-* **Optional Dependency:** PlayerHUD Availability Condition plugin  
-  https://github.com/jeanlucio/moodle-availability_playerhud
 * **PHP:** Compatible with your Moodle version
 
 ---
@@ -180,11 +176,9 @@ O PlayerHUD funciona em conjunto com plugins complementares:
 ### 📦 Requisitos
 
 * **Moodle:** 4.5 ou superior
-* **Dependência Obrigatória:** Filtro PlayerHUD  
-  https://github.com/jeanlucio/moodle-filter_playerhud
-* **Dependência Opcional:** Plugin de Restrição PlayerHUD  
-  https://github.com/jeanlucio/moodle-availability_playerhud
 * **PHP:** Compatível com a versão do Moodle
+
+### 🔗 Plugins Complementares
 
 ---
 
