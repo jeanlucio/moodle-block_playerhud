@@ -157,6 +157,42 @@ $string['great'] = 'Legal!';
 $string['groq_apikey'] = 'Chave da API Groq';
 $string['groq_apikey_desc'] = 'Insira sua chave da Groq Cloud para redundância gratuita.';
 $string['group'] = 'Grupo';
+$string['help_btn'] = 'Ajuda';
+$string['help_content_desc'] = 'Personalize as instruções que os alunos veem na aba Ajuda. Limpe este campo ou marque a caixa abaixo para restaurar o padrão do sistema.';
+$string['help_content_label'] = 'Conteúdo de Ajuda Personalizado';
+$string['help_pagedefault'] = '
+<div class="alert alert-info shadow-sm mb-4">
+    <div class="d-flex align-items-center">
+        <div class="me-3"><i class="fa fa-info-circle fa-2x" aria-hidden="true"></i></div>
+        <div>
+            <h5 class="alert-heading fw-bold m-0">Bem-vindo, Aventureiro!</h5>
+            <p class="mb-0">Este curso utiliza um sistema de gamificação para acompanhar seu progresso.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-cube fa-3x text-primary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Itens & Drops</h5>
+                <p class="small text-muted">Encontre códigos secretos escondidos nas descrições das atividades ou complete tarefas para coletar itens e encher sua Mochila.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-trophy fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Ranking</h5>
+                <p class="small text-muted">Ganhe XP para subir de nível. Verifique o Ranking para ver sua posição em relação aos colegas ou outros grupos.</p>
+            </div>
+        </div>
+    </div>
+</div>';
+$string['help_reset_checkbox'] = 'Restaurar conteúdo de ajuda padrão ao salvar';
+$string['help_title'] = 'Guia do Jogo';
 $string['hidden'] = 'Oculto';
 $string['hidden_desc'] = 'Apenas o professor vê você.';
 $string['infinite'] = 'Infinito';
@@ -274,6 +310,7 @@ $string['tab_config'] = 'Configurações';
 $string['tab_items'] = 'Biblioteca de Itens';
 $string['tab_maintenance'] = 'A aba "{$a}" está atualmente em manutenção ou construção.';
 $string['tab_ranking'] = 'Ranking';
+$string['tab_rules'] = 'Ajuda & Regras';
 $string['take'] = 'Pegar';
 $string['total_items_xp'] = 'Total XP em Itens';
 $string['tradable'] = 'Trocável?';
@@ -297,43 +334,3 @@ $string['xp_required_max'] = 'XP para o Nível Máximo';
 $string['xp_warning_msg'] = 'Itens trocáveis não podem conceder XP para evitar fraudes. O valor será definido como 0.';
 $string['yes'] = 'Sim';
 $string['yours'] = 'Possui: {$a}';
-// ... Strings existentes ...
-
-// --- Seção Ajuda / Regras ---
-$string['tab_rules'] = 'Ajuda & Regras';
-$string['help_title'] = 'Guia do Jogo';
-$string['help_btn'] = 'Ajuda';
-$string['help_content_label'] = 'Conteúdo de Ajuda Personalizado';
-$string['help_content_desc'] = 'Personalize as instruções que os alunos veem na aba Ajuda. Limpe este campo ou marque a caixa abaixo para restaurar o padrão do sistema.';
-$string['help_reset_checkbox'] = 'Restaurar conteúdo de ajuda padrão ao salvar';
-$string['help_pagedefault'] = '
-<div class="alert alert-info shadow-sm mb-4">
-    <div class="d-flex align-items-center">
-        <div class="me-3"><i class="fa fa-info-circle fa-2x" aria-hidden="true"></i></div>
-        <div>
-            <h5 class="alert-heading fw-bold m-0">Bem-vindo, Aventureiro!</h5>
-            <p class="mb-0">Este curso utiliza um sistema de gamificação para acompanhar seu progresso.</p>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-cube fa-3x text-primary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Itens & Drops</h5>
-                <p class="small text-muted">Encontre códigos secretos escondidos nas descrições das atividades ou complete tarefas para coletar itens e encher sua Mochila.</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-trophy fa-3x text-warning mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Ranking</h5>
-                <p class="small text-muted">Ganhe XP para subir de nível. Verifique o Ranking para ver sua posição em relação aos colegas ou outros grupos.</p>
-            </div>
-        </div>
-    </div>
-</div>';

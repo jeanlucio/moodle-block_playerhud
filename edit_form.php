@@ -129,4 +129,3 @@ class block_playerhud_edit_form extends block_edit_form {
         return $data;
     }
 }
-

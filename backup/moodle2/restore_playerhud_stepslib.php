@@ -32,7 +32,6 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         // Content.
         $paths[] = new restore_path_element('item', '/block/playerhud/items/item');
         $paths[] = new restore_path_element('drop', '/block/playerhud/drops/drop');
-        
         // User Data (Verify if user data was included).
         if ($this->task->get_setting_value('users')) {
             $paths[] = new restore_path_element('player', '/block/playerhud/players/player');
@@ -56,7 +55,6 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         unset($data->id);
 
         $newitemid = $DB->insert_record('block_playerhud_items', $data);
-        
         // Mapping for files and subsequent drops/inventory.
         $this->set_mapping('item', $oldid, $newitemid, true);
         $this->add_related_files('block_playerhud', 'item_image', 'item', null, $oldid);
@@ -82,8 +80,7 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
             return; // Skip if item parent not found.
         }
         $data->itemid = $newitemid;
-
-        // Create new unique code to avoid collisions if needed, 
+        // Create new unique code to avoid collisions if needed.
         // but restoring same code is usually preferred for hardcoded links.
         // We keep the original code from XML.
 
@@ -147,7 +144,7 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
             $newdropid = $this->get_mappingid('drop', $olddropid);
             if (!$newdropid) {
                 // If drop wasn't restored (e.g. deleted), we still keep the item but set drop to 0.
-                $newdropid = 0; 
+                $newdropid = 0;
             }
         }
 

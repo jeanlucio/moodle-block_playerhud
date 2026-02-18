@@ -48,14 +48,14 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         // 3. User Data Structure (Progress & Inventory).
         $players = new backup_nested_element('players');
         $player = new backup_nested_element('player', ['id'], [
-            'userid', 'currentxp', 'enable_gamification', 
-            'ranking_visibility', 'last_inventory_view', 
-            'last_shop_view', 'timecreated', 'timemodified'
+            'userid', 'currentxp', 'enable_gamification',
+            'ranking_visibility', 'last_inventory_view',
+            'last_shop_view', 'timecreated', 'timemodified',
         ]);
 
         $inventories = new backup_nested_element('inventories');
         $inventory = new backup_nested_element('inventory', ['id'], [
-            'userid', 'itemid', 'dropid', 'source', 'timecreated'
+            'userid', 'itemid', 'dropid', 'source', 'timecreated',
         ]);
 
         // 4. Hierarchy.
@@ -72,7 +72,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $inventories->add_child($inventory);
 
         // 5. Data Sources.
-        
+
         // Items belonging to this block instance.
         $item->set_source_table('block_playerhud_items', ['blockinstanceid' => backup::VAR_BLOCKID]);
 
@@ -83,13 +83,13 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         if ($this->task->get_setting_value('users')) {
             // Player Profile (XP, Level).
             $player->set_source_table('block_playerhud_user', ['blockinstanceid' => backup::VAR_BLOCKID]);
-            
+
             // Inventory: We need to join with items to filter by this block instance.
-            $sql_inv = "SELECT inv.* FROM {block_playerhud_inventory} inv
+            $sqlinv = "SELECT inv.* FROM {block_playerhud_inventory} inv
                           JOIN {block_playerhud_items} i ON inv.itemid = i.id
                          WHERE i.blockinstanceid = :blockid";
-            
-            $inventory->set_source_sql($sql_inv, ['blockid' => backup::VAR_BLOCKID]);
+
+            $inventory->set_source_sql($sqlinv, ['blockid' => backup::VAR_BLOCKID]);
 
             // Annotate User IDs (Crucial for Moodle 4.5+ consistency).
             $player->annotate_ids('user', 'userid');

@@ -405,7 +405,7 @@ class generator {
 
         // 1. Check for cURL level errors (e.g., DNS, Timeout).
         if ($curlerror) {
-            // $curl->error contains the error message.
+            // 1.1 $curl->error contains the error message.
             return ['success' => false, 'message' => 'cURL Error: ' . $curl->error];
         }
 

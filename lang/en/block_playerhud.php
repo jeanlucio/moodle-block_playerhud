@@ -157,6 +157,42 @@ $string['great'] = 'Great!';
 $string['groq_apikey'] = 'Groq API Key';
 $string['groq_apikey_desc'] = 'Enter your Groq Cloud key for free redundancy.';
 $string['group'] = 'Group';
+$string['help_btn'] = 'Help';
+$string['help_content_desc'] = 'Customize the instructions students see in the Help tab. Clear this field or check the box below to restore the system default.';
+$string['help_content_label'] = 'Custom Help Content';
+$string['help_pagedefault'] = '
+<div class="alert alert-info shadow-sm mb-4">
+    <div class="d-flex align-items-center">
+        <div class="me-3"><i class="fa fa-info-circle fa-2x" aria-hidden="true"></i></div>
+        <div>
+            <h5 class="alert-heading fw-bold m-0">Welcome, Adventurer!</h5>
+            <p class="mb-0">This course uses a gamification system to track your progress.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-cube fa-3x text-primary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Items & Drops</h5>
+                <p class="small text-muted">Find secret codes hidden in activities descriptions or complete tasks to collect items and fill your Backpack.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-trophy fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Leaderboard</h5>
+                <p class="small text-muted">Earn XP to level up. Check the Leaderboard to see how you rank against your peers or other groups.</p>
+            </div>
+        </div>
+    </div>
+</div>';
+$string['help_reset_checkbox'] = 'Reset help content to system default on save';
+$string['help_title'] = 'Game Guide';
 $string['hidden'] = 'Hidden';
 $string['hidden_desc'] = 'Only the teacher sees you.';
 $string['infinite'] = 'Infinite';
@@ -274,6 +310,7 @@ $string['tab_config'] = 'Settings';
 $string['tab_items'] = 'Item Library';
 $string['tab_maintenance'] = 'The "{$a}" tab is currently under maintenance or construction.';
 $string['tab_ranking'] = 'Leaderboard';
+$string['tab_rules'] = 'Help & Rules';
 $string['take'] = 'Take';
 $string['total_items_xp'] = 'Total XP in Items';
 $string['tradable'] = 'Tradable?';
@@ -297,43 +334,3 @@ $string['xp_required_max'] = 'XP for Max Level';
 $string['xp_warning_msg'] = 'Tradable items cannot grant XP to prevent fraud. The value will be set to 0.';
 $string['yes'] = 'Yes';
 $string['yours'] = 'Owned: {$a}';
-// ... Strings existentes ...
-
-// --- Help / Rules Section ---
-$string['tab_rules'] = 'Help & Rules';
-$string['help_title'] = 'Game Guide';
-$string['help_btn'] = 'Help';
-$string['help_content_label'] = 'Custom Help Content';
-$string['help_content_desc'] = 'Customize the instructions students see in the Help tab. Clear this field or check the box below to restore the system default.';
-$string['help_reset_checkbox'] = 'Reset help content to system default on save';
-$string['help_pagedefault'] = '
-<div class="alert alert-info shadow-sm mb-4">
-    <div class="d-flex align-items-center">
-        <div class="me-3"><i class="fa fa-info-circle fa-2x" aria-hidden="true"></i></div>
-        <div>
-            <h5 class="alert-heading fw-bold m-0">Welcome, Adventurer!</h5>
-            <p class="mb-0">This course uses a gamification system to track your progress.</p>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-cube fa-3x text-primary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Items & Drops</h5>
-                <p class="small text-muted">Find secret codes hidden in activities descriptions or complete tasks to collect items and fill your Backpack.</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-trophy fa-3x text-warning mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Leaderboard</h5>
-                <p class="small text-muted">Earn XP to level up. Check the Leaderboard to see how you rank against your peers or other groups.</p>
-            </div>
-        </div>
-    </div>
-</div>';

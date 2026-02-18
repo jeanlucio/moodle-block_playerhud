@@ -170,18 +170,18 @@ if ($isoptin) {
                 $tabcontenthtml = $render->display();
             }
             break;
-            case 'rules':
-        if (class_exists('\block_playerhud\output\view\tab_rules')) {
-            // Prepare config object for the renderer
-            $cleanconfig = new stdClass();
-            // Map the config_help_content (saved by form) to a generic property
-            $cleanconfig->help_content = isset($config->config_help_content) ? 
-                                         $config->config_help_content : null;
+        case 'rules':
+            if (class_exists('\block_playerhud\output\view\tab_rules')) {
+                // Prepare config object for the renderer.
+                $cleanconfig = new stdClass();
+                // Map the config_help_content (saved by form) to a generic property.
+                $cleanconfig->help_content = isset($config->config_help_content) ?
+                    $config->config_help_content : null;
 
-            $render = new \block_playerhud\output\view\tab_rules($cleanconfig);
-            $tabcontenthtml = $render->display();
-        }
-        break;
+                $render = new \block_playerhud\output\view\tab_rules($cleanconfig);
+                $tabcontenthtml = $render->display();
+            }
+            break;
     }
 
     if (empty($tabcontenthtml)) {

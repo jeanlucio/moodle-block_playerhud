@@ -257,12 +257,12 @@ class game {
         if ($allitems) {
             // 2. Optimization: Get ALL drops for this instance in ONE query.
             // Joining to ensure we only get drops for enabled items.
-            $sql = "SELECT d.*, d.itemid 
+            $sql = "SELECT d.*, d.itemid
                       FROM {block_playerhud_drops} d
                       JOIN {block_playerhud_items} i ON d.itemid = i.id
                      WHERE i.blockinstanceid = :instanceid
                        AND i.enabled = 1";
-            
+
             $alldrops = $DB->get_records_sql($sql, ['instanceid' => $blockinstanceid]);
 
             // 3. Group drops by itemid in memory.
@@ -313,8 +313,8 @@ class game {
             'is_max' => $ismaxlevel,
             'level_class' => $levelclass,
             'total_game_xp' => $totalgamexp,
-            // CORREÇÃO: Forçar (int) para garantir número sem vírgula no CSS
-            'progress' => (int)round($visualprogress), 
+            // Fix: Force (int) to ensure integer number in CSS.
+            'progress' => (int)round($visualprogress),
         ];
     }
 
