@@ -115,6 +115,14 @@ PlayerHUD works together with complementary plugins:
 
 ---
 
+## 📄 License / Licença
+
+This project is licensed under the **GNU General Public License v3 (GPLv3)**.
+
+**Copyright:** 2026 Jean Lúcio
+
+---
+
 ## Português
 
 O **Bloco PlayerHUD** é um sistema modular de gamificação para Moodle que introduz mecânicas estruturadas de progressão baseadas em **XP, Níveis, Inventário e Ranking**.
@@ -220,8 +228,8 @@ O PlayerHUD funciona em conjunto com plugins complementares:
 
 ---
 
-## 📄 License / Licença
+## 📄 Licença
 
-This project is licensed under the **GNU General Public License v3 (GPLv3)**.
+Este projeto é licenciado sob a **GNU General Public License v3 (GPLv3)**.
 
 **Copyright:** 2026 Jean Lúcio
