@@ -1,3 +1,18 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
  * Timer logic for PlayerHUD Block.
  *
@@ -8,65 +23,64 @@
 define(['jquery'], function($) {
     return {
         init: function(strings) {
-            // Evita rodar múltiplos intervalos se o init for chamado várias vezes
+            // Avoid running multiple intervals if init is called multiple times.
             if (window.phTimerInterval) {
                 return;
             }
 
-            // Função de atualização
-            var updateTimers = function() {
-                var now = Math.floor(Date.now() / 1000);
-                var reloadNeeded = false;
+            // Update function.
+            const updateTimers = () => {
+                const now = Math.floor(Date.now() / 1000);
+                let reloadNeeded = false;
 
                 $('.ph-timer').each(function() {
-                    var el = $(this);
-                    // Se já estiver marcado para recarregar, ignora
+                    const el = $(this);
+                    // If already marked for reloading, skip.
                     if (el.data('reloading')) {
                         return;
                     }
 
-                    var deadline = parseInt(el.attr('data-deadline'));
+                    const deadline = parseInt(el.attr('data-deadline'));
                     if (isNaN(deadline)) {
                         return;
                     }
 
-                    var diff = deadline - now;
-
+                    const diff = deadline - now;
                     if (diff <= 0) {
-                        // --- TEMPO ACABOU ---
+                        // --- TIME UP ---
                         el.text(strings.ready);
                         el.removeClass('text-muted').addClass('text-success fw-bold');
 
-                        // Marca o elemento para não processar de novo
+                        // Mark element to avoid processing again.
                         el.data('reloading', true);
                         reloadNeeded = true;
 
                     } else {
-                        // --- CONTANDO ---
-                        var m = Math.floor(diff / 60);
-                        var s = diff % 60;
-                        var timeString = m + 'm ' + (s < 10 ? '0' : '') + s + 's';
+                        // --- COUNTING ---
+                        const m = Math.floor(diff / 60);
+                        const s = diff % 60;
+                        const timeString = m + 'm ' + (s < 10 ? '0' : '') + s + 's';
 
-                        // Lógica Atualizada: Verifica se deve esconder o rótulo "Próxima coleta..."
-                        // Se o atributo data-no-label existir, usamos string vazia.
-                        var showLabel = !el.attr('data-no-label');
-                        var label = (showLabel && strings.label) ? strings.label + ' ' : '';
+                        // Logic: Check if label "Next collection..." should be hidden.
+                        // If data-no-label attribute exists, use empty string.
+                        const showLabel = !el.attr('data-no-label');
+                        const label = (showLabel && strings.label) ? strings.label + ' ' : '';
 
                         el.text(label + timeString);
                     }
                 });
 
-                // Se algum timer acabou, agenda o reload da página
+                // If any timer finished, schedule page reload.
                 if (reloadNeeded) {
-                    setTimeout(function() {
+                    setTimeout(() => {
                         location.reload();
-                    }, 1500); // Espera 1.5 segundos antes de recarregar
+                    }, 1500); // Wait 1.5 seconds before reloading.
                 }
             };
 
-            // Inicia o loop (1 segundo)
+            // Start loop (1 second).
             window.phTimerInterval = setInterval(updateTimers, 1000);
-            // Roda imediatamente
+            // Run immediately.
             updateTimers();
         }
     };

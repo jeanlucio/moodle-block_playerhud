@@ -246,17 +246,35 @@ class game {
         $maxlevels = isset($config->max_levels) ? (int)$config->max_levels : 20;
 
         // Calculate Game Goal (Sum of finite items).
+        // 1. Get all enabled items.
         $allitems = $DB->get_records('block_playerhud_items', [
             'blockinstanceid' => $blockinstanceid,
             'enabled' => 1,
         ]);
+
         $totalgamexp = 0;
 
         if ($allitems) {
+            // 2. Optimization: Get ALL drops for this instance in ONE query.
+            // Joining to ensure we only get drops for enabled items.
+            $sql = "SELECT d.*, d.itemid 
+                      FROM {block_playerhud_drops} d
+                      JOIN {block_playerhud_items} i ON d.itemid = i.id
+                     WHERE i.blockinstanceid = :instanceid
+                       AND i.enabled = 1";
+            
+            $alldrops = $DB->get_records_sql($sql, ['instanceid' => $blockinstanceid]);
+
+            // 3. Group drops by itemid in memory.
+            $dropsbyitem = [];
+            foreach ($alldrops as $d) {
+                $dropsbyitem[$d->itemid][] = $d;
+            }
+
+            // 4. Calculate total.
             foreach ($allitems as $item) {
-                $drops = $DB->get_records('block_playerhud_drops', ['itemid' => $item->id]);
-                if (!empty($drops)) {
-                    foreach ($drops as $drop) {
+                if (isset($dropsbyitem[$item->id])) {
+                    foreach ($dropsbyitem[$item->id] as $drop) {
                         if ($drop->maxusage > 0) {
                             $totalgamexp += ($item->xp * $drop->maxusage);
                         }

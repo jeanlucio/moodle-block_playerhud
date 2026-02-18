@@ -388,36 +388,48 @@ class generator {
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
 
+        // Moodle core curl class handles Proxy and SSL settings automatically.
         $curl = new \curl();
 
-        // Moodle curl class handles headers as an array.
-        $options = [
-            'CURLOPT_TIMEOUT' => 30,
-            'CURLOPT_HTTPHEADER' => $headers,
-            'CURLOPT_SSL_VERIFYPEER' => true, // Moodle standard is true unless necessary otherwise.
-        ];
+        // Sets the headers using the Moodle API (array).
+        $curl->setHeader($headers);
 
-        // Post request.
-        $res = $curl->post($url, $payload, $options);
+        // Executes the POST request.
+        // The post() method returns the response body directly.
+        $response = $curl->post($url, $payload);
+
+        // Get HTTP status code and errors from the object properties.
         $info = $curl->get_info();
-        $code = $info['http_code'];
-        $curlerror = $curl->get_errno() ? $curl->error : '';
+        $code = isset($info['http_code']) ? (int)$info['http_code'] : 0;
+        $curlerror = $curl->get_errno();
 
-        // Error handling.
+        // 1. Check for cURL level errors (e.g., DNS, Timeout).
         if ($curlerror) {
-            return ['success' => false, 'message' => $curlerror];
+            // $curl->error contains the error message.
+            return ['success' => false, 'message' => 'cURL Error: ' . $curl->error];
         }
 
+        // 2. Check for HTTP level errors (e.g., 401, 500).
         if ($code !== 200) {
+            // Tries to extract error message from JSON response body if available.
+            $errormsg = '';
+            if (!empty($response)) {
+                $decodederror = json_decode($response, true);
+                if (isset($decodederror['error']['message'])) {
+                    $errormsg = ': ' . $decodederror['error']['message'];
+                }
+            }
+
             $msg = get_string(
                 'error_service_code',
                 'block_playerhud',
-                ['service' => $source, 'code' => $code]
+                ['service' => $source, 'code' => $code . $errormsg]
             );
             return ['success' => false, 'message' => $msg];
         }
 
-        $decoded = json_decode($res, true);
+        // 3. Process Success.
+        $decoded = json_decode($response, true);
         $content = '';
 
         if ($source === 'Gemini') {

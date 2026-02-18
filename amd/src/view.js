@@ -1,4 +1,19 @@
 /* global bootstrap */
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
  * Student View JS for PlayerHUD.
  *
@@ -15,14 +30,14 @@ define(['jquery', 'core/notification'], function($, Notification) {
          * @param {Object} config The configuration object passed from PHP.
          */
         init: function(config) {
-            // Move o modal para o final do body para evitar problemas de z-index
+            // Move modal to body end to avoid z-index issues.
             $('#ph-item-modal-view').appendTo('body');
 
             // 1. Disable HUD Confirmation.
             $('.js-disable-hud').on('click', function(e) {
                 e.preventDefault();
-                var url = $(this).attr('href');
-                var msg = $(this).attr('data-confirm-msg');
+                const url = $(this).attr('href');
+                const msg = $(this).attr('data-confirm-msg');
 
                 Notification.confirm(
                     config.strings.confirm_title,
@@ -35,7 +50,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 );
             });
 
-            // Acessibilidade: Permite abrir itens com Enter ou Espaço
+            // Accessibility: Allow opening items with Enter or Space.
             $(document).on('keydown', '.ph-item-trigger', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -47,58 +62,58 @@ define(['jquery', 'core/notification'], function($, Notification) {
             /**
              * Helper to open/close bootstrap modal safely.
              */
-            function openItemModal() {
-                var el = document.getElementById('ph-item-modal-view');
-                if (typeof $ !== 'undefined' && $.fn.modal) {
-                    // Bootstrap 4 (Tema Clássico)
-                    $(el).modal('show');
-                } else {
-                    // Bootstrap 5 (Moodle 4.x Padrão)
+            const openItemModal = () => {
+                const el = document.getElementById('ph-item-modal-view');
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    // Bootstrap 5 (Moodle 4.x Default).
                     try {
-                        var m = bootstrap.Modal.getOrCreateInstance(el);
+                        const m = bootstrap.Modal.getOrCreateInstance(el);
                         m.show();
                     } catch (e) {
                         // eslint-disable-next-line no-console
                         console.error(e);
                     }
+                } else {
+                    // Fallback for older themes.
+                    $(el).modal('show');
                 }
-            }
+            };
 
             // Event Delegation for clicking on items.
             $(document).on('click', '.ph-item-trigger', function(e) {
                 e.preventDefault();
-                var trigger = $(this);
+                const trigger = $(this);
 
                 // Extract data.
-                var name = trigger.attr('data-name');
-                var xp = trigger.attr('data-xp');
-                var img = trigger.attr('data-image');
-                var isImg = trigger.attr('data-isimage'); // String "1" or "0".
-                var date = trigger.attr('data-date'); // Fallback (Texto do PHP)
-                var timestamp = trigger.attr('data-timestamp'); // Timestamp Cru [NOVO]
-                var count = trigger.attr('data-count');
-                var desc = trigger.find('.ph-item-description-content').html();
+                const name = trigger.attr('data-name');
+                const xp = trigger.attr('data-xp');
+                const img = trigger.attr('data-image');
+                const isImg = trigger.attr('data-isimage'); // String "1" or "0".
+                const date = trigger.attr('data-date'); // Fallback (PHP Text).
+                const timestamp = trigger.attr('data-timestamp'); // Raw Timestamp.
+                const count = trigger.attr('data-count');
+                const desc = trigger.find('.ph-item-description-content').html();
 
                 // Populate Modal.
                 $('#phModalTitleView, #phModalNameView').text(name);
                 $('#phModalXPView').text(xp);
 
-                var descEl = $('#phModalDescView');
+                const descEl = $('#phModalDescView');
                 if (desc && desc.trim() !== '') {
                     descEl.html(desc);
                 } else {
                     descEl.html('<i class="text-muted">' + config.strings.no_desc + '</i>');
                 }
 
-                var badgeEl = $('#phModalCountBadgeView');
+                const badgeEl = $('#phModalCountBadgeView');
                 if (count && count > 0) {
                     badgeEl.text('x' + count).show();
                 } else {
                     badgeEl.hide();
                 }
 
-                // Image Handling (CLEANUP: Classes CSS em vez de style inline)
-                var imgCont = $('#phModalImageContainerView');
+                // Image Handling.
+                const imgCont = $('#phModalImageContainerView');
                 imgCont.empty();
 
                 if (isImg == '1' || isImg === 'true') {
@@ -117,11 +132,11 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
 
                 // --- Date Internationalization Logic ---
-                var dateEl = $('#phModalDateView');
-                var formattedDate = '';
+                const dateEl = $('#phModalDateView');
+                let formattedDate = '';
 
                 if (timestamp && timestamp > 0) {
-                    var lang = $('html').attr('lang') || 'en';
+                    let lang = $('html').attr('lang') || 'en';
                     lang = lang.replace('_', '-');
 
                     try {
@@ -138,7 +153,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
 
                 if (formattedDate) {
-                    var prefix = (config.strings && config.strings.last_collected) ?
+                    const prefix = (config.strings && config.strings.last_collected) ?
                         config.strings.last_collected + ' ' : '';
 
                     dateEl.find('span').text(prefix + formattedDate);

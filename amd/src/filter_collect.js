@@ -72,7 +72,7 @@ const updateStash = (itemData) => {
         stash.closest('.ph-stash-wrapper').removeClass('d-none').show();
         stash.find('.text-muted, span.small').remove();
 
-        // Check duplicated by name and remove.
+        // Check for duplicate items by name and remove them.
         stash.children().filter((i, el) => $(el).attr('data-name') === itemData.name).remove();
 
         const isImage = String(itemData.isimage) === '1';
@@ -104,6 +104,7 @@ const updateStash = (itemData) => {
 
         newItem.hide().prependTo(stash).fadeIn();
 
+        // Limit items in stash (Widget vs Sidebar).
         const limit = stash.hasClass('ph-widget-stash') ? 14 : 6;
         if (stash.children('.ph-mini-item').length > limit) {
             stash.children('.ph-mini-item').last().remove();
@@ -314,7 +315,7 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
             card.attr('data-date', resp.item_data.date);
             card.attr('data-timestamp', resp.item_data.timestamp);
 
-            // FIX: Atualizar o atributo XP no DOM para que o modal leia o novo valor (revelando "???" se necessário)
+            // Update XP attribute in DOM so modal reads the new value.
             card.attr('data-xp', resp.item_data.xp);
         }
 
@@ -322,7 +323,7 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
             trigger.closest('.ph-drop-image-container').attr({
                 'data-date': resp.item_data.date,
                 'data-timestamp': resp.item_data.timestamp,
-                'data-xp': resp.item_data.xp // Atualiza XP também no modo imagem
+                'data-xp': resp.item_data.xp
             });
         }
     }
@@ -383,7 +384,7 @@ export const init = (config) => {
         );
     });
 
-    // Item Details Modal
+    // Item Details Modal.
     // eslint-disable-next-line complexity
     $('body').on('click keydown', '.ph-item-details-trigger', function(e) {
         if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') {
@@ -420,12 +421,12 @@ export const init = (config) => {
             const xpStr = String(data.xp);
             if (xpStr.indexOf('???') === -1) {
                 const isNum = !isNaN(parseFloat(data.xp)) && isFinite(data.xp);
-                // FIX: Garantir que o texto " XP" apareça se for apenas número
+                // Ensure text contains " XP" if it is just a number.
                 const xpText = isNum ? `${data.xp} XP` : data.xp;
 
                 modalEls.xp.text(xpText).removeClass('d-none').show();
 
-                // FIX: Forçar cor Azul (bg-primary) no modal do filtro, removendo cores antigas
+                // Force blue color (bg-primary) in filter modal, removing old styles.
                 modalEls.xp.removeClass('ph-bg-teal bg-info text-dark').addClass('bg-primary text-white');
             } else {
                 modalEls.xp.hide();
