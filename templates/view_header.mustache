@@ -16,12 +16,19 @@
 }}
 {{!
     @template block_playerhud/view_header
+    @package block_playerhud
+    @copyright 2026 Jean Lúcio
+    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-    Header displaying user stats, level, and XP progress.
-
-    @package    block_playerhud
-    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
-    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @example context (json):
+    {
+        "userpicture": "<img src='avatar.png'>",
+        "fullname": "John Doe",
+        "level_class": "ph-lvl-tier-2",
+        "level_display": "5 / 20",
+        "xp_display": "1200 / 5000 XP",
+        "progress": 45
+    }
 }}
 <div class="card shadow-sm mb-4 border-0 ph-card-rounded">
     <div class="card-body p-4">

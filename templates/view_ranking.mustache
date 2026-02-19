@@ -16,14 +16,34 @@
 }}
 {{!
     @template block_playerhud/view_ranking
+    @package block_playerhud
+    @copyright 2026 Jean Lúcio
+    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-    Template for the leaderboard/ranking tab.
-
-    @package    block_playerhud
-    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
-    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @example context (json):
+    {
+        "str_privacy_title": "My Visibility",
+        "privacy_visible": true,
+        "str_visible": "Visible",
+        "str_visible_desc": "Everyone sees you",
+        "teacher_filter_active": false,
+        "url_toggle_privacy": "#",
+        "str_btn_toggle": "Go Hidden",
+        "btn_toggle_icon": "fa-eye-slash",
+        "btn_toggle_class": "btn-outline-danger",
+        "show_content": true,
+        "has_groups": true,
+        "has_players": true,
+        "str_tab_individual": "Individual",
+        "str_tab_groups": "Groups",
+        "individual": [
+            { "rank": 1, "medal_emoji": "🥇", "fullname": "Alice", "currentxp": 1000, "is_me": true }
+        ],
+        "groups": [
+            { "rank": 1, "name": "Team A", "average_xp": 500 }
+        ]
+    }
 }}
-
 <div class="container-fluid p-0 animate__animated animate__fadeIn">
 
     {{! --- PRIVACY CONTROL BAR --- }}

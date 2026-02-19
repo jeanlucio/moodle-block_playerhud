@@ -16,12 +16,32 @@
 }}
 {{!
     @template block_playerhud/view_collection
+    @package block_playerhud
+    @copyright 2026 Jean Lúcio
+    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-    Template for the collection/inventory tab in the PlayerHUD block.
-
-    @package    block_playerhud
-    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
-    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @example context (json):
+    {
+        "has_items": true,
+        "show_filter": true,
+        "sort_options": [
+            { "value": "#", "label": "XP (Low to High)", "selected": true }
+        ],
+        "items": [
+            {
+                "card_class": "ph-owned",
+                "tabindex": "0",
+                "id": 1,
+                "name": "Sword",
+                "xp_text": "100 XP",
+                "count": 1,
+                "badge_new": true,
+                "is_image": false,
+                "image_content": "⚔️",
+                "date_str": "Jan 01"
+            }
+        ]
+    }
 }}
 {{#has_items}}
 

@@ -16,10 +16,23 @@
 }}
 {{!
     @template block_playerhud/manage_layout
-    Main layout for the management area (Tabs + Content).
-    @package    block_playerhud
-    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
-    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @package block_playerhud
+    @copyright 2026 Jean Lúcio
+    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    @example context (json):
+    {
+        "str_title": "Game Master Panel",
+        "url_backpack": "#",
+        "str_backpack": "Backpack",
+        "url_course": "#",
+        "str_back_course": "Back to Course",
+        "tabs": [
+            { "active": true, "url": "#", "text": "Items", "icon": "<i class='fa fa-cube'></i>" },
+            { "active": false, "url": "#", "text": "Settings", "icon": "<i class='fa fa-cog'></i>" }
+        ],
+        "content_html": "<p>Page content goes here...</p>"
+    }
 }}
 <div class="container-fluid p-0 animate__animated animate__fadeIn">
     

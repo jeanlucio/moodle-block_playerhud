@@ -22,6 +22,35 @@
     @package    block_playerhud
     @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
     @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    @example context (json):
+    {
+        "url_course": "#",
+        "str_back_course": "Back to Course",
+        "is_teacher": true,
+        "url_manage": "#",
+        "str_manage": "Game Master Panel",
+        "header_html": "<div class='alert alert-info'>Header Stats Placeholder</div>",
+        "tabs": [
+            {
+                "active": true,
+                "url": "#",
+                "icon": "<i class='fa fa-trophy'></i>",
+                "text": "Ranking"
+            },
+            {
+                "active": false,
+                "url": "#",
+                "icon": "<i class='fa fa-book'></i>",
+                "text": "Collection"
+            }
+        ],
+        "tab_content_html": "<p>Content of the active tab goes here.</p>",
+        "str_status_active": "You are participating in the game.",
+        "url_disable": "#",
+        "str_confirm_disable": "Are you sure?",
+        "str_disable": "Disable and Exit"
+    }
 }}
 <div class="playerhud-container">
     {{! Header Navigation }}

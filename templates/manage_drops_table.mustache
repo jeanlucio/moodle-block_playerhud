@@ -18,9 +18,59 @@
     @template block_playerhud/manage_drops_table
 
     Manage drops table template.
+
     @package    block_playerhud
     @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
     @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    @example context (json):
+    {
+        "url_course": "#",
+        "str_back_course": "Back to Course",
+        "is_image": true,
+        "media_url": "http://example.com/image.png",
+        "str_managing": "Managing Drops for:",
+        "item_name": "Excalibur Sword",
+        "url_library": "#",
+        "str_back_lib": "Back to Library",
+        "url_new_drop": "#",
+        "str_new_drop": "New Drop Location",
+        "summary_text": "You have 2 drops configured.",
+        "base_url": "#",
+        "sesskey": "12345",
+        "str_select_all": "Select all",
+        "headers": {
+            "name": { "url": "#", "label": "Location", "icon_class": "fa-sort" },
+            "qty": { "url": "#", "label": "Qty", "icon_class": "fa-sort" },
+            "time": { "url": "#", "label": "Time", "icon_class": "fa-sort" }
+        },
+        "str_col_gen": "Code Generator",
+        "str_actions": "Actions",
+        "drops": [
+            {
+                "id": 1,
+                "counter": 1,
+                "name": "Library",
+                "is_infinite": false,
+                "maxusage": 5,
+                "is_immediate": false,
+                "respawntime_fmt": "1h",
+                "full_default_code": "[PLAYERHUD_DROP code=ABC]",
+                "display_code": "ABC",
+                "str_quick_copy": "Copy",
+                "str_gen_title": "Customize",
+                "url_edit": "#",
+                "str_edit": "Edit",
+                "url_delete": "#",
+                "str_delete": "Delete",
+                "confirm_msg": "Sure?"
+            }
+        ],
+        "str_select": "Select",
+        "str_empty_drops": "No drops found",
+        "str_delete_selected": "Delete selected",
+        "str_help_code": "Help text here"
+    }
 }}
 <div class="d-flex align-items-center mb-4 border-bottom pb-3">
     <a href="{{url_course}}" class="btn btn-outline-secondary me-3 shadow-sm">
@@ -41,7 +91,7 @@
 
     <div class="ms-auto d-flex gap-3">
         <a href="{{url_library}}" class="btn btn-outline-dark shadow-sm">
-             <i class="fa fa-book" aria-hidden="true"></i> {{str_back_lib}}
+            <i class="fa fa-book" aria-hidden="true"></i> {{str_back_lib}}
         </a>
         <a href="{{url_new_drop}}" class="btn btn-success shadow-sm ms-2">
             <i class="fa fa-plus" aria-hidden="true"></i> {{str_new_drop}}

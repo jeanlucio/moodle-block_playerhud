@@ -16,10 +16,16 @@
 }}
 {{!
     @template block_playerhud/modal_item
-    Reusable modal for displaying item details.
-    @package    block_playerhud
-    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
-    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @package block_playerhud
+    @copyright 2026 Jean Lúcio
+    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    @example context (json):
+    {
+        "str": [
+            { "details": "Details", "close": "Close" }
+        ]
+    }
 }}
 <div class="modal fade ph-modal-zindex" id="ph-item-modal-view" tabindex="-1" aria-labelledby="phModalTitleView" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">

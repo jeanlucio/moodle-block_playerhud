@@ -16,11 +16,20 @@
 }}
 {{!
     @template block_playerhud/optin
-    Welcome screen for user opt-in.
+    @package block_playerhud
+    @copyright 2026 Jean Lúcio
+    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-    @package    block_playerhud
-    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
-    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @example context (json):
+    {
+        "userpicture": "<img src='pic.jpg'>",
+        "title": "Welcome, John!",
+        "message": "Do you want to join the game?",
+        "url_yes": "#",
+        "url_no": "#",
+        "str_yes": "Yes, join!",
+        "str_no": "No thanks"
+    }
 }}
 <div class="container text-center py-5">
     <div class="card shadow-lg mx-auto ph-optin-card">

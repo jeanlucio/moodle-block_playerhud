@@ -16,12 +16,24 @@
 }}
 {{!
     @template block_playerhud/tab_config
+    @package block_playerhud
+    @copyright 2026 Jean Lúcio
+    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-    Configuration tab template containing balance stats, widget code, and API settings.
-
-    @package    block_playerhud
-    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
-    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @example context (json):
+    {
+        "alert_border_class": "border-info",
+        "total_items_xp": "500",
+        "xp_ceiling": "2000",
+        "alert_class": "alert-info",
+        "alert_icon": "fa-info-circle",
+        "balance_message": "Game economy is balanced.",
+        "widget_code_tip_html": "Tip: Paste this code...",
+        "action_url": "#",
+        "sesskey": "12345",
+        "val_gemini": "",
+        "val_groq": ""
+    }
 }}
 <div class="row">
     {{! --- Balance Card --- }}

@@ -16,12 +16,40 @@
 }}
 {{!
     @template block_playerhud/sidebar_view
+    @package block_playerhud
+    @copyright 2026 Jean Lúcio
+    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-    Main sidebar view for the PlayerHUD block.
-
-    @package    block_playerhud
-    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
-    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @example context (json):
+    {
+        "userpicture": "<img src='user.jpg'>",
+        "username": "Student Name",
+        "level_class": "ph-lvl-tier-1",
+        "level": "1 / 10",
+        "xp": "100 / 500 XP",
+        "viewurl": "#",
+        "progress": 20,
+        "isteacher": true,
+        "manageurl": "#",
+        "has_items": true,
+        "items": [
+            {
+                "name": "Potion",
+                "xp": "50 XP",
+                "isimage": false,
+                "image": "🧪",
+                "description": "Mana restore"
+            }
+        ],
+        "ranking": {
+            "url": "#",
+            "tooltip": "Rank #1",
+            "label": "Leaderboard"
+        },
+        "url_disable": "#",
+        "str_confirm_msg": "Sure?",
+        "str_disable_gamification": "Disable"
+    }
 }}
 <div class="block_playerhud_sidebar p-2">
 
