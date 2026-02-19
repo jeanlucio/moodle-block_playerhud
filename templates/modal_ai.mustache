@@ -15,14 +15,34 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template block_playerhud/tab_config
+    @template block_playerhud/modal_ai
     @package block_playerhud
     @copyright 2026 Jean Lúcio
     @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
     Example context (json):
     {
-        "str": [] 
+        "str": [
+            {
+                "ai_btn_create": "Create with AI",
+                "close": "Close",
+                "ai_prompt_theme_item": "Theme",
+                "ai_theme_placeholder": "E.g., Magic Items",
+                "xp": "XP",
+                "ai_rnd_xp": "100",
+                "qty": "Quantity",
+                "ai_create_drop": "Create Drops",
+                "ai_drop_settings": "Drop Settings",
+                "drop_name_label": "Location Name",
+                "drop_name_default": "Forest",
+                "drop_max_qty": "Max Quantity",
+                "unlimited": "Unlimited",
+                "drop_interval": "Respawn Interval",
+                "drops_immediate": "Immediate",
+                "cancel": "Cancel",
+                "ai_btn_conjure": "Generate"
+            }
+        ]
     }
 }}
 <div class="modal fade" id="ph-ai-modal" tabindex="-1" aria-labelledby="phAiModalLabel" aria-hidden="true">
