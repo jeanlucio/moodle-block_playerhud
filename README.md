@@ -111,7 +111,7 @@ PlayerHUD works together with complementary plugins:
 
 ---
 
-## 🔎 Third-party Service Disclosure
+### 🔎 Third-party Service Disclosure
 
 PlayerHUD includes an optional AI-powered item generation feature.
 
@@ -274,7 +274,7 @@ O PlayerHUD funciona em conjunto com plugins complementares:
 
 ---
 
-## 🔎 Divulgação de Serviço de Terceiros
+### 🔎 Divulgação de Serviço de Terceiros
 
 O PlayerHUD inclui um recurso opcional de geração automática de itens com IA.
 
