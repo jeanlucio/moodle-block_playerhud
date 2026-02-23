@@ -111,6 +111,58 @@ PlayerHUD works together with complementary plugins:
 
 ---
 
+## 🔎 Third-party Service Disclosure
+
+PlayerHUD includes an optional AI-powered item generation feature.
+
+### Is the AI feature required?
+
+No. The plugin works fully without any external AI service.
+All items can be created manually inside Moodle.
+The AI feature is only a productivity tool for automatic item generation.
+
+### Supported Providers
+
+The AI feature supports the following third-party providers:
+
+- Google Gemini
+- Groq
+
+These services operate under their own terms of service and privacy policies.
+
+### How to obtain an API key
+
+API keys must be created directly on the provider’s official website:
+
+- Google Gemini: https://ai.google.dev/
+- Groq: https://console.groq.com/
+
+Both providers currently offer free usage tiers. However, pricing policies may change and paid plans may apply depending on usage limits.
+
+The PlayerHUD plugin does not provide API keys.
+
+### Where API keys are configured
+
+API keys may be configured:
+
+- Globally by the Moodle site administrator, and/or
+- Individually by teachers within their courses.
+
+API keys are stored within Moodle configuration settings.
+
+### Data Transmission
+
+When the AI feature is used, user-entered prompts are transmitted to the selected provider for processing.
+
+The plugin:
+- Does not store prompts
+- Does not store raw AI responses
+- Only stores the generated items created inside Moodle
+
+No external communication occurs unless the AI feature is explicitly used.
+
+---
+
 ## 📄 License / Licença
 
 This project is licensed under the **GNU General Public License v3 (GPLv3)**.
@@ -219,6 +271,58 @@ O PlayerHUD funciona em conjunto com plugins complementares:
 - Proteção com `require_sesskey()`
 - Compatível com a API externa do Moodle
 - Participação no ranking com controle de privacidade
+
+---
+
+## 🔎 Divulgação de Serviço de Terceiros
+
+O PlayerHUD inclui um recurso opcional de geração automática de itens com IA.
+
+### O recurso de IA é obrigatório?
+
+Não. O plugin funciona de forma completa sem qualquer serviço externo.
+Todos os itens podem ser criados manualmente dentro do Moodle.
+A IA é apenas um recurso de produtividade para geração automática de itens.
+
+### Provedores suportados
+
+O recurso de IA oferece suporte aos seguintes provedores externos:
+
+- Google Gemini
+- Groq
+
+Esses serviços seguem seus próprios termos de uso e políticas de privacidade.
+
+### Como obter a chave de API
+
+As chaves de API devem ser criadas diretamente no site oficial do provedor:
+
+- Google Gemini: https://ai.google.dev/
+- Groq: https://console.groq.com/
+
+Atualmente, ambos oferecem planos gratuitos, porém as políticas de preços podem variar conforme o volume de uso.
+
+O PlayerHUD não fornece chaves de API.
+
+### Onde a chave é configurada
+
+As chaves de API podem ser configuradas:
+
+- Globalmente pelo administrador do Moodle, e/ou
+- Individualmente pelo professor dentro de seus cursos.
+
+As chaves são armazenadas nas configurações do Moodle.
+
+### Transmissão de dados
+
+Quando o recurso de IA é utilizado, os prompts informados são enviados ao provedor selecionado para processamento.
+
+O plugin:
+- Não armazena os prompts
+- Não armazena respostas brutas da IA
+- Apenas salva os itens gerados dentro do Moodle
+
+Nenhuma comunicação externa ocorre sem ativação explícita do recurso.
 
 ---
 
