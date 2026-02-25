@@ -7,9 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     
     strategy:
-      fail-fast: false # Não para todos os testes se um falhar
+      fail-fast: false
       matrix:
-        # Testando nas versões que o Moodle 4.5/5.1 exigem
         php: ['8.2', '8.3']
         moodle-branch: ['MOODLE_405_STABLE', 'master']
 
@@ -24,11 +23,14 @@ jobs:
           extensions: mbstring, mysqli, gd, xml, dom, json, zip, bcmath, intl
           ini-values: max_execution_time=600, memory_limit=1G
 
-      - name: Install Moodle Plugin CI
+      - name: Install Moodle Plugin CI (Isolated Mode)
         run: |
-          # Instalando com a bandeira de ignorar requisitos de plataforma para evitar o erro 2
-          composer global require "moodlehq/moodle-plugin-ci:^4" --no-interaction --ignore-platform-reqs
-          echo "$(composer global config bin-dir --absolute)" >> $GITHUB_PATH
+          # Criamos uma pasta fora do projeto para evitar conflito com seu composer.json
+          mkdir ~/moodle-plugin-ci
+          cd ~/moodle-plugin-ci
+          composer require "moodlehq/moodle-plugin-ci:^4" --no-interaction --no-cache
+          # Adicionamos essa pasta no caminho do sistema
+          echo "$HOME/moodle-plugin-ci/vendor/bin" >> $GITHUB_PATH
 
       - name: Initialize CI
         run: |
