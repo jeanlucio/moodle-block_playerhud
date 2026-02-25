@@ -1,0 +1,39 @@
+name: Plugin CI
+
+on: [push, pull_request] # Dispara toda vez que você enviar código
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        # Aqui o GitHub vai testar seu plugin em várias versões ao mesmo tempo!
+        php: ['8.1', '8.2', '8.3']
+        moodle-branch: ['MOODLE_404_STABLE', 'master']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, mysqli, gd, xml, dom, json, zip
+
+      - name: Install Moodle Plugin CI
+        run: |
+          composer global require "moodlehq/moodle-plugin-ci:^4"
+          echo "$(composer global config bin-dir --absolute)" >> $GITHUB_PATH
+
+      - name: Initialize CI
+        run: |
+          moodle-plugin-ci install --plugin . --moodle-branch ${{ matrix.moodle-branch }}
+
+      - name: Run PHPCS (Pilar 2 Automático)
+        run: moodle-plugin-ci phpcs
+
+      - name: Run PHPUnit (Testes de Lógica)
+        run: moodle-plugin-ci phpunit
+        
