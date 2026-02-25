@@ -6,6 +6,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
+    # 1. MOVEMOS A VARIÁVEL PARA CÁ: Agora ela protege todo o ciclo de vida do Job.
+    env:
+      COMPOSER_IGNORE_PLATFORM_REQS: 1
+
     strategy:
       fail-fast: false
       matrix:
@@ -32,19 +36,19 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/moodlehq/moodle-plugin-ci.git ~/moodle-plugin-ci
           cd ~/moodle-plugin-ci
+          # Mantemos a flag aqui por segurança na instalação da própria ferramenta
           composer install --no-dev --no-interaction --ignore-platform-reqs
           echo "$HOME/moodle-plugin-ci/bin" >> $GITHUB_PATH
           echo "$HOME/moodle-plugin-ci/vendor/bin" >> $GITHUB_PATH
 
       - name: Initialize CI
-        env:
-          # Esta é a instrução oficial para o Composer ignorar a versão do PHP no servidor
-          COMPOSER_IGNORE_PLATFORM_REQS: 1
+        # 2. REMOVEMOS O BLOCO ENV DAQUI, POIS AGORA É GLOBAL
         run: |
           moodle-plugin-ci install --plugin . --moodle ${{ matrix.moodle-branch }} --branch ${{ github.ref_name }} --db-type mysqli --db-user root --db-pass root
 
       - name: Run PHPCS
-        run: moodle-plugin-ci phpcs
+        # 3. ADICIONAMOS -vvv PARA MÁXIMA VERBOSIDADE
+        run: moodle-plugin-ci phpcs -vvv
 
       - name: Run PHPUnit
         run: moodle-plugin-ci phpunit
