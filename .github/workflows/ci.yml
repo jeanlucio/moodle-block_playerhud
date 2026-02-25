@@ -33,11 +33,10 @@ jobs:
 
       - name: Initialize CI
         run: |
-          moodle-plugin-ci install --plugin . --moodle-branch ${{ matrix.moodle-branch }}
+          moodle-plugin-ci install --plugin . --moodle ${{ matrix.moodle-branch }}
 
       - name: Run PHPCS
         run: moodle-plugin-ci phpcs
 
       - name: Run PHPUnit
         run: moodle-plugin-ci phpunit
-        
