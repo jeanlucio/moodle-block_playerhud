@@ -1,0 +1,3 @@
+lib/google2-service/*
+vendor/*
+node_modules/*

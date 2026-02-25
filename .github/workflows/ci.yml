@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          path: plugin  # ISSO É NOVO: Força o GitHub a colocar seu código nesta subpasta
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -44,7 +46,7 @@ jobs:
       - name: Initialize CI
         # 2. REMOVEMOS O BLOCO ENV DAQUI, POIS AGORA É GLOBAL
         run: |
-          moodle-plugin-ci install --plugin . --moodle ${{ matrix.moodle-branch }} --branch ${{ github.ref_name }} --db-type mysqli --db-user root --db-pass root
+          moodle-plugin-ci install --plugin ./plugin --moodle ${{ matrix.moodle-branch }} --branch ${{ github.ref_name }} --db-type mysqli --db-user root --db-pass root
 
       - name: Run PHPCS
         # 3. ADICIONAMOS -vvv PARA MÁXIMA VERBOSIDADE
@@ -52,4 +54,3 @@ jobs:
 
       - name: Run PHPUnit
         run: moodle-plugin-ci phpunit
-        
