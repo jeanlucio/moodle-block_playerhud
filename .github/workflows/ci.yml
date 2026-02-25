@@ -33,13 +33,14 @@ jobs:
           git clone --depth 1 https://github.com/moodlehq/moodle-plugin-ci.git ~/moodle-plugin-ci
           cd ~/moodle-plugin-ci
           composer install --no-dev --no-interaction --ignore-platform-reqs
-          # AGORA VAI: Adicionamos a pasta /bin E a /vendor/bin no mapa do robô
+          # Exportamos os dois caminhos: o da ferramenta e o do PHPCS que ela usa
           echo "$HOME/moodle-plugin-ci/bin" >> $GITHUB_PATH
           echo "$HOME/moodle-plugin-ci/vendor/bin" >> $GITHUB_PATH
 
       - name: Initialize CI
         run: |
-          moodle-plugin-ci install --plugin . --moodle ${{ matrix.moodle-branch }} --branch ${{ github.ref_name }} --db-type mysqli --db-user root --db-pass root
+          # Adicionamos o --ignore-platform-reqs aqui para o Moodle aceitar o PHP 8.2
+          moodle-plugin-ci install --plugin . --moodle ${{ matrix.moodle-branch }} --branch ${{ github.ref_name }} --db-type mysqli --db-user root --db-pass root --ignore-platform-reqs
 
       - name: Run PHPCS
         run: moodle-plugin-ci phpcs
