@@ -24,7 +24,6 @@ jobs:
           ini-values: max_execution_time=600, memory_limit=1G
 
       - name: Start MySQL
-        # O GitHub Actions tem o MySQL instalado, mas precisamos ligá-lo manualmente
         run: |
           sudo systemctl start mysql
           mysql -uroot -proot -e "SET GLOBAL sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));"
@@ -34,11 +33,12 @@ jobs:
           git clone --depth 1 https://github.com/moodlehq/moodle-plugin-ci.git ~/moodle-plugin-ci
           cd ~/moodle-plugin-ci
           composer install --no-dev --no-interaction --ignore-platform-reqs
+          # AGORA VAI: Adicionamos a pasta /bin E a /vendor/bin no mapa do robô
           echo "$HOME/moodle-plugin-ci/bin" >> $GITHUB_PATH
+          echo "$HOME/moodle-plugin-ci/vendor/bin" >> $GITHUB_PATH
 
       - name: Initialize CI
         run: |
-          # Adicionamos --db-user e --db-pass para casar com o banco do GitHub
           moodle-plugin-ci install --plugin . --moodle ${{ matrix.moodle-branch }} --branch ${{ github.ref_name }} --db-type mysqli --db-user root --db-pass root
 
       - name: Run PHPCS
