@@ -23,14 +23,13 @@ jobs:
           extensions: mbstring, mysqli, gd, xml, dom, json, zip, bcmath, intl
           ini-values: max_execution_time=600, memory_limit=1G
 
-      - name: Install Moodle Plugin CI (Force Isolation)
+      - name: Install Moodle Plugin CI (Direct Install)
         run: |
-          # Criamos uma pasta isolada e forçamos o Composer a ignorar o projeto local
-          mkdir ~/moodle-plugin-ci
+          # Baixamos a ferramenta direto da fonte, sem passar pelo mercado (Packagist)
+          git clone --depth 1 https://github.com/moodlehq/moodle-plugin-ci.git ~/moodle-plugin-ci
           cd ~/moodle-plugin-ci
-          # O comando COMPOSER="" limpa qualquer configuração que venha do seu plugin
-          COMPOSER="" composer require "moodlehq/moodle-plugin-ci:^4" --no-interaction --ignore-platform-reqs
-          echo "$HOME/moodle-plugin-ci/vendor/bin" >> $GITHUB_PATH
+          composer install --no-dev --no-interaction --ignore-platform-reqs
+          echo "$HOME/moodle-plugin-ci/bin" >> $GITHUB_PATH
 
       - name: Initialize CI
         run: |
