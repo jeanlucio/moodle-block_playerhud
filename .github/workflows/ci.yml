@@ -1,16 +1,17 @@
 name: Plugin CI
 
-on: [push, pull_request] # Dispara toda vez que você enviar código
+on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     
     strategy:
+      fail-fast: false # Não para todos os testes se um falhar
       matrix:
-        # Aqui o GitHub vai testar seu plugin em várias versões ao mesmo tempo!
-        php: ['8.1', '8.2', '8.3']
-        moodle-branch: ['MOODLE_404_STABLE', 'master']
+        # Testando nas versões que o Moodle 4.5/5.1 exigem
+        php: ['8.2', '8.3']
+        moodle-branch: ['MOODLE_405_STABLE', 'master']
 
     steps:
       - name: Checkout code
@@ -20,20 +21,22 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, mysqli, gd, xml, dom, json, zip
+          extensions: mbstring, mysqli, gd, xml, dom, json, zip, bcmath, intl
+          ini-values: max_execution_time=600, memory_limit=1G
 
       - name: Install Moodle Plugin CI
         run: |
-          composer global require "moodlehq/moodle-plugin-ci:^4"
+          # Instalando com a bandeira de ignorar requisitos de plataforma para evitar o erro 2
+          composer global require "moodlehq/moodle-plugin-ci:^4" --no-interaction --ignore-platform-reqs
           echo "$(composer global config bin-dir --absolute)" >> $GITHUB_PATH
 
       - name: Initialize CI
         run: |
           moodle-plugin-ci install --plugin . --moodle-branch ${{ matrix.moodle-branch }}
 
-      - name: Run PHPCS (Pilar 2 Automático)
+      - name: Run PHPCS
         run: moodle-plugin-ci phpcs
 
-      - name: Run PHPUnit (Testes de Lógica)
+      - name: Run PHPUnit
         run: moodle-plugin-ci phpunit
         
