@@ -9,3 +9,5 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
+
+playerhud.code-workspace
