@@ -6,7 +6,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
-    # Ignora restrições de plataforma para garantir compatibilidade com versões bleeding-edge
     env:
       COMPOSER_IGNORE_PLATFORM_REQS: 1
 
@@ -46,6 +45,8 @@ jobs:
         run: |
           moodle-plugin-ci install --plugin ./plugin --moodle ${{ matrix.moodle-branch }} --branch ${{ github.ref_name }} --db-type mysqli --db-user root --db-pass root
 
+      # --- AQUI COMEÇAM AS VALIDAÇÕES ---
+
       - name: PHP Syntax Check (PHPLint)
         run: moodle-plugin-ci phplint
 
@@ -58,11 +59,14 @@ jobs:
       - name: Check Mustache Templates
         run: moodle-plugin-ci mustache
 
-      # Ajuste necessário para as regras de CSS do Moodle 5.x
-      - name: Install Missing Stylelint Config
+      # CORREÇÃO AQUI:
+      # Removemos a instalação manual do stylelint-config-standard.
+      # Adicionamos este passo para garantir que as dependências do NODE do próprio Moodle estejam instaladas.
+      # O diretório padrão de instalação do moodle-plugin-ci é "moodle".
+      - name: Install Node Dependencies (Moodle Core)
         run: |
-          cd ${{ matrix.moodle-branch }}
-          npm install stylelint-config-standard --no-save --legacy-peer-deps
+          cd moodle
+          npm install --no-save
 
       - name: Run JS/CSS Lint (Grunt)
         run: moodle-plugin-ci grunt
