@@ -54,3 +54,33 @@ jobs:
 
       - name: Run PHPUnit
         run: moodle-plugin-ci phpunit
+
+      - name: Run JS/CSS Lint (Grunt)
+        run: moodle-plugin-ci grunt
+
+      - name: Run Mustache Lint
+        run: moodle-plugin-ci mustache
+
+      - name: PHP Syntax Check (PHPLint)
+        run: moodle-plugin-ci phplint
+
+      - name: Validate XML Files
+        run: moodle-plugin-ci xmllint
+
+      - name: Validate Plugin ID and Version
+        run: moodle-plugin-ci validatid
+
+      - name: Check Documentation (PHPDoc)
+        run: moodle-plugin-ci phpdoc
+
+      - name: Run PHPCS (Code Style)
+        run: moodle-plugin-ci phpcs -vvv
+
+      - name: Check Mustache Templates
+        run: moodle-plugin-ci mustache
+
+      - name: Run JS/CSS Lint (Grunt)
+        run: moodle-plugin-ci grunt
+
+      - name: Run PHPUnit (Logic Tests)
+        run: moodle-plugin-ci phpunit
