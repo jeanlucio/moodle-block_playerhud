@@ -79,6 +79,15 @@ class provider implements
             'timecreated' => 'privacy:metadata:timecreated',
         ], 'privacy:metadata:ai_logs');
 
+        // Declaration for Moodle Privacy Subsystem (External APIs).
+        $collection->add_external_location_link('google_gemini', [
+            'prompt' => 'privacy:metadata:external:prompt',
+        ], 'privacy:metadata:external:gemini_summary');
+
+        $collection->add_external_location_link('groq', [
+            'prompt' => 'privacy:metadata:external:prompt',
+        ], 'privacy:metadata:external:groq_summary');
+
         return $collection;
     }
 
