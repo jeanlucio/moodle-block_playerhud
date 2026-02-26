@@ -62,7 +62,7 @@ jobs:
       - name: Install Missing Stylelint Config
         run: |
           cd ${{ matrix.moodle-branch }}
-          npm install stylelint-config-standard --no-save
+          npm install stylelint-config-standard --no-save --legacy-peer-deps
 
       - name: Run JS/CSS Lint (Grunt)
         run: moodle-plugin-ci grunt
