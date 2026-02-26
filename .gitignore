@@ -11,3 +11,9 @@ Thumbs.db
 .idea/
 
 playerhud.code-workspace
+
+# Ignorar configurações locais de linting (Evita conflito com o Grunt do Moodle CI)
+.stylelintrc.json
+.eslintrc
+.eslintrc.json
+.eslintignore
