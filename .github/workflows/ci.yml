@@ -59,15 +59,6 @@ jobs:
       - name: Check Mustache Templates
         run: moodle-plugin-ci mustache
 
-      # CORREÇÃO AQUI:
-      # Removemos a instalação manual do stylelint-config-standard.
-      # Adicionamos este passo para garantir que as dependências do NODE do próprio Moodle estejam instaladas.
-      # O diretório padrão de instalação do moodle-plugin-ci é "moodle".
-      - name: Install Node Dependencies (Moodle Core)
-        run: |
-          cd moodle
-          npm install --no-save
-
       - name: Run JS/CSS Lint (Grunt)
         run: moodle-plugin-ci grunt
 
