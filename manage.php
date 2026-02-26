@@ -105,14 +105,16 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
 
         foreach ($holders as $holder) {
             $xptoremove = $item->xp * $holder->qtd;
-            // Update timemodified to reflect balance change.
-            $DB->execute(
-                "UPDATE {block_playerhud_user}
-                    SET currentxp = GREATEST(0, currentxp - ?),
-                        timemodified = ?
-                  WHERE userid = ? AND blockinstanceid = ?",
-                [$xptoremove, time(), $holder->userid, $instanceid]
-            );
+            // Update timemodified to reflect balance change using standard DML.
+            $player = $DB->get_record('block_playerhud_user', [
+                'userid' => $holder->userid,
+                'blockinstanceid' => $instanceid,
+            ]);
+            if ($player) {
+                $player->currentxp = max(0, $player->currentxp - $xptoremove);
+                $player->timemodified = time();
+                $DB->update_record('block_playerhud_user', $player);
+            }
         }
 
         // 2. Delete dependencies.
@@ -154,14 +156,16 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
 
                 foreach ($holders as $holder) {
                     $xptoremove = $item->xp * $holder->qtd;
-                    // Update timemodified here too.
-                    $DB->execute(
-                        "UPDATE {block_playerhud_user}
-                            SET currentxp = GREATEST(0, currentxp - ?),
-                                timemodified = ?
-                          WHERE userid = ? AND blockinstanceid = ?",
-                        [$xptoremove, time(), $holder->userid, $instanceid]
-                    );
+                    // Update timemodified using standard DML.
+                    $player = $DB->get_record('block_playerhud_user', [
+                        'userid' => $holder->userid,
+                        'blockinstanceid' => $instanceid,
+                    ]);
+                    if ($player) {
+                        $player->currentxp = max(0, $player->currentxp - $xptoremove);
+                        $player->timemodified = time();
+                        $DB->update_record('block_playerhud_user', $player);
+                    }
                 }
 
                 // 2. Delete dependencies.
@@ -205,14 +209,16 @@ if ($action == 'delete_quest' && $questid && confirm_sesskey()) {
             $now = time();
 
             foreach ($completions as $log) {
-                // Remove XP reward and update timemodified for tie-breaking.
-                $DB->execute(
-                    "UPDATE {block_playerhud_user}
-                        SET currentxp = GREATEST(0, currentxp - ?),
-                            timemodified = ?
-                      WHERE userid = ? AND blockinstanceid = ?",
-                    [$quest->reward_xp, $now, $log->userid, $instanceid]
-                );
+                // Remove XP reward and update timemodified for tie-breaking using standard DML.
+                $player = $DB->get_record('block_playerhud_user', [
+                    'userid' => $log->userid,
+                    'blockinstanceid' => $instanceid,
+                ]);
+                if ($player) {
+                    $player->currentxp = max(0, $player->currentxp - $quest->reward_xp);
+                    $player->timemodified = $now;
+                    $DB->update_record('block_playerhud_user', $player);
+                }
             }
         }
 
