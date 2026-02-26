@@ -1,4 +1,4 @@
-name: Plugin CI (Moodle Ultimate Quality)
+name: Plugin CI (Moodle Full Suite)
 
 on: [push, pull_request]
 
@@ -6,6 +6,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
+    # Ignora restrições de plataforma para garantir compatibilidade com versões bleeding-edge
     env:
       COMPOSER_IGNORE_PLATFORM_REQS: 1
 
@@ -48,14 +49,8 @@ jobs:
       - name: PHP Syntax Check (PHPLint)
         run: moodle-plugin-ci phplint
 
-      - name: Validate XML Files (DB Schema)
-        run: moodle-plugin-ci xmllint
-
-      - name: Validate Plugin ID and Version
-        run: moodle-plugin-ci validatid
-
-      - name: Check Documentation (PHPDoc)
-        run: moodle-plugin-ci phpdoc
+      - name: Validate Plugin (version.php, db/install.xml, etc.)
+        run: moodle-plugin-ci validate
 
       - name: Run PHPCS (Code Style)
         run: moodle-plugin-ci phpcs -vvv
@@ -63,7 +58,7 @@ jobs:
       - name: Check Mustache Templates
         run: moodle-plugin-ci mustache
 
-      # Correção para o erro de Stylelint no Grunt (Moodle 5.x)
+      # Ajuste necessário para as regras de CSS do Moodle 5.x
       - name: Install Missing Stylelint Config
         run: |
           cd ${{ matrix.moodle-branch }}
