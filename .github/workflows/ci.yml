@@ -43,8 +43,7 @@ jobs:
 
       - name: Initialize CI
         run: |
-          cd plugin && git checkout -B main && cd ..
-          moodle-plugin-ci install --plugin ./plugin --moodle ${{ matrix.moodle-branch }} --db-type mysqli --db-user root --db-pass root
+          moodle-plugin-ci install --plugin ./plugin --moodle ${{ matrix.moodle-branch }} --branch main --db-type mysqli --db-user root --db-pass root
           
       # --- AQUI COMEÇAM AS VALIDAÇÕES ---
 
