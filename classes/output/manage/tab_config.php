@@ -79,10 +79,22 @@ class tab_config implements renderable, templatable {
         $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid, 'enabled' => 1]);
 
         if ($items) {
+            // Preload all drops for this instance to avoid N+1 query problem.
+            $sql = "SELECT d.id, d.itemid, d.maxusage
+                      FROM {block_playerhud_drops} d
+                      JOIN {block_playerhud_items} i ON d.itemid = i.id
+                     WHERE i.blockinstanceid = :instanceid AND i.enabled = 1";
+            $alldrops = $DB->get_records_sql($sql, ['instanceid' => $this->instanceid]);
+
+            // Group drops by itemid in memory.
+            $dropsbyitem = [];
+            foreach ($alldrops as $drop) {
+                $dropsbyitem[$drop->itemid][] = $drop;
+            }
+
             foreach ($items as $item) {
-                $drops = $DB->get_records('block_playerhud_drops', ['itemid' => $item->id]);
-                if ($drops) {
-                    foreach ($drops as $drop) {
+                if (!empty($dropsbyitem[$item->id])) {
+                    foreach ($dropsbyitem[$item->id] as $drop) {
                         // Infinite drops (0) do not count towards the economy.
                         if ($drop->maxusage > 0) {
                             $totalitemsxp += ($item->xp * $drop->maxusage);

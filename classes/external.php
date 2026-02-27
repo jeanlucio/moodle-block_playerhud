@@ -195,12 +195,24 @@ class external extends external_api {
         ]);
 
         if ($items) {
+            // Preload all drops for this instance to avoid N+1 query problem.
+            $sql = "SELECT d.id, d.itemid, d.maxusage
+                      FROM {block_playerhud_drops} d
+                      JOIN {block_playerhud_items} i ON d.itemid = i.id
+                     WHERE i.blockinstanceid = :instanceid AND i.enabled = 1";
+            $alldrops = $DB->get_records_sql($sql, ['instanceid' => $params['instanceid']]);
+
+            // Group drops by itemid in memory.
+            $dropsbyitem = [];
+            foreach ($alldrops as $drop) {
+                $dropsbyitem[$drop->itemid][] = $drop;
+            }
+
             foreach ($items as $it) {
-                $drops = $DB->get_records('block_playerhud_drops', ['itemid' => $it->id]);
-                if ($drops) {
-                    foreach ($drops as $d) {
-                        if ($d->maxusage > 0) {
-                            $currenttotalxp += ($it->xp * $d->maxusage);
+                if (!empty($dropsbyitem[$it->id])) {
+                    foreach ($dropsbyitem[$it->id] as $drop) {
+                        if ($drop->maxusage > 0) {
+                            $currenttotalxp += ($it->xp * $drop->maxusage);
                         }
                     }
                 } else {

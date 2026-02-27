@@ -144,42 +144,52 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
         $fs = get_file_storage();
         $deletedcount = 0;
 
-        foreach ($bulkids as $delid) {
-            $item = $DB->get_record('block_playerhud_items', ['id' => $delid, 'blockinstanceid' => $instanceid]);
-            if ($item) {
-                // 1. Remove XP from users.
-                $sql = "SELECT userid, COUNT(id) as qtd
-                          FROM {block_playerhud_inventory}
-                         WHERE itemid = ?
-                      GROUP BY userid";
-                $holders = $DB->get_records_sql($sql, [$delid]);
+        // 1. Get all selected items belonging to this instance.
+        [$insql, $inparams] = $DB->get_in_or_equal($bulkids);
+        $params = array_merge($inparams, [$instanceid]);
+        $items = $DB->get_records_select(
+            'block_playerhud_items',
+            "id $insql AND blockinstanceid = ?",
+            $params
+        );
 
-                foreach ($holders as $holder) {
-                    $xptoremove = $item->xp * $holder->qtd;
-                    // Update timemodified using standard DML.
-                    $player = $DB->get_record('block_playerhud_user', [
-                        'userid' => $holder->userid,
-                        'blockinstanceid' => $instanceid,
-                    ]);
-                    if ($player) {
-                        $player->currentxp = max(0, $player->currentxp - $xptoremove);
-                        $player->timemodified = time();
-                        $DB->update_record('block_playerhud_user', $player);
-                    }
+        if ($items) {
+            $itemids = array_keys($items);
+            [$iteminsql, $iteminparams] = $DB->get_in_or_equal($itemids);
+
+            // 2. Calculate XP to remove per user in a single query.
+            $sql = "SELECT inv.userid, SUM(it.xp) as totalxptoremove
+                      FROM {block_playerhud_inventory} inv
+                      JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                     WHERE inv.itemid $iteminsql
+                  GROUP BY inv.userid";
+            $holders = $DB->get_records_sql($sql, $iteminparams);
+
+            foreach ($holders as $holder) {
+                $player = $DB->get_record('block_playerhud_user', [
+                    'userid' => $holder->userid,
+                    'blockinstanceid' => $instanceid,
+                ]);
+                if ($player) {
+                    $player->currentxp = max(0, $player->currentxp - $holder->totalxptoremove);
+                    $player->timemodified = time();
+                    $DB->update_record('block_playerhud_user', $player);
                 }
-
-                // 2. Delete dependencies.
-                $DB->delete_records('block_playerhud_inventory', ['itemid' => $delid]);
-                $DB->delete_records('block_playerhud_drops', ['itemid' => $delid]);
-                $DB->delete_records('block_playerhud_trade_reqs', ['itemid' => $delid]);
-                $DB->delete_records('block_playerhud_trade_rewards', ['itemid' => $delid]);
-
-                // 3. Delete files and record.
-                $fs->delete_area_files($context->id, 'block_playerhud', 'item_image', $delid);
-                $DB->delete_records('block_playerhud_items', ['id' => $delid]);
-
-                $deletedcount++;
             }
+
+            // 3. Delete dependencies in bulk without loops.
+            $DB->delete_records_select('block_playerhud_inventory', "itemid $iteminsql", $iteminparams);
+            $DB->delete_records_select('block_playerhud_drops', "itemid $iteminsql", $iteminparams);
+            $DB->delete_records_select('block_playerhud_trade_reqs', "itemid $iteminsql", $iteminparams);
+            $DB->delete_records_select('block_playerhud_trade_rewards', "itemid $iteminsql", $iteminparams);
+
+            // 4. Delete files and the items themselves.
+            foreach ($itemids as $delid) {
+                $fs->delete_area_files($context->id, 'block_playerhud', 'item_image', $delid);
+            }
+            $DB->delete_records_select('block_playerhud_items', "id $iteminsql", $iteminparams);
+
+            $deletedcount = count($itemids);
         }
 
         redirect(
