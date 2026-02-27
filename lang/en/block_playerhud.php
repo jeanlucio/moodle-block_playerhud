@@ -306,6 +306,7 @@ $string['optin_no'] = 'No, thanks. Return to course.';
 $string['optin_yes'] = 'Yes, I want to join!';
 $string['playerhud:addinstance'] = 'Add a new PlayerHUD';
 $string['playerhud:manage'] = 'Manage Game Content';
+$string['playerhud:myaddinstance'] = 'Add a new PlayerHUD block to Dashboard';
 $string['playerhud:view'] = 'View PlayerHUD';
 $string['pluginadministration'] = 'PlayerHUD Administration';
 $string['pluginname'] = 'PlayerHUD';
