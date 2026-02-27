@@ -24,6 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+// phpcs:disable moodle.Files.LineLength
+
 $string['actions'] = 'Actions';
 $string['ai_btn_conjure'] = 'Conjure!';
 $string['ai_btn_create'] = 'Create Magic Item';

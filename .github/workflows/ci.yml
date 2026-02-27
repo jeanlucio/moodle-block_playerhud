@@ -43,8 +43,9 @@ jobs:
 
       - name: Initialize CI
         run: |
+          cd plugin && git checkout -b main || true && cd ..
           moodle-plugin-ci install --plugin ./plugin --moodle ${{ matrix.moodle-branch }} --db-type mysqli --db-user root --db-pass root
-
+          
       # --- AQUI COMEÇAM AS VALIDAÇÕES ---
 
       - name: PHP Syntax Check (PHPLint)
