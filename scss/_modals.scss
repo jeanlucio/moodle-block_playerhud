@@ -1,0 +1,151 @@
+// Modals and Overlays.
+
+.ph-modal-zindex { z-index: 10550; }
+.ph-z-index-high { z-index: 10500; }
+
+.ph-modal-img-container {
+    min-width: 100px;
+}
+
+.ph-modal-img {
+    max-width: 120px;
+    max-height: 120px;
+    object-fit: contain;
+}
+
+.ph-modal-emoji {
+    font-size: 3rem;
+    line-height: 1;
+}
+
+.ph-alert-warning-box {
+    background-color: var(--warning-bg-subtle, #fff3cd);
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--warning-border-subtle, #ffeeba);
+}
+
+.ph-img-xs {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.ph-header-img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    margin-inline-end: 15px;
+}
+
+.ph-header-emoji {
+    font-size: 40px;
+    margin-inline-end: 15px;
+    line-height: 1;
+}
+
+.ph-rank-medal {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.ph-badge-tiny { font-size: 0.65rem; }
+
+.ph-empty-state-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+}
+
+@keyframes ph-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.ph-optin-card {
+    max-width: 500px;
+    border-radius: 15px;
+    border: none;
+}
+
+.ph-optin-text { font-size: 1.1rem; }
+.ph-tab-content-wrapper { min-height: 300px; }
+
+// Count Badges.
+.ph-badge-counter {
+    position: absolute;
+    top: 8px;
+    background-color: var(--light, #f8f9fa);
+    color: var(--gray-700, #495057);
+    border: 1px solid var(--gray-300, #dee2e6);
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 5;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.ph-badge-pos-left {
+    inset-inline-start: 8px;
+    color: var(--info, #0dcaf0);
+    border-color: var(--info, #0dcaf0);
+    background-color: #fff;
+}
+
+.ph-badge-pos-right {
+    inset-inline-end: 8px;
+    color: var(--dark, #212529);
+}
+
+.ph-counter-text {
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+.ph-card-count-badge { display: none; }
+.ph-infinite-badge { display: none; }
+
+.ph-img-contain-120 {
+    max-width: 120px;
+    max-height: 120px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.ph-emoji-80 {
+    font-size: 80px;
+    line-height: 1;
+    display: inline-block;
+}
+
+.ph-badge-preview-corner {
+    position: absolute;
+    top: 5px;
+    inset-inline-end: 5px;
+    font-size: 0.7rem;
+}
+
+// Helpers.
+.ph-help-trigger {
+    color: var(--primary, #0d6efd);
+    font-size: 1.1rem;
+    line-height: 1;
+    opacity: 0.85;
+    transition: transform 0.2s ease, color 0.2s ease, opacity 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+
+    &:hover {
+        color: var(--info, #0dcaf0);
+        opacity: 1;
+        transform: scale(1.2) rotate(10deg);
+    }
+}

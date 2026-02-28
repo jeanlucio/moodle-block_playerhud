@@ -1,0 +1,93 @@
+// Management UI styles (Admin/Teacher only).
+
+.ph-col-select {
+    width: 60px;
+    text-align: center;
+    vertical-align: middle;
+    padding-inline: 0;
+
+    input[type="checkbox"] {
+        margin: 0 auto;
+        display: inline-block;
+        vertical-align: middle;
+    }
+}
+
+.ph-col-xs, .ph-col-sm { width: 50px; }
+.ph-col-md { width: 80px; }
+.ph-col-lg { width: 100px; }
+.ph-col-xl { width: 140px; }
+.ph-col-xxl { width: 160px; }
+.ph-col-actions { width: 220px; }
+.ph-col-qty { width: 130px; }
+.ph-col-time { width: 150px; }
+.ph-col-gen { width: 180px; }
+.ph-col-rank { width: 60px; }
+
+// Code Generator.
+.ph-code-input,
+.ph-input-code-readonly {
+    background-color: var(--gray-200, #f0f0f0);
+    color: var(--pink, #d63384);
+    font-size: 0.85rem;
+    font-weight: bold;
+    font-family: monospace;
+    opacity: 1;
+}
+
+.ph-modal-codegen {
+    .ph-gen-preview-real-card {
+        background-color: var(--card-bg, #fff);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+        width: 160px;
+        margin: 0 auto;
+
+        img {
+            max-width: 100%;
+            max-height: 60px;
+            object-fit: contain;
+            margin: 0 auto;
+        }
+    }
+}
+
+.ph-gen-img-lg {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 0;
+}
+
+.ph-gen-emoji-lg {
+    font-size: 60px;
+    line-height: 1;
+}
+
+.ph-gen-preview-wrapper-img {
+    cursor: pointer;
+    filter: drop-shadow(0 4px 2px rgba(0, 0, 0, 0.1));
+    text-align: center;
+    display: inline-block;
+    transition: transform 0.2s ease;
+
+    &:hover {
+        transform: scale(1.05);
+    }
+}
+
+// Codegen Modal Fixes.
+#ph-codegen-modal .btn-close {
+    background-image: none;
+    background-color: transparent;
+    opacity: 1;
+    color: #fff;
+    font-size: 1.5rem;
+    line-height: 1;
+    border: 0;
+    filter: none;
+}
+
+#ph-codegen-modal .btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(200%);
+    opacity: 1;
+}
