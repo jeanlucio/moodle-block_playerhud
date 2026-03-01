@@ -60,7 +60,7 @@
         </a>
         
         {{#is_teacher}}
-        <a href="{{url_manage}}" class="btn btn-primary btn-sm shadow-sm">
+        <a href="{{url_manage}}" class="btn btn-outline-dark btn-sm shadow-sm fw-bold">
             <i class="fa fa-cogs" aria-hidden="true"></i> {{str_manage}}
         </a>
         {{/is_teacher}}
@@ -70,7 +70,7 @@
     {{{header_html}}}
 
     {{! Navigation Tabs }}
-    <ul class="nav nav-pills mb-4 ph-nav-pills" id="ph-student-tabs" role="tablist">
+    <ul class="nav nav-tabs mb-4" id="ph-student-tabs" role="tablist">
         {{#tabs}}
         <li class="nav-item" role="presentation">
             <a class="nav-link {{#active}}active{{/active}}" href="{{url}}">

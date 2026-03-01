@@ -100,9 +100,9 @@
                 <table class="table table-hover table-striped mb-0 align-middle">
                     <thead class="bg-light border-bottom">
                         <tr class="text-nowrap">
-                            <th scope="col" class="ph-col-select">
+                            <th scope="col" class="ph-col-select text-center align-middle">
                                 <span class="accesshide">{{str_select_all}}</span>
-                                <input type="checkbox" id="ph-select-all" class="form-check-input" title="{{str_select_all}}">
+                                <input type="checkbox" id="ph-select-all" class="form-check-input m-0 position-static" title="{{str_select_all}}">
                             </th>
                             <th scope="col" class="ph-col-sm text-center">N.</th>
                             <th scope="col" class="ph-col-md text-center">{{str_col_image}}</th>
@@ -130,12 +130,12 @@
                     <tbody>
                         {{#items}}
                         <tr class="{{^enabled}}opacity-50{{/enabled}}">
-                            <td class="ph-col-select">
+                            <td class="ph-col-select text-center align-middle">
                                 <label class="accesshide" for="chk-{{id}}">{{str_select}} {{name}}</label>
-                                <input type="checkbox" name="bulk_ids[]" value="{{id}}" id="chk-{{id}}" class="form-check-input ph-bulk-check">
+                                <input type="checkbox" name="bulk_ids[]" value="{{id}}" id="chk-{{id}}" class="form-check-input ph-bulk-check m-0 position-static">
                             </td>
-                            <td class="align-middle text-center text-muted small">{{counter}}</td>
-                            <td class="align-middle text-center position-relative">
+                            <td class="align-middle text-center text-muted small text-nowrap">{{counter}}</td>
+                            <td class="align-middle text-center position-relative text-nowrap">
                                  <a href="#" class="ph-preview-trigger text-decoration-none d-block"
                                     {{{preview_attributes}}} data-desc-target="desc_hidden_{{id}}" aria-label="{{str_col_image}}">
                                     {{#is_image}}
@@ -154,13 +154,13 @@
                                         <i class="fa fa-user-secret text-warning ms-1" title="{{str_secret}}" aria-hidden="true"></i>
                                         <span class="visually-hidden">({{str_secret}})</span>
                                     {{/secret}}
-                                </a>
+                                 </a>
                                 <div id="desc_hidden_{{id}}" class="d-none">{{{description_html}}}</div>
                             </td>
-                            <td class="align-middle">
-                                 <span class="badge bg-primary text-white">+{{xp}} XP</span>
+                            <td class="align-middle text-nowrap">
+                                <span class="badge bg-primary text-white">+{{xp}} XP</span>
                             </td>
-                            <td class="align-middle">
+                            <td class="align-middle text-nowrap">
                                 {{#enabled}}
                                     <span class="badge bg-success text-white">{{str_yes}}</span>
                                     <a href="{{url_toggle}}" class="btn btn-sm btn-light border ms-1" aria-label="{{str_hide}}">
@@ -174,18 +174,21 @@
                                     </a>
                                 {{/enabled}}
                             </td>
-                            <td class="align-middle">
+                            <td class="align-middle text-nowrap">
                                 <a href="{{url_drops}}" class="btn btn-sm {{btn_drops_class}} w-100" aria-label="{{str_manage_drops}}">
-                                    <i class="fa fa-map-marker me-1" aria-hidden="true"></i> Drops: <strong>{{drops_count}}</strong>
+                                    <i class="fa fa-map-marker" aria-hidden="true"></i>
+                                    <span class="d-none d-xl-inline ms-1">Drops:</span> <strong>{{drops_count}}</strong>
                                 </a>
                             </td>
-                            <td class="align-middle text-end">
+                            <td class="align-middle text-end text-nowrap">
                                 <a href="{{url_edit}}" class="btn btn-sm btn-primary me-1 shadow-sm" aria-label="{{str_edit}}">
-                                   <i class="fa fa-pencil me-1" aria-hidden="true"></i> {{str_edit}}
+                                   <i class="fa fa-pencil" aria-hidden="true"></i>
+                                   <span class="d-none d-xl-inline ms-1">{{str_edit}}</span>
                                 </a>
                                 <a href="{{url_delete}}" class="btn btn-sm btn-danger shadow-sm js-delete-btn"
                                     aria-label="{{str_delete}}" data-confirm-msg="{{confirm_msg}}">
-                                    <i class="fa fa-trash me-1" aria-hidden="true"></i> {{str_delete}}
+                                    <i class="fa fa-trash" aria-hidden="true"></i>
+                                    <span class="d-none d-xl-inline ms-1">{{str_delete}}</span>
                                 </a>
                             </td>
                         </tr>

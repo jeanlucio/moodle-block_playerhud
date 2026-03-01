@@ -1,5 +1,21 @@
 @charset "UTF-8";
 /**
+ * This file is part of Moodle - http://moodle.org/
+ *
+ * Moodle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Moodle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+ */
+/**
  * PlayerHUD Block Main SCSS.
  *
  * @package    block_playerhud
@@ -94,6 +110,27 @@
     margin: -0.5rem -0.5rem -0.5rem auto;
 }
 
+#ph-student-tabs .nav-link,
+#ph-manage-tabs .nav-link {
+    color: var(--gray-600, #6c757d);
+    font-weight: 500;
+    border-top: 3px solid transparent;
+    transition: all 0.2s ease-in-out;
+}
+#ph-student-tabs .nav-link:hover,
+#ph-manage-tabs .nav-link:hover {
+    color: var(--primary, #0d6efd);
+    background-color: var(--gray-100, #f8f9fa);
+}
+#ph-student-tabs .nav-link.active,
+#ph-manage-tabs .nav-link.active {
+    color: var(--primary, #0d6efd);
+    font-weight: 700;
+    background-color: var(--card-bg, #fff);
+    border-color: var(--gray-300, #dee2e6) var(--gray-300, #dee2e6) var(--card-bg, #fff);
+    border-top: 3px solid var(--primary, #0d6efd);
+}
+
 .block_playerhud .userpicture {
     border: 3px solid var(--light, #fff);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -142,7 +179,7 @@
     background-color: var(--card-bg, #fff);
     border: 1px solid rgba(0, 0, 0, 0.125);
     min-height: 100px;
-    border-inline-start: 5px solid var(--secondary, #6c757d);
+    border-inline-start: 5px solid var(--gray-600, #6c757d);
     transition: border-color 0.3s ease;
 }
 
@@ -152,7 +189,7 @@
         height: auto;
         min-height: auto;
         border-inline-start: 1px solid rgba(0, 0, 0, 0.125);
-        border-top: 5px solid var(--secondary, #6c757d);
+        border-top: 5px solid var(--gray-600, #6c757d);
     }
 }
 
@@ -367,22 +404,22 @@
 .ph-lvl-tier-1.badge,
 .ph-lvl-tier-1.playerhud-widget-container .progress-bar,
 .block_playerhud .ph-lvl-tier-1.progress-bar {
-    background-color: var(--secondary, #6c757d);
+    background-color: var(--gray-600, #6c757d);
     color: var(--light, #fff);
-    border-color: var(--secondary, #6c757d);
+    border-color: var(--gray-600, #6c757d);
 }
 .ph-lvl-tier-1 .btn-ph-level-border,
 .ph-lvl-tier-1.playerhud-widget-container .btn-ph-level-border {
-    border-color: var(--secondary, #6c757d);
-    color: var(--secondary, #6c757d);
+    border-color: var(--gray-600, #6c757d);
+    color: var(--gray-600, #6c757d);
 }
 .ph-lvl-tier-1 .btn-ph-level-border:hover,
 .ph-lvl-tier-1.playerhud-widget-container .btn-ph-level-border:hover {
-    background-color: var(--secondary, #6c757d);
+    background-color: var(--gray-600, #6c757d);
     color: var(--light, #fff);
 }
 .ph-lvl-tier-1.playerhud-widget-container {
-    border-inline-start-color: var(--secondary, #6c757d);
+    border-inline-start-color: var(--gray-600, #6c757d);
 }
 
 .ph-lvl-tier-2.progress-bar,
@@ -476,7 +513,7 @@
 
 @media (max-width: 767.98px) {
     .playerhud-widget-container.ph-lvl-tier-1 {
-        border-top-color: var(--secondary, #6c757d);
+        border-top-color: var(--gray-600, #6c757d);
     }
     .playerhud-widget-container.ph-lvl-tier-2 {
         border-top-color: var(--success, #208337);
@@ -609,7 +646,8 @@
 }
 
 .ph-col-select {
-    width: 60px;
+    width: 50px;
+    min-width: 50px;
     text-align: center;
     vertical-align: middle;
     padding-inline: 0;
@@ -623,42 +661,52 @@
 .ph-col-xs,
 .ph-col-sm {
     width: 50px;
+    min-width: 50px;
 }
 
 .ph-col-md {
     width: 80px;
+    min-width: 80px;
 }
 
 .ph-col-lg {
     width: 100px;
+    min-width: 100px;
 }
 
 .ph-col-xl {
     width: 140px;
+    min-width: 120px;
 }
 
 .ph-col-xxl {
     width: 160px;
+    min-width: 140px;
 }
 
 .ph-col-actions {
     width: 220px;
+    min-width: 110px;
 }
 
 .ph-col-qty {
     width: 130px;
+    min-width: 100px;
 }
 
 .ph-col-time {
     width: 150px;
+    min-width: 100px;
 }
 
 .ph-col-gen {
     width: 180px;
+    min-width: 130px;
 }
 
 .ph-col-rank {
     width: 60px;
+    min-width: 60px;
 }
 
 .ph-code-input,

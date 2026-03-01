@@ -72,7 +72,7 @@
     }
 }
 
-.ph-lvl-tier-1 { @include ph-tier(var(--secondary, #6c757d)); }
+.ph-lvl-tier-1 { @include ph-tier(var(--gray-600, #6c757d)); }
 .ph-lvl-tier-2 { @include ph-tier(var(--success, #208337)); }
 .ph-lvl-tier-3 { @include ph-tier(var(--primary, #0b55c4)); }
 .ph-lvl-tier-4 { @include ph-tier(var(--purple, #6f42c1)); }
@@ -116,7 +116,7 @@
 // Responsive overrides for borders.
 @media (max-width: 767.98px) {
     .playerhud-widget-container {
-        &.ph-lvl-tier-1 { border-top-color: var(--secondary, #6c757d); }
+        &.ph-lvl-tier-1 { border-top-color: var(--gray-600, #6c757d); }
         &.ph-lvl-tier-2 { border-top-color: var(--success, #208337); }
         &.ph-lvl-tier-3 { border-top-color: var(--primary, #0b55c4); }
         &.ph-lvl-tier-4 { border-top-color: var(--purple, #6f42c1); }
