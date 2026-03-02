@@ -143,8 +143,6 @@ class drops {
                 ]);
 
                 // Code logic.
-                $displaycode = !empty($drop->code) ? $drop->code : $drop->id;
-
                 $dropsdata[] = [
                     'id' => $drop->id,
                     'counter' => $counter++,
@@ -154,8 +152,8 @@ class drops {
                     'is_immediate' => ($drop->respawntime == 0),
                     'respawntime' => $drop->respawntime,
                     'respawntime_fmt' => format_time($drop->respawntime),
-                    'display_code' => $displaycode,
-                    'full_default_code' => '[PLAYERHUD_DROP code=' . $displaycode . ']',
+                    'display_code' => $drop->code,
+                    'full_default_code' => '[PLAYERHUD_DROP code=' . $drop->code . ']',
                     'confirm_msg' => get_string('drops_confirm_delete', 'block_playerhud'),
                     'url_edit' => $editurl->out(false),
                     'url_delete' => $deleteurl->out(false),

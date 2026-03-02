@@ -47,7 +47,7 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                 const modeRadio = $('input[name="codeMode"]:checked');
                 const mode = modeRadio.length ? modeRadio.val() : 'card';
 
-                const param = isNaN(currentDropCode) ? 'code=' + currentDropCode : 'id=' + currentDropCode;
+                const param = 'code=' + currentDropCode;
                 let code = '[PLAYERHUD_DROP ' + param + ']';
                 let previewHtml = '';
 

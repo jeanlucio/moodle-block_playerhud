@@ -82,27 +82,6 @@ function block_playerhud_pluginfile($course, $birecord, $context, $filearea, $ar
 }
 
 /**
- * Helper function used by Text Filters to fetch Drop details efficiently.
- * This avoids the filter needing to do complex JOINs manually.
- *
- * @param int $dropid The ID of the drop.
- * @return stdClass|false The drop object with item details mixed in, or false.
- */
-function block_playerhud_get_drop_details_for_filter($dropid) {
-    global $DB;
-
-    $sql = "SELECT d.id as dropid, d.maxusage, d.respawntime, d.blockinstanceid,
-                   i.id as itemid, i.name as itemname, i.image, i.xp, i.description,
-                   i.secret, i.required_class_id
-              FROM {block_playerhud_drops} d
-              JOIN {block_playerhud_items} i ON d.itemid = i.id
-             WHERE d.id = :dropid
-               AND i.enabled = 1"; // Only enabled items.
-
-    return $DB->get_record_sql($sql, ['dropid' => $dropid]);
-}
-
-/**
  * Fetches Drop details using the hash CODE and instance ID.
  *
  * @param string $code The alphanumeric code (e.g. 3C815F).
