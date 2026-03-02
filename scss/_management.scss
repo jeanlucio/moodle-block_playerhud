@@ -14,16 +14,47 @@
     }
 }
 
-.ph-col-xs, .ph-col-sm { width: 50px; min-width: 50px; }
-.ph-col-md { width: 80px; min-width: 80px; }
-.ph-col-lg { width: 100px; min-width: 100px; }
-.ph-col-xl { width: 140px; min-width: 120px; }
-.ph-col-xxl { width: 160px; min-width: 140px; }
-.ph-col-actions { width: 220px; min-width: 110px; }
-.ph-col-qty { width: 130px; min-width: 100px; }
-.ph-col-time { width: 150px; min-width: 100px; }
-.ph-col-gen { width: 180px; min-width: 130px; }
-.ph-col-rank { width: 60px; min-width: 60px; }
+.ph-col-xs,
+.ph-col-sm {
+    width: 50px;
+    min-width: 50px;
+}
+.ph-col-md {
+    width: 80px;
+    min-width: 80px;
+}
+.ph-col-lg {
+    width: 100px;
+    min-width: 100px;
+}
+.ph-col-xl {
+    width: 140px;
+    min-width: 120px;
+}
+.ph-col-xxl {
+    width: 160px;
+    min-width: 140px;
+}
+.ph-col-actions {
+    width: 220px;
+    min-width: 110px;
+}
+.ph-col-qty {
+    width: 130px;
+    min-width: 100px;
+}
+.ph-col-time {
+    width: 150px;
+    min-width: 100px;
+}
+.ph-col-gen {
+    width: 180px;
+    min-width: 130px;
+}
+.ph-col-rank {
+    width: 60px;
+    min-width: 60px;
+}
 
 // Code Generator.
 .ph-code-input,

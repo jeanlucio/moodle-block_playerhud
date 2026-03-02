@@ -1,7 +1,11 @@
 // Modals and Overlays.
 
-.ph-modal-zindex { z-index: 10550; }
-.ph-z-index-high { z-index: 10500; }
+.ph-modal-zindex {
+    z-index: 10550;
+}
+.ph-z-index-high {
+    z-index: 10500;
+}
 
 .ph-modal-img-container {
     min-width: 100px;
@@ -49,17 +53,13 @@
     line-height: 1;
 }
 
-.ph-badge-tiny { font-size: 0.65rem; }
+.ph-badge-tiny {
+    font-size: 0.65rem;
+}
 
 .ph-empty-state-icon {
     font-size: 3rem;
     opacity: 0.3;
-}
-
-@keyframes ph-pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
 }
 
 .ph-optin-card {
@@ -68,8 +68,12 @@
     border: none;
 }
 
-.ph-optin-text { font-size: 1.1rem; }
-.ph-tab-content-wrapper { min-height: 300px; }
+.ph-optin-text {
+    font-size: 1.1rem;
+}
+.ph-tab-content-wrapper {
+    min-height: 300px;
+}
 
 // Count Badges.
 .ph-badge-counter {
@@ -106,8 +110,12 @@
     font-size: 0.85rem;
 }
 
-.ph-card-count-badge { display: none; }
-.ph-infinite-badge { display: none; }
+.ph-card-count-badge {
+    display: none;
+}
+.ph-infinite-badge {
+    display: none;
+}
 
 .ph-img-contain-120 {
     max-width: 120px;

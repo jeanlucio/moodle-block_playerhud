@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_playerhud';
-$plugin->version   = 2026030100;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2026030200;        // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2024100700;        // Requires: Moodle 4.5+.
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v1.0.6';
+$plugin->release   = 'v1.0.7';

@@ -7,20 +7,42 @@
     text-overflow: ellipsis;
 }
 
-.ph-cursor-pointer { cursor: pointer; }
-.ph-cursor-wait { cursor: wait; }
-.ph-cursor-help { cursor: help; }
+.ph-cursor-pointer {
+    cursor: pointer;
+}
+.ph-cursor-wait {
+    cursor: wait;
+}
+.ph-cursor-help {
+    cursor: help;
+}
 
-.ph-text-xs { font-size: 0.7rem; }
-.ph-text-sm { font-size: 0.9rem; }
-.ph-text-md { font-size: 1rem; }
-.ph-fs-09 { font-size: 0.9rem; }
+.ph-text-xs {
+    font-size: 0.7rem;
+}
+.ph-text-sm {
+    font-size: 0.9rem;
+}
+.ph-text-md {
+    font-size: 1rem;
+}
+.ph-fs-09 {
+    font-size: 0.9rem;
+}
 
-.ph-opacity-50 { opacity: 0.5; }
-.ph-opacity-low { opacity: 0.3; }
+.ph-opacity-50 {
+    opacity: 0.5;
+}
+.ph-opacity-low {
+    opacity: 0.3;
+}
 
-.ph-display-none { display: none; }
-.ph-h-60 { height: 60px; }
+.ph-display-none {
+    display: none;
+}
+.ph-h-60 {
+    height: 60px;
+}
 
 // Bootstrap overrides restricted to block.
 .block_playerhud .btn,
@@ -68,7 +90,7 @@
     .nav-link {
         color: var(--gray-600, #6c757d);
         font-weight: 500;
-        border-top: 3px solid transparent; 
+        border-top: 3px solid transparent;
         transition: all 0.2s ease-in-out;
 
         &:hover {

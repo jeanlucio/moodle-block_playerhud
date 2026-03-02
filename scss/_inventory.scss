@@ -1,6 +1,20 @@
 // Cards and Inventory Styles.
 
-.ph-card-rounded { border-radius: 15px; }
+@keyframes ph-pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.ph-card-rounded {
+    border-radius: 15px;
+}
 
 .playerhud-item-card {
     position: relative;
@@ -63,7 +77,9 @@
     border: 1px solid var(--gray-200, #e9ecef);
 }
 
-.ph-text-gold { color: #856404; }
+.ph-text-gold {
+    color: #856404;
+}
 
 .ph-card-date {
     font-size: 0.65rem;
