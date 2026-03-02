@@ -90,7 +90,7 @@ const updateStash = (itemData) => {
             'role': 'button',
             'tabindex': '0',
             'data-name': itemData.name,
-            'data-xp': itemData.xp,
+            'data-xp': itemData.xp + ' ' + (appStrings.xp || 'XP'),
             'data-image': itemData.image,
             'data-isimage': itemData.isimage,
             'data-date': itemData.date,
@@ -139,10 +139,12 @@ const updateHud = (data, itemData) => {
         // Update Progress Bar.
         const progressBar = container.find('.progress-bar');
         progressBar.css('width', `${data.progress}%`).attr('aria-valuenow', data.progress);
+        progressBar.find('.ph-progress-text').text(`${data.progress}%`);
 
         // Update Level Badge.
         const levelBadge = container.find('.badge').filter(function() {
-            return $(this).attr('class').match(/ph-lvl-tier-/);
+            const cls = $(this).attr('class') || '';
+            return cls.match(/ph-lvl-tier-/) && cls.indexOf('ph-badge-ghost') === -1;
         });
 
         if (levelBadge.length) {
@@ -316,14 +318,14 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
             card.attr('data-timestamp', resp.item_data.timestamp);
 
             // Update XP attribute in DOM so modal reads the new value.
-            card.attr('data-xp', resp.item_data.xp);
+            card.attr('data-xp', resp.item_data.xp + ' ' + (appStrings.xp || 'XP'));
         }
 
         if (mode === 'image') {
             trigger.closest('.ph-drop-image-container').attr({
                 'data-date': resp.item_data.date,
                 'data-timestamp': resp.item_data.timestamp,
-                'data-xp': resp.item_data.xp
+                'data-xp': resp.item_data.xp + ' ' + (appStrings.xp || 'XP')
             });
         }
     }

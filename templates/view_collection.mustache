@@ -74,6 +74,10 @@
          data-count="{{count}}"
          data-image="{{data_image_payload}}"
          data-isimage="{{is_image_bool}}"
+         {{#count}}
+         data-timestamp="{{timestamp}}"
+         data-date="{{date_str}}"
+         {{/count}}
          aria-label="{{name}}">
 
         {{! NEW BADGE }}
