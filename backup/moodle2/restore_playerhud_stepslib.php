@@ -55,9 +55,10 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         unset($data->id);
 
         $newitemid = $DB->insert_record('block_playerhud_items', $data);
-        // Mapping for files and subsequent drops/inventory.
-        $this->set_mapping('item', $oldid, $newitemid, true);
-        $this->add_related_files('block_playerhud', 'item_image', 'item', null, $oldid);
+
+        // Namespaced mapping to prevent ID collision with Moodle Core during restore.
+        $this->set_mapping('playerhud_item', $oldid, $newitemid, true);
+        $this->add_related_files('block_playerhud', 'item_image', 'playerhud_item', null, $oldid);
     }
 
     /**
@@ -74,18 +75,17 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         $data->blockinstanceid = $this->task->get_blockid();
         unset($data->id);
 
-        // Remap item ID.
-        $newitemid = $this->get_mappingid('item', $olditemid);
+        // Remap item ID using the namespaced key.
+        $newitemid = $this->get_mappingid('playerhud_item', $olditemid);
         if (!$newitemid) {
             return; // Skip if item parent not found.
         }
-        $data->itemid = $newitemid;
-        // Create new unique code to avoid collisions if needed.
-        // but restoring same code is usually preferred for hardcoded links.
-        // We keep the original code from XML.
 
+        $data->itemid = $newitemid;
+
+        // We keep the original code from XML to maintain shortcode links valid.
         $newdropid = $DB->insert_record('block_playerhud_drops', $data);
-        $this->set_mapping('drop', $oldid, $newdropid);
+        $this->set_mapping('playerhud_drop', $oldid, $newdropid);
     }
 
     /**
@@ -98,7 +98,7 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         $data = (object)$data;
         $olduserid = $data->userid;
 
-        // Map User ID.
+        // Map User ID (Core mapping 'user' is safe).
         $newuserid = $this->get_mappingid('user', $olduserid);
         if (!$newuserid) {
             return; // User not included in restore.
@@ -124,7 +124,7 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         $data = (object)$data;
         $olduserid = $data->userid;
         $olditemid = $data->itemid;
-        $olddropid = $data->dropid; // Can be 0 or ID.
+        $olddropid = $data->dropid;
 
         // 1. Map User.
         $newuserid = $this->get_mappingid('user', $olduserid);
@@ -132,16 +132,16 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
             return;
         }
 
-        // 2. Map Item.
-        $newitemid = $this->get_mappingid('item', $olditemid);
+        // 2. Map Item using namespaced key.
+        $newitemid = $this->get_mappingid('playerhud_item', $olditemid);
         if (!$newitemid) {
             return;
         }
 
-        // 3. Map Drop (Optional).
+        // 3. Map Drop using namespaced key (Optional).
         $newdropid = 0;
         if (!empty($olddropid)) {
-            $newdropid = $this->get_mappingid('drop', $olddropid);
+            $newdropid = $this->get_mappingid('playerhud_drop', $olddropid);
             if (!$newdropid) {
                 // If drop wasn't restored (e.g. deleted), we still keep the item but set drop to 0.
                 $newdropid = 0;
