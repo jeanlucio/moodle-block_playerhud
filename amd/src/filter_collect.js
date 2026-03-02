@@ -309,11 +309,6 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
     if (resp.item_data) {
         const card = trigger.closest('.playerhud-item-card');
         if (card.length) {
-            const badge = card.find('.ph-badge-count');
-            if (card.attr('data-unique') !== '1') {
-                const currentCount = parseInt(badge.text().replace('x', ''), 10) || 0;
-                badge.text('x' + (currentCount + 1)).removeClass('d-none').show();
-            }
             card.attr('data-date', resp.item_data.date);
             card.attr('data-timestamp', resp.item_data.timestamp);
 
