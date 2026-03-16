@@ -51,7 +51,7 @@ $string['ai_prompt_theme_item'] = 'Tema (ex: Mitologia, Química)';
 $string['ai_reply_lang'] = 'Responda estritamente no idioma: {$a}.';
 $string['ai_rnd_xp'] = 'Vazio = Aleatório';
 $string['ai_role_item'] = 'Atue como um Especialista no Assunto e Educador.';
-$string['ai_rules_item'] = 'IMPORTANTE: Crie uma descrição factual, realista e educativa sobre o item, como se fosse para uma enciclopédia ou livro didático. NÃO invente histórias de fantasia, não crie "lore" fictícia e NÃO mencione XP, níveis ou mecânicas de jogo no texto.';
+$string['ai_rules_item'] = 'IMPORTANTE: Crie uma descrição factual, realista e educacional do item. REGRAS: 1. O "nome" deve ser curto (máximo de 3 palavras). 2. A "descrição" deve ser extremamente concisa e direta (máximo de 150 caracteres). 3. NÃO invente histórias de fantasia ou "lore", e NÃO mencione XP, níveis ou mecânicas de jogo.';
 $string['ai_success'] = 'Item criado com sucesso!';
 $string['ai_task_multi'] = 'Crie {$a->count} itens reais e distintos relacionados ao tema: \'{$a->theme}\'.';
 $string['ai_task_single'] = 'Crie UM item real relacionado ao tema: \'{$a}\'.';
