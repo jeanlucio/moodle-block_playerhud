@@ -196,8 +196,9 @@ if ($isoptin) {
     $tabsdef = [
         // 1. Collection (Base).
         'collection' => ['icon' => '🎒', 'text' => get_string('tab_collection', 'block_playerhud')],
+        'shop'       => ['icon' => '🏪', 'text' => get_string('tab_shop', 'block_playerhud')],
 
-        // Note: Features like Shop, Quests, and Chapters are hidden for version 1.0.
+        // Note: Features like Quests, and Chapters are hidden for version 1.0.
 
         // 5. Ranking (Social - If enabled in configs).
         'ranking' => ($config->enable_ranking) ? [

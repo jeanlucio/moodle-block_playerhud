@@ -371,7 +371,8 @@ echo $OUTPUT->header();
 // Tab Definitions (V1.0 - Features under construction hidden).
 $tabsdef = [
     'items'    => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
-    // Future tabs: trades, quests, chapters, classes, reports.
+    'trades'   => ['icon' => '⚖️', 'text' => get_string('tab_trades', 'block_playerhud')],
+    // Future tabs: quests, chapters, classes, reports.
     'config'   => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
 ];
 

@@ -206,6 +206,33 @@ class provider implements
                     (object) ['items' => $data]
                 );
             }
+
+            // D. Trade Logs (Shop History).
+            $sqltrades = "SELECT tl.id, tl.timecreated, t.name as tradename
+                            FROM {block_playerhud_trade_log} tl
+                            JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
+                           WHERE tl.userid = :userid AND t.blockinstanceid = :instanceid
+                        ORDER BY tl.timecreated DESC";
+
+            $tradelogs = $DB->get_records_sql($sqltrades, [
+                'userid' => $userid,
+                'instanceid' => $instanceid,
+            ]);
+
+            $tradedata = [];
+            foreach ($tradelogs as $log) {
+                $tradedata[] = [
+                    'trade_name' => $log->tradename,
+                    'transaction_date' => transform::datetime($log->timecreated),
+                ];
+            }
+
+            if (!empty($tradedata)) {
+                writer::with_context($context)->export_data(
+                    [get_string('pluginname', 'block_playerhud'), 'Shop History'],
+                    (object) ['transactions' => $tradedata]
+                );
+            }
         }
     }
 

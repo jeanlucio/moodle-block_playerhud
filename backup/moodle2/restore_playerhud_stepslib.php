@@ -32,10 +32,17 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         // Content.
         $paths[] = new restore_path_element('item', '/block/playerhud/items/item');
         $paths[] = new restore_path_element('drop', '/block/playerhud/drops/drop');
+        $paths[] = new restore_path_element('trade', '/block/playerhud/trades/trade');
+        $paths[] = new restore_path_element('trade_req', '/block/playerhud/trades/trade/trade_reqs/trade_req');
+
+        $rewardpath = '/block/playerhud/trades/trade/trade_rewards/trade_reward';
+        $paths[] = new restore_path_element('trade_reward', $rewardpath);
+
         // User Data (Verify if user data was included).
         if ($this->task->get_setting_value('users')) {
             $paths[] = new restore_path_element('player', '/block/playerhud/players/player');
             $paths[] = new restore_path_element('inventory', '/block/playerhud/inventories/inventory');
+            $paths[] = new restore_path_element('trade_log', '/block/playerhud/trade_logs/trade_log');
         }
 
         return $paths;
@@ -155,5 +162,82 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
 
         // Insert inventory record.
         $DB->insert_record('block_playerhud_inventory', $data);
+    }
+
+    /**
+     * Process trades.
+     *
+     * @param array $data
+     */
+    public function process_trade($data) {
+        global $DB;
+        $data = (object)$data;
+        $oldid = $data->id;
+
+        $data->blockinstanceid = $this->task->get_blockid();
+        unset($data->id);
+
+        $newid = $DB->insert_record('block_playerhud_trades', $data);
+        $this->set_mapping('playerhud_trade', $oldid, $newid);
+    }
+
+    /**
+     * Process trade requirements.
+     *
+     * @param array $data
+     */
+    public function process_trade_req($data) {
+        global $DB;
+        $data = (object)$data;
+
+        $newtradeid = $this->get_mappingid('playerhud_trade', $data->tradeid);
+        $newitemid = $this->get_mappingid('playerhud_item', $data->itemid);
+
+        if ($newtradeid && $newitemid) {
+            $data->tradeid = $newtradeid;
+            $data->itemid = $newitemid;
+            unset($data->id);
+            $DB->insert_record('block_playerhud_trade_reqs', $data);
+        }
+    }
+
+    /**
+     * Process trade rewards.
+     *
+     * @param array $data
+     */
+    public function process_trade_reward($data) {
+        global $DB;
+        $data = (object)$data;
+
+        $newtradeid = $this->get_mappingid('playerhud_trade', $data->tradeid);
+        $newitemid = $this->get_mappingid('playerhud_item', $data->itemid);
+
+        if ($newtradeid && $newitemid) {
+            $data->tradeid = $newtradeid;
+            $data->itemid = $newitemid;
+            unset($data->id);
+            $DB->insert_record('block_playerhud_trade_rewards', $data);
+        }
+    }
+
+    /**
+     * Process trade logs (User history).
+     *
+     * @param array $data
+     */
+    public function process_trade_log($data) {
+        global $DB;
+        $data = (object)$data;
+
+        $newuserid = $this->get_mappingid('user', $data->userid);
+        $newtradeid = $this->get_mappingid('playerhud_trade', $data->tradeid);
+
+        if ($newuserid && $newtradeid) {
+            $data->userid = $newuserid;
+            $data->tradeid = $newtradeid;
+            unset($data->id);
+            $DB->insert_record('block_playerhud_trade_log', $data);
+        }
     }
 }

@@ -31,7 +31,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         // 1. Root element.
         $playerhud = new backup_nested_element('playerhud', ['id'], null);
 
-        // 2. Game Content Structure (Items & Drops).
+        // 2. Game Content Structure.
         $items = new backup_nested_element('items');
         $item = new backup_nested_element('item', ['id'], [
             'name', 'description', 'image', 'xp', 'enabled',
@@ -45,7 +45,19 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
             'timecreated', 'timemodified',
         ]);
 
-        // 3. User Data Structure (Progress & Inventory).
+        // Trades Structure (New).
+        $trades = new backup_nested_element('trades');
+        $trade = new backup_nested_element('trade', ['id'], [
+            'name', 'groupid', 'centralized', 'onetime', 'timecreated',
+        ]);
+
+        $tradereqs = new backup_nested_element('trade_reqs');
+        $tradereq = new backup_nested_element('trade_req', ['id'], ['tradeid', 'itemid', 'qty']);
+
+        $traderewards = new backup_nested_element('trade_rewards');
+        $tradereward = new backup_nested_element('trade_reward', ['id'], ['tradeid', 'itemid', 'qty']);
+
+        // 3. User Data Structure.
         $players = new backup_nested_element('players');
         $player = new backup_nested_element('player', ['id'], [
             'userid', 'currentxp', 'enable_gamification',
@@ -58,6 +70,9 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
             'userid', 'itemid', 'dropid', 'source', 'timecreated',
         ]);
 
+        $tradelogs = new backup_nested_element('trade_logs');
+        $tradelog = new backup_nested_element('trade_log', ['id'], ['userid', 'tradeid', 'timecreated']);
+
         // 4. Hierarchy.
         $playerhud->add_child($items);
         $items->add_child($item);
@@ -65,35 +80,47 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $playerhud->add_child($drops);
         $drops->add_child($drop);
 
+        $playerhud->add_child($trades);
+        $trades->add_child($trade);
+        $trade->add_child($tradereqs);
+        $tradereqs->add_child($tradereq);
+        $trade->add_child($traderewards);
+        $traderewards->add_child($tradereward);
+
         $playerhud->add_child($players);
         $players->add_child($player);
 
         $playerhud->add_child($inventories);
         $inventories->add_child($inventory);
 
+        $playerhud->add_child($tradelogs);
+        $tradelogs->add_child($tradelog);
+
         // 5. Data Sources.
-
-        // Items belonging to this block instance.
         $item->set_source_table('block_playerhud_items', ['blockinstanceid' => backup::VAR_BLOCKID]);
-
-        // Drops belonging to this block instance.
         $drop->set_source_table('block_playerhud_drops', ['blockinstanceid' => backup::VAR_BLOCKID]);
 
-        // USER DATA: Only if users are included in backup.
+        $trade->set_source_table('block_playerhud_trades', ['blockinstanceid' => backup::VAR_BLOCKID]);
+        $tradereq->set_source_table('block_playerhud_trade_reqs', ['tradeid' => backup::VAR_PARENTID]);
+        $tradereward->set_source_table('block_playerhud_trade_rewards', ['tradeid' => backup::VAR_PARENTID]);
+
         if ($this->task->get_setting_value('users')) {
-            // Player Profile (XP, Level).
             $player->set_source_table('block_playerhud_user', ['blockinstanceid' => backup::VAR_BLOCKID]);
 
-            // Inventory: We need to join with items to filter by this block instance.
             $sqlinv = "SELECT inv.* FROM {block_playerhud_inventory} inv
-                          JOIN {block_playerhud_items} i ON inv.itemid = i.id
-                         WHERE i.blockinstanceid = :blockid";
-
+                         JOIN {block_playerhud_items} i ON inv.itemid = i.id
+                        WHERE i.blockinstanceid = :blockid";
             $inventory->set_source_sql($sqlinv, ['blockid' => backup::VAR_BLOCKID]);
 
-            // Annotate User IDs (Crucial for Moodle 4.5+ consistency).
+            $sqltradelog = "SELECT tl.* FROM {block_playerhud_trade_log} tl
+                              JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
+                             WHERE t.blockinstanceid = :blockid";
+            $tradelog->set_source_sql($sqltradelog, ['blockid' => backup::VAR_BLOCKID]);
+
+            // Annotate User IDs for core Moodle GDPR/Rollback systems.
             $player->annotate_ids('user', 'userid');
             $inventory->annotate_ids('user', 'userid');
+            $tradelog->annotate_ids('user', 'userid');
         }
 
         // 6. File annotations.

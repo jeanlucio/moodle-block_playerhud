@@ -14,14 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Version metadata for the repository_pluginname plugin.
- *
- * @package   repository_pluginname
- * @copyright 2026, author_fullname <author_link>
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 namespace block_playerhud\output\view;
 
 use renderable;

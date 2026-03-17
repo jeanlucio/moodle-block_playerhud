@@ -68,7 +68,7 @@
         <span class="badge {{level_class}} border">{{#str}} level, block_playerhud {{/str}} {{level}}</span>
         <div class="d-flex align-items-center gap-2">
                 <span class="badge rounded-pill {{level_class}}">{{xp}}</span>
-                <a href="{{viewurl}}&tab=rules" class="ph-help-trigger" 
+                <a href="{{viewurl}}&tab=rules" class="ph-help-trigger"
                 title="{{#str}} help_btn, block_playerhud {{/str}}" aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </a>
@@ -104,7 +104,16 @@
             <span aria-hidden="true">🎒</span>
         </a>
 
-        {{! B. Ranking }}
+        {{! B. Shop }}
+        <a href="{{url_shop}}"
+           class="btn btn-ph-level-border shadow-sm"
+           data-bs-toggle="tooltip" data-bs-placement="bottom"
+           title="{{#str}} tab_shop, block_playerhud {{/str}}"
+           aria-label="{{#str}} tab_shop, block_playerhud {{/str}}">
+            <span aria-hidden="true">🏪</span>
+        </a>
+
+        {{! C. Ranking }}
         {{#ranking}}
         <a href="{{url}}"
            class="btn btn-ph-level-border shadow-sm"
@@ -115,7 +124,7 @@
         </a>
         {{/ranking}}
 
-        {{! C. Exit }}
+        {{! D. Exit }}
         <a href="{{url_disable}}"
            class="btn btn-ph-level-border shadow-sm js-disable-hud"
            data-bs-toggle="tooltip" data-bs-placement="bottom"
