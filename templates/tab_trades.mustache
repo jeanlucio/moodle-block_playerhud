@@ -1,0 +1,157 @@
+{{!
+	This file is part of Moodle - http://moodle.org/
+
+	Moodle is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	Moodle is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/tab_trades
+
+    Trades management tab output template for PlayerHUD.
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "str_title": "Trades (NPC)",
+        "url_add": "#",
+        "str_add": "New Trade",
+        "has_trades": true,
+        "str_shop": "Shop",
+        "str_hidden": "Hidden",
+        "str_edit": "Edit",
+        "str_delete": "Delete",
+        "str_pay": "Student pays",
+        "str_receive": "Student receives",
+        "str_copy": "Copy",
+        "str_empty": "No trades available.",
+        "trades": [
+            {
+                "id": 1,
+                "name": "Trade 1",
+                "is_centralized": true,
+                "shortcode": "[PLAYERHUD_TRADE id=1]",
+                "url_edit": "#",
+                "url_delete": "#",
+                "confirm_msg": "Are you sure?",
+                "requirements": [
+                    { "qty": 3, "name": "Wood", "is_image": false, "image_content": "🪵" }
+                ],
+                "rewards": [
+                    { "qty": 1, "name": "Sword", "is_image": false, "image_content": "🗡️" }
+                ]
+            }
+        ]
+    }
+}}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="h5 text-muted m-0 fw-bold">{{str_title}}</h3>
+    <a href="{{url_add}}" class="btn btn-success shadow-sm fw-bold">
+        <i class="fa fa-plus me-1" aria-hidden="true"></i> {{str_add}}
+    </a>
+</div>
+
+<div class="row">
+    {{#has_trades}}
+        {{#trades}}
+        <div class="col-lg-6 col-12 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+
+                {{! TRADE HEADER }}
+                <div class="card-header bg-light d-flex justify-content-between align-items-center border-bottom">
+                    <div>
+                        {{#is_centralized}}
+                            <span class="badge bg-info text-dark shadow-sm">{{str_shop}}</span>
+                        {{/is_centralized}}
+                        {{^is_centralized}}
+                            <span class="badge bg-secondary shadow-sm">{{str_hidden}}</span>
+                        {{/is_centralized}}
+                        <span class="fw-bold ms-2 text-dark">{{name}}</span>
+                    </div>
+                    <div>
+                        <a href="{{url_edit}}" class="btn btn-sm btn-primary shadow-sm" aria-label="{{str_edit}}">
+                            <i class="fa fa-pencil" aria-hidden="true"></i>
+                        </a>
+                        <a href="{{url_delete}}" class="btn btn-sm btn-danger shadow-sm js-delete-btn"
+                           data-confirm-msg="{{confirm_msg}}" aria-label="{{str_delete}}">
+                            <i class="fa fa-trash" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+
+                {{! TRADE BODY }}
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-uppercase text-danger fw-bold d-block mb-2 ph-text-xs">{{str_pay}}</small>
+                        {{#requirements}}
+                            <div class="d-flex align-items-center mb-1 text-muted small">
+                                <div class="me-2">
+                                    {{#is_image}}
+                                        <img src="{{image_url}}" alt="" class="ph-img-xs">
+                                    {{/is_image}}
+                                    {{^is_image}}
+                                        <span class="fs-5 lh-1" aria-hidden="true">{{image_content}}</span>
+                                    {{/is_image}}
+                                </div>
+                                <div>{{qty}}x {{name}}</div>
+                            </div>
+                        {{/requirements}}
+                    </div>
+
+                    <div class="text-center text-muted mb-3 opacity-50">
+                        <i class="fa fa-arrow-down" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <small class="text-uppercase text-success fw-bold d-block mb-2 ph-text-xs">{{str_receive}}</small>
+                        {{#rewards}}
+                            <div class="d-flex align-items-center mb-1 text-dark fw-bold small">
+                                <div class="me-2">
+                                    {{#is_image}}
+                                        <img src="{{image_url}}" alt="" class="ph-img-xs">
+                                    {{/is_image}}
+                                    {{^is_image}}
+                                        <span class="fs-5 lh-1" aria-hidden="true">{{image_content}}</span>
+                                    {{/is_image}}
+                                </div>
+                                <div>{{qty}}x {{name}}</div>
+                            </div>
+                        {{/rewards}}
+                    </div>
+                </div>
+
+                {{! FOOTER (SHORTCODE) }}
+                <div class="card-footer bg-light border-top">
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control font-monospace text-center text-muted bg-white border-end-0"
+                               value="{{shortcode}}" readonly id="code_{{id}}">
+                        <button class="btn btn-outline-secondary js-copy-code" type="button"
+                                data-clipboard-target="#code_{{id}}">
+                            <i class="fa fa-copy me-1" aria-hidden="true"></i> {{str_copy}}
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {{/trades}}
+    {{/has_trades}}
+
+    {{^has_trades}}
+        <div class="col-12 text-center py-5 text-muted">
+            <div style="font-size: 3rem; opacity: 0.3;" aria-hidden="true">⚖️</div>
+            <p class="mt-3">{{str_empty}}</p>
+        </div>
+    {{/has_trades}}
+</div>
