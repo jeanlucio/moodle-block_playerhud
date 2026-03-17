@@ -144,3 +144,67 @@
         object-fit: contain;
     }
 }
+// UI Helpers for Shop and Trades (Replaces Inline CSS).
+.block_playerhud,
+.filter_playerhud {
+    .ph-input-qty {
+        width: 80px;
+        min-width: 80px;
+    }
+
+    .ph-img-sm {
+        width: 30px;
+        height: 30px;
+        object-fit: contain;
+    }
+
+    .ph-icon-empty {
+        font-size: 3rem;
+        opacity: 0.3;
+    }
+
+    // Trade Widget (Filter).
+    .ph-trade-widget-card {
+        max-width: 480px;
+        border-radius: 12px;
+        border: 2px solid var(--border-color, var(--bs-gray-200, #e9ecef));
+
+        .card-header {
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+    }
+
+    .ph-trade-label {
+        font-size: 0.70rem;
+    }
+
+    .ph-trade-item-icon {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--bs-gray-100, #f8f9fa);
+        border-radius: 4px;
+
+        &.success-bg {
+            background-color: var(--bs-success-bg-subtle, #e8f5e9);
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .ph-emoji-sm {
+            font-size: 18px;
+            line-height: 1;
+        }
+    }
+
+    .ph-min-w-0 {
+        min-width: 0;
+    }
+}

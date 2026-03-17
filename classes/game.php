@@ -528,32 +528,37 @@ class game {
         $groups = groups_get_all_groups($courseid);
 
         if ($groups) {
+            $groupids = array_keys($groups);
+            [$gsql, $gparams] = $DB->get_in_or_equal($groupids);
+
+            $sqlgrp = "SELECT gm.groupid, SUM(pu.currentxp) as total, COUNT(pu.id) as qtd
+                         FROM {groups_members} gm
+                         JOIN {block_playerhud_user} pu ON pu.userid = gm.userid
+                        WHERE pu.blockinstanceid = ?
+                          AND pu.enable_gamification = 1
+                          AND pu.ranking_visibility = 1
+                          AND gm.groupid $gsql
+                     GROUP BY gm.groupid";
+
+            $params = array_merge([$blockinstanceid], $gparams);
+            $allgroupstats = $DB->get_records_sql($sqlgrp, $params);
+
             foreach ($groups as $grp) {
-                $members = groups_get_members($grp->id, 'u.id');
-                if (!$members) {
-                    continue;
-                }
-                $memberids = array_keys($members);
-                [$insql, $inparams] = $DB->get_in_or_equal($memberids);
-                $sqlgrp = "SELECT SUM(currentxp) as total, COUNT(id) as qtd
-                             FROM {block_playerhud_user}
-                            WHERE blockinstanceid = ?
-                              AND enable_gamification = 1
-                              AND ranking_visibility = 1
-                              AND userid $insql";
-                $params = array_merge([$blockinstanceid], $inparams);
-                $grpstats = $DB->get_record_sql($sqlgrp, $params);
-                if ($grpstats && $grpstats->qtd > 0) {
-                    $avg = floor($grpstats->total / $grpstats->qtd);
+                if (isset($allgroupstats[$grp->id]) && $allgroupstats[$grp->id]->qtd > 0) {
+                    $stat = $allgroupstats[$grp->id];
+                    $avg = floor($stat->total / $stat->qtd);
+
                     $gobj = new \stdClass();
                     $gobj->id = $grp->id;
                     $gobj->name = format_string($grp->name);
                     $gobj->average_xp = $avg;
-                    $gobj->member_count = $grpstats->qtd;
+                    $gobj->member_count = $stat->qtd;
                     $gobj->is_my_group = groups_is_member($grp->id, $currentuserid);
+
                     $groupranking[] = $gobj;
                 }
             }
+
             usort($groupranking, function ($a, $b) {
                 return $b->average_xp <=> $a->average_xp;
             });

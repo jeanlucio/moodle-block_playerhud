@@ -17,7 +17,6 @@
 namespace block_playerhud\form;
 
 defined('MOODLE_INTERNAL') || die();
-
 require_once($CFG->libdir . '/formslib.php');
 
 /**
@@ -34,7 +33,6 @@ class edit_trade_form extends \moodleform {
     public function definition() {
         global $DB;
         $mform = $this->_form;
-
         $instanceid = $this->_customdata['instanceid'];
         $courseid = $this->_customdata['courseid'];
 
@@ -71,7 +69,6 @@ class edit_trade_form extends \moodleform {
             'name ASC',
             'id, name'
         );
-
         $itemoptions = [0 => '--- ' . get_string('select') . ' ---'] + ($allitems ? $allitems : []);
 
         // Fetch Groups.
@@ -79,7 +76,6 @@ class edit_trade_form extends \moodleform {
         $groupings = groups_get_all_groupings($courseid);
 
         $groupoptions = [0 => get_string('allparticipants')];
-
         if ($groups) {
             foreach ($groups as $g) {
                 $groupoptions[$g->id] = get_string('group') . ': ' . format_string($g->name);
@@ -111,13 +107,12 @@ class edit_trade_form extends \moodleform {
         for ($i = 0; $i < $repeatsreq; $i++) {
             $group = [];
 
-            // Limpamos as classes do Bootstrap, deixando apenas a sua classe original do SCSS.
+            // Keep only original SCSS class.
             $previewhtml = '<div class="ph-item-preview me-2" id="preview_req_' . $i . '">' .
                            '<span class="text-muted ph-text-xs" aria-hidden="true">?</span></div>';
-
             $group[] = $mform->createElement('static', "prev_req_$i", '', $previewhtml);
 
-            // Removemos as classes form-select e w-auto.
+            // Remove form-select and w-auto classes.
             $group[] = $mform->createElement(
                 'select',
                 "req_itemid_$i",
@@ -126,18 +121,18 @@ class edit_trade_form extends \moodleform {
                 ['class' => 'ph-item-selector', 'data-target' => "preview_req_$i"]
             );
 
-            // Travamos a largura em 80px para ele não "cair" para a linha de baixo.
+            // Apply fixed width class to prevent wrapping.
             $group[] = $mform->createElement(
                 'text',
                 "req_qty_$i",
                 '',
-                ['type' => 'number', 'min' => 1, 'style' => 'width: 80px;']
+                ['type' => 'number', 'min' => 1, 'class' => 'ph-input-qty']
             );
             $mform->setType("req_qty_$i", PARAM_INT);
 
             $label = get_string('item_n', 'block_playerhud', $i + 1);
 
-            // Ajustamos os separadores para: [Espaço] e [ x ].
+            // Adjust separators.
             $mform->addGroup($group, "req_group_$i", $label, [' ', '<span class="mx-2 text-muted fw-bold">x</span>'], false);
             $mform->setDefault("req_qty_$i", 1);
         }
@@ -164,7 +159,6 @@ class edit_trade_form extends \moodleform {
 
             $previewhtml = '<div class="ph-item-preview me-2" id="preview_give_' . $i . '">' .
                            '<span class="text-muted ph-text-xs" aria-hidden="true">?</span></div>';
-
             $group[] = $mform->createElement('static', "prev_give_$i", '', $previewhtml);
 
             $group[] = $mform->createElement(
@@ -175,11 +169,12 @@ class edit_trade_form extends \moodleform {
                 ['class' => 'ph-item-selector', 'data-target' => "preview_give_$i"]
             );
 
+            // Apply fixed width class to prevent wrapping.
             $group[] = $mform->createElement(
                 'text',
                 "give_qty_$i",
                 '',
-                ['type' => 'number', 'min' => 1, 'style' => 'width: 80px;']
+                ['type' => 'number', 'min' => 1, 'class' => 'ph-input-qty']
             );
             $mform->setType("give_qty_$i", PARAM_INT);
 

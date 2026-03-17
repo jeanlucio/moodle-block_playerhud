@@ -84,6 +84,10 @@ class tab_shop implements renderable, templatable {
         $trades = \block_playerhud\game::get_full_trades($this->instanceid);
         $tradesdata = [];
 
+        $completedtrades = $DB->get_records_menu('block_playerhud_trade_log', [
+            'userid' => $this->player->userid,
+        ], '', 'tradeid, id');
+
         if ($trades) {
             foreach ($trades as $trade) {
                 if ($trade->centralized != 1) {
@@ -108,10 +112,7 @@ class tab_shop implements renderable, templatable {
                 // 4. Check One-Time restriction.
                 $iscompleted = false;
                 if ($trade->onetime) {
-                    $iscompleted = $DB->record_exists('block_playerhud_trade_log', [
-                        'tradeid' => $trade->id,
-                        'userid' => $this->player->userid,
-                    ]);
+                    $iscompleted = isset($completedtrades[$trade->id]);
                 }
 
                 // 5. Format Requirements.

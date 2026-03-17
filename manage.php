@@ -24,7 +24,7 @@
 
 require_once('../../config.php');
 
-// 1. Initial configuration and parameters.
+// Initial configuration and parameters.
 $courseid   = required_param('id', PARAM_INT);
 $instanceid = required_param('instanceid', PARAM_INT);
 $activetab  = optional_param('tab', 'items', PARAM_ALPHA);
@@ -39,7 +39,7 @@ $tradeid = optional_param('tradeid', 0, PARAM_INT);
 $sort = optional_param('sort', '', PARAM_ALPHA);
 $dir  = optional_param('dir', 'ASC', PARAM_ALPHA);
 
-// 2. Security checks.
+// Security checks.
 $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
 $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
 
@@ -58,11 +58,11 @@ $baseurl = new moodle_url('/blocks/playerhud/manage.php', [
 // Page Setup.
 $PAGE->set_url($baseurl);
 $PAGE->set_context($context);
-$PAGE->set_pagelayout('incourse'); // Ensures block drawer appears.
+$PAGE->set_pagelayout('incourse');
 $PAGE->set_title(get_string('pluginname', 'block_playerhud'));
 $PAGE->set_heading(format_string($course->fullname));
 
-// 3. Action processing (Global Controllers).
+// Action processing (Global Controllers).
 
 // Action: Toggle Item Status.
 if ($action == 'toggle' && $itemid && confirm_sesskey()) {
@@ -96,34 +96,42 @@ if ($action == 'toggle_quest' && $questid && confirm_sesskey()) {
 if ($action === 'delete' && $itemid && confirm_sesskey()) {
     $item = $DB->get_record('block_playerhud_items', ['id' => $itemid, 'blockinstanceid' => $instanceid]);
     if ($item) {
-        // 1. Remove XP from users holding this item.
-        $sql = "SELECT userid, COUNT(id) as qtd
-                  FROM {block_playerhud_inventory}
-                 WHERE itemid = ?
-              GROUP BY userid";
+        // Bulk load users holding this item to remove XP (Prevent N+1 Queries).
+        $sql = "SELECT userid, COUNT(id) as qtd FROM {block_playerhud_inventory} WHERE itemid = ? GROUP BY userid";
         $holders = $DB->get_records_sql($sql, [$itemid]);
 
-        foreach ($holders as $holder) {
-            $xptoremove = $item->xp * $holder->qtd;
-            // Update timemodified to reflect balance change using standard DML.
-            $player = $DB->get_record('block_playerhud_user', [
-                'userid' => $holder->userid,
-                'blockinstanceid' => $instanceid,
-            ]);
-            if ($player) {
-                $player->currentxp = max(0, $player->currentxp - $xptoremove);
-                $player->timemodified = time();
-                $DB->update_record('block_playerhud_user', $player);
+        if ($holders) {
+            $userids = array_keys($holders);
+            [$usql, $uparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'usr');
+            $uparams['instanceid'] = $instanceid;
+
+            $players = $DB->get_records_select(
+                'block_playerhud_user',
+                "blockinstanceid = :instanceid AND userid $usql",
+                $uparams,
+                '',
+                'userid, id, currentxp, timemodified, enable_gamification'
+            );
+
+            $now = time();
+            foreach ($holders as $holder) {
+                if (isset($players[$holder->userid])) {
+                    $player = $players[$holder->userid];
+                    $xptoremove = $item->xp * $holder->qtd;
+                    $player->currentxp = max(0, $player->currentxp - $xptoremove);
+                    $player->timemodified = $now;
+                    $DB->update_record('block_playerhud_user', $player);
+                }
             }
         }
 
-        // 2. Delete dependencies.
+        // Delete dependencies.
         $DB->delete_records('block_playerhud_inventory', ['itemid' => $itemid]);
         $DB->delete_records('block_playerhud_drops', ['itemid' => $itemid]);
         $DB->delete_records('block_playerhud_trade_reqs', ['itemid' => $itemid]);
         $DB->delete_records('block_playerhud_trade_rewards', ['itemid' => $itemid]);
 
-        // 3. Delete the item files and record.
+        // Delete the item files and record.
         $fs = get_file_storage();
         $fs->delete_area_files($context->id, 'block_playerhud', 'item_image', $itemid);
         $DB->delete_records('block_playerhud_items', ['id' => $itemid]);
@@ -139,25 +147,20 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
 // Action: Bulk Delete Items (Multiple).
 if ($action === 'bulk_delete' && confirm_sesskey()) {
     $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
-
     if (!empty($bulkids)) {
         $fs = get_file_storage();
         $deletedcount = 0;
 
-        // 1. Get all selected items belonging to this instance.
+        // Get all selected items belonging to this instance.
         [$insql, $inparams] = $DB->get_in_or_equal($bulkids);
         $params = array_merge($inparams, [$instanceid]);
-        $items = $DB->get_records_select(
-            'block_playerhud_items',
-            "id $insql AND blockinstanceid = ?",
-            $params
-        );
+        $items = $DB->get_records_select('block_playerhud_items', "id $insql AND blockinstanceid = ?", $params);
 
         if ($items) {
             $itemids = array_keys($items);
             [$iteminsql, $iteminparams] = $DB->get_in_or_equal($itemids);
 
-            // 2. Calculate XP to remove per user in a single query.
+            // Calculate XP to remove per user in a single query.
             $sql = "SELECT inv.userid, SUM(it.xp) as totalxptoremove
                       FROM {block_playerhud_inventory} inv
                       JOIN {block_playerhud_items} it ON inv.itemid = it.id
@@ -165,25 +168,38 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
                   GROUP BY inv.userid";
             $holders = $DB->get_records_sql($sql, $iteminparams);
 
-            foreach ($holders as $holder) {
-                $player = $DB->get_record('block_playerhud_user', [
-                    'userid' => $holder->userid,
-                    'blockinstanceid' => $instanceid,
-                ]);
-                if ($player) {
-                    $player->currentxp = max(0, $player->currentxp - $holder->totalxptoremove);
-                    $player->timemodified = time();
-                    $DB->update_record('block_playerhud_user', $player);
+            // Bulk load users to avoid N+1.
+            if ($holders) {
+                $userids = array_keys($holders);
+                [$usql, $uparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'usr');
+                $uparams['instanceid'] = $instanceid;
+
+                $players = $DB->get_records_select(
+                    'block_playerhud_user',
+                    "blockinstanceid = :instanceid AND userid $usql",
+                    $uparams,
+                    '',
+                    'userid, id, currentxp, timemodified, enable_gamification'
+                );
+
+                $now = time();
+                foreach ($holders as $holder) {
+                    if (isset($players[$holder->userid])) {
+                        $player = $players[$holder->userid];
+                        $player->currentxp = max(0, $player->currentxp - $holder->totalxptoremove);
+                        $player->timemodified = $now;
+                        $DB->update_record('block_playerhud_user', $player);
+                    }
                 }
             }
 
-            // 3. Delete dependencies in bulk without loops.
+            // Delete dependencies in bulk without loops.
             $DB->delete_records_select('block_playerhud_inventory', "itemid $iteminsql", $iteminparams);
             $DB->delete_records_select('block_playerhud_drops', "itemid $iteminsql", $iteminparams);
             $DB->delete_records_select('block_playerhud_trade_reqs', "itemid $iteminsql", $iteminparams);
             $DB->delete_records_select('block_playerhud_trade_rewards', "itemid $iteminsql", $iteminparams);
 
-            // 4. Delete files and the items themselves.
+            // Delete files and the items themselves.
             foreach ($itemids as $delid) {
                 $fs->delete_area_files($context->id, 'block_playerhud', 'item_image', $delid);
             }
@@ -209,30 +225,39 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
 // Action: Delete Quest.
 if ($action == 'delete_quest' && $questid && confirm_sesskey()) {
     $quest = $DB->get_record('block_playerhud_quests', ['id' => $questid, 'blockinstanceid' => $instanceid]);
-
     if ($quest) {
-        // 1. Revert XP for students who completed.
+        // Revert XP for students who completed avoiding N+1.
         if ($quest->reward_xp > 0) {
-            $completions = $DB->get_records('block_playerhud_quest_log', ['questid' => $questid]);
+            $sql = "SELECT userid, COUNT(id) as completions FROM {block_playerhud_quest_log} WHERE questid = :qid GROUP BY userid";
+            $userscompleted = $DB->get_records_sql($sql, ['qid' => $questid]);
 
-            // Use fixed time() for all updates in transaction.
-            $now = time();
+            if ($userscompleted) {
+                $userids = array_keys($userscompleted);
+                [$usql, $uparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'usr');
+                $uparams['instanceid'] = $instanceid;
 
-            foreach ($completions as $log) {
-                // Remove XP reward and update timemodified for tie-breaking using standard DML.
-                $player = $DB->get_record('block_playerhud_user', [
-                    'userid' => $log->userid,
-                    'blockinstanceid' => $instanceid,
-                ]);
-                if ($player) {
-                    $player->currentxp = max(0, $player->currentxp - $quest->reward_xp);
-                    $player->timemodified = $now;
-                    $DB->update_record('block_playerhud_user', $player);
+                $players = $DB->get_records_select(
+                    'block_playerhud_user',
+                    "blockinstanceid = :instanceid AND userid $usql",
+                    $uparams,
+                    '',
+                    'userid, id, currentxp, timemodified, enable_gamification'
+                );
+
+                $now = time();
+                foreach ($userscompleted as $uc) {
+                    if (isset($players[$uc->userid])) {
+                        $player = $players[$uc->userid];
+                        $xptoremove = $quest->reward_xp * $uc->completions;
+                        $player->currentxp = max(0, $player->currentxp - $xptoremove);
+                        $player->timemodified = $now;
+                        $DB->update_record('block_playerhud_user', $player);
+                    }
                 }
             }
         }
 
-        // 2. Delete records.
+        // Delete records.
         $DB->delete_records('block_playerhud_quest_log', ['questid' => $questid]);
         $DB->delete_records('block_playerhud_quests', ['id' => $questid]);
 
@@ -253,6 +278,7 @@ if ($action == 'delete_trade' && $tradeid && confirm_sesskey()) {
         $DB->delete_records('block_playerhud_trade_log', ['tradeid' => $tradeid]);
         $DB->delete_records('block_playerhud_trades', ['id' => $tradeid, 'blockinstanceid' => $instanceid]);
         $transaction->allow_commit();
+
         redirect(
             new moodle_url($baseurl, ['tab' => 'trades']),
             get_string('changessaved', 'block_playerhud'),
@@ -290,11 +316,15 @@ if ($action == 'delete_chapter') {
     $chapterid = optional_param('chapterid', 0, PARAM_INT);
     if ($chapterid && confirm_sesskey()) {
         $scenes = $DB->get_records('block_playerhud_story_nodes', ['chapterid' => $chapterid]);
-        foreach ($scenes as $sc) {
-            $DB->delete_records('block_playerhud_choices', ['nodeid' => $sc->id]);
+        if ($scenes) {
+            $sceneids = array_keys($scenes);
+            [$nsql, $nparams] = $DB->get_in_or_equal($sceneids);
+            // Bulk delete choices avoiding N+1.
+            $DB->delete_records_select('block_playerhud_choices', "nodeid $nsql", $nparams);
         }
         $DB->delete_records('block_playerhud_story_nodes', ['chapterid' => $chapterid]);
         $DB->delete_records('block_playerhud_chapters', ['id' => $chapterid, 'blockinstanceid' => $instanceid]);
+
         redirect(
             new moodle_url($baseurl, ['tab' => 'chapters']),
             get_string('chapter_deleted', 'block_playerhud'),
@@ -308,7 +338,6 @@ if ($action == 'save_keys' && confirm_sesskey()) {
     $gkey = optional_param('gemini_key', '', PARAM_TEXT);
     $qkey = optional_param('groq_key', '', PARAM_TEXT);
 
-    // In blocks, we save settings to the instance configdata.
     $config = (array) unserialize(base64_decode($bi->configdata));
     $config['apikey_gemini'] = trim($gkey);
     $config['apikey_groq'] = trim($qkey);
@@ -323,57 +352,46 @@ if ($action == 'save_keys' && confirm_sesskey()) {
     );
 }
 
-// 4. PRE-RENDER LOGIC (Controller Strategy).
+// PRE-RENDER LOGIC (Controller Strategy).
 $contenthtml = '';
 
 // Try to load the tab controller.
 $renderclass = "\\block_playerhud\\output\\manage\\tab_{$activetab}";
-
 if (class_exists($renderclass)) {
-    // Instantiate the tab renderer.
     $renderer = new $renderclass($instanceid, $courseid, $sort, $dir);
 
-    // If it has form processing logic (e.g. items/add).
     if (method_exists($renderer, 'process')) {
         $renderer->process();
     }
 
-    // Render tab content.
     if ($renderer instanceof \templatable) {
-        // Render via Mustache (New Standard).
         if (method_exists($renderer, 'display')) {
             $contenthtml = $renderer->display();
         } else {
-            // Fallback to standard templates.
             $contenthtml = $OUTPUT->render_from_template(
                 "block_playerhud/tab_{$activetab}",
                 $renderer->export_for_template($OUTPUT)
             );
         }
     } else {
-        // Fallback for old classes (manual display, if any).
         if (method_exists($renderer, 'display')) {
             $contenthtml = $renderer->display();
         }
     }
 } else {
-    // Tab not implemented or missing file.
     $contenthtml = $OUTPUT->notification(
         get_string('tab_maintenance', 'block_playerhud', ucfirst($activetab)),
         'info'
     );
 }
 
-// Page Setup was moved to the top to ensure correct layout.
-
 echo $OUTPUT->header();
 
 // Tab Definitions (V1.0 - Features under construction hidden).
 $tabsdef = [
-    'items'    => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
-    'trades'   => ['icon' => '⚖️', 'text' => get_string('tab_trades', 'block_playerhud')],
-    // Future tabs: quests, chapters, classes, reports.
-    'config'   => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
+    'items'  => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
+    'trades' => ['icon' => '⚖️', 'text' => get_string('tab_trades', 'block_playerhud')],
+    'config' => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
 ];
 
 $tabsdata = [];
@@ -401,5 +419,4 @@ $layoutdata = [
 ];
 
 echo $OUTPUT->render_from_template('block_playerhud/manage_layout', $layoutdata);
-
 echo $OUTPUT->footer();

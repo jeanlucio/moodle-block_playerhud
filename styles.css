@@ -812,6 +812,69 @@
     object-fit: contain;
 }
 
+.block_playerhud .ph-input-qty,
+.filter_playerhud .ph-input-qty {
+    width: 80px;
+    min-width: 80px;
+}
+.block_playerhud .ph-img-sm,
+.filter_playerhud .ph-img-sm {
+    width: 30px;
+    height: 30px;
+    -o-object-fit: contain;
+    object-fit: contain;
+}
+.block_playerhud .ph-icon-empty,
+.filter_playerhud .ph-icon-empty {
+    font-size: 3rem;
+    opacity: 0.3;
+}
+.block_playerhud .ph-trade-widget-card,
+.filter_playerhud .ph-trade-widget-card {
+    max-width: 480px;
+    border-radius: 12px;
+    border: 2px solid var(--border-color, var(--bs-gray-200, #e9ecef));
+}
+.block_playerhud .ph-trade-widget-card .card-header,
+.filter_playerhud .ph-trade-widget-card .card-header {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+.block_playerhud .ph-trade-label,
+.filter_playerhud .ph-trade-label {
+    font-size: 0.7rem;
+}
+.block_playerhud .ph-trade-item-icon,
+.filter_playerhud .ph-trade-item-icon {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bs-gray-100, #f8f9fa);
+    border-radius: 4px;
+}
+.block_playerhud .ph-trade-item-icon.success-bg,
+.filter_playerhud .ph-trade-item-icon.success-bg {
+    background-color: var(--bs-success-bg-subtle, #e8f5e9);
+}
+.block_playerhud .ph-trade-item-icon img,
+.filter_playerhud .ph-trade-item-icon img {
+    max-width: 100%;
+    max-height: 100%;
+    -o-object-fit: contain;
+    object-fit: contain;
+}
+.block_playerhud .ph-trade-item-icon .ph-emoji-sm,
+.filter_playerhud .ph-trade-item-icon .ph-emoji-sm {
+    font-size: 18px;
+    line-height: 1;
+}
+.block_playerhud .ph-min-w-0,
+.filter_playerhud .ph-min-w-0 {
+    min-width: 0;
+}
+
 .ph-modal-zindex {
     z-index: 10550;
 }
