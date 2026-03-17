@@ -62,7 +62,7 @@ class tab_shop implements renderable, templatable {
      * @param renderer_base $output The renderer.
      * @return array Data for the template.
      */
-    public function export_for_template(renderer_base $output) {
+    public function export_for_template($output) {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
 

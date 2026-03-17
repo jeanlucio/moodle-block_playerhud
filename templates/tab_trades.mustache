@@ -136,7 +136,8 @@
                     <div class="input-group input-group-sm">
                         <input type="text" class="form-control font-monospace text-center text-muted bg-white border-end-0"
                                value="{{shortcode}}" readonly id="code_{{id}}">
-                        <button class="btn btn-outline-secondary js-copy-code" type="button"
+                        <button class="btn btn-outline-secondary" type="button"
+                                data-action="copytoclipboard"
                                 data-clipboard-target="#code_{{id}}">
                             <i class="fa fa-copy me-1" aria-hidden="true"></i> {{str_copy}}
                         </button>
@@ -155,3 +156,6 @@
         </div>
     {{/has_trades}}
 </div>
+{{#js}}
+require(['core/copy_to_clipboard']);
+{{/js}}

@@ -29,6 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 $string['actions'] = 'Ações';
 $string['add_cost_item'] = 'Adicionar item de requisito';
 $string['add_reward_item'] = 'Adicionar item de recompensa';
+$string['add_trade'] = 'Nova Oferta de Negociação';
 $string['ai_btn_conjure'] = 'Conjurar!';
 $string['ai_btn_create'] = 'Criar Item Mágico';
 $string['ai_create_drop'] = 'Gerar local de Drop?';

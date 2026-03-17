@@ -54,7 +54,7 @@ class tab_trades implements renderable, templatable {
      * @param renderer_base $output The renderer.
      * @return array Data for the template.
      */
-    public function export_for_template(renderer_base $output) {
+    public function export_for_template($output) {
         global $CFG;
         require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
 
@@ -137,7 +137,7 @@ class tab_trades implements renderable, templatable {
             'trades' => $tradesdata,
             'url_add' => $addurl->out(false),
             'str_title' => get_string('tab_trades', 'block_playerhud'),
-            'str_add' => get_string('drops_btn_new', 'block_playerhud'),
+            'str_add' => get_string('add_trade', 'block_playerhud'),
             'str_shop' => get_string('tab_shop', 'block_playerhud'),
             'str_hidden' => get_string('hidden', 'block_playerhud'),
             'str_pay' => get_string('shop_pay', 'block_playerhud'),

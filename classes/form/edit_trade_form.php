@@ -110,32 +110,35 @@ class edit_trade_form extends \moodleform {
 
         for ($i = 0; $i < $repeatsreq; $i++) {
             $group = [];
-            $previewhtml = '<div class="ph-item-preview" id="preview_req_' . $i . '">' .
+
+            // Limpamos as classes do Bootstrap, deixando apenas a sua classe original do SCSS.
+            $previewhtml = '<div class="ph-item-preview me-2" id="preview_req_' . $i . '">' .
                            '<span class="text-muted ph-text-xs" aria-hidden="true">?</span></div>';
 
             $group[] = $mform->createElement('static', "prev_req_$i", '', $previewhtml);
+
+            // Removemos as classes form-select e w-auto.
             $group[] = $mform->createElement(
                 'select',
                 "req_itemid_$i",
                 '',
                 $itemoptions,
-                ['class' => 'ph-item-selector form-select', 'data-target' => "preview_req_$i", 'aria-label' => get_string('item')]
+                ['class' => 'ph-item-selector', 'data-target' => "preview_req_$i"]
             );
+
+            // Travamos a largura em 80px para ele não "cair" para a linha de baixo.
             $group[] = $mform->createElement(
                 'text',
                 "req_qty_$i",
                 '',
-                [
-                    'type' => 'number',
-                    'min' => 1,
-                    'class' => 'form-control',
-                    'aria-label' => get_string('qty', 'block_playerhud'),
-                ]
+                ['type' => 'number', 'min' => 1, 'style' => 'width: 80px;']
             );
             $mform->setType("req_qty_$i", PARAM_INT);
 
             $label = get_string('item_n', 'block_playerhud', $i + 1);
-            $mform->addGroup($group, "req_group_$i", $label, [' ', ' ', ' x '], false);
+
+            // Ajustamos os separadores para: [Espaço] e [ x ].
+            $mform->addGroup($group, "req_group_$i", $label, [' ', '<span class="mx-2 text-muted fw-bold">x</span>'], false);
             $mform->setDefault("req_qty_$i", 1);
         }
 
@@ -158,32 +161,30 @@ class edit_trade_form extends \moodleform {
 
         for ($i = 0; $i < $repeatsgive; $i++) {
             $group = [];
-            $previewhtml = '<div class="ph-item-preview" id="preview_give_' . $i . '">' .
+
+            $previewhtml = '<div class="ph-item-preview me-2" id="preview_give_' . $i . '">' .
                            '<span class="text-muted ph-text-xs" aria-hidden="true">?</span></div>';
 
             $group[] = $mform->createElement('static', "prev_give_$i", '', $previewhtml);
+
             $group[] = $mform->createElement(
                 'select',
                 "give_itemid_$i",
                 '',
                 $itemoptions,
-                ['class' => 'ph-item-selector form-select', 'data-target' => "preview_give_$i", 'aria-label' => get_string('item')]
+                ['class' => 'ph-item-selector', 'data-target' => "preview_give_$i"]
             );
+
             $group[] = $mform->createElement(
                 'text',
                 "give_qty_$i",
                 '',
-                [
-                    'type' => 'number',
-                    'min' => 1,
-                    'class' => 'form-control',
-                    'aria-label' => get_string('qty', 'block_playerhud'),
-                ]
+                ['type' => 'number', 'min' => 1, 'style' => 'width: 80px;']
             );
             $mform->setType("give_qty_$i", PARAM_INT);
 
             $label = get_string('item_n', 'block_playerhud', $i + 1);
-            $mform->addGroup($group, "give_group_$i", $label, [' ', ' ', ' x '], false);
+            $mform->addGroup($group, "give_group_$i", $label, [' ', '<span class="mx-2 text-muted fw-bold">x</span>'], false);
             $mform->setDefault("give_qty_$i", 1);
         }
 

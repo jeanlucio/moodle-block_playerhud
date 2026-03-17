@@ -23,16 +23,12 @@
 
 define(['jquery'], function($) {
     return {
-        /**
-         * Initialize the module.
-         *
-         * @param {Object} itemsMap Map of item IDs to their image URLs or emojis.
-         */
         init: function(itemsMap) {
             const updatePreview = (selectEl) => {
                 const $select = $(selectEl);
                 let targetId = $select.attr('data-target');
 
+                // Fallback robusto igual ao seu código original
                 if (!targetId && $select.attr('name')) {
                     const match = $select.attr('name').match(/([a-z]+)_itemid_(\d+)/);
                     if (match) {
@@ -52,29 +48,35 @@ define(['jquery'], function($) {
                 const itemId = String($select.val());
                 $previewBox.empty();
 
-                if (itemId && itemsMap.hasOwnProperty(itemId)) {
+                // Garante que não vai tentar buscar o ID "0" (--- Selecionar ---)
+                if (itemId && itemId !== "0" && itemsMap.hasOwnProperty(itemId)) {
                     const content = itemsMap[itemId];
                     if (content.startsWith('EMOJI:')) {
                         const emoji = content.replace('EMOJI:', '');
-                        $previewBox.append($('<span aria-hidden="true">').text(emoji));
+                        $previewBox.append($('<span class="fs-4 lh-1" aria-hidden="true">').text(emoji));
                     } else {
-                        $previewBox.append($('<img>', {src: content, alt: ''}));
+                        // Usando classes Bootstrap 5 no lugar de CSS inline para blindar o layout
+                        $previewBox.append($('<img>', {
+                            src: content,
+                            alt: '',
+                            "class": 'w-100 h-100 object-fit-contain'
+                        }));
                     }
-                    $previewBox.addClass('border-success bg-white');
+                    $previewBox.addClass('border-success').removeClass('border');
                 } else {
                     $previewBox.append($('<span class="text-muted ph-text-xs" aria-hidden="true">?</span>'));
-                    $previewBox.removeClass('border-success bg-white');
+                    $previewBox.removeClass('border-success').addClass('border');
                 }
             };
 
-            // Event delegation for dynamically added elements or normal changes.
-            $('body').on('change', '.ph-item-selector', function() {
+            // Event listener cravado no atributo 'name' para nunca falhar
+            $('body').on('change', 'select[name*="_itemid_"]', function() {
                 updatePreview(this);
             });
 
-            // Initial trigger on page load.
+            // Disparo inicial
             setTimeout(() => {
-                $('.ph-item-selector').each(function() {
+                $('select[name*="_itemid_"]').each(function() {
                     updatePreview(this);
                 });
             }, 100);
