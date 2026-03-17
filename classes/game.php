@@ -76,13 +76,11 @@ class game {
      */
     public static function get_inventory($userid, $blockinstanceid) {
         global $DB;
-
         $sql = "SELECT inv.id as unique_inventory_id, i.*, inv.timecreated as collecteddate
                   FROM {block_playerhud_items} i
                   JOIN {block_playerhud_inventory} inv ON inv.itemid = i.id
                  WHERE inv.userid = :userid AND i.blockinstanceid = :pid
               ORDER BY inv.timecreated DESC";
-
         return $DB->get_records_sql($sql, ['userid' => $userid, 'pid' => $blockinstanceid]);
     }
 
@@ -180,6 +178,7 @@ class game {
         $player = self::get_player($instanceid, $userid);
         $bi = $DB->get_record('block_instances', ['id' => $instanceid]);
         $config = unserialize(base64_decode($bi->configdata));
+
         if (!$config) {
             $config = new \stdClass();
         }
@@ -313,7 +312,6 @@ class game {
             'is_max' => $ismaxlevel,
             'level_class' => $levelclass,
             'total_game_xp' => $totalgamexp,
-            // Fix: Force (int) to ensure integer number in CSS.
             'progress' => (int)round($visualprogress),
         ];
     }
@@ -373,6 +371,7 @@ class game {
             false,
             true
         );
+
         $managerids = array_keys($managers);
 
         // Build exclusion clause.
@@ -385,7 +384,8 @@ class game {
         ];
 
         if (!empty($managerids)) {
-            [$insql, $inparams] = $DB->get_in_or_equal($managerids, SQL_PARAMS_NAMED, 'ex', false); // False = NOT IN.
+            [$insql, $inparams] = $DB->get_in_or_equal($managerids, SQL_PARAMS_NAMED, 'ex', false);
+            // False = NOT IN.
             $excludeclause = "AND userid $insql";
             $params = array_merge($params, $inparams);
         }
@@ -395,7 +395,6 @@ class game {
         // 1. Have MORE XP than me.
         // 2. OR have the SAME XP, but arrived earlier.
         // 3. AND are NOT managers/teachers.
-
         $sql = "SELECT COUNT(id)
                   FROM {block_playerhud_user}
                  WHERE blockinstanceid = :pid
@@ -474,6 +473,7 @@ class game {
             $iscompetitor = (!$ispaused && !$ishidden);
 
             $shoulddisplay = ($iscompetitor || $isteacher || $isme);
+
             if (!$shoulddisplay) {
                 continue;
             }
@@ -511,8 +511,6 @@ class game {
             // Data Formatting.
             $mygroups = isset($usergroupsmap[$usr->userid]) ? $usergroupsmap[$usr->userid] : [];
             $usr->group_name = empty($mygroups) ? '-' : implode(', ', $mygroups);
-
-            // New: Formatted date for transparency.
             $usr->last_score_date = userdate($usr->timemodified, get_string('strftimedatetimeshort', 'langconfig'));
 
             $usr->is_me = $isme;
@@ -523,7 +521,7 @@ class game {
             $individualranking[] = $usr;
         }
 
-        // Groups logic.
+        // Groups logic (Optimized Zero N+1 query).
         $groupranking = [];
         $groups = groups_get_all_groups($courseid);
 
@@ -562,6 +560,7 @@ class game {
             usort($groupranking, function ($a, $b) {
                 return $b->average_xp <=> $a->average_xp;
             });
+
             $grank = 1;
             foreach ($groupranking as &$g) {
                 $g->rank = $grank++;
