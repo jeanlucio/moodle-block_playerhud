@@ -831,9 +831,11 @@
 }
 .block_playerhud .ph-trade-widget-card,
 .filter_playerhud .ph-trade-widget-card {
-    max-width: 480px;
+    width: 100%;
+    max-width: 360px;
     border-radius: 12px;
     border: 2px solid var(--border-color, var(--bs-gray-200, #e9ecef));
+    cursor: default;
 }
 .block_playerhud .ph-trade-widget-card .card-header,
 .filter_playerhud .ph-trade-widget-card .card-header {
@@ -848,11 +850,13 @@
 .filter_playerhud .ph-trade-item-icon {
     width: 28px;
     height: 28px;
+    min-width: 28px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     background-color: var(--bs-gray-100, #f8f9fa);
     border-radius: 4px;
+    overflow: hidden;
 }
 .block_playerhud .ph-trade-item-icon.success-bg,
 .filter_playerhud .ph-trade-item-icon.success-bg {
@@ -860,10 +864,13 @@
 }
 .block_playerhud .ph-trade-item-icon img,
 .filter_playerhud .ph-trade-item-icon img {
+    width: 100%;
+    height: 100%;
     max-width: 100%;
     max-height: 100%;
     -o-object-fit: contain;
     object-fit: contain;
+    display: block;
 }
 .block_playerhud .ph-trade-item-icon .ph-emoji-sm,
 .filter_playerhud .ph-trade-item-icon .ph-emoji-sm {
@@ -873,6 +880,15 @@
 .block_playerhud .ph-min-w-0,
 .filter_playerhud .ph-min-w-0 {
     min-width: 0;
+}
+
+.ph-trade-icon-box {
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .ph-modal-zindex {

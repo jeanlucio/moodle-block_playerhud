@@ -61,11 +61,10 @@ class tab_collection implements renderable, templatable {
         global $DB, $CFG, $PAGE;
         require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
 
-        // 1. Capture sort parameter (Default: xp_asc).
-        $currentsort = optional_param('sort', 'xp_asc', PARAM_ALPHANUMEXT);
+        // 1. Capture sort parameter (Default: recent).
+        $currentsort = optional_param('sort', 'recent', PARAM_ALPHANUMEXT);
 
         // 2. Fetch Inventory from DB.
-        // JOIN to know if the origin is an infinite drop.
         $sql = "SELECT inv.*, d.maxusage as drop_maxusage
                   FROM {block_playerhud_inventory} inv
              LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
@@ -80,7 +79,7 @@ class tab_collection implements renderable, templatable {
             }
         }
 
-        // Fetch all items (Initial SQL order doesn't matter as we will resort).
+        // Fetch all items.
         $allitems = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid], 'xp ASC');
 
         // Check player class for visibility.
@@ -94,6 +93,12 @@ class tab_collection implements renderable, templatable {
                 $myclassid = $prog->classid;
             }
         }
+
+        // BULK FETCH: Check which items have infinite drops (Zero N+1 Optimization).
+        $sqlinf = "SELECT DISTINCT itemid, 1 as is_inf
+                     FROM {block_playerhud_drops}
+                    WHERE blockinstanceid = :pid AND maxusage = 0";
+        $infinitedrops = $DB->get_records_sql_menu($sqlinf, ['pid' => $this->instanceid]);
 
         $itemsdata = [];
         $context = \context_block::instance($this->instanceid);
@@ -114,10 +119,9 @@ class tab_collection implements renderable, templatable {
                 }
 
                 $media = \block_playerhud\utils::get_item_display_data($item, $context);
-                $isinfiniteconfig = $DB->record_exists('block_playerhud_drops', [
-                    'itemid' => $item->id,
-                    'maxusage' => 0,
-                ]);
+
+                // Use the pre-loaded bulk array.
+                $isinfiniteconfig = isset($infinitedrops[$item->id]);
                 $jspayload = $media['is_image'] ? $media['url'] : strip_tags($media['content']);
 
                 // Separate count (Finite vs Infinite).
@@ -136,20 +140,20 @@ class tab_collection implements renderable, templatable {
                     }
                 }
 
-                // Format name for sorting (remove HTML tags and convert secrets).
+                // Format name for sorting.
                 $visiblename = format_string($item->name);
-                $sortname = strip_tags($visiblename); // Clean key for sorting.
+                $sortname = strip_tags($visiblename);
 
                 // Uncollected Item Logic.
                 if ($totalcount == 0) {
                     $itemobj = [
                         'card_class' => 'ph-missing',
-                        'date_str' => '&nbsp;', // Empty space to maintain height.
+                        'date_str' => '&nbsp;',
                     ];
 
                     if ($item->secret) {
                         $itemobj['name'] = get_string('secret_name', 'block_playerhud');
-                        $sortname = 'zzzz_secret'; // Force secrets to the end of A-Z list.
+                        $sortname = 'zzzz_secret';
                         $itemobj['xp_text'] = "???";
                         $itemobj['description'] = get_string('secret_desc', 'block_playerhud');
                         $itemobj['is_image'] = false;
@@ -227,6 +231,7 @@ class tab_collection implements renderable, templatable {
                 } else {
                     $itemobj['raw_xp'] = (int)$item->xp;
                 }
+
                 $itemobj['count'] = $totalcount;
                 $itemobj['timestamp'] = $lastts;
 
@@ -243,9 +248,9 @@ class tab_collection implements renderable, templatable {
             }
         }
 
-        // 3. Robust Sorting (Collator).
-        // Fallback safe if intl fails (rare in Moodle).
-        $collator = new \Collator('en_US');
+        // 3. Robust Sorting (Sua lógica Collator original).
+        $locale = current_language() ?: 'en';
+        $collator = new \Collator($locale);
 
         usort($itemsdata, function ($a, $b) use ($currentsort, $collator) {
             switch ($currentsort) {
@@ -254,19 +259,6 @@ class tab_collection implements renderable, templatable {
 
                 case 'name_desc':
                     return $collator->compare($b['sort_name'], $a['sort_name']);
-
-                case 'xp_desc':
-                    // Tie-break by name if XP is equal.
-                    if ($b['raw_xp'] == $a['raw_xp']) {
-                        return $collator->compare($a['sort_name'], $b['sort_name']);
-                    }
-                    return $b['raw_xp'] <=> $a['raw_xp'];
-
-                case 'xp_asc':
-                    if ($a['raw_xp'] == $b['raw_xp']) {
-                        return $collator->compare($a['sort_name'], $b['sort_name']);
-                    }
-                    return $a['raw_xp'] <=> $b['raw_xp'];
 
                 case 'count_desc':
                     if ($a['count'] == $b['count']) {
@@ -280,11 +272,7 @@ class tab_collection implements renderable, templatable {
                     }
                     return $a['count'] <=> $b['count'];
 
-                case 'recent':
-                    return $b['timestamp'] <=> $a['timestamp'];
-
                 case 'acquired':
-                    // Those who have (count > 0) come first.
                     $hasa = ($a['count'] > 0) ? 1 : 0;
                     $hasb = ($b['count'] > 0) ? 1 : 0;
                     if ($hasa == $hasb) {
@@ -293,7 +281,6 @@ class tab_collection implements renderable, templatable {
                     return $hasb <=> $hasa;
 
                 case 'missing':
-                    // Those who don't have (count == 0) come first.
                     $hasa = ($a['count'] > 0) ? 1 : 0;
                     $hasb = ($b['count'] > 0) ? 1 : 0;
                     if ($hasa == $hasb) {
@@ -301,26 +288,25 @@ class tab_collection implements renderable, templatable {
                     }
                     return $hasa <=> $hasb;
 
+                case 'recent':
                 default:
-                    // Default: XP Ascending.
-                    return $a['raw_xp'] <=> $b['raw_xp'];
+                    // Default: Recent.
+                    return $b['timestamp'] <=> $a['timestamp'];
             }
         });
 
-        // 4. Prepare Filter Dropdown Data.
+        // 4. Prepare Filter Dropdown Data (Sem opções de XP).
         $url = new moodle_url($PAGE->url);
         $url->param('tab', 'collection');
 
         $options = [
-            'xp_asc'     => get_string('sort_xp_asc', 'block_playerhud'),
-            'xp_desc'    => get_string('sort_xp_desc', 'block_playerhud'),
-            'name_asc'   => get_string('sort_name_asc', 'block_playerhud'),
-            'name_desc'  => get_string('sort_name_desc', 'block_playerhud'),
-            'count_desc' => get_string('sort_count_desc', 'block_playerhud'),
-            'count_asc'  => get_string('sort_count_asc', 'block_playerhud'),
             'recent'     => get_string('sort_recent', 'block_playerhud'),
             'acquired'   => get_string('sort_acquired', 'block_playerhud'),
             'missing'    => get_string('sort_missing', 'block_playerhud'),
+            'count_desc' => get_string('sort_count_desc', 'block_playerhud'),
+            'count_asc'  => get_string('sort_count_asc', 'block_playerhud'),
+            'name_asc'   => get_string('sort_name_asc', 'block_playerhud'),
+            'name_desc'  => get_string('sort_name_desc', 'block_playerhud'),
         ];
 
         $sortoptions = [];

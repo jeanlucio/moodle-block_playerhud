@@ -55,9 +55,8 @@ class tab_trades implements renderable, templatable {
      * @return array Data for the template.
      */
     public function export_for_template($output) {
-        global $CFG;
+        global $CFG, $PAGE;
         require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
-
         $context = \context_block::instance($this->instanceid);
         $trades = \block_playerhud\game::get_full_trades($this->instanceid);
         $tradesdata = [];
@@ -100,7 +99,6 @@ class tab_trades implements renderable, templatable {
                     'instanceid' => $this->instanceid,
                     'tradeid' => $trade->id,
                 ]);
-
                 $delurl = new moodle_url('/blocks/playerhud/manage.php', [
                     'id' => $this->courseid,
                     'instanceid' => $this->instanceid,
@@ -109,13 +107,13 @@ class tab_trades implements renderable, templatable {
                     'sesskey' => sesskey(),
                 ]);
 
-                // Prepare Safe Delete Message.
                 $msgraw = get_string('deletecheck', 'moodle', format_string($trade->name));
 
                 $tradesdata[] = [
                     'id' => $trade->id,
                     'name' => format_string($trade->name),
                     'is_centralized' => ($trade->centralized == 1),
+                    'is_onetime' => ($trade->onetime == 1),
                     'shortcode' => "[PLAYERHUD_TRADE id={$trade->id}]",
                     'url_edit' => $editurl->out(false),
                     'url_delete' => $delurl->out(false),
@@ -126,11 +124,22 @@ class tab_trades implements renderable, templatable {
             }
         }
 
-        // 4. Global UI Data.
+        // 4. Global UI Data & JS Injection.
         $addurl = new moodle_url('/blocks/playerhud/edit_trade.php', [
             'courseid' => $this->courseid,
             'instanceid' => $this->instanceid,
         ]);
+
+        $stronetime = str_replace('?', '', get_string('one_time_trade', 'block_playerhud'));
+
+        $jsvars = [
+            'strings' => [
+                'confirm_title' => get_string('confirmation', 'admin'),
+                'yes' => get_string('yes'),
+                'cancel' => get_string('cancel'),
+            ],
+        ];
+        $PAGE->requires->js_call_amd('block_playerhud/manage_trades', 'init', [$jsvars]);
 
         return [
             'has_trades' => !empty($tradesdata),
@@ -140,6 +149,7 @@ class tab_trades implements renderable, templatable {
             'str_add' => get_string('add_trade', 'block_playerhud'),
             'str_shop' => get_string('tab_shop', 'block_playerhud'),
             'str_hidden' => get_string('hidden', 'block_playerhud'),
+            'str_onetime' => $stronetime,
             'str_pay' => get_string('shop_pay', 'block_playerhud'),
             'str_receive' => get_string('shop_receive', 'block_playerhud'),
             'str_copy' => get_string('gen_copy', 'block_playerhud'),

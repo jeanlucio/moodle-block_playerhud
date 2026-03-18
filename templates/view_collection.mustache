@@ -25,7 +25,7 @@
         "has_items": true,
         "show_filter": true,
         "sort_options": [
-            { "value": "#", "label": "XP (Low to High)", "selected": true }
+            { "value": "#", "label": "Recent", "selected": true }
         ],
         "items": [
             {
@@ -33,8 +33,7 @@
                 "tabindex": "0",
                 "id": 1,
                 "name": "Sword",
-                "xp_text": "100 XP",
-                "count": 1,
+                "count": 5,
                 "badge_new": true,
                 "is_image": false,
                 "image_content": "⚔️",
@@ -65,12 +64,11 @@
 
 <div class="playerhud-inventory-grid animate__animated animate__fadeIn">
     {{#items}}
-    <div class="playerhud-item-card card {{card_class}} ph-item-trigger ph-cursor-pointer h-100"
+    <div class="playerhud-item-card card {{card_class}} ph-item-trigger ph-cursor-pointer h-100 position-relative"
          role="button"
          tabindex="{{tabindex}}"
          data-id="{{id}}"
          data-name="{{name}}"
-         data-xp="{{xp_text}}"
          data-count="{{count}}"
          data-image="{{data_image_payload}}"
          data-isimage="{{is_image_bool}}"
@@ -92,23 +90,14 @@
             </span>
         {{/badge_archived}}
 
-        {{! INFINITE BADGE (Left) }}
-        {{#is_infinite_type}}
-            <div class="ph-badge-counter ph-badge-pos-left" title="{{#str}} infinite_item_title, block_playerhud {{/str}}">
-                <i class="fa fa-infinity" aria-hidden="true"></i>
-                {{#has_infinite_copies}}
-                    <span class="ph-counter-text ms-1">{{count_infinite}}</span>
-                {{/has_infinite_copies}}
-            </div>
-        {{/is_infinite_type}}
-
-        {{! FINITE BADGE (Right) }}
-        {{#has_finite_copies}}
-            <div class="ph-badge-counter ph-badge-pos-right" title="Itens Finitos">
-                <i class="fa fa-hashtag" aria-hidden="true"></i>
-                <span class="ph-counter-text ms-1">{{count_finite}}</span>
-            </div>
-        {{/has_finite_copies}}
+        {{! O CONTADOR DE ITENS NO ESTILO MODAL (Escuro com "x") }}
+        {{#count}}
+            <span class="badge bg-dark text-white rounded-pill position-absolute shadow-sm"
+                  style="top: 8px; inset-inline-end: 8px; z-index: 5; font-size: 0.85rem;"
+                  title="{{#str}} qty, block_playerhud {{/str}}">
+                x{{count}}
+            </span>
+        {{/count}}
 
         <div class="d-none ph-item-description-content">{{{description}}}</div>
 
@@ -120,24 +109,21 @@
                     <img src="{{image_url}}" class="ph-modal-img ph-card-img" alt="" aria-hidden="true">
                  {{/is_image}}
                  {{^is_image}}
-                    <div class="ph-modal-emoji ph-card-emoji" aria-hidden="true">{{{image_content}}}</div>
+                     <div class="ph-modal-emoji ph-card-emoji" aria-hidden="true">{{{image_content}}}</div>
                  {{/is_image}}
             </div>
 
-            {{! 2. Name and XP (Fixed relative top) }}
-            <div class="text-center w-100 mb-2">
+            {{! 2. Name }}
+            <div class="text-center w-100 mb-2 mt-2">
                 <div class="fw-bold ph-card-title mb-1 ph-text-md" title="{{name}}">{{name}}</div>
-                <span class="badge bg-primary text-white ph-xp-badge">{{xp_text}}</span>
             </div>
 
-            
             <div class="mt-auto w-100 text-center">
-                {{#has_origins}}
-                <div class="ph-card-origins mb-1">
-                    {{#origin_map}}<span class="me-1"><i class="fa fa-map-o text-primary" aria-hidden="true"></i> {{origin_map}}</span>{{/origin_map}}
-                    {{#origin_shop}}<span class="me-1"><i class="fa fa-shopping-cart text-success" aria-hidden="true"></i> {{origin_shop}}</span>{{/origin_shop}}
-                    {{#origin_quest}}<span class="me-1"><i class="fa fa-scroll ph-text-gold" aria-hidden="true"></i> {{origin_quest}}</span>{{/origin_quest}}
-                    {{#origin_legacy}}<span><i class="fa fa-star text-warning" aria-hidden="true"></i> {{origin_legacy}}</span>{{/origin_legacy}}
+                 {{#has_origins}}
+                <div class="ph-card-origins mb-1 mt-2">
+                    {{#origin_map}}<span class="me-1" title="{{#str}} legend_origins, block_playerhud {{/str}}"><i class="fa fa-map-o text-primary" aria-hidden="true"></i> {{origin_map}}</span>{{/origin_map}}
+                    {{#origin_shop}}<span class="me-1" title="{{#str}} tab_shop, block_playerhud {{/str}}"><i class="fa fa-shopping-cart text-success" aria-hidden="true"></i> {{origin_shop}}</span>{{/origin_shop}}
+                    {{#origin_legacy}}<span title="Outros"><i class="fa fa-star text-warning" aria-hidden="true"></i> {{origin_legacy}}</span>{{/origin_legacy}}
                 </div>
                 {{/has_origins}}
 
@@ -147,12 +133,12 @@
     </div>
     {{/items}}
 </div>
-{{! Legend }}
+
+{{! LEGENDA SIMPLIFICADA (Focada nas Origens do Mapa e Loja) }}
 <div class="mt-4 pt-3 border-top d-flex flex-wrap justify-content-center small text-muted align-items-center">
     <span class="fw-bold text-dark mx-3 my-1"><i class="fa fa-info-circle me-1" aria-hidden="true"></i>{{#str}} legend, block_playerhud {{/str}}</span>
-    <span class="mx-3 my-1"><i class="fa fa-infinity text-info me-1" aria-hidden="true"></i>{{#str}} legend_infinite, block_playerhud {{/str}}</span>
-    <span class="mx-3 my-1"><i class="fa fa-hashtag text-dark me-1" aria-hidden="true"></i>{{#str}} legend_finite, block_playerhud {{/str}}</span>
-    <span class="mx-3 my-1"><i class="fa fa-map-o text-primary me-1" aria-hidden="true"></i>{{#str}} legend_origins, block_playerhud {{/str}}</span>
+    <span class="mx-3 my-1"><i class="fa fa-map-o text-primary me-1" aria-hidden="true"></i> {{#str}} legend_origins, block_playerhud {{/str}}</span>
+    <span class="mx-3 my-1"><i class="fa fa-shopping-cart text-success me-1" aria-hidden="true"></i> {{#str}} tab_shop, block_playerhud {{/str}}</span>
 </div>
 {{/has_items}}
 

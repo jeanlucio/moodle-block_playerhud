@@ -47,7 +47,7 @@
         ]
     }
 }}
-<div class="container-fluid p-0 animate__animated animate__fadeIn">
+<div class="block_playerhud container-fluid p-0 animate__animated animate__fadeIn">
 
     <div class="alert alert-info border-0 shadow-sm mb-4 d-flex align-items-center">
         <i class="fa fa-info-circle me-2" aria-hidden="true"></i>
@@ -57,65 +57,81 @@
     <div class="row">
         {{#has_trades}}
             {{#trades}}
-            <div class="col-lg-6 col-12 mb-4">
-                <div class="ph-trade-card h-100 d-flex flex-column border rounded shadow-sm bg-white">
-                    <div class="ph-trade-body flex-grow-1 p-3">
-
-                        <div class="ph-trade-section ph-trade-req mb-3">
-                            <small class="text-uppercase text-muted fw-bold mb-2 d-block ph-text-xs">
-                                {{str_pay}}
-                            </small>
-                            {{#requirements}}
-                            <div class="d-flex align-items-center mb-1">
-                                <div class="me-2 text-center" style="width: 30px;">
-                                    {{#is_image}}
-                                        <img src="{{image_url}}" alt="" class="ph-img-sm">
-                                    {{/is_image}}
-                                    {{^is_image}}
-                                        <span class="fs-4 lh-1" aria-hidden="true">{{image_content}}</span>
-                                    {{/is_image}}
-                                </div>
-                                <div class="text-muted small">{{qty}}x {{name}}</div>
-                            </div>
-                            {{/requirements}}
-                        </div>
-
-                        <div class="ph-trade-arrow text-center text-muted mb-3 opacity-50">
-                            <i class="fa fa-arrow-down" aria-hidden="true"></i>
-                        </div>
-
-                        <div class="ph-trade-section ph-trade-give">
-                            <small class="text-uppercase text-muted fw-bold mb-2 d-block ph-text-xs">
-                                {{str_receive}}
-                            </small>
-                            {{#rewards}}
-                            <div class="d-flex align-items-center mb-1 text-dark">
-                                <div class="me-2 text-center" style="width: 30px;">
-                                    {{#is_image}}
-                                        <img src="{{image_url}}" alt="" class="ph-img-sm">
-                                    {{/is_image}}
-                                    {{^is_image}}
-                                        <span class="fs-4 lh-1" aria-hidden="true">{{image_content}}</span>
-                                    {{/is_image}}
-                                </div>
-                                <div class="fw-bold small">{{qty}}x {{name}}</div>
-                            </div>
-                            {{/rewards}}
-                        </div>
-
+            <div class="col-lg-6 col-12 mb-4 d-flex justify-content-center">
+                <div class="card ph-trade-widget-card shadow-sm h-100 w-100">
+                    <div class="card-header bg-light border-bottom text-center py-2">
+                        <h6 class="mb-0 fw-bold text-dark">
+                            <i class="fa fa-balance-scale me-1 text-primary" aria-hidden="true"></i> {{name}}
+                        </h6>
                     </div>
+                    <div class="card-body p-3 d-flex flex-column">
 
-                    <div class="card-footer bg-white border-top-0 pt-0 text-center pb-3">
-                        {{#is_completed}}
-                            <button class="btn btn-secondary w-100 fw-bold" disabled>
-                                <i class="fa fa-check me-1" aria-hidden="true"></i> {{str_redeemed}}
-                            </button>
-                        {{/is_completed}}
-                        {{^is_completed}}
-                            <a href="{{action_url}}" class="btn btn-success w-100 shadow-sm fw-bold">
-                                <i class="fa fa-exchange me-1" aria-hidden="true"></i> {{str_perform}}
-                            </a>
-                        {{/is_completed}}
+                        <div class="row align-items-center flex-grow-1">
+                            <div class="col-5 text-center px-1">
+                                <div class="text-danger small fw-bold text-uppercase mb-2 ph-trade-label">
+                                    <i class="fa fa-minus-circle me-1" aria-hidden="true"></i>{{str_pay}}
+                                </div>
+                                <div class="d-flex flex-column gap-2 align-items-center">
+                                    {{#requirements}}
+                                    <div class="badge bg-white text-dark border d-flex align-items-center p-1 pe-2 shadow-sm w-100 text-start" title="{{name}}">
+                                        <div class="me-2 flex-shrink-0 ph-trade-item-icon rounded-2">
+                                            {{#is_image}}
+                                                <img src="{{image_url}}" alt="" class="img-fluid w-100 h-100 object-fit-contain rounded-2">
+                                            {{/is_image}}
+                                            {{^is_image}}
+                                                <span class="ph-emoji-sm" aria-hidden="true">{{image_content}}</span>
+                                            {{/is_image}}
+                                        </div>
+                                        <div class="text-truncate ph-min-w-0">
+                                            <span class="fw-bold fs-6">{{qty}}x</span>
+                                            <span class="fw-normal">{{name}}</span>
+                                        </div>
+                                    </div>
+                                    {{/requirements}}
+                                </div>
+                            </div>
+
+                            <div class="col-2 text-center text-muted px-0">
+                                <i class="fa fa-arrow-right fs-5" aria-hidden="true"></i>
+                            </div>
+
+                            <div class="col-5 text-center px-1">
+                                <div class="text-success small fw-bold text-uppercase mb-2 ph-trade-label">
+                                    <i class="fa fa-plus-circle me-1" aria-hidden="true"></i>{{str_receive}}
+                                </div>
+                                <div class="d-flex flex-column gap-2 align-items-center">
+                                    {{#rewards}}
+                                    <div class="badge bg-white text-dark border border-success d-flex align-items-center p-1 pe-2 shadow-sm w-100 text-start" title="{{name}}">
+                                        <div class="me-2 flex-shrink-0 ph-trade-item-icon success-bg rounded-2">
+                                            {{#is_image}}
+                                                <img src="{{image_url}}" alt="" class="img-fluid w-100 h-100 object-fit-contain rounded-2">
+                                            {{/is_image}}
+                                            {{^is_image}}
+                                                <span class="ph-emoji-sm" aria-hidden="true">{{image_content}}</span>
+                                            {{/is_image}}
+                                        </div>
+                                        <div class="text-truncate ph-min-w-0">
+                                            <span class="fw-bold fs-6">{{qty}}x</span>
+                                            <span class="fw-normal">{{name}}</span>
+                                        </div>
+                                    </div>
+                                    {{/rewards}}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-3 pt-3 border-top">
+                            {{#is_completed}}
+                                <button class="btn btn-secondary w-100 fw-bold shadow-sm rounded-3" disabled>
+                                    <i class="fa fa-check me-1" aria-hidden="true"></i> {{str_redeemed}}
+                                </button>
+                            {{/is_completed}}
+                            {{^is_completed}}
+                                <a href="{{action_url}}" class="btn btn-success w-100 fw-bold shadow-sm rounded-3">
+                                    <i class="fa fa-exchange me-1" aria-hidden="true"></i> {{str_perform}}
+                                </a>
+                            {{/is_completed}}
+                        </div>
                     </div>
                 </div>
             </div>

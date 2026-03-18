@@ -21,39 +21,6 @@
     @package    block_playerhud
     @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
     @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-
-    Example context (json):
-    {
-        "str_title": "Trades (NPC)",
-        "url_add": "#",
-        "str_add": "New Trade",
-        "has_trades": true,
-        "str_shop": "Shop",
-        "str_hidden": "Hidden",
-        "str_edit": "Edit",
-        "str_delete": "Delete",
-        "str_pay": "Student pays",
-        "str_receive": "Student receives",
-        "str_copy": "Copy",
-        "str_empty": "No trades available.",
-        "trades": [
-            {
-                "id": 1,
-                "name": "Trade 1",
-                "is_centralized": true,
-                "shortcode": "[PLAYERHUD_TRADE id=1]",
-                "url_edit": "#",
-                "url_delete": "#",
-                "confirm_msg": "Are you sure?",
-                "requirements": [
-                    { "qty": 3, "name": "Wood", "is_image": false, "image_content": "🪵" }
-                ],
-                "rewards": [
-                    { "qty": 1, "name": "Sword", "is_image": false, "image_content": "🗡️" }
-                ]
-            }
-        ]
-    }
 }}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="h5 text-muted m-0 fw-bold">{{str_title}}</h3>
@@ -65,74 +32,93 @@
 <div class="row">
     {{#has_trades}}
         {{#trades}}
-        <div class="col-lg-6 col-12 mb-4">
-            <div class="card h-100 shadow-sm border-0">
+        <div class="col-lg-6 col-12 mb-4 d-flex justify-content-center">
+            <div class="card ph-trade-widget-card shadow-sm h-100 w-100">
 
                 {{! TRADE HEADER }}
-                <div class="card-header bg-light d-flex justify-content-between align-items-center border-bottom">
-                    <div>
+                <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center border-bottom py-2">
+                    <div class="d-flex align-items-center mb-2 mb-md-0">
                         {{#is_centralized}}
-                            <span class="badge bg-info text-dark shadow-sm">{{str_shop}}</span>
+                            <span class="badge bg-primary text-white shadow-sm">{{str_shop}}</span>
                         {{/is_centralized}}
                         {{^is_centralized}}
-                            <span class="badge bg-secondary shadow-sm">{{str_hidden}}</span>
+                            <span class="badge bg-secondary text-white shadow-sm">{{str_hidden}}</span>
                         {{/is_centralized}}
+                        {{#is_onetime}}
+                            <span class="badge bg-warning text-dark shadow-sm ms-1"><i class="fa fa-asterisk" aria-hidden="true"></i> {{str_onetime}}</span>
+                        {{/is_onetime}}
                         <span class="fw-bold ms-2 text-dark">{{name}}</span>
                     </div>
-                    <div>
+                    <div class="d-flex gap-1">
                         <a href="{{url_edit}}" class="btn btn-sm btn-primary shadow-sm" aria-label="{{str_edit}}">
-                            <i class="fa fa-pencil" aria-hidden="true"></i>
+                            <i class="fa fa-pencil" aria-hidden="true"></i> <span class="d-none d-xl-inline ms-1">{{str_edit}}</span>
                         </a>
                         <a href="{{url_delete}}" class="btn btn-sm btn-danger shadow-sm js-delete-btn"
                            data-confirm-msg="{{confirm_msg}}" aria-label="{{str_delete}}">
-                            <i class="fa fa-trash" aria-hidden="true"></i>
+                            <i class="fa fa-trash" aria-hidden="true"></i> <span class="d-none d-xl-inline ms-1">{{str_delete}}</span>
                         </a>
                     </div>
                 </div>
 
-                {{! TRADE BODY }}
-                <div class="card-body">
-                    <div class="mb-3">
-                        <small class="text-uppercase text-danger fw-bold d-block mb-2 ph-text-xs">{{str_pay}}</small>
-                        {{#requirements}}
-                            <div class="d-flex align-items-center mb-1 text-muted small">
-                                <div class="me-2">
-                                    {{#is_image}}
-                                        <img src="{{image_url}}" alt="" class="ph-img-xs">
-                                    {{/is_image}}
-                                    {{^is_image}}
-                                        <span class="fs-5 lh-1" aria-hidden="true">{{image_content}}</span>
-                                    {{/is_image}}
-                                </div>
-                                <div>{{qty}}x {{name}}</div>
+                {{! TRADE BODY (Idêntico ao do aluno) }}
+                <div class="card-body p-3 d-flex flex-column">
+                    <div class="row align-items-center flex-grow-1">
+                        <div class="col-5 text-center px-1">
+                            <div class="text-danger small fw-bold text-uppercase mb-2 ph-trade-label">
+                                <i class="fa fa-minus-circle me-1" aria-hidden="true"></i>{{str_pay}}
                             </div>
-                        {{/requirements}}
-                    </div>
-
-                    <div class="text-center text-muted mb-3 opacity-50">
-                        <i class="fa fa-arrow-down" aria-hidden="true"></i>
-                    </div>
-
-                    <div>
-                        <small class="text-uppercase text-success fw-bold d-block mb-2 ph-text-xs">{{str_receive}}</small>
-                        {{#rewards}}
-                            <div class="d-flex align-items-center mb-1 text-dark fw-bold small">
-                                <div class="me-2">
-                                    {{#is_image}}
-                                        <img src="{{image_url}}" alt="" class="ph-img-xs">
-                                    {{/is_image}}
-                                    {{^is_image}}
-                                        <span class="fs-5 lh-1" aria-hidden="true">{{image_content}}</span>
-                                    {{/is_image}}
+                            <div class="d-flex flex-column gap-2 align-items-center">
+                                {{#requirements}}
+                                <div class="badge bg-white text-dark border d-flex align-items-center p-1 pe-2 shadow-sm w-100 text-start" title="{{name}}">
+                                    <div class="me-2 flex-shrink-0 bg-light border rounded ph-trade-icon-box">
+                                        {{#is_image}}
+                                            <img src="{{image_url}}" alt="" class="ph-img-sm">
+                                        {{/is_image}}
+                                        {{^is_image}}
+                                            <span class="ph-emoji-sm" aria-hidden="true">{{image_content}}</span>
+                                        {{/is_image}}
+                                    </div>
+                                    <div class="text-truncate ph-min-w-0">
+                                        <span class="fw-bold fs-6">{{qty}}x</span>
+                                        <span class="fw-normal">{{name}}</span>
+                                    </div>
                                 </div>
-                                <div>{{qty}}x {{name}}</div>
+                                {{/requirements}}
                             </div>
-                        {{/rewards}}
+                        </div>
+
+                        <div class="col-2 text-center text-muted px-0">
+                            <i class="fa fa-arrow-right fs-5" aria-hidden="true"></i>
+                        </div>
+
+                        <div class="col-5 text-center px-1">
+                            <div class="text-success small fw-bold text-uppercase mb-2 ph-trade-label">
+                                <i class="fa fa-plus-circle me-1" aria-hidden="true"></i>{{str_receive}}
+                            </div>
+                            <div class="d-flex flex-column gap-2 align-items-center">
+                                {{#rewards}}
+                                <div class="badge bg-white text-dark border border-success d-flex align-items-center p-1 pe-2 shadow-sm w-100 text-start" title="{{name}}">
+                                    <div class="me-2 flex-shrink-0 bg-success bg-opacity-10 border border-success rounded ph-trade-icon-box">
+                                        {{#is_image}}
+                                            <img src="{{image_url}}" alt="" class="ph-img-sm">
+                                        {{/is_image}}
+                                        {{^is_image}}
+                                            <span class="ph-emoji-sm" aria-hidden="true">{{image_content}}</span>
+                                        {{/is_image}}
+                                    </div>
+                                    <div class="text-truncate ph-min-w-0">
+                                        <span class="fw-bold fs-6">{{qty}}x</span>
+                                        <span class="fw-normal">{{name}}</span>
+                                    </div>
+                                </div>
+                                {{/rewards}}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {{! FOOTER (SHORTCODE) }}
-                <div class="card-footer bg-light border-top">
+                <div class="card-footer bg-light border-top p-2">
                     <div class="input-group input-group-sm">
                         <input type="text" class="form-control font-monospace text-center text-muted bg-white border-end-0"
                                value="{{shortcode}}" readonly id="code_{{id}}">
@@ -156,6 +142,3 @@
         </div>
     {{/has_trades}}
 </div>
-{{#js}}
-require(['core/copy_to_clipboard']);
-{{/js}}

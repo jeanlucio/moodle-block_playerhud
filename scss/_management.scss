@@ -165,9 +165,11 @@
 
     // Trade Widget (Filter).
     .ph-trade-widget-card {
-        max-width: 480px;
+        width: 100%;
+        max-width: 360px;
         border-radius: 12px;
         border: 2px solid var(--border-color, var(--bs-gray-200, #e9ecef));
+        cursor: default;
 
         .card-header {
             border-top-left-radius: 10px;
@@ -182,20 +184,26 @@
     .ph-trade-item-icon {
         width: 28px;
         height: 28px;
+        min-width: 28px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         background-color: var(--bs-gray-100, #f8f9fa);
         border-radius: 4px;
+        overflow: hidden;
 
         &.success-bg {
             background-color: var(--bs-success-bg-subtle, #e8f5e9);
         }
 
         img {
+            width: 100%;
+            height: 100%;
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+            display: block;
+
         }
 
         .ph-emoji-sm {
@@ -207,4 +215,12 @@
     .ph-min-w-0 {
         min-width: 0;
     }
+}
+.ph-trade-icon-box {
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }

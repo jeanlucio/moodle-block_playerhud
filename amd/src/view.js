@@ -86,7 +86,6 @@ define(['jquery', 'core/notification'], function($, Notification) {
 
                 // Extract data.
                 const name = trigger.attr('data-name');
-                const xp = trigger.attr('data-xp');
                 const img = trigger.attr('data-image');
                 const isImg = trigger.attr('data-isimage'); // String "1" or "0".
                 const date = trigger.attr('data-date'); // Fallback (PHP Text).
@@ -96,7 +95,6 @@ define(['jquery', 'core/notification'], function($, Notification) {
 
                 // Populate Modal.
                 $('#phModalTitleView, #phModalNameView').text(name);
-                $('#phModalXPView').text(xp);
 
                 const descEl = $('#phModalDescView');
                 if (desc && desc.trim() !== '') {

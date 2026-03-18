@@ -84,9 +84,11 @@ class tab_shop implements renderable, templatable {
         $trades = \block_playerhud\game::get_full_trades($this->instanceid);
         $tradesdata = [];
 
-        $completedtrades = $DB->get_records_menu('block_playerhud_trade_log', [
-            'userid' => $this->player->userid,
-        ], '', 'tradeid, id');
+        // Fetch completed trades (Distinct to avoid Moodle debugging warning on duplicates).
+        $sql = "SELECT DISTINCT tradeid, 1 as completed
+                  FROM {block_playerhud_trade_log}
+                 WHERE userid = :userid";
+        $completedtrades = $DB->get_records_sql_menu($sql, ['userid' => $this->player->userid]);
 
         if ($trades) {
             foreach ($trades as $trade) {
