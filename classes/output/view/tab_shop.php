@@ -90,6 +90,16 @@ class tab_shop implements renderable, templatable {
                  WHERE userid = :userid";
         $completedtrades = $DB->get_records_sql_menu($sql, ['userid' => $this->player->userid]);
 
+        // Fetch user inventory counts in a single query.
+        $sqlinv = "SELECT itemid, COUNT(id) as qty FROM {block_playerhud_inventory} WHERE userid = :userid GROUP BY itemid";
+        $myinventory = $DB->get_records_sql_menu($sqlinv, ['userid' => $this->player->userid]);
+
+        // Fetch completed trades (Distinct to avoid Moodle debugging warning on duplicates).
+        $sql = "SELECT DISTINCT tradeid, 1 as completed
+                  FROM {block_playerhud_trade_log}
+                 WHERE userid = :userid";
+        $completedtrades = $DB->get_records_sql_menu($sql, ['userid' => $this->player->userid]);
+
         if ($trades) {
             foreach ($trades as $trade) {
                 if ($trade->centralized != 1) {
@@ -147,7 +157,7 @@ class tab_shop implements renderable, templatable {
                     ];
                 }
 
-                // 7. Action URL.
+                // 7. Action URL for performing the trade.
                 $processurl = new moodle_url('/blocks/playerhud/process_trade.php', [
                     'instanceid' => $this->instanceid,
                     'courseid' => $this->courseid,
@@ -155,12 +165,24 @@ class tab_shop implements renderable, templatable {
                     'sesskey' => sesskey(),
                 ]);
 
+                // Check if user can afford this trade.
+                $canafford = true;
+                foreach ($trade->requirements as $req) {
+                    $myqty = isset($myinventory[$req->itemid]) ? $myinventory[$req->itemid] : 0;
+                    if ($myqty < $req->qty) {
+                        $canafford = false;
+                        break;
+                    }
+                }
+
+                // Compile data for this trade.
                 $tradesdata[] = [
                     'id' => $trade->id,
                     'name' => format_string($trade->name),
                     'requirements' => $reqsdata,
                     'rewards' => $rewsdata,
                     'is_completed' => $iscompleted,
+                    'can_afford' => $canafford,
                     'action_url' => $processurl->out(false),
                 ];
             }
@@ -175,6 +197,7 @@ class tab_shop implements renderable, templatable {
             'str_receive' => get_string('shop_receive', 'block_playerhud'),
             'str_redeemed' => get_string('trade_redeemed', 'block_playerhud'),
             'str_perform' => get_string('trade_perform', 'block_playerhud'),
+            'str_missing_items' => get_string('trade_missing_items', 'block_playerhud'),
             'str_empty' => get_string('shop_empty', 'block_playerhud'),
         ];
     }

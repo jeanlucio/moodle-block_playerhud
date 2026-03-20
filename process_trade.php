@@ -40,11 +40,16 @@ require_sesskey();
 $context = \context_block::instance($instanceid);
 require_capability('block/playerhud:view', $context);
 
-$returnurl = new moodle_url('/blocks/playerhud/view.php', [
-    'id' => $courseid,
-    'instanceid' => $instanceid,
-    'tab' => 'shop',
-]);
+$returnparam = optional_param('returnurl', '', PARAM_LOCALURL);
+if (!empty($returnparam)) {
+    $returnurl = new moodle_url($returnparam);
+} else {
+    $returnurl = new moodle_url('/blocks/playerhud/view.php', [
+        'id' => $courseid,
+        'instanceid' => $instanceid,
+        'tab' => 'shop',
+    ]);
+}
 
 // 2. Fetch Trade.
 $trade = $DB->get_record('block_playerhud_trades', ['id' => $tradeid, 'blockinstanceid' => $instanceid]);
