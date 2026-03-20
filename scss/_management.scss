@@ -226,3 +226,15 @@
     align-items: center;
     line-height: 1;
 }
+.block_playerhud form.mform {
+    select.ph-item-selector {
+        width: auto;
+        flex: 0 0 auto;
+    }
+
+    input.ph-input-qty {
+        width: 80px;
+        max-width: 80px;
+        flex: 0 0 80px;
+    }
+}

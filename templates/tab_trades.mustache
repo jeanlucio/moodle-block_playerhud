@@ -21,6 +21,15 @@
     @package    block_playerhud
     @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
     @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "str_title": "Configuração de Trocas",
+        "url_add": "#",
+        "str_add": "Nova Troca",
+        "has_trades": false,
+        "str_empty": "Nenhuma troca cadastrada."
+    }
 }}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="h5 text-muted m-0 fw-bold">{{str_title}}</h3>
@@ -42,10 +51,13 @@
                             <span class="badge bg-primary text-white shadow-sm">{{str_shop}}</span>
                         {{/is_centralized}}
                         {{^is_centralized}}
-                            <span class="badge bg-secondary text-white shadow-sm">{{str_hidden}}</span>
+                            <span class="badge bg-dark text-white shadow-sm">{{str_hidden}}</span>
                         {{/is_centralized}}
                         {{#is_onetime}}
-                            <span class="badge bg-warning text-dark shadow-sm ms-1"><i class="fa fa-asterisk" aria-hidden="true"></i> {{str_onetime}}</span>
+                            <span class="badge bg-warning text-dark shadow-sm ms-1">{{str_onetime}}</span>
+                        {{/is_onetime}}
+                        {{^is_onetime}}
+                            <span class="badge bg-info text-dark shadow-sm ms-1"><i class="fa fa-refresh" aria-hidden="true"></i> {{str_unlimited}}</span>
                         {{/is_onetime}}
                         <span class="fw-bold ms-2 text-dark">{{name}}</span>
                     </div>

@@ -109,12 +109,15 @@ class tab_trades implements renderable, templatable {
 
                 $msgraw = get_string('deletecheck', 'moodle', format_string($trade->name));
 
+                $secureraw = $trade->id . '_' . $trade->timecreated;
+                $securecode = strtoupper(substr(md5($secureraw), 0, 6));
+
                 $tradesdata[] = [
                     'id' => $trade->id,
                     'name' => format_string($trade->name),
                     'is_centralized' => ($trade->centralized == 1),
                     'is_onetime' => ($trade->onetime == 1),
-                    'shortcode' => "[PLAYERHUD_TRADE id={$trade->id}]",
+                    'shortcode' => "[PLAYERHUD_TRADE code={$securecode}]",
                     'url_edit' => $editurl->out(false),
                     'url_delete' => $delurl->out(false),
                     'confirm_msg' => s($msgraw),
@@ -150,6 +153,7 @@ class tab_trades implements renderable, templatable {
             'str_shop' => get_string('tab_shop', 'block_playerhud'),
             'str_hidden' => get_string('hidden', 'block_playerhud'),
             'str_onetime' => $stronetime,
+            'str_unlimited' => get_string('unlimited', 'block_playerhud'),
             'str_pay' => get_string('shop_pay', 'block_playerhud'),
             'str_receive' => get_string('shop_receive', 'block_playerhud'),
             'str_copy' => get_string('gen_copy', 'block_playerhud'),
