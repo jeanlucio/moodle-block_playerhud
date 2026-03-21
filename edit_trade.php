@@ -144,30 +144,47 @@ if ($mform->is_cancelled()) {
         $currenttradeid = $DB->insert_record('block_playerhud_trades', $record);
     }
 
-    // Save Requirements.
+    // Save Requirements (Student Pays).
+    $reqstoinsert = [];
+
     for ($i = 0; $i < $data->repeats_req; $i++) {
         $itemfield = "req_itemid_$i";
         $qtyfield = "req_qty_$i";
+
         if (!empty($data->$itemfield) && $data->$itemfield > 0) {
             $req = new \stdClass();
             $req->tradeid = $currenttradeid;
             $req->itemid = $data->$itemfield;
             $req->qty = max(1, (int)$data->$qtyfield);
-            $DB->insert_record('block_playerhud_trade_reqs', $req);
+
+            $reqstoinsert[] = $req;
         }
     }
 
-    // Save Rewards.
+    if (!empty($reqstoinsert)) {
+        $DB->insert_records('block_playerhud_trade_reqs', $reqstoinsert);
+    }
+
+
+    // Save Rewards (Student Receives).
+    $rewardstoinsert = [];
+
     for ($i = 0; $i < $data->repeats_give; $i++) {
         $itemfield = "give_itemid_$i";
         $qtyfield = "give_qty_$i";
+
         if (!empty($data->$itemfield) && $data->$itemfield > 0) {
             $rew = new \stdClass();
             $rew->tradeid = $currenttradeid;
             $rew->itemid = $data->$itemfield;
             $rew->qty = max(1, (int)$data->$qtyfield);
-            $DB->insert_record('block_playerhud_trade_rewards', $rew);
+
+            $rewardstoinsert[] = $rew;
         }
+    }
+
+    if (!empty($rewardstoinsert)) {
+        $DB->insert_records('block_playerhud_trade_rewards', $rewardstoinsert);
     }
 
     $transaction->allow_commit();

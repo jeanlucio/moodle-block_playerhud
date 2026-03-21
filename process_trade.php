@@ -196,6 +196,8 @@ try {
 
     // Give Reward Items.
     $rewardsnames = [];
+    $newinventories = [];
+
     if ($rewards) {
         $now = time();
         foreach ($rewards as $rew) {
@@ -211,10 +213,15 @@ try {
                 $newinv->dropid = 0;
                 $newinv->source = 'shop';
                 $newinv->timecreated = $now;
-                $DB->insert_record('block_playerhud_inventory', $newinv);
+
+                $newinventories[] = $newinv;
             }
             $rewardsnames[] = "{$rew->qty}x " . format_string($rewarditem->name);
         }
+    }
+
+    if (!empty($newinventories)) {
+        $DB->insert_records('block_playerhud_inventory', $newinventories);
     }
 
     // Record Log.

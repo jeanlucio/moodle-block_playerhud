@@ -106,11 +106,18 @@ class drops {
         if ($action === 'bulk_delete' && confirm_sesskey()) {
             $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
             if (!empty($bulkids)) {
-                $count = 0;
-                foreach ($bulkids as $did) {
-                    $DB->delete_records('block_playerhud_drops', ['id' => $did, 'itemid' => $itemid]);
-                    $count++;
-                }
+                [$insql, $inparams] = $DB->get_in_or_equal($bulkids, SQL_PARAMS_NAMED, 'did');
+
+                $params = array_merge($inparams, ['itemid' => $itemid]);
+
+                $DB->delete_records_select(
+                    'block_playerhud_drops',
+                    "id $insql AND itemid = :itemid",
+                    $params
+                );
+
+                $count = count($bulkids);
+
                 redirect(
                     $baseurl,
                     get_string('deleted_bulk', 'block_playerhud', $count),

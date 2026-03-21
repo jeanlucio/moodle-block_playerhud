@@ -257,6 +257,17 @@ class tab_items implements renderable {
         if ($items) {
             require_once($GLOBALS['CFG']->dirroot . '/blocks/playerhud/lib.php');
 
+            $dropscounts = [];
+            $itemids = array_keys($items);
+            if (!empty($itemids)) {
+                [$insql, $inparams] = $DB->get_in_or_equal($itemids);
+                $sql = "SELECT itemid, COUNT(id) as count
+                          FROM {block_playerhud_drops}
+                         WHERE itemid $insql
+                      GROUP BY itemid";
+                $dropscounts = $DB->get_records_sql_menu($sql, $inparams);
+            }
+
             foreach ($items as $item) {
                 $mediadata = \block_playerhud\utils::get_item_display_data($item, $context);
 
@@ -268,7 +279,7 @@ class tab_items implements renderable {
                                         strip_tags($mediadata['content'])) . '" ' .
                                  'data-isimage="' . ($mediadata['is_image'] ? 1 : 0) . '"';
 
-                $dropscount = $DB->count_records('block_playerhud_drops', ['itemid' => $item->id]);
+                $dropscount = isset($dropscounts[$item->id]) ? $dropscounts[$item->id] : 0;
 
                 $itemsdata[] = [
                     'id' => $item->id,
