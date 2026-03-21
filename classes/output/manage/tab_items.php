@@ -268,8 +268,11 @@ class tab_items implements renderable {
                 $dropscounts = $DB->get_records_sql_menu($sql, $inparams);
             }
 
+            // Bulk load media.
+            $allmedia = \block_playerhud\utils::get_items_display_data($items, $context);
+
             foreach ($items as $item) {
-                $mediadata = \block_playerhud\utils::get_item_display_data($item, $context);
+                $mediadata = $allmedia[$item->id];
 
                 // Preview attributes for JS.
                 $previewattrs = 'data-name="' . s($item->name) . '" ' .

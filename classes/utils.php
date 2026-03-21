@@ -33,65 +33,89 @@ namespace block_playerhud;
  */
 class utils {
     /**
-     * Returns the correct URL for the item image or formatted HTML for emojis.
+     * Retrieves display data for an array of items in bulk to avoid N+1 queries.
      *
-     * Priority:
-     * 1. File uploaded via File API.
-     * 2. External URL (if starts with http).
-     * 3. Emoji/Text (returns null in URL and content wrapped in aria-hidden).
+     * @param array $items Array of item objects (must have ->id and ->image).
+     * @param \context $context The block context.
+     * @return array Array of display data keyed by item ID.
+     */
+    public static function get_items_display_data(array $items, \context $context): array {
+        $results = [];
+        if (empty($items)) {
+            return $results;
+        }
+
+        $fs = get_file_storage();
+
+        // Bulk fetch all files for this block instance's item_image area.
+        // Passing false to itemid forces Moodle to retrieve all items in this area.
+        $allfiles = $fs->get_area_files(
+            $context->id,
+            'block_playerhud',
+            'item_image',
+            false,
+            'itemid, sortorder DESC, id DESC',
+            false
+        );
+
+        // Group files by itemid in memory.
+        $filesbyitem = [];
+        foreach ($allfiles as $f) {
+            if ($f->get_filesize() > 0) {
+                if (!isset($filesbyitem[$f->get_itemid()])) {
+                    $filesbyitem[$f->get_itemid()] = $f;
+                }
+            }
+        }
+
+        // Process each item using the in-memory map.
+        foreach ($items as $item) {
+            $itemid = $item->id;
+            if (isset($filesbyitem[$itemid])) {
+                $f = $filesbyitem[$itemid];
+                $url = \moodle_url::make_pluginfile_url(
+                    $context->id,
+                    'block_playerhud',
+                    'item_image',
+                    $itemid,
+                    $f->get_filepath(),
+                    $f->get_filename()
+                )->out();
+
+                $results[$itemid] = [
+                    'url' => $url,
+                    'is_image' => true,
+                    'content' => $url,
+                ];
+            } else if (strpos($item->image, 'http') === 0) {
+                $results[$itemid] = [
+                    'url' => $item->image,
+                    'is_image' => true,
+                    'content' => $item->image,
+                ];
+            } else {
+                $results[$itemid] = [
+                    'url' => null,
+                    'is_image' => false,
+                    'content' => $item->image,
+                ];
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Returns the correct URL for the item image or formatted HTML for emojis.
+     * Refactored to act as a wrapper for the bulk method.
      *
      * @param \stdClass $item The item object from DB.
      * @param \context $context The block context.
      * @return array Data array ['url', 'is_image', 'content'].
      */
     public static function get_item_display_data($item, $context) {
-        // 1. Try to fetch uploaded image (File API).
-        $fs = get_file_storage();
-
-        // Fetch files from 'item_image' area.
-        // Component changed from mod_playerhud to block_playerhud.
-        $files = $fs->get_area_files($context->id, 'block_playerhud', 'item_image', $item->id, 'sortorder', false);
-
-        $uploadedfile = null;
-        foreach ($files as $f) {
-            if (!$f->is_directory() && $f->get_filesize() > 0) {
-                $uploadedfile = $f;
-                break;
-            }
-        }
-
-        if ($uploadedfile) {
-            $url = \moodle_url::make_pluginfile_url(
-                $context->id,
-                'block_playerhud',
-                'item_image',
-                $item->id,
-                $uploadedfile->get_filepath(),
-                $uploadedfile->get_filename()
-            )->out();
-
-            return [
-                'url' => $url,
-                'is_image' => true,
-                'content' => $url,
-            ];
-        }
-
-        // 2. If no upload, check text field for External URL.
-        if (strpos($item->image, 'http') === 0) {
-            return [
-                'url' => $item->image,
-                'is_image' => true,
-                'content' => $item->image,
-            ];
-        } else {
-            // 3. If not a link, it is an Emoji or Text.
-            return [
-                'url' => null,
-                'is_image' => false,
-                'content' => $item->image,
-            ];
-        }
+        $results = self::get_items_display_data([$item->id => $item], $context);
+        return $results[$item->id];
     }
 
     /**

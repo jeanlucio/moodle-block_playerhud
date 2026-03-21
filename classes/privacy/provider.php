@@ -140,25 +140,96 @@ class provider implements
 
     /**
      * Export all user data for the specified approved contextlist.
+     * Refactored to avoid N+1 queries.
      *
      * @param approved_contextlist $contextlist The approved contextlist.
      */
     public static function export_user_data(approved_contextlist $contextlist) {
         global $DB;
 
-        $contexts = $contextlist->get_contexts();
         $userid = $contextlist->get_userid();
+        $contexts = $contextlist->get_contexts();
 
+        $instanceids = [];
+        $validcontexts = [];
+
+        // 1. Gather all block instance IDs from the contexts.
         foreach ($contexts as $context) {
-            if ($context->contextlevel != CONTEXT_BLOCK) {
-                continue;
+            if ($context->contextlevel == CONTEXT_BLOCK) {
+                $instanceids[] = $context->instanceid;
+                $validcontexts[] = $context;
             }
+        }
 
-            $instanceid = $context->instanceid;
+        if (empty($instanceids)) {
+            return;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($instanceids, SQL_PARAMS_NAMED, 'inst');
+        $params = array_merge(['userid' => $userid], $inparams);
+
+        // 2. Bulk fetch Player Profiles.
+        $players = $DB->get_records_select(
+            'block_playerhud_user',
+            "userid = :userid AND blockinstanceid $insql",
+            $params,
+            '',
+            'blockinstanceid, currentxp, enable_gamification, timecreated'
+        );
+
+        // 3. Bulk fetch RPG Progress.
+        $rpgs = $DB->get_records_select(
+            'block_playerhud_rpg_progress',
+            "userid = :userid AND blockinstanceid $insql",
+            $params,
+            '',
+            'blockinstanceid, classid, karma, current_nodes, completed_chapters'
+        );
+
+        // 4. Bulk fetch Inventory.
+        $sqlinv = "SELECT inv.id, it.blockinstanceid, inv.itemid, inv.timecreated
+                     FROM {block_playerhud_inventory} inv
+                     JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                    WHERE inv.userid = :userid AND it.blockinstanceid $insql";
+
+        $inventoryrecords = $DB->get_records_sql($sqlinv, $params);
+        $inventorybyinstance = [];
+
+        if ($inventoryrecords) {
+            foreach ($inventoryrecords as $inv) {
+                $inventorybyinstance[$inv->blockinstanceid][] = [
+                    'item_id' => $inv->itemid,
+                    'collected_on' => transform::datetime($inv->timecreated),
+                ];
+            }
+        }
+
+        // 5. Bulk fetch Trade Logs.
+        $sqltrades = "SELECT tl.id, t.blockinstanceid, tl.timecreated, t.name as tradename
+                        FROM {block_playerhud_trade_log} tl
+                        JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
+                       WHERE tl.userid = :userid AND t.blockinstanceid $insql
+                    ORDER BY tl.timecreated DESC";
+
+        $tradelogs = $DB->get_records_sql($sqltrades, $params);
+        $tradesbyinstance = [];
+
+        if ($tradelogs) {
+            foreach ($tradelogs as $log) {
+                $tradesbyinstance[$log->blockinstanceid][] = [
+                    'trade_name' => $log->tradename,
+                    'transaction_date' => transform::datetime($log->timecreated),
+                ];
+            }
+        }
+
+        // 6. Export data using the in-memory arrays.
+        foreach ($validcontexts as $context) {
+            $instid = $context->instanceid;
 
             // A. General Profile.
-            $player = $DB->get_record('block_playerhud_user', ['blockinstanceid' => $instanceid, 'userid' => $userid]);
-            if ($player) {
+            if (isset($players[$instid])) {
+                $player = $players[$instid];
                 writer::with_context($context)->export_data(
                     [get_string('pluginname', 'block_playerhud'), 'Profile'],
                     (object) [
@@ -170,11 +241,8 @@ class provider implements
             }
 
             // B. RPG Progress.
-            $rpg = $DB->get_record('block_playerhud_rpg_progress', [
-                'blockinstanceid' => $instanceid,
-                'userid' => $userid,
-            ]);
-            if ($rpg) {
+            if (isset($rpgs[$instid])) {
+                $rpg = $rpgs[$instid];
                 writer::with_context($context)->export_data(
                     [get_string('pluginname', 'block_playerhud'), 'RPG Progress'],
                     (object) [
@@ -187,50 +255,18 @@ class provider implements
             }
 
             // C. Inventory.
-            $sql = "SELECT inv.* FROM {block_playerhud_inventory} inv
-                      JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                     WHERE inv.userid = :userid AND it.blockinstanceid = :instanceid";
-
-            $inventory = $DB->get_records_sql($sql, ['userid' => $userid, 'instanceid' => $instanceid]);
-
-            $data = [];
-            foreach ($inventory as $inv) {
-                $data[] = [
-                    'item_id' => $inv->itemid,
-                    'collected_on' => transform::datetime($inv->timecreated),
-                ];
-            }
-            if (!empty($data)) {
+            if (!empty($inventorybyinstance[$instid])) {
                 writer::with_context($context)->export_data(
                     [get_string('pluginname', 'block_playerhud'), 'Inventory'],
-                    (object) ['items' => $data]
+                    (object) ['items' => $inventorybyinstance[$instid]]
                 );
             }
 
             // D. Trade Logs (Shop History).
-            $sqltrades = "SELECT tl.id, tl.timecreated, t.name as tradename
-                            FROM {block_playerhud_trade_log} tl
-                            JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
-                           WHERE tl.userid = :userid AND t.blockinstanceid = :instanceid
-                        ORDER BY tl.timecreated DESC";
-
-            $tradelogs = $DB->get_records_sql($sqltrades, [
-                'userid' => $userid,
-                'instanceid' => $instanceid,
-            ]);
-
-            $tradedata = [];
-            foreach ($tradelogs as $log) {
-                $tradedata[] = [
-                    'trade_name' => $log->tradename,
-                    'transaction_date' => transform::datetime($log->timecreated),
-                ];
-            }
-
-            if (!empty($tradedata)) {
+            if (!empty($tradesbyinstance[$instid])) {
                 writer::with_context($context)->export_data(
                     [get_string('pluginname', 'block_playerhud'), 'Shop History'],
-                    (object) ['transactions' => $tradedata]
+                    (object) ['transactions' => $tradesbyinstance[$instid]]
                 );
             }
         }
@@ -243,6 +279,7 @@ class provider implements
      */
     public static function delete_data_for_all_users_in_context(\context $context) {
         global $DB;
+
         if ($context->contextlevel != CONTEXT_BLOCK) {
             return;
         }
@@ -301,6 +338,7 @@ class provider implements
      */
     public static function delete_data_for_users(approved_userlist $userlist) {
         $context = $userlist->get_context();
+
         if ($context->contextlevel != CONTEXT_BLOCK) {
             return;
         }
@@ -329,11 +367,13 @@ class provider implements
             "blockinstanceid = :instanceid AND userid $usql",
             $params
         );
+
         $DB->delete_records_select(
             'block_playerhud_rpg_progress',
             "blockinstanceid = :instanceid AND userid $usql",
             $params
         );
+
         $DB->delete_records_select(
             'block_playerhud_ai_logs',
             "blockinstanceid = :instanceid AND userid $usql",

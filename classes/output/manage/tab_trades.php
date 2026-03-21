@@ -57,17 +57,31 @@ class tab_trades implements renderable, templatable {
     public function export_for_template($output) {
         global $CFG, $PAGE;
         require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
+
         $context = \context_block::instance($this->instanceid);
         $trades = \block_playerhud\game::get_full_trades($this->instanceid);
         $tradesdata = [];
 
+        // 1. BULK FETCH: Prepare all media for trades at once to avoid N+1 queries.
+        $fakeitems = [];
         if ($trades) {
             foreach ($trades as $trade) {
-                // 1. Process Requirements.
+                foreach ($trade->requirements as $req) {
+                    $fakeitems[$req->itemid] = (object)['id' => $req->itemid, 'image' => $req->image];
+                }
+                foreach ($trade->rewards as $rew) {
+                    $fakeitems[$rew->itemid] = (object)['id' => $rew->itemid, 'image' => $rew->image];
+                }
+            }
+        }
+        $allmedia = \block_playerhud\utils::get_items_display_data($fakeitems, $context);
+
+        if ($trades) {
+            foreach ($trades as $trade) {
+                // 2. Process Requirements.
                 $reqsdata = [];
                 foreach ($trade->requirements as $req) {
-                    $fakeitem = (object)['id' => $req->itemid, 'image' => $req->image];
-                    $media = \block_playerhud\utils::get_item_display_data($fakeitem, $context);
+                    $media = $allmedia[$req->itemid];
 
                     $reqsdata[] = [
                         'qty' => $req->qty,
@@ -78,11 +92,10 @@ class tab_trades implements renderable, templatable {
                     ];
                 }
 
-                // 2. Process Rewards.
+                // 3. Process Rewards.
                 $rewsdata = [];
                 foreach ($trade->rewards as $rew) {
-                    $fakeitem = (object)['id' => $rew->itemid, 'image' => $rew->image];
-                    $media = \block_playerhud\utils::get_item_display_data($fakeitem, $context);
+                    $media = $allmedia[$rew->itemid];
 
                     $rewsdata[] = [
                         'qty' => $rew->qty,
@@ -93,12 +106,13 @@ class tab_trades implements renderable, templatable {
                     ];
                 }
 
-                // 3. URLs and Actions.
+                // 4. URLs and Actions.
                 $editurl = new moodle_url('/blocks/playerhud/edit_trade.php', [
                     'courseid' => $this->courseid,
                     'instanceid' => $this->instanceid,
                     'tradeid' => $trade->id,
                 ]);
+
                 $delurl = new moodle_url('/blocks/playerhud/manage.php', [
                     'id' => $this->courseid,
                     'instanceid' => $this->instanceid,
@@ -127,7 +141,7 @@ class tab_trades implements renderable, templatable {
             }
         }
 
-        // 4. Global UI Data & JS Injection.
+        // 5. Global UI Data & JS Injection.
         $addurl = new moodle_url('/blocks/playerhud/edit_trade.php', [
             'courseid' => $this->courseid,
             'instanceid' => $this->instanceid,
@@ -142,6 +156,7 @@ class tab_trades implements renderable, templatable {
                 'cancel' => get_string('cancel'),
             ],
         ];
+
         $PAGE->requires->js_call_amd('block_playerhud/manage_trades', 'init', [$jsvars]);
 
         return [

@@ -89,12 +89,13 @@ class block_playerhud extends block_base {
             $stats = \block_playerhud\game::get_game_stats($config, $this->instance->id, $player->currentxp);
 
             // Recent Items Logic (Stash).
-            $recentitems = [];
-            $seenitems = [];
             $rawinventory = \block_playerhud\game::get_inventory($USER->id, $this->instance->id);
             $limit = 6;
             $count = 0;
+            $seenitems = [];
+            $itemstodisplay = [];
 
+            // 1. Gather unique items needed.
             foreach ($rawinventory as $invitem) {
                 if ($count >= $limit) {
                     break;
@@ -103,9 +104,17 @@ class block_playerhud extends block_base {
                     continue;
                 }
                 $seenitems[] = $invitem->id;
+                $itemstodisplay[$invitem->id] = $invitem;
+                $count++;
+            }
 
-                $media = \block_playerhud\utils::get_item_display_data($invitem, $context);
+            // 2. Bulk load media to prevent N+1.
+            $allmedia = \block_playerhud\utils::get_items_display_data($itemstodisplay, $context);
 
+            // 3. Prepare template data.
+            $recentitems = [];
+            foreach ($itemstodisplay as $invitem) {
+                $media = $allmedia[$invitem->id];
                 $recentitems[] = [
                     'name' => format_string($invitem->name),
                     'xp' => $invitem->xp . ' XP',
@@ -115,7 +124,6 @@ class block_playerhud extends block_base {
                     'date' => userdate($invitem->collecteddate, get_string('strftimedatefullshort', 'langconfig')),
                     'timestamp' => $invitem->collecteddate,
                 ];
-                $count++;
             }
 
             $manageurl = '';

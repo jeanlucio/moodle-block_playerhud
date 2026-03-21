@@ -104,6 +104,9 @@ class tab_collection implements renderable, templatable {
         $context = \context_block::instance($this->instanceid);
 
         if ($allitems) {
+            // Bulk load media for all collection items.
+            $allmedia = \block_playerhud\utils::get_items_display_data($allitems, $context);
+
             foreach ($allitems as $item) {
                 $usercopies = isset($inventorybyitem[$item->id]) ? $inventorybyitem[$item->id] : [];
                 $totalcount = count($usercopies);
@@ -118,7 +121,7 @@ class tab_collection implements renderable, templatable {
                     }
                 }
 
-                $media = \block_playerhud\utils::get_item_display_data($item, $context);
+                $media = $allmedia[$item->id];
 
                 // Use the pre-loaded bulk array.
                 $isinfiniteconfig = isset($infinitedrops[$item->id]);
@@ -248,7 +251,7 @@ class tab_collection implements renderable, templatable {
             }
         }
 
-        // 3. Robust Sorting (Sua lógica Collator original).
+        // 3. Robust Sorting with Collator for locale-aware sorting.
         $locale = current_language() ?: 'en';
         $collator = new \Collator($locale);
 

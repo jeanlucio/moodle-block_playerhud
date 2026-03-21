@@ -80,15 +80,9 @@ class tab_shop implements renderable, templatable {
             }
         }
 
-        // 2. Fetch Trades using our new optimized method.
+        // 2. Fetch Trades using our optimized method.
         $trades = \block_playerhud\game::get_full_trades($this->instanceid);
         $tradesdata = [];
-
-        // Fetch completed trades (Distinct to avoid Moodle debugging warning on duplicates).
-        $sql = "SELECT DISTINCT tradeid, 1 as completed
-                  FROM {block_playerhud_trade_log}
-                 WHERE userid = :userid";
-        $completedtrades = $DB->get_records_sql_menu($sql, ['userid' => $this->player->userid]);
 
         // Fetch user inventory counts in a single query.
         $sqlinv = "SELECT itemid, COUNT(id) as qty FROM {block_playerhud_inventory} WHERE userid = :userid GROUP BY itemid";
@@ -100,13 +94,27 @@ class tab_shop implements renderable, templatable {
                  WHERE userid = :userid";
         $completedtrades = $DB->get_records_sql_menu($sql, ['userid' => $this->player->userid]);
 
+        // 3. BULK FETCH: Prepare all media for trades at once to avoid N+1 queries.
+        $fakeitems = [];
+        if ($trades) {
+            foreach ($trades as $trade) {
+                foreach ($trade->requirements as $req) {
+                    $fakeitems[$req->itemid] = (object)['id' => $req->itemid, 'image' => $req->image];
+                }
+                foreach ($trade->rewards as $rew) {
+                    $fakeitems[$rew->itemid] = (object)['id' => $rew->itemid, 'image' => $rew->image];
+                }
+            }
+        }
+        $allmedia = \block_playerhud\utils::get_items_display_data($fakeitems, $context);
+
         if ($trades) {
             foreach ($trades as $trade) {
                 if ($trade->centralized != 1) {
                     continue; // Skip hidden/map-only trades.
                 }
 
-                // 3. Check class restrictions on rewards.
+                // 4. Check class restrictions on rewards.
                 $visibleforme = true;
                 foreach ($trade->rewards as $rew) {
                     if (!empty($rew->required_class_id)) {
@@ -121,18 +129,16 @@ class tab_shop implements renderable, templatable {
                     continue;
                 }
 
-                // 4. Check One-Time restriction.
+                // 5. Check One-Time restriction.
                 $iscompleted = false;
                 if ($trade->onetime) {
                     $iscompleted = isset($completedtrades[$trade->id]);
                 }
 
-                // 5. Format Requirements.
+                // 6. Format Requirements using the bulk-loaded media array.
                 $reqsdata = [];
                 foreach ($trade->requirements as $req) {
-                    $fakeitem = (object)['id' => $req->itemid, 'image' => $req->image];
-                    $media = \block_playerhud\utils::get_item_display_data($fakeitem, $context);
-
+                    $media = $allmedia[$req->itemid];
                     $reqsdata[] = [
                         'qty' => $req->qty,
                         'name' => format_string($req->name),
@@ -142,12 +148,10 @@ class tab_shop implements renderable, templatable {
                     ];
                 }
 
-                // 6. Format Rewards.
+                // 7. Format Rewards using the bulk-loaded media array.
                 $rewsdata = [];
                 foreach ($trade->rewards as $rew) {
-                    $fakeitem = (object)['id' => $rew->itemid, 'image' => $rew->image];
-                    $media = \block_playerhud\utils::get_item_display_data($fakeitem, $context);
-
+                    $media = $allmedia[$rew->itemid];
                     $rewsdata[] = [
                         'qty' => $rew->qty,
                         'name' => format_string($rew->name),
@@ -157,7 +161,7 @@ class tab_shop implements renderable, templatable {
                     ];
                 }
 
-                // 7. Action URL for performing the trade.
+                // 8. Action URL for performing the trade.
                 $processurl = new moodle_url('/blocks/playerhud/process_trade.php', [
                     'instanceid' => $this->instanceid,
                     'courseid' => $this->courseid,
@@ -165,7 +169,7 @@ class tab_shop implements renderable, templatable {
                     'sesskey' => sesskey(),
                 ]);
 
-                // Check if user can afford this trade.
+                // 9. Check if user can afford this trade.
                 $canafford = true;
                 foreach ($trade->requirements as $req) {
                     $myqty = isset($myinventory[$req->itemid]) ? $myinventory[$req->itemid] : 0;
