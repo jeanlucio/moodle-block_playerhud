@@ -421,6 +421,7 @@ $string['trade_req_desc'] = 'Selecione os itens que o aluno deve pagar para conc
 $string['trade_req_hdr'] = 'Requisitos (aluno paga)';
 $string['trade_saved'] = 'Troca salva com sucesso.';
 $string['trade_success_msg'] = 'Troca realizada com sucesso! Você recebeu: {$a}';
+$string['trade_you_have'] = '(Você tem: {$a})';
 $string['unlimited'] = 'Ilimitado';
 $string['uploadfile'] = 'Upload de Arquivo';
 $string['view_ranking'] = 'Ver Ranking';

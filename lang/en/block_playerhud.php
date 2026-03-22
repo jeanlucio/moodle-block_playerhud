@@ -421,6 +421,7 @@ $string['trade_req_desc'] = 'Select the items the student must pay to complete t
 $string['trade_req_hdr'] = 'Requirements (Student pays)';
 $string['trade_saved'] = 'Trade saved successfully.';
 $string['trade_success_msg'] = 'Trade successful! You received: {$a}';
+$string['trade_you_have'] = '(Owned: {$a})';
 $string['unlimited'] = 'Unlimited';
 $string['uploadfile'] = 'Upload File';
 $string['view_ranking'] = 'View Leaderboard';

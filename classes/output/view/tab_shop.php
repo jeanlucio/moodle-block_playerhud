@@ -135,16 +135,28 @@ class tab_shop implements renderable, templatable {
                     $iscompleted = isset($completedtrades[$trade->id]);
                 }
 
-                // 6. Format Requirements using the bulk-loaded media array.
+                // 6 & 9. Format Requirements and Check Affordability simultaneously.
                 $reqsdata = [];
+                $canafford = true;
                 foreach ($trade->requirements as $req) {
                     $media = $allmedia[$req->itemid];
+
+                    // Calculate affordability and define UI classes for visual feedback.
+                    $myqty = isset($myinventory[$req->itemid]) ? $myinventory[$req->itemid] : 0;
+                    $hasenough = ($myqty >= $req->qty);
+
+                    if (!$hasenough) {
+                        $canafford = false;
+                    }
+
                     $reqsdata[] = [
                         'qty' => $req->qty,
                         'name' => format_string($req->name),
                         'is_image' => $media['is_image'],
                         'image_url' => $media['is_image'] ? $media['url'] : '',
                         'image_content' => $media['is_image'] ? '' : strip_tags($media['content']),
+                        'user_qty' => $myqty,
+                        'qty_class' => $hasenough ? 'text-success' : 'text-danger',
                     ];
                 }
 
@@ -168,16 +180,6 @@ class tab_shop implements renderable, templatable {
                     'tradeid' => $trade->id,
                     'sesskey' => sesskey(),
                 ]);
-
-                // 9. Check if user can afford this trade.
-                $canafford = true;
-                foreach ($trade->requirements as $req) {
-                    $myqty = isset($myinventory[$req->itemid]) ? $myinventory[$req->itemid] : 0;
-                    if ($myqty < $req->qty) {
-                        $canafford = false;
-                        break;
-                    }
-                }
 
                 // Compile data for this trade.
                 $tradesdata[] = [
