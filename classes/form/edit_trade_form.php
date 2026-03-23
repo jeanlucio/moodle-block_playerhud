@@ -97,6 +97,7 @@ class edit_trade_form extends \moodleform {
 
         // Section: Student pays.
         $mform->addElement('header', 'req_header', get_string('trade_req_hdr', 'block_playerhud'));
+        $mform->setExpanded('req_header', true);
         $mform->addElement(
             'static',
             'req_desc',
@@ -137,16 +138,22 @@ class edit_trade_form extends \moodleform {
             $mform->setDefault("req_qty_$i", 1);
         }
 
-        $mform->addElement(
-            'submit',
-            'add_req_btn',
+        $btnreqhtml = \html_writer::tag(
+            'button',
             get_string('add_cost_item', 'block_playerhud'),
-            ['class' => 'btn-secondary btn-sm w-auto']
+            [
+                'type' => 'submit',
+                'name' => 'add_req_btn',
+                'value' => '1',
+                'class' => 'btn btn-secondary btn-sm w-auto mb-3',
+            ]
         );
+        $mform->addElement('html', $btnreqhtml);
         $mform->registerNoSubmitButton('add_req_btn');
 
         // Section: Student receives.
         $mform->addElement('header', 'give_header', get_string('trade_give_hdr', 'block_playerhud'));
+        $mform->setExpanded('give_header', true);
         $mform->addElement(
             'static',
             'give_desc',
@@ -183,12 +190,17 @@ class edit_trade_form extends \moodleform {
             $mform->setDefault("give_qty_$i", 1);
         }
 
-        $mform->addElement(
-            'submit',
-            'add_give_btn',
+        $btngivehtml = \html_writer::tag(
+            'button',
             get_string('add_reward_item', 'block_playerhud'),
-            ['class' => 'btn-secondary btn-sm w-auto']
+            [
+                'type' => 'submit',
+                'name' => 'add_give_btn',
+                'value' => '1',
+                'class' => 'btn btn-secondary btn-sm w-auto mb-3',
+            ]
         );
+        $mform->addElement('html', $btngivehtml);
         $mform->registerNoSubmitButton('add_give_btn');
 
         // Rules.

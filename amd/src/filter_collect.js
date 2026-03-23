@@ -79,14 +79,13 @@ const updateStash = (itemData) => {
         let contentHtml = '';
 
         if (isImage) {
-            contentHtml = `<img src="${itemData.image}" alt="" class="ph-mini-item-img">`;
+            contentHtml = `<img src="${itemData.image}" alt="" class="ph-mini-item-img rounded-0">`;
         } else {
-            contentHtml = `<span class="ph-mini-emoji" aria-hidden="true">${itemData.image}</span>`;
+            contentHtml = `<span class="ph-emoji" aria-hidden="true">${itemData.image}</span>`;
         }
 
         const newItem = $('<div>', {
-            'class': 'ph-mini-item ph-item-trigger border bg-white rounded ' +
-                     'd-flex align-items-center justify-content-center overflow-hidden position-relative shadow-sm',
+            'class': 'ph-mini-item ph-item-trigger',
             'role': 'button',
             'tabindex': '0',
             'data-name': itemData.name,
@@ -141,12 +140,11 @@ const updateHud = (data, itemData) => {
         progressBar.css('width', `${data.progress}%`).attr('aria-valuenow', data.progress);
         progressBar.find('.ph-progress-text').text(`${data.progress}%`);
 
-        // Update Level Badge.
+        // Update Level Badge
         const levelBadge = container.find('.badge').filter(function() {
             const cls = $(this).attr('class') || '';
-            return cls.match(/ph-lvl-tier-/) && cls.indexOf('ph-badge-ghost') === -1;
+            return cls.match(/ph-lvl-tier-/) && cls.indexOf('rounded-pill') === -1 && cls.indexOf('ph-badge-ghost') === -1;
         });
-
         if (levelBadge.length) {
             const labelText = appStrings.level || 'Level';
             let lvlString = `${data.level}`;
@@ -156,21 +154,22 @@ const updateHud = (data, itemData) => {
             levelBadge.text(`${labelText} ${lvlString}`);
         }
 
-        // Update XP Text.
-        container.find('span, div, strong').each(function() {
-            const el = $(this);
-            if (el.children().length === 0 && el.text().indexOf('XP') > -1) {
-                let xpString = `${data.currentxp}`;
-                if (data.xp_target > 0) {
-                    xpString += ` / ${data.xp_target}`;
-                }
-                xpString += ' XP';
-                if (data.is_win) {
-                    xpString += ' 🏆';
-                }
-                el.text(xpString);
-            }
+        // Update XP Text
+        const xpBadge = container.find('.badge.rounded-pill').filter(function() {
+            const cls = $(this).attr('class') || '';
+            return cls.match(/ph-lvl-tier-/);
         });
+        if (xpBadge.length) {
+            let xpString = `${data.currentxp}`;
+            if (data.xp_target > 0) {
+                xpString += ` / ${data.xp_target}`;
+            }
+            xpString += ' XP';
+            if (data.is_win) {
+                xpString += ' 🏆';
+            }
+            xpBadge.text(xpString);
+        }
     });
 
     if (itemData) {
