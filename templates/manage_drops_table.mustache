@@ -172,14 +172,14 @@
                                 <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm js-copy-code me-1"
                                         data-clipboard-text="{{full_default_code}}"
                                         title="{{str_quick_copy}}"
-                                        aria-label="{{str_quick_copy}}">
+                                        aria-label="{{str_quick_copy}} {{name}}">
                                     <i class="fa fa-copy" aria-hidden="true"></i> {{str_quick_copy}}
                                 </button>
 
                                 <button type="button" class="btn btn-outline-dark btn-sm js-open-gen-modal shadow-sm"
                                         data-dropcode="{{display_code}}"
                                         title="{{str_gen_title}}"
-                                        aria-label="{{str_gen_title}}">
+                                        aria-label="{{str_gen_title}} {{name}}">
                                     <i class="fa fa-magic" aria-hidden="true"></i> {{str_gen_title}}
                                 </button>
                             </div>
@@ -187,11 +187,11 @@
 
                         <td class="align-middle text-end">
                             <a href="{{url_edit}}" class="btn btn-sm btn-primary me-1 shadow-sm">
-                                <i class="fa fa-pencil" aria-hidden="true"></i> {{str_edit}}
+                                <i class="fa fa-pencil" aria-hidden="true"></i> {{str_edit}} {{name}}
                             </a>
                             <a href="{{url_delete}}" class="btn btn-sm btn-danger shadow-sm js-delete-btn"
                                data-confirm-msg="{{confirm_msg}}">
-                                <i class="fa fa-trash" aria-hidden="true"></i> {{str_delete}}
+                                <i class="fa fa-trash" aria-hidden="true"></i> {{str_delete}} {{name}}
                             </a>
                         </td>
                     </tr>

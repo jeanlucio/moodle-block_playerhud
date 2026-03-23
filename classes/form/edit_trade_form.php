@@ -141,7 +141,7 @@ class edit_trade_form extends \moodleform {
             'submit',
             'add_req_btn',
             get_string('add_cost_item', 'block_playerhud'),
-            ['class' => 'btn-secondary btn-sm']
+            ['class' => 'btn-secondary btn-sm w-auto']
         );
         $mform->registerNoSubmitButton('add_req_btn');
 
@@ -187,7 +187,7 @@ class edit_trade_form extends \moodleform {
             'submit',
             'add_give_btn',
             get_string('add_reward_item', 'block_playerhud'),
-            ['class' => 'btn-secondary btn-sm']
+            ['class' => 'btn-secondary btn-sm w-auto']
         );
         $mform->registerNoSubmitButton('add_give_btn');
 

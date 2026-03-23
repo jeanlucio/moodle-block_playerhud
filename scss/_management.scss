@@ -225,6 +225,10 @@
     justify-content: center;
     align-items: center;
     line-height: 1;
+
+    &.success-bg {
+        background-color: var(--bs-success-bg-subtle, #e8f5e9);
+    }
 }
 .block_playerhud form.mform {
     select.ph-item-selector {

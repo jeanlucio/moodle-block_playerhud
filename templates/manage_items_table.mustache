@@ -163,13 +163,13 @@
                             <td class="align-middle text-nowrap">
                                 {{#enabled}}
                                     <span class="badge bg-success text-white">{{str_yes}}</span>
-                                    <a href="{{url_toggle}}" class="btn btn-sm btn-light border ms-1" aria-label="{{str_hide}}">
+                                    <a href="{{url_toggle}}" class="btn btn-sm btn-light border ms-1" aria-label="{{str_hide}} {{name}}">
                                         <i class="fa fa-eye text-success" aria-hidden="true"></i>
                                     </a>
                                 {{/enabled}}
                                 {{^enabled}}
                                     <span class="badge bg-secondary text-white">{{str_no}}</span>
-                                    <a href="{{url_toggle}}" class="btn btn-sm btn-warning ms-1" aria-label="{{str_show}}">
+                                    <a href="{{url_toggle}}" class="btn btn-sm btn-warning ms-1" aria-label="{{str_show}} {{name}}">
                                         <i class="fa fa-eye-slash" aria-hidden="true"></i>
                                     </a>
                                 {{/enabled}}
@@ -181,12 +181,12 @@
                                 </a>
                             </td>
                             <td class="align-middle text-end text-nowrap">
-                                <a href="{{url_edit}}" class="btn btn-sm btn-primary me-1 shadow-sm" aria-label="{{str_edit}}">
+                                <a href="{{url_edit}}" class="btn btn-sm btn-primary me-1 shadow-sm" aria-label="{{str_edit}} {{name}}">
                                    <i class="fa fa-pencil" aria-hidden="true"></i>
                                    <span class="d-none d-xl-inline ms-1">{{str_edit}}</span>
                                 </a>
                                 <a href="{{url_delete}}" class="btn btn-sm btn-danger shadow-sm js-delete-btn"
-                                    aria-label="{{str_delete}}" data-confirm-msg="{{confirm_msg}}">
+                                    aria-label="{{str_delete}} {{name}}" data-confirm-msg="{{confirm_msg}}">
                                     <i class="fa fa-trash" aria-hidden="true"></i>
                                     <span class="d-none d-xl-inline ms-1">{{str_delete}}</span>
                                 </a>

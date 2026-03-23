@@ -59,7 +59,7 @@ define(['jquery'], function($) {
                         // --- COUNTING ---
                         const m = Math.floor(diff / 60);
                         const s = diff % 60;
-                        const timeString = m + 'm ' + (s < 10 ? '0' : '') + s + 's';
+                        const timeString = m + ' ' + strings.min + ' ' + (s < 10 ? '0' : '') + s + ' ' + strings.sec;
 
                         // Logic: Check if label "Next collection..." should be hidden.
                         // If data-no-label attribute exists, use empty string.

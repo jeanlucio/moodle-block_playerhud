@@ -42,7 +42,7 @@
     {{#has_trades}}
         {{#trades}}
         <div class="col-lg-6 col-12 mb-4 d-flex justify-content-center">
-            <div class="card ph-trade-widget-card shadow-sm h-100 w-100">
+            <div class="card ph-trade-widget-card shadow-sm h-100 w-100" role="group" aria-label="{{name}}">
 
                 {{! TRADE HEADER }}
                 <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center border-bottom py-2">
@@ -62,11 +62,11 @@
                         <span class="fw-bold ms-2 text-dark">{{name}}</span>
                     </div>
                     <div class="d-flex gap-1">
-                        <a href="{{url_edit}}" class="btn btn-sm btn-primary shadow-sm" aria-label="{{str_edit}}">
+                        <a href="{{url_edit}}" class="btn btn-sm btn-primary shadow-sm" aria-label="{{str_edit}} {{name}}">
                             <i class="fa fa-pencil" aria-hidden="true"></i> <span class="d-none d-xl-inline ms-1">{{str_edit}}</span>
                         </a>
                         <a href="{{url_delete}}" class="btn btn-sm btn-danger shadow-sm js-delete-btn"
-                           data-confirm-msg="{{confirm_msg}}" aria-label="{{str_delete}}">
+                           data-confirm-msg="{{confirm_msg}}" aria-label="{{str_delete}} {{name}}">
                             <i class="fa fa-trash" aria-hidden="true"></i> <span class="d-none d-xl-inline ms-1">{{str_delete}}</span>
                         </a>
                     </div>
@@ -110,7 +110,7 @@
                             <div class="d-flex flex-column gap-2 align-items-center">
                                 {{#rewards}}
                                 <div class="badge bg-white text-dark border border-success text-wrap d-flex align-items-center p-1 pe-2 shadow-sm w-100 text-start" title="{{name}}">
-                                    <div class="me-2 flex-shrink-0 bg-success bg-opacity-10 border border-success rounded ph-trade-icon-box">
+                                    <div class="me-2 flex-shrink-0 success-bg border border-success rounded ph-trade-icon-box">
                                         {{#is_image}}
                                             <img src="{{image_url}}" alt="" class="img-fluid w-100 h-100 object-fit-contain p-1">
                                         {{/is_image}}

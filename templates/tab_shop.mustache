@@ -58,7 +58,7 @@
         {{#has_trades}}
             {{#trades}}
             <div class="col-lg-6 col-12 mb-4 d-flex justify-content-center">
-                <div class="card ph-trade-widget-card shadow-sm h-100 w-100">
+                <div class="card ph-trade-widget-card shadow-sm h-100 w-100" role="group" aria-label="{{name}}">
                     <div class="card-header bg-light border-bottom text-center py-2">
                         <h6 class="mb-0 fw-bold text-dark">
                             <i class="fa fa-balance-scale me-1 text-primary" aria-hidden="true"></i> {{name}}
@@ -127,18 +127,18 @@
 
                         <div class="text-center mt-3 pt-3 border-top">
                             {{#is_completed}}
-                                <button class="btn btn-secondary w-100 fw-bold shadow-sm rounded-3" disabled>
+                                <button class="btn btn-secondary w-100 fw-bold shadow-sm rounded-3" disabled aria-label="{{str_redeemed}}: {{name}}">
                                     <i class="fa fa-check me-1" aria-hidden="true"></i> {{str_redeemed}}
                                 </button>
                             {{/is_completed}}
                             {{^is_completed}}
                                 {{#can_afford}}
-                                <a href="{{action_url}}" class="btn btn-success w-100 fw-bold shadow-sm rounded-3">
+                                <a href="{{action_url}}" class="btn btn-success w-100 fw-bold shadow-sm rounded-3" aria-label="{{str_perform}}: {{name}}">
                                     <i class="fa fa-exchange me-1" aria-hidden="true"></i> {{str_perform}}
                                 </a>
                                 {{/can_afford}}
                                 {{^can_afford}}
-                                <button class="btn btn-outline-secondary w-100 fw-bold shadow-sm rounded-3" disabled>
+                                <button class="btn btn-outline-secondary w-100 fw-bold shadow-sm rounded-3" disabled aria-label="{{str_missing_items}}: {{name}}">
                                     <i class="fa fa-lock me-1" aria-hidden="true"></i> {{str_missing_items}}
                                 </button>
                                 {{/can_afford}}
