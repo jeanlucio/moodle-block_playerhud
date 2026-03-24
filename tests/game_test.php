@@ -72,6 +72,8 @@ final class game_test extends advanced_testcase {
         $item->blockinstanceid = $this->instanceid;
         $item->name = $name;
         $item->xp = $xp;
+        $item->image = '';
+        $item->description = '';
         $item->enabled = 1;
         $item->secret = 0;
         $item->timecreated = time();
@@ -187,11 +189,12 @@ final class game_test extends advanced_testcase {
         $this->assertTrue($result['success']);
 
         // The system MUST throw an exception on the second attempt.
-        $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessage('limitreached');
-
-        // This line will trigger the exception.
-        game::process_collection($this->instanceid, $drop->id, $user->id);
+        try {
+            game::process_collection($this->instanceid, $drop->id, $user->id);
+            $this->fail('Expected moodle_exception with errorcode limitreached');
+        } catch (\moodle_exception $e) {
+            $this->assertEquals('limitreached', $e->errorcode);
+        }
     }
 
     /**
@@ -213,9 +216,11 @@ final class game_test extends advanced_testcase {
         game::process_collection($this->instanceid, $drop->id, $user->id);
 
         // Trying again immediately MUST trigger the waitmore exception.
-        $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessage('waitmore');
-
-        game::process_collection($this->instanceid, $drop->id, $user->id);
+        try {
+            game::process_collection($this->instanceid, $drop->id, $user->id);
+            $this->fail('Expected moodle_exception with errorcode waitmore');
+        } catch (\moodle_exception $e) {
+            $this->assertEquals('waitmore', $e->errorcode);
+        }
     }
 }
