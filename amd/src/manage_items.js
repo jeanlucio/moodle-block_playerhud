@@ -109,6 +109,10 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                 $('#phModalNameView, #phModalTitleView').text(name);
                 $('#phModalXPView').text(xp);
 
+                // Hide badges by default. They can be shown if needed based on item type or other logic.
+                $('#phModalCountBadgeView').hide();
+                $('#phModalDateView').hide();
+
                 const $descEl = $('#phModalDescView');
                 if (descHtml && descHtml.trim() !== '') {
                     $descEl.html(descHtml);
@@ -199,12 +203,16 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                 const originalText = $btn.text();
                 $btn.prop('disabled', true).text(config.strings.ai_creating).attr('aria-busy', 'true');
 
+                // Handle XP input: if empty, send -1 to indicate "no change". Otherwise, parse integer.
+                const xpInput = $('#ai-xp').val();
+                const xpToSend = xpInput === '' ? -1 : parseInt(xpInput, 10);
+
                 // Call Moodle External Function.
                 const requestArgs = {
                     instanceid: config.instanceid,
                     courseid: config.courseid,
                     theme: theme,
-                    xp: parseInt($('#ai-xp').val()) || 0,
+                    xp: isNaN(xpToSend) ? -1 : xpToSend,
                     amount: parseInt($('#ai-amount').val()) || 1,
                     // eslint-disable-next-line camelcase
                     create_drop: $('#ai-drop').is(':checked'),

@@ -85,8 +85,7 @@ class generator {
 
         // 3. XP Logic.
         $balance = $extraoptions['balance_context'] ?? null;
-
-        if ($xp <= 0 && !$isinfinitedrop && $balance) {
+        if ($xp < 0 && !$isinfinitedrop && $balance) {
             if ($balance['gap'] > 2000) {
                 $xp = rand(150, 300);
             } else if ($balance['gap'] > 500) {
@@ -96,7 +95,7 @@ class generator {
             } else {
                 $xp = rand(10, 30);
             }
-        } else if ($xp <= 0 && !$isinfinitedrop) {
+        } else if ($xp < 0 && !$isinfinitedrop) {
             $xp = rand(10, 200);
         }
 

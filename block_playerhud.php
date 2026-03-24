@@ -173,7 +173,7 @@ class block_playerhud extends block_base {
                 'username'    => fullname($USER),
                 'userpicture' => $OUTPUT->user_picture($USER, ['size' => 100]),
                 'xp'          => $xpdisplay,
-                'level'       => $stats['level'] . ' / ' . $stats['max_levels'],
+                'level'       => $stats['level'] . '/' . $stats['max_levels'],
                 'level_class' => $stats['level_class'],
                 'progress'    => $stats['progress'],
                 'viewurl'     => $urlbase->out(false),

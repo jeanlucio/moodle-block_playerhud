@@ -76,7 +76,7 @@ class header implements renderable, templatable {
         return [
             'userpicture' => $output->user_picture($this->user, ['size' => 100, 'class' => 'rounded-circle shadow-sm']),
             'fullname' => fullname($this->user),
-            'level_display' => $stats['level'] . ' / ' . $stats['max_levels'],
+            'level_display' => $stats['level'] . '/' . $stats['max_levels'],
             'xp_display' => $xpdisplay,
             'progress' => $stats['progress'],
             'level_class' => !empty($stats['level_class']) ? $stats['level_class'] : 'bg-primary',
