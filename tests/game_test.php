@@ -26,52 +26,159 @@ use block_playerhud\game;
  * @covers     \block_playerhud\game
  */
 final class game_test extends advanced_testcase {
+    /** @var int Dummy block instance ID for testing. */
+    protected $instanceid = 999;
+
     /**
-     * Test get_player method to ensure it creates or retrieves the correct user data.
+     * Helper to create a dummy item for tests.
      *
-     * @covers ::get_player
+     * @param string $name Item name.
+     * @param int $xp XP value.
+     * @return \stdClass The created item.
      */
-    public function test_get_player(): void {
+    protected function create_dummy_item(string $name, int $xp): \stdClass {
         global $DB;
-
-        // Essential: Rollback database changes after test.
-        $this->resetAfterTest(true);
-
-        $user = $this->getDataGenerator()->create_user();
-        $blockinstanceid = 999;
-
-        // 1. Test creation of a new player.
-        $player = game::get_player($blockinstanceid, $user->id);
-        $this->assertEquals(0, $player->currentxp);
-        $this->assertEquals(1, $player->enable_gamification);
-        $this->assertNotEmpty($player->timecreated);
-
-        // 2. Test retrieving an existing player.
-        $DB->set_field('block_playerhud_user', 'currentxp', 150, ['id' => $player->id]);
-
-        $existingplayer = game::get_player($blockinstanceid, $user->id);
-        $this->assertEquals(150, $existingplayer->currentxp);
+        $item = new \stdClass();
+        $item->blockinstanceid = $this->instanceid;
+        $item->name = $name;
+        $item->xp = $xp;
+        $item->enabled = 1;
+        $item->secret = 0;
+        $item->timecreated = time();
+        $item->timemodified = time();
+        $item->id = $DB->insert_record('block_playerhud_items', $item);
+        return $item;
     }
 
     /**
-     * Test toggle_gamification method.
+     * Helper to create a dummy drop for tests.
      *
-     * @covers ::toggle_gamification
+     * @param int $itemid The item ID.
+     * @param int $maxusage Maximum collections allowed (0 for infinite).
+     * @param int $respawntime Cooldown in seconds.
+     * @return \stdClass The created drop.
      */
-    public function test_toggle_gamification(): void {
+    protected function create_dummy_drop(int $itemid, int $maxusage, int $respawntime = 0): \stdClass {
+        global $DB;
+        $drop = new \stdClass();
+        $drop->blockinstanceid = $this->instanceid;
+        $drop->itemid = $itemid;
+        $drop->name = 'Test Location';
+        $drop->maxusage = $maxusage;
+        $drop->respawntime = $respawntime;
+        $drop->code = 'TEST' . rand(100, 999);
+        $drop->timecreated = time();
+        $drop->timemodified = time();
+        $drop->id = $DB->insert_record('block_playerhud_drops', $drop);
+        return $drop;
+    }
+
+    /**
+     * Test game statistics math (Levels, Max Levels, and Total XP).
+     *
+     * @covers ::get_game_stats
+     */
+    public function test_get_game_stats(): void {
         $this->resetAfterTest(true);
 
+        // 1. Setup config.
+        $config = new \stdClass();
+        $config->xp_per_level = 100;
+        $config->max_levels = 10;
+
+        // 2. Setup economy (Total Game XP).
+        $item = $this->create_dummy_item('Test Item', 50);
+        // A drop that can be collected 3 times. Total game XP should be 150.
+        $this->create_dummy_drop($item->id, 3);
+
+        // 3. Test Level 1 (50 XP).
+        $stats = game::get_game_stats($config, $this->instanceid, 50);
+        $this->assertEquals(1, $stats['level']);
+        $this->assertEquals(150, $stats['total_game_xp']);
+        $this->assertEquals(50, $stats['xp_next']); // Needs 50 more to reach 100.
+        $this->assertFalse($stats['is_max']);
+
+        // 4. Test Level 2 (150 XP).
+        $stats = game::get_game_stats($config, $this->instanceid, 150);
+        $this->assertEquals(2, $stats['level']);
+
+        // 5. Test Max Level Cap (2000 XP - should cap at level 10).
+        $stats = game::get_game_stats($config, $this->instanceid, 2000);
+        $this->assertEquals(10, $stats['level']);
+        $this->assertTrue($stats['is_max']);
+    }
+
+    /**
+     * Test the Anti-Farm rule: Infinite drops (maxusage = 0) must yield 0 XP.
+     *
+     * @covers ::process_collection
+     */
+    public function test_process_collection_infinite_drop_anti_farm(): void {
+        $this->resetAfterTest(true);
         $user = $this->getDataGenerator()->create_user();
-        $blockinstanceid = 999;
 
-        // Toggle OFF.
-        game::toggle_gamification($blockinstanceid, $user->id, false);
-        $player = game::get_player($blockinstanceid, $user->id);
-        $this->assertEquals(0, $player->enable_gamification);
+        // Create an item worth 100 XP, but on an infinite drop.
+        $item = $this->create_dummy_item('Infinite Berry', 100);
+        $drop = $this->create_dummy_drop($item->id, 0);
 
-        // Toggle ON.
-        game::toggle_gamification($blockinstanceid, $user->id, true);
-        $player = game::get_player($blockinstanceid, $user->id);
-        $this->assertEquals(1, $player->enable_gamification);
+        // Process collection.
+        $result = game::process_collection($this->instanceid, $drop->id, $user->id);
+
+        $this->assertTrue($result['success']);
+
+        // Assert the user got the item in inventory...
+        $this->assertTrue(game::has_item($user->id, $item->id));
+
+        // ...but assert the Anti-Farm rule worked: XP must be 0!
+        $player = game::get_player($this->instanceid, $user->id);
+        $this->assertEquals(0, $player->currentxp);
+    }
+
+    /**
+     * Test strict limit enforcement (maxusage).
+     *
+     * @covers ::process_collection
+     */
+    public function test_process_collection_maxusage_limit(): void {
+        $this->resetAfterTest(true);
+        $user = $this->getDataGenerator()->create_user();
+
+        // Create a rare item that can only be collected ONCE.
+        $item = $this->create_dummy_item('Rare Sword', 200);
+        $drop = $this->create_dummy_drop($item->id, 1);
+
+        // First collection should succeed.
+        $result = game::process_collection($this->instanceid, $drop->id, $user->id);
+        $this->assertTrue($result['success']);
+
+        // The system MUST throw an exception on the second attempt.
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage('limitreached'); // This string key is in your lang file.
+
+        // This line will trigger the exception.
+        game::process_collection($this->instanceid, $drop->id, $user->id);
+    }
+
+    /**
+     * Test cooldown enforcement (respawntime).
+     *
+     * @covers ::process_collection
+     */
+    public function test_process_collection_cooldown(): void {
+        $this->resetAfterTest(true);
+        $user = $this->getDataGenerator()->create_user();
+
+        // Create an item that can be collected 5 times, but requires waiting 1 hour.
+        $item = $this->create_dummy_item('Daily Potion', 50);
+        $drop = $this->create_dummy_drop($item->id, 5, 3600);
+
+        // First collection should succeed.
+        game::process_collection($this->instanceid, $drop->id, $user->id);
+
+        // Trying again immediately MUST trigger the waitmore exception.
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage('waitmore');
+
+        game::process_collection($this->instanceid, $drop->id, $user->id);
     }
 }
