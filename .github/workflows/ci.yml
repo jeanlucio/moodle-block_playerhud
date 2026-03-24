@@ -73,8 +73,8 @@ jobs:
           moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1 --db-port=$DB_PORT
 
           # WORKAROUND: Substituir o atalho (symlink) por uma cópia real
-          # para o Mustache e o Grunt não falharem na validação de caminhos
-          rm moodle/blocks/playerhud
+          # Usando -rf para forçar a remoção do diretório com segurança
+          rm -rf moodle/blocks/playerhud
           cp -r ./plugin moodle/blocks/playerhud
         env:
           DB: ${{ matrix.database }}
