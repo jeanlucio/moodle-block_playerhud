@@ -16,7 +16,7 @@ jobs:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
       mariadb:
-        image: mariadb:10.11 # ATUALIZADO PARA 10.11 PARA SUPORTAR MOODLE 5.1
+        image: mariadb:10.11
         env:
           MYSQL_USER: 'root'
           MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
@@ -66,28 +66,28 @@ jobs:
 
       - name: PHP Lint
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phplint block_playerhud
+        run: moodle-plugin-ci phplint ./plugin
 
       - name: PHP Mess Detector
         continue-on-error: true
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpmd block_playerhud
+        run: moodle-plugin-ci phpmd ./plugin
 
       - name: Moodle Code Checker
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpcs --max-warnings 0 block_playerhud
+        run: moodle-plugin-ci phpcs --max-warnings 0 ./plugin
 
       - name: Mustache Lint
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci mustache block_playerhud
+        run: moodle-plugin-ci mustache moodle/blocks/playerhud
 
       - name: Grunt tasks
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci grunt --max-lint-warnings 0 block_playerhud
+        run: moodle-plugin-ci grunt --max-lint-warnings 0 moodle/blocks/playerhud
 
       - name: PHPUnit tests
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpunit block_playerhud
+        run: moodle-plugin-ci phpunit ./plugin
 
       - name: Mark cancelled jobs as failed
         if: ${{ cancelled() }}
