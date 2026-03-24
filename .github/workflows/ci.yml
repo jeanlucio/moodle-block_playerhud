@@ -13,16 +13,19 @@ jobs:
           POSTGRES_USER: 'postgres'
           POSTGRES_HOST_AUTH_METHOD: 'trust'
         ports:
-          - 5433:5432
-        options: --health-cmd="pg_isready -U postgres" --health-interval=10s --health-timeout=5s --health-retries=3
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
+
       mariadb:
         image: mariadb:10.11
         env:
           MYSQL_USER: 'root'
           MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+          MYSQL_CHARACTER_SET_SERVER: 'utf8mb4'
+          MYSQL_COLLATION_SERVER: 'utf8mb4_unicode_ci'
         ports:
-          - 3307:3306
-        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=10s --health-timeout=5s --health-retries=3
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
 
     strategy:
       fail-fast: false
@@ -50,60 +53,47 @@ jobs:
       - name: Initialise moodle-plugin-ci
         run: |
           composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
-          echo "$(cd ci/bin; pwd)" >> $GITHUB_PATH
-          echo "$(cd ci/vendor/bin; pwd)" >> $GITHUB_PATH
+          echo $(cd ci/bin; pwd) >> $GITHUB_PATH
+          echo $(cd ci/vendor/bin; pwd) >> $GITHUB_PATH
           sudo locale-gen en_AU.UTF-8
           echo "NVM_DIR=$HOME/.nvm" >> $GITHUB_ENV
 
       - name: Install moodle-plugin-ci
-        run: |
-          DB_PORT=3307
-          if [ "${{ matrix.database }}" = "pgsql" ]; then
-            DB_PORT=5433
-          fi
-          moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1 --db-port=$DB_PORT
-
-          # WORKAROUND: substitui o symlink criado pelo CI por uma cópia real dos arquivos,
-          # resolvendo erros de "basename" no Mustache e Grunt.
-          PLUGIN_DEST="$GITHUB_WORKSPACE/moodle/blocks/playerhud"
-
-          [ -L "$PLUGIN_DEST" ] && unlink "$PLUGIN_DEST"
-          [ -d "$PLUGIN_DEST" ] && rm -rf "$PLUGIN_DEST"
-
-          mkdir -p "$(dirname "$PLUGIN_DEST")"
-          cp -R "$GITHUB_WORKSPACE/plugin" "$PLUGIN_DEST"
+        # Sem workaround manual: o CI instala e linka o plugin corretamente.
+        # Sem --db-port: usa as portas padrão dos services acima (5432 / 3306).
+        run: moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
         env:
           DB: ${{ matrix.database }}
           MOODLE_BRANCH: ${{ matrix.moodle-branch }}
 
       - name: PHP Lint
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
-        run: moodle-plugin-ci phplint $GITHUB_WORKSPACE/moodle/blocks/playerhud
+        run: moodle-plugin-ci phplint
 
       - name: PHP Mess Detector
         continue-on-error: true
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
-        run: moodle-plugin-ci phpmd $GITHUB_WORKSPACE/moodle/blocks/playerhud
+        run: moodle-plugin-ci phpmd
 
       - name: Moodle Code Checker
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
-        run: moodle-plugin-ci phpcs --max-warnings 0 $GITHUB_WORKSPACE/moodle/blocks/playerhud
+        run: moodle-plugin-ci phpcs --max-warnings 0
 
       - name: Validate Plugin
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
-        run: moodle-plugin-ci validate $GITHUB_WORKSPACE/moodle/blocks/playerhud
+        run: moodle-plugin-ci validate
 
       - name: Mustache Lint
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
-        run: moodle-plugin-ci mustache $GITHUB_WORKSPACE/moodle/blocks/playerhud
+        run: moodle-plugin-ci mustache
 
       - name: Grunt tasks
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
-        run: moodle-plugin-ci grunt --max-lint-warnings 0 $GITHUB_WORKSPACE/moodle/blocks/playerhud
+        run: moodle-plugin-ci grunt --max-lint-warnings 0
 
       - name: PHPUnit tests
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpunit $GITHUB_WORKSPACE/moodle/blocks/playerhud
+        run: moodle-plugin-ci phpunit
 
       - name: Mark cancelled jobs as failed
         if: ${{ cancelled() }}
