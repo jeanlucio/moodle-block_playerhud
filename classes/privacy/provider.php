@@ -147,7 +147,7 @@ class provider implements
     public static function export_user_data(approved_contextlist $contextlist) {
         global $DB;
 
-        $userid = $contextlist->get_userid();
+        $userid = $contextlist->get_user()->id;
         $contexts = $contextlist->get_contexts();
 
         $instanceids = [];
@@ -321,7 +321,7 @@ class provider implements
      * @param approved_contextlist $contextlist The approved contextlist.
      */
     public static function delete_data_for_user(approved_contextlist $contextlist) {
-        $userid = $contextlist->get_userid();
+        $userid = $contextlist->get_user()->id;
         $userids = [$userid];
 
         foreach ($contextlist->get_contexts() as $context) {
