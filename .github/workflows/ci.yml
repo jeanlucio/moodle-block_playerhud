@@ -63,43 +63,47 @@ jobs:
           fi
           moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1 --db-port=$DB_PORT
 
-          # WORKAROUND DEFINITIVO: Desvincula o atalho criado pelo CI e copia os arquivos reais
-          # para dentro do Moodle. Isso resolve o erro de "basename" do Mustache e Grunt.
-          unlink moodle/blocks/playerhud || true
-          rm -rf moodle/blocks/playerhud || true
-          cp -R plugin moodle/blocks/playerhud
+          # WORKAROUND: substitui o symlink criado pelo CI por uma cópia real dos arquivos,
+          # resolvendo erros de "basename" no Mustache e Grunt.
+          PLUGIN_DEST="$GITHUB_WORKSPACE/moodle/blocks/playerhud"
+
+          [ -L "$PLUGIN_DEST" ] && unlink "$PLUGIN_DEST"
+          [ -d "$PLUGIN_DEST" ] && rm -rf "$PLUGIN_DEST"
+
+          mkdir -p "$(dirname "$PLUGIN_DEST")"
+          cp -R "$GITHUB_WORKSPACE/plugin" "$PLUGIN_DEST"
         env:
           DB: ${{ matrix.database }}
           MOODLE_BRANCH: ${{ matrix.moodle-branch }}
 
       - name: PHP Lint
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
-        run: moodle-plugin-ci phplint moodle/blocks/playerhud
+        run: moodle-plugin-ci phplint $GITHUB_WORKSPACE/moodle/blocks/playerhud
 
       - name: PHP Mess Detector
         continue-on-error: true
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
-        run: moodle-plugin-ci phpmd moodle/blocks/playerhud
+        run: moodle-plugin-ci phpmd $GITHUB_WORKSPACE/moodle/blocks/playerhud
 
       - name: Moodle Code Checker
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
-        run: moodle-plugin-ci phpcs --max-warnings 0 moodle/blocks/playerhud
+        run: moodle-plugin-ci phpcs --max-warnings 0 $GITHUB_WORKSPACE/moodle/blocks/playerhud
 
       - name: Validate Plugin
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
-        run: moodle-plugin-ci validate moodle/blocks/playerhud
+        run: moodle-plugin-ci validate $GITHUB_WORKSPACE/moodle/blocks/playerhud
 
       - name: Mustache Lint
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
-        run: moodle-plugin-ci mustache moodle/blocks/playerhud
+        run: moodle-plugin-ci mustache $GITHUB_WORKSPACE/moodle/blocks/playerhud
 
       - name: Grunt tasks
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
-        run: moodle-plugin-ci grunt --max-lint-warnings 0 moodle/blocks/playerhud
+        run: moodle-plugin-ci grunt --max-lint-warnings 0 $GITHUB_WORKSPACE/moodle/blocks/playerhud
 
       - name: PHPUnit tests
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpunit moodle/blocks/playerhud
+        run: moodle-plugin-ci phpunit $GITHUB_WORKSPACE/moodle/blocks/playerhud
 
       - name: Mark cancelled jobs as failed
         if: ${{ cancelled() }}
