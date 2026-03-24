@@ -27,7 +27,37 @@ use block_playerhud\game;
  */
 final class game_test extends advanced_testcase {
     /** @var int Dummy block instance ID for testing. */
-    protected $instanceid = 999;
+    protected $instanceid;
+
+    /**
+     * Creates a real block instance in the database to satisfy context_block.
+     */
+    protected function setup_block_instance(): void {
+        global $DB;
+
+        // Create a real course and get its context.
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+
+        // Insert a real block instance.
+        $bi = new \stdClass();
+        $bi->blockname = 'playerhud';
+        $bi->parentcontextid = $coursecontext->id;
+        $bi->showinsubcontexts = 0;
+        $bi->pagetypepattern = 'course-view-*';
+        $bi->subpagepattern = null;
+        $bi->defaultregion = 'side-pre';
+        $bi->defaultweight = 0;
+
+        // Provide empty config to avoid base64/unserialize warnings.
+        $config = new \stdClass();
+        $bi->configdata = base64_encode(serialize($config));
+
+        $bi->timecreated = time();
+        $bi->timemodified = time();
+
+        $this->instanceid = $DB->insert_record('block_instances', $bi);
+    }
 
     /**
      * Helper to create a dummy item for tests.
@@ -80,6 +110,7 @@ final class game_test extends advanced_testcase {
      */
     public function test_get_game_stats(): void {
         $this->resetAfterTest(true);
+        $this->setup_block_instance();
 
         // 1. Setup config.
         $config = new \stdClass();
@@ -115,6 +146,8 @@ final class game_test extends advanced_testcase {
      */
     public function test_process_collection_infinite_drop_anti_farm(): void {
         $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
         $user = $this->getDataGenerator()->create_user();
 
         // Create an item worth 100 XP, but on an infinite drop.
@@ -141,6 +174,8 @@ final class game_test extends advanced_testcase {
      */
     public function test_process_collection_maxusage_limit(): void {
         $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
         $user = $this->getDataGenerator()->create_user();
 
         // Create a rare item that can only be collected ONCE.
@@ -153,7 +188,7 @@ final class game_test extends advanced_testcase {
 
         // The system MUST throw an exception on the second attempt.
         $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessage('limitreached'); // This string key is in your lang file.
+        $this->expectExceptionMessage('limitreached');
 
         // This line will trigger the exception.
         game::process_collection($this->instanceid, $drop->id, $user->id);
@@ -166,6 +201,8 @@ final class game_test extends advanced_testcase {
      */
     public function test_process_collection_cooldown(): void {
         $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
         $user = $this->getDataGenerator()->create_user();
 
         // Create an item that can be collected 5 times, but requires waiting 1 hour.

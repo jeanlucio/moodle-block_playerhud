@@ -33,6 +33,8 @@ jobs:
         include:
           - {moodle-branch: 'MOODLE_501_STABLE', php: '8.3', database: 'pgsql', runchecks: 'all'}
           - {moodle-branch: 'MOODLE_501_STABLE', php: '8.3', database: 'mariadb'}
+          - {moodle-branch: 'MOODLE_500_STABLE', php: '8.2', database: 'pgsql'}
+          - {moodle-branch: 'MOODLE_500_STABLE', php: '8.2', database: 'mariadb'}
           - {moodle-branch: 'MOODLE_405_STABLE', php: '8.2', database: 'pgsql'}
           - {moodle-branch: 'MOODLE_405_STABLE', php: '8.2', database: 'mariadb'}
 
