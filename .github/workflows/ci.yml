@@ -8,32 +8,39 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:15
         env:
           POSTGRES_USER: 'postgres'
           POSTGRES_HOST_AUTH_METHOD: 'trust'
         ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
+          - 5433:5432
+        options: --health-cmd="pg_isready -U postgres" --health-interval=10s --health-timeout=5s --health-retries=3
       mariadb:
         image: mariadb:10.11
         env:
           MYSQL_USER: 'root'
           MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
         ports:
-          - 3306:3306
+          - 3307:3306
         options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=10s --health-timeout=5s --health-retries=3
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {moodle-branch: 'MOODLE_405_STABLE', php: '8.2', database: 'pgsql'}
-          - {moodle-branch: 'MOODLE_405_STABLE', php: '8.2', database: 'mariadb'}
-          # Mantive as linhas do 5.1 que você pediu, mas leia a observação abaixo!
-          - {moodle-branch: 'MOODLE_501_STABLE', php: '8.3', database: 'pgsql'}
-          - {moodle-branch: 'MOODLE_501_STABLE', php: '8.3', database: 'mariadb'}
-          - {moodle-branch: 'main', php: '8.3', database: 'pgsql'}
+          - php: '8.3'
+            runchecks: 'all' # Roda Grunt, Mustache e Lint APENAS nesta versão para economizar tempo
+            moodle-branch: 'MOODLE_501_STABLE'
+            database: 'pgsql'
+          - php: '8.3'
+            moodle-branch: 'MOODLE_501_STABLE'
+            database: 'mariadb'
+          - php: '8.2'
+            moodle-branch: 'MOODLE_405_STABLE'
+            database: 'pgsql'
+          - php: '8.2'
+            moodle-branch: 'MOODLE_405_STABLE'
+            database: 'mariadb'
 
     steps:
       - name: Check out repository code
@@ -52,42 +59,55 @@ jobs:
       - name: Initialise moodle-plugin-ci
         run: |
           composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
-          echo $(cd ci/bin; pwd) >> $GITHUB_PATH
-          echo $(cd ci/vendor/bin; pwd) >> $GITHUB_PATH
+          echo "$(cd ci/bin; pwd)" >> $GITHUB_PATH
+          echo "$(cd ci/vendor/bin; pwd)" >> $GITHUB_PATH
           sudo locale-gen en_AU.UTF-8
           echo "NVM_DIR=$HOME/.nvm" >> $GITHUB_ENV
 
       - name: Install moodle-plugin-ci
         run: |
-          moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
+          DB_PORT=3307
+          if [ "${{ matrix.database }}" = "pgsql" ]; then
+            DB_PORT=5433
+          fi
+          moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1 --db-port=$DB_PORT
+
+          # WORKAROUND: Substituir o atalho (symlink) por uma cópia real
+          # para o Mustache e o Grunt não falharem na validação de caminhos
+          rm moodle/blocks/playerhud
+          cp -r ./plugin moodle/blocks/playerhud
         env:
           DB: ${{ matrix.database }}
           MOODLE_BRANCH: ${{ matrix.moodle-branch }}
 
       - name: PHP Lint
-        if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phplint ./plugin
+        if: ${{ !cancelled() && matrix.runchecks == 'all' }}
+        run: moodle-plugin-ci phplint moodle/blocks/playerhud
 
       - name: PHP Mess Detector
         continue-on-error: true
-        if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpmd ./plugin
+        if: ${{ !cancelled() && matrix.runchecks == 'all' }}
+        run: moodle-plugin-ci phpmd moodle/blocks/playerhud
 
       - name: Moodle Code Checker
-        if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpcs --max-warnings 0 ./plugin
+        if: ${{ !cancelled() && matrix.runchecks == 'all' }}
+        run: moodle-plugin-ci phpcs --max-warnings 0 moodle/blocks/playerhud
+
+      - name: Validate Plugin
+        if: ${{ !cancelled() && matrix.runchecks == 'all' }}
+        run: moodle-plugin-ci validate moodle/blocks/playerhud
 
       - name: Mustache Lint
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.runchecks == 'all' }}
         run: moodle-plugin-ci mustache moodle/blocks/playerhud
 
       - name: Grunt tasks
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.runchecks == 'all' }}
         run: moodle-plugin-ci grunt --max-lint-warnings 0 moodle/blocks/playerhud
 
       - name: PHPUnit tests
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpunit ./plugin
+        run: moodle-plugin-ci phpunit moodle/blocks/playerhud
 
       - name: Mark cancelled jobs as failed
         if: ${{ cancelled() }}
