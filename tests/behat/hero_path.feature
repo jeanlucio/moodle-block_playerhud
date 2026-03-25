@@ -16,8 +16,10 @@ Feature: PlayerHUD Hero Path and Accessibility
       | user     | course | role           |
       | student1 | C1     | student        |
       | teacher1 | C1     | editingteacher |
-    # Aqui o Moodle injeta o bloco na página de forma nativa e silenciosa
-    And I add the "PlayerHUD" block to the default region of "Course 1" course
+    # A forma nativa e correta de injetar um bloco invisivelmente no Moodle
+    And the following "blocks" exist:
+      | blockname | contextlevel | reference | pagetypepattern | defaultregion |
+      | playerhud | Course       | C1        | course-view-* | side-pre      |
 
   Scenario: Teacher creates an item via Master Panel
     Given I log in as "teacher1"
