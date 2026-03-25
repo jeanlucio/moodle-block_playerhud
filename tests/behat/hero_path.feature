@@ -23,8 +23,8 @@ Feature: PlayerHUD Hero Path and Accessibility
   Scenario: Teacher creates an item via Master Panel
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
-    # Abre a gaveta de blocos lateral (Moodle 4.0+)
-    And I open the block drawer
+    # Comando nativo do Moodle para abrir a gaveta de blocos no tema Boost
+    And I click on "Open block drawer" "button"
 
     When I click on "Game Master Panel" "link"
     And I click on "New Item" "link"
@@ -37,8 +37,8 @@ Feature: PlayerHUD Hero Path and Accessibility
   Scenario: Student checks Backpack and Shop Accessibility
     Given I log in as "student1"
     And I am on "Course 1" course homepage
-    # Abre a gaveta de blocos lateral (Moodle 4.0+)
-    And I open the block drawer
+    # Comando nativo do Moodle para abrir a gaveta de blocos no tema Boost
+    And I click on "Open block drawer" "button"
 
     When I click on "Open Backpack" "link"
     Then I should see "Collection"
