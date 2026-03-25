@@ -16,16 +16,17 @@ Feature: PlayerHUD Hero Path and Accessibility
       | user     | course | role           |
       | student1 | C1     | student        |
       | teacher1 | C1     | editingteacher |
+    # O truque de ouro: Colocamos o bloco na região "content" (centro da tela).
+    # Assim ele nunca ficará oculto em gavetas recolhíveis!
     And the following "blocks" exist:
       | blockname | contextlevel | reference | pagetypepattern | defaultregion |
-      | playerhud | Course       | C1        | course-view-*   | side-pre      |
+      | playerhud | Course       | C1        | course-view-* | content       |
 
   Scenario: Teacher creates an item via Master Panel
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
-    # Resolve o opt-in do teacher antes de tentar navegar
-    And I click on "Yes, I want to join!" "link" in the "PlayerHUD" "block"
-    When I click on "Master Panel" "link" in the "PlayerHUD" "block"
+    # Agora que o bloco está no meio da tela, o clique funciona de primeira
+    When I click on "Game Master Panel" "link"
     And I click on "New Item" "link"
     And I set the field "Item Name" to "Magic Potion"
     And I set the field "Emoji or Image URL" to "🧪"
@@ -36,11 +37,15 @@ Feature: PlayerHUD Hero Path and Accessibility
   Scenario: Student checks Backpack and Shop Accessibility
     Given I log in as "student1"
     And I am on "Course 1" course homepage
-    # Resolve o opt-in do student antes de tentar navegar
-    And I click on "Yes, I want to join!" "link" in the "PlayerHUD" "block"
-    When I click on "Open Backpack" "link" in the "PlayerHUD" "block"
+    # O robô clica no ícone da mochila
+    When I click on "Open Backpack" "link"
     Then I should see "Collection"
+
+    # Validação de Ouro: Audita o contraste e as tags ARIA na Mochila
     And the page should meet accessibility standards
+
     When I click on "Shop" "link"
     Then I should see "No trades available"
+
+    # Validação de Ouro: Audita o contraste e as tags ARIA na Loja
     And the page should meet accessibility standards
