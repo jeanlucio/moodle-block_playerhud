@@ -1,8 +1,8 @@
 @block @block_playerhud @javascript
-Feature: PlayerHUD Hero Path
-  In order to progress in the game
-  As a student
-  I need to collect drops and view them in my backpack
+Feature: PlayerHUD Hero Path and Accessibility
+  In order to ensure the game is playable and accessible
+  As a user
+  I need to navigate the Master Panel and Student Backpack
 
   Background:
     Given the following "users" exist:
@@ -16,34 +16,32 @@ Feature: PlayerHUD Hero Path
       | user     | course | role           |
       | student1 | C1     | student        |
       | teacher1 | C1     | editingteacher |
+    # Aqui o Moodle injeta o bloco na página de forma nativa e silenciosa
+    And I add the "PlayerHUD" block to the default region of "Course 1" course
 
-  Scenario: Teacher creates an item and Student collects it
-    # 1. Professor cria o Item e o Drop via Interface (Testando o Painel do Mestre)
+  Scenario: Teacher creates an item via Master Panel
     Given I log in as "teacher1"
-    And I am on "Course 1" course homepage with editing mode on
-    And I add the "PlayerHUD" block to the default region with:
-      | config_xp_per_level | 100 |
-
+    And I am on "Course 1" course homepage
+    # Vai direto para o painel gerenciar itens
     When I click on "Game Master Panel" "link"
-    And I click on "Add Item" "link"
+    And I click on "New Item" "link"
     And I set the field "Item Name" to "Magic Potion"
     And I set the field "Emoji or Image URL" to "🧪"
     And I press "Save changes"
     Then I should see "Changes saved successfully"
+    And I should see "Magic Potion"
 
-    # 2. Aluno entra, abre a mochila e a loja para auditar a Acessibilidade!
-    Given I log out
-    And I log in as "student1"
+  Scenario: Student checks Backpack and Shop Accessibility
+    Given I log in as "student1"
     And I am on "Course 1" course homepage
-
     When I click on "Open Backpack" "link"
     Then I should see "Collection"
 
-    # Validação de Ouro: WCAG 2.1 AA da Mochila
+    # Validação de Ouro: O robô audita o contraste e as tags ARIA na Mochila
     And the page should meet accessibility standards
 
     When I click on "Shop" "link"
     Then I should see "No trades available"
 
-    # Validação de Ouro: WCAG 2.1 AA da Loja
+    # Validação de Ouro: O robô audita o contraste e as tags ARIA na Loja
     And the page should meet accessibility standards
