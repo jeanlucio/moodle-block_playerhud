@@ -31,7 +31,7 @@
  * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class block_playerhud_generator extends component_generator_base {
+class block_playerhud_generator extends testing_block_generator {
     /**
      * Creates a dummy item for Behat tests.
      *
