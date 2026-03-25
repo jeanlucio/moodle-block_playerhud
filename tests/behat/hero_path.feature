@@ -16,8 +16,7 @@ Feature: PlayerHUD Hero Path and Accessibility
       | user     | course | role           |
       | student1 | C1     | student        |
       | teacher1 | C1     | editingteacher |
-    # O truque de ouro: Colocamos o bloco na região "content" (centro da tela).
-    # Assim ele nunca ficará oculto em gavetas recolhíveis!
+    # Solução 1: Bloco no centro da tela (nunca fica oculto em gavetas)
     And the following "blocks" exist:
       | blockname | contextlevel | reference | pagetypepattern | defaultregion |
       | playerhud | Course       | C1        | course-view-* | content       |
@@ -25,8 +24,8 @@ Feature: PlayerHUD Hero Path and Accessibility
   Scenario: Teacher creates an item via Master Panel
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
-    # Agora que o bloco está no meio da tela, o clique funciona de primeira
-    When I click on "Game Master Panel" "link"
+    # Solução 2: Clica pelo HTML do botão (Infalível)
+    When I click on "a[href*='manage.php']" "css_element" in the "PlayerHUD" "block"
     And I click on "New Item" "link"
     And I set the field "Item Name" to "Magic Potion"
     And I set the field "Emoji or Image URL" to "🧪"
@@ -37,8 +36,8 @@ Feature: PlayerHUD Hero Path and Accessibility
   Scenario: Student checks Backpack and Shop Accessibility
     Given I log in as "student1"
     And I am on "Course 1" course homepage
-    # O robô clica no ícone da mochila
-    When I click on "Open Backpack" "link"
+    # Solução 2: Clica pelo Aria-Label do botão de Emoji (Infalível)
+    When I click on "a[aria-label='Open Backpack']" "css_element" in the "PlayerHUD" "block"
     Then I should see "Collection"
 
     # Validação de Ouro: Audita o contraste e as tags ARIA na Mochila
