@@ -23,10 +23,8 @@ Feature: PlayerHUD Hero Path and Accessibility
   Scenario: Teacher creates an item via Master Panel
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
-    # Comando nativo do Moodle para abrir a gaveta de blocos no tema Boost
-    And I click on "Open block drawer" "button"
-
-    When I click on "Game Master Panel" "link"
+    # O robô procura o link de forma inteligente dentro do bloco PlayerHUD
+    When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I click on "New Item" "link"
     And I set the field "Item Name" to "Magic Potion"
     And I set the field "Emoji or Image URL" to "🧪"
@@ -37,17 +35,15 @@ Feature: PlayerHUD Hero Path and Accessibility
   Scenario: Student checks Backpack and Shop Accessibility
     Given I log in as "student1"
     And I am on "Course 1" course homepage
-    # Comando nativo do Moodle para abrir a gaveta de blocos no tema Boost
-    And I click on "Open block drawer" "button"
-
-    When I click on "Open Backpack" "link"
+    # O robô procura o link de forma inteligente dentro do bloco PlayerHUD
+    When I click on "Open Backpack" "link" in the "PlayerHUD" "block"
     Then I should see "Collection"
 
-    # Validação de Ouro: O robô audita o contraste e as tags ARIA na Mochila
+    # Validação de Ouro: Audita o contraste e as tags ARIA na Mochila
     And the page should meet accessibility standards
 
     When I click on "Shop" "link"
     Then I should see "No trades available"
 
-    # Validação de Ouro: O robô audita o contraste e as tags ARIA na Loja
+    # Validação de Ouro: Audita o contraste e as tags ARIA na Loja
     And the page should meet accessibility standards
