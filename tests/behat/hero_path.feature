@@ -23,8 +23,8 @@ Feature: PlayerHUD Hero Path and Accessibility
   Scenario: Teacher creates an item via Master Panel
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
-    # O robô procura o link de forma inteligente dentro do bloco PlayerHUD
-    When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
+    # Infalível: Clica na tag <a> que contém manage.php no link
+    When I click on "a[href*='manage.php']" "css_element" in the "PlayerHUD" "block"
     And I click on "New Item" "link"
     And I set the field "Item Name" to "Magic Potion"
     And I set the field "Emoji or Image URL" to "🧪"
@@ -35,13 +35,14 @@ Feature: PlayerHUD Hero Path and Accessibility
   Scenario: Student checks Backpack and Shop Accessibility
     Given I log in as "student1"
     And I am on "Course 1" course homepage
-    # O robô procura o link de forma inteligente dentro do bloco PlayerHUD
-    When I click on "Open Backpack" "link" in the "PlayerHUD" "block"
+    # Infalível: Clica no botão da mochila usando a propriedade de acessibilidade
+    When I click on "a[aria-label='Open Backpack']" "css_element" in the "PlayerHUD" "block"
     Then I should see "Collection"
 
     # Validação de Ouro: Audita o contraste e as tags ARIA na Mochila
     And the page should meet accessibility standards
 
+    # Como a Loja (Shop) dentro da Mochila é uma aba que contém texto escrito, o "link" normal funciona perfeitamente aqui!
     When I click on "Shop" "link"
     Then I should see "No trades available"
 
