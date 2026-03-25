@@ -16,7 +16,6 @@ Feature: PlayerHUD Hero Path and Accessibility
       | user     | course | role           |
       | student1 | C1     | student        |
       | teacher1 | C1     | editingteacher |
-    # A forma nativa e correta de injetar um bloco invisivelmente no Moodle
     And the following "blocks" exist:
       | blockname | contextlevel | reference | pagetypepattern | defaultregion |
       | playerhud | Course       | C1        | course-view-* | side-pre      |
@@ -24,7 +23,9 @@ Feature: PlayerHUD Hero Path and Accessibility
   Scenario: Teacher creates an item via Master Panel
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
-    # Vai direto para o painel gerenciar itens
+    # Abre a gaveta de blocos lateral (Moodle 4.0+)
+    And I open the block drawer
+
     When I click on "Game Master Panel" "link"
     And I click on "New Item" "link"
     And I set the field "Item Name" to "Magic Potion"
@@ -36,6 +37,9 @@ Feature: PlayerHUD Hero Path and Accessibility
   Scenario: Student checks Backpack and Shop Accessibility
     Given I log in as "student1"
     And I am on "Course 1" course homepage
+    # Abre a gaveta de blocos lateral (Moodle 4.0+)
+    And I open the block drawer
+
     When I click on "Open Backpack" "link"
     Then I should see "Collection"
 
