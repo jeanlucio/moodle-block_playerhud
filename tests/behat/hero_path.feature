@@ -22,10 +22,13 @@ Feature: PlayerHUD Hero Path and Accessibility
 
   Scenario: Teacher creates an item via Master Panel
     Given I log in as "teacher1"
-    # A MÁGICA PARA O PROFESSOR: Entrar com o modo de edição ligado!
     And I am on "Course 1" course homepage with editing mode on
 
-    When I click on "Game Master Panel" "link"
+    # O ROBO ACEITA O CONVITE
+    When I click on "Yes, I want to join!" "link"
+
+    # Agora sim ele clica no painel mestre
+    And I click on "Game Master Panel" "link"
     And I click on "New Item" "link"
     And I set the field "Item Name" to "Magic Potion"
     And I set the field "Emoji or Image URL" to "🧪"
@@ -37,15 +40,16 @@ Feature: PlayerHUD Hero Path and Accessibility
     Given I log in as "student1"
     And I am on "Course 1" course homepage
 
-    # A MÁGICA PARA O ALUNO: Procurar no HTML inteiro da página (sem limitar ao bloco)
-    When I click on "a[aria-label='Open Backpack']" "css_element"
+    # O ROBO ACEITA O CONVITE
+    When I click on "Yes, I want to join!" "link"
+
+    # E clica na mochila pelo Aria-Label
+    And I click on "a[aria-label='Open Backpack']" "css_element"
     Then I should see "Collection"
 
-    # Validação de Ouro: Audita o contraste e as tags ARIA na Mochila
     And the page should meet accessibility standards
 
     When I click on "Shop" "link"
     Then I should see "No trades available"
 
-    # Validação de Ouro: Audita o contraste e as tags ARIA na Loja
     And the page should meet accessibility standards
