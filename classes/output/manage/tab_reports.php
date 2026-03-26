@@ -97,6 +97,24 @@ class tab_reports implements renderable, templatable {
             $contextdata['str_back']       = get_string('back', 'block_playerhud');
             $contextdata['audit_logs']     = $this->get_audit_logs($this->selecteduserid);
             $contextdata['has_audit_logs'] = !empty($contextdata['audit_logs']);
+
+            // Data for granting items to user.
+            $contextdata['r_userid'] = $this->selecteduserid;
+            $contextdata['grant_action_url'] = (new moodle_url('/blocks/playerhud/manage.php'))->out(false);
+            $allitems = $DB->get_records_menu(
+                'block_playerhud_items',
+                ['blockinstanceid' => $this->instanceid, 'enabled' => 1],
+                'name ASC',
+                'id, name'
+            );
+            $itemoptions = [];
+            if ($allitems) {
+                foreach ($allitems as $iid => $iname) {
+                    $itemoptions[] = ['value' => $iid, 'label' => format_string($iname)];
+                }
+            }
+            $contextdata['available_items'] = $itemoptions;
+            $contextdata['has_available_items'] = !empty($itemoptions);
         } else {
             $contextdata['headers'] = [
                 'student' => $this->get_sort_data('student', get_string('student', 'block_playerhud'), $baseurl),
@@ -125,13 +143,18 @@ class tab_reports implements renderable, templatable {
             'col_details' => get_string('report_col_details', 'block_playerhud'),
             'col_object'  => get_string('report_col_object', 'block_playerhud'),
             'col_ai'      => get_string('report_col_ai', 'block_playerhud'),
+            'revoke_item'    => get_string('revoke_item', 'block_playerhud'),
+            'confirm_revoke' => get_string('confirm_revoke', 'block_playerhud'),
             'btn_more'    => get_string('report_show_more', 'block_playerhud'),
         ];
 
         $jsconfig = [
-            'baseUrl' => $baseurl->out(false),
-            'strMore' => get_string('report_show_more', 'block_playerhud'),
-            'strLess' => get_string('report_show_less', 'block_playerhud'),
+            'baseUrl'         => $baseurl->out(false),
+            'strMore'         => get_string('report_show_more', 'block_playerhud'),
+            'strLess'         => get_string('report_show_less', 'block_playerhud'),
+            'strConfirmTitle' => get_string('confirmation', 'admin'),
+            'strYes'          => get_string('yes'),
+            'strCancel'       => get_string('cancel'),
         ];
         $PAGE->requires->js_call_amd('block_playerhud/manage_reports', 'init', [$jsconfig]);
 
@@ -387,9 +410,9 @@ class tab_reports implements renderable, templatable {
         $concatitem = $DB->sql_concat("'item_'", "inv.id");
         $concattrade = $DB->sql_concat("'trade_'", "tl.id");
 
-        // Adicionamos i.id AS itemid para poder buscar as imagens corretamente.
+        // Combining item acquisition logs and trade logs into a single query with a union, ordered by time.
         $sql = "
-        SELECT uniqueid, event_type, object_name, timecreated, details, icon, xp_gained, itemid
+        SELECT uniqueid, event_type, object_name, timecreated, details, icon, xp_gained, itemid, inventory_id
         FROM (
             SELECT $concatitem AS uniqueid, 'item' AS event_type, i.name AS object_name, inv.timecreated,
                    inv.source AS details, i.image AS icon,
@@ -397,14 +420,14 @@ class tab_reports implements renderable, templatable {
                        WHEN inv.source = 'map' AND COALESCE(d.maxusage, 1) > 0 THEN i.xp
                        ELSE 0
                    END AS xp_gained,
-                   i.id AS itemid
+                   i.id AS itemid, inv.id AS inventory_id
               FROM {block_playerhud_inventory} inv
               JOIN {block_playerhud_items} i ON inv.itemid = i.id
          LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
              WHERE inv.userid = :u1 AND i.blockinstanceid = :p1
             UNION ALL
             SELECT $concattrade AS uniqueid, 'trade' AS event_type, t.name AS object_name, tl.timecreated,
-                   'trade_completed' AS details, '⚖️' AS icon, 0 AS xp_gained, 0 AS itemid
+                   'trade_completed' AS details, '⚖️' AS icon, 0 AS xp_gained, 0 AS itemid, 0 AS inventory_id
               FROM {block_playerhud_trade_log} tl
               JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
              WHERE tl.userid = :u2 AND t.blockinstanceid = :p2
@@ -463,6 +486,18 @@ class tab_reports implements renderable, templatable {
                     $xpbadge = '<span class="text-muted small">-</span>';
                 }
 
+                $urldelete = '';
+                if ($log->inventory_id > 0) {
+                    $urldelete = new moodle_url('/blocks/playerhud/manage.php', [
+                        'id' => $this->courseid,
+                        'instanceid' => $this->instanceid,
+                        'action' => 'revoke_item',
+                        'invid' => $log->inventory_id,
+                        'r_userid' => $userid,
+                        'sesskey' => sesskey(),
+                    ]);
+                }
+
                 $results[] = [
                     'date'          => userdate($log->timecreated, get_string('strftimedatetime', 'langconfig')),
                     'badge_class'   => $badgeclass,
@@ -473,6 +508,8 @@ class tab_reports implements renderable, templatable {
                     'object_name'   => format_string($log->object_name),
                     'xp_badge'      => $xpbadge,
                     'details_html'  => $detailtext,
+                    'url_revoke'    => $urldelete ? $urldelete->out(false) : '',
+                    'has_revoke'    => ($log->inventory_id > 0),
                 ];
             }
         }

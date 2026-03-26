@@ -352,6 +352,56 @@ if ($action == 'save_keys' && confirm_sesskey()) {
     );
 }
 
+// Action: Revoke Item (Teacher manually removes item).
+if ($action === 'revoke_item' && confirm_sesskey()) {
+    $invid = required_param('invid', PARAM_INT);
+    $ruserid = required_param('r_userid', PARAM_INT);
+
+    $inv = $DB->get_record('block_playerhud_inventory', ['id' => $invid]);
+    if ($inv) {
+        $item = $DB->get_record('block_playerhud_items', ['id' => $inv->itemid, 'blockinstanceid' => $instanceid]);
+        if ($item) {
+            $player = $DB->get_record('block_playerhud_user', ['blockinstanceid' => $instanceid, 'userid' => $inv->userid]);
+            if ($player) {
+                // If item grants XP, remove it from the player.
+                $player->currentxp = max(0, $player->currentxp - $item->xp);
+                $player->timemodified = time();
+                $DB->update_record('block_playerhud_user', $player);
+            }
+        }
+        $DB->delete_records('block_playerhud_inventory', ['id' => $invid]);
+    }
+
+    $url = new moodle_url($baseurl, ['tab' => 'reports', 'r_userid' => $ruserid]);
+    redirect($url, get_string('item_revoked', 'block_playerhud'), \core\output\notification::NOTIFY_SUCCESS);
+}
+
+// Action: Grant Item (Teacher manually gives item).
+if ($action === 'grant_item' && confirm_sesskey()) {
+    $ruserid = required_param('r_userid', PARAM_INT);
+    $itemid = required_param('itemid', PARAM_INT);
+
+    $item = $DB->get_record('block_playerhud_items', ['id' => $itemid, 'blockinstanceid' => $instanceid], '*', MUST_EXIST);
+    $player = \block_playerhud\game::get_player($instanceid, $ruserid);
+
+    $newinv = new \stdClass();
+    $newinv->userid = $ruserid;
+    $newinv->itemid = $item->id;
+    $newinv->dropid = 0;
+    $newinv->source = 'teacher'; // Mark as teacher granted for potential future features (e.g. filtering, special handling).
+    $newinv->timecreated = time();
+    $DB->insert_record('block_playerhud_inventory', $newinv);
+
+    if ($item->xp > 0) {
+        $player->currentxp += $item->xp;
+        $player->timemodified = time();
+        $DB->update_record('block_playerhud_user', $player);
+    }
+
+    $url = new moodle_url($baseurl, ['tab' => 'reports', 'r_userid' => $ruserid]);
+    redirect($url, get_string('item_granted', 'block_playerhud'), \core\output\notification::NOTIFY_SUCCESS);
+}
+
 // PRE-RENDER LOGIC (Controller Strategy).
 $contenthtml = '';
 

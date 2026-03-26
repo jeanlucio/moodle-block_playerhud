@@ -19,15 +19,6 @@
     @package block_playerhud
     @copyright 2026 Jean Lúcio
     @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-
-    Example context (json):
-    {
-        "is_audit": false,
-        "str": { "audit": "Audit" },
-        "kpis": [{"title": "Total XP", "value": "1500", "subtitle": "", "bg_class": "ph-bg-gradient-primary"}],
-        "has_students": true,
-        "user_selector": { "options": [{"value": 1, "label": "John", "selected": true}] }
-    }
 }}
 <div class="playerhud-reports-container animate__animated animate__fadeIn">
 
@@ -98,43 +89,82 @@
             </a>
         </div>
 
-        {{#has_audit_logs}}
-        <div class="table-responsive shadow-sm rounded">
-            <table class="table table-hover table-striped bg-white mb-0 align-middle">
-                <thead class="table-dark">
-                    <tr>
-                        <th scope="col">{{str.col_date}}</th>
-                        <th scope="col">{{str.col_type}}</th>
-                        <th scope="col">{{str.col_desc}}</th>
-                        <th scope="col" class="text-center">{{str.xp}}</th>
-                        <th scope="col">{{str.col_details}}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{#audit_logs}}
-                    <tr>
-                        <td class="text-muted small" style="width:180px;">{{date}}</td>
-                        <td><span class="badge {{badge_class}}">{{badge_text}}</span></td>
-                        <td class="fw-bold">
-                            <div class="d-flex align-items-center">
-                                <div class="me-2 text-center" style="width:30px;">
-                                    {{#is_image_icon}}<img src="{{icon_url}}" class="ph-img-xs" alt="">{{/is_image_icon}}
-                                    {{^is_image_icon}}<span class="fs-5" aria-hidden="true">{{icon_emoji}}</span>{{/is_image_icon}}
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center p-3 flex-wrap gap-2">
+                <span class="fw-bold"><i class="fa fa-history" aria-hidden="true"></i> {{str.audit}}</span>
+
+                {{! FORMULÁRIO DE CONCEDER ITEM }}
+                {{#has_available_items}}
+                <form action="{{grant_action_url}}" method="post" class="d-flex align-items-center m-0">
+                    <input type="hidden" name="id" value="{{courseid}}">
+                    <input type="hidden" name="instanceid" value="{{instanceid}}">
+                    <input type="hidden" name="action" value="grant_item">
+                    <input type="hidden" name="r_userid" value="{{r_userid}}">
+                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+
+                    <div class="input-group input-group-sm">
+                        <select name="itemid" class="form-select border-success" required aria-label="Select item">
+                            <option value="">-- Conceder Item --</option>
+                            {{#available_items}}
+                                <option value="{{value}}">{{label}}</option>
+                            {{/available_items}}
+                        </select>
+                        <button type="submit" class="btn btn-success fw-bold">
+                            <i class="fa fa-gift" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </form>
+                {{/has_available_items}}
+            </div>
+
+            <div class="card-body p-0 table-responsive">
+                {{#has_audit_logs}}
+                <table class="table table-hover table-striped bg-white mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col" class="ps-3">{{str.col_date}}</th>
+                            <th scope="col">{{str.col_type}}</th>
+                            <th scope="col">{{str.col_desc}}</th>
+                            <th scope="col" class="text-center">{{str.xp}}</th>
+                            <th scope="col">{{str.col_details}}</th>
+                            <th scope="col" class="text-end pe-3">{{str.action}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#audit_logs}}
+                        <tr>
+                            <td class="text-muted small ps-3" style="width:180px;">{{date}}</td>
+                            <td><span class="badge {{badge_class}}">{{badge_text}}</span></td>
+                            <td class="fw-bold">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-2 text-center" style="width:30px;">
+                                        {{#is_image_icon}}<img src="{{icon_url}}" class="ph-img-xs" alt="">{{/is_image_icon}}
+                                        {{^is_image_icon}}<span class="fs-5" aria-hidden="true">{{icon_emoji}}</span>{{/is_image_icon}}
+                                    </div>
+                                    <div>{{object_name}}</div>
                                 </div>
-                                <div>{{object_name}}</div>
-                            </div>
-                        </td>
-                        <td class="text-center">{{{xp_badge}}}</td>
-                        <td class="text-muted small">{{{details_html}}}</td>
-                    </tr>
-                    {{/audit_logs}}
-                </tbody>
-            </table>
+                            </td>
+                            <td class="text-center">{{{xp_badge}}}</td>
+                            <td class="text-muted small">{{{details_html}}}</td>
+                            <td class="text-end pe-3">
+                                {{#has_revoke}}
+                                    <a href="{{url_revoke}}" class="btn btn-sm btn-outline-danger js-delete-report-btn"
+                                       title="{{str.revoke_item}}"
+                                       data-confirm-msg="{{str.confirm_revoke}}">
+                                        <i class="fa fa-trash" aria-hidden="true"></i>
+                                    </a>
+                                {{/has_revoke}}
+                            </td>
+                        </tr>
+                        {{/audit_logs}}
+                    </tbody>
+                </table>
+                {{/has_audit_logs}}
+                {{^has_audit_logs}}
+                    <div class="alert alert-info m-3">{{str.no_logs}}</div>
+                {{/has_audit_logs}}
+            </div>
         </div>
-        {{/has_audit_logs}}
-        {{^has_audit_logs}}
-            <div class="alert alert-info">{{str.no_logs}}</div>
-        {{/has_audit_logs}}
     {{/is_audit}}
 
     {{^is_audit}}
