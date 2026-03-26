@@ -119,7 +119,6 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
                     $player = $players[$holder->userid];
                     $xptoremove = $item->xp * $holder->qtd;
                     $player->currentxp = max(0, $player->currentxp - $xptoremove);
-                    $player->timemodified = $now;
                     $DB->update_record('block_playerhud_user', $player);
                 }
             }
@@ -187,7 +186,6 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
                     if (isset($players[$holder->userid])) {
                         $player = $players[$holder->userid];
                         $player->currentxp = max(0, $player->currentxp - $holder->totalxptoremove);
-                        $player->timemodified = $now;
                         $DB->update_record('block_playerhud_user', $player);
                     }
                 }
@@ -250,7 +248,6 @@ if ($action == 'delete_quest' && $questid && confirm_sesskey()) {
                         $player = $players[$uc->userid];
                         $xptoremove = $quest->reward_xp * $uc->completions;
                         $player->currentxp = max(0, $player->currentxp - $xptoremove);
-                        $player->timemodified = $now;
                         $DB->update_record('block_playerhud_user', $player);
                     }
                 }
@@ -363,13 +360,15 @@ if ($action === 'revoke_item' && confirm_sesskey()) {
         if ($item) {
             $player = $DB->get_record('block_playerhud_user', ['blockinstanceid' => $instanceid, 'userid' => $inv->userid]);
             if ($player) {
-                // If item grants XP, remove it from the player.
                 $player->currentxp = max(0, $player->currentxp - $item->xp);
-                $player->timemodified = time();
                 $DB->update_record('block_playerhud_user', $player);
             }
+
+            // Soft Revoke: Mark the inventory record as revoked instead of deleting.
+            $inv->source = 'revoked';
+            $inv->timecreated = time();
+            $DB->update_record('block_playerhud_inventory', $inv);
         }
-        $DB->delete_records('block_playerhud_inventory', ['id' => $invid]);
     }
 
     $url = new moodle_url($baseurl, ['tab' => 'reports', 'r_userid' => $ruserid]);

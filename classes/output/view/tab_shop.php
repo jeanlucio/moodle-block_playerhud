@@ -85,7 +85,10 @@ class tab_shop implements renderable, templatable {
         $tradesdata = [];
 
         // Fetch user inventory counts in a single query.
-        $sqlinv = "SELECT itemid, COUNT(id) as qty FROM {block_playerhud_inventory} WHERE userid = :userid GROUP BY itemid";
+        $sqlinv = "SELECT itemid, COUNT(id) as qty
+                     FROM {block_playerhud_inventory}
+                    WHERE userid = :userid AND source != 'revoked'
+                 GROUP BY itemid";
         $myinventory = $DB->get_records_sql_menu($sqlinv, ['userid' => $this->player->userid]);
 
         // Fetch completed trades (Distinct to avoid Moodle debugging warning on duplicates).

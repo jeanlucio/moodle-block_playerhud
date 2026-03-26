@@ -357,7 +357,7 @@ class tab_reports implements renderable, templatable {
                    pu.currentxp, pu.enable_gamification,
                    (SELECT COUNT(inv.id) FROM {block_playerhud_inventory} inv
                     JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                    WHERE inv.userid = u.id AND it.blockinstanceid = :p1) as total_items
+                    WHERE inv.userid = u.id AND it.blockinstanceid = :p1 AND inv.source != 'revoked') as total_items
               FROM {user} u
               JOIN {block_playerhud_user} pu ON pu.userid = u.id
              WHERE pu.blockinstanceid = :p2
@@ -410,13 +410,15 @@ class tab_reports implements renderable, templatable {
         $concatitem = $DB->sql_concat("'item_'", "inv.id");
         $concattrade = $DB->sql_concat("'trade_'", "tl.id");
 
-        // Combining item acquisition logs and trade logs into a single query with a union, ordered by time.
         $sql = "
         SELECT uniqueid, event_type, object_name, timecreated, details, icon, xp_gained, itemid, inventory_id
         FROM (
-            SELECT $concatitem AS uniqueid, 'item' AS event_type, i.name AS object_name, inv.timecreated,
+            SELECT $concatitem AS uniqueid,
+                   CASE WHEN inv.source = 'revoked' THEN 'item_revoked' ELSE 'item' END AS event_type,
+                   i.name AS object_name, inv.timecreated,
                    inv.source AS details, i.image AS icon,
                    CASE
+                       WHEN inv.source = 'revoked' AND COALESCE(d.maxusage, 1) > 0 THEN -i.xp
                        WHEN inv.source = 'map' AND COALESCE(d.maxusage, 1) > 0 THEN i.xp
                        ELSE 0
                    END AS xp_gained,
@@ -465,13 +467,22 @@ class tab_reports implements renderable, templatable {
                 if ($log->event_type === 'item') {
                     $badgeclass = 'bg-primary';
                     $badgetext  = get_string('report_type_item', 'block_playerhud');
-
                     if (isset($allmedia[$log->itemid])) {
                         $media = $allmedia[$log->itemid];
                         $isimageicon = $media['is_image'];
                         $iconurl = $media['is_image'] ? $media['url'] : '';
                         $iconemoji = $media['is_image'] ? '' : strip_tags($media['content']);
                     }
+                } else if ($log->event_type === 'item_revoked') {
+                    $badgeclass = 'bg-danger';
+                    $badgetext  = get_string('report_type_revoked', 'block_playerhud');
+                    if (isset($allmedia[$log->itemid])) {
+                        $media = $allmedia[$log->itemid];
+                        $isimageicon = $media['is_image'];
+                        $iconurl = $media['is_image'] ? $media['url'] : '';
+                        $iconemoji = $media['is_image'] ? '' : strip_tags($media['content']);
+                    }
+                    $log->inventory_id = 0; // Hide revoke button for revoked items.
                 } else if ($log->event_type === 'trade') {
                     $badgeclass = 'bg-info text-dark';
                     $badgetext  = get_string('report_type_trade', 'block_playerhud');
@@ -480,14 +491,16 @@ class tab_reports implements renderable, templatable {
 
                 $xpbadge = '';
                 if ($log->xp_gained > 0) {
-                    $xpbadge = '<span class="badge bg-success text-white ph-text-xs">+' .
-                        $log->xp_gained . ' XP</span>';
+                    $xpbadge = '<span class="badge bg-success text-white ph-text-xs">+' . $log->xp_gained . ' XP</span>';
+                } else if ($log->xp_gained < 0) {
+                    $xpbadge = '<span class="badge bg-danger text-white ph-text-xs">' . $log->xp_gained . ' XP</span>';
                 } else {
                     $xpbadge = '<span class="text-muted small">-</span>';
                 }
 
+                // For item events that are not revoked, show revoke option.
                 $urldelete = '';
-                if ($log->inventory_id > 0) {
+                if ($log->inventory_id > 0 && property_exists($this, 'courseid')) {
                     $urldelete = new moodle_url('/blocks/playerhud/manage.php', [
                         'id' => $this->courseid,
                         'instanceid' => $this->instanceid,

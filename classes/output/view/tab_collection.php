@@ -68,7 +68,7 @@ class tab_collection implements renderable, templatable {
         $sql = "SELECT inv.*, d.maxusage as drop_maxusage
                   FROM {block_playerhud_inventory} inv
              LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
-                 WHERE inv.userid = :userid";
+                 WHERE inv.userid = :userid AND inv.source != 'revoked'";
 
         $rawinventory = $DB->get_records_sql($sql, ['userid' => $this->player->userid]);
 

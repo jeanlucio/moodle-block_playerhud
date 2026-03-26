@@ -190,7 +190,7 @@ class trade_manager {
 
                 $sql = "SELECT id, itemid
                           FROM {block_playerhud_inventory}
-                         WHERE userid = :userid AND itemid $invinsql
+                         WHERE userid = :userid AND itemid $invinsql AND source != 'revoked'
                       ORDER BY timecreated ASC";
 
                 $invrecords = $DB->get_records_sql($sql, $invparams);

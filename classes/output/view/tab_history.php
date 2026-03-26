@@ -92,22 +92,25 @@ class tab_history implements renderable, templatable {
         $concattrade = $DB->sql_concat("'trade_'", "tl.id");
 
         $sql = "
-        SELECT uniqueid, event_type, object_name, timecreated, details, icon, xp_gained, itemid
+        SELECT uniqueid, event_type, object_name, timecreated, details, icon, xp_gained, itemid, inventory_id
         FROM (
-            SELECT $concatitem AS uniqueid, 'item' AS event_type, i.name AS object_name, inv.timecreated,
+            SELECT $concatitem AS uniqueid,
+                   CASE WHEN inv.source = 'revoked' THEN 'item_revoked' ELSE 'item' END AS event_type,
+                   i.name AS object_name, inv.timecreated,
                    inv.source AS details, i.image AS icon,
                    CASE
+                       WHEN inv.source = 'revoked' AND COALESCE(d.maxusage, 1) > 0 THEN -i.xp
                        WHEN inv.source = 'map' AND COALESCE(d.maxusage, 1) > 0 THEN i.xp
                        ELSE 0
                    END AS xp_gained,
-                   i.id AS itemid
+                   i.id AS itemid, inv.id AS inventory_id
               FROM {block_playerhud_inventory} inv
               JOIN {block_playerhud_items} i ON inv.itemid = i.id
          LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
              WHERE inv.userid = :u1 AND i.blockinstanceid = :p1
             UNION ALL
             SELECT $concattrade AS uniqueid, 'trade' AS event_type, t.name AS object_name, tl.timecreated,
-                   'trade_completed' AS details, '⚖️' AS icon, 0 AS xp_gained, 0 AS itemid
+                   'trade_completed' AS details, '⚖️' AS icon, 0 AS xp_gained, 0 AS itemid, 0 AS inventory_id
               FROM {block_playerhud_trade_log} tl
               JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
              WHERE tl.userid = :u2 AND t.blockinstanceid = :p2
@@ -115,10 +118,8 @@ class tab_history implements renderable, templatable {
         ORDER BY timecreated DESC LIMIT 100";
 
         $params = [
-            'u1' => $userid,
-            'p1' => $this->instanceid,
-            'u2' => $userid,
-            'p2' => $this->instanceid,
+            'u1' => $userid, 'p1' => $this->instanceid,
+            'u2' => $userid, 'p2' => $this->instanceid,
         ];
         $logs = $DB->get_records_sql($sql, $params);
 
@@ -147,13 +148,22 @@ class tab_history implements renderable, templatable {
                 if ($log->event_type === 'item') {
                     $badgeclass = 'bg-primary';
                     $badgetext  = get_string('report_type_item', 'block_playerhud');
-
                     if (isset($allmedia[$log->itemid])) {
                         $media = $allmedia[$log->itemid];
                         $isimageicon = $media['is_image'];
                         $iconurl = $media['is_image'] ? $media['url'] : '';
                         $iconemoji = $media['is_image'] ? '' : strip_tags($media['content']);
                     }
+                } else if ($log->event_type === 'item_revoked') {
+                    $badgeclass = 'bg-danger';
+                    $badgetext  = get_string('report_type_revoked', 'block_playerhud');
+                    if (isset($allmedia[$log->itemid])) {
+                        $media = $allmedia[$log->itemid];
+                        $isimageicon = $media['is_image'];
+                        $iconurl = $media['is_image'] ? $media['url'] : '';
+                        $iconemoji = $media['is_image'] ? '' : strip_tags($media['content']);
+                    }
+                    $log->inventory_id = 0; // Hide revoke button for revoked items.
                 } else if ($log->event_type === 'trade') {
                     $badgeclass = 'bg-info text-dark';
                     $badgetext  = get_string('report_type_trade', 'block_playerhud');
@@ -162,10 +172,24 @@ class tab_history implements renderable, templatable {
 
                 $xpbadge = '';
                 if ($log->xp_gained > 0) {
-                    $xpbadge = '<span class="badge bg-success text-white ph-text-xs">+' .
-                        $log->xp_gained . ' XP</span>';
+                    $xpbadge = '<span class="badge bg-success text-white ph-text-xs">+' . $log->xp_gained . ' XP</span>';
+                } else if ($log->xp_gained < 0) {
+                    $xpbadge = '<span class="badge bg-danger text-white ph-text-xs">' . $log->xp_gained . ' XP</span>';
                 } else {
                     $xpbadge = '<span class="text-muted small">-</span>';
+                }
+
+                // For item events that are not revoked, show revoke option.
+                $urldelete = '';
+                if ($log->inventory_id > 0 && property_exists($this, 'courseid')) {
+                    $urldelete = new moodle_url('/blocks/playerhud/manage.php', [
+                        'id' => $this->courseid,
+                        'instanceid' => $this->instanceid,
+                        'action' => 'revoke_item',
+                        'invid' => $log->inventory_id,
+                        'r_userid' => $userid,
+                        'sesskey' => sesskey(),
+                    ]);
                 }
 
                 $results[] = [
@@ -178,6 +202,8 @@ class tab_history implements renderable, templatable {
                     'object_name'   => format_string($log->object_name),
                     'xp_badge'      => $xpbadge,
                     'details_html'  => $detailtext,
+                    'url_revoke'    => $urldelete ? $urldelete->out(false) : '',
+                    'has_revoke'    => ($log->inventory_id > 0),
                 ];
             }
         }

@@ -79,7 +79,7 @@ class game {
         $sql = "SELECT inv.id as unique_inventory_id, i.*, inv.timecreated as collecteddate
                   FROM {block_playerhud_items} i
                   JOIN {block_playerhud_inventory} inv ON inv.itemid = i.id
-                 WHERE inv.userid = :userid AND i.blockinstanceid = :pid
+                 WHERE inv.userid = :userid AND i.blockinstanceid = :pid AND inv.source != 'revoked'
               ORDER BY inv.timecreated DESC";
         return $DB->get_records_sql($sql, ['userid' => $userid, 'pid' => $blockinstanceid]);
     }
