@@ -61,6 +61,7 @@ final class gamemaster_test extends advanced_testcase {
         $player->blockinstanceid = $instanceid;
         $player->userid = $user->id;
         $player->currentxp = 0;
+        $player->timecreated = $pastdate;
         $player->timemodified = $pastdate;
         $DB->insert_record('block_playerhud_user', $player);
 
@@ -69,6 +70,8 @@ final class gamemaster_test extends advanced_testcase {
         $item->blockinstanceid = $instanceid;
         $item->name = 'Espada de Teste';
         $item->xp = 100;
+        $item->timecreated = time();
+        $item->timemodified = time();
         $itemid = $DB->insert_record('block_playerhud_items', $item);
 
         // 2. Ação: Simular o grant_item do manage.php.
@@ -117,6 +120,7 @@ final class gamemaster_test extends advanced_testcase {
         $player->blockinstanceid = $instanceid;
         $player->userid = $user->id;
         $player->currentxp = 500;
+        $player->timecreated = $fivedaysago;
         $player->timemodified = $fivedaysago;
         $DB->insert_record('block_playerhud_user', $player);
 
@@ -125,6 +129,8 @@ final class gamemaster_test extends advanced_testcase {
         $item->blockinstanceid = $instanceid;
         $item->name = 'Escudo Roubado';
         $item->xp = 200;
+        $item->timecreated = time();
+        $item->timemodified = time();
         $itemid = $DB->insert_record('block_playerhud_items', $item);
 
         $inv = new \stdClass();
@@ -167,12 +173,14 @@ final class gamemaster_test extends advanced_testcase {
         // 1. Setup: Jogador com 50 XP.
         $user = $this->getDataGenerator()->create_user();
         $instanceid = 1;
+        $pastdate = time() - 3600;
 
         $player = new \stdClass();
         $player->blockinstanceid = $instanceid;
         $player->userid = $user->id;
         $player->currentxp = 50;
-        $player->timemodified = time() - 3600;
+        $player->timecreated = $pastdate;
+        $player->timemodified = $pastdate;
         $DB->insert_record('block_playerhud_user', $player);
 
         // Item vale 100 XP (mais do que o jogador tem).
@@ -180,6 +188,8 @@ final class gamemaster_test extends advanced_testcase {
         $item->blockinstanceid = $instanceid;
         $item->name = 'Item Bugado';
         $item->xp = 100;
+        $item->timecreated = time();
+        $item->timemodified = time();
 
         // 2. Ação: Remover os 100 XP do jogador.
         $dbplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
@@ -208,6 +218,7 @@ final class gamemaster_test extends advanced_testcase {
         $player->blockinstanceid = $instanceid;
         $player->userid = $user->id;
         $player->currentxp = 1000;
+        $player->timecreated = $olddate;
         $player->timemodified = $olddate;
         $DB->insert_record('block_playerhud_user', $player);
 
@@ -216,6 +227,8 @@ final class gamemaster_test extends advanced_testcase {
         $item->blockinstanceid = $instanceid;
         $item->name = 'Poção Excluída';
         $item->xp = 200;
+        $item->timecreated = time();
+        $item->timemodified = time();
         $itemid = $DB->insert_record('block_playerhud_items', $item);
 
         // Aluno coletou esse item 2 vezes (400 XP ganhos com ele).
@@ -249,6 +262,7 @@ final class gamemaster_test extends advanced_testcase {
         $player->blockinstanceid = 1;
         $player->userid = $user->id;
         $player->currentxp = 800;
+        $player->timecreated = $olddate;
         $player->timemodified = $olddate;
         $DB->insert_record('block_playerhud_user', $player);
 
@@ -279,6 +293,7 @@ final class gamemaster_test extends advanced_testcase {
         $player->blockinstanceid = 1;
         $player->userid = $user->id;
         $player->currentxp = 2000;
+        $player->timecreated = $olddate;
         $player->timemodified = $olddate;
         $DB->insert_record('block_playerhud_user', $player);
 
