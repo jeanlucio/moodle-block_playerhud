@@ -158,7 +158,7 @@ class external extends external_api {
         $dropmax = 0,
         $droptime = 0
     ) {
-        global $DB;
+        global $DB, $USER;
 
         // 1. Validation.
         $params = self::validate_parameters(self::generate_ai_content_parameters(), [
@@ -247,6 +247,22 @@ class external extends external_api {
                 $extraoptions,
                 $params['amount']
             );
+
+            if (!empty($result['created_items'])) {
+                $logs = [];
+                $now = time();
+                foreach ($result['created_items'] as $itemname) {
+                    $log = new \stdClass();
+                    $log->blockinstanceid = $params['instanceid'];
+                    $log->userid          = $USER->id;
+                    $log->action_type     = 'item';
+                    $log->object_name     = $itemname;
+                    $log->ai_provider     = $result['provider'] ?? 'Unknown';
+                    $log->timecreated     = $now;
+                    $logs[] = $log;
+                }
+                $DB->insert_records('block_playerhud_ai_logs', $logs);
+            }
 
             return [
                 'success' => true,

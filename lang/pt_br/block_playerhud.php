@@ -66,6 +66,7 @@ $string['api_key_placeholder'] = 'Deixe vazio para usar a da instituição';
 $string['api_settings_desc'] = 'Se você tiver suas próprias chaves de API (Gemini ou Groq), insira-as aqui. O sistema usará suas chaves como prioridade. Se deixar em branco, o sistema tentará usar a chave global da instituição (se houver).';
 $string['api_settings_title'] = 'Suas Chaves de IA (Opcional)';
 $string['average'] = 'Média';
+$string['back'] = 'Voltar';
 $string['back_to_course'] = 'Voltar ao Curso';
 $string['back_to_library'] = 'Voltar para a Biblioteca';
 $string['bal_msg_easy'] = 'Fácil demais! Há <strong>{$a->total} XP</strong> disponíveis. O aluno chegará ao topo muito rápido.';
@@ -75,6 +76,8 @@ $string['bal_msg_perfect'] = 'Excelente! O jogo está balanceado ({$a->ratio}% d
 $string['cancel'] = 'Cancelar';
 $string['changessaved'] = 'Alterações salvas com sucesso.';
 $string['choice_text'] = 'Texto do Botão';
+$string['class_empty'] = 'Nenhuma classe atribuída ainda.';
+$string['class_name'] = 'Classe RPG';
 $string['click_to_hide'] = 'Clique para ocultar';
 $string['click_to_show'] = 'Clique para mostrar';
 $string['close'] = 'Fechar';
@@ -172,103 +175,105 @@ $string['help_btn'] = 'Ajuda';
 $string['help_content_label'] = 'Conteúdo de Ajuda Personalizado';
 $string['help_content_label_help'] = 'Personalize as instruções que os alunos veem na aba Ajuda. Limpe este campo ou marque a caixa abaixo para restaurar o padrão do sistema.';
 $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
-    <div class="d-flex align-items-center">
-        <div class="me-3">
-            <i class="fa fa-gamepad fa-2x" aria-hidden="true"></i>
-        </div>
-        <div>
-            <h5 class="alert-heading fw-bold m-0">Bem-vindo(a) ao PlayerHUD!</h5>
-            <p class="mb-0">
-                Este curso utiliza um sistema de gamificação para acompanhar seu progresso,
-                recompensar sua participação e tornar sua jornada de aprendizagem mais envolvente.
-            </p>
-        </div>
-    </div>
+    <div class="d-flex align-items-center">
+        <div class="me-3">
+            <i class="fa fa-gamepad fa-2x" aria-hidden="true"></i>
+        </div>
+        <div>
+            <h5 class="alert-heading fw-bold m-0">Bem-vindo(a) ao PlayerHUD!</h5>
+            <p class="mb-0">
+                Este curso utiliza um sistema de gamificação para acompanhar seu progresso,
+                recompensar sua participação e tornar sua jornada de aprendizagem mais envolvente.
+            </p>
+        </div>
+    </div>
 </div>
 <div class="row">
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-star fa-3x text-primary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">XP & Níveis</h5>
-                <p class="small text-muted">
-                    Ao coletar itens ou completar desafios, você acumula XP (Experiência).
-                    Conforme seu XP aumenta, seu nível evolui e sua barra de progresso avança.
-                    Dependendo da configuração do professor, o XP pode ou não influenciar sua avaliação.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-cube fa-3x text-success mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Itens & Drops</h5>
-                <p class="small text-muted">
-                    Durante o curso, você poderá encontrar itens escondidos em atividades,
-                    descrições ou desafios específicos. Alguns itens possuem limite de coleta
-                    ou tempo de reaparecimento (cooldown).
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-clock fa-3x text-warning mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Tempo & Limites</h5>
-                <p class="small text-muted">
-                    Se um item exibir um temporizador, significa que ele está temporariamente
-                    indisponível. Após o tempo indicado, poderá ser coletado novamente,
-                    caso o professor tenha permitido.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-trophy fa-3x text-danger mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Ranking</h5>
-                <p class="small text-muted">
-                    O ranking mostra sua posição em relação aos colegas.
-                    Você pode optar por não aparecer publicamente.
-                    Ele funciona como ferramenta de motivação, não como competição obrigatória.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-pause-circle fa-3x text-secondary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Pausar Gamificação</h5>
-                <p class="small text-muted">
-                    Você pode desativar temporariamente sua participação na gamificação.
-                    Seu progresso ficará pausado e poderá ser reativado posteriormente.
-                </p>
-            </div>
-        </div>
-    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-star fa-3x text-primary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">XP & Níveis</h5>
+                <p class="small text-muted">
+                    Ao coletar itens ou completar desafios, você acumula XP (Experiência).
+                    Conforme seu XP aumenta, seu nível evolui e sua barra de progresso avança.
+                    Dependendo da configuração do professor, o XP pode ou não influenciar sua avaliação.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-cube fa-3x text-success mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Itens & Drops</h5>
+                <p class="small text-muted">
+                    Durante o curso, você poderá encontrar itens escondidos em atividades,
+                    descrições ou desafios específicos. Alguns itens possuem limite de coleta
+                    ou tempo de reaparecimento (cooldown).
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-clock fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Tempo & Limites</h5>
+                <p class="small text-muted">
+                    Se um item exibir um temporizador, significa que ele está temporariamente
+                    indisponível. Após o tempo indicado, poderá ser coletado novamente,
+                    caso o professor tenha permitido.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-trophy fa-3x text-danger mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Ranking</h5>
+                <p class="small text-muted">
+                    O ranking mostra sua posição em relação aos colegas.
+                    Você pode optar por não aparecer publicamente.
+                    Ele funciona como ferramenta de motivação, não como competição obrigatória.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-pause-circle fa-3x text-secondary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Pausar Gamificação</h5>
+                <p class="small text-muted">
+                    Você pode desativar temporariamente sua participação na gamificação.
+                    Seu progresso ficará pausado e poderá ser reativado posteriormente.
+                </p>
+            </div>
+        </div>
+    </div>
 </div>
 <div class="alert alert-light border shadow-sm mt-4">
-    <div class="d-flex align-items-center">
-        <div class="me-3">
-            <i class="fa fa-lightbulb fa-2x text-warning" aria-hidden="true"></i>
-        </div>
-        <div>
-            <h6 class="fw-bold m-0">Dica Importante</h6>
-            <p class="mb-0 small text-muted">
-                Explore o curso com atenção, participe das atividades e interaja com os conteúdos.
-                O XP é consequência do seu envolvimento — o aprendizado é o verdadeiro objetivo.
-            </p>
-        </div>
-    </div>
+    <div class="d-flex align-items-center">
+        <div class="me-3">
+            <i class="fa fa-lightbulb fa-2x text-warning" aria-hidden="true"></i>
+        </div>
+        <div>
+            <h6 class="fw-bold m-0">Dica Importante</h6>
+            <p class="mb-0 small text-muted">
+                Explore o curso com atenção, participe das atividades e interaja com os conteúdos.
+                O XP é consequência do seu envolvimento — o aprendizado é o verdadeiro objetivo.
+            </p>
+        </div>
+    </div>
 </div>';
 $string['help_reset_checkbox'] = 'Restaurar conteúdo de ajuda padrão ao salvar';
 $string['help_title'] = 'Guia do Jogo';
 $string['hidden'] = 'Oculto';
 $string['hidden_desc'] = 'Apenas o professor vê você.';
+$string['history_desc'] = 'Acompanhe o registro detalhado de suas aventuras e aquisições.';
+$string['history_empty'] = 'Nenhum registro encontrado em sua jornada ainda.';
 $string['infinite'] = 'Infinito';
 $string['infinite_item_title'] = 'Item Infinito';
 $string['item'] = 'Item';
@@ -361,6 +366,35 @@ $string['ranking_filter_show'] = 'Mostrar Ocultos/Pausados';
 $string['ranking_hdr'] = 'Ranking & Competition';
 $string['ranking_hidden_help'] = 'Clique em <strong>{$a}</strong> acima para voltar a competir.';
 $string['ready'] = 'Pronto!';
+$string['report_action'] = 'Ação';
+$string['report_ai_subtitle'] = 'Últimas 50 gerações';
+$string['report_ai_title'] = 'Auditoria do Oráculo IA';
+$string['report_audit'] = 'Auditoria / Histórico';
+$string['report_col_ai'] = 'Motor IA';
+$string['report_col_date'] = 'Data / Hora';
+$string['report_col_desc'] = 'Elemento';
+$string['report_col_details'] = 'Detalhes';
+$string['report_col_object'] = 'Objeto Gerado';
+$string['report_col_type'] = 'Tipo';
+$string['report_collected_times'] = 'Coletado {$a} vezes';
+$string['report_karma'] = 'Karma';
+$string['report_leader'] = 'Líder';
+$string['report_most_collected'] = 'Item Mais Coletado';
+$string['report_no_logs'] = 'Nenhum registro encontrado.';
+$string['report_select_user'] = '--- Selecione um estudante ---';
+$string['report_show_less'] = 'Mostrar menos';
+$string['report_show_more'] = 'Mostrar registros antigos';
+$string['report_src_map'] = 'Encontrado no mapa';
+$string['report_src_quest'] = 'Recompensa de missão';
+$string['report_src_shop'] = 'Comprado na loja';
+$string['report_status_completed'] = 'Concluído';
+$string['report_status_level'] = 'Nível / XP';
+$string['report_status_transaction'] = 'Transação Executada';
+$string['report_total_xp'] = 'XP Total Gerado';
+$string['report_type_item'] = 'Item';
+$string['report_type_other'] = 'Outro';
+$string['report_type_quest'] = 'Missão';
+$string['report_type_trade'] = 'Troca';
 $string['respawntime'] = 'Tempo de Cooldown';
 $string['respawntime_help'] = 'Esta configuração define quanto tempo o aluno deve esperar para coletar o item novamente neste local específico.<br><br>Defina como <b>0</b> se quiser que a coleta seja única (o aluno pega uma vez e nunca mais aparece), ou se for um item infinito sem tempo de espera.';
 $string['restrict_group'] = 'Restringir a grupo/agrupamento';
@@ -379,6 +413,7 @@ $string['shop_pay'] = 'Você paga';
 $string['shop_receive'] = 'Você recebe';
 $string['shop_xp_warning'] = '<strong>Equilíbrio do jogo:</strong> Itens adquiridos na loja não concedem XP. Eles são usados para criação, missões ou coleções.';
 $string['show_in_shop'] = 'Exibir na loja centralizada?';
+$string['sort'] = 'Ordenar coluna';
 $string['sort_acquired'] = 'Adquiridos Primeiro';
 $string['sort_by'] = 'Ordenar por...';
 $string['sort_count_asc'] = 'Menor Quantidade';
@@ -399,9 +434,11 @@ $string['success'] = 'Sucesso!';
 $string['summary_stats'] = 'Você possui {$a->items} itens criados e {$a->drops} drops espalhados.';
 $string['tab_collection'] = 'Coleção';
 $string['tab_config'] = 'Configurações';
+$string['tab_history'] = 'Histórico';
 $string['tab_items'] = 'Biblioteca de Itens';
 $string['tab_maintenance'] = 'A aba "{$a}" está atualmente em manutenção ou construção.';
 $string['tab_ranking'] = 'Ranking';
+$string['tab_reports'] = 'Relatórios';
 $string['tab_rules'] = 'Ajuda & Regras';
 $string['tab_shop'] = 'Loja';
 $string['tab_trades'] = 'Trocas (NPC)';

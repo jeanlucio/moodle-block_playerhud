@@ -66,6 +66,7 @@ $string['api_key_placeholder'] = 'Leave empty to use the institution\'s key';
 $string['api_settings_desc'] = 'If you have your own API keys (Gemini or Groq), enter them here. The system will use your keys as a priority. If you leave it blank, the system will try to use the institution global key (if any).';
 $string['api_settings_title'] = 'Your AI Keys (Optional)';
 $string['average'] = 'Avg';
+$string['back'] = 'Back';
 $string['back_to_course'] = 'Back to Course';
 $string['back_to_library'] = 'Back to Library';
 $string['bal_msg_easy'] = 'Too easy! There is <strong>{$a->total} XP</strong> available. Students will max out too fast.';
@@ -75,6 +76,8 @@ $string['bal_msg_perfect'] = 'Balanced! The game economy is healthy ({$a->ratio}
 $string['cancel'] = 'Cancel';
 $string['changessaved'] = 'Changes saved successfully.';
 $string['choice_text'] = 'Button Text';
+$string['class_empty'] = 'No classes assigned yet.';
+$string['class_name'] = 'RPG Class';
 $string['click_to_hide'] = 'Click to hide';
 $string['click_to_show'] = 'Click to show';
 $string['close'] = 'Close';
@@ -172,103 +175,105 @@ $string['help_btn'] = 'Help';
 $string['help_content_label'] = 'Custom Help Content';
 $string['help_content_label_help'] = 'Customize the instructions students see in the Help tab. Clear this field or check the box below to restore the system default.';
 $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
-    <div class="d-flex align-items-center">
-        <div class="me-3">
-            <i class="fa fa-gamepad fa-2x" aria-hidden="true"></i>
-        </div>
-        <div>
-            <h5 class="alert-heading fw-bold m-0">Welcome to PlayerHUD!</h5>
-            <p class="mb-0">
-                This course uses a gamification system to track your progress,
-                reward your participation, and make your learning journey more engaging.
-            </p>
-        </div>
-    </div>
+    <div class="d-flex align-items-center">
+        <div class="me-3">
+            <i class="fa fa-gamepad fa-2x" aria-hidden="true"></i>
+        </div>
+        <div>
+            <h5 class="alert-heading fw-bold m-0">Welcome to PlayerHUD!</h5>
+            <p class="mb-0">
+                This course uses a gamification system to track your progress,
+                reward your participation, and make your learning journey more engaging.
+            </p>
+        </div>
+    </div>
 </div>
 <div class="row">
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-star fa-3x text-primary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">XP & Levels</h5>
-                <p class="small text-muted">
-                    By collecting items or completing challenges, you earn XP (Experience Points).
-                    As your XP increases, your level rises and your progress bar advances.
-                    Depending on the instructor\'s configuration, XP may or may not affect your final grade.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-cube fa-3x text-success mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Items & Drops</h5>
-                <p class="small text-muted">
-                    Throughout the course, you may find items hidden inside activities,
-                    descriptions, or specific challenges. Some items may have collection limits
-                    or respawn timers (cooldowns).
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-clock fa-3x text-warning mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Timers & Limits</h5>
-                <p class="small text-muted">
-                    If an item displays a timer, it means it is temporarily unavailable.
-                    Once the countdown ends, it may become collectible again,
-                    depending on the instructor’s settings.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-trophy fa-3x text-danger mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Leaderboard</h5>
-                <p class="small text-muted">
-                    The leaderboard shows your position compared to other participants.
-                    You may choose not to appear publicly.
-                    It is designed as a motivational tool, not a mandatory competition.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-pause-circle fa-3x text-secondary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Pause Gamification</h5>
-                <p class="small text-muted">
-                    You can temporarily disable your participation in the gamification system.
-                    Your progress will be paused and can be reactivated at any time.
-                </p>
-            </div>
-        </div>
-    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-star fa-3x text-primary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">XP & Levels</h5>
+                <p class="small text-muted">
+                    By collecting items or completing challenges, you earn XP (Experience Points).
+                    As your XP increases, your level rises and your progress bar advances.
+                    Depending on the instructor\'s configuration, XP may or may not affect your final grade.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-cube fa-3x text-success mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Items & Drops</h5>
+                <p class="small text-muted">
+                    Throughout the course, you may find items hidden inside activities,
+                    descriptions, or specific challenges. Some items may have collection limits
+                    or respawn timers (cooldowns).
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-clock fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Timers & Limits</h5>
+                <p class="small text-muted">
+                    If an item displays a timer, it means it is temporarily unavailable.
+                    Once the countdown ends, it may become collectible again,
+                    depending on the instructor’s settings.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-trophy fa-3x text-danger mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Leaderboard</h5>
+                <p class="small text-muted">
+                    The leaderboard shows your position compared to other participants.
+                    You may choose not to appear publicly.
+                    It is designed as a motivational tool, not a mandatory competition.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-pause-circle fa-3x text-secondary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Pause Gamification</h5>
+                <p class="small text-muted">
+                    You can temporarily disable your participation in the gamification system.
+                    Your progress will be paused and can be reactivated at any time.
+                </p>
+            </div>
+        </div>
+    </div>
 </div>
 <div class="alert alert-light border shadow-sm mt-4">
-    <div class="d-flex align-items-center">
-        <div class="me-3">
-            <i class="fa fa-lightbulb fa-2x text-warning" aria-hidden="true"></i>
-        </div>
-        <div>
-            <h6 class="fw-bold m-0">Important Tip</h6>
-            <p class="mb-0 small text-muted">
-                Explore the course carefully, participate in activities, and engage with the content.
-                XP is a result of involvement — learning remains the true goal.
-            </p>
-        </div>
-    </div>
+    <div class="d-flex align-items-center">
+        <div class="me-3">
+            <i class="fa fa-lightbulb fa-2x text-warning" aria-hidden="true"></i>
+        </div>
+        <div>
+            <h6 class="fw-bold m-0">Important Tip</h6>
+            <p class="mb-0 small text-muted">
+                Explore the course carefully, participate in activities, and engage with the content.
+                XP is a result of involvement — learning remains the true goal.
+            </p>
+        </div>
+    </div>
 </div>';
 $string['help_reset_checkbox'] = 'Reset help content to system default on save';
 $string['help_title'] = 'Game Guide';
 $string['hidden'] = 'Hidden';
 $string['hidden_desc'] = 'Only the teacher sees you.';
+$string['history_desc'] = 'Follow the detailed log of your adventures and acquisitions.';
+$string['history_empty'] = 'No records found in your journey yet.';
 $string['infinite'] = 'Infinite';
 $string['infinite_item_title'] = 'Infinite Item';
 $string['item'] = 'Item';
@@ -361,6 +366,35 @@ $string['ranking_filter_show'] = 'Show Hidden/Paused';
 $string['ranking_hdr'] = 'Ranking & Competition';
 $string['ranking_hidden_help'] = 'Click on <strong>{$a}</strong> above to join the competition again.';
 $string['ready'] = 'Ready!';
+$string['report_action'] = 'Action';
+$string['report_ai_subtitle'] = 'Latest 50 generations';
+$string['report_ai_title'] = 'AI Oracle Audit';
+$string['report_audit'] = 'Audit / History';
+$string['report_col_ai'] = 'AI Engine';
+$string['report_col_date'] = 'Date / Time';
+$string['report_col_desc'] = 'Element';
+$string['report_col_details'] = 'Details';
+$string['report_col_object'] = 'Object Generated';
+$string['report_col_type'] = 'Type';
+$string['report_collected_times'] = 'Collected {$a} times';
+$string['report_karma'] = 'Karma';
+$string['report_leader'] = 'Top Player';
+$string['report_most_collected'] = 'Most Collected Item';
+$string['report_no_logs'] = 'No records found.';
+$string['report_select_user'] = '--- Select a student ---';
+$string['report_show_less'] = 'Show less';
+$string['report_show_more'] = 'Show older logs';
+$string['report_src_map'] = 'Found on map';
+$string['report_src_quest'] = 'Quest reward';
+$string['report_src_shop'] = 'Bought in shop';
+$string['report_status_completed'] = 'Completed';
+$string['report_status_level'] = 'Level / XP';
+$string['report_status_transaction'] = 'Transaction Executed';
+$string['report_total_xp'] = 'Total XP Generated';
+$string['report_type_item'] = 'Item';
+$string['report_type_other'] = 'Other';
+$string['report_type_quest'] = 'Quest';
+$string['report_type_trade'] = 'Trade';
 $string['respawntime'] = 'Cooldown Time';
 $string['respawntime_help'] = 'This setting defines how long the student must wait to collect the item again at this specific location.<br><br>Set to <b>0</b> if you want the collection to be one-time only (the student takes it once and it never appears again), or if it is an infinite item with no wait time.';
 $string['restrict_group'] = 'Restrict to group/grouping';
@@ -379,6 +413,7 @@ $string['shop_pay'] = 'You pay';
 $string['shop_receive'] = 'You receive';
 $string['shop_xp_warning'] = '<strong>Game Balance:</strong> Items acquired in the shop do not grant XP. They are used for crafting, quests, or collections.';
 $string['show_in_shop'] = 'Show in centralized Shop?';
+$string['sort'] = 'Sort column';
 $string['sort_acquired'] = 'Owned First';
 $string['sort_by'] = 'Sort by...';
 $string['sort_count_asc'] = 'Lowest Quantity';
@@ -399,9 +434,11 @@ $string['success'] = 'Success!';
 $string['summary_stats'] = 'You have {$a->items} items created and {$a->drops} drops available.';
 $string['tab_collection'] = 'Collection';
 $string['tab_config'] = 'Settings';
+$string['tab_history'] = 'History';
 $string['tab_items'] = 'Item Library';
 $string['tab_maintenance'] = 'The "{$a}" tab is currently under maintenance or construction.';
 $string['tab_ranking'] = 'Leaderboard';
+$string['tab_reports'] = 'Reports';
 $string['tab_rules'] = 'Help & Rules';
 $string['tab_shop'] = 'Shop';
 $string['tab_trades'] = 'Trades (NPC)';

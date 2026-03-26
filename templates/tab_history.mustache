@@ -1,0 +1,91 @@
+{{!
+	This file is part of Moodle - http://moodle.org/
+
+	Moodle is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	Moodle is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/tab_history
+    @package block_playerhud
+    @copyright 2026 Jean Lúcio
+    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "str": {
+            "title": "History",
+            "desc": "Check your recent game actions.",
+            "empty": "No logs.",
+            "col_date": "Date",
+            "col_type": "Type",
+            "col_desc": "Element",
+            "xp": "XP",
+            "col_details": "Details"
+        },
+        "has_logs": true,
+        "logs": []
+    }
+}}
+<div class="playerhud-history-container animate__animated animate__fadeIn">
+
+    <div class="alert alert-light border shadow-sm mb-4 d-flex align-items-center">
+        <i class="fa fa-list-alt fa-2x text-primary me-3" aria-hidden="true"></i>
+        <div>
+            <h5 class="m-0 fw-bold">{{str.title}}</h5>
+            <small class="text-muted">{{str.desc}}</small>
+        </div>
+    </div>
+
+    {{#has_logs}}
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-hover table-striped bg-white mb-0 align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">{{str.col_date}}</th>
+                        <th scope="col">{{str.col_type}}</th>
+                        <th scope="col">{{str.col_desc}}</th>
+                        <th scope="col" class="text-center">{{str.xp}}</th>
+                        <th scope="col">{{str.col_details}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#logs}}
+                    <tr>
+                        <td class="text-muted small" style="width:180px;">{{date}}</td>
+                        <td><span class="badge {{badge_class}}">{{badge_text}}</span></td>
+                        <td class="fw-bold">
+                            <div class="d-flex align-items-center">
+                                <div class="me-2 text-center" style="width:30px;">
+                                    {{#is_image_icon}}<img src="{{icon_url}}" class="ph-img-xs" alt="">{{/is_image_icon}}
+                                    {{^is_image_icon}}<span class="fs-5" aria-hidden="true">{{icon_emoji}}</span>{{/is_image_icon}}
+                                </div>
+                                <div>{{object_name}}</div>
+                            </div>
+                        </td>
+                        <td class="text-center">{{{xp_badge}}}</td>
+                        <td class="text-muted small">{{{details_html}}}</td>
+                    </tr>
+                    {{/logs}}
+                </tbody>
+            </table>
+        </div>
+    {{/has_logs}}
+
+    {{^has_logs}}
+        <div class="alert alert-info text-center p-5 shadow-sm">
+            <div class="display-4 text-muted ph-opacity-low mb-3" aria-hidden="true">📭</div>
+            <h5 class="text-muted">{{str.empty}}</h5>
+        </div>
+    {{/has_logs}}
+
+</div>

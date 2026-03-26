@@ -242,3 +242,25 @@
         flex: 0 0 80px;
     }
 }
+// Report Tab Additions
+.ph-bg-gradient-primary {
+    background: linear-gradient(45deg, #4e73df, #224abe);
+}
+.ph-bg-gradient-success {
+    background: linear-gradient(45deg, #1cc88a, #13855c);
+}
+.ph-bg-gradient-info {
+    background: linear-gradient(45deg, #36b9cc, #258391);
+}
+.ph-row-inactive {
+    opacity: 0.6;
+    background-color: var(--gray-100, #f8f9fa);
+}
+.ph-report-progress-xs {
+    height: 6px;
+    width: 80px;
+    margin: 0 auto;
+}
+.ph-opacity-80 {
+    opacity: 0.8;
+}

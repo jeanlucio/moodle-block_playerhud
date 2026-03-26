@@ -170,6 +170,12 @@ if ($isoptin) {
                 $tabcontenthtml = $render->display();
             }
             break;
+        case 'history':
+            if (class_exists('\block_playerhud\output\view\tab_history')) {
+                $render = new \block_playerhud\output\view\tab_history($config, $player, $instanceid);
+                $tabcontenthtml = $render->display();
+            }
+            break;
         case 'rules':
             if (class_exists('\block_playerhud\output\view\tab_rules')) {
                 // Prepare config object for the renderer.
@@ -197,6 +203,7 @@ if ($isoptin) {
         // 1. Collection (Base).
         'collection' => ['icon' => '🎒', 'text' => get_string('tab_collection', 'block_playerhud')],
         'shop'       => ['icon' => '🏪', 'text' => get_string('tab_shop', 'block_playerhud')],
+        'history'    => ['icon' => '📜', 'text' => get_string('tab_history', 'block_playerhud')],
 
         // Note: Features like Quests, and Chapters are hidden for version 1.0.
 
