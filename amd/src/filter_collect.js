@@ -55,7 +55,10 @@ const getModalElements = () => {
         xp: $(`#phModalXP${suffix}`),
         countBadge: $(`#phModalCountBadge${suffix}`),
         date: $(`#phModalDate${suffix}`),
-        dateContainer: $(`#phModalDateContainer${suffix}`)
+        dateContainer: $(`#phModalDateContainer${suffix}`),
+        dropStats: $(`#phModalDropStats${suffix}`),
+        dropProgress: $(`#phModalDropProgress${suffix}`),
+        dropCooldown: $(`#phModalDropCooldown${suffix}`)
     };
 };
 
@@ -306,6 +309,14 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
     const isLimit = resp.limit_reached;
 
     if (resp.item_data) {
+        let container = trigger.closest('.playerhud-item-card, .ph-drop-image-container, .ph-mini-item');
+        if (!container.length) {
+            container = trigger;
+        }
+
+        // Increment count badge if exists.
+        let currentCount = parseInt(container.attr('data-count')) || 0;
+        container.attr('data-count', currentCount + 1);
         const card = trigger.closest('.playerhud-item-card');
         if (card.length) {
             card.attr('data-date', resp.item_data.date);
@@ -402,7 +413,10 @@ export const init = (config) => {
             isImg: container.attr('data-isimage'),
             xp: container.attr('data-xp'),
             date: container.attr('data-date'),
-            timestamp: container.attr('data-timestamp')
+            timestamp: container.attr('data-timestamp'),
+            count: container.attr('data-count'),
+            maxusage: container.attr('data-maxusage'),
+            respawntimeStr: container.attr('data-respawntime-str')
         };
 
         const modalEls = getModalElements();
@@ -445,6 +459,60 @@ export const init = (config) => {
             descHtml = '<i class="text-muted">' + (appStrings.no_desc || '- sem descrição -') + '</i>';
         }
         modalEls.desc.html(descHtml);
+
+        // Show stats if max usage or respawn time exists.
+        let showStats = false;
+
+        // Only display Drop stats if it is actually a Drop (Shortcode in text).
+        if (data.maxusage !== undefined) {
+            const maxUsage = parseInt(data.maxusage, 10);
+
+            // 1. Progress Badge (Infinite or X/Y count).
+            if (maxUsage === 0) {
+                const textStr = appStrings.infinite || 'Infinite';
+                const iconHtml = '<i class="fa fa-infinity me-1" aria-hidden="true"></i>';
+                modalEls.dropProgress.html(`${iconHtml}${textStr}`).show();
+                showStats = true;
+            } else if (!isNaN(maxUsage) && data.count !== undefined) {
+                const textStr = appStrings.collected || 'Collected';
+                modalEls.dropProgress.text(`${data.count}/${maxUsage} ${textStr}`).show();
+                showStats = true;
+            } else {
+                modalEls.dropProgress.hide();
+            }
+
+            // 2. Cooldown Badge (Single, Immediate, or Timer).
+            if (maxUsage === 1) {
+                const textStr = appStrings.single_collection || 'Single collection';
+                const iconHtml = '<i class="fa fa-lock me-1" aria-hidden="true"></i>';
+                modalEls.dropCooldown.html(`${iconHtml}${textStr}`).show();
+                showStats = true;
+            } else if (data.respawntimeStr && data.respawntimeStr.trim() !== '') {
+                const textStr = appStrings.respawntime || 'Cooldown';
+                const iconHtml = '<i class="fa fa-clock-o me-1" aria-hidden="true"></i>';
+                modalEls.dropCooldown.html(`${iconHtml}${textStr}: ${data.respawntimeStr}`).show();
+                showStats = true;
+            } else if (maxUsage > 1) {
+                const textStr = appStrings.immediate || 'Immediate';
+                const iconHtml = '<i class="fa fa-bolt text-warning me-1" aria-hidden="true"></i>';
+                modalEls.dropCooldown.html(`${iconHtml}${textStr}`).show();
+                showStats = true;
+            } else {
+                modalEls.dropCooldown.hide();
+            }
+        }
+
+        if (showStats) {
+            modalEls.dropStats.removeClass('ph-display-none d-none').show();
+        } else {
+            modalEls.dropStats.hide();
+        }
+
+        if (showStats) {
+            modalEls.dropStats.removeClass('ph-display-none d-none').show();
+        } else {
+            modalEls.dropStats.hide();
+        }
 
         let formattedDate = data.date;
         if (data.timestamp && data.timestamp > 0) {

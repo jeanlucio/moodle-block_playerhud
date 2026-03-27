@@ -198,7 +198,7 @@ class drops {
             ),
             'time' => $this->get_sort_data(
                 'respawntime',
-                get_string('drop_interval', 'block_playerhud'),
+                get_string('respawntime', 'block_playerhud'),
                 $sort,
                 $dir,
                 $baseurl

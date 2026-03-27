@@ -261,6 +261,8 @@ if ($isoptin) {
             'cancel' => get_string('cancel'),
             'no_desc' => get_string('no_description', 'block_playerhud'),
             'last_collected' => get_string('last_collected', 'block_playerhud'),
+            'collected' => get_string('collected', 'block_playerhud'),
+            'respawntime' => get_string('respawntime', 'block_playerhud'),
         ],
     ];
     $PAGE->requires->js_call_amd('block_playerhud/view', 'init', [$jsvars]);

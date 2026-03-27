@@ -84,7 +84,7 @@ class edit_drop_form extends \moodleform {
         $mform->addElement(
             'duration',
             'respawntime',
-            get_string('drop_interval', 'block_playerhud'),
+            get_string('respawntime', 'block_playerhud'),
             ['optional' => false, 'defaultunit' => 60]
         );
         $mform->setDefault('respawntime', 0);
