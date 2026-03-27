@@ -139,14 +139,14 @@ class tab_history implements renderable, templatable {
                 $detailtext = get_string_manager()->string_exists($srckey, 'block_playerhud') ?
                     get_string($srckey, 'block_playerhud') : $log->details;
 
-                $badgeclass = 'bg-secondary';
+                $badgeclass = 'bg-secondary text-white';
                 $badgetext  = get_string('report_type_other', 'block_playerhud');
                 $isimageicon = false;
                 $iconurl = '';
                 $iconemoji = $log->icon;
 
                 if ($log->event_type === 'item') {
-                    $badgeclass = 'bg-primary';
+                    $badgeclass = 'bg-primary text-white';
                     $badgetext  = get_string('report_type_item', 'block_playerhud');
                     if (isset($allmedia[$log->itemid])) {
                         $media = $allmedia[$log->itemid];
@@ -155,7 +155,7 @@ class tab_history implements renderable, templatable {
                         $iconemoji = $media['is_image'] ? '' : strip_tags($media['content']);
                     }
                 } else if ($log->event_type === 'item_revoked') {
-                    $badgeclass = 'bg-danger';
+                    $badgeclass = 'bg-danger text-white';
                     $badgetext  = get_string('report_type_revoked', 'block_playerhud');
                     if (isset($allmedia[$log->itemid])) {
                         $media = $allmedia[$log->itemid];
@@ -163,9 +163,9 @@ class tab_history implements renderable, templatable {
                         $iconurl = $media['is_image'] ? $media['url'] : '';
                         $iconemoji = $media['is_image'] ? '' : strip_tags($media['content']);
                     }
-                    $log->inventory_id = 0; // Hide revoke button for revoked items.
+                    $log->inventory_id = 0;
                 } else if ($log->event_type === 'trade') {
-                    $badgeclass = 'bg-info text-dark';
+                    $badgeclass = 'bg-success text-white';
                     $badgetext  = get_string('report_type_trade', 'block_playerhud');
                     $detailtext = get_string('report_status_transaction', 'block_playerhud');
                 }
