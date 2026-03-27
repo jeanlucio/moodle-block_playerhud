@@ -456,6 +456,7 @@ $string['total_items_xp'] = 'Total XP em Itens';
 $string['tradable'] = 'Trocável?';
 $string['tradable_help'] = 'Define se este item pode ser negociado.<br><br><b>Sim:</b> O aluno pode vender este item na loja ou trocá-lo com outros alunos.<br><b>Não:</b> O item é vinculado ao aluno (ideal para itens únicos, chaves de missão ou bens intransferíveis).';
 $string['trade_config_hdr'] = 'Configuração da troca';
+$string['trade_cost'] = 'Custo:';
 $string['trade_default_name'] = 'Nova oferta de troca';
 $string['trade_give_desc'] = 'Selecione os itens que o aluno receberá nesta transação.';
 $string['trade_give_hdr'] = 'Recompensas (aluno recebe)';

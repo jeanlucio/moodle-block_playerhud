@@ -456,6 +456,7 @@ $string['total_items_xp'] = 'Total XP in Items';
 $string['tradable'] = 'Tradable?';
 $string['tradable_help'] = 'Defines if this item can be traded.<br><br><b>Yes:</b> The student can sell this item in the shop or trade it with other students.<br><b>No:</b> The item is bound to the student (ideal for unique items, quest keys, or non-transferable assets).';
 $string['trade_config_hdr'] = 'Trade Configuration';
+$string['trade_cost'] = 'Cost:';
 $string['trade_default_name'] = 'New Trade Offer';
 $string['trade_give_desc'] = 'Select the items the student will receive in this transaction.';
 $string['trade_give_hdr'] = 'Rewards (Student receives)';

@@ -92,7 +92,7 @@ class tab_history implements renderable, templatable {
         $concattrade = $DB->sql_concat("'trade_'", "tl.id");
 
         $sql = "
-        SELECT uniqueid, event_type, object_name, timecreated, details, icon, xp_gained, itemid, inventory_id
+        SELECT uniqueid, event_type, object_name, timecreated, details, icon, xp_gained, itemid, inventory_id, trade_id
         FROM (
             SELECT $concatitem AS uniqueid,
                    CASE WHEN inv.source = 'revoked' THEN 'item_revoked' ELSE 'item' END AS event_type,
@@ -103,14 +103,14 @@ class tab_history implements renderable, templatable {
                        WHEN inv.source = 'map' AND COALESCE(d.maxusage, 1) > 0 THEN i.xp
                        ELSE 0
                    END AS xp_gained,
-                   i.id AS itemid, inv.id AS inventory_id
+                   i.id AS itemid, inv.id AS inventory_id, 0 AS trade_id
               FROM {block_playerhud_inventory} inv
               JOIN {block_playerhud_items} i ON inv.itemid = i.id
          LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
              WHERE inv.userid = :u1 AND i.blockinstanceid = :p1
             UNION ALL
             SELECT $concattrade AS uniqueid, 'trade' AS event_type, t.name AS object_name, tl.timecreated,
-                   'trade_completed' AS details, '⚖️' AS icon, 0 AS xp_gained, 0 AS itemid, 0 AS inventory_id
+                   'trade_completed' AS details, '⚖️' AS icon, 0 AS xp_gained, 0 AS itemid, 0 AS inventory_id, t.id AS trade_id
               FROM {block_playerhud_trade_log} tl
               JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
              WHERE tl.userid = :u2 AND t.blockinstanceid = :p2
@@ -126,11 +126,32 @@ class tab_history implements renderable, templatable {
         $results = [];
         if ($logs) {
             $fakeitems = [];
+            $tradeids = [];
+
+            // Collect IDs for bulk fetching.
             foreach ($logs as $log) {
                 if ($log->itemid > 0) {
                     $fakeitems[$log->itemid] = (object)['id' => $log->itemid, 'image' => $log->icon];
                 }
+                if ($log->event_type === 'trade' && $log->trade_id > 0) {
+                    $tradeids[$log->trade_id] = $log->trade_id;
+                }
             }
+
+            // Bulk fetch trade costs (Requirements).
+            $tradecosts = [];
+            if (!empty($tradeids)) {
+                [$tinsql, $tinparams] = $DB->get_in_or_equal($tradeids, SQL_PARAMS_NAMED, 'trd');
+                $sqlreq = "SELECT req.id, req.tradeid, req.qty, i.name
+                             FROM {block_playerhud_trade_reqs} req
+                             JOIN {block_playerhud_items} i ON req.itemid = i.id
+                            WHERE req.tradeid $tinsql";
+                $reqs = $DB->get_records_sql($sqlreq, $tinparams);
+                foreach ($reqs as $req) {
+                    $tradecosts[$req->tradeid][] = $req->qty . 'x ' . format_string($req->name);
+                }
+            }
+
             $context = \context_block::instance($this->instanceid);
             $allmedia = \block_playerhud\utils::get_items_display_data($fakeitems, $context);
 
@@ -168,6 +189,14 @@ class tab_history implements renderable, templatable {
                     $badgeclass = 'bg-success text-white';
                     $badgetext  = get_string('report_type_trade', 'block_playerhud');
                     $detailtext = get_string('report_status_transaction', 'block_playerhud');
+
+                    // Append the exact items paid for this trade.
+                    if (isset($tradecosts[$log->trade_id])) {
+                        $coststr = implode(', ', $tradecosts[$log->trade_id]);
+                        $strcost = get_string('trade_cost', 'block_playerhud');
+                        $iconminus = '<i class="fa fa-minus-circle" aria-hidden="true"></i>';
+                        $detailtext .= "<br><small class=\"text-danger\">{$iconminus} {$strcost} {$coststr}</small>";
+                    }
                 }
 
                 $xpbadge = '';
@@ -182,7 +211,7 @@ class tab_history implements renderable, templatable {
                 // For item events that are not revoked, show revoke option.
                 $urldelete = '';
                 if ($log->inventory_id > 0 && property_exists($this, 'courseid')) {
-                    $urldelete = new moodle_url('/blocks/playerhud/manage.php', [
+                    $urldelete = new \moodle_url('/blocks/playerhud/manage.php', [
                         'id' => $this->courseid,
                         'instanceid' => $this->instanceid,
                         'action' => 'revoke_item',
