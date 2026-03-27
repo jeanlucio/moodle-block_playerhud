@@ -410,7 +410,6 @@ export const init = (config) => {
             return;
         }
 
-        modalEls.title.text(data.name);
         modalEls.name.text(data.name);
 
         if (data.xp && data.xp !== '0' && String(data.xp).trim() !== '0 XP') {

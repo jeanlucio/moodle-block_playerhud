@@ -106,12 +106,16 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                 const descHtml = descTarget ? $('#' + descTarget).html() : '';
 
                 // Populate Modal.
-                $('#phModalNameView, #phModalTitleView').text(name);
-                $('#phModalXPView').text(xp);
+                $('#phModalNameView').text(name);
+
+                if (xp && xp.trim() !== '') {
+                    $('#phModalXPView').text(xp).removeClass('ph-display-none').show();
+                } else {
+                    $('#phModalXPView').hide();
+                }
 
                 // Hide badges by default. They can be shown if needed based on item type or other logic.
                 $('#phModalCountBadgeView').hide();
-                $('#phModalDateView').hide();
 
                 const $descEl = $('#phModalDescView');
                 if (descHtml && descHtml.trim() !== '') {

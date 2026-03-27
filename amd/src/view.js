@@ -94,7 +94,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 const desc = trigger.find('.ph-item-description-content').html();
 
                 // Populate Modal.
-                $('#phModalTitleView, #phModalNameView').text(name);
+                $('#phModalNameView').text(name);
 
                 const descEl = $('#phModalDescView');
                 if (desc && desc.trim() !== '') {
