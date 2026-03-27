@@ -135,7 +135,7 @@ class collect {
 
                 $itemdata = [
                     'name' => format_string($item->name),
-                    'xp' => $item->xp . ' ' . $strxp,
+                    'xp' => ((int)$drop->maxusage === 0) ? '0' : $item->xp . ' ' . $strxp,
                     'image' => $imageurl,
                     'isimage' => $isimage,
                     'description' => $desc,

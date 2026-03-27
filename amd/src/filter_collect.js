@@ -413,7 +413,7 @@ export const init = (config) => {
         modalEls.title.text(data.name);
         modalEls.name.text(data.name);
 
-        if (data.xp && data.xp !== '0') {
+        if (data.xp && data.xp !== '0' && String(data.xp).trim() !== '0 XP') {
             const xpStr = String(data.xp);
             if (xpStr.indexOf('???') === -1) {
                 const isNum = !isNaN(parseFloat(data.xp)) && isFinite(data.xp);
@@ -435,11 +435,15 @@ export const init = (config) => {
             modalEls.countBadge.hide();
         }
 
-        let descHtml = '...';
-        if (data.descDirect) {
+        let descHtml = '';
+        if (data.descDirect && data.descDirect.trim() !== '') {
             descHtml = data.descDirect;
-        } else if (data.descB64) {
+        } else if (data.descB64 && data.descB64.trim() !== '') {
             descHtml = safeB64Decode(data.descB64);
+        }
+
+        if (!descHtml || descHtml.trim() === '') {
+            descHtml = '<i class="text-muted">' + (appStrings.no_desc || '- sem descrição -') + '</i>';
         }
         modalEls.desc.html(descHtml);
 
