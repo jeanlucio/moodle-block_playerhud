@@ -100,7 +100,7 @@ class tab_history implements renderable, templatable {
                    inv.source AS details, i.image AS icon,
                    CASE
                        WHEN inv.source = 'revoked' AND COALESCE(d.maxusage, 1) > 0 THEN -i.xp
-                       WHEN inv.source = 'map' AND COALESCE(d.maxusage, 1) > 0 THEN i.xp
+                       WHEN inv.source IN ('map', 'teacher') AND COALESCE(d.maxusage, 1) > 0 THEN i.xp
                        ELSE 0
                    END AS xp_gained,
                    i.id AS itemid, inv.id AS inventory_id, 0 AS trade_id

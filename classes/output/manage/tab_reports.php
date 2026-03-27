@@ -100,7 +100,12 @@ class tab_reports implements renderable, templatable {
 
             // Data for granting items to user.
             $contextdata['r_userid'] = $this->selecteduserid;
-            $contextdata['grant_action_url'] = (new moodle_url('/blocks/playerhud/manage.php'))->out(false);
+
+            $contextdata['courseid'] = $this->courseid;
+            $contextdata['instanceid'] = $this->instanceid;
+            $contextdata['sesskey'] = sesskey();
+
+            $contextdata['grant_action_url'] = (new \moodle_url('/blocks/playerhud/manage.php'))->out(false);
             $allitems = $DB->get_records_menu(
                 'block_playerhud_items',
                 ['blockinstanceid' => $this->instanceid, 'enabled' => 1],
@@ -419,7 +424,7 @@ class tab_reports implements renderable, templatable {
                    inv.source AS details, i.image AS icon,
                    CASE
                        WHEN inv.source = 'revoked' AND COALESCE(d.maxusage, 1) > 0 THEN -i.xp
-                       WHEN inv.source = 'map' AND COALESCE(d.maxusage, 1) > 0 THEN i.xp
+                       WHEN inv.source IN ('map', 'teacher') AND COALESCE(d.maxusage, 1) > 0 THEN i.xp
                        ELSE 0
                    END AS xp_gained,
                    i.id AS itemid, inv.id AS inventory_id, 0 AS trade_id

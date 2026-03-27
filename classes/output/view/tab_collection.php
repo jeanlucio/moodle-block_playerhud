@@ -188,8 +188,8 @@ class tab_collection implements renderable, templatable {
                     $itemobj['origin_map'] = 0;
                     $itemobj['origin_shop'] = 0;
                     $itemobj['origin_quest'] = 0;
+                    $itemobj['origin_teacher'] = 0;
                     $itemobj['origin_legacy'] = 0;
-
                     foreach ($usercopies as $copy) {
                         $src = $copy->source ?? '';
                         if ($src == 'map') {
@@ -198,6 +198,8 @@ class tab_collection implements renderable, templatable {
                             $itemobj['origin_shop']++;
                         } else if ($src == 'quest') {
                             $itemobj['origin_quest']++;
+                        } else if ($src == 'teacher') {
+                            $itemobj['origin_teacher']++;
                         } else {
                             $itemobj['origin_legacy']++;
                         }
@@ -206,6 +208,7 @@ class tab_collection implements renderable, templatable {
                         $itemobj['origin_map'] ||
                         $itemobj['origin_shop'] ||
                         $itemobj['origin_quest'] ||
+                        $itemobj['origin_teacher'] ||
                         $itemobj['origin_legacy']
                     ) {
                         $itemobj['has_origins'] = true;
