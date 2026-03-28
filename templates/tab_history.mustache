@@ -16,9 +16,12 @@
 }}
 {{!
     @template block_playerhud/tab_history
-    @package block_playerhud
-    @copyright 2026 Jean Lúcio
-    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    History tab output renderer for students.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
     Example context (json):
     {
@@ -30,10 +33,45 @@
             "col_type": "Type",
             "col_desc": "Element",
             "xp": "XP",
-            "col_details": "Details"
+            "col_details": "Details",
+            "btn_showall": "Show all",
+            "btn_showpaged": "Show 30 per page"
         },
+        "filters": {
+            "action_url": "#",
+            "courseid": 1,
+            "instanceid": 1,
+            "types": [
+                {"value": "", "label": "All", "selected": true},
+                {"value": "item", "label": "Items", "selected": false}
+            ],
+            "text": ""
+        },
+        "headers": {
+            "date": {"url": "#", "label": "Date", "icon_class": "fa-sort"},
+            "type": {"url": "#", "label": "Type", "icon_class": "fa-sort"},
+            "element": {"url": "#", "label": "Element", "icon_class": "fa-sort"},
+            "xp": {"url": "#", "label": "XP", "icon_class": "fa-sort"},
+            "details": {"url": "#", "label": "Details", "icon_class": "fa-sort"}
+        },
+        "showall": false,
+        "url_toggle_showall": "#",
         "has_logs": true,
-        "logs": []
+        "logs": [
+            {
+                "counter": 1,
+                "date": "10 Jan 2026",
+                "badge_class": "bg-primary",
+                "badge_text": "Item",
+                "is_image_icon": true,
+                "icon_url": "https://example.com/icon.png",
+                "icon_emoji": "",
+                "object_name": "Magic Sword",
+                "xp_badge": "<span class=\"badge bg-success text-white\">+100 XP</span>",
+                "details_html": "Found on map"
+            }
+        ],
+        "paging_bar": "<nav>Pagination</nav>"
     }
 }}
 <div class="playerhud-history-container animate__animated animate__fadeIn">
@@ -46,22 +84,64 @@
         </div>
     </div>
 
+    {{! --- LIVE SEARCH BAR & SHOW ALL TOGGLE --- }}
+    <div class="mb-4 d-flex gap-2 flex-wrap">
+        <div class="input-group shadow-sm flex-grow-1" style="min-width: 250px;">
+            <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-muted" aria-hidden="true"></i></span>
+            <input type="text" id="ph-live-search" class="form-control border-start-0 ps-0" placeholder="{{str.search_any}}">
+        </div>
+        <div>
+            {{#showall}}
+                <a href="{{url_toggle_showall}}" class="btn btn-outline-primary shadow-sm h-100 d-flex align-items-center text-nowrap">
+                    <i class="fa fa-compress me-2" aria-hidden="true"></i> {{str.btn_showpaged}}
+                </a>
+            {{/showall}}
+            {{^showall}}
+                <a href="{{url_toggle_showall}}" class="btn btn-outline-secondary shadow-sm h-100 d-flex align-items-center text-nowrap">
+                    <i class="fa fa-expand me-2" aria-hidden="true"></i> {{str.btn_showall}}
+                </a>
+            {{/showall}}
+        </div>
+    </div>
+
     {{#has_logs}}
-        <div class="table-responsive shadow-sm rounded">
-            <table class="table table-hover table-striped bg-white mb-0 align-middle">
-                <thead class="bg-dark text-white">
-                    <tr>
-                        <th scope="col">{{str.col_date}}</th>
-                        <th scope="col">{{str.col_type}}</th>
-                        <th scope="col">{{str.col_desc}}</th>
-                        <th scope="col" class="text-center">{{str.xp}}</th>
-                        <th scope="col">{{str.col_details}}</th>
+        <div class="table-responsive shadow-sm rounded mb-3 border">
+            <table class="table table-hover table-striped bg-white mb-0 align-middle w-100">
+                <thead class="bg-light border-bottom">
+                    <tr class="text-nowrap">
+                        <th scope="col" class="text-center text-muted" style="width: 50px;">{{str.col_num}}</th>
+                        <th scope="col">
+                            <a href="{{headers.date.url}}" class="text-dark text-decoration-none d-flex align-items-center">
+                                {{headers.date.label}} <i class="fa {{headers.date.icon_class}}" aria-hidden="true"></i>
+                            </a>
+                        </th>
+                        <th scope="col">
+                            <a href="{{headers.type.url}}" class="text-dark text-decoration-none d-flex align-items-center">
+                                {{headers.type.label}} <i class="fa {{headers.type.icon_class}}" aria-hidden="true"></i>
+                            </a>
+                        </th>
+                        <th scope="col">
+                            <a href="{{headers.element.url}}" class="text-dark text-decoration-none d-flex align-items-center">
+                                {{headers.element.label}} <i class="fa {{headers.element.icon_class}}" aria-hidden="true"></i>
+                            </a>
+                        </th>
+                        <th scope="col" class="text-center">
+                            <a href="{{headers.xp.url}}" class="text-dark text-decoration-none d-flex align-items-center justify-content-center">
+                                {{headers.xp.label}} <i class="fa {{headers.xp.icon_class}}" aria-hidden="true"></i>
+                            </a>
+                        </th>
+                        <th scope="col">
+                            <a href="{{headers.details.url}}" class="text-dark text-decoration-none d-flex align-items-center">
+                                {{headers.details.label}} <i class="fa {{headers.details.icon_class}}" aria-hidden="true"></i>
+                            </a>
+                        </th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="ph-history-tbody">
                     {{#logs}}
-                    <tr>
-                        <td class="text-muted small" style="width:180px;">{{date}}</td>
+                    <tr class="ph-searchable-row">
+                        <td class="text-center text-muted small">{{counter}}</td>
+                        <td class="text-muted small text-nowrap">{{date}}</td>
                         <td><span class="badge {{badge_class}}">{{badge_text}}</span></td>
                         <td class="fw-bold">
                             <div class="d-flex align-items-center">
@@ -79,6 +159,10 @@
                 </tbody>
             </table>
         </div>
+
+        {{! --- RENDER PAGINATION BAR --- }}
+        {{{paging_bar}}}
+
     {{/has_logs}}
 
     {{^has_logs}}

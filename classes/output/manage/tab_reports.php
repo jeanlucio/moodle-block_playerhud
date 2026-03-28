@@ -43,10 +43,10 @@ class tab_reports implements renderable, templatable {
     /** @var int Selected user ID for audit. */
     protected $selecteduserid;
 
-    /** @var string Sort column. */
+    /** @var string Sort column for main table. */
     protected $sort;
 
-    /** @var string Sort direction. */
+    /** @var string Sort direction for main table. */
     protected $dir;
 
     /**
@@ -93,25 +93,56 @@ class tab_reports implements renderable, templatable {
         ];
 
         if ($this->selecteduserid > 0) {
+            $page = optional_param('page', 0, PARAM_INT);
+            $auditsort = optional_param('audit_sort', 'timecreated', PARAM_ALPHAEXT);
+            $auditdir  = optional_param('audit_dir', 'DESC', PARAM_ALPHA);
+            $filtertype = optional_param('f_type', '', PARAM_ALPHAEXT);
+            $filtertext = optional_param('f_text', '', PARAM_TEXT);
+            $showall = optional_param('showall', 0, PARAM_INT);
+
+            $auditbaseurl = new moodle_url($baseurl, ['r_userid' => $this->selecteduserid]);
+
+            if (!empty($filtertype)) {
+                $auditbaseurl->param('f_type', $filtertype);
+            }
+            if (!empty($filtertext)) {
+                $auditbaseurl->param('f_text', $filtertext);
+            }
+            if ($showall) {
+                $auditbaseurl->param('showall', 1);
+            }
+
+            $logdata = $this->get_audit_logs(
+                $this->selecteduserid,
+                $page,
+                $auditsort,
+                $auditdir,
+                $filtertype,
+                $filtertext,
+                $showall,
+                $auditbaseurl,
+                $output
+            );
+
             $contextdata['url_back']       = $baseurl->out(false);
             $contextdata['str_back']       = get_string('back', 'block_playerhud');
-            $contextdata['audit_logs']     = $this->get_audit_logs($this->selecteduserid);
-            $contextdata['has_audit_logs'] = !empty($contextdata['audit_logs']);
+            $contextdata['audit_logs']     = $logdata['logs'];
+            $contextdata['has_audit_logs'] = !empty($logdata['logs']);
+            $contextdata['paging_bar']     = $logdata['paging_bar'];
 
-            // Data for granting items to user.
             $contextdata['r_userid'] = $this->selecteduserid;
-
             $contextdata['courseid'] = $this->courseid;
             $contextdata['instanceid'] = $this->instanceid;
             $contextdata['sesskey'] = sesskey();
+            $contextdata['grant_action_url'] = (new moodle_url('/blocks/playerhud/manage.php'))->out(false);
 
-            $contextdata['grant_action_url'] = (new \moodle_url('/blocks/playerhud/manage.php'))->out(false);
             $allitems = $DB->get_records_menu(
                 'block_playerhud_items',
                 ['blockinstanceid' => $this->instanceid, 'enabled' => 1],
                 'name ASC',
                 'id, name'
             );
+
             $itemoptions = [];
             if ($allitems) {
                 foreach ($allitems as $iid => $iname) {
@@ -120,6 +151,79 @@ class tab_reports implements renderable, templatable {
             }
             $contextdata['available_items'] = $itemoptions;
             $contextdata['has_available_items'] = !empty($itemoptions);
+
+            $contextdata['audit_headers'] = [
+                'date'    => $this->get_audit_sort_data(
+                    'timecreated',
+                    get_string('report_col_date', 'block_playerhud'),
+                    $auditsort,
+                    $auditdir,
+                    $auditbaseurl
+                ),
+                'type'    => $this->get_audit_sort_data(
+                    'event_type',
+                    get_string('report_col_type', 'block_playerhud'),
+                    $auditsort,
+                    $auditdir,
+                    $auditbaseurl
+                ),
+                'element' => $this->get_audit_sort_data(
+                    'object_name',
+                    get_string('report_col_desc', 'block_playerhud'),
+                    $auditsort,
+                    $auditdir,
+                    $auditbaseurl
+                ),
+                'xp'      => $this->get_audit_sort_data(
+                    'xp_gained',
+                    get_string('xp', 'block_playerhud'),
+                    $auditsort,
+                    $auditdir,
+                    $auditbaseurl
+                ),
+                'details' => $this->get_audit_sort_data(
+                    'details',
+                    get_string('report_col_details', 'block_playerhud'),
+                    $auditsort,
+                    $auditdir,
+                    $auditbaseurl
+                ),
+            ];
+
+            $contextdata['filters'] = [
+                'types' => [
+                    [
+                        'value' => '',
+                        'label' => get_string('all'),
+                        'selected' => ($filtertype === ''),
+                    ],
+                    [
+                        'value' => 'item',
+                        'label' => get_string('items', 'block_playerhud'),
+                        'selected' => ($filtertype === 'item'),
+                    ],
+                    [
+                        'value' => 'trade',
+                        'label' => get_string('tab_trades', 'block_playerhud'),
+                        'selected' => ($filtertype === 'trade'),
+                    ],
+                    [
+                        'value' => 'item_revoked',
+                        'label' => get_string('report_type_revoked', 'block_playerhud'),
+                        'selected' => ($filtertype === 'item_revoked'),
+                    ],
+                ],
+                'text' => $filtertext,
+                'action_url' => (new moodle_url('/blocks/playerhud/manage.php'))->out(false),
+            ];
+
+            $toggleurl = new moodle_url($baseurl, [
+                'r_userid' => $this->selecteduserid,
+                'showall'  => $showall ? 0 : 1,
+                'page'     => 0,
+            ]);
+            $contextdata['showall'] = $showall;
+            $contextdata['url_toggle_showall'] = $toggleurl->out(false);
         } else {
             $contextdata['headers'] = [
                 'student' => $this->get_sort_data('student', get_string('student', 'block_playerhud'), $baseurl),
@@ -134,23 +238,29 @@ class tab_reports implements renderable, templatable {
         $contextdata['has_ai_logs'] = !empty($contextdata['ai_logs']);
 
         $contextdata['str'] = [
-            'leaderboard' => get_string('leaderboard_title', 'block_playerhud'),
-            'level'       => get_string('level', 'block_playerhud'),
-            'xp'          => get_string('xp', 'block_playerhud'),
-            'action'      => get_string('report_action', 'block_playerhud'),
-            'audit'       => get_string('report_audit', 'block_playerhud'),
-            'no_logs'     => get_string('report_no_logs', 'block_playerhud'),
-            'ai_title'    => get_string('report_ai_title', 'block_playerhud'),
-            'ai_sub'      => get_string('report_ai_subtitle', 'block_playerhud'),
-            'col_date'    => get_string('report_col_date', 'block_playerhud'),
-            'col_type'    => get_string('report_col_type', 'block_playerhud'),
-            'col_desc'    => get_string('report_col_desc', 'block_playerhud'),
-            'col_details' => get_string('report_col_details', 'block_playerhud'),
-            'col_object'  => get_string('report_col_object', 'block_playerhud'),
-            'col_ai'      => get_string('report_col_ai', 'block_playerhud'),
+            'leaderboard'    => get_string('leaderboard_title', 'block_playerhud'),
+            'level'          => get_string('level', 'block_playerhud'),
+            'xp'             => get_string('xp', 'block_playerhud'),
+            'action'         => get_string('report_action', 'block_playerhud'),
+            'audit'          => get_string('report_audit', 'block_playerhud'),
+            'no_logs'        => get_string('report_no_logs', 'block_playerhud'),
+            'ai_title'       => get_string('report_ai_title', 'block_playerhud'),
+            'ai_sub'         => get_string('report_ai_subtitle', 'block_playerhud'),
+            'col_date'       => get_string('report_col_date', 'block_playerhud'),
+            'col_type'       => get_string('report_col_type', 'block_playerhud'),
+            'col_desc'       => get_string('report_col_desc', 'block_playerhud'),
+            'col_details'    => get_string('report_col_details', 'block_playerhud'),
+            'col_object'     => get_string('report_col_object', 'block_playerhud'),
+            'col_ai'         => get_string('report_col_ai', 'block_playerhud'),
             'revoke_item'    => get_string('revoke_item', 'block_playerhud'),
             'confirm_revoke' => get_string('confirm_revoke', 'block_playerhud'),
-            'btn_more'    => get_string('report_show_more', 'block_playerhud'),
+            'btn_more'       => get_string('report_show_more', 'block_playerhud'),
+            'filter_btn'     => get_string('filter'),
+            'filter_clr'     => get_string('clear'),
+            'btn_showall'    => get_string('showall', 'moodle', isset($logdata) ? $logdata['total'] : 0),
+            'btn_showpaged'  => get_string('showperpage', 'moodle', 30),
+            'search_any'     => get_string('search_any_term', 'block_playerhud'),
+            'col_num'        => get_string('col_number', 'block_playerhud'),
         ];
 
         $jsconfig = [
@@ -161,13 +271,14 @@ class tab_reports implements renderable, templatable {
             'strYes'          => get_string('yes'),
             'strCancel'       => get_string('cancel'),
         ];
+
         $PAGE->requires->js_call_amd('block_playerhud/manage_reports', 'init', [$jsconfig]);
 
         return $contextdata;
     }
 
     /**
-     * Helper for sort links.
+     * Helper for sort links in general table.
      *
      * @param string $colname
      * @param string $label
@@ -190,12 +301,45 @@ class tab_reports implements renderable, templatable {
     }
 
     /**
+     * Helper for sort links in audit logs.
+     *
+     * @param string $colname
+     * @param string $label
+     * @param string $currentsort
+     * @param string $currentdir
+     * @param moodle_url $baseurl
+     * @return array
+     */
+    private function get_audit_sort_data(
+        string $colname,
+        string $label,
+        string $currentsort,
+        string $currentdir,
+        moodle_url $baseurl
+    ): array {
+        $icon = 'fa-sort text-muted ph-opacity-low ms-1';
+        $nextdir = 'ASC';
+        if ($currentsort === $colname) {
+            $nextdir = ($currentdir === 'ASC') ? 'DESC' : 'ASC';
+            $icon = ($currentdir === 'ASC') ? 'fa-sort-asc text-primary ms-1' : 'fa-sort-desc text-primary ms-1';
+        }
+        $url = new moodle_url($baseurl, ['audit_sort' => $colname, 'audit_dir' => $nextdir]);
+
+        return [
+            'url'        => $url->out(false),
+            'label'      => $label,
+            'icon_class' => $icon,
+        ];
+    }
+
+    /**
      * Get KPI data.
      *
      * @return array
      */
     private function get_kpi_data(): array {
         global $DB;
+
         $totalxp = $DB->get_field_sql(
             "SELECT SUM(currentxp) FROM {block_playerhud_user} WHERE blockinstanceid = ?",
             [$this->instanceid]
@@ -203,6 +347,7 @@ class tab_reports implements renderable, templatable {
 
         $userfieldsapi = \core_user\fields::for_name();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
+
         $topstudent = $DB->get_record_sql(
             "SELECT u.id, $userfields, p.currentxp
                FROM {block_playerhud_user} p
@@ -227,7 +372,7 @@ class tab_reports implements renderable, templatable {
         return [
             [
                 'title'    => get_string('report_total_xp', 'block_playerhud'),
-                'value'    => number_format($totalxp ?: 0, 0, ',', '.'),
+                'value'    => number_format((float)$totalxp ?: 0, 0, ',', '.'),
                 'subtitle' => '',
                 'bg_class' => 'ph-bg-gradient-primary',
             ],
@@ -256,7 +401,6 @@ class tab_reports implements renderable, templatable {
     private function get_charts_data(int $xpperlevel, int $maxlevel): array {
         global $DB;
 
-        // Levels Stats.
         $userxps = $DB->get_records('block_playerhud_user', ['blockinstanceid' => $this->instanceid], '', 'id, currentxp');
         $levelscount = [];
         $maxbarvalue = 0;
@@ -264,10 +408,12 @@ class tab_reports implements renderable, templatable {
         foreach ($userxps as $u) {
             $lvl = floor($u->currentxp / $xpperlevel) + 1;
             $key = ($lvl > $maxlevel) ? $maxlevel . '+' : (int)$lvl;
+
             if (!isset($levelscount[$key])) {
                 $levelscount[$key] = 0;
             }
             $levelscount[$key]++;
+
             if ($levelscount[$key] > $maxbarvalue) {
                 $maxbarvalue = $levelscount[$key];
             }
@@ -306,6 +452,7 @@ class tab_reports implements renderable, templatable {
      */
     private function get_user_selector_data(): array {
         global $DB;
+
         $userfieldsapi = \core_user\fields::for_name();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
 
@@ -314,6 +461,7 @@ class tab_reports implements renderable, templatable {
                   JOIN {block_playerhud_user} p ON p.userid = u.id
                  WHERE p.blockinstanceid = ?
               ORDER BY u.lastname, u.firstname";
+
         $users = $DB->get_records_sql($sql, [$this->instanceid]);
 
         $options = [[
@@ -341,10 +489,12 @@ class tab_reports implements renderable, templatable {
      */
     private function get_students_data(int $xpperlevel): array {
         global $DB;
+
         $userfieldsapi = \core_user\fields::for_name();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
 
         $sortsql = "pu.currentxp DESC";
+
         switch ($this->sort) {
             case 'student':
                 $sortsql = "u.lastname {$this->dir}, u.firstname {$this->dir}";
@@ -362,7 +512,7 @@ class tab_reports implements renderable, templatable {
                    pu.currentxp, pu.enable_gamification,
                    (SELECT COUNT(inv.id) FROM {block_playerhud_inventory} inv
                     JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                    WHERE inv.userid = u.id AND it.blockinstanceid = :p1 AND inv.source != 'revoked') as total_items
+                   WHERE inv.userid = u.id AND it.blockinstanceid = :p1 AND inv.source != 'revoked') as total_items
               FROM {user} u
               JOIN {block_playerhud_user} pu ON pu.userid = u.id
              WHERE pu.blockinstanceid = :p2
@@ -372,6 +522,7 @@ class tab_reports implements renderable, templatable {
             'p1' => $this->instanceid,
             'p2' => $this->instanceid,
         ];
+
         $users = $DB->get_records_sql($sql, $params);
 
         $results = [];
@@ -405,20 +556,37 @@ class tab_reports implements renderable, templatable {
     }
 
     /**
-     * Get user audit logs.
+     * Get paginated user audit logs for teacher's view.
      *
      * @param int $userid
+     * @param int $page
+     * @param string $sort
+     * @param string $dir
+     * @param string $filtertype
+     * @param string $filtertext
+     * @param int $showall
+     * @param moodle_url $baseurl
+     * @param \renderer_base $output
      * @return array
      */
-    private function get_audit_logs(int $userid): array {
+    private function get_audit_logs(
+        int $userid,
+        int $page,
+        string $sort,
+        string $dir,
+        string $filtertype,
+        string $filtertext,
+        int $showall,
+        moodle_url $baseurl,
+        $output
+    ): array {
         global $DB;
+
         $concatitem = $DB->sql_concat("'item_'", "inv.id");
         $concattrade = $DB->sql_concat("'trade_'", "tl.id");
 
-        $sql = "
-        SELECT uniqueid, event_type, object_name, timecreated, details, icon, xp_gained, itemid, inventory_id, trade_id
-        FROM (
-            SELECT $concatitem AS uniqueid,
+        $innersql = "
+            SELECT {$concatitem} AS uniqueid,
                    CASE WHEN inv.source = 'revoked' THEN 'item_revoked' ELSE 'item' END AS event_type,
                    i.name AS object_name, inv.timecreated,
                    inv.source AS details, i.image AS icon,
@@ -433,26 +601,62 @@ class tab_reports implements renderable, templatable {
          LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
              WHERE inv.userid = :u1 AND i.blockinstanceid = :p1
             UNION ALL
-            SELECT $concattrade AS uniqueid, 'trade' AS event_type, t.name AS object_name, tl.timecreated,
-                   'trade_completed' AS details, '⚖️' AS icon, 0 AS xp_gained, 0 AS itemid, 0 AS inventory_id, t.id AS trade_id
+            SELECT {$concattrade} AS uniqueid, 'trade' AS event_type, t.name AS object_name, tl.timecreated,
+                   'trade_completed' AS details, '⚖️' AS icon, 0 AS xp_gained, 0 AS itemid,
+                   0 AS inventory_id, t.id AS trade_id
               FROM {block_playerhud_trade_log} tl
               JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
-             WHERE tl.userid = :u2 AND t.blockinstanceid = :p2
-        ) combined_log
-        ORDER BY timecreated DESC LIMIT 100";
+             WHERE tl.userid = :u2 AND t.blockinstanceid = :p2";
 
         $params = [
-            'u1' => $userid, 'p1' => $this->instanceid,
-            'u2' => $userid, 'p2' => $this->instanceid,
+            'u1' => $userid,
+            'p1' => $this->instanceid,
+            'u2' => $userid,
+            'p2' => $this->instanceid,
         ];
-        $logs = $DB->get_records_sql($sql, $params);
+
+        $where = "1=1";
+        if (!empty($filtertype)) {
+            $where .= " AND event_type = :ftype";
+            $params['ftype'] = $filtertype;
+        }
+        if (!empty($filtertext)) {
+            $likeobj = $DB->sql_like('object_name', ':ftext1', false, false);
+            $likedet = $DB->sql_like('details', ':ftext2', false, false);
+            $where .= " AND ({$likeobj} OR {$likedet})";
+            $params['ftext1'] = '%' . $DB->sql_like_escape($filtertext) . '%';
+            $params['ftext2'] = '%' . $DB->sql_like_escape($filtertext) . '%';
+        }
+
+        $allowedsorts = ['timecreated', 'event_type', 'object_name', 'xp_gained', 'details'];
+        if (!in_array($sort, $allowedsorts)) {
+            $sort = 'timecreated';
+        }
+        $dir = (strtoupper($dir) === 'ASC') ? 'ASC' : 'DESC';
+
+        $sqlcount = "SELECT COUNT(1) FROM ($innersql) combined_log WHERE $where";
+        $totalrecords = $DB->count_records_sql($sqlcount, $params);
+
+        $perpage = 30;
+        if ($showall) {
+            $limitfrom = 0;
+            $limitnum = 0;
+            $perpage = ($totalrecords > 0) ? $totalrecords : 30;
+        } else {
+            $limitfrom = $page * $perpage;
+            $limitnum = $perpage;
+        }
+
+        $sql = "SELECT * FROM ($innersql) combined_log WHERE $where ORDER BY {$sort} {$dir}";
+        $logs = $DB->get_records_sql($sql, $params, $limitfrom, $limitnum);
+
+        $pagingbar = $output->paging_bar($totalrecords, $page, $perpage, $baseurl);
 
         $results = [];
         if ($logs) {
             $fakeitems = [];
             $tradeids = [];
 
-            // Collect IDs for bulk fetching.
             foreach ($logs as $log) {
                 if ($log->itemid > 0) {
                     $fakeitems[$log->itemid] = (object)['id' => $log->itemid, 'image' => $log->icon];
@@ -462,7 +666,6 @@ class tab_reports implements renderable, templatable {
                 }
             }
 
-            // Bulk fetch trade costs (Requirements).
             $tradecosts = [];
             if (!empty($tradeids)) {
                 [$tinsql, $tinparams] = $DB->get_in_or_equal($tradeids, SQL_PARAMS_NAMED, 'trd');
@@ -478,6 +681,7 @@ class tab_reports implements renderable, templatable {
 
             $context = \context_block::instance($this->instanceid);
             $allmedia = \block_playerhud\utils::get_items_display_data($fakeitems, $context);
+            $counter = $limitfrom + 1;
 
             foreach ($logs as $log) {
                 $srckey = 'report_src_' . $log->details;
@@ -514,7 +718,6 @@ class tab_reports implements renderable, templatable {
                     $badgetext  = get_string('report_type_trade', 'block_playerhud');
                     $detailtext = get_string('report_status_transaction', 'block_playerhud');
 
-                    // Append the exact items paid for this trade.
                     if (isset($tradecosts[$log->trade_id])) {
                         $coststr = implode(', ', $tradecosts[$log->trade_id]);
                         $strcost = get_string('trade_cost', 'block_playerhud');
@@ -532,7 +735,6 @@ class tab_reports implements renderable, templatable {
                     $xpbadge = '<span class="text-muted small">-</span>';
                 }
 
-                // For item events that are not revoked, show revoke option.
                 $urldelete = '';
                 if ($log->inventory_id > 0 && property_exists($this, 'courseid')) {
                     $urldelete = new \moodle_url('/blocks/playerhud/manage.php', [
@@ -546,6 +748,7 @@ class tab_reports implements renderable, templatable {
                 }
 
                 $results[] = [
+                    'counter'       => $counter++,
                     'date'          => userdate($log->timecreated, get_string('strftimedatetime', 'langconfig')),
                     'badge_class'   => $badgeclass,
                     'badge_text'    => $badgetext,
@@ -560,7 +763,7 @@ class tab_reports implements renderable, templatable {
                 ];
             }
         }
-        return $results;
+        return ['logs' => $results, 'paging_bar' => $pagingbar, 'total' => $totalrecords];
     }
 
     /**
@@ -570,6 +773,7 @@ class tab_reports implements renderable, templatable {
      */
     private function get_ai_logs(): array {
         global $DB;
+
         $logs = $DB->get_records(
             'block_playerhud_ai_logs',
             ['blockinstanceid' => $this->instanceid],
@@ -590,7 +794,7 @@ class tab_reports implements renderable, templatable {
             foreach ($logs as $log) {
                 $counter++;
                 $logdate = userdate($log->timecreated, get_string('strftimedatetime', 'langconfig'));
-                $aiclass = ($log->ai_provider === 'Gemini') ? 'bg-primary' : 'bg-info text-dark';
+                $aiclass = ($log->ai_provider === 'Gemini') ? 'bg-primary text-white' : 'bg-info text-dark';
 
                 $results[] = [
                     'is_hidden'    => ($counter > 5),

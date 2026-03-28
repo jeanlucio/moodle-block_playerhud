@@ -1,3 +1,18 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
  * Reports management module.
  *
@@ -8,16 +23,26 @@
 define(['jquery', 'core/notification'], function($, Notification) {
     return {
         init: function(config) {
-            // Seletor de usuário para redirecionamento.
+            // User selector for redirection.
             $('#r_userid').on('change', function() {
                 var url = config.baseUrl + '&r_userid=' + $(this).val();
                 window.location.href = url;
             });
 
-            // Toggle para exibir/esconder logs antigos da IA.
+            // Live Search for Audit Logs.
+            $('#ph-live-search').on('input', function() {
+                const term = $(this).val().toLowerCase();
+                $('.ph-searchable-row').each(function() {
+                    const text = $(this).text().toLowerCase();
+                    $(this).toggle(text.indexOf(term) > -1);
+                });
+            });
+
+            // Toggle for showing/hiding old AI logs.
             $('#btn-ai-toggle').on('click', function(e) {
                 e.preventDefault();
                 var rows = $('.ph-ai-hidden');
+
                 if (!rows.length) {
                     return;
                 }
@@ -33,7 +58,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
             });
 
-            // Confirmação padrão do Moodle para deletar itens.
+            // Default Moodle confirmation for deleting items.
             $('.js-delete-report-btn').on('click', function(e) {
                 e.preventDefault();
                 var targetUrl = $(this).attr('href');

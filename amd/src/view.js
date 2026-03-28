@@ -79,6 +79,15 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
             };
 
+            // Live Search for History.
+            $('#ph-live-search').on('input', function() {
+                const term = $(this).val().toLowerCase();
+                $('.ph-searchable-row').each(function() {
+                    const text = $(this).text().toLowerCase();
+                    $(this).toggle(text.indexOf(term) > -1);
+                });
+            });
+
             // Event Delegation for clicking on items.
             $(document).on('click', '.ph-item-trigger', function(e) {
                 e.preventDefault();
