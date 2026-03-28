@@ -284,7 +284,6 @@ class drops {
      */
     public function handle_edit_form() {
         global $DB, $PAGE, $OUTPUT, $COURSE, $CFG;
-        require_once($CFG->dirroot . '/blocks/playerhud/classes/form/edit_drop_form.php');
 
         $instanceid = required_param('instanceid', PARAM_INT);
         $courseid   = required_param('courseid', PARAM_INT);

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], function($, Notification, Ajax) {
+define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_clipboard'], function($, Notification, Ajax, Str) {
 
     /**
      * Manage Items module for PlayerHUD.
@@ -200,7 +200,13 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
 
                 const theme = $('#ai-theme').val();
                 if (!theme) {
-                    Notification.alert('Error', config.strings.err_theme, 'OK');
+                    Str.get_strings([
+                        {key: 'error', component: 'core'},
+                        {key: 'ok', component: 'core'}
+                    ]).then(function(strs) {
+                        Notification.alert(strs[0], config.strings.err_theme, strs[1]);
+                        return true;
+                    }).catch(Notification.exception);
                     return;
                 }
 
@@ -314,9 +320,14 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/copy_to_clipboard'], f
                         setTimeout(function() {
                             $('#ph-success-container').focus();
                         }, 200);
-
                     } else {
-                        Notification.alert('Error', resp.message, 'OK');
+                        Str.get_strings([
+                            {key: 'error', component: 'core'},
+                            {key: 'ok', component: 'core'}
+                        ]).then(function(strs) {
+                            Notification.alert(strs[0], resp.message, strs[1]);
+                            return true;
+                        }).catch(Notification.exception);
                     }
                 }).fail(function(ex) {
                     $btn.prop('disabled', false).text(originalText).removeAttr('aria-busy');

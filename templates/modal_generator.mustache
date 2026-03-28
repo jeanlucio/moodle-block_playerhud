@@ -52,12 +52,12 @@
     <div class="modal-content border-0 shadow-lg">
       <div class="modal-header bg-primary text-white d-flex justify-content-between align-items-center">
         <h5 class="modal-title m-0 fw-bold">{{#str}} gen_title, block_playerhud {{/str}}</h5>
-        <button type="button" class="btn-close btn-close-white js-modal-close" 
+        <button type="button" class="btn-close btn-close-white js-modal-close"
                 data-bs-dismiss="modal" data-dismiss="modal" aria-label="{{#str}} close, block_playerhud {{/str}}">
              <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      
+
       <div class="modal-body">
           <div class="row">
                <div class="col-md-7 border-end">
@@ -99,7 +99,7 @@
                                   <input type="text" class="form-control form-control-sm text-center" id="customBtnEmoji" placeholder="🖐" maxlength="4">
                               </div>
                           </div>
-                          <div class="form-text mt-1 text-muted ph-text-xs">Deixe vazio para usar o padrão.</div>
+                          <div class="form-text mt-1 text-muted ph-text-xs">{{#str}} gen_leave_empty, block_playerhud {{/str}}</div>
                       </div>
 
                       <div class="mb-3 mt-4 ph-alert-warning-box ph-display-none" id="textInputGroup">
@@ -120,12 +120,12 @@
 
           <div class="row mt-3 pt-3 border-top">
                <div class="col-12">
-                 <label class="fw-bold text-success">{{#str}} gen_code_label, block_playerhud {{/str}}</label>
-                  <div class="input-group input-group-lg">
-                      <input type="text" class="form-control font-monospace ph-input-code-readonly" id="finalCode" readonly>
-                      <button class="btn btn-primary fw-bold shadow-sm" type="button" 
+                 <label for="finalCode" class="fw-bold text-success">{{#str}} gen_code_label, block_playerhud {{/str}}</label>
+                    <div class="input-group input-group-lg">
+                        <input type="text" class="form-control font-monospace ph-input-code-readonly" id="finalCode" readonly>
+                      <button class="btn btn-primary fw-bold shadow-sm" type="button"
                               id="copyFinalCode"
-                              data-action="copytoclipboard" 
+                              data-action="copytoclipboard"
                               data-clipboard-target="#finalCode">
                           <i class="fa fa-copy" aria-hidden="true"></i> {{#str}} gen_copy, block_playerhud {{/str}}
                       </button>

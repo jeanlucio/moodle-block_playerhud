@@ -456,7 +456,7 @@ export const init = (config) => {
         }
 
         if (!descHtml || descHtml.trim() === '') {
-            descHtml = '<i class="text-muted">' + (appStrings.no_desc || '- sem descrição -') + '</i>';
+            descHtml = '<i class="text-muted">' + (appStrings.no_desc || '- no description -') + '</i>';
         }
         modalEls.desc.html(descHtml);
 

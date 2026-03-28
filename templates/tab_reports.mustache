@@ -116,7 +116,7 @@
         <div class="mb-4 mt-3 d-flex gap-2 flex-wrap">
             <div class="input-group shadow-sm flex-grow-1" style="min-width: 250px;">
                 <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-muted" aria-hidden="true"></i></span>
-                <input type="text" id="ph-live-search" class="form-control border-start-0 ps-0" placeholder="{{str.search_any}}">
+                <input type="text" id="ph-live-search" class="form-control border-start-0 ps-0" placeholder="{{str.search_any}}" aria-label="{{str.search_any}}">
             </div>
             <div>
                 {{#showall}}
@@ -147,7 +147,7 @@
 
                     <div class="input-group input-group-sm">
                         <select name="itemid" class="form-select border-success" required aria-label="Select item">
-                            <option value="">-- Conceder Item --</option>
+                            <option value="">-- {{#str}} grant_item_select, block_playerhud {{/str}} --</option>
                             {{#available_items}}
                                 <option value="{{value}}">{{label}}</option>
                             {{/available_items}}
@@ -214,8 +214,9 @@
                             <td class="text-end pe-3">
                                 {{#has_revoke}}
                                     <a href="{{url_revoke}}" class="btn btn-sm btn-outline-danger js-delete-report-btn"
-                                       title="{{str.revoke_item}}"
-                                       data-confirm-msg="{{str.confirm_revoke}}">
+                                        title="{{str.revoke_item}}"
+                                        aria-label="{{str.revoke_item}}"
+                                        data-confirm-msg="{{str.confirm_revoke}}">
                                         <i class="fa fa-trash" aria-hidden="true"></i>
                                     </a>
                                 {{/has_revoke}}
@@ -239,7 +240,7 @@
         {{#has_students}}
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white fw-bold">
-                <i class="fa fa-list" aria-hidden="true"></i> {{str.leaderboard}} (Resumo)
+                <i class="fa fa-list" aria-hidden="true"></i> {{str.leaderboard}} ({{#str}} summary, block_playerhud {{/str}})
             </div>
             <div class="card-body p-0 table-responsive">
                 <table class="table table-hover table-striped mb-0 text-center align-middle">
@@ -280,8 +281,8 @@
                             </td>
                             <td><span class="badge bg-light text-dark border">{{total_items}}</span></td>
                             <td class="pe-3">
-                                <a href="{{url_audit}}" class="btn btn-sm btn-outline-primary" title="{{str.audit}}">
-                                   <i class="fa fa-search" aria-hidden="true"></i>
+                                <a href="{{url_audit}}" class="btn btn-sm btn-outline-primary" title="{{str.audit}}" aria-label="{{str.audit}}">
+                                    <i class="fa fa-search" aria-hidden="true"></i>
                                 </a>
                             </td>
                         </tr>

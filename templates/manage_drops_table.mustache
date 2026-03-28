@@ -114,10 +114,9 @@
                 <thead class="bg-light">
                     <tr>
                         <th scope="col" class="ph-col-select text-center align-middle">
-                            <span class="accesshide">{{str_select_all}}</span>
-                            <input type="checkbox" id="ph-select-all" class="form-check-input m-0 position-static" title="{{str_select_all}}">
+                            <input type="checkbox" id="ph-select-all" class="form-check-input m-0 position-static" title="{{str_select_all}}" aria-label="{{str_select_all}}">
                         </th>
-                        <th scope="col" class="ph-col-sm">N.</th>
+                        <th scope="col" class="ph-col-sm">{{#str}} col_number, block_playerhud {{/str}}</th>
 
                         <th scope="col">
                             <a href="{{headers.name.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
@@ -143,7 +142,7 @@
                     {{#drops}}
                     <tr>
                         <td class="ph-col-select">
-                            <label class="accesshide" for="chk-{{id}}">{{str_select}}</label>
+                            <label class="visually-hidden" for="chk-{{id}}">{{str_select}}</label>
                             <input type="checkbox" name="bulk_ids[]" value="{{id}}" id="chk-{{id}}" class="form-check-input ph-bulk-check">
                         </td>
                         <td class="align-middle text-muted small">{{counter}}</td>

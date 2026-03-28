@@ -101,10 +101,9 @@
                     <thead class="bg-light border-bottom">
                         <tr class="text-nowrap">
                             <th scope="col" class="ph-col-select text-center align-middle">
-                                <span class="accesshide">{{str_select_all}}</span>
-                                <input type="checkbox" id="ph-select-all" class="form-check-input m-0 position-static" title="{{str_select_all}}">
+                                <input type="checkbox" id="ph-select-all" class="form-check-input m-0 position-static" title="{{str_select_all}}" aria-label="{{str_select_all}}">
                             </th>
-                            <th scope="col" class="ph-col-sm text-center">N.</th>
+                            <th scope="col" class="ph-col-sm text-center">{{#str}} col_number, block_playerhud {{/str}}</th>
                             <th scope="col" class="ph-col-md text-center">{{str_col_image}}</th>
 
                             <th scope="col">
@@ -131,7 +130,7 @@
                         {{#items}}
                         <tr class="{{^enabled}}opacity-50{{/enabled}}">
                             <td class="ph-col-select text-center align-middle">
-                                <label class="accesshide" for="chk-{{id}}">{{str_select}} {{name}}</label>
+                                <label class="visually-hidden" for="chk-{{id}}">{{str_select}} {{name}}</label>
                                 <input type="checkbox" name="bulk_ids[]" value="{{id}}" id="chk-{{id}}" class="form-check-input ph-bulk-check m-0 position-static">
                             </td>
                             <td class="align-middle text-center text-muted small text-nowrap">{{counter}}</td>
@@ -177,7 +176,7 @@
                             <td class="align-middle text-nowrap">
                                 <a href="{{url_drops}}" class="btn btn-sm {{btn_drops_class}} w-100" aria-label="{{str_manage_drops}}">
                                     <i class="fa fa-map-marker" aria-hidden="true"></i>
-                                    <span class="d-none d-xl-inline ms-1">Drops:</span> <strong>{{drops_count}}</strong>
+                                    <span class="d-none d-xl-inline ms-1">{{#str}} drops, block_playerhud {{/str}}:</span> <strong>{{drops_count}}</strong>
                                 </a>
                             </td>
                             <td class="align-middle text-end text-nowrap">

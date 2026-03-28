@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, Notification) {
+define(['jquery', 'core/notification', 'core/copy_to_clipboard', 'core/str'], function($, Notification, unused, Str) {
 
     /**
      * Manage Drops module.
@@ -243,7 +243,16 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                     }).catch(function(err) {
                         // eslint-disable-next-line no-console
                         console.error('Clipboard error:', err);
-                        Notification.alert('Error', 'Unable to copy to clipboard.', 'OK');
+
+                        // eslint-disable-next-line promise/no-nesting
+                        return Str.get_strings([
+                            {key: 'error', component: 'core'},
+                            {key: 'err_clipboard', component: 'block_playerhud'},
+                            {key: 'ok', component: 'core'}
+                        ]).then(function(strs) {
+                            Notification.alert(strs[0], strs[1], strs[2]);
+                            return true;
+                        }).catch(Notification.exception);
                     });
                 }
             });
