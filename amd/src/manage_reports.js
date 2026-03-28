@@ -25,7 +25,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
         init: function(config) {
             // User selector for redirection.
             $('#r_userid').on('change', function() {
-                var url = config.baseUrl + '&r_userid=' + $(this).val();
+                const url = config.baseUrl + '&r_userid=' + $(this).val();
                 window.location.href = url;
             });
 
@@ -41,13 +41,13 @@ define(['jquery', 'core/notification'], function($, Notification) {
             // Toggle for showing/hiding old AI logs.
             $('#btn-ai-toggle').on('click', function(e) {
                 e.preventDefault();
-                var rows = $('.ph-ai-hidden');
+                const rows = $('.ph-ai-hidden');
 
                 if (!rows.length) {
                     return;
                 }
 
-                var isHidden = rows.first().is(':hidden');
+                const isHidden = rows.first().is(':hidden');
 
                 if (isHidden) {
                     rows.show();
@@ -61,8 +61,8 @@ define(['jquery', 'core/notification'], function($, Notification) {
             // Default Moodle confirmation for deleting items.
             $('.js-delete-report-btn').on('click', function(e) {
                 e.preventDefault();
-                var targetUrl = $(this).attr('href');
-                var msg = $(this).attr('data-confirm-msg');
+                const targetUrl = $(this).attr('href');
+                const msg = $(this).attr('data-confirm-msg');
 
                 Notification.confirm(
                     config.strConfirmTitle,

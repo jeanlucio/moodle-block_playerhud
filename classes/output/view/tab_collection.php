@@ -254,27 +254,24 @@ class tab_collection implements renderable, templatable {
             }
         }
 
-        // 3. Robust Sorting with Collator for locale-aware sorting.
-        $locale = current_language() ?: 'en';
-        $collator = new \Collator($locale);
-
-        usort($itemsdata, function ($a, $b) use ($currentsort, $collator) {
+        // 3. Robust Sorting with core_collator for locale-aware sorting.
+        usort($itemsdata, function ($a, $b) use ($currentsort) {
             switch ($currentsort) {
                 case 'name_asc':
-                    return $collator->compare($a['sort_name'], $b['sort_name']);
+                    return \core_collator::compare($a['sort_name'], $b['sort_name']);
 
                 case 'name_desc':
-                    return $collator->compare($b['sort_name'], $a['sort_name']);
+                    return \core_collator::compare($b['sort_name'], $a['sort_name']);
 
                 case 'count_desc':
                     if ($a['count'] == $b['count']) {
-                        return $collator->compare($a['sort_name'], $b['sort_name']);
+                        return \core_collator::compare($a['sort_name'], $b['sort_name']);
                     }
                     return $b['count'] <=> $a['count'];
 
                 case 'count_asc':
                     if ($a['count'] == $b['count']) {
-                        return $collator->compare($a['sort_name'], $b['sort_name']);
+                        return \core_collator::compare($a['sort_name'], $b['sort_name']);
                     }
                     return $a['count'] <=> $b['count'];
 
@@ -282,7 +279,7 @@ class tab_collection implements renderable, templatable {
                     $hasa = ($a['count'] > 0) ? 1 : 0;
                     $hasb = ($b['count'] > 0) ? 1 : 0;
                     if ($hasa == $hasb) {
-                        return $collator->compare($a['sort_name'], $b['sort_name']);
+                        return \core_collator::compare($a['sort_name'], $b['sort_name']);
                     }
                     return $hasb <=> $hasa;
 
@@ -290,7 +287,7 @@ class tab_collection implements renderable, templatable {
                     $hasa = ($a['count'] > 0) ? 1 : 0;
                     $hasb = ($b['count'] > 0) ? 1 : 0;
                     if ($hasa == $hasb) {
-                        return $collator->compare($a['sort_name'], $b['sort_name']);
+                        return \core_collator::compare($a['sort_name'], $b['sort_name']);
                     }
                     return $hasa <=> $hasb;
 

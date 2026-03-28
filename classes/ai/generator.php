@@ -405,7 +405,8 @@ class generator {
         // 1. Check for cURL level errors (e.g., DNS, Timeout).
         if ($curlerror) {
             // 1.1 $curl->error contains the error message.
-            return ['success' => false, 'message' => 'cURL Error: ' . $curl->error];
+            $msg = get_string('error_connection', 'block_playerhud') . ' (' . $curl->error . ')';
+            return ['success' => false, 'message' => $msg];
         }
 
         // 2. Check for HTTP level errors (e.g., 401, 500).
