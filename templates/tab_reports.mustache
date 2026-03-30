@@ -15,9 +15,7 @@
 	along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template block_playerhud/tab_reports
-
-    Reports tab management.
+    Template for the Reports tab in PlayerHUD management.
 
     @package    block_playerhud
     @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
@@ -36,11 +34,13 @@
             "col_desc": "Element",
             "col_details": "Details",
             "btn_showall": "Show all",
-            "btn_showpaged": "Show 30 per page"
+            "btn_showpaged": "Show 30 per page",
+            "summary": "Summary"
         },
         "kpis": [{"title": "Total XP", "value": "1500", "subtitle": "", "bg_class": "ph-bg-gradient-primary"}],
         "has_students": true,
-        "user_selector": { "options": [{"value": 1, "label": "Jean Lúcio", "selected": true}] }
+        "user_selector": { "options": [{"value": 1, "label": "Jean Lúcio", "selected": true}] },
+        "url_export": "#"
     }
 }}
 <div class="playerhud-reports-container animate__animated animate__fadeIn">
@@ -146,13 +146,13 @@
                     <input type="hidden" name="sesskey" value="{{sesskey}}">
 
                     <div class="input-group input-group-sm">
-                        <select name="itemid" class="form-select border-success" required aria-label="Select item">
+                        <select name="itemid" class="form-select border-success" required aria-label="{{str.grant_item_select}}">
                             <option value="">-- {{str.grant_item_select}} --</option>
                             {{#available_items}}
                                 <option value="{{value}}">{{label}}</option>
                             {{/available_items}}
                         </select>
-                        <button type="submit" class="btn btn-success fw-bold">
+                        <button type="submit" class="btn btn-success fw-bold" aria-label="{{str.grant_item_select}}">
                             <i class="fa fa-gift" aria-hidden="true"></i>
                         </button>
                     </div>
@@ -214,6 +214,7 @@
                             <td class="text-end pe-3">
                                 {{#has_revoke}}
                                     <a href="{{url_revoke}}" class="btn btn-sm btn-outline-danger js-delete-report-btn text-nowrap"
+                                        data-bs-toggle="tooltip"
                                         title="{{str.revoke_item}}"
                                         aria-label="{{str.revoke_item}} {{object_name}}"
                                         data-confirm-msg="{{str.confirm_revoke}}">
@@ -239,8 +240,16 @@
     {{^is_audit}}
         {{#has_students}}
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white fw-bold">
-                <i class="fa fa-list" aria-hidden="true"></i> {{str.leaderboard}} ({{str.summary}})
+            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span><i class="fa fa-list" aria-hidden="true"></i> {{str.leaderboard}} ({{str.summary}})</span>
+                <div class="d-flex gap-2">
+                    <a href="{{url_export}}&amp;format=csv" class="btn btn-sm btn-outline-success shadow-sm" title="{{str.export_csv}}">
+                        <i class="fa fa-download" aria-hidden="true"></i> <span class="d-none d-md-inline">{{str.export_csv}}</span>
+                    </a>
+                    <a href="{{url_export}}&amp;format=excel" class="btn btn-sm btn-outline-success shadow-sm" title="{{str.export_excel}}">
+                        <i class="fa fa-file-excel-o" aria-hidden="true"></i> <span class="d-none d-md-inline">{{str.export_excel}}</span>
+                    </a>
+                </div>
             </div>
             <div class="card-body p-0 table-responsive">
                 <table class="table table-hover table-striped mb-0 text-center align-middle">
@@ -271,7 +280,7 @@
                         <tr class="{{row_class}}">
                             <td class="text-center text-muted small fw-bold">{{counter}}</td>
                             <td class="text-start ps-3">
-                                <a href="{{url_audit}}" class="{{name_class}}" title="{{str.audit}}">{{fullname}}</a>
+                                <a href="{{url_audit}}" class="{{name_class}}" data-bs-toggle="tooltip" title="{{str.audit}}">{{fullname}}</a>
                             </td>
                             <td>
                                 {{#is_active}}
@@ -282,7 +291,7 @@
                             <td><span class="badge bg-light text-dark border">{{total_items}}</span></td>
                             <td class="text-center text-muted small font-monospace">{{last_action}}</td>
                             <td class="pe-3">
-                                <a href="{{url_audit}}" class="btn btn-sm btn-outline-primary text-nowrap" title="{{str.audit}}" aria-label="{{str.audit}} {{fullname}}">
+                                <a href="{{url_audit}}" class="btn btn-sm btn-outline-primary text-nowrap" data-bs-toggle="tooltip" title="{{str.audit}}" aria-label="{{str.audit}} {{fullname}}">
                                     <i class="fa fa-search" aria-hidden="true"></i> <span class="ms-1">{{str.view}}</span>
                                 </a>
                             </td>

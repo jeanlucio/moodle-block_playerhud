@@ -232,6 +232,11 @@ class tab_reports implements renderable, templatable {
             ];
             $contextdata['students']     = $this->get_students_data($xpperlevel, $maxlevels);
             $contextdata['has_students'] = !empty($contextdata['students']);
+
+            $contextdata['url_export'] = (new moodle_url('/blocks/playerhud/export.php', [
+                'id' => $this->courseid,
+                'instanceid' => $this->instanceid,
+            ]))->out(false);
         }
 
         $contextdata['ai_logs']     = $this->get_ai_logs();
@@ -266,6 +271,8 @@ class tab_reports implements renderable, templatable {
             'btn_showpaged'     => get_string('showperpage', 'moodle', 30),
             'search_any'        => get_string('search_any_term', 'block_playerhud'),
             'col_num'           => get_string('col_number', 'block_playerhud'),
+            'export_csv'        => get_string('export_csv', 'block_playerhud'),
+            'export_excel'      => get_string('export_excel', 'block_playerhud'),
         ];
 
         $jsconfig = [
