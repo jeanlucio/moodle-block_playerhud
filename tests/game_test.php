@@ -16,6 +16,7 @@
 
 namespace block_playerhud;
 
+use advanced_testcase;
 use block_playerhud\game;
 
 /**
