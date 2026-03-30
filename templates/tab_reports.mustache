@@ -69,17 +69,17 @@
                 <div class="card-header bg-white fw-bold">
                     <i class="fa fa-bar-chart text-info" aria-hidden="true"></i> {{charts.str_levels}}
                 </div>
-                <div class="card-body overflow-auto" style="max-height: 200px;">
+                <div class="card-body overflow-auto ph-max-h-200">
                     {{#charts.has_levels}}
                         {{#charts.levels}}
                             <div class="d-flex align-items-center mb-1 small">
-                                <div class="fw-bold" style="width:50px;">{{str.level}} {{label}}</div>
+                                <div class="fw-bold ph-w-50">{{str.level}} {{label}}</div>
                                 <div class="flex-grow-1 mx-2">
-                                    <div class="progress" style="height: 10px;" aria-hidden="true">
+                                    <div class="progress ph-h-10" aria-hidden="true">
                                         <div class="progress-bar bg-info" style="width: {{percent}}%"></div>
                                     </div>
                                 </div>
-                                <div class="text-end" style="width:30px;">{{total}}</div>
+                                <div class="text-end ph-w-30">{{total}}</div>
                             </div>
                         {{/charts.levels}}
                     {{/charts.has_levels}}
@@ -95,7 +95,7 @@
     <div class="card mb-4 shadow-sm">
         <div class="card-body p-3 bg-light d-flex align-items-center flex-wrap">
             <strong class="me-3 mb-2 mb-md-0"><i class="fa fa-filter" aria-hidden="true"></i> {{str.audit}}</strong>
-            <div class="flex-grow-1" style="max-width:500px;">
+            <div class="flex-grow-1 ph-max-w-500">
                 <label for="r_userid" class="sr-only visually-hidden">{{str.audit}}</label>
                 <select id="r_userid" class="form-select w-100">
                     {{#user_selector.options}}
@@ -116,7 +116,7 @@
 
         {{! --- LIVE SEARCH BAR & SHOW ALL TOGGLE --- }}
         <div class="mb-4 mt-3 d-flex gap-2 flex-wrap">
-            <div class="input-group shadow-sm flex-grow-1" style="min-width: 250px;">
+            <div class="input-group shadow-sm flex-grow-1 ph-min-w-250">
                 <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-muted" aria-hidden="true"></i></span>
                 <input type="text" id="ph-live-search" class="form-control border-start-0 ps-0" placeholder="{{str.search_any}}" aria-label="{{str.search_any}}">
             </div>
@@ -167,7 +167,7 @@
                 <table class="table table-hover table-striped bg-white mb-0 align-middle w-100">
                     <thead class="bg-light border-bottom">
                         <tr class="text-nowrap">
-                            <th scope="col" class="text-center text-muted ps-3" style="width: 50px;">{{str.col_num}}</th>
+                            <th scope="col" class="text-center text-muted ps-3 ph-w-50">{{str.col_num}}</th>
                             <th scope="col">
                                 <a href="{{audit_headers.date.url}}" class="text-dark text-decoration-none d-flex align-items-center">
                                     {{audit_headers.date.label}} <i class="fa {{audit_headers.date.icon_class}}" aria-hidden="true"></i>
@@ -204,7 +204,7 @@
                             <td><span class="badge {{badge_class}}">{{badge_text}}</span></td>
                             <td class="fw-bold">
                                 <div class="d-flex align-items-center">
-                                    <div class="me-2 text-center" style="width:30px;">
+                                    <div class="me-2 text-center ph-w-30">
                                         {{#is_image_icon}}<img src="{{icon_url}}" class="ph-img-xs" alt="">{{/is_image_icon}}
                                         {{^is_image_icon}}<span class="fs-5" aria-hidden="true">{{icon_emoji}}</span>{{/is_image_icon}}
                                     </div>
@@ -212,7 +212,7 @@
                                 </div>
                             </td>
                             <td class="text-center">{{{xp_badge}}}</td>
-                            <td class="text-muted small text-wrap" style="min-width: 200px; max-width: 350px;">{{{details_html}}}</td>
+                            <td class="text-muted small text-wrap ph-table-details-col">{{{details_html}}}</td>
                             <td class="text-end pe-3">
                                 {{#has_revoke}}
                                     <a href="{{url_revoke}}" class="btn btn-sm btn-outline-danger js-delete-report-btn text-nowrap"
