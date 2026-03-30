@@ -497,6 +497,7 @@ class tab_reports implements renderable, templatable {
      * Get main students table data.
      *
      * @param int $xpperlevel
+     * @param int $maxlevels
      * @return array
      */
     private function get_students_data(int $xpperlevel, int $maxlevels): array {
