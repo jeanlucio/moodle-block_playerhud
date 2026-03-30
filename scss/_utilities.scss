@@ -107,3 +107,31 @@
         }
     }
 }
+// Utility classes for fixed widths and heights.
+.ph-w-30 {
+    width: 30px;
+}
+.ph-w-50 {
+    width: 50px;
+}
+.ph-min-w-250 {
+    min-width: 250px;
+}
+.ph-max-w-500 {
+    max-width: 500px;
+}
+.ph-max-h-200 {
+    max-height: 200px;
+}
+
+// Custom table column widths for details view.
+.ph-table-details-col {
+    min-width: 200px;
+    max-width: 350px;
+}
+
+// Utility class for empty state icons.
+.ph-empty-icon-lg {
+    font-size: 3rem;
+    opacity: 0.3;
+}

@@ -131,6 +131,36 @@
     border-top: 3px solid var(--primary, #0d6efd);
 }
 
+.ph-w-30 {
+    width: 30px;
+}
+
+.ph-w-50 {
+    width: 50px;
+}
+
+.ph-min-w-250 {
+    min-width: 250px;
+}
+
+.ph-max-w-500 {
+    max-width: 500px;
+}
+
+.ph-max-h-200 {
+    max-height: 200px;
+}
+
+.ph-table-details-col {
+    min-width: 200px;
+    max-width: 350px;
+}
+
+.ph-empty-icon-lg {
+    font-size: 3rem;
+    opacity: 0.3;
+}
+
 .block_playerhud .userpicture {
     border: 3px solid var(--light, #fff);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
