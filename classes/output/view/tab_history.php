@@ -379,7 +379,8 @@ class tab_history implements renderable, templatable {
                         $coststr = implode(', ', $tradecosts[$log->trade_id]);
                         $strcost = get_string('trade_cost', 'block_playerhud');
                         $iconminus = '<i class="fa fa-minus-circle" aria-hidden="true"></i>';
-                        $detailtext .= "<br><small class=\"text-danger\">{$iconminus} {$strcost} {$coststr}</small>";
+                        $detailtext .= "<small class=\"text-danger d-block mt-1 text-wrap\">" .
+                            "{$iconminus} {$strcost} {$coststr}</small>";
                     }
                 }
 

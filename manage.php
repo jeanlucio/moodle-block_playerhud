@@ -37,7 +37,7 @@ $tradeid = optional_param('tradeid', 0, PARAM_INT);
 
 // Sorting Parameters.
 $sort = optional_param('sort', '', PARAM_ALPHA);
-$dir  = optional_param('dir', 'ASC', PARAM_ALPHA);
+$dir  = optional_param('dir', '', PARAM_ALPHA);
 
 // Security checks.
 $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);

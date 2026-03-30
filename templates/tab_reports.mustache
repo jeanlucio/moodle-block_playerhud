@@ -210,7 +210,7 @@
                                 </div>
                             </td>
                             <td class="text-center">{{{xp_badge}}}</td>
-                            <td class="text-muted small">{{{details_html}}}</td>
+                            <td class="text-muted small text-wrap" style="min-width: 200px; max-width: 350px;">{{{details_html}}}</td>
                             <td class="text-end pe-3">
                                 {{#has_revoke}}
                                     <a href="{{url_revoke}}" class="btn btn-sm btn-outline-danger js-delete-report-btn text-nowrap"
@@ -246,6 +246,7 @@
                 <table class="table table-hover table-striped mb-0 text-center align-middle">
                     <thead class="bg-light border-bottom">
                         <tr>
+                            <th scope="col" class="ph-col-sm text-center text-muted">{{str.col_num}}</th>
                             <th scope="col" class="text-start ps-3">
                                 <a href="{{headers.student.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
                                     {{headers.student.label}} <i class="fa {{headers.student.icon_class}}" aria-hidden="true"></i>
@@ -261,12 +262,14 @@
                                     {{headers.items.label}} <i class="fa {{headers.items.icon_class}}" aria-hidden="true"></i>
                                 </a>
                             </th>
+                            <th scope="col" class="text-center text-muted small"><i class="fa fa-clock-o" aria-hidden="true"></i> {{str.last_action}}</th>
                             <th scope="col" class="fw-bold pe-3 text-dark">{{str.action}}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {{#students}}
                         <tr class="{{row_class}}">
+                            <td class="text-center text-muted small fw-bold">{{counter}}</td>
                             <td class="text-start ps-3">
                                 <a href="{{url_audit}}" class="{{name_class}}" title="{{str.audit}}">{{fullname}}</a>
                             </td>
@@ -277,6 +280,7 @@
                                 {{/is_active}}
                             </td>
                             <td><span class="badge bg-light text-dark border">{{total_items}}</span></td>
+                            <td class="text-center text-muted small font-monospace">{{last_action}}</td>
                             <td class="pe-3">
                                 <a href="{{url_audit}}" class="btn btn-sm btn-outline-primary text-nowrap" title="{{str.audit}}" aria-label="{{str.audit}} {{fullname}}">
                                     <i class="fa fa-search" aria-hidden="true"></i> <span class="ms-1">{{str.view}}</span>

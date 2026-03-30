@@ -385,6 +385,7 @@ $string['report_col_object'] = 'Objeto Gerado';
 $string['report_col_type'] = 'Tipo';
 $string['report_collected_times'] = 'Coletado {$a} vezes';
 $string['report_karma'] = 'Karma';
+$string['report_last_action'] = 'Última Ação';
 $string['report_leader'] = 'Líder';
 $string['report_most_collected'] = 'Item Mais Coletado';
 $string['report_no_logs'] = 'Nenhum registro encontrado.';

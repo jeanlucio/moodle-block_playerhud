@@ -248,6 +248,7 @@ class tab_reports implements renderable, templatable {
             'ai_title'          => get_string('report_ai_title', 'block_playerhud'),
             'ai_sub'            => get_string('report_ai_subtitle', 'block_playerhud'),
             'col_date'          => get_string('report_col_date', 'block_playerhud'),
+            'last_action'       => get_string('report_last_action', 'block_playerhud'),
             'col_type'          => get_string('report_col_type', 'block_playerhud'),
             'col_desc'          => get_string('report_col_desc', 'block_playerhud'),
             'col_details'       => get_string('report_col_details', 'block_playerhud'),
@@ -494,11 +495,21 @@ class tab_reports implements renderable, templatable {
     private function get_students_data(int $xpperlevel, int $maxlevels): array {
         global $DB;
 
+        $coursecontext = \context_course::instance($this->courseid);
+        $managers = get_users_by_capability($coursecontext, 'block/playerhud:manage', 'u.id');
+        $managerids = array_keys($managers);
+
+        $excludeclause = '';
+        $excludeparams = [];
+        if (!empty($managerids)) {
+            [$insql, $excludeparams] = $DB->get_in_or_equal($managerids, SQL_PARAMS_NAMED, 'exm', false);
+            $excludeclause = "AND pu.userid $insql";
+        }
+
         $userfieldsapi = \core_user\fields::for_name();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
 
         $sortsql = "pu.currentxp DESC";
-
         switch ($this->sort) {
             case 'student':
                 $sortsql = "u.lastname {$this->dir}, u.firstname {$this->dir}";
@@ -513,13 +524,14 @@ class tab_reports implements renderable, templatable {
 
         $sql = "
             SELECT u.id, $userfields, u.email,
-                   pu.currentxp, pu.enable_gamification,
+                   pu.currentxp, pu.enable_gamification, pu.timemodified,
                    (SELECT COUNT(inv.id) FROM {block_playerhud_inventory} inv
                     JOIN {block_playerhud_items} it ON inv.itemid = it.id
                    WHERE inv.userid = u.id AND it.blockinstanceid = :p1 AND inv.source != 'revoked') as total_items
               FROM {user} u
               JOIN {block_playerhud_user} pu ON pu.userid = u.id
              WHERE pu.blockinstanceid = :p2
+               $excludeclause
           ORDER BY $sortsql";
 
         $params = [
@@ -527,11 +539,17 @@ class tab_reports implements renderable, templatable {
             'p2' => $this->instanceid,
         ];
 
+        if (!empty($excludeparams)) {
+            $params = array_merge($params, $excludeparams);
+        }
+
         $users = $DB->get_records_sql($sql, $params);
 
         $results = [];
+        $counter = 1;
         if ($users) {
             foreach ($users as $row) {
+                $lastactiondate = userdate($row->timemodified, get_string('strftimedatetime', 'langconfig'));
                 $isactive = ($row->enable_gamification == 1);
 
                 $rawlevel = floor($row->currentxp / $xpperlevel) + 1;
@@ -545,6 +563,8 @@ class tab_reports implements renderable, templatable {
                 ]);
 
                 $results[] = [
+                    'counter'     => $counter++,
+                    'last_action' => $lastactiondate,
                     'id'          => $row->id,
                     'fullname'    => fullname($row),
                     'is_active'   => $isactive,
@@ -728,7 +748,8 @@ class tab_reports implements renderable, templatable {
                         $coststr = implode(', ', $tradecosts[$log->trade_id]);
                         $strcost = get_string('trade_cost', 'block_playerhud');
                         $iconminus = '<i class="fa fa-minus-circle" aria-hidden="true"></i>';
-                        $detailtext .= "<br><small class=\"text-danger\">{$iconminus} {$strcost} {$coststr}</small>";
+                        $detailtext .= "<small class=\"text-danger d-block mt-1 text-wrap\">" .
+                            "{$iconminus} {$strcost} {$coststr}</small>";
                     }
                 }
 
