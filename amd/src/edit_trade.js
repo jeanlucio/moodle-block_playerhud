@@ -28,7 +28,7 @@ define(['jquery'], function($) {
                 const $select = $(selectEl);
                 let targetId = $select.attr('data-target');
 
-                // Fallback robusto igual ao seu código original
+                // Robust fallback matching the original code.
                 if (!targetId && $select.attr('name')) {
                     const match = $select.attr('name').match(/([a-z]+)_itemid_(\d+)/);
                     if (match) {
@@ -48,14 +48,14 @@ define(['jquery'], function($) {
                 const itemId = String($select.val());
                 $previewBox.empty();
 
-                // Garante que não vai tentar buscar o ID "0" (--- Selecionar ---)
+                // Ensures it won't try to fetch ID "0" (--- Select ---).
                 if (itemId && itemId !== "0" && itemsMap.hasOwnProperty(itemId)) {
                     const content = itemsMap[itemId];
                     if (content.startsWith('EMOJI:')) {
                         const emoji = content.replace('EMOJI:', '');
                         $previewBox.append($('<span class="fs-4 lh-1" aria-hidden="true">').text(emoji));
                     } else {
-                        // Usando classes Bootstrap 5 no lugar de CSS inline para blindar o layout
+                        // Using Bootstrap 5 classes instead of inline CSS to bulletproof the layout.
                         $previewBox.append($('<img>', {
                             src: content,
                             alt: '',
@@ -69,12 +69,12 @@ define(['jquery'], function($) {
                 }
             };
 
-            // Event listener cravado no atributo 'name' para nunca falhar
+            // Event listener bound to the 'name' attribute to prevent failures.
             $('body').on('change', 'select[name*="_itemid_"]', function() {
                 updatePreview(this);
             });
 
-            // Disparo inicial
+            // Initial trigger.
             setTimeout(() => {
                 $('select[name*="_itemid_"]').each(function() {
                     updatePreview(this);

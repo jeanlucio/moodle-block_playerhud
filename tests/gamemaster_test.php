@@ -51,12 +51,12 @@ final class gamemaster_test extends advanced_testcase {
     public function test_grant_item_updates_xp_and_date(): void {
         global $DB;
 
-        // 1. Setup: Criar curso, usuário e bloco falso.
+        // 1. Setup: Create course, user, and fake block instance.
         $user = $this->getDataGenerator()->create_user();
         $instanceid = 1; // Fake block instance.
 
-        // Criar o jogador com 0 XP e data antiga.
-        $pastdate = time() - 86400; // Ontem.
+        // Create player with 0 XP and an old date.
+        $pastdate = time() - 86400; // Yesterday.
         $player = new \stdClass();
         $player->blockinstanceid = $instanceid;
         $player->userid = $user->id;
@@ -65,16 +65,16 @@ final class gamemaster_test extends advanced_testcase {
         $player->timemodified = $pastdate;
         $DB->insert_record('block_playerhud_user', $player);
 
-        // Criar um item que vale 100 XP.
+        // Create an item worth 100 XP.
         $item = new \stdClass();
         $item->blockinstanceid = $instanceid;
-        $item->name = 'Espada de Teste';
+        $item->name = 'Test Sword';
         $item->xp = 100;
         $item->timecreated = time();
         $item->timemodified = time();
         $itemid = $DB->insert_record('block_playerhud_items', $item);
 
-        // 2. Ação: Simular o grant_item do manage.php.
+        // 2. Action: Simulate grant_item from manage.php.
         $now = time();
         $newinv = new \stdClass();
         $newinv->userid = $user->id;
@@ -89,18 +89,18 @@ final class gamemaster_test extends advanced_testcase {
         $dbplayer->timemodified = $now;
         $DB->update_record('block_playerhud_user', $dbplayer);
 
-        // 3. Asserções (Validações).
+        // 3. Assertions (Validations).
         $updatedplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
         $inventory = $DB->get_records('block_playerhud_inventory', ['userid' => $user->id]);
 
-        $this->assertEquals(100, $updatedplayer->currentxp, 'O XP deveria ter subido para 100.');
+        $this->assertEquals(100, $updatedplayer->currentxp, 'XP should have increased to 100.');
         $this->assertGreaterThan(
             $pastdate,
             $updatedplayer->timemodified,
-            'A data timemodified deveria ter sido atualizada para o momento da concessão.'
+            'The timemodified date should have been updated to the exact time of the grant.'
         );
-        $this->assertCount(1, $inventory, 'Deveria existir 1 item no inventário.');
-        $this->assertEquals('teacher', reset($inventory)->source, 'A origem do item deve ser do professor.');
+        $this->assertCount(1, $inventory, 'There should be 1 item in the inventory.');
+        $this->assertEquals('teacher', reset($inventory)->source, 'The item source must be from the teacher.');
     }
 
     /**
@@ -114,7 +114,7 @@ final class gamemaster_test extends advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $instanceid = 1;
 
-        // Jogador com 500 XP atingidos há 5 dias.
+        // Player reached 500 XP 5 days ago.
         $fivedaysago = time() - (5 * 86400);
         $player = new \stdClass();
         $player->blockinstanceid = $instanceid;
@@ -124,10 +124,10 @@ final class gamemaster_test extends advanced_testcase {
         $player->timemodified = $fivedaysago;
         $DB->insert_record('block_playerhud_user', $player);
 
-        // Item de 200 XP que o aluno já possui.
+        // 200 XP item that the student already owns.
         $item = new \stdClass();
         $item->blockinstanceid = $instanceid;
-        $item->name = 'Escudo Roubado';
+        $item->name = 'Stolen Shield';
         $item->xp = 200;
         $item->timecreated = time();
         $item->timemodified = time();
@@ -140,10 +140,11 @@ final class gamemaster_test extends advanced_testcase {
         $inv->timecreated = $fivedaysago;
         $invid = $DB->insert_record('block_playerhud_inventory', $inv);
 
-        // 2. Ação: Simular o revoke_item do manage.php (Soft Revoke).
+        // 2. Action: Simulate revoke_item from manage.php (Soft Revoke).
         $dbplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
         $dbplayer->currentxp = max(0, $dbplayer->currentxp - $item->xp);
-        // NOTA: Intencionalmente NÃO atualizamos dbplayer->timemodified.
+
+        // NOTE: We intentionally DO NOT update dbplayer->timemodified.
         $DB->update_record('block_playerhud_user', $dbplayer);
 
         $dbinv = $DB->get_record('block_playerhud_inventory', ['id' => $invid]);
@@ -151,17 +152,17 @@ final class gamemaster_test extends advanced_testcase {
         $dbinv->timecreated = time();
         $DB->update_record('block_playerhud_inventory', $dbinv);
 
-        // 3. Asserções (Validações Cruciais).
+        // 3. Assertions (Crucial Validations).
         $updatedplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
         $updatedinv = $DB->get_record('block_playerhud_inventory', ['id' => $invid]);
 
-        $this->assertEquals(300, $updatedplayer->currentxp, 'O XP deveria ter caído de 500 para 300.');
+        $this->assertEquals(300, $updatedplayer->currentxp, 'XP should have dropped from 500 to 300.');
         $this->assertEquals(
             $fivedaysago,
             $updatedplayer->timemodified,
-            'CATASTRÓFICO: A data timemodified foi alterada! O critério de desempate foi quebrado.'
+            'CATASTROPHIC: The timemodified date was changed! The tie-breaker criterion was broken.'
         );
-        $this->assertEquals('revoked', $updatedinv->source, 'O status do item deve ser Soft Revoke (revoked).');
+        $this->assertEquals('revoked', $updatedinv->source, 'The item status should be Soft Revoke (revoked).');
     }
 
     /**
@@ -170,7 +171,7 @@ final class gamemaster_test extends advanced_testcase {
     public function test_xp_never_negative_on_revoke(): void {
         global $DB;
 
-        // 1. Setup: Jogador com 50 XP.
+        // 1. Setup: Player with 50 XP.
         $user = $this->getDataGenerator()->create_user();
         $instanceid = 1;
         $pastdate = time() - 3600;
@@ -183,22 +184,22 @@ final class gamemaster_test extends advanced_testcase {
         $player->timemodified = $pastdate;
         $DB->insert_record('block_playerhud_user', $player);
 
-        // Item vale 100 XP (mais do que o jogador tem).
+        // Item is worth 100 XP (more than the player currently has).
         $item = new \stdClass();
         $item->blockinstanceid = $instanceid;
-        $item->name = 'Item Bugado';
+        $item->name = 'Glitched Item';
         $item->xp = 100;
         $item->timecreated = time();
         $item->timemodified = time();
 
-        // 2. Ação: Remover os 100 XP do jogador.
+        // 2. Action: Remove 100 XP from the player.
         $dbplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
         $dbplayer->currentxp = max(0, $dbplayer->currentxp - $item->xp);
         $DB->update_record('block_playerhud_user', $dbplayer);
 
-        // 3. Asserções.
+        // 3. Assertions.
         $updatedplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $this->assertEquals(0, $updatedplayer->currentxp, 'O XP não pode ficar negativo. Deveria ter travado em 0.');
+        $this->assertEquals(0, $updatedplayer->currentxp, 'XP cannot be negative. It should have been capped at 0.');
     }
 
     /**
@@ -211,9 +212,9 @@ final class gamemaster_test extends advanced_testcase {
         // 1. Setup.
         $user = $this->getDataGenerator()->create_user();
         $instanceid = 1;
-        $olddate = time() - (10 * 86400); // 10 dias atrás.
+        $olddate = time() - (10 * 86400); // 10 days ago.
 
-        // Jogador com 1000 XP.
+        // Player with 1000 XP.
         $player = new \stdClass();
         $player->blockinstanceid = $instanceid;
         $player->userid = $user->id;
@@ -222,29 +223,30 @@ final class gamemaster_test extends advanced_testcase {
         $player->timemodified = $olddate;
         $DB->insert_record('block_playerhud_user', $player);
 
-        // Item de 200 XP.
+        // 200 XP item.
         $item = new \stdClass();
         $item->blockinstanceid = $instanceid;
-        $item->name = 'Poção Excluída';
+        $item->name = 'Deleted Potion';
         $item->xp = 200;
         $item->timecreated = time();
         $item->timemodified = time();
         $itemid = $DB->insert_record('block_playerhud_items', $item);
 
-        // Aluno coletou esse item 2 vezes (400 XP ganhos com ele).
+        // Student collected this item 2 times (earned 400 XP from it).
         $qtd = 2;
 
-        // 2. Ação: Simular a lógica exata da action 'delete' do manage.php.
+        // 2. Action: Simulate the exact logic of the 'delete' action in manage.php.
         $dbplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
         $xptoremove = $item->xp * $qtd;
         $dbplayer->currentxp = max(0, $dbplayer->currentxp - $xptoremove);
-        // NOTA: Intencionalmente NÃO atualizamos dbplayer->timemodified.
+
+        // NOTE: We intentionally DO NOT update dbplayer->timemodified.
         $DB->update_record('block_playerhud_user', $dbplayer);
 
-        // 3. Asserções.
+        // 3. Assertions.
         $updatedplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $this->assertEquals(600, $updatedplayer->currentxp, 'O XP deveria ter caído de 1000 para 600.');
-        $this->assertEquals($olddate, $updatedplayer->timemodified, 'A exclusão do item alterou a data de desempate!');
+        $this->assertEquals(600, $updatedplayer->currentxp, 'XP should have dropped from 1000 to 600.');
+        $this->assertEquals($olddate, $updatedplayer->timemodified, 'Item deletion altered the tie-breaker date!');
     }
 
     /**
@@ -256,7 +258,7 @@ final class gamemaster_test extends advanced_testcase {
 
         // 1. Setup.
         $user = $this->getDataGenerator()->create_user();
-        $olddate = time() - 3600; // 1 hora atrás.
+        $olddate = time() - 3600; // 1 hour ago.
 
         $player = new \stdClass();
         $player->blockinstanceid = 1;
@@ -266,16 +268,17 @@ final class gamemaster_test extends advanced_testcase {
         $player->timemodified = $olddate;
         $DB->insert_record('block_playerhud_user', $player);
 
-        // 2. Ação: Simular a action 'bulk_delete' (Múltiplos itens somando 350 XP a remover).
+        // 2. Action: Simulate 'bulk_delete' action (Multiple items summing 350 XP to remove).
         $totalxptoremove = 350;
+
         $dbplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
         $dbplayer->currentxp = max(0, $dbplayer->currentxp - $totalxptoremove);
         $DB->update_record('block_playerhud_user', $dbplayer);
 
-        // 3. Asserções.
+        // 3. Assertions.
         $updatedplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $this->assertEquals(450, $updatedplayer->currentxp, 'O XP deveria ter caído de 800 para 450.');
-        $this->assertEquals($olddate, $updatedplayer->timemodified, 'A exclusão em massa alterou a data de desempate!');
+        $this->assertEquals(450, $updatedplayer->currentxp, 'XP should have dropped from 800 to 450.');
+        $this->assertEquals($olddate, $updatedplayer->timemodified, 'Bulk deletion altered the tie-breaker date!');
     }
 
     /**
@@ -287,7 +290,7 @@ final class gamemaster_test extends advanced_testcase {
 
         // 1. Setup.
         $user = $this->getDataGenerator()->create_user();
-        $olddate = time() - 86400; // 1 dia atrás.
+        $olddate = time() - 86400; // 1 day ago.
 
         $player = new \stdClass();
         $player->blockinstanceid = 1;
@@ -297,23 +300,23 @@ final class gamemaster_test extends advanced_testcase {
         $player->timemodified = $olddate;
         $DB->insert_record('block_playerhud_user', $player);
 
-        // Quest de 500 XP completada 1 vez.
+        // 500 XP quest completed 1 time.
         $questrewardxp = 500;
         $completions = 1;
 
-        // 2. Ação: Simular a action 'delete_quest'.
+        // 2. Action: Simulate 'delete_quest' action.
         $dbplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
         $xptoremove = $questrewardxp * $completions;
         $dbplayer->currentxp = max(0, $dbplayer->currentxp - $xptoremove);
         $DB->update_record('block_playerhud_user', $dbplayer);
 
-        // 3. Asserções.
+        // 3. Assertions.
         $updatedplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
         $this->assertEquals(
             1500,
             $updatedplayer->currentxp,
-            'O XP da quest (500) deveria ter sido subtraído dos 2000 originais.'
+            'The quest XP (500) should have been subtracted from the original 2000.'
         );
-        $this->assertEquals($olddate, $updatedplayer->timemodified, 'Deletar a missão alterou a data de desempate!');
+        $this->assertEquals($olddate, $updatedplayer->timemodified, 'Deleting the quest altered the tie-breaker date!');
     }
 }

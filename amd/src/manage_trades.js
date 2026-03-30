@@ -29,7 +29,7 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
          * @param {Object} config The configuration object passed from PHP.
          */
         init: function(config) {
-            // Interceptador limpo para usar a Caixa de Confirmação nativa do Moodle.
+            // Clean interceptor to use Moodle's native Confirmation Box.
             $('body').on('click', '.js-delete-btn', function(e) {
                 e.preventDefault();
                 const $btn = $(this);
