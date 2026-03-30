@@ -52,7 +52,7 @@
             <div class="mb-2 mb-md-0">
                 <div class="d-flex align-items-center mb-1">
                     <strong class="me-2">{{str_privacy_title}}</strong>
-                    
+
                     {{#privacy_visible}}
                         <span class="badge bg-success text-white shadow-sm">
                             <i class="fa fa-eye me-1" aria-hidden="true"></i> {{str_visible}}
@@ -64,7 +64,7 @@
                         </span>
                     {{/privacy_visible}}
                 </div>
-                
+
                 <div class="text-muted small">
                     {{#privacy_visible}} {{str_visible_desc}} {{/privacy_visible}}
                     {{^privacy_visible}} {{str_hidden_desc}} {{/privacy_visible}}
@@ -83,7 +83,7 @@
                     <i class="fa {{btn_toggle_icon}} me-1" aria-hidden="true"></i> {{str_btn_toggle}}
                 </a>
             </div>
-            
+
         </div>
     </div>
 
@@ -91,11 +91,10 @@
     {{#show_content}}
         <ul class="nav nav-tabs mb-3" id="rankingTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                {{! 
-                    CORREÇÃO 2: Atributos Híbridos para as Abas (BS4 e BS5)
-                    Adicionado data-toggle e data-target para Moodle 4.x
+                {{!
+                    Hybrid Attributes for Tabs (BS4 and BS5). Added data-toggle and data-target for Moodle 4.x compatibility.
                 }}
-                <button class="nav-link active fw-bold" id="individual-tab" 
+                <button class="nav-link active fw-bold" id="individual-tab"
                         data-bs-toggle="tab" data-toggle="tab"
                         data-bs-target="#individual" data-target="#individual"
                         type="button" role="tab" aria-selected="true">
@@ -104,7 +103,7 @@
             </li>
             {{#has_groups}}
             <li class="nav-item" role="presentation">
-                <button class="nav-link fw-bold" id="groups-tab" 
+                <button class="nav-link fw-bold" id="groups-tab"
                         data-bs-toggle="tab" data-toggle="tab"
                         data-bs-target="#groups" data-target="#groups"
                         type="button" role="tab" aria-selected="false">
@@ -115,7 +114,7 @@
         </ul>
 
         <div class="tab-content" id="rankingTabsContent">
-            
+
             {{! --- 1. INDIVIDUAL RANKING --- }}
             <div class="tab-pane fade show active" id="individual" role="tabpanel" aria-labelledby="individual-tab">
                 {{#has_players}}
@@ -149,7 +148,7 @@
                                                 <div class="fw-bold {{#is_me}}text-primary{{/is_me}}">
                                                     {{fullname}}
                                                 </div>
-                                                
+
                                                 {{! HIDDEN STUDENT INDICATOR }}
                                                 {{#is_hidden_marker}}
                                                     <span class="badge bg-secondary text-white ph-badge-tiny" title="{{str_hidden}}">
@@ -159,9 +158,9 @@
 
                                                 {{! PAUSED STUDENT INDICATOR (TEACHER VIEW) }}
                                                 {{#is_paused}}
-                                                    <span class="badge bg-danger text-white ph-badge-tiny" 
+                                                    <span class="badge bg-danger text-white ph-badge-tiny"
                                                           title="{{#str}} status_paused_title, block_playerhud {{/str}}">
-                                                        <i class="fa fa-pause-circle me-1" aria-hidden="true"></i> 
+                                                        <i class="fa fa-pause-circle me-1" aria-hidden="true"></i>
                                                         {{#str}} status_off, block_playerhud {{/str}}
                                                     </span>
                                                 {{/is_paused}}
@@ -184,7 +183,7 @@
                     </div>
                 </div>
                 {{/has_players}}
-                
+
                 {{^has_players}}
                     <div class="alert alert-info text-center shadow-sm">
                         <i class="fa fa-info-circle fa-2x mb-3 d-block" aria-hidden="true"></i>
@@ -234,14 +233,14 @@
 
         </div>
     {{/show_content}}
-    
+
     {{! --- EMPTY STATE IF HIDDEN --- }}
     {{^show_content}}
         <div class="text-center py-5">
             <div class="mb-3 display-4 text-muted ph-opacity-low" aria-hidden="true">🙈</div>
-            
+
             <h4 class="text-muted">{{str_hidden}}</h4>
-            
+
             <p class="text-muted small">
                 {{str_hidden_desc}}<br>
                 {{{str_hidden_help}}}

@@ -231,10 +231,10 @@ class provider implements
             if (isset($players[$instid])) {
                 $player = $players[$instid];
                 writer::with_context($context)->export_data(
-                    [get_string('pluginname', 'block_playerhud'), 'Profile'],
+                    [get_string('pluginname', 'block_playerhud'), get_string('profile')],
                     (object) [
                         'currentxp' => $player->currentxp,
-                        'level_progress' => $player->enable_gamification ? 'Enabled' : 'Disabled',
+                        'level_progress' => $player->enable_gamification ? get_string('yes') : get_string('no'),
                         'joined' => transform::datetime($player->timecreated),
                     ]
                 );
@@ -244,7 +244,7 @@ class provider implements
             if (isset($rpgs[$instid])) {
                 $rpg = $rpgs[$instid];
                 writer::with_context($context)->export_data(
-                    [get_string('pluginname', 'block_playerhud'), 'RPG Progress'],
+                    [get_string('pluginname', 'block_playerhud'), get_string('privacy_export_rpg', 'block_playerhud')],
                     (object) [
                         'class_id' => $rpg->classid,
                         'karma' => $rpg->karma,
@@ -257,7 +257,7 @@ class provider implements
             // C. Inventory.
             if (!empty($inventorybyinstance[$instid])) {
                 writer::with_context($context)->export_data(
-                    [get_string('pluginname', 'block_playerhud'), 'Inventory'],
+                    [get_string('pluginname', 'block_playerhud'), get_string('tab_collection', 'block_playerhud')],
                     (object) ['items' => $inventorybyinstance[$instid]]
                 );
             }
@@ -265,7 +265,7 @@ class provider implements
             // D. Trade Logs (Shop History).
             if (!empty($tradesbyinstance[$instid])) {
                 writer::with_context($context)->export_data(
-                    [get_string('pluginname', 'block_playerhud'), 'Shop History'],
+                    [get_string('pluginname', 'block_playerhud'), get_string('tab_shop', 'block_playerhud')],
                     (object) ['transactions' => $tradesbyinstance[$instid]]
                 );
             }
