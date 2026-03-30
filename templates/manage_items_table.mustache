@@ -130,13 +130,13 @@
                         {{#items}}
                         <tr class="{{^enabled}}opacity-50{{/enabled}}">
                             <td class="ph-col-select text-center align-middle">
-                                <label class="visually-hidden" for="chk-{{id}}">{{str_select}} {{name}}</label>
+                                <label class="sr-only visually-hidden" for="chk-{{id}}">{{str_select}} {{name}}</label>
                                 <input type="checkbox" name="bulk_ids[]" value="{{id}}" id="chk-{{id}}" class="form-check-input ph-bulk-check m-0 position-static">
                             </td>
                             <td class="align-middle text-center text-muted small text-nowrap">{{counter}}</td>
                             <td class="align-middle text-center position-relative text-nowrap">
                                  <a href="#" class="ph-preview-trigger text-decoration-none d-block"
-                                    {{{preview_attributes}}} data-desc-target="desc_hidden_{{id}}" aria-label="{{str_col_image}}">
+                                    {{{preview_attributes}}} data-desc-target="desc_hidden_{{id}}" aria-label="{{name}}">
                                     {{#is_image}}
                                         <img src="{{image_url}}" class="ph-img-xs" alt="">
                                     {{/is_image}}

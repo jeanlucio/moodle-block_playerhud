@@ -230,7 +230,7 @@ class tab_reports implements renderable, templatable {
                 'xp'      => $this->get_sort_data('xp', get_string('report_status_level', 'block_playerhud'), $baseurl),
                 'items'   => $this->get_sort_data('items', get_string('items', 'block_playerhud'), $baseurl),
             ];
-            $contextdata['students']     = $this->get_students_data($xpperlevel);
+            $contextdata['students']     = $this->get_students_data($xpperlevel, $maxlevels);
             $contextdata['has_students'] = !empty($contextdata['students']);
         }
 
@@ -238,29 +238,33 @@ class tab_reports implements renderable, templatable {
         $contextdata['has_ai_logs'] = !empty($contextdata['ai_logs']);
 
         $contextdata['str'] = [
-            'leaderboard'    => get_string('leaderboard_title', 'block_playerhud'),
-            'level'          => get_string('level', 'block_playerhud'),
-            'xp'             => get_string('xp', 'block_playerhud'),
-            'action'         => get_string('report_action', 'block_playerhud'),
-            'audit'          => get_string('report_audit', 'block_playerhud'),
-            'no_logs'        => get_string('report_no_logs', 'block_playerhud'),
-            'ai_title'       => get_string('report_ai_title', 'block_playerhud'),
-            'ai_sub'         => get_string('report_ai_subtitle', 'block_playerhud'),
-            'col_date'       => get_string('report_col_date', 'block_playerhud'),
-            'col_type'       => get_string('report_col_type', 'block_playerhud'),
-            'col_desc'       => get_string('report_col_desc', 'block_playerhud'),
-            'col_details'    => get_string('report_col_details', 'block_playerhud'),
-            'col_object'     => get_string('report_col_object', 'block_playerhud'),
-            'col_ai'         => get_string('report_col_ai', 'block_playerhud'),
-            'revoke_item'    => get_string('revoke_item', 'block_playerhud'),
-            'confirm_revoke' => get_string('confirm_revoke', 'block_playerhud'),
-            'btn_more'       => get_string('report_show_more', 'block_playerhud'),
-            'filter_btn'     => get_string('filter'),
-            'filter_clr'     => get_string('clear'),
-            'btn_showall'    => get_string('showall', 'moodle', isset($logdata) ? $logdata['total'] : 0),
-            'btn_showpaged'  => get_string('showperpage', 'moodle', 30),
-            'search_any'     => get_string('search_any_term', 'block_playerhud'),
-            'col_num'        => get_string('col_number', 'block_playerhud'),
+            'leaderboard'       => get_string('leaderboard_title', 'block_playerhud'),
+            'summary'           => get_string('summary', 'block_playerhud'),
+            'level'             => get_string('level', 'block_playerhud'),
+            'xp'                => get_string('xp', 'block_playerhud'),
+            'action'            => get_string('report_action', 'block_playerhud'),
+            'audit'             => get_string('report_audit', 'block_playerhud'),
+            'no_logs'           => get_string('report_no_logs', 'block_playerhud'),
+            'ai_title'          => get_string('report_ai_title', 'block_playerhud'),
+            'ai_sub'            => get_string('report_ai_subtitle', 'block_playerhud'),
+            'col_date'          => get_string('report_col_date', 'block_playerhud'),
+            'col_type'          => get_string('report_col_type', 'block_playerhud'),
+            'col_desc'          => get_string('report_col_desc', 'block_playerhud'),
+            'col_details'       => get_string('report_col_details', 'block_playerhud'),
+            'col_object'        => get_string('report_col_object', 'block_playerhud'),
+            'col_ai'            => get_string('report_col_ai', 'block_playerhud'),
+            'grant_item_select' => get_string('grant_item_select', 'block_playerhud'),
+            'revoke_item'       => get_string('revoke_item', 'block_playerhud'),
+            'confirm_revoke'    => get_string('confirm_revoke', 'block_playerhud'),
+            'delete'            => get_string('delete'),
+            'view'              => get_string('view'),
+            'btn_more'          => get_string('report_show_more', 'block_playerhud'),
+            'filter_btn'        => get_string('filter'),
+            'filter_clr'        => get_string('clear'),
+            'btn_showall'       => get_string('showall', 'moodle', isset($logdata) ? $logdata['total'] : 0),
+            'btn_showpaged'     => get_string('showperpage', 'moodle', 30),
+            'search_any'        => get_string('search_any_term', 'block_playerhud'),
+            'col_num'           => get_string('col_number', 'block_playerhud'),
         ];
 
         $jsconfig = [
@@ -438,7 +442,7 @@ class tab_reports implements renderable, templatable {
         }
 
         return [
-            'str_levels'  => get_string('level', 'block_playerhud'),
+            'str_levels'  => get_string('report_chart_title', 'block_playerhud'),
             'str_no_logs' => get_string('report_no_logs', 'block_playerhud'),
             'has_levels'  => !empty($levelsdata),
             'levels'      => $levelsdata,
@@ -487,7 +491,7 @@ class tab_reports implements renderable, templatable {
      * @param int $xpperlevel
      * @return array
      */
-    private function get_students_data(int $xpperlevel): array {
+    private function get_students_data(int $xpperlevel, int $maxlevels): array {
         global $DB;
 
         $userfieldsapi = \core_user\fields::for_name();
@@ -529,7 +533,9 @@ class tab_reports implements renderable, templatable {
         if ($users) {
             foreach ($users as $row) {
                 $isactive = ($row->enable_gamification == 1);
-                $level = floor($row->currentxp / $xpperlevel) + 1;
+
+                $rawlevel = floor($row->currentxp / $xpperlevel) + 1;
+                $level = ($rawlevel > $maxlevels) ? $maxlevels : (int)$rawlevel;
 
                 $urlaudit = new moodle_url('/blocks/playerhud/manage.php', [
                     'id'         => $this->courseid,

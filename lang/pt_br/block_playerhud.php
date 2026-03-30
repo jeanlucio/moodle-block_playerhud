@@ -376,6 +376,7 @@ $string['report_action'] = 'Ação';
 $string['report_ai_subtitle'] = 'Últimas 50 gerações';
 $string['report_ai_title'] = 'Auditoria do Oráculo IA';
 $string['report_audit'] = 'Auditoria / Histórico';
+$string['report_chart_title'] = 'Distribuição de Alunos por Nível';
 $string['report_col_ai'] = 'Motor IA';
 $string['report_col_date'] = 'Data / Hora';
 $string['report_col_desc'] = 'Elemento';

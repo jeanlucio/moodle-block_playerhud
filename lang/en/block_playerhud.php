@@ -376,6 +376,7 @@ $string['report_action'] = 'Action';
 $string['report_ai_subtitle'] = 'Latest 50 generations';
 $string['report_ai_title'] = 'AI Oracle Audit';
 $string['report_audit'] = 'Audit / History';
+$string['report_chart_title'] = 'Students per level';
 $string['report_col_ai'] = 'AI Engine';
 $string['report_col_date'] = 'Date / Time';
 $string['report_col_desc'] = 'Element';

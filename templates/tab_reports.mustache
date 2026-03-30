@@ -73,8 +73,8 @@
                             <div class="d-flex align-items-center mb-1 small">
                                 <div class="fw-bold" style="width:50px;">{{str.level}} {{label}}</div>
                                 <div class="flex-grow-1 mx-2">
-                                    <div class="progress" style="height: 10px;">
-                                        <div class="progress-bar bg-info" role="progressbar" style="width: {{percent}}%"></div>
+                                    <div class="progress" style="height: 10px;" aria-hidden="true">
+                                        <div class="progress-bar bg-info" style="width: {{percent}}%"></div>
                                     </div>
                                 </div>
                                 <div class="text-end" style="width:30px;">{{total}}</div>
@@ -94,7 +94,7 @@
         <div class="card-body p-3 bg-light d-flex align-items-center flex-wrap">
             <strong class="me-3 mb-2 mb-md-0"><i class="fa fa-filter" aria-hidden="true"></i> {{str.audit}}</strong>
             <div class="flex-grow-1" style="max-width:500px;">
-                <label for="r_userid" class="visually-hidden">{{str.audit}}</label>
+                <label for="r_userid" class="sr-only visually-hidden">{{str.audit}}</label>
                 <select id="r_userid" class="form-select w-100">
                     {{#user_selector.options}}
                         <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
@@ -147,7 +147,7 @@
 
                     <div class="input-group input-group-sm">
                         <select name="itemid" class="form-select border-success" required aria-label="Select item">
-                            <option value="">-- {{#str}} grant_item_select, block_playerhud {{/str}} --</option>
+                            <option value="">-- {{str.grant_item_select}} --</option>
                             {{#available_items}}
                                 <option value="{{value}}">{{label}}</option>
                             {{/available_items}}
@@ -213,11 +213,11 @@
                             <td class="text-muted small">{{{details_html}}}</td>
                             <td class="text-end pe-3">
                                 {{#has_revoke}}
-                                    <a href="{{url_revoke}}" class="btn btn-sm btn-outline-danger js-delete-report-btn"
+                                    <a href="{{url_revoke}}" class="btn btn-sm btn-outline-danger js-delete-report-btn text-nowrap"
                                         title="{{str.revoke_item}}"
-                                        aria-label="{{str.revoke_item}}"
+                                        aria-label="{{str.revoke_item}} {{object_name}}"
                                         data-confirm-msg="{{str.confirm_revoke}}">
-                                        <i class="fa fa-trash" aria-hidden="true"></i>
+                                        <i class="fa fa-trash" aria-hidden="true"></i> <span class="ms-1">{{str.delete}}</span>
                                     </a>
                                 {{/has_revoke}}
                             </td>
@@ -240,28 +240,28 @@
         {{#has_students}}
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white fw-bold">
-                <i class="fa fa-list" aria-hidden="true"></i> {{str.leaderboard}} ({{#str}} summary, block_playerhud {{/str}})
+                <i class="fa fa-list" aria-hidden="true"></i> {{str.leaderboard}} ({{str.summary}})
             </div>
             <div class="card-body p-0 table-responsive">
                 <table class="table table-hover table-striped mb-0 text-center align-middle">
-                    <thead class="bg-dark text-white">
+                    <thead class="bg-light border-bottom">
                         <tr>
                             <th scope="col" class="text-start ps-3">
-                                <a href="{{headers.student.url}}" class="text-white text-decoration-none fw-bold d-flex align-items-center">
+                                <a href="{{headers.student.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
                                     {{headers.student.label}} <i class="fa {{headers.student.icon_class}}" aria-hidden="true"></i>
                                 </a>
                             </th>
                             <th scope="col">
-                                <a href="{{headers.xp.url}}" class="text-white text-decoration-none fw-bold d-flex align-items-center justify-content-center">
+                                <a href="{{headers.xp.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center justify-content-center">
                                     {{headers.xp.label}} <i class="fa {{headers.xp.icon_class}}" aria-hidden="true"></i>
                                 </a>
                             </th>
                             <th scope="col">
-                                <a href="{{headers.items.url}}" class="text-white text-decoration-none fw-bold d-flex align-items-center justify-content-center">
+                                <a href="{{headers.items.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center justify-content-center">
                                     {{headers.items.label}} <i class="fa {{headers.items.icon_class}}" aria-hidden="true"></i>
                                 </a>
                             </th>
-                            <th scope="col" class="fw-bold pe-3">{{str.action}}</th>
+                            <th scope="col" class="fw-bold pe-3 text-dark">{{str.action}}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -272,17 +272,14 @@
                             </td>
                             <td>
                                 {{#is_active}}
-                                    <span class="badge bg-success ph-text-sm">LVL {{level}}</span><br>
+                                    <span class="badge bg-success text-white ph-text-sm">{{str.level}} {{level}}</span><br>
                                     <small class="text-muted">{{xp}} XP</small>
-                                {{/is_active}}
-                                {{^is_active}}
-                                    <span class="badge bg-secondary" title="{{str_optout}}"><i class="fa fa-ban" aria-hidden="true"></i> {{str_optout}}</span>
                                 {{/is_active}}
                             </td>
                             <td><span class="badge bg-light text-dark border">{{total_items}}</span></td>
                             <td class="pe-3">
-                                <a href="{{url_audit}}" class="btn btn-sm btn-outline-primary" title="{{str.audit}}" aria-label="{{str.audit}}">
-                                    <i class="fa fa-search" aria-hidden="true"></i>
+                                <a href="{{url_audit}}" class="btn btn-sm btn-outline-primary text-nowrap" title="{{str.audit}}" aria-label="{{str.audit}} {{fullname}}">
+                                    <i class="fa fa-search" aria-hidden="true"></i> <span class="ms-1">{{str.view}}</span>
                                 </a>
                             </td>
                         </tr>

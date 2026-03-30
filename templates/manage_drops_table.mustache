@@ -142,7 +142,7 @@
                     {{#drops}}
                     <tr>
                         <td class="ph-col-select">
-                            <label class="visually-hidden" for="chk-{{id}}">{{str_select}}</label>
+                            <label class="sr-only visually-hidden" for="chk-{{id}}">{{str_select}} {{{name}}}</label>
                             <input type="checkbox" name="bulk_ids[]" value="{{id}}" id="chk-{{id}}" class="form-check-input ph-bulk-check">
                         </td>
                         <td class="align-middle text-muted small">{{counter}}</td>
