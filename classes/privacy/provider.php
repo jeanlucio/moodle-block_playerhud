@@ -34,7 +34,8 @@ use core_privacy\local\request\approved_userlist;
 class provider implements
     \core_privacy\local\metadata\provider,
     \core_privacy\local\request\core_userlist_provider,
-    \core_privacy\local\request\plugin\provider {
+    \core_privacy\local\request\plugin\provider,
+    \core_privacy\local\request\user_preference_provider {
     /**
      * Returns metadata about the data stored by this plugin.
      *
@@ -42,6 +43,9 @@ class provider implements
      * @return collection The collection with added metadata.
      */
     public static function get_metadata(collection $collection): collection {
+        // API Keys (User Preferences).
+        $collection->add_user_preference('block_playerhud_gemini_key', 'privacy:metadata:preference:gemini_key');
+        $collection->add_user_preference('block_playerhud_groq_key', 'privacy:metadata:preference:groq_key');
         // Main User Data.
         $collection->add_database_table('block_playerhud_user', [
             'currentxp' => 'privacy:metadata:playerhud_user:currentxp',
@@ -412,5 +416,42 @@ class provider implements
             [$tdelsql, $tdelparams] = $DB->get_in_or_equal($tlids);
             $DB->delete_records_select('block_playerhud_trade_log', "id $tdelsql", $tdelparams);
         }
+    }
+
+    /**
+     * Export all user preferences for the plugin.
+     *
+     * @param int $userid The userid of the user whose data is to be exported.
+     */
+    public static function export_user_preferences(int $userid) {
+        $geminikey = get_user_preferences('block_playerhud_gemini_key', null, $userid);
+        if ($geminikey !== null) {
+            writer::with_context(\context_system::instance())->export_user_preference(
+                'block_playerhud',
+                'block_playerhud_gemini_key',
+                $geminikey,
+                get_string('privacy:metadata:preference:gemini_key', 'block_playerhud')
+            );
+        }
+
+        $groqkey = get_user_preferences('block_playerhud_groq_key', null, $userid);
+        if ($groqkey !== null) {
+            writer::with_context(\context_system::instance())->export_user_preference(
+                'block_playerhud',
+                'block_playerhud_groq_key',
+                $groqkey,
+                get_string('privacy:metadata:preference:groq_key', 'block_playerhud')
+            );
+        }
+    }
+
+    /**
+     * Delete all use preferences for the plugin.
+     *
+     * @param int $userid The userid of the user whose data is to be deleted.
+     */
+    public static function delete_user_preferences(int $userid) {
+        unset_user_preference('block_playerhud_gemini_key', $userid);
+        unset_user_preference('block_playerhud_groq_key', $userid);
     }
 }

@@ -158,8 +158,8 @@ class tab_config implements renderable, templatable {
             'widget_code_tip_html' => get_string('widget_code_tip', 'block_playerhud'),
             'action_url' => $actionurl->out(false),
             'sesskey' => sesskey(),
-            'val_gemini' => $config->apikey_gemini ?? '',
-            'val_groq' => $config->apikey_groq ?? '',
+            'val_gemini' => get_user_preferences('block_playerhud_gemini_key', ''),
+            'val_groq'   => get_user_preferences('block_playerhud_groq_key', ''),
         ];
     }
 }

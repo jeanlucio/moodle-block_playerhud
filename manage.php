@@ -331,16 +331,21 @@ if ($action == 'delete_chapter') {
 }
 
 // Action: Save API Keys.
-if ($action == 'save_keys' && confirm_sesskey()) {
+if ($action === 'save_keys' && confirm_sesskey()) {
     $gkey = optional_param('gemini_key', '', PARAM_TEXT);
     $qkey = optional_param('groq_key', '', PARAM_TEXT);
 
-    $config = (array) unserialize(base64_decode($bi->configdata));
-    $config['apikey_gemini'] = trim($gkey);
-    $config['apikey_groq'] = trim($qkey);
+    // Store keys as user preferences to prevent sensitive data from being stored in block config and potentially leaked in backups.
+    set_user_preference('block_playerhud_gemini_key', trim($gkey));
+    set_user_preference('block_playerhud_groq_key', trim($qkey));
 
-    $bi->configdata = base64_encode(serialize((object)$config));
-    $DB->update_record('block_instances', $bi);
+    // Remove keys from block config if they exist to prevent confusion and ensure they are only stored in user preferences.
+    $config = (array) unserialize(base64_decode($bi->configdata));
+    if (isset($config['apikey_gemini']) || isset($config['apikey_groq'])) {
+        unset($config['apikey_gemini'], $config['apikey_groq']);
+        $bi->configdata = base64_encode(serialize((object)$config));
+        $DB->update_record('block_instances', $bi);
+    }
 
     redirect(
         new moodle_url($baseurl, ['tab' => 'config']),

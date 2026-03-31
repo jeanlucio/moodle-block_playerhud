@@ -62,9 +62,11 @@ class generator {
     public function generate($mode, $theme, $xp, $createdrop, $extraoptions = [], $amount = 1) {
 
         // 1. Get Keys.
-        $geminikey = trim($this->config->apikey_gemini ?? '');
-        $groqkey   = trim($this->config->apikey_groq ?? '');
+        // User preference keys take precedence over global config, allowing teachers to use their own keys if desired.
+        $geminikey = get_user_preferences('block_playerhud_gemini_key', '');
+        $groqkey   = get_user_preferences('block_playerhud_groq_key', '');
 
+        // Fallback to global config if user preferences are not set.
         if (empty($geminikey)) {
             $geminikey = get_config('block_playerhud', 'apikey_gemini');
         }

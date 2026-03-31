@@ -140,4 +140,30 @@ final class privacy_provider_test extends advanced_testcase {
             'AI logs should be deleted.'
         );
     }
+
+    /**
+     * Test that user preferences (API keys) are deleted correctly.
+     * Ensure GDPR compliance by removing preference traces upon user deletion.
+     *
+     * @covers \block_playerhud\privacy\provider::delete_user_preferences
+     */
+    public function test_delete_user_preferences(): void {
+        $this->resetAfterTest(true);
+        $user = $this->getDataGenerator()->create_user();
+
+        // Simulate a teacher saving API keys in user preferences.
+        set_user_preference('block_playerhud_gemini_key', 'AIza_test_key', $user->id);
+        set_user_preference('block_playerhud_groq_key', 'gsk_test_key', $user->id);
+
+        // Verify keys are stored before deletion.
+        $this->assertEquals('AIza_test_key', get_user_preferences('block_playerhud_gemini_key', null, $user->id));
+        $this->assertEquals('gsk_test_key', get_user_preferences('block_playerhud_groq_key', null, $user->id));
+
+        // Execute the privacy provider deletion method.
+        \block_playerhud\privacy\provider::delete_user_preferences($user->id);
+
+        // Assert that the keys are now null (removed from DB).
+        $this->assertNull(get_user_preferences('block_playerhud_gemini_key', null, $user->id));
+        $this->assertNull(get_user_preferences('block_playerhud_groq_key', null, $user->id));
+    }
 }
