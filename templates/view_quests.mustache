@@ -1,0 +1,148 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/view_quests
+
+    Displays student quest cards with claim buttons.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "str_reward": "Rewards",
+        "str_claimed": "Completed",
+        "str_pending": "Pending",
+        "str_claim": "Claim Reward",
+        "str_progress_label": "Completed",
+        "quests": [
+            {
+                "id": 1,
+                "name": "Read Chapter 1",
+                "description_html": "<p>Read all sections of Chapter 1.</p>",
+                "is_manual": false,
+                "is_activity": true,
+                "type_label": "Activity Completion",
+                "requirement": "",
+                "reward_text": "50 XP + Magic Potion",
+                "has_reward": true,
+                "is_claimed": false,
+                "is_completed": true,
+                "can_claim": true,
+                "progress_pct": 100,
+                "str_progress": "100%",
+                "url_claim": "#",
+                "str_status": "Claim Reward",
+                "str_claim": "Claim Reward"
+            }
+        ]
+    }
+}}
+<div class="block_playerhud">
+    <div class="row g-3">
+        {{#quests}}
+        <div class="col-12 col-md-6">
+            <div class="card h-100 ph-quest-card
+                {{#is_claimed}}ph-quest-claimed{{/is_claimed}}
+                {{^is_claimed}}{{#can_claim}}ph-quest-ready{{/can_claim}}{{/is_claimed}}">
+
+                <div class="card-body">
+                    {{! Type badge + title }}
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0 fw-bold">{{name}}</h5>
+                        {{#is_activity}}
+                        <span class="badge bg-info text-dark ms-2 flex-shrink-0">{{type_label}}</span>
+                        {{/is_activity}}
+                        {{#is_manual}}
+                        <span class="badge bg-secondary ms-2 flex-shrink-0">{{type_label}}</span>
+                        {{/is_manual}}
+                    </div>
+
+                    {{! Description }}
+                    {{#description_html}}
+                    <div class="card-text text-muted small mb-2">{{{description_html}}}</div>
+                    {{/description_html}}
+
+                    {{! Manual requirement text }}
+                    {{#is_manual}}
+                    {{#requirement}}
+                    <p class="small mb-2">
+                        <i class="fa fa-tasks me-1" aria-hidden="true"></i>
+                        {{requirement}}
+                    </p>
+                    {{/requirement}}
+                    {{/is_manual}}
+
+                    {{! Reward }}
+                    {{#has_reward}}
+                    <p class="small mb-2">
+                        <i class="fa fa-gift me-1 text-warning" aria-hidden="true"></i>
+                        <strong>{{str_reward}}:</strong> {{reward_text}}
+                    </p>
+                    {{/has_reward}}
+
+                    {{! Progress bar (activity type) }}
+                    {{#is_activity}}
+                    <div class="mb-3">
+                        <div class="progress" role="progressbar"
+                             aria-valuenow="{{progress_pct}}"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            <div class="progress-bar
+                                {{#is_claimed}}bg-success{{/is_claimed}}
+                                {{^is_claimed}}{{#is_completed}}bg-primary{{/is_completed}}{{/is_claimed}}"
+                                 style="width: {{progress_pct}}%">
+                            </div>
+                        </div>
+                        <span class="visually-hidden">{{str_progress_label}}: {{str_progress}}</span>
+                    </div>
+                    {{/is_activity}}
+                </div>
+
+                {{! Card footer: status / claim button }}
+                <div class="card-footer bg-transparent border-top-0 pt-0">
+                    {{#is_claimed}}
+                    <span class="badge bg-success px-3 py-2">
+                        <i class="fa fa-check me-1" aria-hidden="true"></i>
+                        {{str_claimed}}
+                    </span>
+                    {{/is_claimed}}
+
+                    {{^is_claimed}}
+                    {{#can_claim}}
+                    <a href="{{url_claim}}"
+                       class="btn btn-success btn-sm"
+                       aria-label="{{str_claim}}: {{name}}">
+                        <i class="fa fa-trophy me-1" aria-hidden="true"></i>
+                        {{str_claim}}
+                    </a>
+                    {{/can_claim}}
+                    {{^can_claim}}
+                    <span class="badge bg-light text-muted border px-3 py-2">
+                        <i class="fa fa-clock-o me-1" aria-hidden="true"></i>
+                        {{str_pending}}
+                    </span>
+                    {{/can_claim}}
+                    {{/is_claimed}}
+                </div>
+
+            </div>
+        </div>
+        {{/quests}}
+    </div>
+</div>

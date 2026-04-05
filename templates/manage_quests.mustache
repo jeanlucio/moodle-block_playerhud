@@ -1,0 +1,129 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/manage_quests
+
+    Displays the quest management list.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "url_add": "#",
+        "str_add_quest": "New Quest",
+        "str_col_name": "Name",
+        "str_col_type": "Type",
+        "str_col_reward": "Rewards",
+        "str_col_claims": "Claims",
+        "str_col_enabled": "Enabled?",
+        "str_actions": "Actions",
+        "str_edit": "Edit",
+        "str_delete": "Delete",
+        "str_empty": "No quests created.",
+        "has_quests": true,
+        "quests": [
+            {
+                "id": 1,
+                "name": "Read Chapter 1",
+                "type_label": "Activity Completion",
+                "is_activity": true,
+                "enabled": true,
+                "reward_text": "50 XP + Magic Potion",
+                "claims_count": 3,
+                "url_edit": "#",
+                "url_toggle": "#",
+                "url_delete": "#",
+                "str_toggle": "Click to hide",
+                "str_delete_confirm": "Are you sure?"
+            }
+        ]
+    }
+}}
+<div class="block_playerhud">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{{url_add}}" class="btn btn-primary">
+            <i class="fa fa-plus me-1" aria-hidden="true"></i>
+            {{str_add_quest}}
+        </a>
+    </div>
+
+    {{#has_quests}}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">{{str_col_name}}</th>
+                    <th scope="col">{{str_col_type}}</th>
+                    <th scope="col">{{str_col_reward}}</th>
+                    <th scope="col" class="text-center">{{str_col_claims}}</th>
+                    <th scope="col" class="text-center">{{str_col_enabled}}</th>
+                    <th scope="col" class="text-end">{{str_actions}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#quests}}
+                <tr>
+                    <td class="fw-semibold">{{name}}</td>
+                    <td>
+                        {{#is_activity}}
+                        <span class="badge bg-info text-dark">{{type_label}}</span>
+                        {{/is_activity}}
+                        {{^is_activity}}
+                        <span class="badge bg-secondary">{{type_label}}</span>
+                        {{/is_activity}}
+                    </td>
+                    <td class="text-muted small">{{reward_text}}</td>
+                    <td class="text-center">
+                        <span class="badge bg-light text-dark border">{{claims_count}}</span>
+                    </td>
+                    <td class="text-center">
+                        <a href="{{url_toggle}}"
+                           class="btn btn-sm {{#enabled}}btn-success{{/enabled}}{{^enabled}}btn-outline-secondary{{/enabled}}"
+                           aria-label="{{str_toggle}}">
+                            <i class="fa {{#enabled}}fa-eye{{/enabled}}{{^enabled}}fa-eye-slash{{/enabled}}"
+                               aria-hidden="true"></i>
+                        </a>
+                    </td>
+                    <td class="text-end">
+                        <a href="{{url_edit}}"
+                           class="btn btn-sm btn-outline-primary me-1"
+                           aria-label="{{str_edit}} {{name}}">
+                            <i class="fa fa-pencil" aria-hidden="true"></i>
+                        </a>
+                        <a href="{{url_delete}}"
+                           class="btn btn-sm btn-outline-danger"
+                           aria-label="{{str_delete}} {{name}}"
+                           data-confirm="{{str_delete_confirm}}">
+                            <i class="fa fa-trash" aria-hidden="true"></i>
+                        </a>
+                    </td>
+                </tr>
+                {{/quests}}
+            </tbody>
+        </table>
+    </div>
+    {{/has_quests}}
+
+    {{^has_quests}}
+    <div class="alert alert-info">
+        <i class="fa fa-info-circle me-1" aria-hidden="true"></i>
+        {{str_empty}}
+    </div>
+    {{/has_quests}}
+</div>

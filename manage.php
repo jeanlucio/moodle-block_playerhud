@@ -441,9 +441,10 @@ if (class_exists($renderclass)) {
 
 echo $OUTPUT->header();
 
-// Tab Definitions (V1.0 - Features under construction hidden).
+// Tab Definitions.
 $tabsdef = [
     'items'  => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
+    'quests' => ['icon' => '📋', 'text' => get_string('tab_quests', 'block_playerhud')],
     'trades' => ['icon' => '⚖️', 'text' => get_string('tab_trades', 'block_playerhud')],
     'reports' => ['icon' => '📊', 'text' => get_string('tab_reports', 'block_playerhud')],
     'config' => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
