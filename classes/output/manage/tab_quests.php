@@ -46,17 +46,25 @@ class tab_quests implements renderable {
     /** @var edit_quest_form|null Active form instance (edit/add mode). */
     protected $mform = null;
 
+    /** @var string Sort column. */
+    protected $sort;
+
+    /** @var string Sort direction. */
+    protected $dir;
+
     /**
      * Constructor.
      *
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
-     * @param string $sort Unused (kept for uniform constructor signature).
-     * @param string $dir Unused (kept for uniform constructor signature).
+     * @param string $sort Sort column.
+     * @param string $dir Sort direction.
      */
-    public function __construct($instanceid, $courseid, $sort = '', $dir = '') {
+    public function __construct($instanceid, $courseid, $sort = 'timecreated', $dir = 'DESC') {
         $this->instanceid = $instanceid;
         $this->courseid   = $courseid;
+        $this->sort       = $sort ?: 'timecreated';
+        $this->dir        = $dir ?: 'DESC';
     }
 
     /**
