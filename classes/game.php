@@ -282,6 +282,14 @@ class game {
             }
         }
 
+        // Add XP available from enabled quest rewards to the game total.
+        $questxp = $DB->get_field_sql(
+            "SELECT COALESCE(SUM(reward_xp), 0) FROM {block_playerhud_quests}
+              WHERE blockinstanceid = :instanceid AND enabled = 1",
+            ['instanceid' => $blockinstanceid]
+        );
+        $totalgamexp += (int)$questxp;
+
         $rawlevel = 1 + floor($currentxp / $xpperlevel);
         $level = ($rawlevel > $maxlevels) ? $maxlevels : $rawlevel;
 
