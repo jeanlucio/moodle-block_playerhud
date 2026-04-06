@@ -92,101 +92,17 @@ if ($tab == 'toggle_ranking_pref' && confirm_sesskey()) {
 
 // Logic: Claim Quest Reward.
 if ($action === 'claim_quest' && confirm_sesskey()) {
-    $questid = required_param('questid', PARAM_INT);
+    $questid  = required_param('questid', PARAM_INT);
     $questurl = new moodle_url($PAGE->url, ['tab' => 'quests']);
-
-    $quest = $DB->get_record(
-        'block_playerhud_quests',
-        ['id' => $questid, 'blockinstanceid' => $instanceid, 'enabled' => 1]
-    );
-    if (!$quest) {
-        redirect($questurl, get_string('error_quest_invalid', 'block_playerhud'), \core\output\notification::NOTIFY_ERROR);
-    }
-
-    $alreadyclaimed = $DB->record_exists(
-        'block_playerhud_quest_log',
-        ['questid' => $questid, 'userid' => $USER->id]
-    );
-    if ($alreadyclaimed) {
-        redirect(
-            $questurl,
-            get_string('error_quest_already_claimed', 'block_playerhud'),
-            \core\output\notification::NOTIFY_WARNING
-        );
-    }
-
-    // Activity-type: verify completion before allowing claim.
-    if ($quest->type == 2 && !empty($quest->requirement)) {
-        $cmid = (int)$quest->requirement;
-        $iscompleted = $DB->record_exists_select(
-            'course_modules_completion',
-            'userid = :uid AND coursemoduleid = :cmid AND completionstate >= 1',
-            ['uid' => $USER->id, 'cmid' => $cmid]
-        );
-        if (!$iscompleted) {
-            redirect(
-                $questurl,
-                get_string('error_quest_requirements', 'block_playerhud'),
-                \core\output\notification::NOTIFY_WARNING
-            );
-        }
-    }
-
-    $transaction = $DB->start_delegated_transaction();
     try {
-        // 1. Log the claim.
-        $log = new stdClass();
-        $log->questid     = $questid;
-        $log->userid      = $USER->id;
-        $log->timecreated = time();
-        $DB->insert_record('block_playerhud_quest_log', $log);
-
-        // 2. Grant XP.
-        if ($quest->reward_xp > 0) {
-            $qplayer = \block_playerhud\game::get_player($instanceid, $USER->id);
-            $qplayer->currentxp    = $qplayer->currentxp + $quest->reward_xp;
-            $qplayer->timemodified = time();
-            $DB->update_record('block_playerhud_user', $qplayer);
-        }
-
-        // 3. Grant item reward.
-        if ($quest->reward_itemid > 0) {
-            $newinv              = new stdClass();
-            $newinv->userid      = $USER->id;
-            $newinv->itemid      = $quest->reward_itemid;
-            $newinv->dropid      = 0;
-            $newinv->source      = 'quest';
-            $newinv->timecreated = time();
-            $DB->insert_record('block_playerhud_inventory', $newinv);
-        }
-
-        $transaction->allow_commit();
-
-        // Build success message with earned rewards.
-        $rewardparts = [];
-        if ($quest->reward_xp > 0) {
-            $rewardparts[] = $quest->reward_xp . ' XP';
-        }
-        if ($quest->reward_itemid > 0) {
-            $rewarditem = $DB->get_record('block_playerhud_items', ['id' => $quest->reward_itemid], 'name');
-            if ($rewarditem) {
-                $rewardparts[] = format_string($rewarditem->name);
-            }
-        }
-        $rewardstr = implode(get_string('connector_and', 'block_playerhud'), $rewardparts);
-
+        $rewardstr = \block_playerhud\quest::claim_reward($questid, $USER->id, $instanceid, $courseid);
         redirect(
             $questurl,
             get_string('quest_claimed_success', 'block_playerhud', $rewardstr),
             \core\output\notification::NOTIFY_SUCCESS
         );
-    } catch (Exception $e) {
-        $transaction->rollback($e);
-        redirect(
-            $questurl,
-            get_string('error_msg', 'block_playerhud', $e->getMessage()),
-            \core\output\notification::NOTIFY_ERROR
-        );
+    } catch (\moodle_exception $e) {
+        redirect($questurl, $e->getMessage(), \core\output\notification::NOTIFY_ERROR);
     }
 }
 

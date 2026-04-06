@@ -27,6 +27,7 @@ namespace block_playerhud\output\manage;
 use renderable;
 use moodle_url;
 use block_playerhud\form\edit_quest_form;
+use block_playerhud\quest;
 
 /**
  * Quests management tab renderer.
@@ -92,25 +93,29 @@ class tab_quests implements renderable {
         }
 
         if ($data = $this->mform->get_data()) {
-            $record = new \stdClass();
-            $record->blockinstanceid  = $this->instanceid;
-            $record->name             = $data->name;
-            $record->description      = $data->description['text'];
-            $record->type             = (int)$data->type;
-            $record->enabled          = (int)$data->enabled;
-            $record->reward_xp        = max(0, (int)$data->reward_xp);
-            $record->reward_itemid    = (int)$data->reward_itemid;
-            $record->req_itemid       = 0;
-            $record->required_class_id = '0';
-            $record->image_todo       = '';
-            $record->image_done       = '';
-            $record->timemodified     = time();
+            $type = (int)$data->type;
 
-            // Store requirement: text for manual, cmid string for activity.
-            if ($record->type === 2) {
-                $record->requirement = (string)(int)$data->requirement_cmid;
+            $record                    = new \stdClass();
+            $record->blockinstanceid   = $this->instanceid;
+            $record->name              = $data->name;
+            $record->description       = $data->description['text'];
+            $record->type              = $type;
+            $record->enabled           = (int)$data->enabled;
+            $record->reward_xp         = max(0, (int)$data->reward_xp);
+            $record->reward_itemid     = (int)$data->reward_itemid;
+            $record->required_class_id = '0';
+            $record->image_todo        = trim($data->image_todo ?? '');
+            $record->image_done        = trim($data->image_done ?? '');
+            $record->timemodified      = time();
+
+            if ($type === quest::TYPE_ACTIVITY) {
+                $record->requirement = (string)(int)$data->activity_cmid;
+                $record->req_itemid  = 0;
             } else {
-                $record->requirement = trim($data->requirement ?? '');
+                $record->requirement = (string)(int)$data->target_value;
+                $record->req_itemid  = ($type === quest::TYPE_SPECIFIC_ITEM)
+                    ? (int)$data->req_itemid
+                    : 0;
             }
 
             if ($questid > 0) {
@@ -135,17 +140,18 @@ class tab_quests implements renderable {
                 ['id' => $questid, 'blockinstanceid' => $this->instanceid]
             );
             if ($quest) {
-                $formdata = (array)$quest;
-                $formdata['questid']     = $quest->id;
-                $formdata['instanceid']  = $this->instanceid;
-                $formdata['courseid']    = $this->courseid;
-                $formdata['description'] = ['text' => $quest->description, 'format' => FORMAT_HTML];
+                $formdata                 = (array)$quest;
+                $formdata['questid']      = $quest->id;
+                $formdata['instanceid']   = $this->instanceid;
+                $formdata['courseid']     = $this->courseid;
+                $formdata['description']  = ['text' => $quest->description, 'format' => FORMAT_HTML];
 
-                if ($quest->type == 2) {
-                    $formdata['requirement_cmid'] = (int)$quest->requirement;
-                    $formdata['requirement']      = '';
+                if ($quest->type == quest::TYPE_ACTIVITY) {
+                    $formdata['activity_cmid'] = (int)$quest->requirement;
+                    $formdata['target_value']  = 1;
                 } else {
-                    $formdata['requirement_cmid'] = 0;
+                    $formdata['target_value']  = (int)$quest->requirement;
+                    $formdata['activity_cmid'] = 0;
                 }
 
                 $this->mform->set_data($formdata);
@@ -206,11 +212,14 @@ class tab_quests implements renderable {
             'timecreated DESC'
         );
 
-        // Preload item names to avoid N+1.
+        // Preload reward item names to avoid N+1.
         $itemids = [];
         foreach ($quests as $q) {
             if ($q->reward_itemid > 0) {
                 $itemids[$q->reward_itemid] = $q->reward_itemid;
+            }
+            if ($q->req_itemid > 0) {
+                $itemids[$q->req_itemid] = $q->req_itemid;
             }
         }
         $itemnames = [];
@@ -236,65 +245,78 @@ class tab_quests implements renderable {
         }
 
         $typelabels = [
-            1 => get_string('quest_type_manual', 'block_playerhud'),
-            2 => get_string('quest_type_activity', 'block_playerhud'),
+            quest::TYPE_LEVEL         => get_string('quest_type_level', 'block_playerhud'),
+            quest::TYPE_XP_TOTAL      => get_string('quest_type_xp_total', 'block_playerhud'),
+            quest::TYPE_UNIQUE_ITEMS  => get_string('quest_type_unique_items', 'block_playerhud'),
+            quest::TYPE_SPECIFIC_ITEM => get_string('quest_type_specific_item', 'block_playerhud'),
+            quest::TYPE_ACTIVITY      => get_string('quest_type_activity', 'block_playerhud'),
         ];
 
         $questsdata = [];
-        foreach ($quests as $quest) {
+        foreach ($quests as $q) {
             $rewardtext = '';
-            if ($quest->reward_xp > 0) {
-                $rewardtext .= $quest->reward_xp . ' XP';
+            if ($q->reward_xp > 0) {
+                $rewardtext .= $q->reward_xp . ' XP';
             }
-            if ($quest->reward_itemid > 0 && isset($itemnames[$quest->reward_itemid])) {
-                $rewardtext .= ($rewardtext ? ' + ' : '') . $itemnames[$quest->reward_itemid];
+            if ($q->reward_itemid > 0 && isset($itemnames[$q->reward_itemid])) {
+                $rewardtext .= ($rewardtext ? ' + ' : '') . $itemnames[$q->reward_itemid];
+            }
+
+            $requirementtext = '';
+            if ($q->type == quest::TYPE_SPECIFIC_ITEM && $q->req_itemid > 0) {
+                $requirementtext = ($itemnames[$q->req_itemid] ?? '?') . ' x' . $q->requirement;
+            } else if ($q->type !== quest::TYPE_ACTIVITY) {
+                $requirementtext = $q->requirement;
             }
 
             $questsdata[] = [
-                'id'           => $quest->id,
-                'name'         => format_string($quest->name),
-                'type_label'   => $typelabels[$quest->type] ?? '-',
-                'is_activity'  => ($quest->type == 2),
-                'enabled'      => (bool)$quest->enabled,
-                'reward_text'  => $rewardtext ?: '—',
-                'claims_count' => $claimcounts[$quest->id] ?? 0,
-                'url_edit'     => (new moodle_url($baseurl, [
+                'id'               => $q->id,
+                'image_todo'       => !empty($q->image_todo) ? $q->image_todo : '📋',
+                'name'             => format_string($q->name),
+                'type_label'       => $typelabels[$q->type] ?? '-',
+                'requirement_text' => $requirementtext,
+                'enabled'          => (bool)$q->enabled,
+                'reward_text'      => $rewardtext ?: '—',
+                'claims_count'     => $claimcounts[$q->id] ?? 0,
+                'url_edit'         => (new moodle_url($baseurl, [
                     'action'  => 'edit',
-                    'questid' => $quest->id,
+                    'questid' => $q->id,
                 ]))->out(false),
-                'url_toggle'   => (new moodle_url($baseurl, [
+                'url_toggle'       => (new moodle_url($baseurl, [
                     'action'  => 'toggle_quest',
-                    'questid' => $quest->id,
+                    'questid' => $q->id,
                     'sesskey' => sesskey(),
                 ]))->out(false),
-                'url_delete'   => (new moodle_url($baseurl, [
+                'url_delete'       => (new moodle_url($baseurl, [
                     'action'  => 'delete_quest',
-                    'questid' => $quest->id,
+                    'questid' => $q->id,
                     'sesskey' => sesskey(),
                 ]))->out(false),
-                'str_toggle'   => $quest->enabled
+                'str_toggle'         => $q->enabled
                     ? get_string('click_to_hide', 'block_playerhud')
                     : get_string('click_to_show', 'block_playerhud'),
                 'str_delete_confirm' => s(
-                    get_string('confirm_delete', 'block_playerhud') . " '" . format_string($quest->name) . "'?"
+                    get_string('confirm_delete', 'block_playerhud') . " '" . format_string($q->name) . "'?"
                 ),
             ];
         }
 
         $templatedata = [
-            'url_add'            => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
-            'str_add_quest'      => get_string('quest_new', 'block_playerhud'),
-            'str_col_name'       => get_string('quest_name', 'block_playerhud'),
-            'str_col_type'       => get_string('quest_type', 'block_playerhud'),
-            'str_col_reward'     => get_string('quest_rewards_hdr', 'block_playerhud'),
-            'str_col_claims'     => get_string('quest_col_claims', 'block_playerhud'),
-            'str_col_enabled'    => get_string('enabled', 'block_playerhud'),
-            'str_actions'        => get_string('actions'),
-            'str_edit'           => get_string('edit'),
-            'str_delete'         => get_string('delete'),
-            'str_empty'          => get_string('quests_none', 'block_playerhud'),
-            'quests'             => $questsdata,
-            'has_quests'         => !empty($questsdata),
+            'url_add'         => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
+            'str_add_quest'   => get_string('quest_new', 'block_playerhud'),
+            'str_col_icon'    => get_string('quest_icon_todo', 'block_playerhud'),
+            'str_col_name'    => get_string('quest_name', 'block_playerhud'),
+            'str_col_type'    => get_string('quest_type', 'block_playerhud'),
+            'str_col_req'     => get_string('quest_target_value', 'block_playerhud'),
+            'str_col_reward'  => get_string('quest_rewards_hdr', 'block_playerhud'),
+            'str_col_claims'  => get_string('quest_col_claims', 'block_playerhud'),
+            'str_col_enabled' => get_string('enabled', 'block_playerhud'),
+            'str_actions'     => get_string('actions'),
+            'str_edit'        => get_string('edit'),
+            'str_delete'      => get_string('delete'),
+            'str_empty'       => get_string('quests_none', 'block_playerhud'),
+            'quests'          => $questsdata,
+            'has_quests'      => !empty($questsdata),
         ];
 
         return $OUTPUT->render_from_template('block_playerhud/manage_quests', $templatedata);

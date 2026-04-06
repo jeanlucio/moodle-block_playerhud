@@ -41,32 +41,35 @@ class edit_quest_form extends \moodleform {
      */
     public function definition() {
         global $DB;
-        $mform = $this->_form;
+        $mform      = $this->_form;
         $instanceid = $this->_customdata['instanceid'];
         $courseid   = $this->_customdata['courseid'];
 
-        // Fetch items for reward/requirement selects.
-        $allitems = $DB->get_records_menu(
+        // Items for reward/accumulator selects.
+        $allitems    = $DB->get_records_menu(
             'block_playerhud_items',
             ['blockinstanceid' => $instanceid, 'enabled' => 1],
             'name ASC',
             'id, name'
         );
-        $nooption   = [0 => '— ' . get_string('none', 'block_playerhud') . ' —'];
+        $nooption    = [0 => '— ' . get_string('none', 'block_playerhud') . ' —'];
         $itemoptions = $nooption + ($allitems ?: []);
 
-        // Quest type options.
+        // Quest type options matching \block_playerhud\quest constants.
         $typeoptions = [
-            1 => get_string('quest_type_manual', 'block_playerhud'),
-            2 => get_string('quest_type_activity', 'block_playerhud'),
+            \block_playerhud\quest::TYPE_LEVEL         => get_string('quest_type_level', 'block_playerhud'),
+            \block_playerhud\quest::TYPE_XP_TOTAL      => get_string('quest_type_xp_total', 'block_playerhud'),
+            \block_playerhud\quest::TYPE_UNIQUE_ITEMS  => get_string('quest_type_unique_items', 'block_playerhud'),
+            \block_playerhud\quest::TYPE_SPECIFIC_ITEM => get_string('quest_type_specific_item', 'block_playerhud'),
+            \block_playerhud\quest::TYPE_ACTIVITY      => get_string('quest_type_activity', 'block_playerhud'),
         ];
 
         // Course modules with completion enabled (for activity-type quests).
-        $modoptions = [0 => '— ' . get_string('select') . ' —'];
+        $activityoptions = [0 => '— ' . get_string('select') . ' —'];
         $modinfo = get_fast_modinfo($courseid);
         foreach ($modinfo->get_cms() as $cm) {
             if ($cm->visible && $cm->completion > 0) {
-                $modoptions[$cm->id] = format_string($cm->name) . ' (' . $cm->modname . ')';
+                $activityoptions[$cm->id] = format_string($cm->name) . ' (' . $cm->modname . ')';
             }
         }
 
@@ -82,42 +85,53 @@ class edit_quest_form extends \moodleform {
         $mform->addElement('editor', 'description', get_string('description', 'block_playerhud'));
         $mform->setType('description', PARAM_RAW);
 
-        // 3. Type.
+        // Requirements header.
+        $mform->addElement('header', 'req_hdr', get_string('quest_requirements_hdr', 'block_playerhud'));
+        $mform->setExpanded('req_hdr', true);
+
+        // 3. Quest type.
         $mform->addElement('select', 'type', get_string('quest_type', 'block_playerhud'), $typeoptions);
         $mform->setType('type', PARAM_INT);
-        $mform->setDefault('type', 1);
+        $mform->setDefault('type', \block_playerhud\quest::TYPE_LEVEL);
 
-        // 4. Requirement text (type = manual).
-        $mform->addElement(
-            'text',
-            'requirement',
-            get_string('quest_requirement', 'block_playerhud')
-        );
-        $mform->setType('requirement', PARAM_TEXT);
-        $mform->addHelpButton('requirement', 'quest_requirement', 'block_playerhud');
-        $mform->hideIf('requirement', 'type', 'neq', '1');
+        // 4. Target value — Level, XP or item quantity (types 1–4).
+        $mform->addElement('text', 'target_value', get_string('quest_target_value', 'block_playerhud'));
+        $mform->setType('target_value', PARAM_INT);
+        $mform->setDefault('target_value', 1);
+        $mform->hideIf('target_value', 'type', 'eq', (string)\block_playerhud\quest::TYPE_ACTIVITY);
 
-        // 5. Activity CMID selector (type = activity).
+        // 5. Specific item (type 4 — Accumulator only).
         $mform->addElement(
             'select',
-            'requirement_cmid',
-            get_string('quest_activity', 'block_playerhud'),
-            $modoptions
+            'req_itemid',
+            get_string('quest_req_item', 'block_playerhud'),
+            $itemoptions
         );
-        $mform->setType('requirement_cmid', PARAM_INT);
-        $mform->setDefault('requirement_cmid', 0);
-        $mform->hideIf('requirement_cmid', 'type', 'neq', '2');
+        $mform->setType('req_itemid', PARAM_INT);
+        $mform->setDefault('req_itemid', 0);
+        $mform->hideIf('req_itemid', 'type', 'neq', (string)\block_playerhud\quest::TYPE_SPECIFIC_ITEM);
+
+        // 6. Activity CMID selector (type 5 — Activity only).
+        $mform->addElement(
+            'select',
+            'activity_cmid',
+            get_string('quest_activity', 'block_playerhud'),
+            $activityoptions
+        );
+        $mform->setType('activity_cmid', PARAM_INT);
+        $mform->setDefault('activity_cmid', 0);
+        $mform->hideIf('activity_cmid', 'type', 'neq', (string)\block_playerhud\quest::TYPE_ACTIVITY);
 
         // Rewards header.
         $mform->addElement('header', 'rewards_hdr', get_string('quest_rewards_hdr', 'block_playerhud'));
         $mform->setExpanded('rewards_hdr', true);
 
-        // 6. XP Reward.
+        // 7. XP Reward.
         $mform->addElement('text', 'reward_xp', get_string('quest_reward_xp', 'block_playerhud'));
         $mform->setType('reward_xp', PARAM_INT);
         $mform->setDefault('reward_xp', 0);
 
-        // 7. Item Reward.
+        // 8. Item Reward.
         $mform->addElement(
             'select',
             'reward_itemid',
@@ -127,14 +141,24 @@ class edit_quest_form extends \moodleform {
         $mform->setType('reward_itemid', PARAM_INT);
         $mform->setDefault('reward_itemid', 0);
 
-        // Rules header.
-        $mform->addElement('header', 'rules_hdr', get_string('visualrules', 'block_playerhud'));
+        // Visual identity header.
+        $mform->addElement('header', 'visual_hdr', get_string('visualrules', 'block_playerhud'));
 
-        // 8. Enabled.
+        // 9. Icon in-progress (emoji).
+        $mform->addElement('text', 'image_todo', get_string('quest_icon_todo', 'block_playerhud'));
+        $mform->setType('image_todo', PARAM_TEXT);
+        $mform->setDefault('image_todo', '📋');
+
+        // 10. Icon achievement/emblem (emoji).
+        $mform->addElement('text', 'image_done', get_string('quest_icon_done', 'block_playerhud'));
+        $mform->setType('image_done', PARAM_TEXT);
+        $mform->setDefault('image_done', '🏅');
+
+        // 11. Enabled.
         $mform->addElement('selectyesno', 'enabled', get_string('enabled', 'block_playerhud'));
         $mform->setDefault('enabled', 1);
 
-        // 9. Class Restriction — reserved for when Classes system is implemented (Etapa 1).
+        // 12. Class restriction — reserved for Classes system (Etapa 1).
         $mform->addElement('hidden', 'required_class_id');
         $mform->setType('required_class_id', PARAM_TEXT);
         $mform->setDefault('required_class_id', '0');
@@ -161,17 +185,24 @@ class edit_quest_form extends \moodleform {
      */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
+        $type   = (int)$data['type'];
 
         if (empty(trim($data['name']))) {
             $errors['name'] = get_string('required');
         }
 
-        if ((int)$data['type'] === 1 && empty(trim($data['requirement'] ?? ''))) {
-            $errors['requirement'] = get_string('required');
+        if ($type !== \block_playerhud\quest::TYPE_ACTIVITY) {
+            if (!isset($data['target_value']) || (int)$data['target_value'] < 1) {
+                $errors['target_value'] = get_string('quest_validate_target', 'block_playerhud');
+            }
         }
 
-        if ((int)$data['type'] === 2 && empty($data['requirement_cmid'])) {
-            $errors['requirement_cmid'] = get_string('required');
+        if ($type === \block_playerhud\quest::TYPE_SPECIFIC_ITEM && empty($data['req_itemid'])) {
+            $errors['req_itemid'] = get_string('required');
+        }
+
+        if ($type === \block_playerhud\quest::TYPE_ACTIVITY && empty($data['activity_cmid'])) {
+            $errors['activity_cmid'] = get_string('required');
         }
 
         if (!is_numeric($data['reward_xp']) || (int)$data['reward_xp'] < 0) {

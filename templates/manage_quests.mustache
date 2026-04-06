@@ -27,8 +27,10 @@
     {
         "url_add": "#",
         "str_add_quest": "New Quest",
+        "str_col_icon": "Icon",
         "str_col_name": "Name",
         "str_col_type": "Type",
+        "str_col_req": "Target",
         "str_col_reward": "Rewards",
         "str_col_claims": "Claims",
         "str_col_enabled": "Enabled?",
@@ -40,11 +42,12 @@
         "quests": [
             {
                 "id": 1,
-                "name": "Read Chapter 1",
-                "type_label": "Activity Completion",
-                "is_activity": true,
+                "image_todo": "📋",
+                "name": "Reach Level 5",
+                "type_label": "Reach Level",
+                "requirement_text": "5",
                 "enabled": true,
-                "reward_text": "50 XP + Magic Potion",
+                "reward_text": "50 XP",
                 "claims_count": 3,
                 "url_edit": "#",
                 "url_toggle": "#",
@@ -68,8 +71,10 @@
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
+                    <th scope="col" class="text-center">{{str_col_icon}}</th>
                     <th scope="col">{{str_col_name}}</th>
                     <th scope="col">{{str_col_type}}</th>
+                    <th scope="col">{{str_col_req}}</th>
                     <th scope="col">{{str_col_reward}}</th>
                     <th scope="col" class="text-center">{{str_col_claims}}</th>
                     <th scope="col" class="text-center">{{str_col_enabled}}</th>
@@ -79,15 +84,10 @@
             <tbody>
                 {{#quests}}
                 <tr>
+                    <td class="text-center ph-quest-icon-cell" aria-hidden="true">{{image_todo}}</td>
                     <td class="fw-semibold">{{name}}</td>
-                    <td>
-                        {{#is_activity}}
-                        <span class="badge bg-info text-dark">{{type_label}}</span>
-                        {{/is_activity}}
-                        {{^is_activity}}
-                        <span class="badge bg-secondary">{{type_label}}</span>
-                        {{/is_activity}}
-                    </td>
+                    <td><span class="badge bg-secondary">{{type_label}}</span></td>
+                    <td class="text-muted small">{{requirement_text}}</td>
                     <td class="text-muted small">{{reward_text}}</td>
                     <td class="text-center">
                         <span class="badge bg-light text-dark border">{{claims_count}}</span>

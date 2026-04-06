@@ -26,29 +26,27 @@
     Example context (json):
     {
         "str_reward": "Rewards",
-        "str_claimed": "Completed",
-        "str_pending": "Pending",
-        "str_claim": "Claim Reward",
         "str_progress_label": "Completed",
         "quests": [
             {
                 "id": 1,
-                "name": "Read Chapter 1",
-                "description_html": "<p>Read all sections of Chapter 1.</p>",
-                "is_manual": false,
-                "is_activity": true,
-                "type_label": "Activity Completion",
-                "requirement": "",
-                "reward_text": "50 XP + Magic Potion",
+                "name": "Reach Level 5",
+                "description_html": "<p>Reach level 5 in the course.</p>",
+                "image_todo": "📋",
+                "image_done": "🏅",
+                "type_label": "Reach Level",
+                "is_activity": false,
+                "reward_text": "50 XP",
                 "has_reward": true,
                 "is_claimed": false,
-                "is_completed": true,
                 "can_claim": true,
-                "progress_pct": 100,
-                "str_progress": "100%",
+                "progress_pct": 80,
+                "str_progress": "80%",
+                "progress_label": "4 / 5",
                 "url_claim": "#",
-                "str_status": "Claim Reward",
-                "str_claim": "Claim Reward"
+                "str_claim": "Claim Reward",
+                "str_pending": "Pending",
+                "str_claimed": "Completed"
             }
         ]
     }
@@ -62,31 +60,24 @@
                 {{^is_claimed}}{{#can_claim}}ph-quest-ready{{/can_claim}}{{/is_claimed}}">
 
                 <div class="card-body">
-                    {{! Type badge + title }}
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h5 class="card-title mb-0 fw-bold">{{name}}</h5>
-                        {{#is_activity}}
-                        <span class="badge bg-info text-dark ms-2 flex-shrink-0">{{type_label}}</span>
-                        {{/is_activity}}
-                        {{#is_manual}}
-                        <span class="badge bg-secondary ms-2 flex-shrink-0">{{type_label}}</span>
-                        {{/is_manual}}
+                    {{! Icon + title }}
+                    <div class="d-flex align-items-start mb-2">
+                        <span class="ph-quest-icon me-2" aria-hidden="true">
+                            {{#is_claimed}}{{image_done}}{{/is_claimed}}
+                            {{^is_claimed}}{{image_todo}}{{/is_claimed}}
+                        </span>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h5 class="card-title mb-0 fw-bold">{{name}}</h5>
+                                <span class="badge bg-secondary ms-2 flex-shrink-0">{{type_label}}</span>
+                            </div>
+                        </div>
                     </div>
 
                     {{! Description }}
                     {{#description_html}}
                     <div class="card-text text-muted small mb-2">{{{description_html}}}</div>
                     {{/description_html}}
-
-                    {{! Manual requirement text }}
-                    {{#is_manual}}
-                    {{#requirement}}
-                    <p class="small mb-2">
-                        <i class="fa fa-tasks me-1" aria-hidden="true"></i>
-                        {{requirement}}
-                    </p>
-                    {{/requirement}}
-                    {{/is_manual}}
 
                     {{! Reward }}
                     {{#has_reward}}
@@ -96,8 +87,7 @@
                     </p>
                     {{/has_reward}}
 
-                    {{! Progress bar (activity type) }}
-                    {{#is_activity}}
+                    {{! Progress bar }}
                     <div class="mb-3">
                         <div class="progress" role="progressbar"
                              aria-valuenow="{{progress_pct}}"
@@ -105,13 +95,13 @@
                              aria-valuemax="100">
                             <div class="progress-bar
                                 {{#is_claimed}}bg-success{{/is_claimed}}
-                                {{^is_claimed}}{{#is_completed}}bg-primary{{/is_completed}}{{/is_claimed}}"
+                                {{^is_claimed}}{{#can_claim}}bg-primary{{/can_claim}}{{/is_claimed}}"
                                  style="width: {{progress_pct}}%">
                             </div>
                         </div>
+                        <small class="text-muted">{{progress_label}}</small>
                         <span class="visually-hidden">{{str_progress_label}}: {{str_progress}}</span>
                     </div>
-                    {{/is_activity}}
                 </div>
 
                 {{! Card footer: status / claim button }}
