@@ -91,8 +91,8 @@ class tab_quests implements renderable {
         [$qinsql, $qinparams] = $DB->get_in_or_equal($questids);
         $claimedrows = $DB->get_records_select(
             'block_playerhud_quest_log',
-            "userid = :uid AND questid $qinsql",
-            array_merge(['uid' => $USER->id], $qinparams),
+            "userid = ? AND questid $qinsql",
+            array_merge([$USER->id], $qinparams),
             '',
             'questid'
         );
