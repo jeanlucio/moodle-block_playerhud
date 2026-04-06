@@ -28,16 +28,19 @@
         "url_add": "#",
         "str_add_quest": "New Quest",
         "str_col_icon": "Icon",
-        "str_col_name": "Name",
-        "str_col_type": "Type",
-        "str_col_req": "Target",
         "str_col_reward": "Rewards",
         "str_col_claims": "Claims",
         "str_col_enabled": "Enabled?",
+        "str_col_req": "Target",
         "str_actions": "Actions",
         "str_edit": "Edit",
         "str_delete": "Delete",
         "str_empty": "No quests created.",
+        "headers": {
+            "name": { "url": "#", "label": "Name", "icon_class": "fa-sort" },
+            "type": { "url": "#", "label": "Type", "icon_class": "fa-sort" },
+            "date": { "url": "#", "label": "Date", "icon_class": "fa-sort" }
+        },
         "has_quests": true,
         "quests": [
             {
@@ -45,6 +48,7 @@
                 "image_todo": "📋",
                 "name": "Reach Level 5",
                 "type_label": "Reach Level",
+                "type_badge_class": "bg-primary text-white",
                 "requirement_text": "5",
                 "enabled": true,
                 "reward_text": "50 XP",
@@ -53,7 +57,7 @@
                 "url_toggle": "#",
                 "url_delete": "#",
                 "str_toggle": "Click to hide",
-                "str_delete_confirm": "Are you sure?"
+                "str_delete_confirm": "Are you sure you want to delete &#x27;Reach Level 5&#x27;?"
             }
         ]
     }
@@ -72,8 +76,18 @@
             <thead class="table-light">
                 <tr>
                     <th scope="col" class="text-center">{{str_col_icon}}</th>
-                    <th scope="col">{{str_col_name}}</th>
-                    <th scope="col">{{str_col_type}}</th>
+                    <th scope="col">
+                        <a href="{{headers.name.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
+                            {{headers.name.label}}
+                            <i class="fa {{headers.name.icon_class}} ms-1" aria-hidden="true"></i>
+                        </a>
+                    </th>
+                    <th scope="col">
+                        <a href="{{headers.type.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
+                            {{headers.type.label}}
+                            <i class="fa {{headers.type.icon_class}} ms-1" aria-hidden="true"></i>
+                        </a>
+                    </th>
                     <th scope="col">{{str_col_req}}</th>
                     <th scope="col">{{str_col_reward}}</th>
                     <th scope="col" class="text-center">{{str_col_claims}}</th>
@@ -86,7 +100,9 @@
                 <tr>
                     <td class="text-center ph-quest-icon-cell" aria-hidden="true">{{image_todo}}</td>
                     <td class="fw-semibold">{{name}}</td>
-                    <td><span class="badge bg-secondary">{{type_label}}</span></td>
+                    <td>
+                        <span class="badge {{type_badge_class}}">{{type_label}}</span>
+                    </td>
                     <td class="text-muted small">{{requirement_text}}</td>
                     <td class="text-muted small">{{reward_text}}</td>
                     <td class="text-center">
@@ -105,12 +121,14 @@
                            class="btn btn-sm btn-outline-primary me-1"
                            aria-label="{{str_edit}} {{name}}">
                             <i class="fa fa-pencil" aria-hidden="true"></i>
+                            <span class="d-none d-xl-inline ms-1">{{str_edit}}</span>
                         </a>
                         <a href="{{url_delete}}"
-                           class="btn btn-sm btn-outline-danger"
+                           class="btn btn-sm btn-danger shadow-sm js-delete-btn"
                            aria-label="{{str_delete}} {{name}}"
-                           data-confirm="{{str_delete_confirm}}">
+                           data-confirm-msg="{{str_delete_confirm}}">
                             <i class="fa fa-trash" aria-hidden="true"></i>
+                            <span class="d-none d-xl-inline ms-1">{{str_delete}}</span>
                         </a>
                     </td>
                 </tr>

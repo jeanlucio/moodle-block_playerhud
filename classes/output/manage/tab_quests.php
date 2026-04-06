@@ -192,12 +192,41 @@ class tab_quests implements renderable {
     }
 
     /**
+     * Build sort link data for a column header.
+     *
+     * @param string $colname Column identifier.
+     * @param string $label Display label.
+     * @param moodle_url $baseurl Base URL.
+     * @return array Sort data for the template.
+     */
+    protected function get_sort_data(string $colname, string $label, moodle_url $baseurl): array {
+        $icon    = 'fa-sort text-muted opacity-25';
+        $nextdir = 'ASC';
+
+        if ($this->sort === $colname) {
+            if ($this->dir === 'ASC') {
+                $icon    = 'fa-sort-asc text-primary';
+                $nextdir = 'DESC';
+            } else {
+                $icon    = 'fa-sort-desc text-primary';
+                $nextdir = 'ASC';
+            }
+        }
+
+        return [
+            'url'        => (new moodle_url($baseurl, ['sort' => $colname, 'dir' => $nextdir]))->out(false),
+            'label'      => $label,
+            'icon_class' => $icon,
+        ];
+    }
+
+    /**
      * Render the quest list table.
      *
      * @return string HTML.
      */
     protected function render_list() {
-        global $DB, $OUTPUT;
+        global $DB, $OUTPUT, $PAGE;
 
         $baseurl = new moodle_url('/blocks/playerhud/manage.php', [
             'id'         => $this->courseid,
@@ -205,11 +234,17 @@ class tab_quests implements renderable {
             'tab'        => 'quests',
         ]);
 
+        $allowedsorts = ['name', 'type', 'timecreated'];
+        if (!in_array($this->sort, $allowedsorts)) {
+            $this->sort = 'timecreated';
+        }
+        $this->dir = (strtoupper($this->dir) === 'ASC') ? 'ASC' : 'DESC';
+
         // Load quests for this block instance.
         $quests = $DB->get_records(
             'block_playerhud_quests',
             ['blockinstanceid' => $this->instanceid],
-            'timecreated DESC'
+            "{$this->sort} {$this->dir}"
         );
 
         // Preload reward item names to avoid N+1.
@@ -252,6 +287,14 @@ class tab_quests implements renderable {
             quest::TYPE_ACTIVITY      => get_string('quest_type_activity', 'block_playerhud'),
         ];
 
+        $typebadges = [
+            quest::TYPE_LEVEL         => 'bg-primary text-white',
+            quest::TYPE_XP_TOTAL      => 'bg-success text-white',
+            quest::TYPE_UNIQUE_ITEMS  => 'bg-info text-dark',
+            quest::TYPE_SPECIFIC_ITEM => 'bg-warning text-dark',
+            quest::TYPE_ACTIVITY      => 'bg-danger text-white',
+        ];
+
         $questsdata = [];
         foreach ($quests as $q) {
             $rewardtext = '';
@@ -274,6 +317,7 @@ class tab_quests implements renderable {
                 'image_todo'       => !empty($q->image_todo) ? $q->image_todo : '📋',
                 'name'             => format_string($q->name),
                 'type_label'       => $typelabels[$q->type] ?? '-',
+                'type_badge_class' => $typebadges[$q->type] ?? 'bg-secondary text-white',
                 'requirement_text' => $requirementtext,
                 'enabled'          => (bool)$q->enabled,
                 'reward_text'      => $rewardtext ?: '—',
@@ -301,20 +345,38 @@ class tab_quests implements renderable {
             ];
         }
 
+        $headers = [
+            'name' => $this->get_sort_data('name', get_string('quest_name', 'block_playerhud'), $baseurl),
+            'type' => $this->get_sort_data('type', get_string('quest_type', 'block_playerhud'), $baseurl),
+            'date' => $this->get_sort_data(
+                'timecreated',
+                get_string('report_col_date', 'block_playerhud'),
+                $baseurl
+            ),
+        ];
+
+        $jsvars = [
+            'strings' => [
+                'confirm_title' => get_string('confirmation', 'admin'),
+                'yes'           => get_string('yes'),
+                'cancel'        => get_string('cancel'),
+            ],
+        ];
+        $PAGE->requires->js_call_amd('block_playerhud/manage_quests', 'init', [$jsvars]);
+
         $templatedata = [
             'url_add'         => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
             'str_add_quest'   => get_string('quest_new', 'block_playerhud'),
             'str_col_icon'    => get_string('quest_icon_todo', 'block_playerhud'),
-            'str_col_name'    => get_string('quest_name', 'block_playerhud'),
-            'str_col_type'    => get_string('quest_type', 'block_playerhud'),
-            'str_col_req'     => get_string('quest_target_value', 'block_playerhud'),
             'str_col_reward'  => get_string('quest_rewards_hdr', 'block_playerhud'),
             'str_col_claims'  => get_string('quest_col_claims', 'block_playerhud'),
             'str_col_enabled' => get_string('enabled', 'block_playerhud'),
+            'str_col_req'     => get_string('quest_target_value', 'block_playerhud'),
             'str_actions'     => get_string('actions'),
             'str_edit'        => get_string('edit'),
             'str_delete'      => get_string('delete'),
             'str_empty'       => get_string('quests_none', 'block_playerhud'),
+            'headers'         => $headers,
             'quests'          => $questsdata,
             'has_quests'      => !empty($questsdata),
         ];
