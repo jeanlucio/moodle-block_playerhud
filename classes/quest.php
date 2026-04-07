@@ -47,6 +47,15 @@ class quest {
     /** @var int Quest type: Complete a Moodle activity. */
     const TYPE_ACTIVITY = 5;
 
+    /** @var int Quest type: Collect N total items (including duplicates). */
+    const TYPE_TOTAL_ITEMS = 6;
+
+    /** @var int Quest type: Perform N trades in the shop. */
+    const TYPE_TRADES = 7;
+
+    /** @var int Quest type: Perform a specific trade N times. */
+    const TYPE_SPECIFIC_TRADE = 8;
+
     /**
      * Checks the status of a quest for a specific user.
      *
@@ -104,6 +113,43 @@ class quest {
                 $itemid = (int)$quest->req_itemid;
                 // Item ID is unique, but belongs to an instance, so counting is safe within context.
                 $current = $DB->count_records('block_playerhud_inventory', ['userid' => $userid, 'itemid' => $itemid]);
+
+                $status->completed = ($current >= $target);
+                $status->progress = ($target > 0) ? min(100, floor(($current / $target) * 100)) : 100;
+                $status->label = "{$current} / {$target}";
+                break;
+
+            case self::TYPE_TOTAL_ITEMS:
+                $sql = "SELECT COUNT(inv.id)
+                          FROM {block_playerhud_inventory} inv
+                          JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                         WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source != 'revoked'";
+                $current = $DB->count_records_sql($sql, [$userid, $quest->blockinstanceid]);
+                $target = (int)$quest->requirement;
+
+                $status->completed = ($current >= $target);
+                $status->progress = ($target > 0) ? min(100, floor(($current / $target) * 100)) : 100;
+                $status->label = "{$current} / {$target} " . get_string('items', 'block_playerhud');
+                break;
+
+            case self::TYPE_TRADES:
+                $sql = "SELECT COUNT(tl.id)
+                          FROM {block_playerhud_trade_log} tl
+                          JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
+                         WHERE tl.userid = ? AND t.blockinstanceid = ?";
+                $current = $DB->count_records_sql($sql, [$userid, $quest->blockinstanceid]);
+                $target = (int)$quest->requirement;
+
+                $status->completed = ($current >= $target);
+                $status->progress = ($target > 0) ? min(100, floor(($current / $target) * 100)) : 100;
+                $status->label = "{$current} / {$target} " . get_string('tab_trades', 'block_playerhud');
+                break;
+
+            case self::TYPE_SPECIFIC_TRADE:
+                $target = (int)$quest->requirement;
+                $tradeid = (int)$quest->req_itemid;
+
+                $current = $DB->count_records('block_playerhud_trade_log', ['userid' => $userid, 'tradeid' => $tradeid]);
 
                 $status->completed = ($current >= $target);
                 $status->progress = ($target > 0) ? min(100, floor(($current / $target) * 100)) : 100;
@@ -245,5 +291,117 @@ class quest {
             $transaction->rollback($e);
             throw $e;
         }
+    }
+
+    /**
+     * Generates heuristic quest suggestions based on course mapping.
+     * Guaranteed Zero N+1 Queries.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param \stdClass $config Block configuration.
+     * @return array Array of suggested quests.
+     */
+    public static function get_heuristic_suggestions(int $instanceid, int $courseid, \stdClass $config): array {
+        global $DB;
+        $suggestions = [];
+
+        // Preload existing quests to avoid suggesting duplicates.
+        $existing = $DB->get_records('block_playerhud_quests', ['blockinstanceid' => $instanceid], '', 'id, type, requirement');
+        $hasquest = function ($type, $req) use ($existing) {
+            foreach ($existing as $q) {
+                if ($q->type == $type && $q->requirement == (string)$req) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // 1. Activity Mapping (Fast Modinfo uses Moodle's internal fast cache).
+        $modinfo = get_fast_modinfo($courseid);
+        foreach ($modinfo->get_cms() as $cm) {
+            if ($cm->visible && $cm->completion > 0) {
+                if (!$hasquest(self::TYPE_ACTIVITY, $cm->id)) {
+                    $suggestions[] = [
+                        'type' => self::TYPE_ACTIVITY,
+                        'requirement' => $cm->id,
+                        'name' => get_string('quest_sug_activity', 'block_playerhud', format_string($cm->name)),
+                        'reward_xp' => 50,
+                        'image_todo' => '📋',
+                        'image_done' => '🏅',
+                        'uid' => 'act_' . $cm->id,
+                    ];
+                }
+            }
+        }
+
+        // 2. Level Milestones (25%, 50%, 75%, 100% of Max Level).
+        $maxlevels = isset($config->max_levels) ? (int)$config->max_levels : 20;
+        $levelsteps = [
+            (int)ceil($maxlevels * 0.25),
+            (int)ceil($maxlevels * 0.50),
+            (int)ceil($maxlevels * 0.75),
+            (int)$maxlevels,
+        ];
+        $levelsteps = array_unique(array_filter($levelsteps, function ($v) {
+            return $v > 1;
+        }));
+
+        foreach ($levelsteps as $lvl) {
+            if (!$hasquest(self::TYPE_LEVEL, $lvl)) {
+                $suggestions[] = [
+                    'type' => self::TYPE_LEVEL,
+                    'requirement' => $lvl,
+                    'name' => get_string('quest_sug_level', 'block_playerhud', $lvl),
+                    'reward_xp' => $lvl * 20,
+                    'image_todo' => '📈',
+                    'image_done' => '👑',
+                    'uid' => 'lvl_' . $lvl,
+                ];
+            }
+        }
+
+        // 3. Collection Milestones.
+        $totalitems = $DB->count_records('block_playerhud_items', ['blockinstanceid' => $instanceid, 'enabled' => 1]);
+        if ($totalitems >= 2) {
+            $itemsteps = [(int)ceil($totalitems * 0.5), $totalitems];
+            $itemsteps = array_unique(array_filter($itemsteps, function ($v) {
+                return $v > 0;
+            }));
+            foreach ($itemsteps as $itms) {
+                if (!$hasquest(self::TYPE_UNIQUE_ITEMS, $itms)) {
+                    $suggestions[] = [
+                        'type' => self::TYPE_UNIQUE_ITEMS,
+                        'requirement' => $itms,
+                        'name' => get_string('quest_sug_items', 'block_playerhud', $itms),
+                        'reward_xp' => $itms * 30,
+                        'image_todo' => '🎒',
+                        'image_done' => '🏆',
+                        'uid' => 'col_' . $itms,
+                    ];
+                }
+            }
+        }
+
+        // 4. Economy Milestones.
+        $totaltrades = $DB->count_records('block_playerhud_trades', ['blockinstanceid' => $instanceid]);
+        if ($totaltrades > 0) {
+            $tradesteps = [1, 5, 10];
+            foreach ($tradesteps as $trds) {
+                if (!$hasquest(self::TYPE_TRADES, $trds)) {
+                    $suggestions[] = [
+                        'type' => self::TYPE_TRADES,
+                        'requirement' => $trds,
+                        'name' => get_string('quest_sug_trades', 'block_playerhud', $trds),
+                        'reward_xp' => $trds * 40,
+                        'image_todo' => '⚖️',
+                        'image_done' => '🤝',
+                        'uid' => 'trd_' . $trds,
+                    ];
+                }
+            }
+        }
+
+        return $suggestions;
     }
 }

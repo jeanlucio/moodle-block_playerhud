@@ -64,10 +64,16 @@
 }}
 <div class="block_playerhud">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <a href="{{url_add}}" class="btn btn-primary">
-            <i class="fa fa-plus me-1" aria-hidden="true"></i>
-            {{str_add_quest}}
-        </a>
+        <div>
+            {{#url_suggest}}
+            <a href="{{url_suggest}}" class="btn btn-info text-white shadow-sm me-2">
+                <i class="fa fa-magic me-1" aria-hidden="true"></i> {{str_suggest}}
+            </a>
+            {{/url_suggest}}
+            <a href="{{url_add}}" class="btn btn-primary shadow-sm">
+                <i class="fa fa-plus me-1" aria-hidden="true"></i> {{str_add_quest}}
+            </a>
+        </div>
     </div>
 
     {{#has_quests}}
@@ -75,6 +81,7 @@
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
+                    <th scope="col" class="ph-col-sm text-center">{{#str}} col_number, block_playerhud {{/str}}</th>
                     <th scope="col" class="text-center">{{str_col_icon}}</th>
                     <th scope="col">
                         <a href="{{headers.name.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
@@ -89,36 +96,58 @@
                         </a>
                     </th>
                     <th scope="col">{{str_col_req}}</th>
-                    <th scope="col">{{str_col_reward}}</th>
-                    <th scope="col" class="text-center">{{str_col_claims}}</th>
-                    <th scope="col" class="text-center">{{str_col_enabled}}</th>
+                    <th scope="col">
+                        <a href="{{headers.reward.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
+                            {{headers.reward.label}}
+                            <i class="fa {{headers.reward.icon_class}} ms-1" aria-hidden="true"></i>
+                        </a>
+                    </th>
+                    <th scope="col" class="text-center">
+                        <a href="{{headers.claims.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center justify-content-center">
+                            {{headers.claims.label}}
+                            <i class="fa {{headers.claims.icon_class}} ms-1" aria-hidden="true"></i>
+                        </a>
+                    </th>
+                    <th scope="col" class="text-center">
+                        <a href="{{headers.enabled.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center justify-content-center">
+                            {{headers.enabled.label}}
+                            <i class="fa {{headers.enabled.icon_class}} ms-1" aria-hidden="true"></i>
+                        </a>
+                    </th>
                     <th scope="col" class="text-end">{{str_actions}}</th>
                 </tr>
             </thead>
             <tbody>
                 {{#quests}}
                 <tr>
-                    <td class="text-center ph-quest-icon-cell" aria-hidden="true">{{image_todo}}</td>
-                    <td class="fw-semibold">{{name}}</td>
-                    <td>
+                    <td class="align-middle text-center text-muted small text-nowrap">{{counter}}</td>
+                    <td class="align-middle text-center ph-quest-icon-cell" aria-hidden="true">{{image_todo}}</td>
+                    <td class="align-middle fw-semibold">{{name}}</td>
+                    <td class="align-middle">
                         <span class="badge {{type_badge_class}}">{{type_label}}</span>
                     </td>
-                    <td class="text-muted small">{{requirement_text}}</td>
-                    <td class="text-muted small">{{reward_text}}</td>
-                    <td class="text-center">
+                    <td class="align-middle text-muted small">{{requirement_text}}</td>
+                    <td class="align-middle text-muted small">{{reward_text}}</td>
+                    <td class="align-middle text-center">
                         <span class="badge bg-light text-dark border">{{claims_count}}</span>
                     </td>
-                    <td class="text-center">
-                        <a href="{{url_toggle}}"
-                           class="btn btn-sm {{#enabled}}btn-success{{/enabled}}{{^enabled}}btn-outline-secondary{{/enabled}}"
-                           aria-label="{{str_toggle}}">
-                            <i class="fa {{#enabled}}fa-eye{{/enabled}}{{^enabled}}fa-eye-slash{{/enabled}}"
-                               aria-hidden="true"></i>
-                        </a>
+                    <td class="align-middle text-nowrap text-center">
+                        {{#enabled}}
+                            <span class="badge bg-success text-white">{{str_yes}}</span>
+                            <a href="{{url_toggle}}" class="btn btn-sm btn-light border ms-1" aria-label="{{str_hide}} {{name}}">
+                                <i class="fa fa-eye text-success" aria-hidden="true"></i>
+                            </a>
+                        {{/enabled}}
+                        {{^enabled}}
+                            <span class="badge bg-secondary text-white">{{str_no}}</span>
+                            <a href="{{url_toggle}}" class="btn btn-sm btn-warning ms-1" aria-label="{{str_show}} {{name}}">
+                                <i class="fa fa-eye-slash" aria-hidden="true"></i>
+                            </a>
+                        {{/enabled}}
                     </td>
-                    <td class="text-end">
+                    <td class="align-middle text-end text-nowrap">
                         <a href="{{url_edit}}"
-                           class="btn btn-sm btn-outline-primary me-1"
+                           class="btn btn-sm btn-primary me-1 shadow-sm"
                            aria-label="{{str_edit}} {{name}}">
                             <i class="fa fa-pencil" aria-hidden="true"></i>
                             <span class="d-none d-xl-inline ms-1">{{str_edit}}</span>

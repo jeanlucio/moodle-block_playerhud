@@ -219,18 +219,18 @@ if ($isoptin) {
         // 1. Collection (Base).
         'collection' => ['icon' => '🎒', 'text' => get_string('tab_collection', 'block_playerhud')],
         'shop'       => ['icon' => '🏪', 'text' => get_string('tab_shop', 'block_playerhud')],
-        'history'    => ['icon' => '📜', 'text' => get_string('tab_history', 'block_playerhud')],
-
         'quests'     => ['icon' => '📋', 'text' => get_string('tab_quests', 'block_playerhud')],
 
         // Note: Chapters are hidden until the Story system is fully implemented.
 
-        // 5. Ranking (Social - If enabled in configs).
+        // Ranking (Social - If enabled in configs).
         'ranking' => ($config->enable_ranking) ? [
             'icon' => '🏆',
             'text' => get_string('leaderboard_title', 'block_playerhud'),
         ] : null,
-        'rules' => ['icon' => '❓', 'text' => get_string('tab_rules', 'block_playerhud')],
+
+        'history'    => ['icon' => '📜', 'text' => get_string('tab_history', 'block_playerhud')],
+        'rules'      => ['icon' => '❓', 'text' => get_string('tab_rules', 'block_playerhud')],
     ];
 
     foreach ($tabsdef as $key => $def) {

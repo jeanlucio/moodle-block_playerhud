@@ -209,11 +209,14 @@ class tab_quests implements renderable {
      */
     protected function get_type_label($type) {
         $map = [
-            quest::TYPE_LEVEL         => get_string('quest_type_level', 'block_playerhud'),
-            quest::TYPE_XP_TOTAL      => get_string('quest_type_xp_total', 'block_playerhud'),
-            quest::TYPE_UNIQUE_ITEMS  => get_string('quest_type_unique_items', 'block_playerhud'),
-            quest::TYPE_SPECIFIC_ITEM => get_string('quest_type_specific_item', 'block_playerhud'),
-            quest::TYPE_ACTIVITY      => get_string('quest_type_activity', 'block_playerhud'),
+            quest::TYPE_LEVEL          => get_string('quest_type_level', 'block_playerhud'),
+            quest::TYPE_XP_TOTAL       => get_string('quest_type_xp_total', 'block_playerhud'),
+            quest::TYPE_UNIQUE_ITEMS   => get_string('quest_type_unique_items', 'block_playerhud'),
+            quest::TYPE_TOTAL_ITEMS    => get_string('quest_type_total_items', 'block_playerhud'),
+            quest::TYPE_TRADES         => get_string('quest_type_trades', 'block_playerhud'),
+            quest::TYPE_SPECIFIC_ITEM  => get_string('quest_type_specific_item', 'block_playerhud'),
+            quest::TYPE_SPECIFIC_TRADE => get_string('quest_type_specific_trade', 'block_playerhud'),
+            quest::TYPE_ACTIVITY       => get_string('quest_type_activity', 'block_playerhud'),
         ];
         return $map[$type] ?? '-';
     }

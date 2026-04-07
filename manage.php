@@ -406,6 +406,70 @@ if ($action === 'grant_item' && confirm_sesskey()) {
     redirect($url, get_string('item_granted', 'block_playerhud'), \core\output\notification::NOTIFY_SUCCESS);
 }
 
+// Action: Auto Suggest Quests (Heuristic).
+if ($action === 'suggest_quests' || $action === 'save_suggestions') {
+    $config = unserialize(base64_decode($bi->configdata));
+    if (!$config) {
+        $config = new \stdClass();
+    }
+
+    $suggestions = \block_playerhud\quest::get_heuristic_suggestions($instanceid, $courseid, $config);
+
+    // Build the form with suggestions.
+    $formurl = new moodle_url($baseurl, ['tab' => 'quests']);
+    $sugform = new \block_playerhud\form\suggest_quests_form($formurl, ['suggestions' => $suggestions]);
+
+    if ($action === 'suggest_quests') {
+        $sugform->set_data([
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'action'     => 'save_suggestions',
+        ]);
+    }
+
+    if ($sugform->is_cancelled()) {
+        redirect(new moodle_url($baseurl, ['tab' => 'quests']));
+    } else if ($data = $sugform->get_data()) {
+        $count = 0;
+        $now = time();
+        foreach ($suggestions as $sug) {
+            $field = 'sug_' . $sug['uid'];
+            // If the checkbox for this suggestion is checked, create the quest.
+            if (!empty($data->$field)) {
+                $record = new \stdClass();
+                $record->blockinstanceid = $instanceid;
+                $record->name = $sug['name'];
+                $record->description = '';
+                $record->type = $sug['type'];
+                $record->requirement = (string)$sug['requirement'];
+                $record->req_itemid = 0;
+                $record->reward_xp = $sug['reward_xp'];
+                $record->reward_itemid = 0;
+                $record->required_class_id = '0';
+                $record->image_todo = $sug['image_todo'];
+                $record->image_done = $sug['image_done'];
+                $record->enabled = 1;
+                $record->timecreated = $now;
+                $record->timemodified = $now;
+                $DB->insert_record('block_playerhud_quests', $record);
+                $count++;
+            }
+        }
+
+        // Redirect back to the quests tab with a success message indicating how many quests were created.
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'quests']),
+            get_string('quest_sug_created', 'block_playerhud', $count),
+            \core\output\notification::NOTIFY_SUCCESS
+        );
+    }
+
+    echo $OUTPUT->header();
+    $sugform->display();
+    echo $OUTPUT->footer();
+    exit;
+}
+
 // PRE-RENDER LOGIC (Controller Strategy).
 $contenthtml = '';
 
@@ -443,11 +507,11 @@ echo $OUTPUT->header();
 
 // Tab Definitions.
 $tabsdef = [
-    'items'  => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
-    'quests' => ['icon' => '📋', 'text' => get_string('tab_quests', 'block_playerhud')],
-    'trades' => ['icon' => '⚖️', 'text' => get_string('tab_trades', 'block_playerhud')],
+    'items'   => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
+    'trades'  => ['icon' => '⚖️', 'text' => get_string('tab_trades', 'block_playerhud')],
+    'quests'  => ['icon' => '📋', 'text' => get_string('tab_quests', 'block_playerhud')],
     'reports' => ['icon' => '📊', 'text' => get_string('tab_reports', 'block_playerhud')],
-    'config' => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
+    'config'  => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
 ];
 
 $tabsdata = [];

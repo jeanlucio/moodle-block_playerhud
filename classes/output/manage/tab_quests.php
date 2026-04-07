@@ -60,11 +60,11 @@ class tab_quests implements renderable {
      * @param string $sort Sort column.
      * @param string $dir Sort direction.
      */
-    public function __construct($instanceid, $courseid, $sort = 'timecreated', $dir = 'DESC') {
+    public function __construct($instanceid, $courseid, $sort = 'name', $dir = 'ASC') {
         $this->instanceid = $instanceid;
         $this->courseid   = $courseid;
-        $this->sort       = $sort ?: 'timecreated';
-        $this->dir        = $dir ?: 'DESC';
+        $this->sort       = $sort ?: 'name';
+        $this->dir        = $dir ?: 'ASC';
     }
 
     /**
@@ -121,9 +121,13 @@ class tab_quests implements renderable {
                 $record->req_itemid  = 0;
             } else {
                 $record->requirement = (string)(int)$data->target_value;
-                $record->req_itemid  = ($type === quest::TYPE_SPECIFIC_ITEM)
-                    ? (int)$data->req_itemid
-                    : 0;
+                if ($type === quest::TYPE_SPECIFIC_ITEM) {
+                    $record->req_itemid = (int)$data->req_itemid;
+                } else if ($type === quest::TYPE_SPECIFIC_TRADE) {
+                    $record->req_itemid = (int)$data->req_tradeid;
+                } else {
+                    $record->req_itemid = 0;
+                }
             }
 
             if ($questid > 0) {
@@ -160,6 +164,10 @@ class tab_quests implements renderable {
                 } else {
                     $formdata['target_value']  = (int)$quest->requirement;
                     $formdata['activity_cmid'] = 0;
+                }
+
+                if ($quest->type == quest::TYPE_SPECIFIC_TRADE) {
+                    $formdata['req_tradeid'] = $quest->req_itemid;
                 }
 
                 $this->mform->set_data($formdata);
@@ -242,29 +250,38 @@ class tab_quests implements renderable {
             'tab'        => 'quests',
         ]);
 
-        $allowedsorts = ['name', 'type', 'timecreated'];
+        $allowedsorts = ['name', 'type', 'timecreated', 'reward_xp', 'claims', 'enabled'];
         if (!in_array($this->sort, $allowedsorts)) {
-            $this->sort = 'timecreated';
+            $this->sort = 'name';
         }
-        $this->dir = (strtoupper($this->dir) === 'ASC') ? 'ASC' : 'DESC';
+        $this->dir = (strtoupper($this->dir) === 'DESC') ? 'DESC' : 'ASC';
 
-        // Load quests for this block instance.
-        $quests = $DB->get_records(
-            'block_playerhud_quests',
-            ['blockinstanceid' => $this->instanceid],
-            "{$this->sort} {$this->dir}"
-        );
+        // Load quests for this block instance with claims count.
+        $sql = "SELECT q.*, COALESCE(ql.claims_count, 0) AS claims
+                  FROM {block_playerhud_quests} q
+             LEFT JOIN (SELECT questid, COUNT(id) AS claims_count
+                          FROM {block_playerhud_quest_log}
+                      GROUP BY questid) ql ON ql.questid = q.id
+                 WHERE q.blockinstanceid = :instanceid
+              ORDER BY {$this->sort} {$this->dir}";
+
+        $quests = $DB->get_records_sql($sql, ['instanceid' => $this->instanceid]);
 
         // Preload reward item names to avoid N+1.
         $itemids = [];
+        $tradeids = [];
         foreach ($quests as $q) {
             if ($q->reward_itemid > 0) {
                 $itemids[$q->reward_itemid] = $q->reward_itemid;
             }
-            if ($q->req_itemid > 0) {
+            if ($q->type == quest::TYPE_SPECIFIC_ITEM && $q->req_itemid > 0) {
                 $itemids[$q->req_itemid] = $q->req_itemid;
             }
+            if ($q->type == quest::TYPE_SPECIFIC_TRADE && $q->req_itemid > 0) {
+                $tradeids[$q->req_itemid] = $q->req_itemid;
+            }
         }
+
         $itemnames = [];
         if (!empty($itemids)) {
             [$insql, $inparams] = $DB->get_in_or_equal(array_values($itemids));
@@ -274,36 +291,39 @@ class tab_quests implements renderable {
             }
         }
 
-        // Preload claim counts per quest (avoid N+1).
-        $claimcounts = [];
-        if (!empty($quests)) {
-            $qids = array_keys($quests);
-            [$qinsql, $qinparams] = $DB->get_in_or_equal($qids);
-            $sql = "SELECT questid, COUNT(id) AS cnt FROM {block_playerhud_quest_log}
-                     WHERE questid $qinsql GROUP BY questid";
-            $counts = $DB->get_records_sql($sql, $qinparams);
-            foreach ($counts as $c) {
-                $claimcounts[$c->questid] = (int)$c->cnt;
+        $tradenames = [];
+        if (!empty($tradeids)) {
+            [$tsql, $tparams] = $DB->get_in_or_equal(array_values($tradeids));
+            $trows = $DB->get_records_select('block_playerhud_trades', "id $tsql", $tparams, '', 'id, name');
+            foreach ($trows as $row) {
+                $tradenames[$row->id] = format_string($row->name);
             }
         }
 
         $typelabels = [
-            quest::TYPE_LEVEL         => get_string('quest_type_level', 'block_playerhud'),
-            quest::TYPE_XP_TOTAL      => get_string('quest_type_xp_total', 'block_playerhud'),
-            quest::TYPE_UNIQUE_ITEMS  => get_string('quest_type_unique_items', 'block_playerhud'),
-            quest::TYPE_SPECIFIC_ITEM => get_string('quest_type_specific_item', 'block_playerhud'),
-            quest::TYPE_ACTIVITY      => get_string('quest_type_activity', 'block_playerhud'),
+            quest::TYPE_LEVEL          => get_string('quest_type_level', 'block_playerhud'),
+            quest::TYPE_XP_TOTAL       => get_string('quest_type_xp_total', 'block_playerhud'),
+            quest::TYPE_UNIQUE_ITEMS   => get_string('quest_type_unique_items', 'block_playerhud'),
+            quest::TYPE_TOTAL_ITEMS    => get_string('quest_type_total_items', 'block_playerhud'),
+            quest::TYPE_TRADES         => get_string('quest_type_trades', 'block_playerhud'),
+            quest::TYPE_SPECIFIC_ITEM  => get_string('quest_type_specific_item', 'block_playerhud'),
+            quest::TYPE_SPECIFIC_TRADE => get_string('quest_type_specific_trade', 'block_playerhud'),
+            quest::TYPE_ACTIVITY       => get_string('quest_type_activity', 'block_playerhud'),
         ];
 
         $typebadges = [
-            quest::TYPE_LEVEL         => 'bg-primary text-white',
-            quest::TYPE_XP_TOTAL      => 'bg-success text-white',
-            quest::TYPE_UNIQUE_ITEMS  => 'bg-info text-dark',
-            quest::TYPE_SPECIFIC_ITEM => 'bg-warning text-dark',
-            quest::TYPE_ACTIVITY      => 'bg-danger text-white',
+            quest::TYPE_LEVEL          => 'bg-primary text-white',
+            quest::TYPE_XP_TOTAL       => 'bg-success text-white',
+            quest::TYPE_ACTIVITY       => 'bg-danger text-white',
+            quest::TYPE_UNIQUE_ITEMS   => 'bg-dark text-white',
+            quest::TYPE_SPECIFIC_ITEM  => 'bg-warning text-dark',
+            quest::TYPE_TOTAL_ITEMS    => 'bg-secondary text-dark',
+            quest::TYPE_TRADES         => 'bg-light text-dark border border-secondary',
+            quest::TYPE_SPECIFIC_TRADE => 'bg-white text-primary border border-primary',
         ];
 
         $questsdata = [];
+        $counter = 1;
         foreach ($quests as $q) {
             $rewardtext = '';
             if ($q->reward_xp > 0) {
@@ -316,12 +336,15 @@ class tab_quests implements renderable {
             $requirementtext = '';
             if ($q->type == quest::TYPE_SPECIFIC_ITEM && $q->req_itemid > 0) {
                 $requirementtext = ($itemnames[$q->req_itemid] ?? '?') . ' x' . $q->requirement;
+            } else if ($q->type == quest::TYPE_SPECIFIC_TRADE && $q->req_itemid > 0) {
+                $requirementtext = ($tradenames[$q->req_itemid] ?? '?') . ' x' . $q->requirement;
             } else if ($q->type !== quest::TYPE_ACTIVITY) {
                 $requirementtext = $q->requirement;
             }
 
             $questsdata[] = [
                 'id'               => $q->id,
+                'counter'          => $counter++,
                 'image_todo'       => !empty($q->image_todo) ? $q->image_todo : '📋',
                 'name'             => format_string($q->name),
                 'type_label'       => $typelabels[$q->type] ?? '-',
@@ -329,7 +352,7 @@ class tab_quests implements renderable {
                 'requirement_text' => $requirementtext,
                 'enabled'          => (bool)$q->enabled,
                 'reward_text'      => $rewardtext ?: '—',
-                'claims_count'     => $claimcounts[$q->id] ?? 0,
+                'claims_count'     => $q->claims,
                 'url_edit'         => (new moodle_url($baseurl, [
                     'action'  => 'edit',
                     'questid' => $q->id,
@@ -344,9 +367,10 @@ class tab_quests implements renderable {
                     'questid' => $q->id,
                     'sesskey' => sesskey(),
                 ]))->out(false),
-                'str_toggle'         => $q->enabled
-                    ? get_string('click_to_hide', 'block_playerhud')
-                    : get_string('click_to_show', 'block_playerhud'),
+                'str_yes'            => get_string('yes'),
+                'str_no'             => get_string('no'),
+                'str_hide'           => get_string('click_to_hide', 'block_playerhud'),
+                'str_show'           => get_string('click_to_show', 'block_playerhud'),
                 'str_delete_confirm' => s(
                     get_string('confirm_delete', 'block_playerhud') . " '" . format_string($q->name) . "'?"
                 ),
@@ -354,13 +378,11 @@ class tab_quests implements renderable {
         }
 
         $headers = [
-            'name' => $this->get_sort_data('name', get_string('quest_name', 'block_playerhud'), $baseurl),
-            'type' => $this->get_sort_data('type', get_string('quest_type', 'block_playerhud'), $baseurl),
-            'date' => $this->get_sort_data(
-                'timecreated',
-                get_string('report_col_date', 'block_playerhud'),
-                $baseurl
-            ),
+            'name'    => $this->get_sort_data('name', get_string('quest_name', 'block_playerhud'), $baseurl),
+            'type'    => $this->get_sort_data('type', get_string('quest_type', 'block_playerhud'), $baseurl),
+            'reward'  => $this->get_sort_data('reward_xp', get_string('quest_rewards_hdr', 'block_playerhud'), $baseurl),
+            'claims'  => $this->get_sort_data('claims', get_string('quest_col_claims', 'block_playerhud'), $baseurl),
+            'enabled' => $this->get_sort_data('enabled', get_string('enabled', 'block_playerhud'), $baseurl),
         ];
 
         $jsvars = [
@@ -374,11 +396,10 @@ class tab_quests implements renderable {
 
         $templatedata = [
             'url_add'         => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
+            'url_suggest'     => (new moodle_url($baseurl, ['action' => 'suggest_quests']))->out(false),
+            'str_suggest'     => get_string('quest_sug_btn', 'block_playerhud'),
             'str_add_quest'   => get_string('quest_new', 'block_playerhud'),
             'str_col_icon'    => get_string('quest_icon_todo', 'block_playerhud'),
-            'str_col_reward'  => get_string('quest_rewards_hdr', 'block_playerhud'),
-            'str_col_claims'  => get_string('quest_col_claims', 'block_playerhud'),
-            'str_col_enabled' => get_string('enabled', 'block_playerhud'),
             'str_col_req'     => get_string('quest_target_value', 'block_playerhud'),
             'str_actions'     => get_string('actions'),
             'str_edit'        => get_string('edit'),
