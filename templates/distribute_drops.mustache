@@ -76,7 +76,8 @@
 <div class="ph-distribute-drops">
 
     {{! Header }}
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 p-3 bg-light rounded border shadow-sm ph-manage-header">
+    <div class="d-flex flex-wrap justify-content-between align-items-center
+        mb-3 p-3 bg-light rounded border shadow-sm ph-manage-header">
         <div class="d-flex align-items-center">
             <i class="fa fa-random text-warning me-2 fa-lg" aria-hidden="true"></i>
             <div>
@@ -129,7 +130,7 @@
                         {{#drops}}
                         <tr class="ph-distribute-row{{#inserted_anywhere}} ph-row-inserted{{/inserted_anywhere}}"
                             data-drop-id="{{id}}" data-drop-code="{{code}}"
-                            data-inserted-anywhere="{{#inserted_anywhere}}1{{/inserted_anywhere}}{{^inserted_anywhere}}0{{/inserted_anywhere}}"
+                            data-inserted-anywhere="{{inserted_anywhere_int}}"
                             data-inserted-field="{{inserted_field}}"
                             data-inserted-cmids="{{{inserted_cmids_json}}}">
                             {{! Checkbox — enabled on all rows }}
@@ -138,7 +139,7 @@
                                 <input type="checkbox" id="ph-chk-{{id}}"
                                     class="form-check-input ph-dist-check m-0 position-static"
                                     data-drop-id="{{id}}"
-                                    data-inserted="{{#inserted_anywhere}}1{{/inserted_anywhere}}{{^inserted_anywhere}}0{{/inserted_anywhere}}">
+                                    data-inserted="{{inserted_anywhere_int}}">
                             </td>
                             {{! Drop / Item }}
                             <td class="align-middle">
@@ -169,8 +170,8 @@
                                     <option value="{{cmid}}"
                                         data-modname="{{modname}}"
                                         data-name="{{name}}"
-                                        data-supports-content="{{#supports_content}}1{{/supports_content}}{{^supports_content}}0{{/supports_content}}"
-                                        data-is-label="{{#is_label}}1{{/is_label}}{{^is_label}}0{{/is_label}}"
+                                        data-supports-content="{{supports_content_int}}"
+                                        data-is-label="{{is_label_int}}"
                                         {{#selected}}selected{{/selected}}>
                                         {{name}} ({{modname_translated}})
                                     </option>

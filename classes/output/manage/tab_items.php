@@ -442,14 +442,18 @@ class tab_items implements renderable {
             if (!isset($columns['intro']) && !isset($columns['content'])) {
                 continue;
             }
+            $supportscontent = ($cm->modname === 'page');
+            $islabel         = ($cm->modname === 'label');
             $modules[] = [
                 'cmid'               => $cm->id,
                 'instance'           => $cm->instance,
                 'name'               => format_string($cm->name),
                 'modname'            => $cm->modname,
                 'modname_translated' => get_string('modulename', 'mod_' . $cm->modname),
-                'supports_content'   => ($cm->modname === 'page'),
-                'is_label'           => ($cm->modname === 'label'),
+                'supports_content'   => $supportscontent,
+                'supports_content_int' => $supportscontent ? 1 : 0,
+                'is_label'           => $islabel,
+                'is_label_int'       => $islabel ? 1 : 0,
             ];
         }
 
@@ -513,7 +517,8 @@ class tab_items implements renderable {
                 'image_content'       => $mediadata['is_image'] ? '' : strip_tags($mediadata['content']),
                 'modules'             => $rowmodules,
                 'inserted_cmids_json'  => json_encode($insertedcmids),
-                'inserted_anywhere'   => $insertedanywhere,
+                'inserted_anywhere'     => $insertedanywhere,
+                'inserted_anywhere_int' => $insertedanywhere ? 1 : 0,
                 'inserted_field'      => $insertedinfo['first_field'],
                 'inserted_field_label' => $insertedanywhere
                     ? get_string(

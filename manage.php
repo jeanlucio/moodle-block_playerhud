@@ -430,30 +430,32 @@ if ($action === 'suggest_quests' || $action === 'save_suggestions') {
     if ($sugform->is_cancelled()) {
         redirect(new moodle_url($baseurl, ['tab' => 'quests']));
     } else if ($data = $sugform->get_data()) {
-        $count = 0;
         $now = time();
+        $records = [];
         foreach ($suggestions as $sug) {
             $field = 'sug_' . $sug['uid'];
-            // If the checkbox for this suggestion is checked, create the quest.
             if (!empty($data->$field)) {
                 $record = new \stdClass();
-                $record->blockinstanceid = $instanceid;
-                $record->name = $sug['name'];
-                $record->description = '';
-                $record->type = $sug['type'];
-                $record->requirement = (string)$sug['requirement'];
-                $record->req_itemid = 0;
-                $record->reward_xp = $sug['reward_xp'];
-                $record->reward_itemid = 0;
+                $record->blockinstanceid  = $instanceid;
+                $record->name             = $sug['name'];
+                $record->description      = '';
+                $record->type             = $sug['type'];
+                $record->requirement      = (string)$sug['requirement'];
+                $record->req_itemid       = 0;
+                $record->reward_xp        = $sug['reward_xp'];
+                $record->reward_itemid    = 0;
                 $record->required_class_id = '0';
-                $record->image_todo = $sug['image_todo'];
-                $record->image_done = $sug['image_done'];
-                $record->enabled = 1;
-                $record->timecreated = $now;
-                $record->timemodified = $now;
-                $DB->insert_record('block_playerhud_quests', $record);
-                $count++;
+                $record->image_todo       = $sug['image_todo'];
+                $record->image_done       = $sug['image_done'];
+                $record->enabled          = 1;
+                $record->timecreated      = $now;
+                $record->timemodified     = $now;
+                $records[] = $record;
             }
+        }
+        $count = count($records);
+        if ($count > 0) {
+            $DB->insert_records('block_playerhud_quests', $records);
         }
 
         // Redirect back to the quests tab with a success message indicating how many quests were created.
