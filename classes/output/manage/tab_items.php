@@ -443,12 +443,13 @@ class tab_items implements renderable {
                 continue;
             }
             $modules[] = [
-                'cmid'             => $cm->id,
-                'instance'         => $cm->instance,
-                'name'             => format_string($cm->name),
-                'modname'          => $cm->modname,
-                'supports_content' => ($cm->modname === 'page'),
-                'is_label'         => ($cm->modname === 'label'),
+                'cmid'               => $cm->id,
+                'instance'           => $cm->instance,
+                'name'               => format_string($cm->name),
+                'modname'            => $cm->modname,
+                'modname_translated' => get_string('modulename', 'mod_' . $cm->modname),
+                'supports_content'   => ($cm->modname === 'page'),
+                'is_label'           => ($cm->modname === 'label'),
             ];
         }
 
@@ -511,9 +512,17 @@ class tab_items implements renderable {
                 'image_url'           => $mediadata['is_image'] ? $mediadata['url'] : '',
                 'image_content'       => $mediadata['is_image'] ? '' : strip_tags($mediadata['content']),
                 'modules'             => $rowmodules,
-                'inserted_cmids_json' => json_encode($insertedcmids),
+                'inserted_cmids_json'  => json_encode($insertedcmids),
                 'inserted_anywhere'   => $insertedanywhere,
                 'inserted_field'      => $insertedinfo['first_field'],
+                'inserted_field_label' => $insertedanywhere
+                    ? get_string(
+                        $insertedinfo['first_field'] === 'content'
+                            ? 'distribute_field_content'
+                            : 'distribute_field_intro',
+                        'block_playerhud'
+                    )
+                    : '',
                 'inserted_names'      => implode(', ', $insertednames),
             ];
         }
@@ -557,6 +566,10 @@ class tab_items implements renderable {
                 'insert_selected'  => get_string('distribute_insert_selected', 'block_playerhud', '__N__'),
                 'no_selection'     => get_string('distribute_no_selection', 'block_playerhud'),
                 'select_all'       => get_string('selectall'),
+                'remove'           => get_string('distribute_remove', 'block_playerhud'),
+                'removing'         => get_string('distribute_removing', 'block_playerhud'),
+                'remove_confirm'   => get_string('distribute_remove_confirm', 'block_playerhud'),
+                'undo_selected'    => get_string('distribute_undo_selected', 'block_playerhud', '__N__'),
             ],
         ];
         $PAGE->requires->js_call_amd('block_playerhud/distribute_drops', 'init', [$jsvars]);

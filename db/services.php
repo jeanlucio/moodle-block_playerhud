@@ -53,4 +53,13 @@ $functions = [
         'ajax'        => true,
         'loginrequired' => true,
     ],
+
+    'block_playerhud_remove_drop_shortcode' => [
+        'classname'   => 'block_playerhud\external',
+        'methodname'  => 'remove_drop_shortcode',
+        'description' => 'Remove a drop shortcode from a course module field',
+        'type'        => 'write',
+        'ajax'        => true,
+        'loginrequired' => true,
+    ],
 ];

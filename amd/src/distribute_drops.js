@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notification) {
+define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Ajax, Notification, Str) {
 
     /**
      * Distribute Drops module for PlayerHUD.
@@ -52,11 +52,15 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
 
     /**
      * Update the field selector options based on the selected module.
+     * Only applies to pending rows that still have the interactive selects.
      *
      * @param {jQuery} $row
      */
     function updateFieldOptions($row) {
         var $moduleSelect = $row.find('.ph-select-module');
+        if ($moduleSelect.length === 0) {
+            return;
+        }
         var $selected = $('option:selected', $moduleSelect);
         var modname = $selected.data('modname');
         var supportsContent = $selected.data('supportsContent') === 1 ||
@@ -76,80 +80,81 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
     }
 
     /**
-     * Mark a row as already inserted: disable its controls, check its checkbox.
+     * Enforce initial checkbox state for a server-pre-rendered inserted row.
+     * Cells already contain static text rendered server-side — do not touch them.
+     *
+     * @param {jQuery} $row
+     */
+    function initInsertedRow($row) {
+        $row.addClass('ph-row-inserted');
+        $row.find('.ph-dist-check').prop('checked', false);
+    }
+
+    /**
+     * Mark a row as newly inserted during this session.
+     * Replaces interactive selects with static text and updates the status badge.
      *
      * @param {jQuery} $row
      */
     function markRowInserted($row) {
         $row.addClass('ph-row-inserted');
-        $row.find('.ph-select-module, .ph-select-field, .ph-select-position').prop('disabled', true);
-        var $chk = $row.find('.ph-dist-check');
-        $chk.prop('checked', true).prop('disabled', true);
+
+        var $modSelect = $row.find('.ph-select-module');
+        var activityName = $modSelect.find('option:selected').data('name') ||
+            $modSelect.find('option:selected').text().trim();
+        var fieldVal = $row.find('.ph-select-field').val();
+        var fieldLabel = (fieldVal === 'content') ? strings.field_content : strings.field_intro;
+
+        // Replace Activity cell with static text.
+        $modSelect.closest('td').html(
+            '<span class="fw-semibold">' + $('<span>').text(activityName).html() + '</span>'
+        );
+
+        // Replace Field cell with static text.
+        $row.find('.ph-select-field').closest('td').html(
+            '<span>' + $('<span>').text(fieldLabel).html() + '</span>'
+        );
+
+        // Replace Position cell with dash.
+        $row.find('.ph-select-position').closest('td').html(
+            '<span class="text-muted">\u2014</span>'
+        );
+
+        // Update checkbox data-inserted so bulk buttons count it correctly.
+        $row.find('.ph-dist-check').data('inserted', '1').attr('data-inserted', '1').prop('checked', false);
+
+        // Update status badge.
         $row.find('.ph-dist-status')
             .html('<span class="badge bg-success"><i class="fa fa-check me-1" aria-hidden="true"></i>' +
                 strings.inserted + '</span>');
     }
 
     /**
-     * Mark a row as pending: enable its controls, uncheck its checkbox.
-     *
-     * @param {jQuery} $row
+     * Update both action buttons based on current checkbox state.
+     * Insert button counts pending rows checked; Remove button counts inserted rows checked.
      */
-    function markRowPending($row) {
-        $row.removeClass('ph-row-inserted');
-        $row.find('.ph-select-module, .ph-select-field, .ph-select-position').prop('disabled', false);
-        var $chk = $row.find('.ph-dist-check');
-        $chk.prop('checked', false).prop('disabled', false);
-        $row.find('.ph-dist-status').empty();
-    }
+    function updateActionButtons() {
+        var insertCount = $('.ph-dist-check:checked[data-inserted="0"]').length;
+        var removeCount = $('.ph-dist-check:checked[data-inserted="1"]').length;
 
-    /**
-     * Evaluate whether this drop has already been distributed anywhere in the course.
-     * Uses the server-side pre-computed flag, not the selected module.
-     *
-     * @param {jQuery} $row
-     */
-    function evaluateRow($row) {
-        var insertedAnywhere = $row.data('insertedAnywhere') === 1 ||
-            $row.data('insertedAnywhere') === '1';
-
-        if (insertedAnywhere) {
-            // Pre-select the actual field where the drop was found.
-            var insertedField = $row.data('insertedField') || 'intro';
-            $row.find('.ph-select-field').val(insertedField);
-            markRowInserted($row);
+        var $insertBtn = $('#ph-btn-bulk-insert');
+        if (insertCount > 0) {
+            var insertLabel = strings.insert_selected.replace('__N__', insertCount);
+            $insertBtn.removeClass('disabled').removeAttr('disabled')
+                .html('<i class="fa fa-check me-1" aria-hidden="true"></i> ' + insertLabel);
         } else {
-            markRowPending($row);
-        }
-    }
-
-    /**
-     * Add a cmid to the row's inserted list.
-     *
-     * @param {jQuery} $row
-     * @param {number} cmid
-     */
-    function recordInserted($row, cmid) {
-        var list = getInsertedCmids($row);
-        if (list.indexOf(cmid) === -1) {
-            list.push(cmid);
-        }
-        $row.attr('data-inserted-cmids', JSON.stringify(list));
-    }
-
-    /**
-     * Update the bulk insert button label with the current selection count.
-     */
-    function updateBulkButton() {
-        var count = $('.ph-dist-check:checked:not(:disabled)').length;
-        var $btn = $('#ph-btn-bulk-insert');
-        if (count > 0) {
-            var label = strings.insert_selected.replace('__N__', count);
-            $btn.removeClass('disabled').removeAttr('disabled')
-                .html('<i class="fa fa-check me-1" aria-hidden="true"></i> ' + label);
-        } else {
-            $btn.addClass('disabled').attr('disabled', 'disabled')
+            $insertBtn.addClass('disabled').attr('disabled', 'disabled')
                 .html('<i class="fa fa-check me-1" aria-hidden="true"></i> ' + strings.btn_insert);
+        }
+
+        var $removeBtn = $('#ph-btn-bulk-remove');
+        if (removeCount > 0) {
+            var removeLabel = strings.undo_selected.replace('__N__', removeCount);
+            $removeBtn.removeClass('disabled').removeAttr('disabled')
+                .html('<i class="fa fa-undo me-1" aria-hidden="true"></i> ' + removeLabel);
+        } else {
+            $removeBtn.addClass('disabled').attr('disabled', 'disabled')
+                .html('<i class="fa fa-undo me-1" aria-hidden="true"></i> ' + strings.remove);
         }
     }
 
@@ -163,35 +168,39 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
             strings = config.strings;
             cfg = config;
 
-            // Set initial field options and insertion state for every row.
+            // Initialise field options for pending rows; set class for inserted rows.
             $('.ph-distribute-row').each(function() {
                 var $row = $(this);
-                updateFieldOptions($row);
-                evaluateRow($row);
+                var isInserted = $row.data('insertedAnywhere') === 1 ||
+                    $row.data('insertedAnywhere') === '1';
+                if (isInserted) {
+                    initInsertedRow($row);
+                } else {
+                    updateFieldOptions($row);
+                }
             });
 
-            updateBulkButton();
+            updateActionButtons();
 
             // Select All checkbox.
             $('#ph-dist-select-all').on('change', function() {
                 var checked = $(this).is(':checked');
-                $('.ph-dist-check:not(:disabled)').prop('checked', checked);
-                updateBulkButton();
+                $('.ph-dist-check').prop('checked', checked);
+                updateActionButtons();
             });
 
             // Individual checkbox changes.
             $('body').on('change', '.ph-dist-check', function() {
-                var total = $('.ph-dist-check:not(:disabled)').length;
-                var checkedCount = $('.ph-dist-check:checked:not(:disabled)').length;
+                var total = $('.ph-dist-check').length;
+                var checkedCount = $('.ph-dist-check:checked').length;
                 $('#ph-dist-select-all').prop('indeterminate', checkedCount > 0 && checkedCount < total);
                 $('#ph-dist-select-all').prop('checked', checkedCount === total && total > 0);
-                updateBulkButton();
+                updateActionButtons();
             });
 
-            // Module select change: update field options only (state depends on drop, not on activity).
+            // Module select change: update field options for pending rows.
             $('body').on('change', '.ph-select-module', function() {
-                var $row = $(this).closest('tr');
-                updateFieldOptions($row);
+                updateFieldOptions($(this).closest('tr'));
             });
 
             // Bulk Insert button.
@@ -201,7 +210,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
                     return;
                 }
 
-                var $checked = $('.ph-dist-check:checked:not(:disabled)');
+                var $checked = $('.ph-dist-check:checked[data-inserted="0"]');
                 if ($checked.length === 0) {
                     Notification.addNotification({message: strings.no_selection, type: 'warning'});
                     return;
@@ -211,7 +220,6 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
                     .html('<i class="fa fa-spinner fa-spin me-1" aria-hidden="true"></i> ' +
                         strings.inserting);
 
-                // Build one request per selected row and batch them in a single HTTP call.
                 var requests = [];
                 var $rows = [];
 
@@ -239,7 +247,11 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
 
                     promise.done(function(resp) {
                         if (resp.success) {
-                            recordInserted($row, cmid);
+                            var list = getInsertedCmids($row);
+                            if (list.indexOf(cmid) === -1) {
+                                list.push(cmid);
+                            }
+                            $row.attr('data-inserted-cmids', JSON.stringify(list));
                             $row.attr('data-inserted-anywhere', '1');
                             markRowInserted($row);
                         } else {
@@ -250,9 +262,80 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
                     });
                 });
 
-                // Wait for all to settle then refresh the button state.
                 $.when.apply($, calls).always(function() {
-                    updateBulkButton();
+                    updateActionButtons();
+                });
+            });
+
+            // Bulk Remove button.
+            $('#ph-btn-bulk-remove').on('click', function() {
+                var $btn = $(this);
+                if ($btn.hasClass('disabled')) {
+                    return;
+                }
+
+                var $checked = $('.ph-dist-check:checked[data-inserted="1"]');
+                if ($checked.length === 0) {
+                    return;
+                }
+
+                Str.get_strings([
+                    {key: 'confirm', component: 'core'},
+                    {key: 'yes', component: 'core'},
+                    {key: 'no', component: 'core'}
+                ]).then(function(strs) {
+                    Notification.confirm(
+                        strs[0],
+                        strings.remove_confirm,
+                        strs[1],
+                        strs[2],
+                        function() {
+                            $btn.addClass('disabled').attr('disabled', 'disabled')
+                                .html('<i class="fa fa-spinner fa-spin me-1" aria-hidden="true"></i> ' +
+                                    strings.removing);
+
+                            var requests = [];
+
+                            $checked.each(function() {
+                                var $row = $(this).closest('tr');
+                                var cmids = getInsertedCmids($row);
+                                var cmid = cmids.length > 0 ? cmids[0] : 0;
+                                var field = $row.attr('data-inserted-field') || 'intro';
+
+                                requests.push({
+                                    methodname: 'block_playerhud_remove_drop_shortcode',
+                                    args: {
+                                        instanceid: cfg.instanceid,
+                                        courseid: cfg.courseid,
+                                        dropid: parseInt($row.data('dropId'), 10),
+                                        cmid: cmid,
+                                        field: field
+                                    }
+                                });
+                            });
+
+                            var calls = Ajax.call(requests);
+                            var allOk = true;
+
+                            calls.forEach(function(promise) {
+                                promise.fail(function(ex) {
+                                    allOk = false;
+                                    Notification.exception(ex);
+                                });
+                            });
+
+                            $.when.apply($, calls).always(function() {
+                                if (allOk) {
+                                    window.location.reload();
+                                } else {
+                                    updateActionButtons();
+                                }
+                            });
+                        }
+                    );
+                    return;
+                }).catch(function() {
+                    return;
                 });
             });
         }
