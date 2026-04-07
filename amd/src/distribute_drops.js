@@ -158,6 +158,56 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
         }
     }
 
+    /**
+     * Process the bulk removal of inserted drop shortcodes.
+     * Extracted to prevent max-nested-callbacks ESLint warning.
+     *
+     * @param {jQuery} $btn The clicked button.
+     * @param {jQuery} $checked The selected checkboxes.
+     */
+    function processBulkRemove($btn, $checked) {
+        $btn.addClass('disabled').attr('disabled', 'disabled')
+            .html('<i class="fa fa-spinner fa-spin me-1" aria-hidden="true"></i> ' + strings.removing);
+
+        var requests = [];
+
+        $checked.each(function() {
+            var $row = $(this).closest('tr');
+            var cmids = getInsertedCmids($row);
+            var cmid = cmids.length > 0 ? cmids[0] : 0;
+            var field = $row.attr('data-inserted-field') || 'intro';
+
+            requests.push({
+                methodname: 'block_playerhud_remove_drop_shortcode',
+                args: {
+                    instanceid: cfg.instanceid,
+                    courseid: cfg.courseid,
+                    dropid: parseInt($row.data('dropId'), 10),
+                    cmid: cmid,
+                    field: field
+                }
+            });
+        });
+
+        var calls = Ajax.call(requests);
+        var allOk = true;
+
+        calls.forEach(function(promise) {
+            promise.fail(function(ex) {
+                allOk = false;
+                Notification.exception(ex);
+            });
+        });
+
+        $.when.apply($, calls).always(function() {
+            if (allOk) {
+                window.location.reload();
+            } else {
+                updateActionButtons();
+            }
+        });
+    }
+
     return {
         /**
          * Initialise the distribute drops page.
@@ -290,52 +340,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
                         strs[1],
                         strs[2],
                         function() {
-                            $btn.addClass('disabled').attr('disabled', 'disabled')
-                                .html('<i class="fa fa-spinner fa-spin me-1" aria-hidden="true"></i> ' +
-                                    strings.removing);
-
-                            var requests = [];
-
-                            $checked.each(function() {
-                                var $row = $(this).closest('tr');
-                                var cmids = getInsertedCmids($row);
-                                var cmid = cmids.length > 0 ? cmids[0] : 0;
-                                var field = $row.attr('data-inserted-field') || 'intro';
-
-                                requests.push({
-                                    methodname: 'block_playerhud_remove_drop_shortcode',
-                                    args: {
-                                        instanceid: cfg.instanceid,
-                                        courseid: cfg.courseid,
-                                        dropid: parseInt($row.data('dropId'), 10),
-                                        cmid: cmid,
-                                        field: field
-                                    }
-                                });
-                            });
-
-                            var calls = Ajax.call(requests);
-                            var allOk = true;
-
-                            calls.forEach(function(promise) {
-                                promise.fail(function(ex) {
-                                    allOk = false;
-                                    Notification.exception(ex);
-                                });
-                            });
-
-                            $.when.apply($, calls).always(function() {
-                                if (allOk) {
-                                    window.location.reload();
-                                } else {
-                                    updateActionButtons();
-                                }
-                            });
+                            processBulkRemove($btn, $checked);
                         }
                     );
                     return;
-                }).catch(function() {
-                    return;
+                }).catch(function(ex) {
+                    Notification.exception(ex);
                 });
             });
         }
