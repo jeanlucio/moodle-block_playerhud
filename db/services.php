@@ -44,4 +44,13 @@ $functions = [
         'loginrequired' => true,
         'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
+
+    'block_playerhud_insert_drop_shortcode' => [
+        'classname'   => 'block_playerhud\external',
+        'methodname'  => 'insert_drop_shortcode',
+        'description' => 'Insert a drop shortcode into a course module field',
+        'type'        => 'write',
+        'ajax'        => true,
+        'loginrequired' => true,
+    ],
 ];
