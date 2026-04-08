@@ -45,7 +45,18 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
             'timecreated', 'timemodified',
         ]);
 
-        // Trades Structure (New).
+        // Quests Structure.
+        $quests = new backup_nested_element('quests');
+        $quest = new backup_nested_element('quest', ['id'], [
+            'name', 'description', 'type', 'requirement', 'req_itemid',
+            'reward_xp', 'reward_itemid', 'required_class_id',
+            'image_todo', 'image_done', 'enabled', 'timecreated', 'timemodified',
+        ]);
+
+        $questlogs = new backup_nested_element('quest_logs');
+        $questlog = new backup_nested_element('quest_log', ['id'], ['userid', 'questid', 'timecreated']);
+
+        // Trades Structure.
         $trades = new backup_nested_element('trades');
         $trade = new backup_nested_element('trade', ['id'], [
             'name', 'groupid', 'centralized', 'onetime', 'timecreated',
@@ -80,6 +91,11 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $playerhud->add_child($drops);
         $drops->add_child($drop);
 
+        $playerhud->add_child($quests);
+        $quests->add_child($quest);
+        $quest->add_child($questlogs);
+        $questlogs->add_child($questlog);
+
         $playerhud->add_child($trades);
         $trades->add_child($trade);
         $trade->add_child($tradereqs);
@@ -100,12 +116,20 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $item->set_source_table('block_playerhud_items', ['blockinstanceid' => backup::VAR_BLOCKID]);
         $drop->set_source_table('block_playerhud_drops', ['blockinstanceid' => backup::VAR_BLOCKID]);
 
+        $quest->set_source_table('block_playerhud_quests', ['blockinstanceid' => backup::VAR_BLOCKID]);
+
         $trade->set_source_table('block_playerhud_trades', ['blockinstanceid' => backup::VAR_BLOCKID]);
         $tradereq->set_source_table('block_playerhud_trade_reqs', ['tradeid' => backup::VAR_PARENTID]);
         $tradereward->set_source_table('block_playerhud_trade_rewards', ['tradeid' => backup::VAR_PARENTID]);
 
         if ($this->task->get_setting_value('users')) {
             $player->set_source_table('block_playerhud_user', ['blockinstanceid' => backup::VAR_BLOCKID]);
+
+            $sqlquestlog = "SELECT ql.* FROM {block_playerhud_quest_log} ql
+                              JOIN {block_playerhud_quests} q ON ql.questid = q.id
+                             WHERE q.blockinstanceid = :blockid";
+            $questlog->set_source_sql($sqlquestlog, ['blockid' => backup::VAR_BLOCKID]);
+            $questlog->annotate_ids('user', 'userid');
 
             $sqlinv = "SELECT inv.* FROM {block_playerhud_inventory} inv
                          JOIN {block_playerhud_items} i ON inv.itemid = i.id

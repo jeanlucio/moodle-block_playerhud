@@ -140,6 +140,13 @@ class provider implements
         // Users with AI logs.
         $sqlai = "SELECT userid FROM {block_playerhud_ai_logs} WHERE blockinstanceid = :instanceid";
         $userlist->add_from_sql('userid', $sqlai, $params);
+
+        // Users with quest logs.
+        $sqlql = "SELECT ql.userid
+                    FROM {block_playerhud_quest_log} ql
+                    JOIN {block_playerhud_quests} q ON ql.questid = q.id
+                   WHERE q.blockinstanceid = :instanceid";
+        $userlist->add_from_sql('userid', $sqlql, $params);
     }
 
     /**
@@ -208,7 +215,26 @@ class provider implements
             }
         }
 
-        // 5. Bulk fetch Trade Logs.
+        // 5. Bulk fetch Quest Logs.
+        $sqlql = "SELECT ql.id, q.blockinstanceid, q.name AS questname, ql.timecreated
+                    FROM {block_playerhud_quest_log} ql
+                    JOIN {block_playerhud_quests} q ON ql.questid = q.id
+                   WHERE ql.userid = :userid AND q.blockinstanceid $insql
+                ORDER BY ql.timecreated DESC";
+
+        $questlogs = $DB->get_records_sql($sqlql, $params);
+        $questlogsbyinstance = [];
+
+        if ($questlogs) {
+            foreach ($questlogs as $log) {
+                $questlogsbyinstance[$log->blockinstanceid][] = [
+                    'quest_name' => $log->questname,
+                    'claimed_on' => transform::datetime($log->timecreated),
+                ];
+            }
+        }
+
+        // 7. Bulk fetch Trade Logs.
         $sqltrades = "SELECT tl.id, t.blockinstanceid, tl.timecreated, t.name as tradename
                         FROM {block_playerhud_trade_log} tl
                         JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
@@ -227,7 +253,7 @@ class provider implements
             }
         }
 
-        // 6. Export data using the in-memory arrays.
+        // 8. Export data using the in-memory arrays.
         foreach ($validcontexts as $context) {
             $instid = $context->instanceid;
 
@@ -266,7 +292,16 @@ class provider implements
                 );
             }
 
-            // D. Trade Logs (Shop History).
+            // D. Quest Logs (Claimed Quests).
+            if (!empty($questlogsbyinstance[$instid])) {
+                writer::with_context($context)->export_data(
+                    [get_string('pluginname', 'block_playerhud'),
+                        get_string('privacy_export_quest_log', 'block_playerhud')],
+                    (object) ['quests' => $questlogsbyinstance[$instid]]
+                );
+            }
+
+            // E. Trade Logs (Shop History).
             if (!empty($tradesbyinstance[$instid])) {
                 writer::with_context($context)->export_data(
                     [get_string('pluginname', 'block_playerhud'), get_string('tab_shop', 'block_playerhud')],

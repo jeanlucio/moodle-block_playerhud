@@ -391,6 +391,7 @@ $string['privacy:metadata:rpg:nodes'] = 'Histórico de cenas visitadas e escolha
 $string['privacy:metadata:timecreated'] = 'O momento em que o registro foi criado.';
 $string['privacy:metadata:trade_log'] = 'Histórico de trocas e compras realizadas na loja.';
 $string['privacy:metadata:trade_log:tradeid'] = 'O ID da transação de troca.';
+$string['privacy_export_quest_log'] = 'Missões Reivindicadas';
 $string['privacy_export_rpg'] = 'Progresso do RPG';
 $string['privacy_updated'] = 'Preferência de privacidade atualizada.';
 $string['qty'] = 'Quantidade';
