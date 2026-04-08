@@ -537,7 +537,8 @@ class game {
             $groupids = array_keys($groups);
             [$gsql, $gparams] = $DB->get_in_or_equal($groupids);
 
-            $sqlgrp = "SELECT gm.groupid, SUM(pu.currentxp) as total, COUNT(pu.id) as qtd
+            $sqlgrp = "SELECT gm.groupid, SUM(pu.currentxp) as total, COUNT(pu.id) as qtd,
+                                MAX(pu.timemodified) as last_xp_change
                          FROM {groups_members} gm
                          JOIN {block_playerhud_user} pu ON pu.userid = gm.userid
                         WHERE pu.blockinstanceid = ?
@@ -558,6 +559,7 @@ class game {
                     $gobj->id = $grp->id;
                     $gobj->name = format_string($grp->name);
                     $gobj->average_xp = $avg;
+                    $gobj->last_xp_change = (int)$stat->last_xp_change;
                     $gobj->member_count = $stat->qtd;
                     $gobj->is_my_group = groups_is_member($grp->id, $currentuserid);
 
@@ -566,13 +568,26 @@ class game {
             }
 
             usort($groupranking, function ($a, $b) {
-                return $b->average_xp <=> $a->average_xp;
+                if ($a->average_xp !== $b->average_xp) {
+                    return $b->average_xp <=> $a->average_xp;
+                }
+                // Tiebreaker: group whose last XP event was earliest ranks higher.
+                return $a->last_xp_change <=> $b->last_xp_change;
             });
 
             $grank = 1;
+            $lastgavg = -1;
+            $lastgtime = -1;
+            $currentgdisplayrank = 1;
             foreach ($groupranking as &$g) {
-                $g->rank = $grank++;
+                if ($g->average_xp !== $lastgavg || $g->last_xp_change !== $lastgtime) {
+                    $currentgdisplayrank = $grank;
+                }
+                $g->rank = $currentgdisplayrank;
                 $g->medal_emoji = ($g->rank == 1) ? '🏆' : null;
+                $lastgavg = $g->average_xp;
+                $lastgtime = $g->last_xp_change;
+                $grank++;
             }
         }
 
