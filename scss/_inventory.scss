@@ -144,30 +144,19 @@
     height: 6px;
 }
 
-// Base description area; scrollable, replaces text-muted default color.
+// Base description area; 2-line clamp with ellipsis, no scroll.
 .playerhud-item-card {
     .ph-quest-desc-scroll {
         color: var(--gray-600, #6c757d);
-        flex: 1 1 auto;
-        min-height: 0; // Required to unlock Flexbox minimum size inside card-body.
-        max-height: 3.6em; // Exactly 3 lines at line-height 1.2.
-        overflow-y: auto;
+        flex-shrink: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
         font-size: 0.75rem;
-        line-height: 1.2;
+        line-height: 1.4;
         text-align: center;
-        padding-inline-end: 4px;
-        scrollbar-width: thin;
-
-        &::-webkit-scrollbar {
-            width: 4px;
-        }
-        &::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        &::-webkit-scrollbar-thumb {
-            background-color: var(--bs-gray-400, #ced4da);
-            border-radius: 4px;
-        }
 
         &:focus-visible {
             outline: 2px solid var(--primary, #0d6efd);
