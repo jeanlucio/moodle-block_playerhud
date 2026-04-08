@@ -38,7 +38,7 @@
                 "image_done": "🏅",
                 "type_label": "Reach Level",
                 "is_activity": false,
-                "reward_text": "50 XP",
+                "reward_parts": [{"text": "50 XP"}, {"text": "Iron Sword"}],
                 "has_reward": true,
                 "is_claimed": false,
                 "can_claim": true,
@@ -87,10 +87,10 @@
             {{! Title }}
             <div class="fw-bold mb-1 ph-text-md w-100 lh-sm flex-shrink-0" title="{{name}}">{{name}}</div>
 
-            {{! Reward line. }}
+            {{! Reward lines: one block per reward part. }}
             {{#has_reward}}
             <div class="ph-quest-reward w-100 text-center flex-shrink-0">
-                <i class="fa fa-gift me-1" aria-hidden="true"></i>{{reward_text}}
+                <i class="fa fa-gift me-1" aria-hidden="true"></i>{{#reward_parts}}<span class="d-block lh-sm">{{text}}</span>{{/reward_parts}}
             </div>
             {{/has_reward}}
 

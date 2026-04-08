@@ -165,10 +165,10 @@
         }
     }
 
-    // Reward line: compact gold text between title and action area.
+    // Reward line: compact green text between title and action area.
     .ph-quest-reward {
         font-size: 0.7rem;
-        color: var(--warning, #ffc107);
+        color: var(--success, #198754);
         font-weight: 600;
         margin-bottom: 0.25rem;
     }

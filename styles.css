@@ -728,7 +728,7 @@
 }
 .playerhud-item-card .ph-quest-reward {
     font-size: 0.7rem;
-    color: var(--warning, #ffc107);
+    color: var(--success, #198754);
     font-weight: 600;
     margin-bottom: 0.25rem;
 }

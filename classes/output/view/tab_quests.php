@@ -163,9 +163,7 @@ class tab_quests implements renderable {
             if ($q->reward_itemid > 0 && isset($rewarditems[$q->reward_itemid])) {
                 $rewardparts[] = $rewarditems[$q->reward_itemid];
             }
-            $rewardtext = !empty($rewardparts)
-                ? implode(get_string('connector_and', 'block_playerhud'), $rewardparts)
-                : get_string('quest_no_reward', 'block_playerhud');
+            $rewardpartsobjs = array_map(static fn($p) => ['text' => $p], $rewardparts);
 
             $progresspct = $isclaimed ? 100 : $status->progress;
 
@@ -187,7 +185,7 @@ class tab_quests implements renderable {
                 'progress_label'   => $isclaimed
                     ? get_string('quest_status_completed', 'block_playerhud')
                     : $status->label,
-                'reward_text'      => $rewardtext,
+                'reward_parts'     => $rewardpartsobjs,
                 'has_reward'       => !empty($rewardparts),
                 'is_claimed'       => $isclaimed,
                 'claimed_date'     => $claimeddate,
