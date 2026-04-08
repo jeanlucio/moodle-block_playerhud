@@ -201,6 +201,17 @@
     align-items: center;
     width: 100%;
 }
+.ph-quest-notify-dot {
+    position: absolute;
+    top: 4px;
+    inset-inline-end: 4px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background-color: var(--danger, #dc3545);
+    border: 2px solid var(--white, #fff);
+    pointer-events: none;
+}
 
 .playerhud-widget-container {
     border-radius: 12px;

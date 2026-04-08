@@ -120,14 +120,28 @@
 
         {{! C. Quests }}
         <a href="{{url_quests}}"
-           class="btn btn-ph-level-border shadow-sm"
+           class="btn btn-ph-level-border shadow-sm position-relative"
            data-bs-toggle="tooltip" data-bs-placement="bottom"
            title="{{#str}} tab_quests, block_playerhud {{/str}}"
            aria-label="{{#str}} tab_quests, block_playerhud {{/str}}">
             <span aria-hidden="true">📋</span>
+            {{#has_claimable_quests}}
+            <span class="ph-quest-notify-dot" aria-hidden="true"></span>
+            {{/has_claimable_quests}}
         </a>
 
-        {{! D. Exit }}
+        {{! D. Ranking }}
+        {{#ranking}}
+        <a href="{{url}}"
+           class="btn btn-ph-level-border shadow-sm"
+           data-bs-toggle="tooltip" data-bs-placement="bottom"
+           title="{{tooltip}}"
+           aria-label="{{label}}">
+            <span aria-hidden="true">🏆</span>
+        </a>
+        {{/ranking}}
+
+        {{! E. Exit }}
         <a href="{{url_disable}}"
            class="btn btn-ph-level-border shadow-sm js-disable-hud"
            data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -138,17 +152,6 @@
                  <i class="fa fa-power-off"></i>
             </span>
         </a>
-
-        {{! E. Ranking }}
-        {{#ranking}}
-        <a href="{{url}}"
-           class="btn btn-ph-level-border shadow-sm"
-           data-bs-toggle="tooltip" data-bs-placement="bottom"
-           title="{{tooltip}}"
-           aria-label="{{label}}">
-            <span aria-hidden="true">🏆</span>
-        </a>
-        {{/ranking}}
 
     </div>
 

@@ -301,6 +301,144 @@ class quest {
     }
 
     /**
+     * Checks if the user has at least one completed-but-unclaimed quest.
+     *
+     * Optimized for sidebar use: lazy-loads DB counts only once per type,
+     * and short-circuits as soon as a claimable quest is found.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $userid User ID.
+     * @param int $courseid Course ID.
+     * @param int $currentxp User's current XP.
+     * @param int $currentlevel User's current level.
+     * @return bool True if at least one reward is waiting to be claimed.
+     */
+    public static function has_claimable_quests(
+        int $instanceid,
+        int $userid,
+        int $courseid,
+        int $currentxp,
+        int $currentlevel
+    ): bool {
+        global $DB, $CFG;
+
+        $quests = $DB->get_records('block_playerhud_quests', ['blockinstanceid' => $instanceid, 'enabled' => 1]);
+        if (empty($quests)) {
+            return false;
+        }
+
+        // Bulk-load claimed IDs for this user; avoids per-quest lookups.
+        $claimed = $DB->get_records_menu('block_playerhud_quest_log', ['userid' => $userid], '', 'questid, questid');
+
+        $unclaimed = array_filter($quests, static fn($q) => !isset($claimed[$q->id]));
+        if (empty($unclaimed)) {
+            return false;
+        }
+
+        // Lazy-loaded counters — each is fetched at most once regardless of quest count.
+        $uniqueitems      = null;
+        $totalitems       = null;
+        $tradecount       = null;
+        $specificitemcnt  = [];
+        $specifictradecnt = [];
+        $modinfo          = null;
+
+        foreach ($unclaimed as $q) {
+            $completed = false;
+
+            switch ($q->type) {
+                case self::TYPE_LEVEL:
+                    $completed = ($currentlevel >= (int)$q->requirement);
+                    break;
+
+                case self::TYPE_XP_TOTAL:
+                    $completed = ($currentxp >= (int)$q->requirement);
+                    break;
+
+                case self::TYPE_UNIQUE_ITEMS:
+                    if ($uniqueitems === null) {
+                        $sql = "SELECT COUNT(DISTINCT inv.itemid)
+                                  FROM {block_playerhud_inventory} inv
+                                  JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                                 WHERE inv.userid = ? AND it.blockinstanceid = ?";
+                        $uniqueitems = (int)$DB->count_records_sql($sql, [$userid, $instanceid]);
+                    }
+                    $completed = ($uniqueitems >= (int)$q->requirement);
+                    break;
+
+                case self::TYPE_TOTAL_ITEMS:
+                    if ($totalitems === null) {
+                        $sql = "SELECT COUNT(inv.id)
+                                  FROM {block_playerhud_inventory} inv
+                                  JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                                 WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source != 'revoked'";
+                        $totalitems = (int)$DB->count_records_sql($sql, [$userid, $instanceid]);
+                    }
+                    $completed = ($totalitems >= (int)$q->requirement);
+                    break;
+
+                case self::TYPE_SPECIFIC_ITEM:
+                    $itemid = (int)$q->req_itemid;
+                    if (!isset($specificitemcnt[$itemid])) {
+                        $specificitemcnt[$itemid] = (int)$DB->count_records(
+                            'block_playerhud_inventory', ['userid' => $userid, 'itemid' => $itemid]
+                        );
+                    }
+                    $completed = ($specificitemcnt[$itemid] >= (int)$q->requirement);
+                    break;
+
+                case self::TYPE_TRADES:
+                    if ($tradecount === null) {
+                        $sql = "SELECT COUNT(tl.id)
+                                  FROM {block_playerhud_trade_log} tl
+                                  JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
+                                 WHERE tl.userid = ? AND t.blockinstanceid = ?";
+                        $tradecount = (int)$DB->count_records_sql($sql, [$userid, $instanceid]);
+                    }
+                    $completed = ($tradecount >= (int)$q->requirement);
+                    break;
+
+                case self::TYPE_SPECIFIC_TRADE:
+                    $tradeid = (int)$q->req_itemid;
+                    if (!isset($specifictradecnt[$tradeid])) {
+                        $specifictradecnt[$tradeid] = (int)$DB->count_records(
+                            'block_playerhud_trade_log', ['userid' => $userid, 'tradeid' => $tradeid]
+                        );
+                    }
+                    $completed = ($specifictradecnt[$tradeid] >= (int)$q->requirement);
+                    break;
+
+                case self::TYPE_ACTIVITY:
+                    require_once($CFG->libdir . '/completionlib.php');
+                    $cmid = (int)$q->requirement;
+                    if ($modinfo === null) {
+                        $modinfo = get_fast_modinfo($courseid);
+                    }
+                    if (!isset($modinfo->cms[$cmid])) {
+                        break;
+                    }
+                    $cm = $modinfo->get_cm($cmid);
+                    if (!$cm || !$cm->uservisible) {
+                        break;
+                    }
+                    $completion     = new \completion_info($modinfo->get_course());
+                    $completiondata = $completion->get_data($cm, false, $userid);
+                    $completed      = in_array(
+                        $completiondata->completionstate,
+                        [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS]
+                    );
+                    break;
+            }
+
+            if ($completed) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Generates heuristic quest suggestions based on course mapping.
      * Guaranteed Zero N+1 Queries.
      *
