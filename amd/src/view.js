@@ -50,8 +50,8 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 );
             });
 
-            // Initialize tooltips for truncated quest descriptions.
-            document.querySelectorAll('.js-ph-quest-desc[data-bs-toggle="tooltip"]').forEach(function(el) {
+            // Initialize tooltips for quest description info buttons.
+            document.querySelectorAll('.js-ph-quest-info[data-bs-toggle="tooltip"]').forEach(function(el) {
                 if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
                     new bootstrap.Tooltip(el, {trigger: 'hover focus'});
                 }

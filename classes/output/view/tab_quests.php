@@ -211,6 +211,7 @@ class tab_quests implements renderable {
             'quests'             => $questsdata,
             'str_reward'         => get_string('quest_rewards_hdr', 'block_playerhud'),
             'str_progress_label' => get_string('report_status_completed', 'block_playerhud'),
+            'str_description'    => get_string('description', 'moodle'),
         ];
 
         return $OUTPUT->render_from_template('block_playerhud/view_quests', $templatedata);

@@ -709,33 +709,36 @@
     height: 6px;
 }
 
-.playerhud-item-card .ph-quest-desc-scroll {
-    color: var(--gray-600, #6c757d);
-    flex-shrink: 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: 0.75rem;
-    line-height: 1.4;
-    text-align: center;
+.playerhud-item-card .ph-quest-info-btn {
+    position: absolute;
+    top: 0.35rem;
+    inset-inline-end: 0.35rem;
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--gray-500, #adb5bd);
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
 }
-.playerhud-item-card .ph-quest-desc-scroll:focus-visible {
-    outline: 2px solid var(--primary, #0d6efd);
-    border-radius: 4px;
+.playerhud-item-card .ph-quest-info-btn:hover,
+.playerhud-item-card .ph-quest-info-btn:focus-visible {
+    color: var(--primary, #0d6efd);
+    outline: none;
+}
+.playerhud-item-card .ph-quest-reward {
+    font-size: 0.7rem;
+    color: var(--warning, #ffc107);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
 }
 
 .playerhud-item-card.ph-quest-card-claimed {
     background-color: var(--ph-quest-claimed-bg, #fdf3d8);
     border-color: var(--ph-quest-claimed-border, #f5c6cb);
 }
-.playerhud-item-card.ph-quest-card-claimed .ph-card-title,
-.playerhud-item-card.ph-quest-card-claimed .ph-quest-desc-scroll {
+.playerhud-item-card.ph-quest-card-claimed .ph-card-title {
     color: var(--ph-quest-gold-dark, #664d03);
-}
-.playerhud-item-card.ph-quest-card-claimed .ph-quest-desc-scroll::-webkit-scrollbar-thumb {
-    background-color: var(--ph-quest-gold-mid, #d39e00);
 }
 .playerhud-item-card.ph-quest-card-claimed .ph-quest-claimed-stamp {
     background-color: var(--ph-quest-stamp-bg, rgba(255, 193, 7, 0.15));

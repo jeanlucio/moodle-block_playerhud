@@ -27,16 +27,17 @@
     {
         "str_reward": "Rewards",
         "str_progress_label": "Completed",
+        "str_description": "Description",
         "quests": [
             {
                 "id": 1,
                 "name": "Reach Level 5",
                 "description_html": "<p>Reach level 5 in the course.</p>",
+                "description_plain": "Reach level 5 in the course.",
                 "image_todo": "📋",
                 "image_done": "🏅",
                 "type_label": "Reach Level",
                 "is_activity": false,
-                "description_plain": "Reach level 5 in the course.",
                 "reward_text": "50 XP",
                 "has_reward": true,
                 "is_claimed": false,
@@ -63,6 +64,18 @@
         {{^is_claimed}}{{^can_claim}}ph-quest-card-pending{{/can_claim}}{{/is_claimed}}">
 
         <div class="card-body p-2 d-flex flex-column align-items-center h-100">
+            {{! Info button: reveals full description via tooltip. }}
+            {{#description_plain}}
+            <button type="button"
+                    class="ph-quest-info-btn js-ph-quest-info"
+                    aria-label="{{str_description}}"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="bottom"
+                    data-bs-title="{{description_plain}}">
+                <i class="fa fa-info-circle" aria-hidden="true"></i>
+            </button>
+            {{/description_plain}}
+
             {{! Quest icon. }}
             <div class="mb-1 text-center ph-card-icon-container flex-shrink-0">
                 <div class="ph-modal-emoji ph-card-emoji" aria-hidden="true">
@@ -74,15 +87,12 @@
             {{! Title }}
             <div class="fw-bold mb-1 ph-text-md w-100 lh-sm flex-shrink-0" title="{{name}}">{{name}}</div>
 
-            {{! Description: 2-line clamp, full text available via tooltip. }}
-            {{#description_html}}
-            <div class="small mb-2 w-100 ph-quest-desc-scroll text-break js-ph-quest-desc"
-                 data-bs-toggle="tooltip"
-                 data-bs-placement="bottom"
-                 data-bs-title="{{description_plain}}">
-                {{{description_html}}}
+            {{! Reward line. }}
+            {{#has_reward}}
+            <div class="ph-quest-reward w-100 text-center flex-shrink-0">
+                <i class="fa fa-gift me-1" aria-hidden="true"></i>{{reward_text}}
             </div>
-            {{/description_html}}
+            {{/has_reward}}
 
             {{! Bottom Action Area }}
             <div class="mt-auto w-100 flex-shrink-0">
