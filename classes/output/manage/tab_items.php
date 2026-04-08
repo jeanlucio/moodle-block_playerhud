@@ -360,6 +360,7 @@ class tab_items implements renderable {
             'base_url' => $baseurl->out(false),
             'sesskey' => sesskey(),
             'summary_text' => $summarytext,
+            'summary_hint' => get_string('summary_stats_hint', 'block_playerhud'),
             'url_add' => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
             'url_distribute' => (new moodle_url($baseurl, ['action' => 'distribute']))->out(false),
             'str_distribute' => get_string('distribute_btn', 'block_playerhud'),
