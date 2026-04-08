@@ -212,10 +212,10 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
             <i class="fa fa-gamepad fa-2x" aria-hidden="true"></i>
         </div>
         <div>
-            <h5 class="alert-heading fw-bold m-0">Bem-vindo(a) ao PlayerHUD!</h5>
+            <h5 class="alert-heading fw-bold m-0">Bem-vindo ao PlayerHUD!</h5>
             <p class="mb-0">
                 Este curso utiliza um sistema de gamificação para acompanhar seu progresso,
-                recompensar sua participação e tornar sua jornada de aprendizagem mais envolvente.
+                recompensar sua participação e tornar sua jornada de aprendizado mais engajadora.
             </p>
         </div>
     </div>
@@ -227,9 +227,9 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
                 <i class="fa fa-star fa-3x text-primary mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">XP & Níveis</h5>
                 <p class="small text-muted">
-                    Ao coletar itens ou completar desafios, você acumula XP (Experiência).
+                    Ao coletar itens ou completar missões, você acumula XP (Experiência).
                     Conforme seu XP aumenta, seu nível evolui e sua barra de progresso avança.
-                    Dependendo da configuração do professor, o XP pode ou não influenciar sua avaliação.
+                    A quantidade de níveis e o total máximo de XP são definidos pelo professor do curso/disciplina.
                 </p>
             </div>
         </div>
@@ -240,9 +240,11 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
                 <i class="fa fa-cube fa-3x text-success mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">Itens & Drops</h5>
                 <p class="small text-muted">
-                    Durante o curso, você poderá encontrar itens escondidos em atividades,
-                    descrições ou desafios específicos. Alguns itens possuem limite de coleta
-                    ou tempo de reaparecimento (cooldown).
+                    Durante o curso, você poderá encontrar itens escondidos em atividades, descrições
+                    ou desafios específicos. Alguns itens possuem limite de coleta ou tempo de reaparecimento (cooldown).
+                    Itens podem ou não dar XP, você pode clicar no card do item que encontrar para verificar
+                    as informações sobre ele, incluindo o valor de XP, se houver. Itens também poderão ser obtidos
+                    através de missões ou trocados na loja.
                 </p>
             </div>
         </div>
@@ -250,12 +252,39 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-clock fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <i class="fa fa-map-signs fa-3x text-info mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Missões</h5>
+                <p class="small text-muted">
+                    Diversas missões podem aparecer no decorrer do curso, como completar determinada atividade,
+                    ou atingir determinado nível no curso. Acesse a área de missões para verificar as disponíveis.
+                    Missões podem dar XP ou itens exclusivos. Sempre que tiver missões pendentes de resgate uma
+                    bolinha vermelha aparecerá no canto do botão do bloco ou widget.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-shopping-cart fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Loja</h5>
+                <p class="small text-muted">
+                    A loja serve para troca/comercialização de itens, o professor definirá quais itens poderão
+                    ser comercializados e as trocas ficarão disponíveis na loja. Algumas trocas podem ser
+                    inseridas pelo professor em outros locais do curso. Fique atento!
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-clock-o fa-3x text-danger mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">Tempo & Limites</h5>
                 <p class="small text-muted">
-                    Se um item exibir um temporizador, significa que ele está temporariamente
-                    indisponível. Após o tempo indicado, poderá ser coletado novamente,
-                    caso o professor tenha permitido.
+                    Itens com mais de uma quantidade para coleta exibirão um contador após a primeira coleta
+                    com a indicação de tempo para resgate do próximo. Fique atento ao prazo do curso/disciplina
+                    para não perder nenhum item, em especial aqueles com altos valores de XP.
                 </p>
             </div>
         </div>
@@ -263,24 +292,26 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-trophy fa-3x text-danger mb-3" aria-hidden="true"></i>
+                <i class="fa fa-trophy fa-3x text-primary mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">Ranking</h5>
                 <p class="small text-muted">
-                    O ranking mostra sua posição em relação aos colegas.
-                    Você pode optar por não aparecer publicamente.
-                    Ele funciona como ferramenta de motivação, não como competição obrigatória.
+                    O ranking mostra sua posição em relação aos colegas. Você pode optar por não
+                    aparecer publicamente. Ele funciona como ferramenta de motivação, não como competição obrigatória.
                 </p>
             </div>
         </div>
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-md-12 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-pause-circle fa-3x text-secondary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Pausar Gamificação</h5>
+                <i class="fa fa-power-off fa-3x text-secondary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Pausar/Desativar Gamificação</h5>
                 <p class="small text-muted">
-                    Você pode desativar temporariamente sua participação na gamificação.
-                    Seu progresso ficará pausado e poderá ser reativado posteriormente.
+                    A gamificação deste curso/disciplina é totalmente opcional. Você pode desativar a camada
+                    de gamificação ocultando assim todas as mecânicas disponíveis se for do seu interesse, clicando
+                    no botão correspondente no bloco ou widget. Caso queira retornar basta acessar o bloco e clicar
+                    no botão correspondente. Este recurso foi construído pensando em dar total liberdade para você
+                    escolher sua forma de participação no curso/disciplina.
                 </p>
             </div>
         </div>
@@ -289,13 +320,13 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
 <div class="alert alert-light border shadow-sm mt-4">
     <div class="d-flex align-items-center">
         <div class="me-3">
-            <i class="fa fa-lightbulb fa-2x text-warning" aria-hidden="true"></i>
+            <i class="fa fa-lightbulb-o fa-2x text-warning" aria-hidden="true"></i>
         </div>
         <div>
             <h6 class="fw-bold m-0">Dica Importante</h6>
             <p class="mb-0 small text-muted">
-                Explore o curso com atenção, participe das atividades e interaja com os conteúdos.
-                O XP é consequência do seu envolvimento — o aprendizado é o verdadeiro objetivo.
+                Explore o curso com cuidado, participe das atividades e engaje-se com o conteúdo.
+                XP é resultado do envolvimento — o aprendizado continua sendo o verdadeiro objetivo.
             </p>
         </div>
     </div>

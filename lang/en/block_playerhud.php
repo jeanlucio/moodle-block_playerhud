@@ -227,9 +227,9 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
                 <i class="fa fa-star fa-3x text-primary mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">XP & Levels</h5>
                 <p class="small text-muted">
-                    By collecting items or completing challenges, you earn XP (Experience Points).
+                    By collecting items or completing quests, you earn XP (Experience Points).
                     As your XP increases, your level rises and your progress bar advances.
-                    Depending on the instructor\'s configuration, XP may or may not affect your final grade.
+                    The number of levels and the maximum total XP are defined by the course instructor.
                 </p>
             </div>
         </div>
@@ -240,9 +240,10 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
                 <i class="fa fa-cube fa-3x text-success mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">Items & Drops</h5>
                 <p class="small text-muted">
-                    Throughout the course, you may find items hidden inside activities,
-                    descriptions, or specific challenges. Some items may have collection limits
-                    or respawn timers (cooldowns).
+                    Throughout the course, you may find items hidden inside activities, descriptions,
+                    or specific challenges. Some items have a collection limit or a respawn timer (cooldown).
+                    Items may or may not grant XP; you can click on an item\'s card to view its details.
+                    Items can also be obtained through quests or traded in the shop.
                 </p>
             </div>
         </div>
@@ -250,12 +251,39 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-clock fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <i class="fa fa-map-signs fa-3x text-info mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Quests</h5>
+                <p class="small text-muted">
+                    Various quests may appear throughout the course, such as completing a specific activity
+                    or reaching a certain level. Access the quests area to check the available ones.
+                    Quests can grant XP or exclusive items. Whenever you have pending quests to claim,
+                    a red dot will appear on the quests button.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-shopping-cart fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Shop</h5>
+                <p class="small text-muted">
+                    The shop is used for trading items. The instructor will define which items can be traded,
+                    and these offers will be available in the shop. Some trades may also be placed by the
+                    instructor in other areas of the course. Stay alert!
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-clock-o fa-3x text-danger mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">Timers & Limits</h5>
                 <p class="small text-muted">
-                    If an item displays a timer, it means it is temporarily unavailable.
-                    Once the countdown ends, it may become collectible again,
-                    depending on the instructor’s settings.
+                    Items with more than one collectible quantity will display a timer after the first collection,
+                    indicating the wait time for the next one. Pay attention to the course deadlines so you
+                    don\'t miss any items, especially those with high XP values.
                 </p>
             </div>
         </div>
@@ -263,24 +291,26 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-trophy fa-3x text-danger mb-3" aria-hidden="true"></i>
+                <i class="fa fa-trophy fa-3x text-primary mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">Leaderboard</h5>
                 <p class="small text-muted">
                     The leaderboard shows your position compared to other participants.
-                    You may choose not to appear publicly.
-                    It is designed as a motivational tool, not a mandatory competition.
+                    You may choose not to appear publicly. It is designed as a motivational tool,
+                    not a mandatory competition.
                 </p>
             </div>
         </div>
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-md-12 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-pause-circle fa-3x text-secondary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Pause Gamification</h5>
+                <i class="fa fa-power-off fa-3x text-secondary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Pause/Disable Gamification</h5>
                 <p class="small text-muted">
-                    You can temporarily disable your participation in the gamification system.
-                    Your progress will be paused and can be reactivated at any time.
+                    The gamification in this course is entirely optional. You can disable the gamification layer,
+                    hiding all available mechanics if you wish, by clicking the corresponding button in the block or widget.
+                    If you want to return, simply access the block and click the button to reactivate it.
+                    This feature was built to give you total freedom to choose how you participate in the course.
                 </p>
             </div>
         </div>
@@ -289,7 +319,7 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
 <div class="alert alert-light border shadow-sm mt-4">
     <div class="d-flex align-items-center">
         <div class="me-3">
-            <i class="fa fa-lightbulb fa-2x text-warning" aria-hidden="true"></i>
+            <i class="fa fa-lightbulb-o fa-2x text-warning" aria-hidden="true"></i>
         </div>
         <div>
             <h6 class="fw-bold m-0">Important Tip</h6>

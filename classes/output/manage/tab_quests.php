@@ -312,14 +312,14 @@ class tab_quests implements renderable {
         ];
 
         $typebadges = [
-            quest::TYPE_LEVEL          => 'bg-primary text-white',
-            quest::TYPE_XP_TOTAL       => 'bg-success text-white',
-            quest::TYPE_ACTIVITY       => 'bg-danger text-white',
-            quest::TYPE_UNIQUE_ITEMS   => 'bg-dark text-white',
-            quest::TYPE_SPECIFIC_ITEM  => 'bg-warning text-dark',
-            quest::TYPE_TOTAL_ITEMS    => 'bg-secondary text-dark',
-            quest::TYPE_TRADES         => 'bg-light text-dark border border-secondary',
-            quest::TYPE_SPECIFIC_TRADE => 'bg-white text-primary border border-primary',
+            quest::TYPE_LEVEL          => 'bg-light text-dark border',
+            quest::TYPE_XP_TOTAL       => 'bg-light text-dark border',
+            quest::TYPE_ACTIVITY       => 'bg-light text-dark border',
+            quest::TYPE_UNIQUE_ITEMS   => 'bg-light text-dark border',
+            quest::TYPE_SPECIFIC_ITEM  => 'bg-light text-dark border',
+            quest::TYPE_TOTAL_ITEMS    => 'bg-light text-dark border',
+            quest::TYPE_TRADES         => 'bg-light text-dark border',
+            quest::TYPE_SPECIFIC_TRADE => 'bg-light text-dark border',
         ];
 
         $questsdata = [];
