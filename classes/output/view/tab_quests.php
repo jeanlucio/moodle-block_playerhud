@@ -72,6 +72,8 @@ class tab_quests implements renderable {
     public function display() {
         global $DB, $OUTPUT, $USER;
 
+        $currentsort = optional_param('sort', 'name_asc', PARAM_ALPHANUMEXT);
+
         // Load enabled quests for this block instance.
         $quests = $DB->get_records(
             'block_playerhud_quests',
@@ -202,11 +204,77 @@ class tab_quests implements renderable {
                 'str_pending'      => get_string('quest_status_pending', 'block_playerhud'),
                 'str_claimed'      => get_string('quest_status_completed', 'block_playerhud'),
                 'str_go_activity'  => get_string('quest_go_activity', 'block_playerhud'),
+                'sort_name'        => strip_tags(format_string($q->name)),
+                'reward_xp_val'    => (int)$q->reward_xp,
+            ];
+        }
+
+        // Sort quests.
+        usort($questsdata, function ($a, $b) use ($currentsort) {
+            switch ($currentsort) {
+                case 'name_desc':
+                    return \core_collator::compare($b['sort_name'], $a['sort_name']);
+
+                case 'claimed_first':
+                    if ($a['is_claimed'] !== $b['is_claimed']) {
+                        return ($b['is_claimed'] ? 1 : 0) <=> ($a['is_claimed'] ? 1 : 0);
+                    }
+                    return \core_collator::compare($a['sort_name'], $b['sort_name']);
+
+                case 'missing':
+                    $pendinga = $a['is_claimed'] ? 0 : 1;
+                    $pendingb = $b['is_claimed'] ? 0 : 1;
+                    if ($pendinga !== $pendingb) {
+                        return $pendingb <=> $pendinga;
+                    }
+                    return \core_collator::compare($a['sort_name'], $b['sort_name']);
+
+                case 'xp_desc':
+                    if ($a['reward_xp_val'] === $b['reward_xp_val']) {
+                        return \core_collator::compare($a['sort_name'], $b['sort_name']);
+                    }
+                    return $b['reward_xp_val'] <=> $a['reward_xp_val'];
+
+                case 'xp_asc':
+                    if ($a['reward_xp_val'] === $b['reward_xp_val']) {
+                        return \core_collator::compare($a['sort_name'], $b['sort_name']);
+                    }
+                    return $a['reward_xp_val'] <=> $b['reward_xp_val'];
+
+                case 'name_asc':
+                default:
+                    return \core_collator::compare($a['sort_name'], $b['sort_name']);
+            }
+        });
+
+        // Build sort options dropdown.
+        $sortbaseurl = new moodle_url('/blocks/playerhud/view.php', [
+            'id'         => $this->courseid,
+            'instanceid' => $this->instanceid,
+            'tab'        => 'quests',
+        ]);
+        $sortoptionkeys = [
+            'name_asc'      => get_string('sort_name_asc', 'block_playerhud'),
+            'name_desc'     => get_string('sort_name_desc', 'block_playerhud'),
+            'claimed_first' => get_string('sort_claimed_first', 'block_playerhud'),
+            'missing'       => get_string('sort_missing', 'block_playerhud'),
+            'xp_desc'       => get_string('sort_xp_desc', 'block_playerhud'),
+            'xp_asc'        => get_string('sort_xp_asc', 'block_playerhud'),
+        ];
+        $sortoptions = [];
+        foreach ($sortoptionkeys as $val => $label) {
+            $u = new moodle_url($sortbaseurl, ['sort' => $val]);
+            $sortoptions[] = [
+                'value'    => $u->out(false),
+                'label'    => $label,
+                'selected' => ($val === $currentsort),
             ];
         }
 
         $templatedata = [
             'quests'             => $questsdata,
+            'sort_options'       => $sortoptions,
+            'show_filter'        => !empty($questsdata),
             'str_reward'         => get_string('quest_rewards_hdr', 'block_playerhud'),
             'str_progress_label' => get_string('report_status_completed', 'block_playerhud'),
             'str_description'    => get_string('description', 'moodle'),

@@ -508,6 +508,7 @@ $string['single_collection'] = 'Single collection';
 $string['sort'] = 'Sort column';
 $string['sort_acquired'] = 'Owned First';
 $string['sort_by'] = 'Sort by...';
+$string['sort_claimed_first'] = 'Completed First';
 $string['sort_count_asc'] = 'Lowest Quantity';
 $string['sort_count_desc'] = 'Highest Quantity';
 $string['sort_missing'] = 'Missing First';

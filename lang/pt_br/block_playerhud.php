@@ -508,6 +508,7 @@ $string['single_collection'] = 'Coleta única';
 $string['sort'] = 'Ordenar coluna';
 $string['sort_acquired'] = 'Adquiridos Primeiro';
 $string['sort_by'] = 'Ordenar por...';
+$string['sort_claimed_first'] = 'Concluídas Primeiro';
 $string['sort_count_asc'] = 'Menor Quantidade';
 $string['sort_count_desc'] = 'Maior Quantidade';
 $string['sort_missing'] = 'Faltantes Primeiro';
