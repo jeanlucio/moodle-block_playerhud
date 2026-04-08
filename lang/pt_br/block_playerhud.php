@@ -473,6 +473,7 @@ $string['quest_type_unique_items'] = 'Colecionador (Itens Únicos)';
 $string['quest_type_xp_total'] = 'Acumular XP Total';
 $string['quest_validate_target'] = 'O valor alvo deve ser pelo menos 1.';
 $string['quests_none'] = 'Nenhuma missão criada ainda.';
+$string['quests_summary'] = 'Você tem {$a} missões criadas.';
 $string['rank_groups'] = 'Grupos (Média XP)';
 $string['rank_individual'] = 'Individual';
 $string['ranking_disable'] = 'Desativar Ranking';

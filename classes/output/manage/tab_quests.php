@@ -394,20 +394,24 @@ class tab_quests implements renderable {
         ];
         $PAGE->requires->js_call_amd('block_playerhud/manage_quests', 'init', [$jsvars]);
 
+        $totalquests = count($questsdata);
+        $summarytext = get_string('quests_summary', 'block_playerhud', $totalquests);
+
         $templatedata = [
-            'url_add'         => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
-            'url_suggest'     => (new moodle_url($baseurl, ['action' => 'suggest_quests']))->out(false),
-            'str_suggest'     => get_string('quest_sug_btn', 'block_playerhud'),
-            'str_add_quest'   => get_string('quest_new', 'block_playerhud'),
-            'str_col_icon'    => get_string('quest_icon_todo', 'block_playerhud'),
-            'str_col_req'     => get_string('quest_target_value', 'block_playerhud'),
-            'str_actions'     => get_string('actions'),
-            'str_edit'        => get_string('edit'),
-            'str_delete'      => get_string('delete'),
-            'str_empty'       => get_string('quests_none', 'block_playerhud'),
-            'headers'         => $headers,
-            'quests'          => $questsdata,
-            'has_quests'      => !empty($questsdata),
+            'summary_text'   => $summarytext,
+            'url_add'        => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
+            'url_suggest'    => (new moodle_url($baseurl, ['action' => 'suggest_quests']))->out(false),
+            'str_suggest'    => get_string('quest_sug_btn', 'block_playerhud'),
+            'str_add_quest'  => get_string('quest_new', 'block_playerhud'),
+            'str_col_icon'   => get_string('quest_icon_todo', 'block_playerhud'),
+            'str_col_req'    => get_string('quest_target_value', 'block_playerhud'),
+            'str_actions'    => get_string('actions'),
+            'str_edit'       => get_string('edit'),
+            'str_delete'     => get_string('delete'),
+            'str_empty'      => get_string('quests_none', 'block_playerhud'),
+            'headers'        => $headers,
+            'quests'         => $questsdata,
+            'has_quests'     => !empty($questsdata),
         ];
 
         return $OUTPUT->render_from_template('block_playerhud/manage_quests', $templatedata);

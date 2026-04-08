@@ -472,6 +472,7 @@ $string['quest_type_unique_items'] = 'Collector (Unique Items)';
 $string['quest_type_xp_total'] = 'Accumulate Total XP';
 $string['quest_validate_target'] = 'Target value must be at least 1.';
 $string['quests_none'] = 'No quests created yet.';
+$string['quests_summary'] = 'You have {$a} quests created.';
 $string['rank_groups'] = 'Groups (Avg XP)';
 $string['rank_individual'] = 'Individual';
 $string['ranking_disable'] = 'Disable Ranking';
