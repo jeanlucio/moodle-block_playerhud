@@ -213,13 +213,13 @@ class tab_quests implements renderable {
         usort($questsdata, function ($a, $b) use ($currentsort) {
             switch ($currentsort) {
                 case 'name_desc':
-                    return \core_collator::compare($b['sort_name'], $a['sort_name']);
+                    return \core_collator::strcmp($b['sort_name'], $a['sort_name']);
 
                 case 'claimed_first':
                     if ($a['is_claimed'] !== $b['is_claimed']) {
                         return ($b['is_claimed'] ? 1 : 0) <=> ($a['is_claimed'] ? 1 : 0);
                     }
-                    return \core_collator::compare($a['sort_name'], $b['sort_name']);
+                    return \core_collator::strcmp($a['sort_name'], $b['sort_name']);
 
                 case 'missing':
                     $pendinga = $a['is_claimed'] ? 0 : 1;
@@ -227,23 +227,23 @@ class tab_quests implements renderable {
                     if ($pendinga !== $pendingb) {
                         return $pendingb <=> $pendinga;
                     }
-                    return \core_collator::compare($a['sort_name'], $b['sort_name']);
+                    return \core_collator::strcmp($a['sort_name'], $b['sort_name']);
 
                 case 'xp_desc':
                     if ($a['reward_xp_val'] === $b['reward_xp_val']) {
-                        return \core_collator::compare($a['sort_name'], $b['sort_name']);
+                        return \core_collator::strcmp($a['sort_name'], $b['sort_name']);
                     }
                     return $b['reward_xp_val'] <=> $a['reward_xp_val'];
 
                 case 'xp_asc':
                     if ($a['reward_xp_val'] === $b['reward_xp_val']) {
-                        return \core_collator::compare($a['sort_name'], $b['sort_name']);
+                        return \core_collator::strcmp($a['sort_name'], $b['sort_name']);
                     }
                     return $a['reward_xp_val'] <=> $b['reward_xp_val'];
 
                 case 'name_asc':
                 default:
-                    return \core_collator::compare($a['sort_name'], $b['sort_name']);
+                    return \core_collator::strcmp($a['sort_name'], $b['sort_name']);
             }
         });
 
