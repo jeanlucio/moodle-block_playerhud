@@ -321,6 +321,7 @@ class quest {
         int $currentlevel
     ): bool {
         global $DB, $CFG;
+        require_once($CFG->libdir . '/completionlib.php');
 
         $quests = $DB->get_records('block_playerhud_quests', ['blockinstanceid' => $instanceid, 'enabled' => 1]);
         if (empty($quests)) {
@@ -336,12 +337,12 @@ class quest {
         }
 
         // Lazy-loaded counters — each is fetched at most once regardless of quest count.
-        $uniqueitems      = null;
-        $totalitems       = null;
-        $tradecount       = null;
-        $specificitemcnt  = [];
+        $uniqueitems = null;
+        $totalitems = null;
+        $tradecount = null;
+        $specificitemcnt = [];
         $specifictradecnt = [];
-        $modinfo          = null;
+        $modinfo = null;
 
         foreach ($unclaimed as $q) {
             $completed = false;
@@ -409,7 +410,6 @@ class quest {
                     break;
 
                 case self::TYPE_ACTIVITY:
-                    require_once($CFG->libdir . '/completionlib.php');
                     $cmid = (int)$q->requirement;
                     if ($modinfo === null) {
                         $modinfo = get_fast_modinfo($courseid);
@@ -421,9 +421,9 @@ class quest {
                     if (!$cm || !$cm->uservisible) {
                         break;
                     }
-                    $completion     = new \completion_info($modinfo->get_course());
+                    $completion = new \completion_info($modinfo->get_course());
                     $completiondata = $completion->get_data($cm, false, $userid);
-                    $completed      = in_array(
+                    $completed = in_array(
                         $completiondata->completionstate,
                         [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS]
                     );
