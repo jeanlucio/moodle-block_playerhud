@@ -43,10 +43,12 @@
                 "progress_pct": 80,
                 "str_progress": "80%",
                 "progress_label": "4 / 5",
+                "activity_url": "",
                 "url_claim": "#",
                 "str_claim": "Claim Reward",
                 "str_pending": "Pending",
                 "str_claimed": "Completed",
+                "str_go_activity": "Go to activity",
                 "claimed_date": "19/01/26"
             }
         ]
@@ -103,7 +105,18 @@
                             <small class="text-muted fw-bold" aria-hidden="true">{{progress_pct}}%</small>
                             <span class="visually-hidden">{{str_progress_label}}: {{progress_pct}}%</span>
                         </div>
-                        <div class="badge bg-light text-muted border w-100 py-1 shadow-sm"><i class="fa fa-lock" aria-hidden="true"></i></div>
+                        {{#activity_url}}
+                        <a href="{{activity_url}}" class="btn btn-outline-primary btn-sm w-100 fw-bold"
+                           aria-label="{{str_go_activity}}: {{name}}">
+                            <i class="fa fa-external-link me-1" aria-hidden="true"></i>{{str_go_activity}}
+                        </a>
+                        {{/activity_url}}
+                        {{^activity_url}}
+                        <div class="badge bg-light text-muted border w-100 py-1 shadow-sm">
+                            <i class="fa fa-lock" aria-hidden="true"></i>
+                            <span class="visually-hidden">{{str_pending}}</span>
+                        </div>
+                        {{/activity_url}}
                     {{/can_claim}}
                 {{/is_claimed}}
             </div>

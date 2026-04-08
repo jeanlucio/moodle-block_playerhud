@@ -418,6 +418,7 @@ $string['quest_reward_xp'] = 'XP Reward';
 $string['quest_rewards_hdr'] = 'Rewards';
 $string['quest_status_completed'] = 'Completed';
 $string['quest_status_pending'] = 'Pending';
+$string['quest_go_activity'] = 'Go to activity';
 $string['quest_status_removed'] = 'Activity removed';
 $string['quest_sug_activity'] = 'Complete: {$a}';
 $string['quest_sug_btn'] = 'Auto Suggest';

@@ -76,6 +76,7 @@ class quest {
         $status->label = "";
         $status->action_url = null;
         $status->is_activity = false;
+        $status->hidden = false;
 
         switch ($quest->type) {
             case self::TYPE_LEVEL:
@@ -173,6 +174,12 @@ class quest {
                 $cm = $modinfo->get_cm($cmid);
 
                 if ($cm) {
+                    // Hide quest entirely if the activity is not visible to this user.
+                    if (!$cm->uservisible) {
+                        $status->hidden = true;
+                        return $status;
+                    }
+
                     $status->action_url = $cm->url;
 
                     $completion = new \completion_info($modinfo->get_course());

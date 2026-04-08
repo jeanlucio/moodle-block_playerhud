@@ -418,6 +418,7 @@ $string['quest_reward_xp'] = 'Recompensa em XP';
 $string['quest_rewards_hdr'] = 'Recompensas';
 $string['quest_status_completed'] = 'Concluído';
 $string['quest_status_pending'] = 'Pendente';
+$string['quest_go_activity'] = 'Ir para a atividade';
 $string['quest_status_removed'] = 'Atividade removida';
 $string['quest_sug_activity'] = 'Completar: {$a}';
 $string['quest_sug_btn'] = 'Sugerir Missões';

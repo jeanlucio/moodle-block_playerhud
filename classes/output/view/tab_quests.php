@@ -148,6 +148,11 @@ class tab_quests implements renderable {
                 $playerlevel
             );
 
+            // Skip quests whose linked activity is not visible to this user.
+            if ($status->hidden) {
+                continue;
+            }
+
             $canclaim = $status->completed && !$isclaimed;
 
             // Build reward text.
@@ -168,7 +173,7 @@ class tab_quests implements renderable {
                 'id'               => $q->id,
                 'name'             => format_string($q->name),
                 'description_html' => !empty($q->description)
-                    ? format_text($q->description, FORMAT_HTML)
+                    ? format_text($q->description, FORMAT_HTML, ['filter' => false])
                     : '',
                 'image_todo'       => !empty($q->image_todo) ? $q->image_todo : '📋',
                 'image_done'       => !empty($q->image_done) ? $q->image_done : '🏅',
@@ -191,9 +196,11 @@ class tab_quests implements renderable {
                         'sesskey' => sesskey(),
                     ]))->out(false)
                     : '',
+                'activity_url'     => $status->action_url ? $status->action_url->out(false) : '',
                 'str_claim'        => get_string('quest_claim', 'block_playerhud'),
                 'str_pending'      => get_string('quest_status_pending', 'block_playerhud'),
                 'str_claimed'      => get_string('quest_status_completed', 'block_playerhud'),
+                'str_go_activity'  => get_string('quest_go_activity', 'block_playerhud'),
             ];
         }
 
