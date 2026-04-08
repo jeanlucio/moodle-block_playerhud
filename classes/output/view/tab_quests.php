@@ -74,10 +74,10 @@ class tab_quests implements renderable {
 
         $currentsort = optional_param('sort', 'name_asc', PARAM_ALPHANUMEXT);
 
-        // Load enabled quests for this block instance.
+        // Load all quests for this block instance (disabled ones may still show as archived).
         $quests = $DB->get_records(
             'block_playerhud_quests',
-            ['blockinstanceid' => $this->instanceid, 'enabled' => 1],
+            ['blockinstanceid' => $this->instanceid],
             'timecreated ASC'
         );
 
@@ -135,6 +135,13 @@ class tab_quests implements renderable {
         $questsdata = [];
         foreach ($quests as $q) {
             $isclaimed = isset($claimedrows[$q->id]);
+
+            // Disabled quest: only show if already claimed (archived state); otherwise hide.
+            if (!$q->enabled && !$isclaimed) {
+                continue;
+            }
+
+            $isarchived = !$q->enabled && $isclaimed;
             $claimeddate = '';
 
             if ($isclaimed) {
@@ -155,7 +162,7 @@ class tab_quests implements renderable {
                 continue;
             }
 
-            $canclaim = $status->completed && !$isclaimed;
+            $canclaim = $status->completed && !$isclaimed && !$isarchived;
 
             // Build reward text.
             $rewardparts = [];
@@ -189,6 +196,7 @@ class tab_quests implements renderable {
                     : $status->label,
                 'reward_parts'     => $rewardpartsobjs,
                 'has_reward'       => !empty($rewardparts),
+                'is_archived'      => $isarchived,
                 'is_claimed'       => $isclaimed,
                 'claimed_date'     => $claimeddate,
                 'can_claim'        => $canclaim,

@@ -138,6 +138,7 @@
 .ph-w-50 {
     width: 50px;
 }
+
 .ph-w-80 {
     width: 80px;
 }
@@ -204,6 +205,7 @@
     align-items: center;
     width: 100%;
 }
+
 .ph-quest-notify-dot {
     position: absolute;
     top: 4px;
@@ -717,6 +719,10 @@
     height: 260px;
     max-height: 260px;
     overflow: hidden;
+}
+
+.playerhud-item-card.ph-item-archived {
+    overflow: visible;
 }
 
 .ph-progress-sm {

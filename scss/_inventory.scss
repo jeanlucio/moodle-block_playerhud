@@ -139,6 +139,11 @@
     overflow: hidden;
 }
 
+// Archived quest cards need visible overflow so the badge can protrude above the card.
+.playerhud-item-card.ph-item-archived {
+    overflow: visible;
+}
+
 // Compact progress bar height variant.
 .ph-progress-sm {
     height: 6px;

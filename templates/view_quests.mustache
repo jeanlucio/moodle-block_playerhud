@@ -44,6 +44,7 @@
                 "is_activity": false,
                 "reward_parts": [{"text": "50 XP"}, {"text": "Iron Sword"}],
                 "has_reward": true,
+                "is_archived": false,
                 "is_claimed": false,
                 "can_claim": true,
                 "progress_pct": 80,
@@ -82,7 +83,14 @@
     <div class="playerhud-item-card card position-relative text-center
         {{#is_claimed}}ph-quest-card-claimed{{/is_claimed}}
         {{^is_claimed}}{{#can_claim}}ph-quest-card-ready{{/can_claim}}{{/is_claimed}}
-        {{^is_claimed}}{{^can_claim}}ph-quest-card-pending{{/can_claim}}{{/is_claimed}}">
+        {{^is_claimed}}{{^can_claim}}ph-quest-card-pending{{/can_claim}}{{/is_claimed}}
+        {{#is_archived}}ph-item-archived{{/is_archived}}">
+
+        {{#is_archived}}
+            <span class="ph-badge-archived">
+                {{#str}} item_archived, block_playerhud {{/str}}
+            </span>
+        {{/is_archived}}
 
         <div class="card-body p-2 d-flex flex-column align-items-center h-100">
             {{! Info button: reveals full description via tooltip. }}
