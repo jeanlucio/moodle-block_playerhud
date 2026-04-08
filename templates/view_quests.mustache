@@ -17,7 +17,7 @@
 {{!
     @template block_playerhud/view_quests
 
-    Displays student quest cards with claim buttons.
+    Displays student quest cards with claim buttons (Grid layout).
 
     @package    block_playerhud
     @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
@@ -46,93 +46,68 @@
                 "url_claim": "#",
                 "str_claim": "Claim Reward",
                 "str_pending": "Pending",
-                "str_claimed": "Completed"
+                "str_claimed": "Completed",
+                "claimed_date": "19/01/26"
             }
         ]
     }
 }}
-<div class="block_playerhud">
-    <div class="row g-3">
-        {{#quests}}
-        <div class="col-12 col-md-6">
-            <div class="card h-100 ph-quest-card
-                {{#is_claimed}}ph-quest-claimed{{/is_claimed}}
-                {{^is_claimed}}{{#can_claim}}ph-quest-ready{{/can_claim}}{{/is_claimed}}">
+<div class="block_playerhud playerhud-inventory-grid animate__animated animate__fadeIn">
+    {{#quests}}
+    <div class="playerhud-item-card card position-relative text-center
+        {{#is_claimed}}ph-quest-card-claimed{{/is_claimed}}
+        {{^is_claimed}}{{#can_claim}}ph-quest-card-ready{{/can_claim}}{{/is_claimed}}
+        {{^is_claimed}}{{^can_claim}}ph-quest-card-pending{{/can_claim}}{{/is_claimed}}">
 
-                <div class="card-body">
-                    {{! Icon + title }}
-                    <div class="d-flex align-items-start mb-2">
-                        <span class="ph-quest-icon me-2" aria-hidden="true">
-                            {{#is_claimed}}{{image_done}}{{/is_claimed}}
-                            {{^is_claimed}}{{image_todo}}{{/is_claimed}}
-                        </span>
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <h5 class="card-title mb-0 fw-bold">{{name}}</h5>
-                                <span class="badge bg-secondary ms-2 flex-shrink-0">{{type_label}}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{! Description }}
-                    {{#description_html}}
-                    <div class="card-text text-muted small mb-2">{{{description_html}}}</div>
-                    {{/description_html}}
-
-                    {{! Reward }}
-                    {{#has_reward}}
-                    <p class="small mb-2">
-                        <i class="fa fa-gift me-1 text-warning" aria-hidden="true"></i>
-                        <strong>{{str_reward}}:</strong> {{reward_text}}
-                    </p>
-                    {{/has_reward}}
-
-                    {{! Progress bar }}
-                    <div class="mb-3">
-                        <div class="progress" role="progressbar"
-                             aria-valuenow="{{progress_pct}}"
-                             aria-valuemin="0"
-                             aria-valuemax="100">
-                            <div class="progress-bar
-                                {{#is_claimed}}bg-success{{/is_claimed}}
-                                {{^is_claimed}}{{#can_claim}}bg-primary{{/can_claim}}{{/is_claimed}}"
-                                 style="width: {{progress_pct}}%">
-                            </div>
-                        </div>
-                        <small class="text-muted">{{progress_label}}</small>
-                        <span class="visually-hidden">{{str_progress_label}}: {{str_progress}}</span>
-                    </div>
+        <div class="card-body p-2 d-flex flex-column align-items-center h-100">
+            {{! Quest icon. }}
+            <div class="mb-1 text-center ph-card-icon-container flex-shrink-0">
+                <div class="ph-modal-emoji ph-card-emoji" aria-hidden="true">
+                    {{#is_claimed}}{{image_done}}{{/is_claimed}}
+                    {{^is_claimed}}{{image_todo}}{{/is_claimed}}
                 </div>
+            </div>
 
-                {{! Card footer: status / claim button }}
-                <div class="card-footer bg-transparent border-top-0 pt-0">
-                    {{#is_claimed}}
-                    <span class="badge bg-success px-3 py-2">
-                        <i class="fa fa-check me-1" aria-hidden="true"></i>
-                        {{str_claimed}}
-                    </span>
-                    {{/is_claimed}}
+            {{! Title }}
+            <div class="fw-bold mb-1 ph-text-md w-100 lh-sm flex-shrink-0" title="{{name}}">{{name}}</div>
 
-                    {{^is_claimed}}
+            {{! Description (Scrollable, Flex-grow, Accessible) }}
+            {{#description_html}}
+            <div class="small mb-2 w-100 ph-quest-desc-scroll text-break" tabindex="0" aria-label="{{name}} - {{#str}} description, block_playerhud {{/str}}">
+                {{{description_html}}}
+            </div>
+            {{/description_html}}
+
+            {{! Bottom Action Area }}
+            <div class="mt-auto w-100 flex-shrink-0">
+                {{#is_claimed}}
+                    <div class="ph-quest-claimed-stamp w-100 py-1 rounded">
+                        <div class="small fw-bold ph-text-gold-dark">
+                            <i class="fa fa-check-circle me-1" aria-hidden="true"></i> {{str_claimed}}
+                        </div>
+                        <div class="ph-text-xs fw-bold ph-text-gold-dark mt-1">{{claimed_date}}</div>
+                    </div>
+                {{/is_claimed}}
+
+                {{^is_claimed}}
                     {{#can_claim}}
-                    <a href="{{url_claim}}"
-                       class="btn btn-success btn-sm"
-                       aria-label="{{str_claim}}: {{name}}">
-                        <i class="fa fa-trophy me-1" aria-hidden="true"></i>
-                        {{str_claim}}
-                    </a>
+                        <a href="{{url_claim}}" class="btn btn-success btn-sm w-100 fw-bold shadow-sm" aria-label="{{str_claim}}: {{name}}">
+                            {{str_claim}}
+                        </a>
                     {{/can_claim}}
                     {{^can_claim}}
-                    <span class="badge bg-light text-muted border px-3 py-2">
-                        <i class="fa fa-clock-o me-1" aria-hidden="true"></i>
-                        {{str_pending}}
-                    </span>
+                        <div class="progress ph-progress-container ph-progress-sm mb-2" aria-hidden="true">
+                            <div class="progress-bar bg-info" style="width: {{progress_pct}}%;"></div>
+                        </div>
+                        <div class="text-center mb-1">
+                            <small class="text-muted fw-bold" aria-hidden="true">{{progress_pct}}%</small>
+                            <span class="visually-hidden">{{str_progress_label}}: {{progress_pct}}%</span>
+                        </div>
+                        <div class="badge bg-light text-muted border w-100 py-1 shadow-sm"><i class="fa fa-lock" aria-hidden="true"></i></div>
                     {{/can_claim}}
-                    {{/is_claimed}}
-                </div>
-
+                {{/is_claimed}}
             </div>
         </div>
-        {{/quests}}
     </div>
+    {{/quests}}
 </div>

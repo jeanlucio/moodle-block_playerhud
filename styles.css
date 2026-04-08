@@ -697,6 +697,70 @@
     gap: 1rem;
 }
 
+.playerhud-item-card.ph-quest-card-pending,
+.playerhud-item-card.ph-quest-card-ready,
+.playerhud-item-card.ph-quest-card-claimed {
+    height: 260px;
+    max-height: 260px;
+    overflow: hidden;
+}
+
+.ph-progress-sm {
+    height: 6px;
+}
+
+.playerhud-item-card .ph-quest-desc-scroll {
+    color: var(--gray-600, #6c757d);
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 3.6em;
+    overflow-y: auto;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    text-align: center;
+    padding-inline-end: 4px;
+    scrollbar-width: thin;
+}
+.playerhud-item-card .ph-quest-desc-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+.playerhud-item-card .ph-quest-desc-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.playerhud-item-card .ph-quest-desc-scroll::-webkit-scrollbar-thumb {
+    background-color: var(--bs-gray-400, #ced4da);
+    border-radius: 4px;
+}
+.playerhud-item-card .ph-quest-desc-scroll:focus-visible {
+    outline: 2px solid var(--primary, #0d6efd);
+    border-radius: 4px;
+}
+
+.playerhud-item-card.ph-quest-card-claimed {
+    background-color: var(--ph-quest-claimed-bg, #fdf3d8);
+    border-color: var(--ph-quest-claimed-border, #f5c6cb);
+}
+.playerhud-item-card.ph-quest-card-claimed .ph-card-title,
+.playerhud-item-card.ph-quest-card-claimed .ph-quest-desc-scroll {
+    color: var(--ph-quest-gold-dark, #664d03);
+}
+.playerhud-item-card.ph-quest-card-claimed .ph-quest-desc-scroll::-webkit-scrollbar-thumb {
+    background-color: var(--ph-quest-gold-mid, #d39e00);
+}
+.playerhud-item-card.ph-quest-card-claimed .ph-quest-claimed-stamp {
+    background-color: var(--ph-quest-stamp-bg, rgba(255, 193, 7, 0.15));
+    border: 1px solid var(--ph-quest-stamp-border, rgba(255, 193, 7, 0.25));
+}
+
+.ph-text-gold-dark {
+    color: var(--ph-quest-gold-dark, #664d03);
+}
+
+.playerhud-item-card.ph-quest-card-ready {
+    border: 2px solid var(--success, #198754);
+    box-shadow: 0 0.25rem 0.5rem var(--ph-quest-ready-shadow, rgba(25, 135, 84, 0.15));
+}
+
 .ph-col-select {
     width: 50px;
     min-width: 50px;

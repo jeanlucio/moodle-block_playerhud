@@ -94,9 +94,8 @@ class tab_quests implements renderable {
             "userid = ? AND questid $qinsql",
             array_merge([$USER->id], $qinparams),
             '',
-            'questid'
+            'questid, timecreated'
         );
-        $claimedids = array_keys($claimedrows);
 
         // Preload reward item names (avoid N+1).
         $rewarditemids = [];
@@ -133,7 +132,12 @@ class tab_quests implements renderable {
 
         $questsdata = [];
         foreach ($quests as $q) {
-            $isclaimed = in_array($q->id, $claimedids);
+            $isclaimed = isset($claimedrows[$q->id]);
+            $claimeddate = '';
+
+            if ($isclaimed) {
+                $claimeddate = userdate($claimedrows[$q->id]->timecreated, get_string('strftimedatefullshort', 'langconfig'));
+            }
 
             // Delegate status check to the quest service class.
             $status = quest::check_status(
@@ -178,6 +182,7 @@ class tab_quests implements renderable {
                 'reward_text'      => $rewardtext,
                 'has_reward'       => !empty($rewardparts),
                 'is_claimed'       => $isclaimed,
+                'claimed_date'     => $claimeddate,
                 'can_claim'        => $canclaim,
                 'url_claim'        => $canclaim
                     ? (new moodle_url($viewurl, [
