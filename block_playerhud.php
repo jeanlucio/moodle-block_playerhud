@@ -148,10 +148,13 @@ class block_playerhud extends block_base {
                 ]);
 
                 // Ranking Logic.
-                if ($player->ranking_visibility == 1 && $player->enable_gamification == 1) {
+                if (!$isteacher && $player->ranking_visibility == 1 && $player->enable_gamification == 1) {
                     $rank = \block_playerhud\game::get_user_rank($this->instance->id, $USER->id, $player->currentxp);
                     $rankdisplay = $rank;
                     $ranktooltip = "#{$rank} - " . get_string('view_ranking', 'block_playerhud');
+                } else if ($isteacher) {
+                    $rankdisplay = '-';
+                    $ranktooltip = get_string('view_ranking', 'block_playerhud');
                 } else {
                     $rankdisplay = '-';
                     $ranktooltip = get_string('enable_ranking', 'block_playerhud');

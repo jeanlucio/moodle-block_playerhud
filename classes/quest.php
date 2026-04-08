@@ -328,8 +328,9 @@ class quest {
             return false;
         }
 
-        // Bulk-load claimed IDs for this user; avoids per-quest lookups.
-        $claimed = $DB->get_records_menu('block_playerhud_quest_log', ['userid' => $userid], '', 'questid, questid');
+        // Bulk-load claimed quest IDs for this user into a lookup map.
+        $claimedids = $DB->get_fieldset_select('block_playerhud_quest_log', 'questid', 'userid = ?', [$userid]);
+        $claimed = array_flip($claimedids);
 
         $unclaimed = array_filter($quests, static fn($q) => !isset($claimed[$q->id]));
         if (empty($unclaimed)) {
