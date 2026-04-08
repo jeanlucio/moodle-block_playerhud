@@ -29,7 +29,6 @@ use block_playerhud\quest;
  * @covers     \block_playerhud\quest
  */
 final class quest_test extends advanced_testcase {
-
     /** @var int Block instance ID. */
     protected $instanceid;
 
@@ -64,10 +63,6 @@ final class quest_test extends advanced_testcase {
 
         $this->instanceid = $DB->insert_record('block_instances', $bi);
     }
-
-    // -----------------------------------------------------------------------
-    // Helpers
-    // -----------------------------------------------------------------------
 
     /**
      * Create a quest record in the database.
@@ -201,10 +196,6 @@ final class quest_test extends advanced_testcase {
         $DB->insert_records('block_playerhud_trade_log', $records);
     }
 
-    // -----------------------------------------------------------------------
-    // check_status() — TYPE_LEVEL
-    // -----------------------------------------------------------------------
-
     /**
      * TYPE_LEVEL: player not yet at required level.
      *
@@ -246,10 +237,6 @@ final class quest_test extends advanced_testcase {
         $this->assertEquals(100, $status->progress);
     }
 
-    // -----------------------------------------------------------------------
-    // check_status() — TYPE_XP_TOTAL
-    // -----------------------------------------------------------------------
-
     /**
      * TYPE_XP_TOTAL: player has insufficient XP.
      *
@@ -276,10 +263,6 @@ final class quest_test extends advanced_testcase {
         $this->assertEquals(100, $status->progress);
     }
 
-    // -----------------------------------------------------------------------
-    // check_status() — TYPE_UNIQUE_ITEMS
-    // -----------------------------------------------------------------------
-
     /**
      * TYPE_UNIQUE_ITEMS: player has fewer unique items than required.
      *
@@ -287,11 +270,11 @@ final class quest_test extends advanced_testcase {
      */
     public function test_check_status_unique_items_not_met(): void {
         $user  = $this->getDataGenerator()->create_user();
-        $itemA = $this->create_dummy_item('Sword');
-        $itemB = $this->create_dummy_item('Shield');
+        $itema = $this->create_dummy_item('Sword');
+        $itemb = $this->create_dummy_item('Shield');
 
-        $this->give_item($user->id, $itemA->id);
-        $this->give_item($user->id, $itemB->id);
+        $this->give_item($user->id, $itema->id);
+        $this->give_item($user->id, $itemb->id);
 
         $quest = $this->create_quest(quest::TYPE_UNIQUE_ITEMS, '3');
         $status = quest::check_status($quest, $user->id, $this->course->id, 0, 1);
@@ -306,13 +289,13 @@ final class quest_test extends advanced_testcase {
      */
     public function test_check_status_unique_items_met(): void {
         $user  = $this->getDataGenerator()->create_user();
-        $itemA = $this->create_dummy_item('Sword');
-        $itemB = $this->create_dummy_item('Shield');
-        $itemC = $this->create_dummy_item('Potion');
+        $itema = $this->create_dummy_item('Sword');
+        $itemb = $this->create_dummy_item('Shield');
+        $itemc = $this->create_dummy_item('Potion');
 
-        $this->give_item($user->id, $itemA->id);
-        $this->give_item($user->id, $itemB->id);
-        $this->give_item($user->id, $itemC->id);
+        $this->give_item($user->id, $itema->id);
+        $this->give_item($user->id, $itemb->id);
+        $this->give_item($user->id, $itemc->id);
 
         $quest = $this->create_quest(quest::TYPE_UNIQUE_ITEMS, '3');
         $status = quest::check_status($quest, $user->id, $this->course->id, 0, 1);
@@ -371,10 +354,6 @@ final class quest_test extends advanced_testcase {
         $this->assertFalse($status->completed);
     }
 
-    // -----------------------------------------------------------------------
-    // check_status() — TYPE_SPECIFIC_ITEM
-    // -----------------------------------------------------------------------
-
     /**
      * TYPE_SPECIFIC_ITEM: player has fewer copies than required.
      *
@@ -410,10 +389,6 @@ final class quest_test extends advanced_testcase {
         $this->assertTrue($status->completed);
         $this->assertEquals(100, $status->progress);
     }
-
-    // -----------------------------------------------------------------------
-    // check_status() — TYPE_TOTAL_ITEMS
-    // -----------------------------------------------------------------------
 
     /**
      * TYPE_TOTAL_ITEMS: counts all non-revoked items (including duplicates).
@@ -459,10 +434,6 @@ final class quest_test extends advanced_testcase {
         $this->assertFalse($status->completed);
         $this->assertEquals(80, $status->progress);
     }
-
-    // -----------------------------------------------------------------------
-    // check_status() — TYPE_TRADES
-    // -----------------------------------------------------------------------
 
     /**
      * TYPE_TRADES: player has not completed enough trades.
@@ -513,10 +484,6 @@ final class quest_test extends advanced_testcase {
         $this->assertTrue($status->completed);
     }
 
-    // -----------------------------------------------------------------------
-    // check_status() — TYPE_SPECIFIC_TRADE
-    // -----------------------------------------------------------------------
-
     /**
      * TYPE_SPECIFIC_TRADE: counts only a specific trade, not others.
      *
@@ -554,10 +521,6 @@ final class quest_test extends advanced_testcase {
         $this->assertEquals(60, $status->progress);
     }
 
-    // -----------------------------------------------------------------------
-    // check_status() — TYPE_ACTIVITY
-    // -----------------------------------------------------------------------
-
     /**
      * TYPE_ACTIVITY: requires real Moodle completion infrastructure.
      * Skipped in unit test — covered by integration/behat tests.
@@ -570,10 +533,6 @@ final class quest_test extends advanced_testcase {
             . ' Covered by integration/behat tests.'
         );
     }
-
-    // -----------------------------------------------------------------------
-    // claim_reward()
-    // -----------------------------------------------------------------------
 
     /**
      * Successful claim: XP is credited to the player and log entry is written.
