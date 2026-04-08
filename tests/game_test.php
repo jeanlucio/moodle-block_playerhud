@@ -145,6 +145,89 @@ final class game_test extends advanced_testcase {
     }
 
     /**
+     * Test that enabled quest reward_xp is included in total_game_xp.
+     *
+     * @covers ::get_game_stats
+     */
+    public function test_get_game_stats_includes_quest_xp(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $config = new \stdClass();
+        $config->xp_per_level = 100;
+        $config->max_levels   = 10;
+
+        // 150 XP from a finite drop (item 50 XP × 3 collections).
+        $item = $this->create_dummy_item('Iron Ore', 50);
+        $this->create_dummy_drop($item->id, 3);
+
+        // 50 XP available from an enabled quest reward.
+        $DB->insert_record('block_playerhud_quests', (object)[
+            'blockinstanceid'  => $this->instanceid,
+            'name'             => 'Test Quest',
+            'description'      => '',
+            'type'             => 1,
+            'requirement'      => '1',
+            'req_itemid'       => 0,
+            'reward_xp'        => 50,
+            'reward_itemid'    => 0,
+            'required_class_id' => '0',
+            'image_todo'       => '📋',
+            'image_done'       => '🏅',
+            'enabled'          => 1,
+            'timecreated'      => time(),
+            'timemodified'     => time(),
+        ]);
+
+        $stats = game::get_game_stats($config, $this->instanceid, 0);
+
+        $this->assertEquals(200, $stats['total_game_xp'], 'Quest reward_xp must be added to drop XP total.');
+    }
+
+    /**
+     * Test that disabled quests do not contribute to total_game_xp.
+     *
+     * @covers ::get_game_stats
+     */
+    public function test_get_game_stats_disabled_quest_excluded(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $config = new \stdClass();
+        $config->xp_per_level = 100;
+        $config->max_levels   = 10;
+
+        $item = $this->create_dummy_item('Herb', 50);
+        $this->create_dummy_drop($item->id, 3);
+
+        // Disabled quest must NOT add to the total.
+        $DB->insert_record('block_playerhud_quests', (object)[
+            'blockinstanceid'  => $this->instanceid,
+            'name'             => 'Disabled Quest',
+            'description'      => '',
+            'type'             => 1,
+            'requirement'      => '1',
+            'req_itemid'       => 0,
+            'reward_xp'        => 500,
+            'reward_itemid'    => 0,
+            'required_class_id' => '0',
+            'image_todo'       => '📋',
+            'image_done'       => '🏅',
+            'enabled'          => 0,
+            'timecreated'      => time(),
+            'timemodified'     => time(),
+        ]);
+
+        $stats = game::get_game_stats($config, $this->instanceid, 0);
+
+        $this->assertEquals(150, $stats['total_game_xp'], 'Disabled quest must not count toward total_game_xp.');
+    }
+
+    /**
      * Test the Anti-Farm rule: Infinite drops (maxusage = 0) must yield 0 XP.
      *
      * @covers ::process_collection

@@ -110,18 +110,46 @@ final class privacy_provider_test extends advanced_testcase {
         $ailog->timecreated = time();
         $DB->insert_record('block_playerhud_ai_logs', $ailog);
 
-        // Verify data actually exists before deleting.
+        // 5. Create a quest and a quest_log entry for this user.
+        $questid = $DB->insert_record('block_playerhud_quests', (object)[
+            'blockinstanceid'  => $this->instanceid,
+            'name'             => 'Privacy Quest',
+            'description'      => '',
+            'type'             => 1,
+            'requirement'      => '1',
+            'req_itemid'       => 0,
+            'reward_xp'        => 10,
+            'reward_itemid'    => 0,
+            'required_class_id' => '0',
+            'image_todo'       => '📋',
+            'image_done'       => '🏅',
+            'enabled'          => 1,
+            'timecreated'      => time(),
+            'timemodified'     => time(),
+        ]);
+        $DB->insert_record('block_playerhud_quest_log', (object)[
+            'questid'     => $questid,
+            'userid'      => $user->id,
+            'timecreated' => time(),
+        ]);
+
+        // Verify all data exists before deleting.
         $this->assertEquals(1, $DB->count_records('block_playerhud_user', ['userid' => $user->id]));
         $this->assertEquals(1, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
         $this->assertEquals(1, $DB->count_records('block_playerhud_ai_logs', ['userid' => $user->id]));
+        $this->assertEquals(
+            1,
+            $DB->count_records('block_playerhud_quest_log', ['userid' => $user->id]),
+            'Quest log entry should exist before deletion.'
+        );
 
-        // 5. Build the approved context list to request deletion.
+        // 6. Build the approved context list to request deletion.
         $approvedcontextlist = new approved_contextlist($user, 'block_playerhud', [$this->context->id]);
 
-        // 6. Execute the Privacy API deletion.
+        // 7. Execute the Privacy API deletion.
         provider::delete_data_for_user($approvedcontextlist);
 
-        // 7. Verify all data is permanently gone from the database.
+        // 8. Verify all data is permanently gone from the database.
         $this->assertEquals(
             0,
             $DB->count_records('block_playerhud_user', ['userid' => $user->id]),
@@ -138,6 +166,12 @@ final class privacy_provider_test extends advanced_testcase {
             0,
             $DB->count_records('block_playerhud_ai_logs', ['userid' => $user->id]),
             'AI logs should be deleted.'
+        );
+
+        $this->assertEquals(
+            0,
+            $DB->count_records('block_playerhud_quest_log', ['userid' => $user->id]),
+            'Quest log entries should be deleted (GDPR compliance).'
         );
     }
 
