@@ -36,6 +36,7 @@
                 "image_done": "🏅",
                 "type_label": "Reach Level",
                 "is_activity": false,
+                "description_plain": "Reach level 5 in the course.",
                 "reward_text": "50 XP",
                 "has_reward": true,
                 "is_claimed": false,
@@ -73,9 +74,12 @@
             {{! Title }}
             <div class="fw-bold mb-1 ph-text-md w-100 lh-sm flex-shrink-0" title="{{name}}">{{name}}</div>
 
-            {{! Description (Scrollable, Flex-grow, Accessible) }}
+            {{! Description: 2-line clamp, full text available via tooltip. }}
             {{#description_html}}
-            <div class="small mb-2 w-100 ph-quest-desc-scroll text-break">
+            <div class="small mb-2 w-100 ph-quest-desc-scroll text-break js-ph-quest-desc"
+                 data-bs-toggle="tooltip"
+                 data-bs-placement="bottom"
+                 data-bs-title="{{description_plain}}">
                 {{{description_html}}}
             </div>
             {{/description_html}}

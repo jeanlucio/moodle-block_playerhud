@@ -172,8 +172,11 @@ class tab_quests implements renderable {
             $questsdata[] = [
                 'id'               => $q->id,
                 'name'             => format_string($q->name),
-                'description_html' => !empty($q->description)
+                'description_html'  => !empty($q->description)
                     ? format_text($q->description, FORMAT_HTML, ['filter' => false])
+                    : '',
+                'description_plain' => !empty($q->description)
+                    ? s(strip_tags(format_text($q->description, FORMAT_HTML, ['filter' => false])))
                     : '',
                 'image_todo'       => !empty($q->image_todo) ? $q->image_todo : '📋',
                 'image_done'       => !empty($q->image_done) ? $q->image_done : '🏅',
