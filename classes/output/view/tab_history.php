@@ -401,7 +401,7 @@ class tab_history implements renderable, templatable {
                     $badgeclass = 'bg-warning text-dark';
                     $badgetext  = get_string('report_type_quest', 'block_playerhud');
                     $iconemoji  = !empty($log->icon) ? $log->icon : '🏅';
-                    $detailtext = get_string('quest_claim', 'block_playerhud');
+                    $detailtext = get_string('quest_status_completed', 'block_playerhud');
                 }
 
                 $xpbadge = '';
