@@ -266,6 +266,72 @@ if ($action == 'delete_quest' && $questid && confirm_sesskey()) {
     }
 }
 
+// Action: Bulk Delete Quests (Multiple).
+if ($action === 'bulk_delete_quests' && confirm_sesskey()) {
+    $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
+    if (!empty($bulkids)) {
+        // Get all selected quests belonging to this instance.
+        [$insql, $inparams] = $DB->get_in_or_equal($bulkids);
+        $params = array_merge($inparams, [$instanceid]);
+        $quests = $DB->get_records_select('block_playerhud_quests', "id $insql AND blockinstanceid = ?", $params);
+
+        if ($quests) {
+            $questids = array_keys($quests);
+            [$qinsql, $qinparams] = $DB->get_in_or_equal($questids);
+
+            // Calculate total XP to remove per user for all quests in a single query.
+            $sql = "SELECT ql.userid, SUM(q.reward_xp) as totalxptoremove
+                      FROM {block_playerhud_quest_log} ql
+                      JOIN {block_playerhud_quests} q ON ql.questid = q.id
+                     WHERE ql.questid $qinsql
+                  GROUP BY ql.userid";
+            $holders = $DB->get_records_sql($sql, $qinparams);
+
+            // Bulk load users to avoid N+1.
+            if ($holders) {
+                $userids = array_keys($holders);
+                [$usql, $uparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'usr');
+                $uparams['instanceid'] = $instanceid;
+
+                $players = $DB->get_records_select(
+                    'block_playerhud_user',
+                    "blockinstanceid = :instanceid AND userid $usql",
+                    $uparams,
+                    '',
+                    'userid, id, currentxp, timemodified, enable_gamification'
+                );
+
+                // Revert XP for all affected users.
+                foreach ($holders as $holder) {
+                    if (isset($players[$holder->userid])) {
+                        $player = $players[$holder->userid];
+                        $player->currentxp = max(0, $player->currentxp - $holder->totalxptoremove);
+                        $DB->update_record('block_playerhud_user', $player);
+                    }
+                }
+            }
+
+            // Delete records in bulk without loops.
+            $DB->delete_records_select('block_playerhud_quest_log', "questid $qinsql", $qinparams);
+            $DB->delete_records_select('block_playerhud_quests', "id $qinsql", $qinparams);
+
+            $deletedcount = count($questids);
+        }
+
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]),
+            get_string('deleted_bulk', 'block_playerhud', $deletedcount ?? 0),
+            \core\output\notification::NOTIFY_SUCCESS
+        );
+    } else {
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]),
+            get_string('no_items_selected', 'block_playerhud'),
+            \core\output\notification::NOTIFY_WARNING
+        );
+    }
+}
+
 // Action: Delete Trade.
 if ($action == 'delete_trade' && $tradeid && confirm_sesskey()) {
     $transaction = $DB->start_delegated_transaction();

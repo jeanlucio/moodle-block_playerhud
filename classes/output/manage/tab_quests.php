@@ -237,7 +237,7 @@ class tab_quests implements renderable {
     }
 
     /**
-     * Render the quest list table.
+     * Render the quest list table with pagination and bulk actions.
      *
      * @return string HTML.
      */
@@ -256,6 +256,13 @@ class tab_quests implements renderable {
         }
         $this->dir = (strtoupper($this->dir) === 'DESC') ? 'DESC' : 'ASC';
 
+        // Pagination logic.
+        $page    = optional_param('page', 0, PARAM_INT);
+        $perpage = 30;
+
+        $countsql = "SELECT COUNT(1) FROM {block_playerhud_quests} WHERE blockinstanceid = :instanceid";
+        $totalquests = $DB->count_records_sql($countsql, ['instanceid' => $this->instanceid]);
+
         // Load quests for this block instance with claims count.
         $sql = "SELECT q.*, COALESCE(ql.claims_count, 0) AS claims
                   FROM {block_playerhud_quests} q
@@ -265,9 +272,16 @@ class tab_quests implements renderable {
                  WHERE q.blockinstanceid = :instanceid
               ORDER BY {$this->sort} {$this->dir}";
 
-        $quests = $DB->get_records_sql($sql, ['instanceid' => $this->instanceid]);
+        $quests = $DB->get_records_sql(
+            $sql,
+            ['instanceid' => $this->instanceid],
+            $page * $perpage,
+            $perpage
+        );
 
-        // Preload reward item names to avoid N+1.
+        $pagingbar = $OUTPUT->paging_bar($totalquests, $page, $perpage, $baseurl, 'page');
+
+        // Preload reward item names to avoid N+1 queries.
         $itemids = [];
         $tradeids = [];
         foreach ($quests as $q) {
@@ -311,6 +325,7 @@ class tab_quests implements renderable {
             quest::TYPE_ACTIVITY       => get_string('quest_type_activity', 'block_playerhud'),
         ];
 
+        // Standardized neutral badges to avoid cognitive overload.
         $typebadges = [
             quest::TYPE_LEVEL          => 'bg-light text-dark border',
             quest::TYPE_XP_TOTAL       => 'bg-light text-dark border',
@@ -323,7 +338,7 @@ class tab_quests implements renderable {
         ];
 
         $questsdata = [];
-        $counter = 1;
+        $counter = ($page * $perpage) + 1;
         foreach ($quests as $q) {
             $rewardtext = '';
             if ($q->reward_xp > 0) {
@@ -361,11 +376,17 @@ class tab_quests implements renderable {
                     'action'  => 'toggle_quest',
                     'questid' => $q->id,
                     'sesskey' => sesskey(),
+                    'sort'    => $this->sort,
+                    'dir'     => $this->dir,
+                    'page'    => $page,
                 ]))->out(false),
                 'url_delete'       => (new moodle_url($baseurl, [
                     'action'  => 'delete_quest',
                     'questid' => $q->id,
                     'sesskey' => sesskey(),
+                    'sort'    => $this->sort,
+                    'dir'     => $this->dir,
+                    'page'    => $page,
                 ]))->out(false),
                 'str_yes'            => get_string('yes'),
                 'str_no'             => get_string('no'),
@@ -385,20 +406,22 @@ class tab_quests implements renderable {
             'enabled' => $this->get_sort_data('enabled', get_string('enabled', 'block_playerhud'), $baseurl),
         ];
 
+        // JavaScript AMD parameters.
         $jsvars = [
             'strings' => [
-                'confirm_title' => get_string('confirmation', 'admin'),
-                'yes'           => get_string('yes'),
-                'cancel'        => get_string('cancel'),
+                'confirm_title'   => get_string('confirmation', 'admin'),
+                'yes'             => get_string('yes'),
+                'cancel'          => get_string('cancel'),
+                'delete_selected' => get_string('delete_selected', 'block_playerhud'),
+                'delete_n_items'  => get_string('delete_n_items', 'block_playerhud'),
+                'confirm_bulk'    => get_string('confirm_bulk_delete', 'block_playerhud'),
             ],
         ];
         $PAGE->requires->js_call_amd('block_playerhud/manage_quests', 'init', [$jsvars]);
 
-        $totalquests = count($questsdata);
-        $summarytext = get_string('quests_summary', 'block_playerhud', $totalquests);
-
         $templatedata = [
-            'summary_text'   => $summarytext,
+            'base_url'       => $baseurl->out(false),
+            'sesskey'        => sesskey(),
             'url_add'        => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
             'url_suggest'    => (new moodle_url($baseurl, ['action' => 'suggest_quests']))->out(false),
             'str_suggest'    => get_string('quest_sug_btn', 'block_playerhud'),
@@ -409,9 +432,14 @@ class tab_quests implements renderable {
             'str_edit'       => get_string('edit'),
             'str_delete'     => get_string('delete'),
             'str_empty'      => get_string('quests_none', 'block_playerhud'),
+            'str_select_all' => get_string('selectall'),
+            'str_select'     => get_string('select'),
+            'str_delete_selected' => get_string('delete_selected', 'block_playerhud'),
             'headers'        => $headers,
             'quests'         => $questsdata,
             'has_quests'     => !empty($questsdata),
+            'paging_bar'     => $pagingbar,
+            'summary_text'   => get_string('quests_summary', 'block_playerhud', $totalquests),
         ];
 
         return $OUTPUT->render_from_template('block_playerhud/manage_quests', $templatedata);
