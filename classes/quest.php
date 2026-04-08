@@ -382,7 +382,8 @@ class quest {
                     $itemid = (int)$q->req_itemid;
                     if (!isset($specificitemcnt[$itemid])) {
                         $specificitemcnt[$itemid] = (int)$DB->count_records(
-                            'block_playerhud_inventory', ['userid' => $userid, 'itemid' => $itemid]
+                            'block_playerhud_inventory',
+                            ['userid' => $userid, 'itemid' => $itemid]
                         );
                     }
                     $completed = ($specificitemcnt[$itemid] >= (int)$q->requirement);
@@ -403,7 +404,8 @@ class quest {
                     $tradeid = (int)$q->req_itemid;
                     if (!isset($specifictradecnt[$tradeid])) {
                         $specifictradecnt[$tradeid] = (int)$DB->count_records(
-                            'block_playerhud_trade_log', ['userid' => $userid, 'tradeid' => $tradeid]
+                            'block_playerhud_trade_log',
+                            ['userid' => $userid, 'tradeid' => $tradeid]
                         );
                     }
                     $completed = ($specifictradecnt[$tradeid] >= (int)$q->requirement);

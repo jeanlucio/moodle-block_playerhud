@@ -170,7 +170,11 @@ class block_playerhud extends block_base {
 
             // Quest notification dot: show when a reward is waiting to be claimed.
             $hasclaimable = \block_playerhud\quest::has_claimable_quests(
-                $this->instance->id, $USER->id, $COURSE->id, $player->currentxp, $stats['level']
+                $this->instance->id,
+                $USER->id,
+                $COURSE->id,
+                $player->currentxp,
+                $stats['level']
             );
 
             // Final Data.
