@@ -116,10 +116,20 @@
             {{! Title }}
             <div class="fw-bold mb-1 ph-text-md w-100 lh-sm flex-shrink-0 ph-text-truncate-2lines" title="{{name}}">{{name}}</div>
 
-            {{! Reward lines: one block per reward part. }}
+            {{! Reward lines: Single badge with text wrap and 2-line truncation. }}
             {{#has_reward}}
-            <div class="ph-quest-reward w-100 text-center flex-shrink-0">
-                <i class="fa fa-gift me-1" aria-hidden="true"></i>{{#reward_parts}}<span class="d-block lh-sm">{{text}}</span>{{/reward_parts}}
+            <div class="w-100 text-center flex-shrink-0 mb-2 px-1">
+                {{#is_claimed}}
+                    <span class="badge bg-warning text-dark border border-warning fw-bold mb-1 text-wrap lh-sm shadow-sm ph-text-truncate-2lines" title="{{reward_combined}}">
+                        {{reward_combined}}
+                    </span>
+                {{/is_claimed}}
+
+                {{^is_claimed}}
+                    <span class="badge bg-light text-success border border-success fw-bold mb-1 text-wrap lh-sm shadow-sm ph-text-truncate-2lines" title="{{reward_combined}}">
+                        {{reward_combined}}
+                    </span>
+                {{/is_claimed}}
             </div>
             {{/has_reward}}
 
@@ -141,26 +151,20 @@
                         </a>
                     {{/can_claim}}
                     {{^can_claim}}
-                        <div class="d-flex justify-content-between align-items-end w-100 mb-1 px-1" aria-hidden="true">
-                            <small class="text-muted fw-bold lh-1 text-truncate pe-2" title="{{progress_label}}">{{progress_label}}</small>
-                            <small class="text-muted fw-bold lh-1">{{progress_pct}}%</small>
-                        </div>
-                        <div class="progress ph-progress-container ph-progress-sm mb-2 w-100" aria-hidden="true">
+                        <div class="progress ph-progress-container ph-progress-sm mb-1 w-100 position-relative" aria-hidden="true">
                             <div class="progress-bar bg-info" style="width: {{progress_pct}}%;"></div>
                         </div>
-                        <span class="sr-only visually-hidden">{{progress_label}}: {{progress_pct}}%</span>
+                        <div class="text-center w-100 mb-2" aria-hidden="true">
+                            {{^activity_url}}<i class="fa fa-lock text-muted me-1" aria-hidden="true"></i>{{/activity_url}}
+                            <small class="text-muted fw-bold ph-text-xs" title="{{progress_label}}">{{progress_label}}</small>
+                        </div>
+                        <span class="sr-only visually-hidden">{{progress_label}}</span>
 
                         {{#activity_url}}
                         <a href="{{activity_url}}" class="btn btn-outline-primary btn-sm w-100 fw-bold"
                            aria-label="{{str_go_activity}}: {{name}}">
                             <i class="fa fa-external-link me-1" aria-hidden="true"></i>{{str_go_activity}}
                         </a>
-                        {{/activity_url}}
-                        {{^activity_url}}
-                        <div class="badge bg-light text-muted border w-100 py-1 shadow-sm">
-                            <i class="fa fa-lock" aria-hidden="true"></i>
-                            <span class="sr-only visually-hidden">{{str_pending}}</span>
-                        </div>
                         {{/activity_url}}
                     {{/can_claim}}
                 {{/is_claimed}}

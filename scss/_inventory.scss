@@ -169,14 +169,6 @@
             outline: none;
         }
     }
-
-    // Reward line: compact green text between title and action area.
-    .ph-quest-reward {
-        font-size: 0.7rem;
-        color: var(--success, #198754);
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-    }
 }
 
 // Completed golden card; overrides via increased specificity.
@@ -191,11 +183,6 @@
     .ph-quest-claimed-stamp {
         background-color: var(--ph-quest-stamp-bg, rgba(255, 193, 7, 0.15));
         border: 1px solid var(--ph-quest-stamp-border, rgba(255, 193, 7, 0.25));
-    }
-
-    .ph-quest-reward {
-        color: var(--ph-quest-gold-dark, #664d03);
-        font-weight: 700;
     }
 }
 

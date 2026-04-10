@@ -757,12 +757,6 @@
     color: var(--primary, #0d6efd);
     outline: none;
 }
-.playerhud-item-card .ph-quest-reward {
-    font-size: 0.7rem;
-    color: var(--success, #198754);
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
 
 .playerhud-item-card.ph-quest-card-claimed {
     background-color: var(--ph-quest-claimed-bg, #fdf3d8);
@@ -774,10 +768,6 @@
 .playerhud-item-card.ph-quest-card-claimed .ph-quest-claimed-stamp {
     background-color: var(--ph-quest-stamp-bg, rgba(255, 193, 7, 0.15));
     border: 1px solid var(--ph-quest-stamp-border, rgba(255, 193, 7, 0.25));
-}
-.playerhud-item-card.ph-quest-card-claimed .ph-quest-reward {
-    color: var(--ph-quest-gold-dark, #664d03);
-    font-weight: 700;
 }
 
 .ph-text-gold-dark {
