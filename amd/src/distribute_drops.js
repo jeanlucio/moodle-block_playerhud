@@ -125,7 +125,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
 
         // Update status badge.
         $row.find('.ph-dist-status')
-            .html('<span class="badge bg-success"><i class="fa fa-check me-1" aria-hidden="true"></i>' +
+            .html('<span class="badge bg-success text-white"><i class="fa fa-check me-1" aria-hidden="true"></i>' +
                 strings.inserted + '</span>');
     }
 

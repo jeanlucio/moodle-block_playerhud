@@ -89,11 +89,11 @@
         </div>
     </div>
 
-    <div class="ms-auto d-flex gap-3">
-        <a href="{{url_library}}" class="btn btn-outline-dark shadow-sm">
+    <div class="ms-auto d-flex">
+        <a href="{{url_library}}" class="btn btn-outline-dark shadow-sm me-2">
             <i class="fa fa-book" aria-hidden="true"></i> {{str_back_lib}}
         </a>
-        <a href="{{url_new_drop}}" class="btn btn-success shadow-sm ms-2">
+        <a href="{{url_new_drop}}" class="btn btn-success shadow-sm">
             <i class="fa fa-plus" aria-hidden="true"></i> {{str_new_drop}}
         </a>
     </div>
@@ -167,12 +167,12 @@
                         </td>
 
                         <td class="align-middle text-nowrap">
-                            <div class="d-flex gap-2 justify-content-start">
-                                <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm js-copy-code me-1"
+                            <div class="d-flex justify-content-start">
+                                <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm js-copy-code me-2"
                                         data-clipboard-text="{{full_default_code}}"
                                         title="{{str_quick_copy}}"
                                         aria-label="{{str_quick_copy}} {{name}}">
-                                    <i class="fa fa-copy" aria-hidden="true"></i> {{str_quick_copy}}
+                                     <i class="fa fa-copy" aria-hidden="true"></i> {{str_quick_copy}}
                                 </button>
 
                                 <button type="button" class="btn btn-outline-dark btn-sm js-open-gen-modal shadow-sm"
