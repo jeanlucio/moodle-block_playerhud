@@ -114,7 +114,7 @@
             </div>
 
             {{! Title }}
-            <div class="fw-bold mb-1 ph-text-md w-100 lh-sm flex-shrink-0" title="{{name}}">{{name}}</div>
+            <div class="fw-bold mb-1 ph-text-md w-100 lh-sm flex-shrink-0 ph-text-truncate-2lines" title="{{name}}">{{name}}</div>
 
             {{! Reward lines: one block per reward part. }}
             {{#has_reward}}
@@ -141,13 +141,15 @@
                         </a>
                     {{/can_claim}}
                     {{^can_claim}}
-                        <div class="progress ph-progress-container ph-progress-sm mb-2" aria-hidden="true">
+                        <div class="d-flex justify-content-between align-items-end w-100 mb-1 px-1" aria-hidden="true">
+                            <small class="text-muted fw-bold lh-1 text-truncate pe-2" title="{{progress_label}}">{{progress_label}}</small>
+                            <small class="text-muted fw-bold lh-1">{{progress_pct}}%</small>
+                        </div>
+                        <div class="progress ph-progress-container ph-progress-sm mb-2 w-100" aria-hidden="true">
                             <div class="progress-bar bg-info" style="width: {{progress_pct}}%;"></div>
                         </div>
-                        <div class="text-center mb-1">
-                            <small class="text-muted fw-bold" aria-hidden="true">{{progress_label}} ({{progress_pct}}%)</small>
-                            <span class="sr-only visually-hidden">{{progress_label}}: {{progress_pct}}%</span>
-                        </div>
+                        <span class="sr-only visually-hidden">{{progress_label}}: {{progress_pct}}%</span>
+
                         {{#activity_url}}
                         <a href="{{activity_url}}" class="btn btn-outline-primary btn-sm w-100 fw-bold"
                            aria-label="{{str_go_activity}}: {{name}}">

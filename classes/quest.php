@@ -106,7 +106,7 @@ class quest {
 
                 $status->completed = ($current >= $target);
                 $status->progress = ($target > 0) ? min(100, floor(($current / $target) * 100)) : 100;
-                $status->label = "{$current} / {$target} " . get_string('items', 'block_playerhud');
+                $status->label = "{$current} / {$target}";
                 break;
 
             case self::TYPE_SPECIFIC_ITEM:
@@ -130,7 +130,7 @@ class quest {
 
                 $status->completed = ($current >= $target);
                 $status->progress = ($target > 0) ? min(100, floor(($current / $target) * 100)) : 100;
-                $status->label = "{$current} / {$target} " . get_string('items', 'block_playerhud');
+                $status->label = "{$current} / {$target}";
                 break;
 
             case self::TYPE_TRADES:
@@ -143,7 +143,7 @@ class quest {
 
                 $status->completed = ($current >= $target);
                 $status->progress = ($target > 0) ? min(100, floor(($current / $target) * 100)) : 100;
-                $status->label = "{$current} / {$target} " . get_string('tab_trades', 'block_playerhud');
+                $status->label = "{$current} / {$target}";
                 break;
 
             case self::TYPE_SPECIFIC_TRADE:
