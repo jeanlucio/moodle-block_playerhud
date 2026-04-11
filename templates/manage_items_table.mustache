@@ -77,26 +77,38 @@
         "modal_preview_html": ""
     }
 }}
-<div class="d-flex justify-content-between align-items-start mb-3 p-3 bg-light rounded border shadow-sm ph-manage-header">
-    <div class="d-flex align-items-start flex-grow-1 me-3">
-        <i class="fa fa-info-circle text-primary me-2 fa-lg mt-1" aria-hidden="true"></i>
-        <div>
-            <span class="fw-bold text-dark">{{summary_text}}</span>
-            <br>
-            <small class="text-muted">{{summary_hint}}</small>
+<div class="d-flex flex-column mb-3 p-3 bg-light rounded border shadow-sm ph-manage-header">
+    <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
+        <div class="d-flex align-items-center flex-grow-1">
+            <span class="fw-bold text-dark me-2">{{summary_text}}</span>
+            <button class="btn btn-link p-0 text-primary text-decoration-none" type="button"
+                    data-toggle="collapse" data-bs-toggle="collapse"
+                    data-target="#ph-summary-hint" data-bs-target="#ph-summary-hint"
+                    aria-expanded="false" aria-controls="ph-summary-hint"
+                    aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
+                <i class="fa fa-question-circle fa-lg" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <div class="d-flex flex-shrink-0">
+            <a href="{{url_distribute}}" class="btn btn-warning shadow-sm me-2">
+                <i class="fa fa-random me-1" aria-hidden="true"></i> {{str_distribute}}
+            </a>
+            <button type="button" class="btn btn-info text-white shadow-sm me-2" id="btn-open-ai-modal">
+                <i class="fa fa-magic me-1" aria-hidden="true"></i> {{str_ai_create}}
+            </button>
+            <a href="{{url_add}}" class="btn btn-primary shadow-sm">
+                <i class="fa fa-plus-circle me-1" aria-hidden="true"></i> {{str_add_item}}
+            </a>
         </div>
     </div>
 
-    <div class="d-flex flex-shrink-0">
-        <a href="{{url_distribute}}" class="btn btn-warning shadow-sm me-2">
-            <i class="fa fa-random me-1" aria-hidden="true"></i> {{str_distribute}}
-        </a>
-        <button type="button" class="btn btn-info text-white shadow-sm me-2" id="btn-open-ai-modal">
-            <i class="fa fa-magic me-1" aria-hidden="true"></i> {{str_ai_create}}
-        </button>
-        <a href="{{url_add}}" class="btn btn-primary shadow-sm">
-            <i class="fa fa-plus-circle me-1" aria-hidden="true"></i> {{str_add_item}}
-        </a>
+    {{! Expandable Help Box (BS5 Collapse) }}
+    <div class="collapse w-100" id="ph-summary-hint">
+        <div class="alert alert-info border-info mb-0 mt-3 small py-2 shadow-sm d-flex align-items-start">
+            <i class="fa fa-lightbulb-o fa-lg me-2 mt-1 text-warning" aria-hidden="true"></i>
+            <div>{{summary_hint}}</div>
+        </div>
     </div>
 </div>
 
