@@ -99,9 +99,25 @@
     </div>
 </div>
 
-<div class="alert alert-light border shadow-sm d-flex align-items-center mb-3">
-    <i class="fa fa-map-signs text-info me-2 fa-lg" aria-hidden="true"></i>
-    <span class="fw-bold text-dark">{{summary_text}}</span>
+<div class="d-flex flex-column mb-3 p-3 bg-light rounded border shadow-sm ph-manage-header">
+    <div class="d-flex align-items-center w-100">
+        <button class="btn btn-link p-0 text-primary text-decoration-none me-2" type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#ph-drops-hint"
+                aria-expanded="false" aria-controls="ph-drops-hint"
+                aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
+            <i class="fa fa-info-circle fa-lg" aria-hidden="true"></i>
+        </button>
+        <span class="fw-bold text-dark">{{summary_text}}</span>
+    </div>
+
+    {{! Expandable Help Box (BS5 Collapse) }}
+    <div class="collapse w-100" id="ph-drops-hint">
+        <div class="alert alert-info border-info mb-0 mt-3 small py-2 shadow-sm d-flex align-items-start">
+            <i class="fa fa-lightbulb-o fa-lg me-2 mt-1 text-warning" aria-hidden="true"></i>
+            <div>{{str_help_code}}</div>
+        </div>
+    </div>
 </div>
 
 <form action="{{base_url}}" method="post" id="bulk-action-form">
@@ -211,9 +227,6 @@
         </button>
     </div>
 
-    <div class="alert alert-info mt-3">
-        {{str_help_code}}
-    </div>
 </form>
 
 {{{modal_gen_html}}}
