@@ -27,39 +27,44 @@
     {
         "url_add": "#",
         "str_add_quest": "New Quest",
-        "str_col_icon": "Icon",
-        "str_col_reward": "Rewards",
-        "str_col_claims": "Claims",
-        "str_col_enabled": "Enabled?",
-        "str_col_req": "Target",
         "str_actions": "Actions",
         "str_edit": "Edit",
         "str_delete": "Delete",
         "str_empty": "No quests created.",
+        "str_select_all": "Select all",
+        "str_select": "Select",
+        "str_delete_selected": "Delete Selected",
         "headers": {
-            "name": { "url": "#", "label": "Name", "icon_class": "fa-sort" },
-            "type": { "url": "#", "label": "Type", "icon_class": "fa-sort" },
-            "date": { "url": "#", "label": "Date", "icon_class": "fa-sort" }
+            "name":    { "url": "#", "label": "Name",    "icon_class": "fa-sort" },
+            "type":    { "url": "#", "label": "Type",    "icon_class": "fa-sort" },
+            "reward":  { "url": "#", "label": "Reward",  "icon_class": "fa-sort" },
+            "claims":  { "url": "#", "label": "Claims",  "icon_class": "fa-sort" },
+            "enabled": { "url": "#", "label": "Enabled", "icon_class": "fa-sort" }
         },
         "base_url": "#",
         "sesskey": "abc123",
         "summary_text": "3 quests created.",
         "has_quests": true,
+        "paging_bar": "",
         "quests": [
             {
                 "id": 1,
+                "counter": 1,
                 "image_todo": "📋",
                 "name": "Reach Level 5",
                 "type_label": "Reach Level",
                 "type_badge_class": "bg-primary text-white",
                 "requirement_text": "5",
                 "enabled": true,
+                "str_yes": "Yes",
+                "str_no": "No",
+                "str_hide": "Hide",
+                "str_show": "Show",
                 "reward_text": "50 XP",
                 "claims_count": 3,
                 "url_edit": "#",
                 "url_toggle": "#",
                 "url_delete": "#",
-                "str_toggle": "Click to hide",
                 "str_delete_confirm": "Are you sure you want to delete &#x27;Reach Level 5&#x27;?"
             }
         ]
@@ -96,7 +101,8 @@
                         <thead class="bg-light border-bottom">
                             <tr class="text-nowrap">
                                 <th scope="col" class="ph-col-select text-center align-middle">
-                                    <input type="checkbox" id="ph-select-all" class="form-check-input m-0 position-static" title="{{str_select_all}}" aria-label="{{str_select_all}}">
+                                    <input type="checkbox" id="ph-select-all" class="form-check-input"
+                                        title="{{str_select_all}}" aria-label="{{str_select_all}}">
                                 </th>
                                 <th scope="col" class="ph-col-sm text-center">{{#str}} col_number, block_playerhud {{/str}}</th>
                                 <th scope="col">
@@ -134,10 +140,10 @@
                         </thead>
                         <tbody>
                             {{#quests}}
-                            <tr class="{{^enabled}}opacity-50{{/enabled}}">
+                            <tr{{^enabled}} class="opacity-50"{{/enabled}}>
                                 <td class="ph-col-select text-center align-middle">
-                                    <label class="sr-only visually-hidden" for="chk-{{id}}">{{str_select}} {{name}}</label>
-                                    <input type="checkbox" name="bulk_ids[]" value="{{id}}" id="chk-{{id}}" class="form-check-input ph-bulk-check m-0 position-static">
+                                    <input type="checkbox" name="bulk_ids[]" value="{{id}}" id="chk-quest-{{id}}"
+                                        class="form-check-input ph-bulk-check" aria-label="{{str_select}} {{name}}">
                                 </td>
                                 <td class="align-middle text-center text-muted small text-nowrap">{{counter}}</td>
                                 <td class="align-middle">
