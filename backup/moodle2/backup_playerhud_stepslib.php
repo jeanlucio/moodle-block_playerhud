@@ -125,10 +125,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         if ($this->task->get_setting_value('users')) {
             $player->set_source_table('block_playerhud_user', ['blockinstanceid' => backup::VAR_BLOCKID]);
 
-            $sqlquestlog = "SELECT ql.* FROM {block_playerhud_quest_log} ql
-                              JOIN {block_playerhud_quests} q ON ql.questid = q.id
-                             WHERE q.blockinstanceid = :blockid";
-            $questlog->set_source_sql($sqlquestlog, ['blockid' => backup::VAR_BLOCKID]);
+            $questlog->set_source_table('block_playerhud_quest_log', ['questid' => backup::VAR_PARENTID]);
             $questlog->annotate_ids('user', 'userid');
 
             $sqlinv = "SELECT inv.* FROM {block_playerhud_inventory} inv
