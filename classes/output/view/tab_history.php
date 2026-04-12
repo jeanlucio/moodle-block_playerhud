@@ -178,6 +178,11 @@ class tab_history implements renderable, templatable {
                 'label' => get_string('report_type_revoked', 'block_playerhud'),
                 'selected' => ($filtertype === 'item_revoked'),
             ],
+            [
+                'value' => 'quest',
+                'label' => get_string('tab_quests', 'block_playerhud'),
+                'selected' => ($filtertype === 'quest'),
+            ],
         ];
 
         $toggleurl = new moodle_url($baseurl, ['showall' => $showall ? 0 : 1, 'page' => 0]);
@@ -238,8 +243,9 @@ class tab_history implements renderable, templatable {
     ): array {
         global $DB;
 
-        $concatitem = $DB->sql_concat("'item_'", "inv.id");
+        $concatitem  = $DB->sql_concat("'item_'", "inv.id");
         $concattrade = $DB->sql_concat("'trade_'", "tl.id");
+        $concatquest = $DB->sql_concat("'quest_'", "ql.id");
 
         $innersql = "
             SELECT {$concatitem} AS uniqueid,
@@ -262,13 +268,22 @@ class tab_history implements renderable, templatable {
                    0 AS inventory_id, t.id AS trade_id
               FROM {block_playerhud_trade_log} tl
               JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
-             WHERE tl.userid = :u2 AND t.blockinstanceid = :p2";
+             WHERE tl.userid = :u2 AND t.blockinstanceid = :p2
+            UNION ALL
+            SELECT {$concatquest} AS uniqueid, 'quest' AS event_type, q.name AS object_name, ql.timecreated,
+                   'quest_claim' AS details, q.image_done AS icon, q.reward_xp AS xp_gained,
+                   0 AS itemid, 0 AS inventory_id, 0 AS trade_id
+              FROM {block_playerhud_quest_log} ql
+              JOIN {block_playerhud_quests} q ON ql.questid = q.id
+             WHERE ql.userid = :u3 AND q.blockinstanceid = :p3";
 
         $params = [
             'u1' => $userid,
             'p1' => $this->instanceid,
             'u2' => $userid,
             'p2' => $this->instanceid,
+            'u3' => $userid,
+            'p3' => $this->instanceid,
         ];
 
         $where = "1=1";
@@ -382,6 +397,11 @@ class tab_history implements renderable, templatable {
                         $detailtext .= "<small class=\"text-danger d-block mt-1 text-wrap\">" .
                             "{$iconminus} {$strcost} {$coststr}</small>";
                     }
+                } else if ($log->event_type === 'quest') {
+                    $badgeclass = 'bg-warning text-dark';
+                    $badgetext  = get_string('report_type_quest', 'block_playerhud');
+                    $iconemoji  = !empty($log->icon) ? $log->icon : '🏅';
+                    $detailtext = get_string('quest_status_completed', 'block_playerhud');
                 }
 
                 $xpbadge = '';

@@ -100,6 +100,32 @@ $string['description'] = 'Descrição';
 $string['description_help'] = 'Um texto curto descrevendo o item (história, funcionalidade ou sabor). Isso aparecerá quando o aluno passar o mouse sobre o item na Mochila.';
 $string['details'] = 'Detalhes';
 $string['disable_exit'] = 'Desativar e Sair';
+$string['distribute_already_inserted'] = 'O shortcode deste drop já está presente na atividade selecionada.';
+$string['distribute_btn'] = 'Distribuir Drops';
+$string['distribute_col_activity'] = 'Atividade / Recurso';
+$string['distribute_col_drop'] = 'Drop / Item';
+$string['distribute_col_field'] = 'Campo';
+$string['distribute_col_position'] = 'Posição';
+$string['distribute_col_status'] = 'Status';
+$string['distribute_desc'] = 'Selecione em qual atividade cada drop deve ser inserido. O sistema sugere a melhor correspondência pelo nome. Clique em "Inserir" para adicionar o shortcode na descrição da atividade.';
+$string['distribute_err_field'] = 'O campo selecionado não existe neste tipo de módulo.';
+$string['distribute_err_no_modules'] = 'Nenhuma atividade ou recurso com campo de texto editável foi encontrado neste curso.';
+$string['distribute_field_content'] = 'Conteúdo da página';
+$string['distribute_field_intro'] = 'Descrição';
+$string['distribute_field_intro_label'] = 'Conteúdo (rótulo)';
+$string['distribute_insert_selected'] = 'Inserir selecionados ({$a})';
+$string['distribute_inserted'] = 'Inserido!';
+$string['distribute_inserting'] = 'Inserindo...';
+$string['distribute_no_drops'] = 'Nenhum drop configurado. Crie localizações de drop primeiro.';
+$string['distribute_no_selection'] = 'Selecione ao menos um drop para inserir.';
+$string['distribute_pos_bottom'] = 'No rodapé';
+$string['distribute_pos_top'] = 'No topo';
+$string['distribute_remove'] = 'Desfazer';
+$string['distribute_remove_confirm'] = 'Remover o shortcode das atividades selecionadas?';
+$string['distribute_removing'] = 'Removendo...';
+$string['distribute_status_pending'] = 'Pendente';
+$string['distribute_title'] = 'Distribuir Drops nas Atividades do Curso';
+$string['distribute_undo_selected'] = 'Desfazer selecionados ({$a})';
 $string['drop_config_header'] = 'Configurar Drop para: {$a}';
 $string['drop_configured_msg'] = 'Drop configurado!';
 $string['drop_max_qty'] = 'Qtd Máxima';
@@ -112,7 +138,7 @@ $string['drop_supplies_label'] = 'Suprimentos';
 $string['drop_unlimited_label'] = 'Ilimitado';
 $string['drop_unlimited_xp_warning'] = '<strong>Nota:</strong> Drops infinitos não concedem XP. Mesmo que este item tenha valor de XP, <strong>este drop específico dará 0 XP</strong>.';
 $string['dropcode'] = 'Shortcode';
-$string['dropcode_help'] = 'Copie este código e cole em qualquer lugar do seu curso (Rótulos, Páginas, Fóruns, Tarefas, etc). Quando o aluno vir este código, o botão "Coletar" aparecerá. Dica: Se você colocar o nome da atividade na localização, o sistema gera automaticamente o link para que você possa acessá-la rapidamente.';
+$string['dropcode_help'] = 'Copie este código e cole em qualquer lugar do seu curso (Rótulos, Páginas, Fóruns, Tarefas, etc). Quando o aluno vir este código, o botão "Coletar" aparecerá. Dica: Se você colocar o nome da atividade na localização, o sistema gera automaticamente o link para acessá-la rapidamente. Você também pode usar "Distribuir Drops" na aba Itens para inserir todos os códigos nas atividades de forma automática.';
 $string['drops'] = 'Drops (Localização)';
 $string['drops_btn_new'] = 'Nova Localização de Drop';
 $string['drops_col_actions'] = 'Ações';
@@ -186,10 +212,10 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
             <i class="fa fa-gamepad fa-2x" aria-hidden="true"></i>
         </div>
         <div>
-            <h5 class="alert-heading fw-bold m-0">Bem-vindo(a) ao PlayerHUD!</h5>
+            <h5 class="alert-heading fw-bold m-0">Bem-vindo ao PlayerHUD!</h5>
             <p class="mb-0">
                 Este curso utiliza um sistema de gamificação para acompanhar seu progresso,
-                recompensar sua participação e tornar sua jornada de aprendizagem mais envolvente.
+                recompensar sua participação e tornar sua jornada de aprendizado mais engajadora.
             </p>
         </div>
     </div>
@@ -201,9 +227,9 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
                 <i class="fa fa-star fa-3x text-primary mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">XP & Níveis</h5>
                 <p class="small text-muted">
-                    Ao coletar itens ou completar desafios, você acumula XP (Experiência).
+                    Ao coletar itens ou completar missões, você acumula XP (Experiência).
                     Conforme seu XP aumenta, seu nível evolui e sua barra de progresso avança.
-                    Dependendo da configuração do professor, o XP pode ou não influenciar sua avaliação.
+                    A quantidade de níveis e o total máximo de XP são definidos pelo professor do curso/disciplina.
                 </p>
             </div>
         </div>
@@ -214,9 +240,11 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
                 <i class="fa fa-cube fa-3x text-success mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">Itens & Drops</h5>
                 <p class="small text-muted">
-                    Durante o curso, você poderá encontrar itens escondidos em atividades,
-                    descrições ou desafios específicos. Alguns itens possuem limite de coleta
-                    ou tempo de reaparecimento (cooldown).
+                    Durante o curso, você poderá encontrar itens escondidos em atividades, descrições
+                    ou desafios específicos. Alguns itens possuem limite de coleta ou tempo de reaparecimento (cooldown).
+                    Itens podem ou não dar XP, você pode clicar no card do item que encontrar para verificar
+                    as informações sobre ele, incluindo o valor de XP, se houver. Itens também poderão ser obtidos
+                    através de missões ou trocados na loja.
                 </p>
             </div>
         </div>
@@ -224,12 +252,39 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-clock fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <i class="fa fa-map-signs fa-3x text-info mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Missões</h5>
+                <p class="small text-muted">
+                    Diversas missões podem aparecer no decorrer do curso, como completar determinada atividade,
+                    ou atingir determinado nível no curso. Acesse a área de missões para verificar as disponíveis.
+                    Missões podem dar XP ou itens exclusivos. Sempre que tiver missões pendentes de resgate uma
+                    bolinha vermelha aparecerá no canto do botão do bloco ou widget.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-shopping-cart fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Loja</h5>
+                <p class="small text-muted">
+                    A loja serve para troca/comercialização de itens, o professor definirá quais itens poderão
+                    ser comercializados e as trocas ficarão disponíveis na loja. Algumas trocas podem ser
+                    inseridas pelo professor em outros locais do curso. Fique atento!
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-clock-o fa-3x text-danger mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">Tempo & Limites</h5>
                 <p class="small text-muted">
-                    Se um item exibir um temporizador, significa que ele está temporariamente
-                    indisponível. Após o tempo indicado, poderá ser coletado novamente,
-                    caso o professor tenha permitido.
+                    Itens com mais de uma quantidade para coleta exibirão um contador após a primeira coleta
+                    com a indicação de tempo para resgate do próximo. Fique atento ao prazo do curso/disciplina
+                    para não perder nenhum item, em especial aqueles com altos valores de XP.
                 </p>
             </div>
         </div>
@@ -237,24 +292,26 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-trophy fa-3x text-danger mb-3" aria-hidden="true"></i>
+                <i class="fa fa-trophy fa-3x text-primary mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">Ranking</h5>
                 <p class="small text-muted">
-                    O ranking mostra sua posição em relação aos colegas.
-                    Você pode optar por não aparecer publicamente.
-                    Ele funciona como ferramenta de motivação, não como competição obrigatória.
+                    O ranking mostra sua posição em relação aos colegas. Você pode optar por não
+                    aparecer publicamente. Ele funciona como ferramenta de motivação, não como competição obrigatória.
                 </p>
             </div>
         </div>
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-md-12 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-pause-circle fa-3x text-secondary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Pausar Gamificação</h5>
+                <i class="fa fa-power-off fa-3x text-secondary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Pausar/Desativar Gamificação</h5>
                 <p class="small text-muted">
-                    Você pode desativar temporariamente sua participação na gamificação.
-                    Seu progresso ficará pausado e poderá ser reativado posteriormente.
+                    A gamificação deste curso/disciplina é totalmente opcional. Você pode desativar a camada
+                    de gamificação ocultando assim todas as mecânicas disponíveis se for do seu interesse, clicando
+                    no botão correspondente no bloco ou widget. Caso queira retornar basta acessar o bloco e clicar
+                    no botão correspondente. Este recurso foi construído pensando em dar total liberdade para você
+                    escolher sua forma de participação no curso/disciplina.
                 </p>
             </div>
         </div>
@@ -263,13 +320,13 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
 <div class="alert alert-light border shadow-sm mt-4">
     <div class="d-flex align-items-center">
         <div class="me-3">
-            <i class="fa fa-lightbulb fa-2x text-warning" aria-hidden="true"></i>
+            <i class="fa fa-lightbulb-o fa-2x text-warning" aria-hidden="true"></i>
         </div>
         <div>
             <h6 class="fw-bold m-0">Dica Importante</h6>
             <p class="mb-0 small text-muted">
-                Explore o curso com atenção, participe das atividades e interaja com os conteúdos.
-                O XP é consequência do seu envolvimento — o aprendizado é o verdadeiro objetivo.
+                Explore o curso com cuidado, participe das atividades e engaje-se com o conteúdo.
+                XP é resultado do envolvimento — o aprendizado continua sendo o verdadeiro objetivo.
             </p>
         </div>
     </div>
@@ -330,6 +387,7 @@ $string['no'] = 'Não';
 $string['no_description'] = '- Sem descrição -';
 $string['no_groups_data'] = 'Este curso não tem grupos definidos para competição.';
 $string['no_ranking_data'] = 'Sem dados de ranking ainda.';
+$string['none'] = 'Nenhum';
 $string['one_time_trade'] = 'Troca única?';
 $string['openbackpack'] = 'Abrir Mochila';
 $string['optin_hello'] = 'Olá, {$a}!';
@@ -364,12 +422,59 @@ $string['privacy:metadata:rpg:nodes'] = 'Histórico de cenas visitadas e escolha
 $string['privacy:metadata:timecreated'] = 'O momento em que o registro foi criado.';
 $string['privacy:metadata:trade_log'] = 'Histórico de trocas e compras realizadas na loja.';
 $string['privacy:metadata:trade_log:tradeid'] = 'O ID da transação de troca.';
+$string['privacy_export_quest_log'] = 'Missões Reivindicadas';
 $string['privacy_export_rpg'] = 'Progresso do RPG';
 $string['privacy_updated'] = 'Preferência de privacidade atualizada.';
 $string['qty'] = 'Quantidade';
+$string['quest_activity'] = 'Atividade do Curso (com conclusão)';
+$string['quest_claim'] = 'Resgatar Recompensa';
+$string['quest_claimed_success'] = 'Recompensa resgatada! Você ganhou: {$a}.';
+$string['quest_class_locked'] = 'Requer uma classe RPG específica.';
+$string['quest_col_claims'] = 'Resgates';
+$string['quest_deleted'] = 'Missão excluída.';
+$string['quest_edit'] = 'Editar Missão';
+$string['quest_go_activity'] = 'Ir para a atividade';
+$string['quest_icon_done'] = 'Ícone (Conquista/Emblema)';
+$string['quest_icon_todo'] = 'Ícone (Em Progresso)';
+$string['quest_name'] = 'Nome da Missão';
+$string['quest_new'] = 'Nova Missão';
+$string['quest_no_reward'] = 'Sem recompensa configurada.';
+$string['quest_no_suggestions'] = 'Nenhuma nova sugestão no momento. Crie mais atividades, itens ou níveis para gerar novas ideias!';
+$string['quest_req_item'] = 'Item Necessário (Acumulador)';
+$string['quest_req_trade'] = 'Troca Exigida';
+$string['quest_requirement'] = 'O que fazer';
+$string['quest_requirement_help'] = 'Descreva claramente o que o aluno precisa fazer para resgatar esta recompensa.';
+$string['quest_requirements_hdr'] = 'Requisitos (Gatilho)';
+$string['quest_reward_item'] = 'Recompensa em Item';
+$string['quest_reward_xp'] = 'Recompensa em XP';
+$string['quest_rewards_hdr'] = 'Recompensas';
 $string['quest_status_completed'] = 'Concluído';
 $string['quest_status_pending'] = 'Pendente';
 $string['quest_status_removed'] = 'Atividade removida';
+$string['quest_sug_activity'] = 'Completar: {$a}';
+$string['quest_sug_btn'] = 'Sugerir Missões';
+$string['quest_sug_created'] = '{$a} missões geradas com sucesso!';
+$string['quest_sug_info'] = 'O sistema mapeou seu curso e sugere as missões abaixo. Desmarque as que não desejar e clique em Criar Missões.';
+$string['quest_sug_items'] = 'Colecionar {$a} itens únicos';
+$string['quest_sug_level'] = 'Alcançar o Nível {$a}';
+$string['quest_sug_save'] = 'Criar Missões Selecionadas';
+$string['quest_sug_trades'] = 'Realizar {$a} trocas na loja';
+$string['quest_suggestions'] = 'Sugestões de Missões Automáticas';
+$string['quest_target_value'] = 'Valor Alvo (Nível, XP ou Qty)';
+$string['quest_type'] = 'Tipo de Objetivo';
+$string['quest_type_activity'] = 'Completar Atividade Moodle';
+$string['quest_type_level'] = 'Alcançar Nível';
+$string['quest_type_manual'] = 'Manual (Aluno Resgata)';
+$string['quest_type_specific_item'] = 'Acumulador (Item Específico)';
+$string['quest_type_specific_trade'] = 'O Artesão (Troca Específica)';
+$string['quest_type_total_items'] = 'Colecionador (Itens Totais)';
+$string['quest_type_trades'] = 'O Mercador (Trocas na Loja)';
+$string['quest_type_unique_items'] = 'Colecionador (Itens Únicos)';
+$string['quest_type_xp_total'] = 'Acumular XP Total';
+$string['quest_validate_target'] = 'O valor alvo deve ser pelo menos 1.';
+$string['quests_none'] = 'Nenhuma missão criada ainda.';
+$string['quests_summary'] = 'Você tem {$a} missões criadas.';
+$string['quests_summary_hint'] = 'Quando o aluno cumpre o objetivo, a recompensa (XP e/ou item) é concedida na hora e pode ser resgatada na área de Missões do aluno. Use o botão "Sugerir Missões" para criar novas missões automaticamente.';
 $string['rank_groups'] = 'Grupos (Média XP)';
 $string['rank_individual'] = 'Individual';
 $string['ranking_disable'] = 'Desativar Ranking';
@@ -395,6 +500,10 @@ $string['report_last_action'] = 'Última Ação';
 $string['report_leader'] = 'Líder';
 $string['report_most_collected'] = 'Item Mais Coletado';
 $string['report_no_logs'] = 'Nenhum registro encontrado.';
+$string['report_quest_chart_title'] = 'Conclusões por Missão';
+$string['report_quest_engaged'] = 'Com conclusões';
+$string['report_quest_no_claims'] = 'Sem conclusões';
+$string['report_quest_total'] = 'Total de missões';
 $string['report_select_user'] = '--- Selecione um estudante ---';
 $string['report_show_less'] = 'Mostrar menos';
 $string['report_show_more'] = 'Mostrar registros antigos';
@@ -436,6 +545,7 @@ $string['single_collection'] = 'Coleta única';
 $string['sort'] = 'Ordenar coluna';
 $string['sort_acquired'] = 'Adquiridos Primeiro';
 $string['sort_by'] = 'Ordenar por...';
+$string['sort_claimed_first'] = 'Concluídas Primeiro';
 $string['sort_count_asc'] = 'Menor Quantidade';
 $string['sort_count_desc'] = 'Maior Quantidade';
 $string['sort_missing'] = 'Faltantes Primeiro';
@@ -453,11 +563,13 @@ $string['student'] = 'Estudante';
 $string['success'] = 'Sucesso!';
 $string['summary'] = 'Resumo';
 $string['summary_stats'] = 'Você possui {$a->items} itens criados e {$a->drops} drops espalhados.';
+$string['summary_stats_hint'] = 'Clique no botão de drops (📍) do item para gerar o shortcode. Depois distribua: automaticamente via "Distribuir Drops" (insere o código nas descrições das atividades) ou manualmente copiando o código e colando em qualquer lugar do curso.';
 $string['tab_collection'] = 'Coleção';
 $string['tab_config'] = 'Configurações';
 $string['tab_history'] = 'Histórico';
 $string['tab_items'] = 'Biblioteca de Itens';
 $string['tab_maintenance'] = 'A aba "{$a}" está atualmente em manutenção ou construção.';
+$string['tab_quests'] = 'Missões';
 $string['tab_ranking'] = 'Ranking';
 $string['tab_reports'] = 'Relatórios';
 $string['tab_rules'] = 'Ajuda & Regras';
@@ -466,7 +578,7 @@ $string['tab_trades'] = 'Trocas (NPC)';
 $string['take'] = 'Pegar';
 $string['time_min'] = 'min';
 $string['time_sec'] = 'seg';
-$string['total_items_xp'] = 'Total XP em Itens';
+$string['total_items_xp'] = 'Total XP no Jogo';
 $string['tradable'] = 'Trocável?';
 $string['tradable_help'] = 'Define se este item pode ser negociado.<br><br><b>Sim:</b> O aluno pode vender este item na loja ou trocá-lo com outros alunos.<br><b>Não:</b> O item é vinculado ao aluno (ideal para itens únicos, chaves de missão ou bens intransferíveis).';
 $string['trade_config_hdr'] = 'Configuração da troca';
@@ -483,6 +595,8 @@ $string['trade_req_hdr'] = 'Requisitos (aluno paga)';
 $string['trade_saved'] = 'Troca salva com sucesso.';
 $string['trade_success_msg'] = 'Troca realizada com sucesso! Você recebeu: {$a}';
 $string['trade_you_have'] = '(Você tem: {$a})';
+$string['trades_summary'] = 'Você tem {$a} oferta(s) de troca criada(s).';
+$string['trades_summary_hint'] = 'As ofertas de troca definem as regras de negociação com o NPC: o aluno paga um ou mais itens e recebe outro em troca. Use "Loja" para exibir a oferta na aba da loja, ou incorpore-a em qualquer parte do curso usando o shortcode exibido.';
 $string['unlimited'] = 'Ilimitado';
 $string['uploadfile'] = 'Upload de Arquivo';
 $string['view_ranking'] = 'Ver Ranking';

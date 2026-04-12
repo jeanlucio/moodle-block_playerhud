@@ -89,6 +89,7 @@ class tab_reports implements renderable, templatable {
             'is_audit'      => ($this->selecteduserid > 0),
             'kpis'          => $this->get_kpi_data(),
             'charts'        => $this->get_charts_data($xpperlevel, $maxlevels),
+            'quest_stats'   => $this->get_quest_stats_data(),
             'user_selector' => $this->get_user_selector_data(),
         ];
 
@@ -211,6 +212,11 @@ class tab_reports implements renderable, templatable {
                         'value' => 'item_revoked',
                         'label' => get_string('report_type_revoked', 'block_playerhud'),
                         'selected' => ($filtertype === 'item_revoked'),
+                    ],
+                    [
+                        'value' => 'quest',
+                        'label' => get_string('tab_quests', 'block_playerhud'),
+                        'selected' => ($filtertype === 'quest'),
                     ],
                 ],
                 'text' => $filtertext,
@@ -458,6 +464,76 @@ class tab_reports implements renderable, templatable {
     }
 
     /**
+     * Get quest completion statistics for the report chart.
+     *
+     * Returns per-quest completion counts and aggregate summary totals.
+     * Zero N+1: single LEFT JOIN query covers all data needed.
+     *
+     * @return array
+     */
+    private function get_quest_stats_data(): array {
+        global $DB;
+
+        $sql = "SELECT q.id, q.name, COUNT(ql.id) AS claims
+                  FROM {block_playerhud_quests} q
+             LEFT JOIN {block_playerhud_quest_log} ql ON ql.questid = q.id
+                 WHERE q.blockinstanceid = :pid AND q.enabled = 1
+              GROUP BY q.id, q.name
+              ORDER BY claims DESC, q.name ASC";
+
+        $rows = $DB->get_records_sql($sql, ['pid' => $this->instanceid]);
+
+        $strnodata = get_string('report_no_logs', 'block_playerhud');
+
+        if (empty($rows)) {
+            return [
+                'str_title'   => get_string('report_quest_chart_title', 'block_playerhud'),
+                'str_no_data' => $strnodata,
+                'has_quests'  => false,
+            ];
+        }
+
+        $total = count($rows);
+        $engaged = 0;
+        $totalclaims = 0;
+        $maxclaims = 0;
+
+        foreach ($rows as $row) {
+            if ($row->claims > 0) {
+                $engaged++;
+            }
+            $totalclaims += (int)$row->claims;
+            if ($row->claims > $maxclaims) {
+                $maxclaims = (int)$row->claims;
+            }
+        }
+
+        $questsdata = [];
+        foreach ($rows as $row) {
+            $questsdata[] = [
+                'label'     => format_string($row->name),
+                'total'     => (int)$row->claims,
+                'percent'   => ($maxclaims > 0) ? round(($row->claims / $maxclaims) * 100) : 0,
+                'no_claims' => ($row->claims == 0),
+            ];
+        }
+
+        return [
+            'str_title'      => get_string('report_quest_chart_title', 'block_playerhud'),
+            'str_no_data'    => $strnodata,
+            'str_total'      => get_string('report_quest_total', 'block_playerhud'),
+            'str_engaged'    => get_string('report_quest_engaged', 'block_playerhud'),
+            'str_no_claims'  => get_string('report_quest_no_claims', 'block_playerhud'),
+            'has_quests'     => true,
+            'total'          => $total,
+            'engaged'        => $engaged,
+            'no_claims'      => $total - $engaged,
+            'total_claims'   => $totalclaims,
+            'quests'         => $questsdata,
+        ];
+    }
+
+    /**
      * Get user selector dropdown data.
      *
      * @return array
@@ -616,8 +692,9 @@ class tab_reports implements renderable, templatable {
     ): array {
         global $DB;
 
-        $concatitem = $DB->sql_concat("'item_'", "inv.id");
+        $concatitem  = $DB->sql_concat("'item_'", "inv.id");
         $concattrade = $DB->sql_concat("'trade_'", "tl.id");
+        $concatquest = $DB->sql_concat("'quest_'", "ql.id");
 
         $innersql = "
             SELECT {$concatitem} AS uniqueid,
@@ -640,13 +717,22 @@ class tab_reports implements renderable, templatable {
                    0 AS inventory_id, t.id AS trade_id
               FROM {block_playerhud_trade_log} tl
               JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
-             WHERE tl.userid = :u2 AND t.blockinstanceid = :p2";
+             WHERE tl.userid = :u2 AND t.blockinstanceid = :p2
+            UNION ALL
+            SELECT {$concatquest} AS uniqueid, 'quest' AS event_type, q.name AS object_name, ql.timecreated,
+                   'quest_claim' AS details, q.image_done AS icon, q.reward_xp AS xp_gained,
+                   0 AS itemid, 0 AS inventory_id, 0 AS trade_id
+              FROM {block_playerhud_quest_log} ql
+              JOIN {block_playerhud_quests} q ON ql.questid = q.id
+             WHERE ql.userid = :u3 AND q.blockinstanceid = :p3";
 
         $params = [
             'u1' => $userid,
             'p1' => $this->instanceid,
             'u2' => $userid,
             'p2' => $this->instanceid,
+            'u3' => $userid,
+            'p3' => $this->instanceid,
         ];
 
         $where = "1=1";
@@ -759,6 +845,11 @@ class tab_reports implements renderable, templatable {
                         $detailtext .= "<small class=\"text-danger d-block mt-1 text-wrap\">" .
                             "{$iconminus} {$strcost} {$coststr}</small>";
                     }
+                } else if ($log->event_type === 'quest') {
+                    $badgeclass = 'bg-warning text-dark';
+                    $badgetext  = get_string('report_type_quest', 'block_playerhud');
+                    $iconemoji  = !empty($log->icon) ? $log->icon : '🏅';
+                    $detailtext = get_string('quest_status_completed', 'block_playerhud');
                 }
 
                 $xpbadge = '';

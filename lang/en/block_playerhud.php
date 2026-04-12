@@ -100,6 +100,32 @@ $string['description'] = 'Description';
 $string['description_help'] = 'A short text describing the item (lore, functionality, or flavor text). This will appear when the student hovers over the item in their Backpack.';
 $string['details'] = 'Details';
 $string['disable_exit'] = 'Disable and Exit';
+$string['distribute_already_inserted'] = 'This drop shortcode is already present in the selected activity.';
+$string['distribute_btn'] = 'Distribute Drops';
+$string['distribute_col_activity'] = 'Activity / Resource';
+$string['distribute_col_drop'] = 'Drop / Item';
+$string['distribute_col_field'] = 'Field';
+$string['distribute_col_position'] = 'Position';
+$string['distribute_col_status'] = 'Status';
+$string['distribute_desc'] = 'Select which activity each drop should be inserted into. The system suggests the best match based on names. Click "Insert" to add the shortcode to the activity description.';
+$string['distribute_err_field'] = 'The selected field does not exist in this module type.';
+$string['distribute_err_no_modules'] = 'No activities or resources with editable text fields were found in this course.';
+$string['distribute_field_content'] = 'Page content';
+$string['distribute_field_intro'] = 'Description';
+$string['distribute_field_intro_label'] = 'Content (label)';
+$string['distribute_insert_selected'] = 'Insert selected ({$a})';
+$string['distribute_inserted'] = 'Inserted!';
+$string['distribute_inserting'] = 'Inserting...';
+$string['distribute_no_drops'] = 'No drops configured. Create drop locations first before distributing.';
+$string['distribute_no_selection'] = 'Select at least one drop to insert.';
+$string['distribute_pos_bottom'] = 'At the bottom';
+$string['distribute_pos_top'] = 'At the top';
+$string['distribute_remove'] = 'Undo';
+$string['distribute_remove_confirm'] = 'Remove the shortcode from the selected activities?';
+$string['distribute_removing'] = 'Removing...';
+$string['distribute_status_pending'] = 'Pending';
+$string['distribute_title'] = 'Distribute Drops in Course Activities';
+$string['distribute_undo_selected'] = 'Undo selected ({$a})';
 $string['drop_config_header'] = 'Configure Drop for: {$a}';
 $string['drop_configured_msg'] = 'Drop configured!';
 $string['drop_max_qty'] = 'Max Quantity';
@@ -112,7 +138,7 @@ $string['drop_supplies_label'] = 'Supplies';
 $string['drop_unlimited_label'] = 'Unlimited';
 $string['drop_unlimited_xp_warning'] = '<strong>Note:</strong> Infinite drops do not grant XP. Even if this item has an XP value, <strong>this specific drop will award 0 XP</strong>.';
 $string['dropcode'] = 'Shortcode';
-$string['dropcode_help'] = 'Copy this code and paste it anywhere in your course (Labels, Pages, Forum posts, Assignments descriptions, etc). When the student sees this code, the "Collect" button will appear. Tip: If you enter the activity name in the location field, the system will automatically generate a link so you can access it quickly.';
+$string['dropcode_help'] = 'Copy this code and paste it anywhere in your course (Labels, Pages, Forum posts, Assignment descriptions, etc). When the student sees this code, the "Collect" button will appear. Tip: If you enter the activity name in the location field, the system will automatically generate a link for quick access. You can also use "Distribute Drops" in the Items tab to insert all codes into activities automatically.';
 $string['drops'] = 'Drops';
 $string['drops_btn_new'] = 'New Drop Location';
 $string['drops_col_actions'] = 'Actions';
@@ -201,9 +227,9 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
                 <i class="fa fa-star fa-3x text-primary mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">XP & Levels</h5>
                 <p class="small text-muted">
-                    By collecting items or completing challenges, you earn XP (Experience Points).
+                    By collecting items or completing quests, you earn XP (Experience Points).
                     As your XP increases, your level rises and your progress bar advances.
-                    Depending on the instructor\'s configuration, XP may or may not affect your final grade.
+                    The number of levels and the maximum total XP are defined by the course instructor.
                 </p>
             </div>
         </div>
@@ -214,9 +240,10 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
                 <i class="fa fa-cube fa-3x text-success mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">Items & Drops</h5>
                 <p class="small text-muted">
-                    Throughout the course, you may find items hidden inside activities,
-                    descriptions, or specific challenges. Some items may have collection limits
-                    or respawn timers (cooldowns).
+                    Throughout the course, you may find items hidden inside activities, descriptions,
+                    or specific challenges. Some items have a collection limit or a respawn timer (cooldown).
+                    Items may or may not grant XP; you can click on an item\'s card to view its details.
+                    Items can also be obtained through quests or traded in the shop.
                 </p>
             </div>
         </div>
@@ -224,12 +251,39 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-clock fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <i class="fa fa-map-signs fa-3x text-info mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Quests</h5>
+                <p class="small text-muted">
+                    Various quests may appear throughout the course, such as completing a specific activity
+                    or reaching a certain level. Access the quests area to check the available ones.
+                    Quests can grant XP or exclusive items. Whenever you have pending quests to claim,
+                    a red dot will appear on the quests button.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-shopping-cart fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Shop</h5>
+                <p class="small text-muted">
+                    The shop is used for trading items. The instructor will define which items can be traded,
+                    and these offers will be available in the shop. Some trades may also be placed by the
+                    instructor in other areas of the course. Stay alert!
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-clock-o fa-3x text-danger mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">Timers & Limits</h5>
                 <p class="small text-muted">
-                    If an item displays a timer, it means it is temporarily unavailable.
-                    Once the countdown ends, it may become collectible again,
-                    depending on the instructor’s settings.
+                    Items with more than one collectible quantity will display a timer after the first collection,
+                    indicating the wait time for the next one. Pay attention to the course deadlines so you
+                    don\'t miss any items, especially those with high XP values.
                 </p>
             </div>
         </div>
@@ -237,24 +291,26 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-trophy fa-3x text-danger mb-3" aria-hidden="true"></i>
+                <i class="fa fa-trophy fa-3x text-primary mb-3" aria-hidden="true"></i>
                 <h5 class="fw-bold">Leaderboard</h5>
                 <p class="small text-muted">
                     The leaderboard shows your position compared to other participants.
-                    You may choose not to appear publicly.
-                    It is designed as a motivational tool, not a mandatory competition.
+                    You may choose not to appear publicly. It is designed as a motivational tool,
+                    not a mandatory competition.
                 </p>
             </div>
         </div>
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-md-12 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
-                <i class="fa fa-pause-circle fa-3x text-secondary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Pause Gamification</h5>
+                <i class="fa fa-power-off fa-3x text-secondary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">Pause/Disable Gamification</h5>
                 <p class="small text-muted">
-                    You can temporarily disable your participation in the gamification system.
-                    Your progress will be paused and can be reactivated at any time.
+                    The gamification in this course is entirely optional. You can disable the gamification layer,
+                    hiding all available mechanics if you wish, by clicking the corresponding button in the block or widget.
+                    If you want to return, simply access the block and click the button to reactivate it.
+                    This feature was built to give you total freedom to choose how you participate in the course.
                 </p>
             </div>
         </div>
@@ -263,7 +319,7 @@ $string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
 <div class="alert alert-light border shadow-sm mt-4">
     <div class="d-flex align-items-center">
         <div class="me-3">
-            <i class="fa fa-lightbulb fa-2x text-warning" aria-hidden="true"></i>
+            <i class="fa fa-lightbulb-o fa-2x text-warning" aria-hidden="true"></i>
         </div>
         <div>
             <h6 class="fw-bold m-0">Important Tip</h6>
@@ -330,6 +386,7 @@ $string['no'] = 'No';
 $string['no_description'] = '- No description -';
 $string['no_groups_data'] = 'This course has no groups defined for competition.';
 $string['no_ranking_data'] = 'No ranking data yet.';
+$string['none'] = 'None';
 $string['one_time_trade'] = 'One-time trade?';
 $string['openbackpack'] = 'Open Backpack';
 $string['optin_hello'] = 'Hello, {$a}!';
@@ -364,12 +421,59 @@ $string['privacy:metadata:rpg:nodes'] = 'History of visited scenes and choices m
 $string['privacy:metadata:timecreated'] = 'The time when the record was created.';
 $string['privacy:metadata:trade_log'] = 'History of trades and purchases made in the shop.';
 $string['privacy:metadata:trade_log:tradeid'] = 'The ID of the trade transaction.';
+$string['privacy_export_quest_log'] = 'Claimed Quests';
 $string['privacy_export_rpg'] = 'RPG Progress';
 $string['privacy_updated'] = 'Privacy preference updated.';
 $string['qty'] = 'Quantity';
+$string['quest_activity'] = 'Course Activity (with completion)';
+$string['quest_claim'] = 'Claim Reward';
+$string['quest_claimed_success'] = 'Reward claimed! You earned: {$a}.';
+$string['quest_class_locked'] = 'Requires a specific RPG class.';
+$string['quest_col_claims'] = 'Claims';
+$string['quest_deleted'] = 'Quest deleted.';
+$string['quest_edit'] = 'Edit Quest';
+$string['quest_go_activity'] = 'Go to activity';
+$string['quest_icon_done'] = 'Icon (Achievement/Emblem)';
+$string['quest_icon_todo'] = 'Icon (In Progress)';
+$string['quest_name'] = 'Quest Name';
+$string['quest_new'] = 'New Quest';
+$string['quest_no_reward'] = 'No reward configured.';
+$string['quest_no_suggestions'] = 'No new suggestions at the moment. Create more activities or items to generate new ideas!';
+$string['quest_req_item'] = 'Required Item (Accumulator)';
+$string['quest_req_trade'] = 'Required Trade';
+$string['quest_requirement'] = 'What to do';
+$string['quest_requirement_help'] = 'Describe clearly what the student needs to do to claim this reward.';
+$string['quest_requirements_hdr'] = 'Requirements (Trigger)';
+$string['quest_reward_item'] = 'Item Reward';
+$string['quest_reward_xp'] = 'XP Reward';
+$string['quest_rewards_hdr'] = 'Rewards';
 $string['quest_status_completed'] = 'Completed';
 $string['quest_status_pending'] = 'Pending';
 $string['quest_status_removed'] = 'Activity removed';
+$string['quest_sug_activity'] = 'Complete: {$a}';
+$string['quest_sug_btn'] = 'Auto Suggest';
+$string['quest_sug_created'] = '{$a} quests generated successfully!';
+$string['quest_sug_info'] = 'The system mapped your course and suggests the missions below. Uncheck the ones you don\'t want and click Save.';
+$string['quest_sug_items'] = 'Collect {$a} unique items';
+$string['quest_sug_level'] = 'Reach Level {$a}';
+$string['quest_sug_save'] = 'Create Selected Quests';
+$string['quest_sug_trades'] = 'Perform {$a} trades in the shop';
+$string['quest_suggestions'] = 'Auto Quest Suggestions';
+$string['quest_target_value'] = 'Target Value (Level, XP or Qty)';
+$string['quest_type'] = 'Quest Type';
+$string['quest_type_activity'] = 'Activity Completion';
+$string['quest_type_level'] = 'Reach Level';
+$string['quest_type_manual'] = 'Manual (Student Claims)';
+$string['quest_type_specific_item'] = 'Accumulator (Specific Item)';
+$string['quest_type_specific_trade'] = 'Craftsman (Specific Trade)';
+$string['quest_type_total_items'] = 'Collector (Total Items)';
+$string['quest_type_trades'] = 'Merchant (Shop Trades)';
+$string['quest_type_unique_items'] = 'Collector (Unique Items)';
+$string['quest_type_xp_total'] = 'Accumulate Total XP';
+$string['quest_validate_target'] = 'Target value must be at least 1.';
+$string['quests_none'] = 'No quests created yet.';
+$string['quests_summary'] = 'You have {$a} quests created.';
+$string['quests_summary_hint'] = 'When the student reaches the objective, the reward (XP and/or item) is granted instantly and can be redeemed in the student\'s Missions area. Use the "Suggest Missions" button to automatically create new missions.';
 $string['rank_groups'] = 'Groups (Avg XP)';
 $string['rank_individual'] = 'Individual';
 $string['ranking_disable'] = 'Disable Ranking';
@@ -395,6 +499,10 @@ $string['report_last_action'] = 'Last Action';
 $string['report_leader'] = 'Top Player';
 $string['report_most_collected'] = 'Most Collected Item';
 $string['report_no_logs'] = 'No records found.';
+$string['report_quest_chart_title'] = 'Completions per quest';
+$string['report_quest_engaged'] = 'With completions';
+$string['report_quest_no_claims'] = 'No completions';
+$string['report_quest_total'] = 'Total quests';
 $string['report_select_user'] = '--- Select a student ---';
 $string['report_show_less'] = 'Show less';
 $string['report_show_more'] = 'Show older logs';
@@ -436,6 +544,7 @@ $string['single_collection'] = 'Single collection';
 $string['sort'] = 'Sort column';
 $string['sort_acquired'] = 'Owned First';
 $string['sort_by'] = 'Sort by...';
+$string['sort_claimed_first'] = 'Completed First';
 $string['sort_count_asc'] = 'Lowest Quantity';
 $string['sort_count_desc'] = 'Highest Quantity';
 $string['sort_missing'] = 'Missing First';
@@ -453,11 +562,13 @@ $string['student'] = 'Student';
 $string['success'] = 'Success!';
 $string['summary'] = 'Summary';
 $string['summary_stats'] = 'You have {$a->items} items created and {$a->drops} drops available.';
+$string['summary_stats_hint'] = 'Click the drop button (📍) of an item to generate its shortcode. Then distribute it: automatically via "Distribute Drops" (inserts the code into activity descriptions) or manually by copying the code and pasting it anywhere in your course.';
 $string['tab_collection'] = 'Collection';
 $string['tab_config'] = 'Settings';
 $string['tab_history'] = 'History';
 $string['tab_items'] = 'Item Library';
 $string['tab_maintenance'] = 'The "{$a}" tab is currently under maintenance or construction.';
+$string['tab_quests'] = 'Quests';
 $string['tab_ranking'] = 'Leaderboard';
 $string['tab_reports'] = 'Reports';
 $string['tab_rules'] = 'Help & Rules';
@@ -466,7 +577,7 @@ $string['tab_trades'] = 'Trades (NPC)';
 $string['take'] = 'Take';
 $string['time_min'] = 'min';
 $string['time_sec'] = 'sec';
-$string['total_items_xp'] = 'Total XP in Items';
+$string['total_items_xp'] = 'Total XP in Game';
 $string['tradable'] = 'Tradable?';
 $string['tradable_help'] = 'Defines if this item can be traded.<br><br><b>Yes:</b> The student can sell this item in the shop or trade it with other students.<br><b>No:</b> The item is bound to the student (ideal for unique items, quest keys, or non-transferable assets).';
 $string['trade_config_hdr'] = 'Trade Configuration';
@@ -483,6 +594,8 @@ $string['trade_req_hdr'] = 'Requirements (Student pays)';
 $string['trade_saved'] = 'Trade saved successfully.';
 $string['trade_success_msg'] = 'Trade successful! You received: {$a}';
 $string['trade_you_have'] = '(Owned: {$a})';
+$string['trades_summary'] = 'You have {$a} trade offer(s) created.';
+$string['trades_summary_hint'] = 'Trade offers define NPC negotiation rules: the student pays one or more items and receives another in return. Use "Shop" to show the offer in the shop tab, or embed it anywhere in the course using the displayed shortcode.';
 $string['unlimited'] = 'Unlimited';
 $string['uploadfile'] = 'Upload File';
 $string['view_ranking'] = 'View Leaderboard';

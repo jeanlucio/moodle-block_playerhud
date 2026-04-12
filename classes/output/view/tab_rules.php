@@ -67,8 +67,8 @@ class tab_rules implements renderable, templatable {
             }
         }
 
-        // Fallback to default if somehow empty.
-        if (empty($rawcontent)) {
+        // Fallback to default if somehow empty or just spaces.
+        if (empty(trim($rawcontent))) {
             $rawcontent = get_string('help_pagedefault', 'block_playerhud');
         }
 

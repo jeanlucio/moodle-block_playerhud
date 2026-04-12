@@ -1,0 +1,256 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/distribute_drops
+
+    Screen for distributing drop shortcodes into course activities.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "instanceid": 1,
+        "courseid": 2,
+        "url_back": "#",
+        "str_title": "Distribute Drops",
+        "str_desc": "Select where to insert each drop.",
+        "str_col_drop": "Drop / Item",
+        "str_col_activity": "Activity / Resource",
+        "str_col_field": "Field",
+        "str_col_position": "Position",
+        "str_col_status": "Status",
+        "str_no_drops": "No drops configured.",
+        "str_no_modules": "No activities found.",
+        "str_back": "Back",
+        "str_field_intro": "Description",
+        "str_field_content": "Page content",
+        "str_field_label": "Content (label)",
+        "str_pos_top": "At the top",
+        "str_pos_bottom": "At the bottom",
+        "has_drops": true,
+        "has_modules": true,
+        "drops": [
+            {
+                "id": 1,
+                "code": "3C815F",
+                "drop_name": "Drop Point",
+                "item_name": "Magic Potion",
+                "is_image": false,
+                "image_url": "",
+                "image_content": "🧪",
+                "inserted_cmids_json": "[]",
+                "inserted_anywhere": false,
+                "inserted_field": "intro",
+                "inserted_field_label": "",
+                "inserted_names": "",
+                "modules": [
+                    {
+                        "cmid": 10,
+                        "name": "Quiz 1",
+                        "modname": "quiz",
+                        "supports_content": false,
+                        "is_label": false,
+                        "selected": true
+                    }
+                ]
+            }
+        ]
+    }
+}}
+<div class="ph-distribute-drops">
+
+    {{! Header }}
+    <div class="d-flex flex-column mb-3 p-3 bg-light rounded border shadow-sm ph-manage-header">
+        <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
+            <div class="d-flex align-items-center flex-grow-1">
+                <i class="fa fa-random text-warning me-2 fa-lg" aria-hidden="true"></i>
+                <button class="btn btn-link p-0 text-primary text-decoration-none me-2" type="button"
+                        data-toggle="collapse" data-bs-toggle="collapse"
+                        data-target="#ph-drops-dist-hint" data-bs-target="#ph-drops-dist-hint"
+                        aria-expanded="true" aria-controls="ph-drops-dist-hint"
+                        aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
+                    <i class="fa fa-question-circle fa-lg" aria-hidden="true"></i>
+                </button>
+                <span class="fw-bold text-dark">{{str_title}}</span>
+            </div>
+            <div class="d-flex flex-shrink-0">
+                <a href="{{url_back}}" class="btn btn-outline-secondary btn-sm shadow-sm">
+                    <i class="fa fa-arrow-left me-1" aria-hidden="true"></i> {{str_back}}
+                </a>
+            </div>
+        </div>
+        <div class="collapse show w-100" id="ph-drops-dist-hint">
+            <div class="alert alert-info border-info mb-0 mt-3 small py-2 shadow-sm d-flex align-items-start">
+                <i class="fa fa-lightbulb-o fa-lg me-2 mt-1 text-warning" aria-hidden="true"></i>
+                <div>{{str_desc}}</div>
+            </div>
+        </div>
+    </div>
+
+    {{! No drops }}
+    {{^has_drops}}
+    <div class="alert alert-info">
+        <i class="fa fa-info-circle me-2" aria-hidden="true"></i> {{str_no_drops}}
+    </div>
+    {{/has_drops}}
+
+    {{! No modules }}
+    {{#has_drops}}
+    {{^has_modules}}
+    <div class="alert alert-warning">
+        <i class="fa fa-exclamation-triangle me-2" aria-hidden="true"></i> {{str_no_modules}}
+    </div>
+    {{/has_modules}}
+    {{/has_drops}}
+
+    {{! Main table }}
+    {{#has_drops}}
+    {{#has_modules}}
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle" id="ph-distribute-table">
+                    <thead class="bg-light border-bottom">
+                        <tr>
+                            <th scope="col" class="ph-col-select text-center">
+                                <input type="checkbox" id="ph-dist-select-all" class="form-check-input m-0 position-static"
+                                    aria-label="{{str_col_drop}}">
+                            </th>
+                            <th scope="col">{{str_col_drop}}</th>
+                            <th scope="col">{{str_col_activity}}</th>
+                            <th scope="col" class="ph-col-md">{{str_col_field}}</th>
+                            <th scope="col" class="ph-col-md">{{str_col_position}}</th>
+                            <th scope="col" class="ph-col-md text-center">{{str_col_status}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#drops}}
+                        <tr class="ph-distribute-row{{#inserted_anywhere}} ph-row-inserted{{/inserted_anywhere}}"
+                            data-drop-id="{{id}}" data-drop-code="{{code}}"
+                            data-inserted-anywhere="{{inserted_anywhere_int}}"
+                            data-inserted-field="{{inserted_field}}"
+                            data-inserted-cmids="{{{inserted_cmids_json}}}">
+                            {{! Checkbox — enabled on all rows }}
+                            <td class="ph-col-select text-center align-middle">
+                                <input type="checkbox" id="ph-chk-{{id}}"
+                                    class="form-check-input ph-dist-check m-0 position-static"
+                                    data-drop-id="{{id}}"
+                                    data-inserted="{{inserted_anywhere_int}}"
+                                    aria-label="{{drop_name}}">
+                            </td>
+                            {{! Drop / Item }}
+                            <td class="align-middle">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="flex-shrink-0 text-center" aria-hidden="true">
+                                        {{#is_image}}
+                                            <img src="{{image_url}}" class="ph-dist-item-img" alt="">
+                                        {{/is_image}}
+                                        {{^is_image}}
+                                            <span class="ph-dist-item-emoji">{{image_content}}</span>
+                                        {{/is_image}}
+                                    </div>
+                                    <div>
+                                        <span class="fw-bold d-block">{{drop_name}}</span>
+                                        <span class="text-muted small d-block">{{item_name}}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            {{! Activity: static text for inserted rows, select for pending }}
+                            <td class="align-middle">
+                                {{#inserted_anywhere}}
+                                <span class="fw-semibold">{{inserted_names}}</span>
+                                {{/inserted_anywhere}}
+                                {{^inserted_anywhere}}
+                                <select class="form-select form-select-sm ph-select-module" id="ph-mod-{{id}}"
+                                    aria-label="{{str_col_activity}}">
+                                    {{#modules}}
+                                    <option value="{{cmid}}"
+                                        data-modname="{{modname}}"
+                                        data-name="{{name}}"
+                                        data-supports-content="{{supports_content_int}}"
+                                        data-is-label="{{is_label_int}}"
+                                        {{#selected}}selected{{/selected}}>
+                                        {{name}} ({{modname_translated}})
+                                    </option>
+                                    {{/modules}}
+                                </select>
+                                {{/inserted_anywhere}}
+                            </td>
+                            {{! Field: static text for inserted rows, select for pending }}
+                            <td class="align-middle">
+                                {{#inserted_anywhere}}
+                                <span>{{inserted_field_label}}</span>
+                                {{/inserted_anywhere}}
+                                {{^inserted_anywhere}}
+                                <select class="form-select form-select-sm ph-select-field" id="ph-field-{{id}}"
+                                    aria-label="{{str_col_field}}">
+                                    <option value="intro">{{str_field_intro}}</option>
+                                </select>
+                                {{/inserted_anywhere}}
+                            </td>
+                            {{! Position: dash for inserted rows, select for pending }}
+                            <td class="align-middle">
+                                {{#inserted_anywhere}}
+                                <span class="text-muted">—</span>
+                                {{/inserted_anywhere}}
+                                {{^inserted_anywhere}}
+                                <select class="form-select form-select-sm ph-select-position" id="ph-pos-{{id}}"
+                                    aria-label="{{str_col_position}}">
+                                    <option value="top">{{str_pos_top}}</option>
+                                    <option value="bottom">{{str_pos_bottom}}</option>
+                                </select>
+                                {{/inserted_anywhere}}
+                            </td>
+                            {{! Status }}
+                            <td class="align-middle text-center ph-dist-status text-nowrap">
+                                {{#inserted_anywhere}}
+                                <span class="badge bg-success text-white">
+                                    <i class="fa fa-check me-1" aria-hidden="true"></i>
+                                    {{#str}} distribute_inserted, block_playerhud {{/str}}
+                                </span>
+                                {{/inserted_anywhere}}
+                                {{^inserted_anywhere}}
+                                <span class="badge bg-secondary text-white">
+                                    <i class="fa fa-clock-o me-1" aria-hidden="true"></i>
+                                    {{#str}} distribute_status_pending, block_playerhud {{/str}}
+                                </span>
+                                {{/inserted_anywhere}}
+                            </td>
+                        </tr>
+                        {{/drops}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3 d-flex">
+        <button type="button" class="btn btn-success shadow-sm disabled me-2" id="ph-btn-bulk-insert" disabled>
+            <i class="fa fa-check me-1" aria-hidden="true"></i>
+            {{#str}} distribute_btn, block_playerhud {{/str}}
+        </button>
+        <button type="button" class="btn btn-outline-danger shadow-sm disabled" id="ph-btn-bulk-remove" disabled>
+            <i class="fa fa-undo me-1" aria-hidden="true"></i>
+            {{#str}} distribute_remove, block_playerhud {{/str}}
+        </button>
+    </div>
+    {{/has_modules}}
+    {{/has_drops}}
+
+</div>

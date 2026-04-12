@@ -89,19 +89,35 @@
         </div>
     </div>
 
-    <div class="ms-auto d-flex gap-3">
-        <a href="{{url_library}}" class="btn btn-outline-dark shadow-sm">
+    <div class="ms-auto d-flex">
+        <a href="{{url_library}}" class="btn btn-outline-dark shadow-sm me-2">
             <i class="fa fa-book" aria-hidden="true"></i> {{str_back_lib}}
         </a>
-        <a href="{{url_new_drop}}" class="btn btn-success shadow-sm ms-2">
+        <a href="{{url_new_drop}}" class="btn btn-success shadow-sm">
             <i class="fa fa-plus" aria-hidden="true"></i> {{str_new_drop}}
         </a>
     </div>
 </div>
 
-<div class="alert alert-light border shadow-sm d-flex align-items-center mb-3">
-    <i class="fa fa-map-signs text-info me-2 fa-lg" aria-hidden="true"></i>
-    <span class="fw-bold text-dark">{{summary_text}}</span>
+<div class="d-flex flex-column mb-3 p-3 bg-light rounded border shadow-sm ph-manage-header">
+    <div class="d-flex align-items-center w-100">
+        <button class="btn btn-link p-0 text-primary text-decoration-none me-2" type="button"
+                data-toggle="collapse" data-bs-toggle="collapse"
+                data-target="#ph-drops-hint" data-bs-target="#ph-drops-hint"
+                aria-expanded="false" aria-controls="ph-drops-hint"
+                aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
+            <i class="fa fa-question-circle fa-lg" aria-hidden="true"></i>
+        </button>
+        <span class="fw-bold text-dark">{{summary_text}}</span>
+    </div>
+
+    {{! Expandable Help Box (BS5 Collapse) }}
+    <div class="collapse w-100" id="ph-drops-hint">
+        <div class="alert alert-info border-info mb-0 mt-3 small py-2 shadow-sm d-flex align-items-start">
+            <i class="fa fa-lightbulb-o fa-lg me-2 mt-1 text-warning" aria-hidden="true"></i>
+            <div>{{str_help_code}}</div>
+        </div>
+    </div>
 </div>
 
 <form action="{{base_url}}" method="post" id="bulk-action-form">
@@ -142,8 +158,8 @@
                     {{#drops}}
                     <tr>
                         <td class="ph-col-select">
-                            <label class="sr-only visually-hidden" for="chk-{{id}}">{{str_select}} {{{name}}}</label>
-                            <input type="checkbox" name="bulk_ids[]" value="{{id}}" id="chk-{{id}}" class="form-check-input ph-bulk-check">
+                            <input type="checkbox" name="bulk_ids[]" value="{{id}}" id="chk-{{id}}"
+                                class="form-check-input ph-bulk-check" aria-label="{{str_select}} {{name}}">
                         </td>
                         <td class="align-middle text-muted small">{{counter}}</td>
                         <td class="align-middle fw-bold">{{{name}}}</td>
@@ -167,12 +183,12 @@
                         </td>
 
                         <td class="align-middle text-nowrap">
-                            <div class="d-flex gap-2 justify-content-start">
-                                <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm js-copy-code me-1"
+                            <div class="d-flex justify-content-start">
+                                <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm js-copy-code me-2"
                                         data-clipboard-text="{{full_default_code}}"
                                         title="{{str_quick_copy}}"
                                         aria-label="{{str_quick_copy}} {{name}}">
-                                    <i class="fa fa-copy" aria-hidden="true"></i> {{str_quick_copy}}
+                                     <i class="fa fa-copy" aria-hidden="true"></i> {{str_quick_copy}}
                                 </button>
 
                                 <button type="button" class="btn btn-outline-dark btn-sm js-open-gen-modal shadow-sm"
@@ -211,9 +227,6 @@
         </button>
     </div>
 
-    <div class="alert alert-info mt-3">
-        {{str_help_code}}
-    </div>
 </form>
 
 {{{modal_gen_html}}}

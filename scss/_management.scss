@@ -264,3 +264,25 @@
 .ph-opacity-80 {
     opacity: 0.8;
 }
+
+// Distribute Drops: inserted row highlight.
+#ph-distribute-table {
+    .ph-row-inserted td {
+        background-color: var(--bs-success-bg-subtle, #d1e7dd);
+    }
+
+    .ph-row-inserted:hover td {
+        background-color: var(--bs-success-border-subtle, #a3cfbb);
+    }
+
+    .ph-dist-item-img {
+        width: 36px;
+        height: 36px;
+        object-fit: contain;
+    }
+
+    .ph-dist-item-emoji {
+        font-size: 28px;
+        line-height: 1;
+    }
+}

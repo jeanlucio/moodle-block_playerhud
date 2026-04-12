@@ -128,3 +128,71 @@
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 1rem;
 }
+// Quest Cards Styling.
+
+// Fixed height matches inventory cards; overflow prevents card spillage.
+.playerhud-item-card.ph-quest-card-pending,
+.playerhud-item-card.ph-quest-card-ready,
+.playerhud-item-card.ph-quest-card-claimed {
+    height: 260px;
+    max-height: 260px;
+    overflow: hidden;
+}
+
+// Archived quest cards need visible overflow so the badge can protrude above the card.
+.playerhud-item-card.ph-item-archived {
+    overflow: visible;
+}
+
+// Compact progress bar height variant.
+.ph-progress-sm {
+    height: 6px;
+}
+
+// Info button: absolute top-right corner, reveals description via tooltip.
+.playerhud-item-card {
+    .ph-quest-info-btn {
+        position: absolute;
+        top: 0.35rem;
+        inset-inline-end: 0.35rem;
+        background: none;
+        border: none;
+        padding: 0;
+        color: var(--gray-500, #adb5bd);
+        font-size: 0.8rem;
+        line-height: 1;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--primary, #0d6efd);
+            outline: none;
+        }
+    }
+}
+
+// Completed golden card; overrides via increased specificity.
+.playerhud-item-card.ph-quest-card-claimed {
+    background-color: var(--ph-quest-claimed-bg, #fdf3d8);
+    border-color: var(--ph-quest-claimed-border, #f5c6cb);
+
+    .ph-card-title {
+        color: var(--ph-quest-gold-dark, #664d03);
+    }
+
+    .ph-quest-claimed-stamp {
+        background-color: var(--ph-quest-stamp-bg, rgba(255, 193, 7, 0.15));
+        border: 1px solid var(--ph-quest-stamp-border, rgba(255, 193, 7, 0.25));
+    }
+}
+
+// Dark golden text utility; WCAG AA compliant on light backgrounds.
+.ph-text-gold-dark {
+    color: var(--ph-quest-gold-dark, #664d03);
+}
+
+// Ready-to-claim card; green border highlights actionable state.
+.playerhud-item-card.ph-quest-card-ready {
+    border: 2px solid var(--success, #198754);
+    box-shadow: 0 0.25rem 0.5rem var(--ph-quest-ready-shadow, rgba(25, 135, 84, 0.15));
+}

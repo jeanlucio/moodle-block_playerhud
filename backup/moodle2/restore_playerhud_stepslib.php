@@ -32,6 +32,7 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         // Content.
         $paths[] = new restore_path_element('item', '/block/playerhud/items/item');
         $paths[] = new restore_path_element('drop', '/block/playerhud/drops/drop');
+        $paths[] = new restore_path_element('quest', '/block/playerhud/quests/quest');
         $paths[] = new restore_path_element('trade', '/block/playerhud/trades/trade');
         $paths[] = new restore_path_element('trade_req', '/block/playerhud/trades/trade/trade_reqs/trade_req');
 
@@ -42,6 +43,8 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         if ($this->task->get_setting_value('users')) {
             $paths[] = new restore_path_element('player', '/block/playerhud/players/player');
             $paths[] = new restore_path_element('inventory', '/block/playerhud/inventories/inventory');
+            $questlogpath = '/block/playerhud/quests/quest/quest_logs/quest_log';
+            $paths[] = new restore_path_element('quest_log', $questlogpath);
             $paths[] = new restore_path_element('trade_log', '/block/playerhud/trade_logs/trade_log');
         }
 
@@ -162,6 +165,55 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
 
         // Insert inventory record.
         $DB->insert_record('block_playerhud_inventory', $data);
+    }
+
+    /**
+     * Process quests (game content).
+     *
+     * @param array $data
+     */
+    public function process_quest($data) {
+        global $DB;
+        $data = (object)$data;
+        $oldid = $data->id;
+
+        $data->blockinstanceid = $this->task->get_blockid();
+        unset($data->id);
+
+        // Remap reward item if present.
+        if (!empty($data->reward_itemid)) {
+            $newrewardid = $this->get_mappingid('playerhud_item', $data->reward_itemid);
+            $data->reward_itemid = $newrewardid ?: 0;
+        }
+
+        // Remap req_itemid if present (used by TYPE_SPECIFIC_ITEM).
+        if (!empty($data->req_itemid)) {
+            $newreqid = $this->get_mappingid('playerhud_item', $data->req_itemid);
+            $data->req_itemid = $newreqid ?: 0;
+        }
+
+        $newid = $DB->insert_record('block_playerhud_quests', $data);
+        $this->set_mapping('playerhud_quest', $oldid, $newid);
+    }
+
+    /**
+     * Process quest logs (user history).
+     *
+     * @param array $data
+     */
+    public function process_quest_log($data) {
+        global $DB;
+        $data = (object)$data;
+
+        $newuserid = $this->get_mappingid('user', $data->userid);
+        $newquestid = $this->get_mappingid('playerhud_quest', $data->questid);
+
+        if ($newuserid && $newquestid) {
+            $data->userid = $newuserid;
+            $data->questid = $newquestid;
+            unset($data->id);
+            $DB->insert_record('block_playerhud_quest_log', $data);
+        }
     }
 
     /**

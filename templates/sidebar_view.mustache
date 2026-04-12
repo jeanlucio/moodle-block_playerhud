@@ -41,6 +41,7 @@
                 "description": "Mana restore"
             }
         ],
+        "url_quests": "#",
         "ranking": {
             "url": "#",
             "tooltip": "Rank #1",
@@ -66,13 +67,13 @@
     {{! 2. STATS }}
     <div class="d-flex justify-content-between align-items-center mb-1 small text-muted px-1">
         <span class="badge {{level_class}} border">{{#str}} level, block_playerhud {{/str}} {{level}}</span>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center">
                 <span class="badge rounded-pill {{level_class}}">{{xp}}</span>
-                <a href="{{url_history}}" class="ph-help-trigger"
+                <a href="{{url_history}}" class="ph-help-trigger ms-2"
                    title="{{#str}} tab_history, block_playerhud {{/str}}" aria-label="{{#str}} tab_history, block_playerhud {{/str}}">
                     <i class="fa fa-list-alt" aria-hidden="true"></i>
                 </a>
-                <a href="{{viewurl}}&tab=rules" class="ph-help-trigger"
+                <a href="{{viewurl}}&tab=rules" class="ph-help-trigger ms-2"
                    title="{{#str}} help_btn, block_playerhud {{/str}}" aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </a>
@@ -114,10 +115,22 @@
            data-bs-toggle="tooltip" data-bs-placement="bottom"
            title="{{#str}} tab_shop, block_playerhud {{/str}}"
            aria-label="{{#str}} tab_shop, block_playerhud {{/str}}">
-            <span aria-hidden="true">🏪</span>
+            <span aria-hidden="true">🛒</span>
         </a>
 
-        {{! C. Ranking }}
+        {{! C. Quests }}
+        <a href="{{url_quests}}"
+           class="btn btn-ph-level-border shadow-sm position-relative"
+           data-bs-toggle="tooltip" data-bs-placement="bottom"
+           title="{{#str}} tab_quests, block_playerhud {{/str}}"
+           aria-label="{{#str}} tab_quests, block_playerhud {{/str}}">
+            <span aria-hidden="true">🎯</span>
+            {{#has_claimable_quests}}
+            <span class="ph-quest-notify-dot" aria-hidden="true"></span>
+            {{/has_claimable_quests}}
+        </a>
+
+        {{! D. Ranking }}
         {{#ranking}}
         <a href="{{url}}"
            class="btn btn-ph-level-border shadow-sm"
@@ -128,7 +141,7 @@
         </a>
         {{/ranking}}
 
-        {{! D. Exit }}
+        {{! E. Exit }}
         <a href="{{url_disable}}"
            class="btn btn-ph-level-border shadow-sm js-disable-hud"
            data-bs-toggle="tooltip" data-bs-placement="bottom"

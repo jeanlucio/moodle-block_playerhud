@@ -1,0 +1,313 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Student quests tab renderer.
+ *
+ * @package    block_playerhud
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace block_playerhud\output\view;
+
+use renderable;
+use moodle_url;
+use block_playerhud\quest;
+use block_playerhud\game;
+
+/**
+ * Student quests tab renderer.
+ *
+ * @package    block_playerhud
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class tab_quests implements renderable {
+    /** @var \stdClass Block configuration. */
+    protected $config;
+
+    /** @var \stdClass Player object. */
+    protected $player;
+
+    /** @var int Block instance ID. */
+    protected $instanceid;
+
+    /** @var int Course ID. */
+    protected $courseid;
+
+    /**
+     * Constructor.
+     *
+     * @param \stdClass $config Block configuration.
+     * @param \stdClass $player Player record.
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     */
+    public function __construct($config, $player, $instanceid, $courseid) {
+        $this->config     = $config;
+        $this->player     = $player;
+        $this->instanceid = $instanceid;
+        $this->courseid   = $courseid;
+    }
+
+    /**
+     * Render the quests tab content.
+     *
+     * @return string HTML content.
+     */
+    public function display() {
+        global $DB, $OUTPUT, $USER;
+
+        $currentsort = optional_param('sort', 'name_asc', PARAM_ALPHANUMEXT);
+
+        // Load all quests for this block instance (disabled ones may still show as archived).
+        $quests = $DB->get_records(
+            'block_playerhud_quests',
+            ['blockinstanceid' => $this->instanceid],
+            'timecreated ASC'
+        );
+
+        if (empty($quests)) {
+            return $OUTPUT->notification(
+                get_string('quests_none', 'block_playerhud'),
+                'info'
+            );
+        }
+
+        // Preload claimed quests for the current user (avoid N+1).
+        $questids = array_keys($quests);
+        [$qinsql, $qinparams] = $DB->get_in_or_equal($questids);
+        $claimedrows = $DB->get_records_select(
+            'block_playerhud_quest_log',
+            "userid = ? AND questid $qinsql",
+            array_merge([$USER->id], $qinparams),
+            '',
+            'questid, timecreated'
+        );
+
+        // Preload reward item names (avoid N+1).
+        $rewarditemids = [];
+        foreach ($quests as $q) {
+            if ($q->reward_itemid > 0) {
+                $rewarditemids[$q->reward_itemid] = $q->reward_itemid;
+            }
+        }
+        $rewarditems = [];
+        if (!empty($rewarditemids)) {
+            [$rinsql, $rinparams] = $DB->get_in_or_equal(array_values($rewarditemids));
+            $rows = $DB->get_records_select(
+                'block_playerhud_items',
+                "id $rinsql",
+                $rinparams,
+                '',
+                'id, name'
+            );
+            foreach ($rows as $row) {
+                $rewarditems[$row->id] = format_string($row->name);
+            }
+        }
+
+        // Calculate player level (used by TYPE_LEVEL quest checks).
+        $stats       = game::get_game_stats($this->config, $this->instanceid, $this->player->currentxp);
+        $playerlevel = $stats['level'];
+
+        // Base URL for claim actions.
+        $viewurl = new moodle_url('/blocks/playerhud/view.php', [
+            'id'         => $this->courseid,
+            'instanceid' => $this->instanceid,
+            'tab'        => 'quests',
+        ]);
+
+        $questsdata = [];
+        foreach ($quests as $q) {
+            $isclaimed = isset($claimedrows[$q->id]);
+
+            // Disabled quest: only show if already claimed (archived state); otherwise hide.
+            if (!$q->enabled && !$isclaimed) {
+                continue;
+            }
+
+            $isarchived = !$q->enabled && $isclaimed;
+            $claimeddate = '';
+
+            if ($isclaimed) {
+                $claimeddate = userdate($claimedrows[$q->id]->timecreated, get_string('strftimedatefullshort', 'langconfig'));
+            }
+
+            // Delegate status check to the quest service class.
+            $status = quest::check_status(
+                $q,
+                $USER->id,
+                $this->courseid,
+                $this->player->currentxp,
+                $playerlevel
+            );
+
+            // Skip quests whose linked activity is not visible to this user.
+            if ($status->hidden) {
+                continue;
+            }
+
+            $canclaim = $status->completed && !$isclaimed && !$isarchived;
+
+            // Build reward text.
+            $rewardparts = [];
+            if ($q->reward_xp > 0) {
+                $rewardparts[] = $q->reward_xp . ' XP';
+            }
+            if ($q->reward_itemid > 0 && isset($rewarditems[$q->reward_itemid])) {
+                $rewardparts[] = $rewarditems[$q->reward_itemid];
+            }
+            $rewardcombined = implode(' + ', $rewardparts);
+
+            $progresspct = $isclaimed ? 100 : $status->progress;
+
+            $questsdata[] = [
+                'id'               => $q->id,
+                'name'             => format_string($q->name),
+                'description_html'  => !empty($q->description)
+                    ? format_text($q->description, FORMAT_HTML, ['filter' => false])
+                    : '',
+                'description_plain' => !empty($q->description)
+                    ? s(strip_tags(format_text($q->description, FORMAT_HTML, ['filter' => false])))
+                    : '',
+                'image_todo'       => !empty($q->image_todo) ? $q->image_todo : '📋',
+                'image_done'       => !empty($q->image_done) ? $q->image_done : '🏅',
+                'type_label'       => $this->get_type_label($q->type),
+                'is_activity'      => ($q->type == quest::TYPE_ACTIVITY),
+                'progress_pct'     => $progresspct,
+                'str_progress'     => $progresspct . '%',
+                'progress_label'   => $isclaimed
+                    ? get_string('quest_status_completed', 'block_playerhud')
+                    : $status->label,
+                'reward_combined'  => $rewardcombined,
+                'has_reward'       => !empty($rewardparts),
+                'is_archived'      => $isarchived,
+                'is_claimed'       => $isclaimed,
+                'claimed_date'     => $claimeddate,
+                'can_claim'        => $canclaim,
+                'url_claim'        => $canclaim
+                    ? (new moodle_url($viewurl, [
+                        'action'  => 'claim_quest',
+                        'questid' => $q->id,
+                        'sesskey' => sesskey(),
+                    ]))->out(false)
+                    : '',
+                'activity_url'     => $status->action_url ? $status->action_url->out(false) : '',
+                'str_claim'        => get_string('quest_claim', 'block_playerhud'),
+                'str_pending'      => get_string('quest_status_pending', 'block_playerhud'),
+                'str_claimed'      => get_string('quest_status_completed', 'block_playerhud'),
+                'str_go_activity'  => get_string('quest_go_activity', 'block_playerhud'),
+                'sort_name'        => strip_tags(format_string($q->name)),
+                'reward_xp_val'    => (int)$q->reward_xp,
+            ];
+        }
+
+        // Sort quests.
+        usort($questsdata, function ($a, $b) use ($currentsort) {
+            switch ($currentsort) {
+                case 'name_desc':
+                    return strcmp($b['sort_name'], $a['sort_name']);
+
+                case 'claimed_first':
+                    if ($a['is_claimed'] !== $b['is_claimed']) {
+                        return ($b['is_claimed'] ? 1 : 0) <=> ($a['is_claimed'] ? 1 : 0);
+                    }
+                    return strcmp($a['sort_name'], $b['sort_name']);
+
+                case 'missing':
+                    $pendinga = $a['is_claimed'] ? 0 : 1;
+                    $pendingb = $b['is_claimed'] ? 0 : 1;
+                    if ($pendinga !== $pendingb) {
+                        return $pendingb <=> $pendinga;
+                    }
+                    return strcmp($a['sort_name'], $b['sort_name']);
+
+                case 'xp_desc':
+                    if ($a['reward_xp_val'] === $b['reward_xp_val']) {
+                        return strcmp($a['sort_name'], $b['sort_name']);
+                    }
+                    return $b['reward_xp_val'] <=> $a['reward_xp_val'];
+
+                case 'xp_asc':
+                    if ($a['reward_xp_val'] === $b['reward_xp_val']) {
+                        return strcmp($a['sort_name'], $b['sort_name']);
+                    }
+                    return $a['reward_xp_val'] <=> $b['reward_xp_val'];
+
+                case 'name_asc':
+                default:
+                    return strcmp($a['sort_name'], $b['sort_name']);
+            }
+        });
+
+        // Build sort options dropdown.
+        $sortbaseurl = new moodle_url('/blocks/playerhud/view.php', [
+            'id'         => $this->courseid,
+            'instanceid' => $this->instanceid,
+            'tab'        => 'quests',
+        ]);
+        $sortoptionkeys = [
+            'name_asc'      => get_string('sort_name_asc', 'block_playerhud'),
+            'name_desc'     => get_string('sort_name_desc', 'block_playerhud'),
+            'claimed_first' => get_string('sort_claimed_first', 'block_playerhud'),
+            'missing'       => get_string('sort_missing', 'block_playerhud'),
+            'xp_desc'       => get_string('sort_xp_desc', 'block_playerhud'),
+            'xp_asc'        => get_string('sort_xp_asc', 'block_playerhud'),
+        ];
+        $sortoptions = [];
+        foreach ($sortoptionkeys as $val => $label) {
+            $u = new moodle_url($sortbaseurl, ['sort' => $val]);
+            $sortoptions[] = [
+                'value'    => $u->out(false),
+                'label'    => $label,
+                'selected' => ($val === $currentsort),
+            ];
+        }
+
+        $templatedata = [
+            'quests'             => $questsdata,
+            'sort_options'       => $sortoptions,
+            'show_filter'        => !empty($questsdata),
+            'str_reward'         => get_string('quest_rewards_hdr', 'block_playerhud'),
+            'str_progress_label' => get_string('report_status_completed', 'block_playerhud'),
+            'str_description'    => get_string('description', 'moodle'),
+        ];
+
+        return $OUTPUT->render_from_template('block_playerhud/view_quests', $templatedata);
+    }
+
+    /**
+     * Return the display label for a given quest type.
+     *
+     * @param int $type Quest type constant.
+     * @return string Localised label.
+     */
+    protected function get_type_label($type) {
+        $map = [
+            quest::TYPE_LEVEL          => get_string('quest_type_level', 'block_playerhud'),
+            quest::TYPE_XP_TOTAL       => get_string('quest_type_xp_total', 'block_playerhud'),
+            quest::TYPE_UNIQUE_ITEMS   => get_string('quest_type_unique_items', 'block_playerhud'),
+            quest::TYPE_TOTAL_ITEMS    => get_string('quest_type_total_items', 'block_playerhud'),
+            quest::TYPE_TRADES         => get_string('quest_type_trades', 'block_playerhud'),
+            quest::TYPE_SPECIFIC_ITEM  => get_string('quest_type_specific_item', 'block_playerhud'),
+            quest::TYPE_SPECIFIC_TRADE => get_string('quest_type_specific_trade', 'block_playerhud'),
+            quest::TYPE_ACTIVITY       => get_string('quest_type_activity', 'block_playerhud'),
+        ];
+        return $map[$type] ?? '-';
+    }
+}

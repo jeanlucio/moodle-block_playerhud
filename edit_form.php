@@ -82,48 +82,100 @@ class block_playerhud_edit_form extends block_edit_form {
         // Reset Checkbox.
         $mform->addElement('checkbox', 'config_reset_help', get_string('help_reset_checkbox', 'block_playerhud'));
         $mform->setType('config_reset_help', PARAM_INT);
+        $mform->setDefault('config_reset_help', 0);
     }
 
     /**
-     * Set data for the form.
-     * Logic: Load default help text if config is empty.
+     * Fill in data before displaying the form.
+     * Ensures compatibility with Moodle's editor element which strictly requires an array.
      *
-     * @param object $defaults Default data.
+     * @param object $defaults Default data loaded from the DB.
      */
     public function set_data($defaults) {
-        // Check if help content exists in config.
-        // Block config data for editors is usually stored as an array ['text' => ..., 'format' => ...].
-        $hascontent = !empty($defaults->config_help_content) &&
-                      (is_string($defaults->config_help_content) || !empty($defaults->config_help_content['text']));
+        // Force checkbox to always start unchecked and clear any legacy DB state
+        // to prevent parent::set_data from marking it as checked automatically.
+        $defaults->config_reset_help = 0;
+        if (isset($this->block->config)) {
+            unset($this->block->config->reset_help);
+            unset($this->block->config->config_reset_help);
+        }
 
-        if (!$hascontent) {
-            $defaults->config_help_content = [
-                'text' => get_string('help_pagedefault', 'block_playerhud'),
-                'format' => FORMAT_HTML,
-            ];
+        $text = '';
+        $format = FORMAT_HTML;
+
+        // Priority 1: From block config (DB).
+        if (isset($this->block->config) && isset($this->block->config->help_content)) {
+            $content = $this->block->config->help_content;
+            if (is_array($content)) {
+                $text = $content['text'] ?? '';
+                $format = $content['format'] ?? FORMAT_HTML;
+            } else if (is_object($content)) {
+                $text = $content->text ?? '';
+                $format = $content->format ?? FORMAT_HTML;
+            } else {
+                $text = (string)$content;
+            }
+        } else if (isset($defaults->config_help_content)) {
+            // Priority 2: From passed defaults.
+            $content = $defaults->config_help_content;
+            if (is_array($content)) {
+                $text = $content['text'] ?? '';
+                $format = $content['format'] ?? FORMAT_HTML;
+            } else {
+                $text = (string)$content;
+            }
+        }
+
+        // Inject default text if DB content is empty.
+        if (empty(trim($text))) {
+            $text = get_string('help_pagedefault', 'block_playerhud');
+        }
+
+        // The Moodle editor element strictly requires an array with 'text' and 'format' keys.
+        $editordata = [
+            'text' => $text,
+            'format' => $format,
+        ];
+
+        $defaults->config_help_content = $editordata;
+
+        // CRITICAL: Update block config before parent::set_data maps it,
+        // preventing the parent from reverting our injected default back to empty.
+        if (isset($this->block->config)) {
+            $this->block->config->help_content = $editordata;
         }
 
         parent::set_data($defaults);
     }
 
     /**
-     * Get data from the form.
-     * Logic: Handle reset checkbox.
+     * Intercept submitted data before Moodle saves it.
      *
-     * @return object|void Data object.
+     * @return object|void Processed data.
      */
     public function get_data() {
         $data = parent::get_data();
 
         if ($data) {
-            // If reset is checked, force the default text.
-            if (!empty($data->config_reset_help)) {
+            $submittedtext = '';
+            if (isset($data->config_help_content)) {
+                $submittedtext = is_array($data->config_help_content)
+                    ? $data->config_help_content['text']
+                    : $data->config_help_content;
+            }
+
+            $defaulttext = get_string('help_pagedefault', 'block_playerhud');
+
+            // If reset is checked OR text matches default: save empty to force dynamic language fetch.
+            if (!empty($data->config_reset_help) || trim($submittedtext) === trim($defaulttext)) {
                 $data->config_help_content = [
-                    'text' => get_string('help_pagedefault', 'block_playerhud'),
+                    'text' => '',
                     'format' => FORMAT_HTML,
                 ];
-                unset($data->config_reset_help); // Don't save the checkbox state.
             }
+
+            // Prevent reset checkbox state from saving to the database.
+            unset($data->config_reset_help);
         }
 
         return $data;

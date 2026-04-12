@@ -90,6 +90,22 @@ if ($tab == 'toggle_ranking_pref' && confirm_sesskey()) {
     );
 }
 
+// Logic: Claim Quest Reward.
+if ($action === 'claim_quest' && confirm_sesskey()) {
+    $questid  = required_param('questid', PARAM_INT);
+    $questurl = new moodle_url($PAGE->url, ['tab' => 'quests']);
+    try {
+        $rewardstr = \block_playerhud\quest::claim_reward($questid, $USER->id, $instanceid, $courseid);
+        redirect(
+            $questurl,
+            get_string('quest_claimed_success', 'block_playerhud', $rewardstr),
+            \core\output\notification::NOTIFY_SUCCESS
+        );
+    } catch (\moodle_exception $e) {
+        redirect($questurl, $e->getMessage(), \core\output\notification::NOTIFY_ERROR);
+    }
+}
+
 // Update Last View Timestamp.
 $isoptin = ($player->enable_gamification == 0 && !$isteacher);
 
@@ -180,9 +196,9 @@ if ($isoptin) {
             if (class_exists('\block_playerhud\output\view\tab_rules')) {
                 // Prepare config object for the renderer.
                 $cleanconfig = new stdClass();
-                // Map the config_help_content (saved by form) to a generic property.
-                $cleanconfig->help_content = isset($config->config_help_content) ?
-                    $config->config_help_content : null;
+                // Map the help_content (Moodle strips the 'config_' prefix when saving to DB).
+                $cleanconfig->help_content = isset($config->help_content) ?
+                    $config->help_content : null;
 
                 $render = new \block_playerhud\output\view\tab_rules($cleanconfig);
                 $tabcontenthtml = $render->display();
@@ -202,17 +218,19 @@ if ($isoptin) {
     $tabsdef = [
         // 1. Collection (Base).
         'collection' => ['icon' => '🎒', 'text' => get_string('tab_collection', 'block_playerhud')],
-        'shop'       => ['icon' => '🏪', 'text' => get_string('tab_shop', 'block_playerhud')],
-        'history'    => ['icon' => '📜', 'text' => get_string('tab_history', 'block_playerhud')],
+        'shop'       => ['icon' => '🛒', 'text' => get_string('tab_shop', 'block_playerhud')],
+        'quests'     => ['icon' => '🎯', 'text' => get_string('tab_quests', 'block_playerhud')],
 
-        // Note: Features like Quests, and Chapters are hidden for version 1.0.
+        // Note: Chapters are hidden until the Story system is fully implemented.
 
-        // 5. Ranking (Social - If enabled in configs).
+        // Ranking (Social - If enabled in configs).
         'ranking' => ($config->enable_ranking) ? [
             'icon' => '🏆',
             'text' => get_string('leaderboard_title', 'block_playerhud'),
         ] : null,
-        'rules' => ['icon' => '❓', 'text' => get_string('tab_rules', 'block_playerhud')],
+
+        'history'    => ['icon' => '📜', 'text' => get_string('tab_history', 'block_playerhud')],
+        'rules'      => ['icon' => '❓', 'text' => get_string('tab_rules', 'block_playerhud')],
     ];
 
     foreach ($tabsdef as $key => $def) {

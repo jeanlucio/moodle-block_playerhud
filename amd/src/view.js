@@ -50,6 +50,13 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 );
             });
 
+            // Initialize tooltips for quest description info buttons.
+            document.querySelectorAll('.js-ph-quest-info[data-bs-toggle="tooltip"]').forEach(function(el) {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                    new bootstrap.Tooltip(el, {trigger: 'hover focus'});
+                }
+            });
+
             // Accessibility: Allow opening items with Enter or Space.
             $(document).on('keydown', '.ph-item-trigger', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {

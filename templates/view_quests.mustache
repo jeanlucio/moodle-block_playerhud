@@ -1,0 +1,176 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/view_quests
+
+    Displays student quest cards with claim buttons (Grid layout).
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "show_filter": true,
+        "sort_options": [
+            { "value": "#", "label": "Name (A-Z)", "selected": true }
+        ],
+        "str_reward": "Rewards",
+        "str_progress_label": "Completed",
+        "str_description": "Description",
+        "quests": [
+            {
+                "id": 1,
+                "name": "Reach Level 5",
+                "description_html": "<p>Reach level 5 in the course.</p>",
+                "description_plain": "Reach level 5 in the course.",
+                "image_todo": "📋",
+                "image_done": "🏅",
+                "type_label": "Reach Level",
+                "is_activity": false,
+                "reward_parts": [{"text": "50 XP"}, {"text": "Iron Sword"}],
+                "has_reward": true,
+                "is_archived": false,
+                "is_claimed": false,
+                "can_claim": true,
+                "progress_pct": 80,
+                "str_progress": "80%",
+                "progress_label": "4 / 5",
+                "activity_url": "",
+                "url_claim": "#",
+                "str_claim": "Claim Reward",
+                "str_pending": "Pending",
+                "str_claimed": "Completed",
+                "str_go_activity": "Go to activity",
+                "claimed_date": "19/01/26"
+            }
+        ]
+    }
+}}
+<div class="block_playerhud">
+    {{#show_filter}}
+    <div class="d-flex justify-content-end mb-3">
+        <div class="d-flex align-items-center">
+            <label for="ph-quests-sort" class="me-2 small text-muted fw-bold">
+                <i class="fa fa-filter" aria-hidden="true"></i> {{#str}} sort_by, block_playerhud {{/str}}
+            </label>
+            <select id="ph-quests-sort" class="form-select form-select-sm shadow-sm border-secondary w-auto"
+                    onchange="window.location.href=this.value"
+                    aria-label="{{#str}} sort_by, block_playerhud {{/str}}">
+                {{#sort_options}}
+                    <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                {{/sort_options}}
+            </select>
+        </div>
+    </div>
+    {{/show_filter}}
+    <div class="playerhud-inventory-grid animate__animated animate__fadeIn">
+    {{#quests}}
+    <div class="playerhud-item-card card position-relative text-center
+        {{#is_claimed}}ph-quest-card-claimed{{/is_claimed}}
+        {{^is_claimed}}{{#can_claim}}ph-quest-card-ready{{/can_claim}}{{/is_claimed}}
+        {{^is_claimed}}{{^can_claim}}ph-quest-card-pending{{/can_claim}}{{/is_claimed}}
+        {{#is_archived}}ph-item-archived{{/is_archived}}">
+
+        {{#is_archived}}
+            <span class="ph-badge-archived">
+                {{#str}} item_archived, block_playerhud {{/str}}
+            </span>
+        {{/is_archived}}
+
+        <div class="card-body p-2 d-flex flex-column align-items-center h-100">
+            {{! Info button: reveals full description via tooltip. }}
+            {{#description_plain}}
+            <button type="button"
+                    class="ph-quest-info-btn js-ph-quest-info"
+                    aria-label="{{str_description}}"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="bottom"
+                    data-bs-title="{{description_plain}}">
+                <i class="fa fa-info-circle" aria-hidden="true"></i>
+            </button>
+            {{/description_plain}}
+
+            {{! Quest icon. }}
+            <div class="mb-1 text-center ph-card-icon-container flex-shrink-0">
+                <div class="ph-modal-emoji ph-card-emoji" aria-hidden="true">
+                    {{#is_claimed}}{{image_done}}{{/is_claimed}}
+                    {{^is_claimed}}{{image_todo}}{{/is_claimed}}
+                </div>
+            </div>
+
+            {{! Title }}
+            <div class="fw-bold mb-1 ph-text-md w-100 lh-sm flex-shrink-0 ph-text-truncate-2lines" title="{{name}}">{{name}}</div>
+
+            {{! Reward lines: Single badge with text wrap and 2-line truncation. }}
+            {{#has_reward}}
+            <div class="w-100 text-center flex-shrink-0 mb-2 px-1">
+                {{#is_claimed}}
+                    <span class="badge bg-warning text-dark border border-warning fw-bold mb-1 text-wrap lh-sm shadow-sm ph-text-truncate-2lines" title="{{reward_combined}}">
+                        {{reward_combined}}
+                    </span>
+                {{/is_claimed}}
+
+                {{^is_claimed}}
+                    <span class="badge bg-light text-success border border-success fw-bold mb-1 text-wrap lh-sm shadow-sm ph-text-truncate-2lines" title="{{reward_combined}}">
+                        {{reward_combined}}
+                    </span>
+                {{/is_claimed}}
+            </div>
+            {{/has_reward}}
+
+            {{! Bottom Action Area }}
+            <div class="mt-auto w-100 flex-shrink-0">
+                {{#is_claimed}}
+                    <div class="ph-quest-claimed-stamp w-100 py-1 rounded">
+                        <div class="small fw-bold ph-text-gold-dark">
+                            <i class="fa fa-check-circle me-1" aria-hidden="true"></i> {{str_claimed}}
+                        </div>
+                        <div class="ph-text-xs fw-bold ph-text-gold-dark mt-1">{{claimed_date}}</div>
+                    </div>
+                {{/is_claimed}}
+
+                {{^is_claimed}}
+                    {{#can_claim}}
+                        <a href="{{url_claim}}" class="btn btn-success btn-sm w-100 fw-bold shadow-sm" aria-label="{{str_claim}}: {{name}}">
+                            {{str_claim}}
+                        </a>
+                    {{/can_claim}}
+                    {{^can_claim}}
+                        <div class="progress ph-progress-container ph-progress-sm mb-1 w-100 position-relative" aria-hidden="true">
+                            <div class="progress-bar bg-info" style="width: {{progress_pct}}%;"></div>
+                        </div>
+                        <div class="text-center w-100 mb-2" aria-hidden="true">
+                            {{^activity_url}}<i class="fa fa-lock text-muted me-1" aria-hidden="true"></i>{{/activity_url}}
+                            <small class="text-muted fw-bold ph-text-xs" title="{{progress_label}}">{{progress_label}}</small>
+                        </div>
+                        <span class="sr-only visually-hidden">{{progress_label}}</span>
+
+                        {{#activity_url}}
+                        <a href="{{activity_url}}" class="btn btn-outline-primary btn-sm w-100 fw-bold"
+                           aria-label="{{str_go_activity}}: {{name}}">
+                            <i class="fa fa-external-link me-1" aria-hidden="true"></i>{{str_go_activity}}
+                        </a>
+                        {{/activity_url}}
+                    {{/can_claim}}
+                {{/is_claimed}}
+            </div>
+        </div>
+    </div>
+    {{/quests}}
+    </div>
+</div>

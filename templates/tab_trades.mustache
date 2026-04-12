@@ -25,17 +25,38 @@
     Example context (json):
     {
         "str_title": "Trade Configuration",
+        "summary_text": "You have 3 trade offer(s) created.",
+        "summary_hint": "Trade offers define NPC negotiation rules: the student pays items and receives another in return.",
         "url_add": "#",
         "str_add": "New Trade",
         "has_trades": false,
         "str_empty": "No trades registered."
     }
 }}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="h5 text-muted m-0 fw-bold">{{str_title}}</h3>
-    <a href="{{url_add}}" class="btn btn-success shadow-sm fw-bold">
-        <i class="fa fa-plus me-1" aria-hidden="true"></i> {{str_add}}
-    </a>
+<div class="d-flex flex-column mb-3 p-3 bg-light rounded border shadow-sm ph-manage-header">
+    <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
+        <div class="d-flex align-items-center flex-grow-1">
+            <button class="btn btn-link p-0 text-primary text-decoration-none me-2" type="button"
+                    data-toggle="collapse" data-bs-toggle="collapse"
+                    data-target="#ph-trades-hint" data-bs-target="#ph-trades-hint"
+                    aria-expanded="false" aria-controls="ph-trades-hint"
+                    aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
+                <i class="fa fa-question-circle fa-lg" aria-hidden="true"></i>
+            </button>
+            <span class="fw-bold text-dark">{{summary_text}}</span>
+        </div>
+        <div class="d-flex flex-shrink-0">
+            <a href="{{url_add}}" class="btn btn-primary shadow-sm">
+                <i class="fa fa-plus-circle me-1" aria-hidden="true"></i> {{str_add}}
+            </a>
+        </div>
+    </div>
+    <div class="collapse w-100" id="ph-trades-hint">
+        <div class="alert alert-info border-info mb-0 mt-3 small py-2 shadow-sm d-flex align-items-start">
+            <i class="fa fa-lightbulb-o fa-lg me-2 mt-1 text-warning" aria-hidden="true"></i>
+            <div>{{summary_hint}}</div>
+        </div>
+    </div>
 </div>
 
 <div class="row">

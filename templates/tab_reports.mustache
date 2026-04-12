@@ -64,7 +64,9 @@
 
     {{! --- 2. GAME STATS (Charts) --- }}
     <div class="row mb-4">
-        <div class="col-md-12">
+
+        {{! Level distribution }}
+        <div class="col-md-6 mb-3 mb-md-0">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white fw-bold">
                     <i class="fa fa-bar-chart text-info" aria-hidden="true"></i> {{charts.str_levels}}
@@ -89,6 +91,51 @@
                 </div>
             </div>
         </div>
+
+        {{! Quest completions }}
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-bold">
+                    <i class="fa fa-list-alt text-warning" aria-hidden="true"></i> {{quest_stats.str_title}}
+                </div>
+                <div class="card-body">
+                    {{#quest_stats.has_quests}}
+                    <div class="d-flex gap-3 mb-3 small text-center flex-wrap">
+                        <div class="flex-fill border rounded p-2">
+                            <div class="fw-bold fs-5">{{quest_stats.total}}</div>
+                            <div class="text-muted">{{quest_stats.str_total}}</div>
+                        </div>
+                        <div class="flex-fill border rounded p-2">
+                            <div class="fw-bold fs-5 text-success">{{quest_stats.engaged}}</div>
+                            <div class="text-muted">{{quest_stats.str_engaged}}</div>
+                        </div>
+                        <div class="flex-fill border rounded p-2">
+                            <div class="fw-bold fs-5 text-danger">{{quest_stats.no_claims}}</div>
+                            <div class="text-muted">{{quest_stats.str_no_claims}}</div>
+                        </div>
+                    </div>
+                    <div class="overflow-auto ph-max-h-200">
+                        {{#quest_stats.quests}}
+                        <div class="d-flex align-items-center mb-1 small">
+                            <div class="flex-grow-1 text-truncate me-2" title="{{label}}">{{label}}</div>
+                            <div class="ph-w-80 mx-2">
+                                <div class="progress ph-h-10" aria-hidden="true">
+                                    <div class="progress-bar {{#no_claims}}bg-secondary{{/no_claims}}{{^no_claims}}bg-warning{{/no_claims}}"
+                                         style="width: {{percent}}%"></div>
+                                </div>
+                            </div>
+                            <div class="text-end ph-w-30">{{total}}</div>
+                        </div>
+                        {{/quest_stats.quests}}
+                    </div>
+                    {{/quest_stats.has_quests}}
+                    {{^quest_stats.has_quests}}
+                        <div class="text-muted text-center">{{quest_stats.str_no_data}}</div>
+                    {{/quest_stats.has_quests}}
+                </div>
+            </div>
+        </div>
+
     </div>
 
     {{! --- 3. STUDENT SELECTOR --- }}

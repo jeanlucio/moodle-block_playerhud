@@ -169,8 +169,13 @@ class tab_items implements renderable {
             'tab' => 'items',
         ]);
 
+        $action = optional_param('action', '', PARAM_ALPHA);
+
         if ($this->mform !== null) {
             return $this->render_form();
+        }
+        if ($action === 'distribute') {
+            return $this->render_distribute_view($baseurl);
         }
         return $this->render_list_view($baseurl);
     }
@@ -355,7 +360,10 @@ class tab_items implements renderable {
             'base_url' => $baseurl->out(false),
             'sesskey' => sesskey(),
             'summary_text' => $summarytext,
+            'summary_hint' => get_string('summary_stats_hint', 'block_playerhud'),
             'url_add' => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
+            'url_distribute' => (new moodle_url($baseurl, ['action' => 'distribute']))->out(false),
+            'str_distribute' => get_string('distribute_btn', 'block_playerhud'),
             'items' => $itemsdata,
             'paging_bar' => $OUTPUT->paging_bar($totalitems, $page, $perpage, $baseurl, 'page'),
 
@@ -401,6 +409,286 @@ class tab_items implements renderable {
         $PAGE->requires->js_call_amd('block_playerhud/manage_items', 'init', [$jsvars]);
 
         return $OUTPUT->render_from_template('block_playerhud/manage_items_table', $templatedata);
+    }
+
+    /**
+     * Render the drop distribution view.
+     *
+     * @param moodle_url $baseurl Base URL for the items tab.
+     * @return string HTML content.
+     */
+    protected function render_distribute_view($baseurl) {
+        global $DB, $PAGE, $OUTPUT;
+
+        // 1. Load all drops with their item info (including image) for this block instance.
+        $sql = "SELECT d.id, d.code, d.name AS drop_name,
+                       i.id AS item_id, i.name AS item_name, i.image AS item_image
+                  FROM {block_playerhud_drops} d
+                  JOIN {block_playerhud_items} i ON d.itemid = i.id
+                 WHERE i.blockinstanceid = :instanceid
+              ORDER BY i.name ASC, d.name ASC";
+        $drops = $DB->get_records_sql($sql, ['instanceid' => $this->instanceid]);
+
+        // 2. Load all course modules that have editable text fields.
+        $course = get_course($this->courseid);
+        $modinfo = get_fast_modinfo($course);
+        $modules = [];
+        foreach ($modinfo->get_cms() as $cm) {
+            // Skip modules being deleted; include hidden modules (teachers can distribute to them).
+            if (!empty($cm->deletioninprogress)) {
+                continue;
+            }
+            // Only include modules whose table has an intro or content field.
+            $columns = $DB->get_columns($cm->modname);
+            if (!isset($columns['intro']) && !isset($columns['content'])) {
+                continue;
+            }
+            $supportscontent = ($cm->modname === 'page');
+            $islabel         = ($cm->modname === 'label');
+            $modules[] = [
+                'cmid'               => $cm->id,
+                'instance'           => $cm->instance,
+                'name'               => format_string($cm->name),
+                'modname'            => $cm->modname,
+                'modname_translated' => get_string('modulename', 'mod_' . $cm->modname),
+                'supports_content'   => $supportscontent,
+                'supports_content_int' => $supportscontent ? 1 : 0,
+                'is_label'           => $islabel,
+                'is_label_int'       => $islabel ? 1 : 0,
+            ];
+        }
+
+        // 3. Pre-compute which cmids already contain each drop's shortcode.
+        $insertedmap = $this->get_inserted_cmids($drops, $modules);
+
+        // 4. Bulk-load item images to avoid N+1.
+        require_once($GLOBALS['CFG']->dirroot . '/blocks/playerhud/lib.php');
+        $context = \context_block::instance($this->instanceid);
+        $itemsforimg = [];
+        foreach ($drops as $drop) {
+            if (!isset($itemsforimg[$drop->item_id])) {
+                $fakeitem = new \stdClass();
+                $fakeitem->id = $drop->item_id;
+                $fakeitem->image = $drop->item_image;
+                $itemsforimg[$drop->item_id] = $fakeitem;
+            }
+        }
+        $allmedia = \block_playerhud\utils::get_items_display_data($itemsforimg, $context);
+
+        // 5. Build data for each drop row.
+        $dropsdata = [];
+        foreach ($drops as $drop) {
+            $insertedinfo = $insertedmap[$drop->id] ?? ['cmids' => [], 'first_cmid' => null, 'first_field' => 'intro'];
+            $insertedcmids = $insertedinfo['cmids'];
+            $insertedanywhere = !empty($insertedcmids);
+
+            // For inserted drops use the actual location; for pending use heuristic suggestion.
+            if ($insertedanywhere) {
+                $suggestedcmid = $insertedinfo['first_cmid'];
+            } else {
+                $suggested = $this->suggest_module($drop->drop_name . ' ' . $drop->item_name, $modules);
+                $suggestedcmid = $suggested ? $suggested['cmid'] : null;
+            }
+
+            // Build human-readable list of activities where this drop is already present.
+            $insertednames = [];
+            foreach ($modules as $mod) {
+                if (in_array($mod['cmid'], $insertedcmids)) {
+                    $insertednames[] = format_string($mod['name']);
+                }
+            }
+
+            $rowmodules = [];
+            foreach ($modules as $mod) {
+                $m = $mod;
+                $m['selected'] = ($suggestedcmid && $mod['cmid'] === $suggestedcmid);
+                $rowmodules[] = $m;
+            }
+
+            // Image data for the item.
+            $mediadata = $allmedia[$drop->item_id] ?? ['is_image' => false, 'url' => '', 'content' => ''];
+
+            $dropsdata[] = [
+                'id'                  => $drop->id,
+                'code'                => $drop->code,
+                'drop_name'           => format_string($drop->drop_name),
+                'item_name'           => format_string($drop->item_name),
+                'is_image'            => (bool)$mediadata['is_image'],
+                'image_url'           => $mediadata['is_image'] ? $mediadata['url'] : '',
+                'image_content'       => $mediadata['is_image'] ? '' : strip_tags($mediadata['content']),
+                'modules'             => $rowmodules,
+                'inserted_cmids_json'  => json_encode($insertedcmids),
+                'inserted_anywhere'     => $insertedanywhere,
+                'inserted_anywhere_int' => $insertedanywhere ? 1 : 0,
+                'inserted_field'      => $insertedinfo['first_field'],
+                'inserted_field_label' => $insertedanywhere
+                    ? get_string(
+                        $insertedinfo['first_field'] === 'content'
+                            ? 'distribute_field_content'
+                            : 'distribute_field_intro',
+                        'block_playerhud'
+                    )
+                    : '',
+                'inserted_names'      => implode(', ', $insertednames),
+            ];
+        }
+
+        // 4. Template data.
+        $templatedata = [
+            'instanceid'          => $this->instanceid,
+            'courseid'            => $this->courseid,
+            'url_back'            => $baseurl->out(false),
+            'drops'               => $dropsdata,
+            'has_drops'           => !empty($dropsdata),
+            'has_modules'         => !empty($modules),
+            'str_title'           => get_string('distribute_title', 'block_playerhud'),
+            'str_desc'            => get_string('distribute_desc', 'block_playerhud'),
+            'str_col_drop'        => get_string('distribute_col_drop', 'block_playerhud'),
+            'str_col_activity'    => get_string('distribute_col_activity', 'block_playerhud'),
+            'str_col_field'       => get_string('distribute_col_field', 'block_playerhud'),
+            'str_col_position'    => get_string('distribute_col_position', 'block_playerhud'),
+            'str_col_status'      => get_string('distribute_col_status', 'block_playerhud'),
+            'str_no_drops'        => get_string('distribute_no_drops', 'block_playerhud'),
+            'str_no_modules'      => get_string('distribute_err_no_modules', 'block_playerhud'),
+            'str_back'            => get_string('back', 'block_playerhud'),
+            'str_field_intro'     => get_string('distribute_field_intro', 'block_playerhud'),
+            'str_field_content'   => get_string('distribute_field_content', 'block_playerhud'),
+            'str_field_label'     => get_string('distribute_field_intro_label', 'block_playerhud'),
+            'str_pos_top'         => get_string('distribute_pos_top', 'block_playerhud'),
+            'str_pos_bottom'      => get_string('distribute_pos_bottom', 'block_playerhud'),
+        ];
+
+        // 5. JS initialisation.
+        $jsvars = [
+            'instanceid' => $this->instanceid,
+            'courseid'   => $this->courseid,
+            'strings'    => [
+                'inserting'        => get_string('distribute_inserting', 'block_playerhud'),
+                'inserted'         => get_string('distribute_inserted', 'block_playerhud'),
+                'btn_insert'       => get_string('distribute_btn', 'block_playerhud'),
+                'field_intro'      => get_string('distribute_field_intro', 'block_playerhud'),
+                'field_content'    => get_string('distribute_field_content', 'block_playerhud'),
+                'field_label'      => get_string('distribute_field_intro_label', 'block_playerhud'),
+                'insert_selected'  => get_string('distribute_insert_selected', 'block_playerhud', '__N__'),
+                'no_selection'     => get_string('distribute_no_selection', 'block_playerhud'),
+                'select_all'       => get_string('selectall'),
+                'remove'           => get_string('distribute_remove', 'block_playerhud'),
+                'removing'         => get_string('distribute_removing', 'block_playerhud'),
+                'remove_confirm'   => get_string('distribute_remove_confirm', 'block_playerhud'),
+                'undo_selected'    => get_string('distribute_undo_selected', 'block_playerhud', '__N__'),
+            ],
+        ];
+        $PAGE->requires->js_call_amd('block_playerhud/distribute_drops', 'init', [$jsvars]);
+
+        return $OUTPUT->render_from_template('block_playerhud/distribute_drops', $templatedata);
+    }
+
+    /**
+     * Suggest the best matching module for a drop based on name similarity.
+     *
+     * @param string $haystack Combined drop and item name.
+     * @param array $modules List of module data arrays.
+     * @return array|null Best matching module or null if list is empty.
+     */
+    private function suggest_module($haystack, $modules) {
+        if (empty($modules)) {
+            return null;
+        }
+        $best = null;
+        $bestscore = -1;
+        $haystack = strtolower($haystack);
+        foreach ($modules as $mod) {
+            similar_text($haystack, strtolower($mod['name']), $percent);
+            if ($percent > $bestscore) {
+                $bestscore = $percent;
+                $best = $mod;
+            }
+        }
+        return $best;
+    }
+
+    /**
+     * Return a map of drop ID => list of cmids where the drop shortcode is already present.
+     *
+     * Queries are batched per module type to avoid N+1.
+     *
+     * @param array $drops Keyed by drop ID, each with a ->code property.
+     * @param array $modules List of module data arrays (must include 'cmid', 'instance', 'modname').
+     * @return array [dropid => int[]]
+     */
+    private function get_inserted_cmids(array $drops, array $modules): array {
+        global $DB;
+
+        if (empty($drops) || empty($modules)) {
+            return [];
+        }
+
+        // Group modules by type: [modname => [instance_id => cmid]].
+        $bytype = [];
+        foreach ($modules as $mod) {
+            $bytype[$mod['modname']][$mod['instance']] = $mod['cmid'];
+        }
+
+        // For each module type, load intro/content fields in one query.
+        // Result: [cmid => ['intro' => text, 'content' => text]].
+        $contentbycmid = [];
+        foreach ($bytype as $modname => $instances) {
+            $instanceids = array_keys($instances);
+            [$insql, $inparams] = $DB->get_in_or_equal($instanceids);
+
+            $columns = $DB->get_columns($modname);
+            $fields = ['id'];
+            if (isset($columns['intro'])) {
+                $fields[] = 'intro';
+            }
+            if (isset($columns['content'])) {
+                $fields[] = 'content';
+            }
+
+            $rows = $DB->get_records_select($modname, "id $insql", $inparams, '', implode(',', $fields));
+            foreach ($rows as $row) {
+                $cmid = $instances[$row->id];
+                $contentbycmid[$cmid] = [];
+                if (isset($row->intro)) {
+                    $contentbycmid[$cmid]['intro'] = (string)$row->intro;
+                }
+                if (isset($row->content)) {
+                    $contentbycmid[$cmid]['content'] = (string)$row->content;
+                }
+            }
+        }
+
+        // For each drop, collect cmids and note the first field where the shortcode was found.
+        $result = [];
+        foreach ($drops as $drop) {
+            $needle = 'code=' . $drop->code;
+            $insertedcmids = [];
+            $firstcmid = null;
+            $firstfield = 'intro';
+
+            foreach ($contentbycmid as $cmid => $fields) {
+                foreach ($fields as $fieldname => $text) {
+                    if (strpos($text, $needle) !== false) {
+                        if ($firstcmid === null) {
+                            $firstcmid = $cmid;
+                            $firstfield = $fieldname;
+                        }
+                        if (!in_array($cmid, $insertedcmids)) {
+                            $insertedcmids[] = $cmid;
+                        }
+                        break; // One field match per cmid is enough.
+                    }
+                }
+            }
+
+            $result[$drop->id] = [
+                'cmids'       => $insertedcmids,
+                'first_cmid'  => $firstcmid,
+                'first_field' => $firstfield,
+            ];
+        }
+
+        return $result;
     }
 
     /**

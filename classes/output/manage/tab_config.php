@@ -106,6 +106,14 @@ class tab_config implements renderable, templatable {
             }
         }
 
+        // Add XP from enabled quest rewards.
+        $questxp = $DB->get_field_sql(
+            "SELECT COALESCE(SUM(reward_xp), 0) FROM {block_playerhud_quests}
+              WHERE blockinstanceid = :instanceid AND enabled = 1",
+            ['instanceid' => $this->instanceid]
+        );
+        $totalitemsxp += (int)$questxp;
+
         // Coverage Ratio.
         $ratio = ($xpceiling > 0) ? ($totalitemsxp / $xpceiling) * 100 : 0;
 

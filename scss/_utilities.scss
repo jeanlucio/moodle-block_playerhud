@@ -7,6 +7,17 @@
     text-overflow: ellipsis;
 }
 
+.ph-text-truncate-2lines {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
+}
+
 .ph-cursor-pointer {
     cursor: pointer;
 }
@@ -113,6 +124,9 @@
 }
 .ph-w-50 {
     width: 50px;
+}
+.ph-w-80 {
+    width: 80px;
 }
 .ph-min-w-250 {
     min-width: 250px;
