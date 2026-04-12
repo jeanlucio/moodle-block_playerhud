@@ -440,6 +440,7 @@ class tab_quests implements renderable {
             'has_quests'     => !empty($questsdata),
             'paging_bar'     => $pagingbar,
             'summary_text'   => get_string('quests_summary', 'block_playerhud', $totalquests),
+            'summary_hint'   => get_string('quests_summary_hint', 'block_playerhud'),
         ];
 
         return $OUTPUT->render_from_template('block_playerhud/manage_quests', $templatedata);

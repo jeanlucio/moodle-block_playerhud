@@ -219,7 +219,7 @@ if ($isoptin) {
         // 1. Collection (Base).
         'collection' => ['icon' => '🎒', 'text' => get_string('tab_collection', 'block_playerhud')],
         'shop'       => ['icon' => '🛒', 'text' => get_string('tab_shop', 'block_playerhud')],
-        'quests'     => ['icon' => '📋', 'text' => get_string('tab_quests', 'block_playerhud')],
+        'quests'     => ['icon' => '🎯', 'text' => get_string('tab_quests', 'block_playerhud')],
 
         // Note: Chapters are hidden until the Story system is fully implemented.
 

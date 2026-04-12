@@ -140,7 +140,7 @@ class edit_quest_form extends \moodleform {
 
         $mform->addElement('text', 'image_todo', get_string('quest_icon_todo', 'block_playerhud'));
         $mform->setType('image_todo', PARAM_TEXT);
-        $mform->setDefault('image_todo', '📋');
+        $mform->setDefault('image_todo', '🎯');
 
         $mform->addElement('text', 'image_done', get_string('quest_icon_done', 'block_playerhud'));
         $mform->setType('image_done', PARAM_TEXT);

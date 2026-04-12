@@ -76,18 +76,31 @@
 <div class="ph-distribute-drops">
 
     {{! Header }}
-    <div class="d-flex flex-wrap justify-content-between align-items-center
-        mb-3 p-3 bg-light rounded border shadow-sm ph-manage-header">
-        <div class="d-flex align-items-center">
-            <i class="fa fa-random text-warning me-2 fa-lg" aria-hidden="true"></i>
-            <div>
-                <span class="fw-bold text-dark d-block">{{str_title}}</span>
-                <span class="text-muted small">{{str_desc}}</span>
+    <div class="d-flex flex-column mb-3 p-3 bg-light rounded border shadow-sm ph-manage-header">
+        <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
+            <div class="d-flex align-items-center flex-grow-1">
+                <i class="fa fa-random text-warning me-2 fa-lg" aria-hidden="true"></i>
+                <button class="btn btn-link p-0 text-primary text-decoration-none me-2" type="button"
+                        data-toggle="collapse" data-bs-toggle="collapse"
+                        data-target="#ph-drops-dist-hint" data-bs-target="#ph-drops-dist-hint"
+                        aria-expanded="true" aria-controls="ph-drops-dist-hint"
+                        aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
+                    <i class="fa fa-question-circle fa-lg" aria-hidden="true"></i>
+                </button>
+                <span class="fw-bold text-dark">{{str_title}}</span>
+            </div>
+            <div class="d-flex flex-shrink-0">
+                <a href="{{url_back}}" class="btn btn-outline-secondary btn-sm shadow-sm">
+                    <i class="fa fa-arrow-left me-1" aria-hidden="true"></i> {{str_back}}
+                </a>
             </div>
         </div>
-        <a href="{{url_back}}" class="btn btn-outline-secondary btn-sm shadow-sm">
-            <i class="fa fa-arrow-left me-1" aria-hidden="true"></i> {{str_back}}
-        </a>
+        <div class="collapse show w-100" id="ph-drops-dist-hint">
+            <div class="alert alert-info border-info mb-0 mt-3 small py-2 shadow-sm d-flex align-items-start">
+                <i class="fa fa-lightbulb-o fa-lg me-2 mt-1 text-warning" aria-hidden="true"></i>
+                <div>{{str_desc}}</div>
+            </div>
+        </div>
     </div>
 
     {{! No drops }}
@@ -135,11 +148,11 @@
                             data-inserted-cmids="{{{inserted_cmids_json}}}">
                             {{! Checkbox — enabled on all rows }}
                             <td class="ph-col-select text-center align-middle">
-                                <label class="sr-only visually-hidden" for="ph-chk-{{id}}">{{drop_name}}</label>
                                 <input type="checkbox" id="ph-chk-{{id}}"
                                     class="form-check-input ph-dist-check m-0 position-static"
                                     data-drop-id="{{id}}"
-                                    data-inserted="{{inserted_anywhere_int}}">
+                                    data-inserted="{{inserted_anywhere_int}}"
+                                    aria-label="{{drop_name}}">
                             </td>
                             {{! Drop / Item }}
                             <td class="align-middle">
@@ -164,8 +177,8 @@
                                 <span class="fw-semibold">{{inserted_names}}</span>
                                 {{/inserted_anywhere}}
                                 {{^inserted_anywhere}}
-                                <label class="sr-only visually-hidden" for="ph-mod-{{id}}">{{str_col_activity}}</label>
-                                <select class="form-select form-select-sm ph-select-module" id="ph-mod-{{id}}">
+                                <select class="form-select form-select-sm ph-select-module" id="ph-mod-{{id}}"
+                                    aria-label="{{str_col_activity}}">
                                     {{#modules}}
                                     <option value="{{cmid}}"
                                         data-modname="{{modname}}"
@@ -185,8 +198,8 @@
                                 <span>{{inserted_field_label}}</span>
                                 {{/inserted_anywhere}}
                                 {{^inserted_anywhere}}
-                                <label class="sr-only visually-hidden" for="ph-field-{{id}}">{{str_col_field}}</label>
-                                <select class="form-select form-select-sm ph-select-field" id="ph-field-{{id}}">
+                                <select class="form-select form-select-sm ph-select-field" id="ph-field-{{id}}"
+                                    aria-label="{{str_col_field}}">
                                     <option value="intro">{{str_field_intro}}</option>
                                 </select>
                                 {{/inserted_anywhere}}
@@ -197,8 +210,8 @@
                                 <span class="text-muted">—</span>
                                 {{/inserted_anywhere}}
                                 {{^inserted_anywhere}}
-                                <label class="sr-only visually-hidden" for="ph-pos-{{id}}">{{str_col_position}}</label>
-                                <select class="form-select form-select-sm ph-select-position" id="ph-pos-{{id}}">
+                                <select class="form-select form-select-sm ph-select-position" id="ph-pos-{{id}}"
+                                    aria-label="{{str_col_position}}">
                                     <option value="top">{{str_pos_top}}</option>
                                     <option value="bottom">{{str_pos_bottom}}</option>
                                 </select>

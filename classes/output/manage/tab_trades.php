@@ -163,6 +163,8 @@ class tab_trades implements renderable, templatable {
             'has_trades' => !empty($tradesdata),
             'trades' => $tradesdata,
             'url_add' => $addurl->out(false),
+            'summary_text' => get_string('trades_summary', 'block_playerhud', count($tradesdata)),
+            'summary_hint' => get_string('trades_summary_hint', 'block_playerhud'),
             'str_title' => get_string('tab_trades', 'block_playerhud'),
             'str_add' => get_string('add_trade', 'block_playerhud'),
             'str_shop' => get_string('tab_shop', 'block_playerhud'),

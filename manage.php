@@ -577,7 +577,7 @@ echo $OUTPUT->header();
 $tabsdef = [
     'items'   => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
     'trades'  => ['icon' => '🛒', 'text' => get_string('tab_trades', 'block_playerhud')],
-    'quests'  => ['icon' => '📋', 'text' => get_string('tab_quests', 'block_playerhud')],
+    'quests'  => ['icon' => '🎯', 'text' => get_string('tab_quests', 'block_playerhud')],
     'reports' => ['icon' => '📊', 'text' => get_string('tab_reports', 'block_playerhud')],
     'config'  => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
 ];
