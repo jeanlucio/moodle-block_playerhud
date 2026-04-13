@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Story manager — business logic for chapters, scenes and choices.
@@ -209,7 +209,7 @@ class story_manager {
             $sign = ((int) $choice->karma_delta > 0) ? '+' : '';
             $events[] = [
                 'type' => 'karma',
-                'msg'  => 'Karma ' . $sign . (int) $choice->karma_delta,
+                'msg'  => get_string('karma_event', 'block_playerhud', $sign . (int) $choice->karma_delta),
             ];
         }
 
@@ -290,20 +290,22 @@ class story_manager {
         $sql = "SELECT * FROM {block_playerhud_story_nodes} WHERE id $insql AND chapterid = ?";
         $nodes = $DB->get_records_sql($sql, $inparams);
 
+        global $OUTPUT;
+
         $context = \context_block::instance($instanceid);
-        $html = '<div class="ph-recap-container">';
+        $scenesdata = [];
         foreach ($pathdata as $nid) {
             if (isset($nodes[$nid])) {
-                $content = format_text($nodes[$nid]->content, FORMAT_HTML, ['context' => $context]);
-                $html .= '<div class="ph-recap-scene mb-4 pb-3 border-bottom">' . $content . '</div>';
+                $scenesdata[] = [
+                    'content' => format_text($nodes[$nid]->content, FORMAT_HTML, ['context' => $context]),
+                ];
             }
         }
-        $html .= '<div class="text-center text-muted fst-italic mt-3">';
-        $html .= '<i class="fa fa-check" aria-hidden="true"></i> ' .
-                 get_string('story_end', 'block_playerhud');
-        $html .= '</div></div>';
 
-        return $html;
+        return $OUTPUT->render_from_template('block_playerhud/story_recap', [
+            'scenes'  => $scenesdata,
+            'str_end' => get_string('story_end', 'block_playerhud'),
+        ]);
     }
 
     /**
@@ -447,69 +449,82 @@ class story_manager {
 
         $choices = [];
         foreach ($choicesraw as $ch) {
-            $btnclass  = 'btn-primary';
-            $disabled  = false;
-            $extrainfo = '';
+            $btnclass    = 'btn-primary';
+            $disabled    = false;
+            $reqclassname = '';
+            $reqclassmet  = true;
+            $reqkarmamin  = 0;
+            $reqkarmamet  = true;
+            $costitemname = '';
+            $costitemqty  = 0;
+            $costitemmet  = true;
 
             // Requirement: class.
             if ((int) $ch->req_class_id > 0) {
-                $reqname = isset($classes[$ch->req_class_id])
+                $reqclassname = isset($classes[$ch->req_class_id])
                     ? format_string($classes[$ch->req_class_id]->name)
                     : '?';
 
-                if ($ispreview) {
-                    $extrainfo .= ' <small class="text-info">[Req: ' . $reqname . ']</small>';
-                } else if ((int) $ch->req_class_id !== $myclass) {
-                    $extrainfo .= ' <small class="text-danger">'
-                        . '<i class="fa fa-lock" aria-hidden="true"></i> '
-                        . get_string('req_class_label', 'block_playerhud', $reqname)
-                        . '</small>';
-                    $disabled  = true;
-                    $btnclass  = 'btn-outline-secondary';
+                if (!$ispreview && (int) $ch->req_class_id !== $myclass) {
+                    $reqclassmet = false;
+                    $disabled    = true;
+                    $btnclass    = 'btn-outline-secondary';
                 }
             }
 
             // Requirement: karma minimum.
             if ((int) $ch->req_karma_min !== 0) {
-                if ($ispreview) {
-                    $extrainfo .= ' <small class="text-info">[Karma &gt; ' .
-                                  (int) $ch->req_karma_min . ']</small>';
-                } else if ($mykarma < (int) $ch->req_karma_min) {
-                    $extrainfo .= ' <small class="text-danger">('
-                        . get_string('low_karma', 'block_playerhud') . ')</small>';
-                    $disabled  = true;
-                    $btnclass  = 'btn-outline-secondary';
+                $reqkarmamin = (int) $ch->req_karma_min;
+                if (!$ispreview && $mykarma < $reqkarmamin) {
+                    $reqkarmamet = false;
+                    $disabled    = true;
+                    $btnclass    = 'btn-outline-secondary';
                 }
             }
 
             // Cost: item.
             if ((int) $ch->cost_itemid > 0) {
-                $qtyneeded = max(1, (int) $ch->cost_item_qty);
-                $iname = isset($items[$ch->cost_itemid])
+                $costitemqty  = max(1, (int) $ch->cost_item_qty);
+                $costitemname = isset($items[$ch->cost_itemid])
                     ? format_string($items[$ch->cost_itemid]->name)
                     : '?';
 
-                if ($ispreview) {
-                    $extrainfo .= ' <small class="text-warning">(-' . $qtyneeded . ' ' . $iname . ')</small>';
-                } else {
+                if (!$ispreview) {
                     $invcount = $invcounts[(int) $ch->cost_itemid] ?? 0;
-                    if ($invcount < $qtyneeded) {
-                        $btnclass  = 'btn-secondary';
-                        $disabled  = true;
-                        $extrainfo .= ' <small>('
-                            . get_string('missing_item', 'block_playerhud', $qtyneeded . 'x ' . $iname)
-                            . ')</small>';
-                    } else {
-                        $extrainfo .= ' <small class="text-warning">(-' . $qtyneeded . ' ' . $iname . ')</small>';
+                    if ($invcount < $costitemqty) {
+                        $costitemmet = false;
+                        $disabled    = true;
+                        $btnclass    = 'btn-secondary';
                     }
                 }
             }
 
             $choices[] = [
-                'id'       => (int) $ch->id,
-                'text'     => format_string($ch->text) . $extrainfo,
-                'btnclass' => $btnclass,
-                'disabled' => $disabled,
+                'id'              => (int) $ch->id,
+                'text'            => format_string($ch->text),
+                'btnclass'        => $btnclass,
+                'disabled'        => $disabled,
+                'req_class_name'  => $reqclassname,
+                'req_class_met'   => $reqclassmet,
+                'req_karma_min'   => $reqkarmamin,
+                'req_karma_met'   => $reqkarmamet,
+                'cost_item_name'  => $costitemname,
+                'cost_item_qty'   => $costitemqty,
+                'cost_item_met'   => $costitemmet,
+                'str_req_class'   => $reqclassname !== ''
+                    ? get_string('req_class_label', 'block_playerhud', $reqclassname)
+                    : '',
+                'str_req_karma'   => $reqkarmamin !== 0
+                    ? get_string('req_karma_label', 'block_playerhud', $reqkarmamin)
+                    : '',
+                'str_low_karma'   => get_string('low_karma', 'block_playerhud'),
+                'str_cost_item'   => $costitemname !== ''
+                    ? get_string('cost_item_label', 'block_playerhud', $costitemqty . 'x ' . $costitemname)
+                    : '',
+                'str_missing_item' => ($costitemname !== '' && !$costitemmet)
+                    ? get_string('missing_item', 'block_playerhud', $costitemqty . 'x ' . $costitemname)
+                    : '',
+                'is_preview'      => $ispreview,
             ];
         }
 

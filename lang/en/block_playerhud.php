@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * English language strings for PlayerHUD.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -95,6 +95,7 @@ $string['choice_cost'] = 'Cost Item';
 $string['choice_cost_qty'] = 'Quantity';
 $string['choice_end_chapter'] = '— End of chapter —';
 $string['choice_karma'] = 'Karma Delta';
+$string['choice_logic_badge'] = 'Logic';
 $string['choice_new_scene'] = '— Create new scene —';
 $string['choice_next'] = 'Next Scene';
 $string['choice_req_class'] = 'Required Class';
@@ -133,6 +134,7 @@ $string['confirm_delete'] = 'Are you sure you want to delete this?';
 $string['confirm_disable'] = 'Are you sure? Your HUD will disappear until you reactivate.';
 $string['confirm_revoke'] = 'Are you sure you want to remove this item from the student? The corresponding XP will be deducted from their total score.';
 $string['connector_and'] = ' and ';
+$string['cost_item_label'] = 'Cost: {$a}';
 $string['default_drop_name'] = 'Generated Drop';
 $string['delete'] = 'Delete';
 $string['delete_n_items'] = 'Delete %d items';
@@ -399,6 +401,7 @@ $string['itemname'] = 'Item Name';
 $string['itemnotfound'] = 'Item not found or inactive.';
 $string['items'] = 'Items:';
 $string['items_none'] = 'No items created';
+$string['karma_event'] = 'Karma {$a}';
 $string['last_collected'] = 'Last collected:';
 $string['latest_items'] = 'Latest items';
 $string['leaderboard_desc'] = 'See who are the masters of the course.';
@@ -570,6 +573,7 @@ $string['report_type_quest'] = 'Quest';
 $string['report_type_revoked'] = 'Revoked';
 $string['report_type_trade'] = 'Trade';
 $string['req_class_label'] = 'Required class: {$a}';
+$string['req_karma_label'] = 'Minimum karma: {$a}';
 $string['respawntime'] = 'Cooldown Time';
 $string['respawntime_help'] = 'This setting defines how long the student must wait to collect the item again at this specific location.<br><br>Set to <b>0</b> if you want the collection to be one-time only (the student takes it once and it never appears again), or if it is an infinite item with no wait time.';
 $string['restrict_group'] = 'Restrict to group/grouping';
@@ -578,6 +582,8 @@ $string['save_and_add'] = 'Save and add choice';
 $string['save_keys'] = 'Save My Keys';
 $string['save_trade'] = 'Save Trade';
 $string['savechanges'] = 'Save changes';
+$string['scene_auto_fallback'] = '<p><em>(Fallback scene — edit this content.)</em></p>';
+$string['scene_auto_from'] = '<p><em>(New scene from choice: "{$a}" — edit this content.)</em></p>';
 $string['scene_content'] = 'Scene Content';
 $string['scene_content_hdr'] = 'Narrative Content';
 $string['scene_delete_confirm'] = 'Are you sure you want to delete this scene? All its choices will be permanently removed.';
@@ -585,6 +591,7 @@ $string['scene_deleted'] = 'Scene deleted successfully.';
 $string['scene_editor'] = 'Scene Editor';
 $string['scene_is_start'] = 'Starting scene?';
 $string['scene_new'] = 'New Scene';
+$string['scene_number'] = 'Scene #{$a}';
 $string['scene_saved'] = 'Scene saved successfully.';
 $string['scene_start_badge'] = 'Start';
 $string['scenes_empty'] = 'No scenes have been created for this chapter yet.';

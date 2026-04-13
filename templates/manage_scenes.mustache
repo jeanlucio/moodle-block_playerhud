@@ -1,0 +1,122 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    Scene list management page for a story chapter.
+
+    @template   block_playerhud/manage_scenes
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio
+    @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "back_url": "/blocks/playerhud/manage.php?id=2&instanceid=3&tab=chapters",
+        "str_back": "Back to chapters",
+        "str_scene_editor": "Scene editor",
+        "chapter_title": "Chapter 1",
+        "new_scene_url": "/blocks/playerhud/edit_scene.php?courseid=2&instanceid=3&chapterid=1",
+        "str_new": "Add scene",
+        "has_scenes": true,
+        "scenes": [
+            {
+                "id_label": "Scene #1",
+                "is_start": true,
+                "str_start_badge": "Start",
+                "snippet": "Once upon a time...",
+                "choice_count": 2,
+                "str_choices": "choices",
+                "url_edit": "/blocks/playerhud/edit_scene.php?courseid=2&instanceid=3&chapterid=1&nodeid=1",
+                "str_edit": "Edit",
+                "url_delete": "/blocks/playerhud/manage_scenes.php?action=delete_scene&nodeid=1",
+                "str_delete": "Delete",
+                "confirm_msg": "Are you sure?"
+            }
+        ],
+        "str_empty": "No scenes yet.",
+        "str_confirm_delete_title": "Confirm delete",
+        "str_cancel": "Cancel",
+        "str_close": "Close",
+        "str_delete": "Delete"
+    }
+}}
+<div>
+    <a href="{{back_url}}" class="btn btn-outline-secondary btn-sm mb-3">
+        &larr; {{str_back}}
+    </a>
+</div>
+
+<h3>{{str_scene_editor}}: {{chapter_title}}</h3>
+
+<a href="{{new_scene_url}}" class="btn btn-primary mb-3">
+    <i class="fa fa-plus-circle" aria-hidden="true"></i> {{str_new}}
+</a>
+
+{{#has_scenes}}
+<div class="list-group mt-3">
+    {{#scenes}}
+    <div class="list-group-item p-3 mb-2 border rounded shadow-sm">
+        <div class="d-flex w-100 justify-content-between align-items-start">
+            <div>
+                <strong>{{id_label}}</strong>
+                {{#is_start}}
+                <span class="badge bg-success ms-2">{{str_start_badge}}</span>
+                {{/is_start}}
+                <p class="mb-1 text-muted small mt-1">{{snippet}}</p>
+                <small class="text-muted">{{choice_count}} {{str_choices}}</small>
+            </div>
+            <div class="d-flex gap-2 ms-3">
+                <a href="{{url_edit}}" class="btn btn-sm btn-outline-primary">
+                    <i class="fa fa-pencil" aria-hidden="true"></i> {{str_edit}}
+                </a>
+                <button class="btn btn-sm btn-outline-danger"
+                        data-action="delete-scene"
+                        data-confirm-msg="{{confirm_msg}}"
+                        data-delete-url="{{url_delete}}"
+                        data-bs-toggle="modal"
+                        data-bs-target="#ph-confirm-delete-scene">
+                    <i class="fa fa-trash" aria-hidden="true"></i> {{str_delete}}
+                </button>
+            </div>
+        </div>
+    </div>
+    {{/scenes}}
+</div>
+{{/has_scenes}}
+{{^has_scenes}}
+<div class="alert alert-info mt-3" role="alert">{{str_empty}}</div>
+{{/has_scenes}}
+
+<div class="modal fade" id="ph-confirm-delete-scene" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{str_confirm_delete_title}}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="{{str_close}}"></button>
+            </div>
+            <div class="modal-body">
+                <p id="ph-delete-scene-msg"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">{{str_cancel}}</button>
+                <a id="ph-delete-scene-url" href="#"
+                   class="btn btn-danger">{{str_delete}}</a>
+            </div>
+        </div>
+    </div>
+</div>

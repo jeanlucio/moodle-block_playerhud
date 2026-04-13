@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace block_playerhud\form;
 
@@ -32,7 +32,7 @@ class edit_scene_form extends \moodleform {
      * Form definition.
      */
     public function definition() {
-        global $DB;
+        global $DB, $OUTPUT;
 
         $mform       = $this->_form;
         $chapterid   = $this->_customdata['chapterid'];
@@ -46,7 +46,7 @@ class edit_scene_form extends \moodleform {
         $mform->addRule('content', null, 'required', null, 'client');
 
         // Start scene flag.
-        $hasscenes     = $DB->record_exists('block_playerhud_story_nodes', ['chapterid' => $chapterid]);
+        $hasscenes      = $DB->record_exists('block_playerhud_story_nodes', ['chapterid' => $chapterid]);
         $defaultisstart = $hasscenes ? 0 : 1;
 
         $mform->addElement('selectyesno', 'is_start', get_string('scene_is_start', 'block_playerhud'));
@@ -55,43 +55,44 @@ class edit_scene_form extends \moodleform {
         // Choices repeater.
         $mform->addElement('header', 'choices_hdr', get_string('choices_hdr', 'block_playerhud'));
 
-        // Build option lists for selects.
-        $othernodes = $DB->get_records(
+        // Build raw option data for scene target select.
+        $othernodes  = $DB->get_records(
             'block_playerhud_story_nodes',
             ['chapterid' => $chapterid],
             'id ASC',
             'id, content'
         );
-        $nodeoptions = [
+        $targetoptionsraw = [
             0  => get_string('choice_end_chapter', 'block_playerhud'),
             -1 => get_string('choice_new_scene', 'block_playerhud'),
             -2 => get_string('choice_same_as_prev', 'block_playerhud'),
         ];
         foreach ($othernodes as $n) {
             $snippet = substr(strip_tags($n->content), 0, 40) . '...';
-            $nodeoptions[$n->id] = 'Scene #' . $n->id . ' (' . $snippet . ')';
+            $targetoptionsraw[$n->id] = get_string('scene_number', 'block_playerhud', $n->id) .
+                ' (' . $snippet . ')';
         }
 
-        $itemrecords   = $DB->get_records(
+        $itemrecords = $DB->get_records(
             'block_playerhud_items',
             ['blockinstanceid' => $instanceid],
             'name ASC',
             'id, name'
         );
-        $itemoptions   = [0 => '--- ' . get_string('none') . ' ---'];
+        $itemoptionsraw = [0 => '--- ' . get_string('none') . ' ---'];
         foreach ($itemrecords as $it) {
-            $itemoptions[$it->id] = format_string($it->name);
+            $itemoptionsraw[$it->id] = format_string($it->name);
         }
 
-        $classrecords  = $DB->get_records(
+        $classrecords = $DB->get_records(
             'block_playerhud_classes',
             ['blockinstanceid' => $instanceid],
             'name ASC',
             'id, name'
         );
-        $classoptions  = [0 => '--- ' . get_string('none') . ' ---'];
+        $classoptionsraw = [0 => '--- ' . get_string('none') . ' ---'];
         foreach ($classrecords as $cl) {
-            $classoptions[$cl->id] = format_string($cl->name);
+            $classoptionsraw[$cl->id] = format_string($cl->name);
         }
 
         // Determine repeater count.
@@ -105,121 +106,50 @@ class edit_scene_form extends \moodleform {
         $mform->setType('repeats', PARAM_INT);
         $mform->setConstant('repeats', $repeats);
 
+        // Pre-build string map (fetched once, reused per iteration).
+        $strmap = [
+            'choice_title_prefix' => get_string('choice_text', 'block_playerhud'),
+            'str_logic_badge'     => get_string('choice_logic_badge', 'block_playerhud'),
+            'str_text'            => get_string('choice_text', 'block_playerhud'),
+            'str_target'          => get_string('choice_next', 'block_playerhud'),
+            'str_req_hdr'         => get_string('choice_req_hdr', 'block_playerhud'),
+            'str_cons_hdr'        => get_string('choice_cons_hdr', 'block_playerhud'),
+            'str_req_class'       => get_string('choice_req_class', 'block_playerhud'),
+            'str_req_karma'       => get_string('choice_req_karma', 'block_playerhud'),
+            'str_karma'           => get_string('choice_karma', 'block_playerhud'),
+            'str_set_class'       => get_string('choice_class_label', 'block_playerhud'),
+            'str_cost_item'       => get_string('choice_cost', 'block_playerhud'),
+            'str_cost_qty'        => get_string('choice_cost_qty', 'block_playerhud'),
+        ];
+
         for ($i = 0; $i < $repeats; $i++) {
-            $valtext = $currentdata["choice_text_$i"] ?? '';
-            $valnext = $currentdata["choice_next_$i"] ?? 0;
-            $valreqclass = $currentdata["choice_req_class_$i"] ?? 0;
-            $valreqkarma = $currentdata["choice_req_karma_$i"] ?? 0;
-            $valkarma = $currentdata["choice_karma_$i"] ?? 0;
-            $valsetclass = $currentdata["choice_set_class_$i"] ?? 0;
-            $valcost = $currentdata["choice_cost_$i"] ?? 0;
-            $valqty = $currentdata["choice_cost_qty_$i"] ?? 1;
+            $valtext     = $currentdata["choice_text_$i"] ?? '';
+            $valnext     = (int) ($currentdata["choice_next_$i"] ?? 0);
+            $valreqclass = (int) ($currentdata["choice_req_class_$i"] ?? 0);
+            $valreqkarma = (int) ($currentdata["choice_req_karma_$i"] ?? 0);
+            $valkarma    = (int) ($currentdata["choice_karma_$i"] ?? 0);
+            $valsetclass = (int) ($currentdata["choice_set_class_$i"] ?? 0);
+            $valcost     = (int) ($currentdata["choice_cost_$i"] ?? 0);
+            $valqty      = max(1, (int) ($currentdata["choice_cost_qty_$i"] ?? 1));
 
-            $choicetitle    = get_string('choice_text', 'block_playerhud') . ' #' . ($i + 1);
-            $strtextlabel   = get_string('choice_text', 'block_playerhud');
-            $strtargetlabel = get_string('choice_next', 'block_playerhud');
-            $strreqhdr      = get_string('choice_req_hdr', 'block_playerhud');
-            $strconshdr     = get_string('choice_cons_hdr', 'block_playerhud');
-            $strreqclass    = get_string('choice_req_class', 'block_playerhud');
-            $strreqkarma    = get_string('choice_req_karma', 'block_playerhud');
-            $strkarmalabel  = get_string('choice_karma', 'block_playerhud');
-            $strclasslabel  = get_string('choice_class_label', 'block_playerhud');
-            $strpayitem     = get_string('choice_cost', 'block_playerhud');
-            $strqty         = get_string('choice_cost_qty', 'block_playerhud');
+            $templatedata = array_merge($strmap, [
+                'idx'          => $i,
+                'choice_title' => $strmap['choice_title_prefix'] . ' #' . ($i + 1),
+                'val_text'     => s($valtext),
+                'val_req_karma' => $valreqkarma,
+                'val_karma'    => $valkarma,
+                'val_cost_qty' => $valqty,
+                'target_options'    => self::build_options($targetoptionsraw, $valnext),
+                'req_class_options' => self::build_options($classoptionsraw, $valreqclass),
+                'set_class_options' => self::build_options($classoptionsraw, $valsetclass),
+                'cost_item_options' => self::build_options($itemoptionsraw, $valcost),
+            ]);
+            unset($templatedata['choice_title_prefix']);
 
-            $targetselect   = \html_writer::select(
-                $nodeoptions,
-                'choice_next_' . $i,
-                $valnext,
-                null,
-                ['class' => 'form-select']
-            );
-            $reqclassselect = \html_writer::select(
-                $classoptions,
-                'choice_req_class_' . $i,
-                $valreqclass,
-                null,
-                ['class' => 'form-select form-select-sm']
-            );
-            $setclassselect = \html_writer::select(
-                $classoptions,
-                'choice_set_class_' . $i,
-                $valsetclass,
-                null,
-                ['class' => 'form-select form-select-sm']
-            );
-            $payitemselect  = \html_writer::select(
-                $itemoptions,
-                'choice_cost_' . $i,
-                $valcost,
-                null,
-                ['class' => 'form-select form-select-sm']
-            );
-
-            $html = '
-            <div class="card ph-choice-card p-3 mb-3 border-start border-5 border-primary">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="fw-bold text-primary m-0">' . $choicetitle . '</h6>
-                    <span class="badge bg-light text-dark border">Logic</span>
-                </div>
-                <div class="row g-2">
-                    <div class="col-md-7 mb-2">
-                        <label class="small fw-bold text-muted">' . $strtextlabel . '</label>
-                        <input type="text" name="choice_text_' . $i . '" value="' . s($valtext) . '"
-                               class="form-control" placeholder="...">
-                    </div>
-                    <div class="col-md-5 mb-2">
-                        <label class="small fw-bold text-muted">' . $strtargetlabel . '</label>
-                        ' . $targetselect . '
-                    </div>
-                </div>
-                <div class="row border-top pt-2 mt-1">
-                    <div class="col-md-5 border-end">
-                        <small class="ph-choice-section-label text-uppercase text-danger fw-bold">'
-                            . $strreqhdr . '</small>
-                        <div class="mb-1 mt-1">
-                            <label class="small text-muted mb-0">' . $strreqclass . '</label>
-                            ' . $reqclassselect . '
-                        </div>
-                        <div class="mb-0">
-                            <label class="small text-muted mb-0">' . $strreqkarma . '</label>
-                            <input type="number" name="choice_req_karma_' . $i . '"
-                                   value="' . (int) $valreqkarma . '"
-                                   class="form-control form-control-sm">
-                        </div>
-                    </div>
-                    <div class="col-md-7 ps-3">
-                        <small class="ph-choice-section-label text-uppercase text-success fw-bold">'
-                            . $strconshdr . '</small>
-                        <div class="row g-2 mt-1">
-                            <div class="col-4">
-                                <label class="small text-muted mb-0">' . $strkarmalabel . '</label>
-                                <input type="number" name="choice_karma_' . $i . '"
-                                       value="' . (int) $valkarma . '"
-                                       class="form-control form-control-sm">
-                            </div>
-                            <div class="col-8">
-                                <label class="small text-muted mb-0">' . $strclasslabel . '</label>
-                                ' . $setclassselect . '
-                            </div>
-                        </div>
-                        <div class="row g-2 mt-2">
-                            <div class="col-8">
-                                <label class="small text-muted mb-0">' . $strpayitem . '</label>
-                                ' . $payitemselect . '
-                            </div>
-                            <div class="col-4">
-                                <label class="small text-muted mb-0">' . $strqty . '</label>
-                                <input type="number" name="choice_cost_qty_' . $i . '"
-                                       value="' . max(1, (int) $valqty) . '"
-                                       class="form-control form-control-sm">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>';
-
-            $mform->addElement('html', $html);
+            $mform->addElement('html', $OUTPUT->render_from_template(
+                'block_playerhud/form_choice_card',
+                $templatedata
+            ));
 
             $mform->setType("choice_text_$i", PARAM_TEXT);
             $mform->setType("choice_next_$i", PARAM_INT);
@@ -248,5 +178,24 @@ class edit_scene_form extends \moodleform {
         $mform->setType('nodeid', PARAM_INT);
 
         $this->add_action_buttons(true, get_string('savechanges'));
+    }
+
+    /**
+     * Convert a key => label map into a Mustache-friendly options array.
+     *
+     * @param array $map Associative array of value => label.
+     * @param int|string $selected Currently selected value.
+     * @return array Array of ['value' => ..., 'label' => ..., 'selected' => bool].
+     */
+    private static function build_options(array $map, $selected): array {
+        $options = [];
+        foreach ($map as $value => $label) {
+            $options[] = [
+                'value'    => (string) $value,
+                'label'    => $label,
+                'selected' => ((string) $value === (string) $selected),
+            ];
+        }
+        return $options;
     }
 }

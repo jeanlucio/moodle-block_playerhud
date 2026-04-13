@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Create or edit a story scene (node) with its choices.
@@ -22,7 +22,7 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
+require(__DIR__ . '/../../config.php');
 
 $courseid   = required_param('courseid', PARAM_INT);
 $instanceid = required_param('instanceid', PARAM_INT);
@@ -155,9 +155,9 @@ if ($mform->is_cancelled()) {
             $rawnextid = optional_param("choice_next_$i", 0, PARAM_INT);
 
             if ($rawnextid === -1) {
-                $newnode           = new stdClass();
+                $newnode            = new stdClass();
                 $newnode->chapterid = $chapterid;
-                $newnode->content   = '<p><em>(New scene from: "' . s($textval) . '")</em></p>';
+                $newnode->content   = get_string('scene_auto_from', 'block_playerhud', s($textval));
                 $newnode->is_start  = 0;
                 $createdid          = $DB->insert_record('block_playerhud_story_nodes', $newnode);
                 $ch->next_nodeid    = $createdid;
@@ -166,9 +166,9 @@ if ($mform->is_cancelled()) {
                 if ($previousdestid > 0) {
                     $ch->next_nodeid = $previousdestid;
                 } else {
-                    $newnode           = new stdClass();
+                    $newnode            = new stdClass();
                     $newnode->chapterid = $chapterid;
-                    $newnode->content   = '<p><em>(Fallback scene)</em></p>';
+                    $newnode->content   = get_string('scene_auto_fallback', 'block_playerhud');
                     $newnode->is_start  = 0;
                     $createdid          = $DB->insert_record('block_playerhud_story_nodes', $newnode);
                     $ch->next_nodeid    = $createdid;

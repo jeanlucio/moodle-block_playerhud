@@ -124,11 +124,55 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             data.node.choices.forEach(function(ch) {
                 var btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'btn ' + ch.btnclass + ' m-1 px-4 py-2';
-                btn.innerHTML = ch.text;
+                btn.className = 'btn ' + ch.btnclass + ' m-1 px-4 py-2 text-start';
                 if (ch.disabled) {
                     btn.disabled = true;
                 }
+
+                var textSpan = document.createElement('span');
+                textSpan.textContent = ch.text;
+                btn.appendChild(textSpan);
+
+                // Requirement: class.
+                if (ch.req_class_name) {
+                    var classTag = document.createElement('small');
+                    classTag.className = ch.req_class_met ? 'd-block text-info' : 'd-block text-danger';
+                    if (!ch.req_class_met) {
+                        var lockIcon = document.createElement('i');
+                        lockIcon.className = 'fa fa-lock me-1';
+                        lockIcon.setAttribute('aria-hidden', 'true');
+                        classTag.appendChild(lockIcon);
+                    }
+                    classTag.appendChild(document.createTextNode(ch.str_req_class));
+                    btn.appendChild(classTag);
+                }
+
+                // Requirement: karma.
+                if (ch.req_karma_min !== 0) {
+                    var karmaTag = document.createElement('small');
+                    if (ch.req_karma_met) {
+                        karmaTag.className = 'd-block text-info';
+                        karmaTag.textContent = ch.str_req_karma;
+                    } else {
+                        karmaTag.className = 'd-block text-danger';
+                        karmaTag.textContent = ch.str_low_karma;
+                    }
+                    btn.appendChild(karmaTag);
+                }
+
+                // Cost: item.
+                if (ch.cost_item_name) {
+                    var costTag = document.createElement('small');
+                    if (ch.cost_item_met) {
+                        costTag.className = 'd-block text-warning';
+                        costTag.textContent = ch.str_cost_item;
+                    } else {
+                        costTag.className = 'd-block text-danger';
+                        costTag.textContent = ch.str_missing_item;
+                    }
+                    btn.appendChild(costTag);
+                }
+
                 btn.addEventListener('click', function() {
                     makeChoice(ch.id, chapterid);
                 });

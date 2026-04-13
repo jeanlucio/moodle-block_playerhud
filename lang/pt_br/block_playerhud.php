@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Portuguese (Brazil) language strings for PlayerHUD.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -95,6 +95,7 @@ $string['choice_cost'] = 'Item de Custo';
 $string['choice_cost_qty'] = 'Quantidade';
 $string['choice_end_chapter'] = '— Fim do capítulo —';
 $string['choice_karma'] = 'Delta de Karma';
+$string['choice_logic_badge'] = 'Lógica';
 $string['choice_new_scene'] = '— Criar nova cena —';
 $string['choice_next'] = 'Próxima Cena';
 $string['choice_req_class'] = 'Classe Necessária';
@@ -133,6 +134,7 @@ $string['confirm_delete'] = 'Tem certeza que deseja excluir isto?';
 $string['confirm_disable'] = 'Tem certeza? Seu HUD desaparecerá até que você o reative.';
 $string['confirm_revoke'] = 'Tem certeza que deseja remover este item do aluno? O XP correspondente será deduzido da pontuação total.';
 $string['connector_and'] = ' e ';
+$string['cost_item_label'] = 'Custo: {$a}';
 $string['default_drop_name'] = 'Drop Gerado';
 $string['delete'] = 'Excluir';
 $string['delete_n_items'] = 'Excluir %d itens';
@@ -400,6 +402,7 @@ $string['itemname'] = 'Nome do Item';
 $string['itemnotfound'] = 'Item não encontrado ou inativo.';
 $string['items'] = 'Itens:';
 $string['items_none'] = 'Nenhum item criado';
+$string['karma_event'] = 'Karma {$a}';
 $string['last_collected'] = 'Última coleta em:';
 $string['latest_items'] = 'Últimas coletas';
 $string['leaderboard_desc'] = 'Veja quem são os mestres do curso.';
@@ -571,6 +574,7 @@ $string['report_type_quest'] = 'Missão';
 $string['report_type_revoked'] = 'Revogado';
 $string['report_type_trade'] = 'Troca';
 $string['req_class_label'] = 'Classe necessária: {$a}';
+$string['req_karma_label'] = 'Karma mínimo: {$a}';
 $string['respawntime'] = 'Tempo de recarga';
 $string['respawntime_help'] = 'Esta configuração define quanto tempo o aluno deve esperar para coletar o item novamente neste local específico.<br><br>Defina como <b>0</b> se quiser que a coleta seja única (o aluno pega uma vez e nunca mais aparece), ou se for um item infinito sem tempo de espera.';
 $string['restrict_group'] = 'Restringir a grupo/agrupamento';
@@ -579,6 +583,8 @@ $string['save_and_add'] = 'Salvar e adicionar escolha';
 $string['save_keys'] = 'Salvar Minhas Chaves';
 $string['save_trade'] = 'Salvar troca';
 $string['savechanges'] = 'Salvar alterações';
+$string['scene_auto_fallback'] = '<p><em>(Cena de fallback — edite este conteúdo.)</em></p>';
+$string['scene_auto_from'] = '<p><em>(Nova cena criada a partir da escolha: "{$a}" — edite este conteúdo.)</em></p>';
 $string['scene_content'] = 'Conteúdo da Cena';
 $string['scene_content_hdr'] = 'Conteúdo Narrativo';
 $string['scene_delete_confirm'] = 'Tem certeza que deseja excluir esta cena? Todas as suas escolhas serão removidas permanentemente.';
@@ -586,6 +592,7 @@ $string['scene_deleted'] = 'Cena excluída com sucesso.';
 $string['scene_editor'] = 'Editor de Cena';
 $string['scene_is_start'] = 'Cena inicial?';
 $string['scene_new'] = 'Nova Cena';
+$string['scene_number'] = 'Cena #{$a}';
 $string['scene_saved'] = 'Cena salva com sucesso.';
 $string['scene_start_badge'] = 'Início';
 $string['scenes_empty'] = 'Nenhuma cena foi criada para este capítulo ainda.';
