@@ -49,4 +49,38 @@ if ($ADMIN->fulltree) {
         '',
         PARAM_TEXT
     ));
+
+    // Custom AI (OpenAI-compatible) Section.
+    $settings->add(new admin_setting_heading(
+        'block_playerhud/openaisettings',
+        get_string('openai_settings_title', 'block_playerhud'),
+        get_string('openai_settings_desc', 'block_playerhud')
+    ));
+
+    // Custom AI Key.
+    $settings->add(new admin_setting_configtext(
+        'block_playerhud/apikey_openai',
+        get_string('openai_apikey', 'block_playerhud'),
+        get_string('openai_apikey_desc', 'block_playerhud'),
+        '',
+        PARAM_TEXT
+    ));
+
+    // Custom AI Base URL.
+    $settings->add(new admin_setting_configtext(
+        'block_playerhud/openai_baseurl',
+        get_string('openai_baseurl', 'block_playerhud'),
+        get_string('openai_baseurl_desc', 'block_playerhud'),
+        'https://api.openai.com/v1/chat/completions',
+        PARAM_URL
+    ));
+
+    // Custom AI Model.
+    $settings->add(new admin_setting_configtext(
+        'block_playerhud/openai_model',
+        get_string('openai_model', 'block_playerhud'),
+        get_string('openai_model_desc', 'block_playerhud'),
+        'gpt-4o-mini',
+        PARAM_TEXT
+    ));
 }

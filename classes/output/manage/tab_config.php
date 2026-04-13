@@ -156,6 +156,11 @@ class tab_config implements renderable, templatable {
             'tab' => 'config',
         ]);
 
+        // Default URL and model come from admin config; used to pre-fill teacher fields.
+        $defaulturl = get_config('block_playerhud', 'openai_baseurl')
+            ?: 'https://api.openai.com/v1/chat/completions';
+        $defaultmodel = get_config('block_playerhud', 'openai_model') ?: 'gpt-4o-mini';
+
         return [
             'total_items_xp' => $totalitemsxp,
             'xp_ceiling' => $xpceiling,
@@ -167,7 +172,12 @@ class tab_config implements renderable, templatable {
             'action_url' => $actionurl->out(false),
             'sesskey' => sesskey(),
             'val_gemini' => get_user_preferences('block_playerhud_gemini_key', ''),
-            'val_groq'   => get_user_preferences('block_playerhud_groq_key', ''),
+            'val_groq' => get_user_preferences('block_playerhud_groq_key', ''),
+            'val_openai' => get_user_preferences('block_playerhud_openai_key', ''),
+            'val_openai_url' => get_user_preferences('block_playerhud_openai_url', ''),
+            'val_openai_model' => get_user_preferences('block_playerhud_openai_model', ''),
+            'placeholder_openai_url' => $defaulturl,
+            'placeholder_openai_model' => $defaultmodel,
         ];
     }
 }

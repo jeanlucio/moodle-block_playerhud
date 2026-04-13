@@ -32,7 +32,12 @@
         "action_url": "#",
         "sesskey": "12345",
         "val_gemini": "",
-        "val_groq": ""
+        "val_groq": "",
+        "val_openai": "",
+        "val_openai_url": "",
+        "val_openai_model": "",
+        "placeholder_openai_url": "https://api.openai.com/v1/chat/completions",
+        "placeholder_openai_model": "gpt-4o-mini"
     }
 }}
 <div class="row">
@@ -125,6 +130,43 @@
                             <span class="input-group-text"><i class="fa fa-bolt" aria-hidden="true"></i></span>
                             <input type="password" class="form-control" name="groq_key" id="groq_key"
                                    value="{{val_groq}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold form-label" for="openai_key">
+                            {{#str}} custom_ai_apikey, block_playerhud {{/str}}
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa fa-plug" aria-hidden="true"></i></span>
+                            <input type="password" class="form-control" name="openai_key" id="openai_key"
+                                   value="{{val_openai}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <a class="text-muted small text-decoration-none d-block mb-2"
+                           data-bs-toggle="collapse" data-toggle="collapse"
+                           href="#customai-advanced" role="button" aria-expanded="false" aria-controls="customai-advanced">
+                            <i class="fa fa-caret-right me-1" aria-hidden="true"></i>
+                            {{#str}} custom_ai_advanced, block_playerhud {{/str}}
+                        </a>
+                        <div class="collapse" id="customai-advanced">
+                            <p class="text-muted small mb-2">{{#str}} custom_ai_advanced_hint, block_playerhud {{/str}}</p>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold" for="openai_url">
+                                    {{#str}} custom_ai_baseurl, block_playerhud {{/str}}
+                                </label>
+                                <input type="url" class="form-control form-control-sm" name="openai_url" id="openai_url"
+                                       value="{{val_openai_url}}" placeholder="{{placeholder_openai_url}}">
+                            </div>
+                            <div>
+                                <label class="form-label small fw-semibold" for="openai_model">
+                                    {{#str}} custom_ai_model, block_playerhud {{/str}}
+                                </label>
+                                <input type="text" class="form-control form-control-sm" name="openai_model" id="openai_model"
+                                       value="{{val_openai_model}}" placeholder="{{placeholder_openai_model}}">
+                            </div>
                         </div>
                     </div>
 
