@@ -51,8 +51,7 @@
         <label for="ph-collection-sort" class="me-2 small text-muted fw-bold">
             <i class="fa fa-filter" aria-hidden="true"></i> {{#str}} sort_by, block_playerhud {{/str}}
         </label>
-        <select id="ph-collection-sort" class="form-select form-select-sm shadow-sm border-secondary w-auto"
-                onchange="window.location.href=this.value"
+        <select id="ph-collection-sort" class="form-select form-select-sm shadow-sm border-secondary w-auto ph-sort-selector"
                 aria-label="{{#str}} sort_by, block_playerhud {{/str}}">
             {{#sort_options}}
                 <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
