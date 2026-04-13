@@ -255,8 +255,10 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             },
             fail: function(ex) {
                 if (contentEl) {
-                    contentEl.innerHTML =
-                        '<div class="alert alert-danger">' + (ex.message || strings.error) + '</div>';
+                    var errDiv = document.createElement('div');
+                    errDiv.className = 'alert alert-danger';
+                    errDiv.textContent = ex.message || strings.error;
+                    contentEl.replaceChildren(errDiv);
                 }
                 Notification.exception(ex);
             },
@@ -284,8 +286,10 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             },
             fail: function(ex) {
                 if (contentEl) {
-                    contentEl.innerHTML =
-                        '<div class="alert alert-danger">' + (ex.message || strings.error) + '</div>';
+                    var errDiv = document.createElement('div');
+                    errDiv.className = 'alert alert-danger';
+                    errDiv.textContent = ex.message || strings.error;
+                    contentEl.replaceChildren(errDiv);
                 }
                 Notification.exception(ex);
             },
@@ -322,8 +326,10 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             },
             fail: function(ex) {
                 if (contentEl) {
-                    contentEl.innerHTML =
-                        '<div class="alert alert-danger">' + (ex.message || strings.error) + '</div>';
+                    var errDiv = document.createElement('div');
+                    errDiv.className = 'alert alert-danger';
+                    errDiv.textContent = ex.message || strings.error;
+                    contentEl.replaceChildren(errDiv);
                 }
                 Notification.exception(ex);
             },
