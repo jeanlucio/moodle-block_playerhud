@@ -561,8 +561,6 @@ class external extends external_api {
         ]);
     }
 
-    // ── Story Web Services ──────────────────────────────────────────────────
-
     /**
      * Shared return structure for node data (used by load_scene, make_choice and previews).
      *

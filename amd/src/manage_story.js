@@ -23,12 +23,12 @@
 define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
 
     var instanceid = 0;
-    var courseid   = 0;
+    var courseid = 0;
 
-    var testModal    = null;
-    var testContent  = null;
-    var testChoices  = null;
-    var bsTestModal  = null;
+    var testModal = null;
+    var testContent = null;
+    var testChoices = null;
+    var bsTestModal = null;
 
     /**
      * Open the test/preview modal.
@@ -199,11 +199,11 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
          */
         init: function(iid, cid) {
             instanceid = iid;
-            courseid   = cid;
+            courseid = cid;
 
             initChapterDelete();
 
-            testModal   = document.getElementById('ph-story-test-modal');
+            testModal = document.getElementById('ph-story-test-modal');
             testContent = document.getElementById('ph-test-content');
             testChoices = document.getElementById('ph-test-choices');
 
