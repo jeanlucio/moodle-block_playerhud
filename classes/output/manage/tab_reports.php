@@ -910,28 +910,74 @@ class tab_reports implements renderable, templatable {
         );
 
         $results = [];
-        if ($logs) {
-            $counter = 0;
-            $typeicons = [
-                'item'          => '🎁',
-                'ai_suggestion' => '💭',
-            ];
+        if (!$logs) {
+            return $results;
+        }
 
-            foreach ($logs as $log) {
-                $counter++;
-                $logdate = userdate($log->timecreated, get_string('strftimedatetime', 'langconfig'));
-                $aiclass = ($log->ai_provider === 'Gemini') ? 'bg-primary text-white' : 'bg-info text-dark';
-
-                $results[] = [
-                    'is_hidden'    => ($counter > 5),
-                    'date'         => $logdate,
-                    'action_badge' => $log->action_type,
-                    'type_icon'    => $typeicons[$log->action_type] ?? '⚙️',
-                    'object_name'  => format_string($log->object_name ?? ''),
-                    'ai_class'     => $aiclass,
-                    'ai_provider'  => $log->ai_provider,
-                ];
+        // Collect unique item names from item-type logs to bulk-load their icons.
+        $itemnames = [];
+        foreach ($logs as $log) {
+            if ($log->action_type === 'item' && !empty($log->object_name)) {
+                $itemnames[$log->object_name] = true;
             }
+        }
+
+        // Build a name → display data map without N+1 queries.
+        $iconbyname = [];
+        if (!empty($itemnames)) {
+            [$namesql, $nameparams] = $DB->get_in_or_equal(array_keys($itemnames), SQL_PARAMS_NAMED, 'nm');
+            $nameparams['blockinstanceid'] = $this->instanceid;
+            $itemrows = $DB->get_records_select(
+                'block_playerhud_items',
+                "blockinstanceid = :blockinstanceid AND name $namesql",
+                $nameparams,
+                '',
+                'id, name, image'
+            );
+
+            if (!empty($itemrows)) {
+                $context = \context_block::instance($this->instanceid);
+                $mediamap = \block_playerhud\utils::get_items_display_data($itemrows, $context);
+                foreach ($itemrows as $item) {
+                    if (isset($mediamap[$item->id])) {
+                        $iconbyname[$item->name] = $mediamap[$item->id];
+                    }
+                }
+            }
+        }
+
+        $counter = 0;
+        foreach ($logs as $log) {
+            $counter++;
+            $logdate = userdate($log->timecreated, get_string('strftimedatetime', 'langconfig'));
+            $aiclass = ($log->ai_provider === 'Gemini') ? 'bg-primary text-white' : 'bg-info text-white';
+
+            $isimageicon = false;
+            $iconurl = '';
+            $iconemoji = '⚙️';
+
+            if ($log->action_type === 'item' && isset($iconbyname[$log->object_name])) {
+                $media = $iconbyname[$log->object_name];
+                $isimageicon = $media['is_image'];
+                $iconurl = $media['is_image'] ? $media['url'] : '';
+                $iconemoji = $media['is_image'] ? '' : strip_tags($media['content']);
+            } else if ($log->action_type === 'item') {
+                $iconemoji = '🎁';
+            } else if ($log->action_type === 'ai_suggestion') {
+                $iconemoji = '💭';
+            }
+
+            $results[] = [
+                'is_hidden'     => ($counter > 5),
+                'date'          => $logdate,
+                'action_badge'  => $log->action_type,
+                'is_image_icon' => $isimageicon,
+                'icon_url'      => $iconurl,
+                'icon_emoji'    => $iconemoji,
+                'object_name'   => format_string($log->object_name ?? ''),
+                'ai_class'      => $aiclass,
+                'ai_provider'   => $log->ai_provider,
+            ];
         }
         return $results;
     }
