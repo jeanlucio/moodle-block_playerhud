@@ -206,132 +206,28 @@ $string['group'] = 'Group';
 $string['help_btn'] = 'Help';
 $string['help_content_label'] = 'Custom Help Content';
 $string['help_content_label_help'] = 'Customize the instructions students see in the Help tab. Clear this field or check the box below to restore the system default.';
-$string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
-    <div class="d-flex align-items-center">
-        <div class="me-3">
-            <i class="fa fa-gamepad fa-2x" aria-hidden="true"></i>
-        </div>
-        <div>
-            <h5 class="alert-heading fw-bold m-0">Welcome to PlayerHUD!</h5>
-            <p class="mb-0">
-                This course uses a gamification system to track your progress,
-                reward your participation, and make your learning journey more engaging.
-            </p>
-        </div>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-star fa-3x text-primary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">XP & Levels</h5>
-                <p class="small text-muted">
-                    By collecting items or completing quests, you earn XP (Experience Points).
-                    As your XP increases, your level rises and your progress bar advances.
-                    The number of levels and the maximum total XP are defined by the course instructor.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-cube fa-3x text-success mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Items & Drops</h5>
-                <p class="small text-muted">
-                    Throughout the course, you may find items hidden inside activities, descriptions,
-                    or specific challenges. Some items have a collection limit or a respawn timer (cooldown).
-                    Items may or may not grant XP; you can click on an item\'s card to view its details.
-                    Items can also be obtained through quests or traded in the shop.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-map-signs fa-3x text-info mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Quests</h5>
-                <p class="small text-muted">
-                    Various quests may appear throughout the course, such as completing a specific activity
-                    or reaching a certain level. Access the quests area to check the available ones.
-                    Quests can grant XP or exclusive items. Whenever you have pending quests to claim,
-                    a red dot will appear on the quests button.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-shopping-cart fa-3x text-warning mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Shop</h5>
-                <p class="small text-muted">
-                    The shop is used for trading items. The instructor will define which items can be traded,
-                    and these offers will be available in the shop. Some trades may also be placed by the
-                    instructor in other areas of the course. Stay alert!
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-clock-o fa-3x text-danger mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Timers & Limits</h5>
-                <p class="small text-muted">
-                    Items with more than one collectible quantity will display a timer after the first collection,
-                    indicating the wait time for the next one. Pay attention to the course deadlines so you
-                    don\'t miss any items, especially those with high XP values.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-trophy fa-3x text-primary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Leaderboard</h5>
-                <p class="small text-muted">
-                    The leaderboard shows your position compared to other participants.
-                    You may choose not to appear publicly. It is designed as a motivational tool,
-                    not a mandatory competition.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-12 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-power-off fa-3x text-secondary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Pause/Disable Gamification</h5>
-                <p class="small text-muted">
-                    The gamification in this course is entirely optional. You can disable the gamification layer,
-                    hiding all available mechanics if you wish, by clicking the corresponding button in the block or widget.
-                    If you want to return, simply access the block and click the button to reactivate it.
-                    This feature was built to give you total freedom to choose how you participate in the course.
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="alert alert-light border shadow-sm mt-4">
-    <div class="d-flex align-items-center">
-        <div class="me-3">
-            <i class="fa fa-lightbulb-o fa-2x text-warning" aria-hidden="true"></i>
-        </div>
-        <div>
-            <h6 class="fw-bold m-0">Important Tip</h6>
-            <p class="mb-0 small text-muted">
-                Explore the course carefully, participate in activities, and engage with the content.
-                XP is a result of involvement — learning remains the true goal.
-            </p>
-        </div>
-    </div>
-</div>';
+$string['help_history_desc'] = 'Keep track of your entire journey. The history tab logs all your activities, including items collected, quests completed, trades made, and level ups.';
+$string['help_history_title'] = 'History';
+$string['help_items_desc'] = 'Throughout the course, you may find items hidden inside activities, descriptions, or specific challenges. Some items have a collection limit or a respawn timer (cooldown). Items may or may not grant XP; you can click on an item\'s card to view its details. Items can also be obtained through quests or traded in the shop.';
+$string['help_items_title'] = 'Items & Drops';
+$string['help_pause_desc'] = 'The gamification in this course is entirely optional. You can disable the gamification layer, hiding all available mechanics if you wish, by clicking the corresponding button in the block or widget. If you want to return, simply access the block and click the button to reactivate it. This feature was built to give you total freedom to choose how you participate in the course.';
+$string['help_pause_title'] = 'Pause/Disable Gamification';
+$string['help_quests_desc'] = 'Various quests may appear throughout the course, such as completing a specific activity or reaching a certain level. Access the quests area to check the available ones. Quests can grant XP or exclusive items. Whenever you have pending quests to claim, a red dot will appear on the quests button.';
+$string['help_quests_title'] = 'Quests';
+$string['help_ranking_desc'] = 'The leaderboard shows your position compared to other participants. You may choose not to appear publicly. It is designed as a motivational tool, not a mandatory competition.';
+$string['help_ranking_title'] = 'Leaderboard';
 $string['help_reset_checkbox'] = 'Reset help content to system default on save';
+$string['help_shop_desc'] = 'The shop is used for trading items. The instructor will define which items can be traded, and these offers will be available in the shop. Some trades may also be placed by the instructor in other areas of the course. Stay alert!';
+$string['help_shop_title'] = 'Shop';
+$string['help_timers_desc'] = 'Items with more than one collectible quantity will display a timer after the first collection, indicating the wait time for the next one. Pay attention to the course deadlines so you don\'t miss any items, especially those with high XP values.';
+$string['help_timers_title'] = 'Timers & Limits';
+$string['help_tip_desc'] = 'Explore the course carefully, participate in activities, and engage with the content. XP is a result of involvement — learning remains the true goal.';
+$string['help_tip_title'] = 'Important Tip';
 $string['help_title'] = 'Game Guide';
+$string['help_welcome_desc'] = 'This course uses a gamification system to track your progress, reward your participation, and make your learning journey more engaging.';
+$string['help_welcome_title'] = 'Welcome to PlayerHUD!';
+$string['help_xp_desc'] = 'By collecting items or completing quests, you earn XP (Experience Points). As your XP increases, your level rises and your progress bar advances. The number of levels and the maximum total XP are defined by the course instructor.';
+$string['help_xp_title'] = 'XP & Levels';
 $string['hidden'] = 'Hidden';
 $string['hidden_desc'] = 'Only the teacher sees you.';
 $string['history_desc'] = 'Follow the detailed log of your adventures and acquisitions.';
