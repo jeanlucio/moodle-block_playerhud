@@ -62,4 +62,31 @@ $functions = [
         'ajax'        => true,
         'loginrequired' => true,
     ],
+
+    'block_playerhud_load_scene' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'load_scene',
+        'description'   => 'Load the current or starting scene for a story chapter',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_make_choice' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'make_choice',
+        'description'   => 'Process a story choice and return the next scene',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_load_recap' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'load_recap',
+        'description'   => 'Return the full story recap HTML for a completed chapter',
+        'type'          => 'read',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
 ];

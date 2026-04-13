@@ -1,0 +1,113 @@
+{{!
+    Template for the student story chapter list and reading modal.
+
+    Classes:
+    * .ph-tab-story              - Root wrapper
+    * .ph-chapter-item           - Base chapter list item
+    * .ph-chapter-item--available - Clickable, not yet started
+    * .ph-chapter-item--completed - Completed chapter (green tint)
+    * .ph-chapter-item--locked    - Future chapter (disabled)
+    * .ph-story-modal-content    - Modal container
+    * .ph-story-modal-header     - Modal header (dark)
+    * .ph-story-modal-body       - Modal body (parchment)
+    * .ph-story-modal-footer     - Modal footer (choices)
+    * .ph-story-content          - Scene text container
+
+    Example context (json):
+    {
+        "has_chapters": true,
+        "str_story": "Story",
+        "str_close": "Close",
+        "str_empty": "No chapters available.",
+        "str_loading": "Loading...",
+        "str_completed": "Chapter completed!",
+        "str_read_again": "Read again",
+        "chapters": [
+            {
+                "id": 1,
+                "title": "Chapter One",
+                "intro_text": "An adventure begins.",
+                "status_icon": "fa-book text-primary",
+                "item_classes": "list-group-item list-group-item-action ph-chapter-item ph-chapter-item--available",
+                "status_text": "Click to read",
+                "is_available": true,
+                "is_completed": false,
+                "is_locked": false,
+                "str_recap": "Read recap"
+            }
+        ]
+    }
+}}
+<div class="ph-tab-story">
+
+    {{#has_chapters}}
+    <div class="list-group">
+        {{#chapters}}
+        <div class="{{item_classes}} p-4 mb-3 border rounded shadow-sm"
+             {{#is_available}}
+             data-action="open-chapter"
+             data-chapterid="{{id}}"
+             data-title="{{title}}"
+             role="button"
+             tabindex="0"
+             {{/is_available}}>
+
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1 fw-bold">
+                    <i class="fa {{status_icon}}" aria-hidden="true"></i>
+                    <span>{{title}}</span>
+                </h5>
+                <small class="text-muted">{{status_text}}</small>
+            </div>
+            <p class="mb-1 text-muted">{{intro_text}}</p>
+
+            {{#is_completed}}
+            <div class="mt-2 pt-2 border-top">
+                <button class="btn btn-sm btn-outline-info"
+                        data-action="read-recap"
+                        data-chapterid="{{id}}"
+                        data-title="{{title}}">
+                    <i class="fa fa-history" aria-hidden="true"></i> {{str_recap}}
+                </button>
+            </div>
+            {{/is_completed}}
+
+        </div>
+        {{/chapters}}
+    </div>
+    {{/has_chapters}}
+
+    {{^has_chapters}}
+    <div class="alert alert-light text-center py-5">
+        <i class="fa fa-book fa-2x mb-2 d-block" aria-hidden="true"></i>
+        {{str_empty}}
+    </div>
+    {{/has_chapters}}
+
+    {{! Story reading modal }}
+    <div class="modal fade" id="ph-story-modal" tabindex="-1" aria-hidden="true"
+         data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content ph-story-modal-content">
+                <div class="modal-header ph-story-modal-header">
+                    <h5 class="modal-title fw-bold" id="ph-story-title">
+                        <i class="fa fa-book me-2" aria-hidden="true"></i> {{str_story}}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white"
+                            data-bs-dismiss="modal" aria-label="{{str_close}}"></button>
+                </div>
+                <div class="modal-body ph-story-modal-body">
+                    <div id="ph-story-content" class="ph-story-content">
+                        <div class="text-center text-muted py-5">
+                            <i class="fa fa-circle-o-notch fa-spin fa-3x" aria-hidden="true"></i>
+                            <p class="mt-2">{{str_loading}}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer ph-story-modal-footer justify-content-center"
+                     id="ph-story-choices"></div>
+            </div>
+        </div>
+    </div>
+
+</div>

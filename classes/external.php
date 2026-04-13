@@ -560,4 +560,216 @@ class external extends external_api {
             'message' => new external_value(PARAM_RAW, 'Message', VALUE_DEFAULT, ''),
         ]);
     }
+
+    // ── Story Web Services ──────────────────────────────────────────────────
+
+    /**
+     * Shared return structure for node data (used by load_scene, make_choice and previews).
+     *
+     * @return external_single_structure
+     */
+    private static function node_returns(): external_single_structure {
+        return new external_single_structure([
+            'node' => new external_single_structure([
+                'content' => new external_value(PARAM_RAW, 'Scene HTML content'),
+                'choices' => new external_multiple_structure(
+                    new external_single_structure([
+                        'id'       => new external_value(PARAM_INT, 'Choice ID'),
+                        'text'     => new external_value(PARAM_RAW, 'Choice label with extra info HTML'),
+                        'btnclass' => new external_value(PARAM_TEXT, 'Bootstrap button class'),
+                        'disabled' => new external_value(PARAM_BOOL, 'Whether the button is disabled'),
+                    ])
+                ),
+            ], 'Node data', VALUE_OPTIONAL),
+            'finished'  => new external_value(PARAM_BOOL, 'Chapter finished flag', VALUE_OPTIONAL),
+            'chapterid' => new external_value(PARAM_INT, 'Chapter ID', VALUE_OPTIONAL),
+            'message'   => new external_value(PARAM_TEXT, 'Completion message', VALUE_OPTIONAL),
+            'events'    => new external_multiple_structure(
+                new external_single_structure([
+                    'type' => new external_value(PARAM_TEXT, 'Event type'),
+                    'msg'  => new external_value(PARAM_TEXT, 'Event message'),
+                ]),
+                'Game events (karma, class change, item loss)',
+                VALUE_OPTIONAL
+            ),
+        ]);
+    }
+
+    /**
+     * Parameters for load_scene.
+     *
+     * @return external_function_parameters
+     */
+    public static function load_scene_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'chapterid'  => new external_value(PARAM_INT, 'Chapter ID'),
+            'preview'    => new external_value(PARAM_BOOL, 'Preview mode (no progress saved)', VALUE_DEFAULT, false),
+        ]);
+    }
+
+    /**
+     * Load the current or starting scene for a chapter.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int $chapterid Chapter ID.
+     * @param bool $preview Preview mode flag.
+     * @return array Scene data.
+     */
+    public static function load_scene(int $instanceid, int $courseid, int $chapterid, bool $preview = false): array {
+        global $USER;
+
+        $params = self::validate_parameters(self::load_scene_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'chapterid'  => $chapterid,
+            'preview'    => $preview,
+        ]);
+
+        $context = context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:view', $context);
+
+        if ($params['preview']) {
+            require_capability('block/playerhud:manage', $context);
+            return \block_playerhud\story_manager::load_preview_start(
+                $params['instanceid'],
+                $USER->id,
+                $params['chapterid']
+            );
+        }
+
+        return \block_playerhud\story_manager::load_scene(
+            $params['instanceid'],
+            $USER->id,
+            $params['chapterid']
+        );
+    }
+
+    /**
+     * Return structure for load_scene.
+     *
+     * @return external_single_structure
+     */
+    public static function load_scene_returns(): external_single_structure {
+        return self::node_returns();
+    }
+
+    /**
+     * Parameters for make_choice.
+     *
+     * @return external_function_parameters
+     */
+    public static function make_choice_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'choiceid'   => new external_value(PARAM_INT, 'Choice ID'),
+            'preview'    => new external_value(PARAM_BOOL, 'Preview mode (no progress saved)', VALUE_DEFAULT, false),
+        ]);
+    }
+
+    /**
+     * Process a player's choice and return the next scene.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int $choiceid Choice ID.
+     * @param bool $preview Preview mode flag.
+     * @return array Next scene data.
+     */
+    public static function make_choice(int $instanceid, int $courseid, int $choiceid, bool $preview = false): array {
+        global $USER;
+
+        $params = self::validate_parameters(self::make_choice_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'choiceid'   => $choiceid,
+            'preview'    => $preview,
+        ]);
+
+        $context = context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:view', $context);
+
+        if ($params['preview']) {
+            require_capability('block/playerhud:manage', $context);
+            return \block_playerhud\story_manager::preview_nav(
+                $params['instanceid'],
+                $USER->id,
+                $params['choiceid']
+            );
+        }
+
+        return \block_playerhud\story_manager::make_choice(
+            $params['instanceid'],
+            $USER->id,
+            $params['choiceid']
+        );
+    }
+
+    /**
+     * Return structure for make_choice.
+     *
+     * @return external_single_structure
+     */
+    public static function make_choice_returns(): external_single_structure {
+        return self::node_returns();
+    }
+
+    /**
+     * Parameters for load_recap.
+     *
+     * @return external_function_parameters
+     */
+    public static function load_recap_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'chapterid'  => new external_value(PARAM_INT, 'Chapter ID'),
+        ]);
+    }
+
+    /**
+     * Return the full story recap HTML for a completed chapter.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int $chapterid Chapter ID.
+     * @return array Recap HTML.
+     */
+    public static function load_recap(int $instanceid, int $courseid, int $chapterid): array {
+        global $USER;
+
+        $params = self::validate_parameters(self::load_recap_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'chapterid'  => $chapterid,
+        ]);
+
+        $context = context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:view', $context);
+
+        $html = \block_playerhud\story_manager::load_recap(
+            $params['instanceid'],
+            $USER->id,
+            $params['chapterid']
+        );
+
+        return ['html' => $html];
+    }
+
+    /**
+     * Return structure for load_recap.
+     *
+     * @return external_single_structure
+     */
+    public static function load_recap_returns(): external_single_structure {
+        return new external_single_structure([
+            'html' => new external_value(PARAM_RAW, 'Full story recap HTML'),
+        ]);
+    }
 }

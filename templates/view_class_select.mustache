@@ -1,0 +1,96 @@
+{{!
+    Template for the RPG class selection screen (student view).
+
+    Classes:
+    * .ph-class-select-grid  - CSS grid wrapper for class cards
+    * .ph-class-select-card  - Individual class card (clickable form)
+    * .ph-class-portrait     - Portrait image container
+    * .ph-class-portrait-img - The <img> inside the portrait
+    * .ph-class-no-portrait  - Fallback placeholder
+    * .ph-class-selected-badge - "Selected" indicator badge
+
+    Example context (json):
+    {
+        "has_classes": true,
+        "has_selection": false,
+        "action_url": "http://example.com/view.php?action=select_class",
+        "str_title": "Choose Your Class",
+        "str_intro": "Select the class that best represents your style.",
+        "str_select_btn": "Choose This Class",
+        "str_hp": "HP:",
+        "str_selected": "Selected",
+        "str_empty": "No classes available.",
+        "classes": [
+            {
+                "id": 1,
+                "name": "Warrior",
+                "description": "A brave fighter.",
+                "base_hp": 150,
+                "has_portrait": true,
+                "portrait": "http://example.com/portrait.png",
+                "is_selected": false
+            }
+        ]
+    }
+}}
+<div class="ph-tab-class-select">
+
+    <div class="mb-4 text-center">
+        <h3 class="fw-bold">{{str_title}}</h3>
+        <p class="text-muted">{{str_intro}}</p>
+    </div>
+
+    {{#has_classes}}
+    <div class="ph-class-select-grid">
+        {{#classes}}
+        <div class="ph-class-select-card {{#is_selected}}ph-class-select-card--active{{/is_selected}}">
+
+            {{! Portrait }}
+            <div class="ph-class-portrait mx-auto mb-3">
+                {{#has_portrait}}
+                    <img src="{{portrait}}" alt="" class="ph-class-portrait-img">
+                {{/has_portrait}}
+                {{^has_portrait}}
+                    <div class="ph-class-no-portrait" aria-hidden="true">⚔️</div>
+                {{/has_portrait}}
+            </div>
+
+            {{! Name & info }}
+            <h5 class="fw-bold text-center mb-1">{{name}}</h5>
+            {{#description}}
+            <p class="ph-class-desc text-muted small text-center mb-2">{{{description}}}</p>
+            {{/description}}
+            <p class="text-center small mb-3">
+                <i class="fa fa-heart text-danger" aria-hidden="true"></i> {{str_hp}} {{base_hp}}
+            </p>
+
+            {{! Action button }}
+            {{#is_selected}}
+            <div class="text-center">
+                <span class="badge ph-class-selected-badge">
+                    <i class="fa fa-check" aria-hidden="true"></i> {{str_selected}}
+                </span>
+            </div>
+            {{/is_selected}}
+            {{^is_selected}}
+            <form method="post" action="{{action_url}}" class="text-center">
+                <input type="hidden" name="classid" value="{{id}}">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    {{str_select_btn}}
+                </button>
+            </form>
+            {{/is_selected}}
+
+        </div>
+        {{/classes}}
+    </div>
+    {{/has_classes}}
+
+    {{^has_classes}}
+    <div class="alert alert-light text-center py-5">
+        <i class="fa fa-users fa-2x mb-2 d-block" aria-hidden="true"></i>
+        {{str_empty}}
+    </div>
+    {{/has_classes}}
+
+</div>

@@ -1,0 +1,127 @@
+{{!
+    Template for the RPG Classes management tab.
+
+    Classes:
+    * .ph-class-card         - Card wrapper for a single class
+    * .ph-class-portrait     - Portrait image container (circular, 60×60)
+    * .ph-class-portrait-img - The <img> element inside the portrait
+    * .ph-class-no-portrait  - Fallback placeholder when no image is uploaded
+
+    Example context (json):
+    {
+        "has_classes": true,
+        "classes": [
+            {
+                "id": 1,
+                "name": "Warrior",
+                "description": "A brave fighter.",
+                "base_hp": 150,
+                "has_portrait": true,
+                "portrait": "http://example.com/portrait.png",
+                "url_edit": "http://example.com/edit_class.php?classid=1",
+                "url_delete": "http://example.com/manage.php?action=delete_class&classid=1",
+                "confirm_msg": "Delete this class?"
+            }
+        ],
+        "url_new": "http://example.com/edit_class.php",
+        "str_new": "New Class",
+        "str_edit": "Edit",
+        "str_delete": "Delete",
+        "str_empty": "No classes defined yet.",
+        "str_hp": "HP:",
+        "str_confirm_delete": "Are you sure?",
+        "str_cancel": "Cancel",
+        "str_close": "Close"
+    }
+}}
+<div class="ph-tab-classes">
+
+    {{! Header actions }}
+    <div class="d-flex justify-content-end mb-3">
+        <a href="{{url_new}}" class="btn btn-primary shadow-sm">
+            <i class="fa fa-plus-circle" aria-hidden="true"></i> {{str_new}}
+        </a>
+    </div>
+
+    {{#has_classes}}
+    <div class="row">
+        {{#classes}}
+        <div class="col-md-4 mb-4">
+            <div class="ph-class-card card h-100 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+
+                    {{! Portrait }}
+                    <div class="ph-class-portrait me-3">
+                        {{#has_portrait}}
+                            <img src="{{portrait}}" alt="" class="ph-class-portrait-img">
+                        {{/has_portrait}}
+                        {{^has_portrait}}
+                            <div class="ph-class-no-portrait" aria-hidden="true">⚔️</div>
+                        {{/has_portrait}}
+                    </div>
+
+                    {{! Info }}
+                    <div class="flex-grow-1 ph-text-truncate-100">
+                        <h5 class="mb-1 fw-bold ph-text-truncate-100">{{name}}</h5>
+                        {{#description}}
+                        <div class="ph-class-desc ph-text-truncate-2lines small text-muted">{{{description}}}</div>
+                        {{/description}}
+                        <div class="small mt-1">
+                            <i class="fa fa-heart text-danger" aria-hidden="true"></i>
+                            {{str_hp}} {{base_hp}}
+                        </div>
+                    </div>
+
+                </div>
+                <div class="card-footer bg-transparent border-0 text-end">
+                    <a href="{{url_edit}}" class="btn btn-sm btn-outline-primary me-1">
+                        <i class="fa fa-pencil" aria-hidden="true"></i> {{str_edit}}
+                    </a>
+                    <button type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        data-action="delete-class"
+                        data-confirm-msg="{{confirm_msg}}"
+                        data-delete-url="{{url_delete}}"
+                        data-bs-toggle="modal"
+                        data-bs-target="#ph-confirm-delete-class">
+                        <i class="fa fa-trash" aria-hidden="true"></i> {{str_delete}}
+                    </button>
+                </div>
+            </div>
+        </div>
+        {{/classes}}
+    </div>
+    {{/has_classes}}
+
+    {{^has_classes}}
+    <div class="alert alert-light text-center py-5">
+        <i class="fa fa-users fa-2x mb-2 d-block" aria-hidden="true"></i>
+        {{str_empty}}
+    </div>
+    {{/has_classes}}
+
+</div>
+
+{{! Shared delete confirmation modal (Bootstrap 5) }}
+<div class="modal fade" id="ph-confirm-delete-class" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{str_confirm_delete}}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                    aria-label="{{str_close}}"></button>
+            </div>
+            <div class="modal-body">
+                <p id="ph-delete-class-msg"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    {{str_cancel}}
+                </button>
+                <a id="ph-delete-class-url" href="#" class="btn btn-danger">
+                    {{str_delete}}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

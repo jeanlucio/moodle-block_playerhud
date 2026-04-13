@@ -595,6 +595,57 @@ class game {
     }
 
     /**
+     * Get the RPG progress record for a user (includes classid, karma, chapter history).
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @param int $userid The user ID.
+     * @return \stdClass|false The rpg_progress record or false if not found.
+     */
+    public static function get_player_class($blockinstanceid, $userid) {
+        global $DB;
+        return $DB->get_record('block_playerhud_rpg_progress', [
+            'blockinstanceid' => $blockinstanceid,
+            'userid' => $userid,
+        ]);
+    }
+
+    /**
+     * Assign an RPG class to a player, creating the progress record if needed.
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @param int $userid The user ID.
+     * @param int $classid The class ID to assign.
+     */
+    public static function assign_class($blockinstanceid, $userid, $classid) {
+        global $DB;
+        $progress = self::get_player_class($blockinstanceid, $userid);
+        if ($progress) {
+            $progress->classid = $classid;
+            $DB->update_record('block_playerhud_rpg_progress', $progress);
+        } else {
+            $progress = new \stdClass();
+            $progress->blockinstanceid = $blockinstanceid;
+            $progress->userid = $userid;
+            $progress->classid = $classid;
+            $progress->karma = 0;
+            $progress->current_nodes = null;
+            $progress->completed_chapters = null;
+            $DB->insert_record('block_playerhud_rpg_progress', $progress);
+        }
+    }
+
+    /**
+     * Get all RPG classes for a block instance, ordered by name.
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @return array Array of class objects keyed by ID.
+     */
+    public static function get_all_classes($blockinstanceid) {
+        global $DB;
+        return $DB->get_records('block_playerhud_classes', ['blockinstanceid' => $blockinstanceid], 'name ASC');
+    }
+
+    /**
      * Get all trades with their requirements and rewards for a specific block instance.
      * Optimized to avoid N+1 query problems using single batch queries.
      *
