@@ -12,187 +12,188 @@
     }
 }
 
-.ph-card-rounded {
-    border-radius: 15px;
-}
+.block_playerhud,
+.path-blocks-playerhud {
 
-.playerhud-item-card {
-    position: relative;
-    height: 100%;
-    min-height: 260px;
-}
-
-.ph-new-badge {
-    position: absolute;
-    top: -5px;
-    inset-inline-start: -5px;
-    background-color: var(--danger, #dc3545);
-    color: var(--light, #fff);
-    font-size: 0.65rem;
-    padding: 2px 5px;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    z-index: 6;
-    animation: ph-pulse 2s infinite;
-}
-
-.ph-badge-archived {
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 20;
-    background-color: var(--secondary, #6c757d);
-    color: #fff;
-    font-size: 0.7rem;
-    padding: 4px 10px;
-    border-radius: 12px;
-    border: 2px solid var(--card-bg, #fff);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-    white-space: nowrap;
-}
-
-[dir="rtl"] .ph-badge-archived {
-    transform: translateX(50%);
-}
-
-.ph-item-archived {
-    opacity: 0.85;
-    filter: grayscale(100%);
-    border: 1px dashed var(--gray-400, #ccc);
-}
-
-.ph-missing {
-    opacity: 0.6;
-    border-style: dashed;
-}
-
-.ph-card-origins {
-    font-size: 0.75rem;
-    color: var(--gray-600, #6c757d);
-    background: var(--gray-100, #f8f9fa);
-    padding: 2px 8px;
-    border-radius: 10px;
-    display: inline-block;
-    border: 1px solid var(--gray-200, #e9ecef);
-}
-
-.ph-text-gold {
-    color: #856404;
-}
-
-.ph-card-date {
-    font-size: 0.65rem;
-    color: var(--gray-500, #adb5bd);
-    margin-top: 5px;
-    border-top: 1px solid var(--gray-100, #f1f1f1);
-    width: 100%;
-    text-align: center;
-    padding-top: 3px;
-}
-
-.ph-card-icon-container {
-    height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.ph-card-img {
-    max-height: 60px;
-    width: auto;
-}
-
-.ph-card-emoji {
-    font-size: 3rem;
-    line-height: 1;
-}
-
-.ph-card-title {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    height: 3.6em;
-    line-height: 1.2;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-    text-align: center;
-    width: 100%;
-}
-
-.playerhud-inventory-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 1rem;
-}
-// Quest Cards Styling.
-
-// Fixed height matches inventory cards; overflow prevents card spillage.
-.playerhud-item-card.ph-quest-card-pending,
-.playerhud-item-card.ph-quest-card-ready,
-.playerhud-item-card.ph-quest-card-claimed {
-    height: 260px;
-    max-height: 260px;
-    overflow: hidden;
-}
-
-// Archived quest cards need visible overflow so the badge can protrude above the card.
-.playerhud-item-card.ph-item-archived {
-    overflow: visible;
-}
-
-// Compact progress bar height variant.
-.ph-progress-sm {
-    height: 6px;
-}
-
-// Info button: absolute top-right corner, reveals description via tooltip.
-.playerhud-item-card {
-    .ph-quest-info-btn {
-        position: absolute;
-        top: 0.35rem;
-        inset-inline-end: 0.35rem;
-        background: none;
-        border: none;
-        padding: 0;
-        color: var(--gray-500, #adb5bd);
-        font-size: 0.8rem;
-        line-height: 1;
-        cursor: pointer;
-
-        &:hover,
-        &:focus-visible {
-            color: var(--primary, #0d6efd);
-            outline: none;
-        }
+    .ph-card-rounded {
+        border-radius: 15px;
     }
-}
 
-// Completed golden card; overrides via increased specificity.
-.playerhud-item-card.ph-quest-card-claimed {
-    background-color: var(--ph-quest-claimed-bg, #fdf3d8);
-    border-color: var(--ph-quest-claimed-border, #f5c6cb);
+    .playerhud-item-card {
+        position: relative;
+        height: 100%;
+        min-height: 260px;
+    }
+
+    .ph-new-badge {
+        position: absolute;
+        top: -5px;
+        inset-inline-start: -5px;
+        background-color: var(--danger, #dc3545);
+        color: var(--light, #fff);
+        font-size: 0.65rem;
+        padding: 2px 5px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        z-index: 6;
+        animation: ph-pulse 2s infinite;
+    }
+
+    .ph-badge-archived {
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 20;
+        background-color: var(--secondary, #6c757d);
+        color: #fff;
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        border-radius: 12px;
+        border: 2px solid var(--card-bg, #fff);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        white-space: nowrap;
+    }
+
+    [dir="rtl"] .ph-badge-archived {
+        transform: translateX(50%);
+    }
+
+    .ph-item-archived {
+        opacity: 0.85;
+        filter: grayscale(100%);
+        border: 1px dashed var(--gray-400, #ccc);
+    }
+
+    .ph-missing {
+        opacity: 0.6;
+        border-style: dashed;
+    }
+
+    .ph-card-origins {
+        font-size: 0.75rem;
+        color: var(--gray-600, #6c757d);
+        background: var(--gray-100, #f8f9fa);
+        padding: 2px 8px;
+        border-radius: 10px;
+        display: inline-block;
+        border: 1px solid var(--gray-200, #e9ecef);
+    }
+
+    .ph-text-gold {
+        color: #856404;
+    }
+
+    .ph-card-date {
+        font-size: 0.65rem;
+        color: var(--gray-500, #adb5bd);
+        margin-top: 5px;
+        border-top: 1px solid var(--gray-100, #f1f1f1);
+        width: 100%;
+        text-align: center;
+        padding-top: 3px;
+    }
+
+    .ph-card-icon-container {
+        height: 90px;
+        width: 100%;
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    div.playerhud-item-card .ph-card-icon-container img.ph-card-img {
+        max-height: 70px;
+        max-width: 100%;
+        width: auto;
+        object-fit: contain;
+    }
+
+    .ph-card-emoji {
+        font-size: 3rem;
+        line-height: 1;
+    }
 
     .ph-card-title {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        height: 3.6em;
+        line-height: 1.2;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        text-align: center;
+        width: 100%;
+    }
+
+    .playerhud-inventory-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 1rem;
+    }
+
+    // Quest Cards Styling.
+    .playerhud-item-card.ph-quest-card-pending,
+    .playerhud-item-card.ph-quest-card-ready,
+    .playerhud-item-card.ph-quest-card-claimed {
+        height: 260px;
+        max-height: 260px;
+        overflow: hidden;
+    }
+
+    .playerhud-item-card.ph-item-archived {
+        overflow: visible;
+    }
+
+    .ph-progress-sm {
+        height: 6px;
+    }
+
+    .playerhud-item-card {
+        .ph-quest-info-btn {
+            position: absolute;
+            top: 0.35rem;
+            inset-inline-end: 0.35rem;
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--gray-500, #adb5bd);
+            font-size: 0.8rem;
+            line-height: 1;
+            cursor: pointer;
+
+            &:hover,
+            &:focus-visible {
+                color: var(--primary, #0d6efd);
+                outline: none;
+            }
+        }
+    }
+
+    .playerhud-item-card.ph-quest-card-claimed {
+        background-color: var(--ph-quest-claimed-bg, #fdf3d8);
+        border-color: var(--ph-quest-claimed-border, #f5c6cb);
+
+        .ph-card-title {
+            color: var(--ph-quest-gold-dark, #664d03);
+        }
+
+        .ph-quest-claimed-stamp {
+            background-color: var(--ph-quest-stamp-bg, rgba(255, 193, 7, 0.15));
+            border: 1px solid var(--ph-quest-stamp-border, rgba(255, 193, 7, 0.25));
+        }
+    }
+
+    .ph-text-gold-dark {
         color: var(--ph-quest-gold-dark, #664d03);
     }
 
-    .ph-quest-claimed-stamp {
-        background-color: var(--ph-quest-stamp-bg, rgba(255, 193, 7, 0.15));
-        border: 1px solid var(--ph-quest-stamp-border, rgba(255, 193, 7, 0.25));
+    .playerhud-item-card.ph-quest-card-ready {
+        border: 2px solid var(--success, #198754);
+        box-shadow: 0 0.25rem 0.5rem var(--ph-quest-ready-shadow, rgba(25, 135, 84, 0.15));
     }
-}
-
-// Dark golden text utility; WCAG AA compliant on light backgrounds.
-.ph-text-gold-dark {
-    color: var(--ph-quest-gold-dark, #664d03);
-}
-
-// Ready-to-claim card; green border highlights actionable state.
-.playerhud-item-card.ph-quest-card-ready {
-    border: 2px solid var(--success, #198754);
-    box-shadow: 0 0.25rem 0.5rem var(--ph-quest-ready-shadow, rgba(25, 135, 84, 0.15));
 }
