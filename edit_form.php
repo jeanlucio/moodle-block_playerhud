@@ -126,9 +126,15 @@ class block_playerhud_edit_form extends block_edit_form {
             }
         }
 
-        // Inject default text if DB content is empty.
+        // When empty, pre-populate with the rendered default template so the teacher
+        // can edit on top of it. Saving persists the custom content; the reset
+        // checkbox clears it back to the template.
         if (empty(trim($text))) {
-            $text = get_string('help_pagedefault', 'block_playerhud');
+            global $OUTPUT;
+            $text = $OUTPUT->render_from_template('block_playerhud/help_default', []);
+            // TinyMCE strips empty inline elements (e.g. Font Awesome <i> tags).
+            // A zero-width space inside each empty <i> prevents that.
+            $text = preg_replace('/<i\b([^>]*)>\s*<\/i>/i', '<i$1>&#8203;</i>', $text);
         }
 
         // The Moodle editor element strictly requires an array with 'text' and 'format' keys.
@@ -157,17 +163,8 @@ class block_playerhud_edit_form extends block_edit_form {
         $data = parent::get_data();
 
         if ($data) {
-            $submittedtext = '';
-            if (isset($data->config_help_content)) {
-                $submittedtext = is_array($data->config_help_content)
-                    ? $data->config_help_content['text']
-                    : $data->config_help_content;
-            }
-
-            $defaulttext = get_string('help_pagedefault', 'block_playerhud');
-
-            // If reset is checked OR text matches default: save empty to force dynamic language fetch.
-            if (!empty($data->config_reset_help) || trim($submittedtext) === trim($defaulttext)) {
+            // If reset is checked: save empty to force use of default template.
+            if (!empty($data->config_reset_help)) {
                 $data->config_help_content = [
                     'text' => '',
                     'format' => FORMAT_HTML,

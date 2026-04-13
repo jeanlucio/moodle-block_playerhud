@@ -148,7 +148,7 @@
         font-size: 1.1rem;
         line-height: 1;
         opacity: 0.85;
-        transition: transform 0.2s ease, color 0.2s ease, opacity 0.2s;
+        transition: color 0.2s ease, opacity 0.2s;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -158,7 +158,6 @@
         &:hover {
             color: var(--info, #0dcaf0);
             opacity: 1;
-            transform: scale(1.2) rotate(10deg);
         }
     }
 }
