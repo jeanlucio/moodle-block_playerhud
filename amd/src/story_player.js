@@ -23,14 +23,14 @@
 define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
 
     var instanceid = 0;
-    var courseid   = 0;
-    var strings    = {};
+    var courseid = 0;
+    var strings = {};
 
-    var modal       = null;
-    var contentEl   = null;
-    var choicesEl   = null;
-    var titleEl     = null;
-    var bsModal     = null;
+    var modal = null;
+    var contentEl = null;
+    var choicesEl = null;
+    var titleEl = null;
+    var bsModal = null;
 
     /**
      * Show the loading spinner inside the modal body.
@@ -62,15 +62,6 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         if (typeof window.bootstrap !== 'undefined' && window.bootstrap.Modal) {
             bsModal = new window.bootstrap.Modal(modal);
             bsModal.show();
-        }
-    }
-
-    /**
-     * Close the story modal.
-     */
-    function closeModal() {
-        if (bsModal) {
-            bsModal.hide();
         }
     }
 
@@ -305,13 +296,13 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
          */
         init: function(iid, cid, strs) {
             instanceid = iid;
-            courseid   = cid;
-            strings    = strs;
+            courseid = cid;
+            strings = strs;
 
-            modal     = document.getElementById('ph-story-modal');
+            modal = document.getElementById('ph-story-modal');
             contentEl = document.getElementById('ph-story-content');
             choicesEl = document.getElementById('ph-story-choices');
-            titleEl   = document.getElementById('ph-story-title');
+            titleEl = document.getElementById('ph-story-title');
 
             document.body.addEventListener('click', function(e) {
                 var opener = e.target.closest('[data-action="open-chapter"]');
