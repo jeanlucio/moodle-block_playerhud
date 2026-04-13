@@ -135,6 +135,11 @@ $string['confirm_disable'] = 'Tem certeza? Seu HUD desaparecerá até que você 
 $string['confirm_revoke'] = 'Tem certeza que deseja remover este item do aluno? O XP correspondente será deduzido da pontuação total.';
 $string['connector_and'] = ' e ';
 $string['cost_item_label'] = 'Custo: {$a}';
+$string['custom_ai_advanced'] = 'Configuração avançada';
+$string['custom_ai_advanced_hint'] = 'Altere estes campos somente se quiser usar um provedor diferente do configurado pela instituição. Compatível com qualquer API no padrão OpenAI.';
+$string['custom_ai_apikey'] = 'Chave de IA Personalizada';
+$string['custom_ai_baseurl'] = 'URL do Endpoint da API';
+$string['custom_ai_model'] = 'Modelo';
 $string['default_drop_name'] = 'Drop Gerado';
 $string['delete'] = 'Excluir';
 $string['delete_n_items'] = 'Excluir %d itens';
@@ -251,133 +256,28 @@ $string['group'] = 'Grupo';
 $string['help_btn'] = 'Ajuda';
 $string['help_content_label'] = 'Conteúdo de Ajuda Personalizado';
 $string['help_content_label_help'] = 'Personalize as instruções que os alunos veem na aba Ajuda. Limpe este campo ou marque a caixa abaixo para restaurar o padrão do sistema.';
-$string['help_pagedefault'] = '<div class="alert alert-info shadow-sm mb-4">
-    <div class="d-flex align-items-center">
-        <div class="me-3">
-            <i class="fa fa-gamepad fa-2x" aria-hidden="true"></i>
-        </div>
-        <div>
-            <h5 class="alert-heading fw-bold m-0">Bem-vindo ao PlayerHUD!</h5>
-            <p class="mb-0">
-                Este curso utiliza um sistema de gamificação para acompanhar seu progresso,
-                recompensar sua participação e tornar sua jornada de aprendizado mais engajadora.
-            </p>
-        </div>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-star fa-3x text-primary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">XP & Níveis</h5>
-                <p class="small text-muted">
-                    Ao coletar itens ou completar missões, você acumula XP (Experiência).
-                    Conforme seu XP aumenta, seu nível evolui e sua barra de progresso avança.
-                    A quantidade de níveis e o total máximo de XP são definidos pelo professor do curso/disciplina.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-cube fa-3x text-success mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Itens & Drops</h5>
-                <p class="small text-muted">
-                    Durante o curso, você poderá encontrar itens escondidos em atividades, descrições
-                    ou desafios específicos. Alguns itens possuem limite de coleta ou tempo de reaparecimento (cooldown).
-                    Itens podem ou não dar XP, você pode clicar no card do item que encontrar para verificar
-                    as informações sobre ele, incluindo o valor de XP, se houver. Itens também poderão ser obtidos
-                    através de missões ou trocados na loja.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-map-signs fa-3x text-info mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Missões</h5>
-                <p class="small text-muted">
-                    Diversas missões podem aparecer no decorrer do curso, como completar determinada atividade,
-                    ou atingir determinado nível no curso. Acesse a área de missões para verificar as disponíveis.
-                    Missões podem dar XP ou itens exclusivos. Sempre que tiver missões pendentes de resgate uma
-                    bolinha vermelha aparecerá no canto do botão do bloco ou widget.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-shopping-cart fa-3x text-warning mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Loja</h5>
-                <p class="small text-muted">
-                    A loja serve para troca/comercialização de itens, o professor definirá quais itens poderão
-                    ser comercializados e as trocas ficarão disponíveis na loja. Algumas trocas podem ser
-                    inseridas pelo professor em outros locais do curso. Fique atento!
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-clock-o fa-3x text-danger mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Tempo & Limites</h5>
-                <p class="small text-muted">
-                    Itens com mais de uma quantidade para coleta exibirão um contador após a primeira coleta
-                    com a indicação de tempo para resgate do próximo. Fique atento ao prazo do curso/disciplina
-                    para não perder nenhum item, em especial aqueles com altos valores de XP.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-trophy fa-3x text-primary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Ranking</h5>
-                <p class="small text-muted">
-                    O ranking mostra sua posição em relação aos colegas. Você pode optar por não
-                    aparecer publicamente. Ele funciona como ferramenta de motivação, não como competição obrigatória.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-12 mb-3">
-        <div class="card h-100 border shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa fa-power-off fa-3x text-secondary mb-3" aria-hidden="true"></i>
-                <h5 class="fw-bold">Pausar/Desativar Gamificação</h5>
-                <p class="small text-muted">
-                    A gamificação deste curso/disciplina é totalmente opcional. Você pode desativar a camada
-                    de gamificação ocultando assim todas as mecânicas disponíveis se for do seu interesse, clicando
-                    no botão correspondente no bloco ou widget. Caso queira retornar basta acessar o bloco e clicar
-                    no botão correspondente. Este recurso foi construído pensando em dar total liberdade para você
-                    escolher sua forma de participação no curso/disciplina.
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="alert alert-light border shadow-sm mt-4">
-    <div class="d-flex align-items-center">
-        <div class="me-3">
-            <i class="fa fa-lightbulb-o fa-2x text-warning" aria-hidden="true"></i>
-        </div>
-        <div>
-            <h6 class="fw-bold m-0">Dica Importante</h6>
-            <p class="mb-0 small text-muted">
-                Explore o curso com cuidado, participe das atividades e engaje-se com o conteúdo.
-                XP é resultado do envolvimento — o aprendizado continua sendo o verdadeiro objetivo.
-            </p>
-        </div>
-    </div>
-</div>';
+$string['help_history_desc'] = 'Acompanhe toda a sua jornada. A aba de histórico registra de forma cronológica todas as suas atividades no curso, incluindo itens coletados, missões concluídas, trocas realizadas e subidas de nível.';
+$string['help_history_title'] = 'Histórico';
+$string['help_items_desc'] = 'Durante o curso, você poderá encontrar itens escondidos em atividades, descrições ou desafios específicos. Alguns itens possuem limite de coleta ou tempo de reaparecimento (cooldown). Itens podem ou não dar XP, você pode clicar no card do item que encontrar para verificar as informações sobre ele. Itens também poderão ser obtidos através de missões ou trocados na loja.';
+$string['help_items_title'] = 'Itens & Drops';
+$string['help_pause_desc'] = 'A gamificação deste curso/disciplina é totalmente opcional. Você pode desativar a camada de gamificação ocultando assim todas as mecânicas disponíveis se for do seu interesse, clicando no botão correspondente no bloco ou widget. Caso queira retornar basta acessar o bloco e clicar no botão correspondente. Este recurso foi construído pensando em dar total liberdade para você escolher sua forma de participação no curso/disciplina.';
+$string['help_pause_title'] = 'Pausar/Desativar Gamificação';
+$string['help_quests_desc'] = 'Diversas missões podem aparecer no decorrer do curso, como completar determinada atividade, ou atingir determinado nível no curso. Acesse a área de missões para verificar as disponíveis. Missões podem dar XP ou itens exclusivos. Sempre que tiver missões pendentes de resgate uma bolinha vermelha aparecerá no canto do botão do bloco ou widget.';
+$string['help_quests_title'] = 'Missões';
+$string['help_ranking_desc'] = 'O ranking mostra sua posição em relação aos colegas. Você pode optar por não aparecer publicamente. Ele funciona como ferramenta de motivação, não como competição obrigatória.';
+$string['help_ranking_title'] = 'Ranking';
 $string['help_reset_checkbox'] = 'Restaurar conteúdo de ajuda padrão ao salvar';
+$string['help_shop_desc'] = 'A loja serve para troca/comercialização de itens. O professor definirá quais itens poderão ser comercializados e as trocas ficarão disponíveis na loja. Algumas trocas podem ser inseridas pelo professor em outros locais do curso. Fique atento!';
+$string['help_shop_title'] = 'Loja';
+$string['help_timers_desc'] = 'Itens com mais de uma quantidade para coleta exibirão um contador após a primeira coleta com a indicação de tempo para resgate do próximo. Fique atento ao prazo do curso/disciplina para não perder nenhum item, em especial aqueles com altos valores de XP.';
+$string['help_timers_title'] = 'Tempo & Limites';
+$string['help_tip_desc'] = 'Explore o curso com cuidado, participe das atividades e engaje-se com o conteúdo. XP é resultado do envolvimento — o aprendizado continua sendo o verdadeiro objetivo.';
+$string['help_tip_title'] = 'Dica Importante';
 $string['help_title'] = 'Guia do Jogo';
+$string['help_welcome_desc'] = 'Este curso utiliza um sistema de gamificação para acompanhar seu progresso, recompensar sua participação e tornar sua jornada de aprendizado mais engajadora.';
+$string['help_welcome_title'] = 'Bem-vindo ao PlayerHUD!';
+$string['help_xp_desc'] = 'Ao coletar itens ou completar missões, você acumula XP (Experiência). Conforme seu XP aumenta, seu nível evolui e sua barra de progresso avança. A quantidade de níveis e o total máximo de XP são definidos pelo professor do curso/disciplina.';
+$string['help_xp_title'] = 'XP & Níveis';
 $string['hidden'] = 'Oculto';
 $string['hidden_desc'] = 'Apenas o professor vê você.';
 $string['history_desc'] = 'Acompanhe o registro detalhado de suas aventuras e aquisições.';
@@ -439,6 +339,14 @@ $string['no_groups_data'] = 'Este curso não tem grupos definidos para competiç
 $string['no_ranking_data'] = 'Sem dados de ranking ainda.';
 $string['none'] = 'Nenhum';
 $string['one_time_trade'] = 'Troca única?';
+$string['openai_apikey'] = 'Chave de API de IA Personalizada (compatível com OpenAI)';
+$string['openai_apikey_desc'] = 'Chave de API para um provedor compatível com o padrão OpenAI (ex.: OpenAI, DeepSeek, Alibaba Qwen, Mistral, OpenRouter). Esta é a chave padrão da instituição, usada quando os professores não fornecem a própria.';
+$string['openai_baseurl'] = 'URL do Endpoint da IA Personalizada';
+$string['openai_baseurl_desc'] = 'URL completa do endpoint do provedor compatível com OpenAI (ex.: https://api.openai.com/v1/chat/completions · https://api.deepseek.com/v1/chat/completions · https://openrouter.ai/api/v1/chat/completions). Este é o padrão da instituição, usado quando os professores não fornecem o próprio.';
+$string['openai_model'] = 'Modelo da IA Personalizada';
+$string['openai_model_desc'] = 'Identificador do modelo do provedor personalizado (ex.: gpt-4o-mini · deepseek-chat · qwen-plus). Este é o padrão da instituição, usado quando os professores não fornecem o próprio.';
+$string['openai_settings_desc'] = 'Configure um provedor de IA personalizado que siga o padrão da API OpenAI. Compatível com OpenAI, DeepSeek, Alibaba Qwen, Mistral, OpenRouter, Ollama e muitos outros. Os professores podem substituir esses padrões com suas próprias chaves e configurações pessoais.';
+$string['openai_settings_title'] = 'Provedor de IA Personalizado (compatível com OpenAI)';
 $string['openbackpack'] = 'Abrir Mochila';
 $string['optin_hello'] = 'Olá, {$a}!';
 $string['optin_message'] = 'Este curso possui um sistema de gamificação com itens, níveis e conquistas. Você gostaria de participar desta jornada?';
@@ -454,6 +362,7 @@ $string['privacy:metadata:ai_logs'] = 'Registros de interações com a IA para g
 $string['privacy:metadata:ai_logs:action'] = 'O tipo de ação realizada pela IA (ex: criar item).';
 $string['privacy:metadata:external:gemini_summary'] = 'O plugin envia textos (prompts) para a API do Google Gemini para gerar itens educativos do jogo.';
 $string['privacy:metadata:external:groq_summary'] = 'O plugin envia textos (prompts) para a API Groq para gerar itens educativos do jogo.';
+$string['privacy:metadata:external:openai_summary'] = 'O plugin envia textos (prompts) para o provedor compatível com OpenAI configurado, a fim de gerar itens educativos do jogo.';
 $string['privacy:metadata:external:prompt'] = 'O texto base (prompt) e o tema fornecidos pelo professor para gerar conteúdo.';
 $string['privacy:metadata:inventory'] = 'O inventário de itens coletados pelo usuário.';
 $string['privacy:metadata:inventory:itemid'] = 'O ID do item que foi coletado.';
@@ -462,6 +371,9 @@ $string['privacy:metadata:playerhud_user:currentxp'] = 'A quantidade atual de po
 $string['privacy:metadata:playerhud_user:ranking_visibility'] = 'Preferência do usuário sobre aparecer ou não no ranking público.';
 $string['privacy:metadata:preference:gemini_key'] = 'Armazena a chave pessoal da API Google Gemini fornecida pelo usuário.';
 $string['privacy:metadata:preference:groq_key'] = 'Armazena a chave pessoal da API Groq fornecida pelo usuário.';
+$string['privacy:metadata:preference:openai_key'] = 'Armazena a chave pessoal da API do provedor compatível com OpenAI fornecida pelo usuário.';
+$string['privacy:metadata:preference:openai_model'] = 'Armazena o identificador de modelo pessoal do provedor compatível com OpenAI fornecido pelo usuário.';
+$string['privacy:metadata:preference:openai_url'] = 'Armazena a URL base pessoal do provedor compatível com OpenAI fornecida pelo usuário.';
 $string['privacy:metadata:quest_log'] = 'Registro de missões completadas pelo usuário.';
 $string['privacy:metadata:quest_log:questid'] = 'O ID da missão completada.';
 $string['privacy:metadata:rpg'] = 'Dados de progresso na história RPG e escolhas do usuário.';

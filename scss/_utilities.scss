@@ -1,154 +1,159 @@
 // Utility classes and Bootstrap overrides restricted to this block namespace.
 
-.ph-text-truncate-100 {
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+.block_playerhud,
+.path-blocks-playerhud {
 
-.ph-text-truncate-2lines {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: normal;
-    word-break: break-word;
-}
+    .ph-text-truncate-100 {
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-.ph-cursor-pointer {
-    cursor: pointer;
-}
-.ph-cursor-wait {
-    cursor: wait;
-}
-.ph-cursor-help {
-    cursor: help;
-}
+    .ph-text-truncate-2lines {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: normal;
+        word-break: break-word;
+    }
 
-.ph-text-xs {
-    font-size: 0.7rem;
-}
-.ph-text-sm {
-    font-size: 0.9rem;
-}
-.ph-text-md {
-    font-size: 1rem;
-}
-.ph-fs-09 {
-    font-size: 0.9rem;
-}
+    .ph-cursor-pointer {
+        cursor: pointer;
+    }
+    .ph-cursor-wait {
+        cursor: wait;
+    }
+    .ph-cursor-help {
+        cursor: help;
+    }
 
-.ph-opacity-50 {
-    opacity: 0.5;
-}
-.ph-opacity-low {
-    opacity: 0.3;
-}
+    .ph-text-xs {
+        font-size: 0.7rem;
+    }
+    .ph-text-sm {
+        font-size: 0.9rem;
+    }
+    .ph-text-md {
+        font-size: 1rem;
+    }
+    .ph-fs-09 {
+        font-size: 0.9rem;
+    }
 
-.ph-display-none {
-    display: none;
-}
-.ph-h-60 {
-    height: 60px;
-}
+    .ph-opacity-50 {
+        opacity: 0.5;
+    }
+    .ph-opacity-low {
+        opacity: 0.3;
+    }
 
-// Bootstrap overrides restricted to block.
-.block_playerhud .btn,
-.block_playerhud table .btn,
-.ph-manage-header .btn,
-#ph-item-modal-view .btn,
-#ph-ai-modal .btn,
-#ph-codegen-modal .btn {
-    border-radius: 0.5rem;
-}
+    .ph-display-none {
+        display: none;
+    }
+    .ph-h-60 {
+        height: 60px;
+    }
 
-.block_playerhud .rounded-pill,
-.ph-manage-header .rounded-pill {
-    border-radius: 50rem;
-}
+    // Bootstrap overrides restricted to block.
+    .btn,
+    table .btn,
+    .ph-manage-header .btn,
+    #ph-item-modal-view .btn,
+    #ph-ai-modal .btn,
+    #ph-codegen-modal .btn {
+        border-radius: 0.5rem;
+    }
 
-// Ensure text contrast on Badges.
-.block_playerhud .badge.bg-primary,
-.block_playerhud .badge.bg-success,
-.block_playerhud .badge.bg-secondary,
-.block_playerhud .badge.bg-info,
-.block_playerhud .badge.bg-danger {
-    color: #fff;
-}
+    .rounded-pill,
+    .ph-manage-header .rounded-pill {
+        border-radius: 50rem;
+    }
 
-// Modal close button fixes.
-.block_playerhud .btn-close,
-#ph-item-modal-view .btn-close,
-#ph-ai-modal .btn-close {
-    opacity: 1;
-    background: transparent;
-    border: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1;
-    color: #000;
-    text-shadow: 0 1px 0 #fff;
-    padding: 0.5rem;
-    margin: -0.5rem -0.5rem -0.5rem auto;
-}
+    // Ensure text contrast on Badges.
+    .badge.bg-primary,
+    .badge.bg-success,
+    .badge.bg-secondary,
+    .badge.bg-info,
+    .badge.bg-danger {
+        color: #fff;
+    }
 
-// Custom Styling for Navigation Tabs (Student and Master Panel).
-#ph-student-tabs,
-#ph-manage-tabs {
-    .nav-link {
-        color: var(--gray-600, #6c757d);
-        font-weight: 500;
-        border-top: 3px solid transparent;
-        transition: all 0.2s ease-in-out;
+    // Modal close button fixes.
+    .btn-close,
+    #ph-item-modal-view .btn-close,
+    #ph-ai-modal .btn-close {
+        opacity: 1;
+        background: transparent;
+        border: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #000;
+        text-shadow: 0 1px 0 #fff;
+        padding: 0.5rem;
+        margin: -0.5rem -0.5rem -0.5rem auto;
+    }
 
-        &:hover {
-            color: var(--primary, #0d6efd);
-            background-color: var(--gray-100, #f8f9fa);
-        }
+    // Custom Styling for Navigation Tabs.
+    #ph-student-tabs,
+    #ph-manage-tabs {
+        .nav-link {
+            color: var(--gray-600, #6c757d);
+            font-weight: 500;
+            border-top: 3px solid transparent;
+            transition: all 0.2s ease-in-out;
 
-        &.active {
-            color: var(--primary, #0d6efd);
-            font-weight: 700;
-            background-color: var(--card-bg, #fff);
-            border-color: var(--gray-300, #dee2e6) var(--gray-300, #dee2e6) var(--card-bg, #fff);
-            border-top: 3px solid var(--primary, #0d6efd);
+            &:hover {
+                color: var(--primary, #0d6efd);
+                background-color: var(--gray-100, #f8f9fa);
+            }
+
+            &.active {
+                color: var(--primary, #0d6efd);
+                font-weight: 700;
+                background-color: var(--card-bg, #fff);
+                border-color: var(--gray-300, #dee2e6) var(--gray-300, #dee2e6) var(--card-bg, #fff);
+                border-top: 3px solid var(--primary, #0d6efd);
+            }
         }
     }
-}
-// Utility classes for fixed widths and heights.
-.ph-w-30 {
-    width: 30px;
-}
-.ph-w-50 {
-    width: 50px;
-}
-.ph-w-80 {
-    width: 80px;
-}
-.ph-min-w-250 {
-    min-width: 250px;
-}
-.ph-max-w-500 {
-    max-width: 500px;
-}
-.ph-max-h-200 {
-    max-height: 200px;
-}
 
-// Custom table column widths for details view.
-.ph-table-details-col {
-    min-width: 200px;
-    max-width: 350px;
-}
+    // Utility classes for fixed widths and heights.
+    .ph-w-30 {
+        width: 30px;
+    }
+    .ph-w-50 {
+        width: 50px;
+    }
+    .ph-w-80 {
+        width: 80px;
+    }
+    .ph-min-w-250 {
+        min-width: 250px;
+    }
+    .ph-max-w-500 {
+        max-width: 500px;
+    }
+    .ph-max-h-200 {
+        max-height: 200px;
+    }
 
-// Utility class for empty state icons.
-.ph-empty-icon-lg {
-    font-size: 3rem;
-    opacity: 0.3;
-}
-.ph-h-10 {
-    height: 10px;
+    // Custom table column widths for details view.
+    .ph-table-details-col {
+        min-width: 200px;
+        max-width: 350px;
+    }
+
+    // Utility class for empty state icons.
+    .ph-empty-icon-lg {
+        font-size: 3rem;
+        opacity: 0.3;
+    }
+    .ph-h-10 {
+        height: 10px;
+    }
 }

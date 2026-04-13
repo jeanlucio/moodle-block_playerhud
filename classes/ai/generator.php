@@ -64,14 +64,29 @@ class generator {
         // 1. Get Keys.
         // User preference keys take precedence over global config, allowing teachers to use their own keys if desired.
         $geminikey = get_user_preferences('block_playerhud_gemini_key', '');
-        $groqkey   = get_user_preferences('block_playerhud_groq_key', '');
+        $groqkey = get_user_preferences('block_playerhud_groq_key', '');
+        $openaikey = get_user_preferences('block_playerhud_openai_key', '');
+        $openaiurl = get_user_preferences('block_playerhud_openai_url', '');
+        $openaimodel = get_user_preferences('block_playerhud_openai_model', '');
 
         // Fallback to global config if user preferences are not set.
         if (empty($geminikey)) {
             $geminikey = get_config('block_playerhud', 'apikey_gemini');
         }
+        if (empty($groqkey)) {
+            $groqkey = get_config('block_playerhud', 'apikey_groq');
+        }
+        if (empty($openaikey)) {
+            $openaikey = get_config('block_playerhud', 'apikey_openai');
+        }
+        if (empty($openaiurl)) {
+            $openaiurl = get_config('block_playerhud', 'openai_baseurl');
+        }
+        if (empty($openaimodel)) {
+            $openaimodel = get_config('block_playerhud', 'openai_model');
+        }
 
-        if (empty($geminikey) && empty($groqkey)) {
+        if (empty($geminikey) && empty($groqkey) && empty($openaikey)) {
             // Error: correct language file key used.
             throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
         }
@@ -114,6 +129,11 @@ class generator {
         // Try Groq only if Gemini failed or was not configured.
         if ((!$result['success']) && !empty($groqkey)) {
             $result = $this->call_groq($prompt, $groqkey);
+        }
+
+        // Try custom OpenAI-compatible provider if both Gemini and Groq failed or were not configured.
+        if ((!$result['success']) && !empty($openaikey) && !empty($openaiurl)) {
+            $result = $this->call_openai_compatible($prompt, $openaikey, $openaiurl, $openaimodel);
         }
 
         if (!$result['success']) {
@@ -373,6 +393,33 @@ class generator {
             json_encode($data),
             ["Authorization: Bearer $key", "Content-Type: application/json"],
             'Groq'
+        );
+    }
+
+    /**
+     * Calls any OpenAI-compatible API provider.
+     *
+     * Works with OpenAI, DeepSeek, Alibaba Qwen, Mistral, OpenRouter, Ollama, and others
+     * that expose the standard /v1/chat/completions endpoint.
+     *
+     * @param string $prompt The prompt text.
+     * @param string $key The API key.
+     * @param string $baseurl The provider base URL (e.g. https://api.openai.com).
+     * @param string $model The model identifier (e.g. gpt-4o-mini).
+     * @return array Response array.
+     */
+    protected function call_openai_compatible(string $prompt, string $key, string $baseurl, string $model): array {
+        $url = $baseurl;
+        $data = [
+            "model" => !empty($model) ? $model : 'gpt-4o-mini',
+            "messages" => [["role" => "user", "content" => $prompt]],
+            "response_format" => ["type" => "json_object"],
+        ];
+        return $this->curl_request(
+            $url,
+            json_encode($data),
+            ["Authorization: Bearer $key", "Content-Type: application/json"],
+            'Custom AI'
         );
     }
 

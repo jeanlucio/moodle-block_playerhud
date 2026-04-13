@@ -46,6 +46,9 @@ class provider implements
         // API Keys (User Preferences).
         $collection->add_user_preference('block_playerhud_gemini_key', 'privacy:metadata:preference:gemini_key');
         $collection->add_user_preference('block_playerhud_groq_key', 'privacy:metadata:preference:groq_key');
+        $collection->add_user_preference('block_playerhud_openai_key', 'privacy:metadata:preference:openai_key');
+        $collection->add_user_preference('block_playerhud_openai_model', 'privacy:metadata:preference:openai_model');
+        $collection->add_user_preference('block_playerhud_openai_url', 'privacy:metadata:preference:openai_url');
         // Main User Data.
         $collection->add_database_table('block_playerhud_user', [
             'currentxp' => 'privacy:metadata:playerhud_user:currentxp',
@@ -91,6 +94,10 @@ class provider implements
         $collection->add_external_location_link('groq', [
             'prompt' => 'privacy:metadata:external:prompt',
         ], 'privacy:metadata:external:groq_summary');
+
+        $collection->add_external_location_link('openai_compatible', [
+            'prompt' => 'privacy:metadata:external:prompt',
+        ], 'privacy:metadata:external:openai_summary');
 
         return $collection;
     }
@@ -478,6 +485,36 @@ class provider implements
                 get_string('privacy:metadata:preference:groq_key', 'block_playerhud')
             );
         }
+
+        $openaikey = get_user_preferences('block_playerhud_openai_key', null, $userid);
+        if ($openaikey !== null) {
+            writer::with_context(\context_system::instance())->export_user_preference(
+                'block_playerhud',
+                'block_playerhud_openai_key',
+                $openaikey,
+                get_string('privacy:metadata:preference:openai_key', 'block_playerhud')
+            );
+        }
+
+        $openaiurl = get_user_preferences('block_playerhud_openai_url', null, $userid);
+        if ($openaiurl !== null) {
+            writer::with_context(\context_system::instance())->export_user_preference(
+                'block_playerhud',
+                'block_playerhud_openai_url',
+                $openaiurl,
+                get_string('privacy:metadata:preference:openai_url', 'block_playerhud')
+            );
+        }
+
+        $openaimodel = get_user_preferences('block_playerhud_openai_model', null, $userid);
+        if ($openaimodel !== null) {
+            writer::with_context(\context_system::instance())->export_user_preference(
+                'block_playerhud',
+                'block_playerhud_openai_model',
+                $openaimodel,
+                get_string('privacy:metadata:preference:openai_model', 'block_playerhud')
+            );
+        }
     }
 
     /**
@@ -488,5 +525,8 @@ class provider implements
     public static function delete_user_preferences(int $userid) {
         unset_user_preference('block_playerhud_gemini_key', $userid);
         unset_user_preference('block_playerhud_groq_key', $userid);
+        unset_user_preference('block_playerhud_openai_key', $userid);
+        unset_user_preference('block_playerhud_openai_model', $userid);
+        unset_user_preference('block_playerhud_openai_url', $userid);
     }
 }

@@ -298,7 +298,7 @@ class tab_collection implements renderable, templatable {
             }
         });
 
-        // 4. Prepare Filter Dropdown Data (Sem opções de XP).
+        // 4. Prepare Filter Dropdown Data (No XP options).
         $url = new moodle_url($PAGE->url);
         $url->param('tab', 'collection');
 

@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,70 +12,91 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace block_playerhud\output\view;
 
 use renderable;
 use templatable;
 use renderer_base;
+use stdClass;
 
 /**
- * Rules/Help tab output renderer.
+ * Rules and Help tab output generator.
+ *
+ * This class handles the display logic for the rules tab, implementing a fallback
+ * mechanism: if no custom content is provided by the teacher, it renders a system
+ * default template instead of using a monolithic language string.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class tab_rules implements renderable, templatable {
-    /** @var \stdClass Block configuration. */
+    /** @var stdClass Block instance configuration. */
     protected $config;
 
     /**
      * Constructor.
      *
-     * @param \stdClass $config Block configuration.
+     * @param stdClass $config Block configuration object.
      */
     public function __construct($config) {
         $this->config = $config;
     }
 
     /**
-     * Display method.
+     * Renders the HTML for the rules tab.
      *
-     * @return string HTML content.
+     * @return string The rendered HTML content.
      */
-    public function display() {
+    public function display(): string {
         global $OUTPUT;
-        return $OUTPUT->render_from_template('block_playerhud/tab_rules', $this->export_for_template($OUTPUT));
+
+        $data = $this->export_for_template($OUTPUT);
+
+        // If the default fallback flag is set, render the system-wide help template.
+        if (!empty($data['use_default'])) {
+            return $OUTPUT->render_from_template('block_playerhud/help_default', []);
+        }
+
+        // Otherwise, render the custom content provided via block settings.
+        return $OUTPUT->render_from_template('block_playerhud/tab_rules', $data);
     }
 
     /**
-     * Export data for template.
+     * Prepares data for the Mustache template.
      *
-     * @param renderer_base $output The renderer.
-     * @return array Template data.
+     * @param renderer_base $output The renderer engine.
+     * @return array Context data for the template.
      */
-    public function export_for_template(renderer_base $output) {
-        // Retrieve content. Handle legacy or array format from editor.
+    public function export_for_template(renderer_base $output): array {
         $rawcontent = '';
+
+        // Safely retrieve help_content from block configuration.
+        // It can be a simple string or an array if using the editor field.
         if (isset($this->config->help_content)) {
             if (is_array($this->config->help_content)) {
-                $rawcontent = $this->config->help_content['text'];
+                $rawcontent = $this->config->help_content['text'] ?? '';
             } else {
-                $rawcontent = $this->config->help_content;
+                $rawcontent = (string)$this->config->help_content;
             }
         }
 
-        // Fallback to default if somehow empty or just spaces.
+        // Check if content is truly empty (ignoring white spaces).
+        // If empty, signal the display method to use the default help_default template.
         if (empty(trim($rawcontent))) {
-            $rawcontent = get_string('help_pagedefault', 'block_playerhud');
+            return [
+                'use_default' => true,
+                'help_content' => '',
+            ];
         }
 
-        // Process filters (essential for media/links).
+        // Process Moodle filters (multilang, media players, etc.) before outputting.
         $content = format_text($rawcontent, FORMAT_HTML, ['noclean' => true]);
 
         return [
+            'use_default' => false,
             'help_content' => $content,
         ];
     }

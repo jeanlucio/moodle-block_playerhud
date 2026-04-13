@@ -456,9 +456,16 @@ export const init = (config) => {
         }
 
         if (!descHtml || descHtml.trim() === '') {
-            descHtml = '<i class="text-muted">' + (appStrings.no_desc || '- no description -') + '</i>';
+            const fallbackText = appStrings.no_description || '- no description -';
+            modalEls.desc.empty().append(
+                $('<i>', {
+                    'class': 'text-muted',
+                    text: fallbackText
+                })
+            );
+        } else {
+            modalEls.desc.html(descHtml);
         }
-        modalEls.desc.html(descHtml);
 
         // Show stats if max usage or respawn time exists.
         let showStats = false;

@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Student quests tab renderer.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_playerhud\output\view;
@@ -167,7 +167,7 @@ class tab_quests implements renderable {
             // Build reward text.
             $rewardparts = [];
             if ($q->reward_xp > 0) {
-                $rewardparts[] = $q->reward_xp . ' XP';
+                $rewardparts[] = $q->reward_xp . ' ' . get_string('xp', 'block_playerhud');
             }
             if ($q->reward_itemid > 0 && isset($rewarditems[$q->reward_itemid])) {
                 $rewardparts[] = $rewarditems[$q->reward_itemid];

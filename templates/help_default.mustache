@@ -1,0 +1,128 @@
+{{!
+	This file is part of Moodle - https://moodle.org/
+
+	Moodle is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	Moodle is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/help_default
+
+    Template for the default help and rules page.
+
+    Example context (json):
+    {}
+}}
+<div class="alert alert-info shadow-sm mb-4">
+    <div class="d-flex align-items-center">
+        <div class="me-3">
+            <i class="fa fa-gamepad fa-2x" aria-hidden="true"></i>
+        </div>
+        <div>
+            <h5 class="alert-heading fw-bold m-0">{{#str}} help_welcome_title, block_playerhud {{/str}}</h5>
+            <p class="mb-0">{{#str}} help_welcome_desc, block_playerhud {{/str}}</p>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-star fa-3x text-primary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">{{#str}} help_xp_title, block_playerhud {{/str}}</h5>
+                <p class="small text-muted">{{#str}} help_xp_desc, block_playerhud {{/str}}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-cube fa-3x text-success mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">{{#str}} help_items_title, block_playerhud {{/str}}</h5>
+                <p class="small text-muted">{{#str}} help_items_desc, block_playerhud {{/str}}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-clock-o fa-3x text-danger mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">{{#str}} help_timers_title, block_playerhud {{/str}}</h5>
+                <p class="small text-muted">{{#str}} help_timers_desc, block_playerhud {{/str}}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-shopping-cart fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">{{#str}} help_shop_title, block_playerhud {{/str}}</h5>
+                <p class="small text-muted">{{#str}} help_shop_desc, block_playerhud {{/str}}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-bullseye fa-3x text-info mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">{{#str}} help_quests_title, block_playerhud {{/str}}</h5>
+                <p class="small text-muted">{{#str}} help_quests_desc, block_playerhud {{/str}}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-trophy fa-3x text-primary mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">{{#str}} help_ranking_title, block_playerhud {{/str}}</h5>
+                <p class="small text-muted">{{#str}} help_ranking_desc, block_playerhud {{/str}}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-history fa-3x text-warning mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">{{#str}} help_history_title, block_playerhud {{/str}}</h5>
+                <p class="small text-muted">{{#str}} help_history_desc, block_playerhud {{/str}}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+                <i class="fa fa-power-off fa-3x text-danger mb-3" aria-hidden="true"></i>
+                <h5 class="fw-bold">{{#str}} help_pause_title, block_playerhud {{/str}}</h5>
+                <p class="small text-muted">{{#str}} help_pause_desc, block_playerhud {{/str}}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-light border shadow-sm mt-4">
+    <div class="d-flex align-items-center">
+        <div class="me-3">
+            <i class="fa fa-lightbulb-o fa-2x text-warning" aria-hidden="true"></i>
+        </div>
+        <div>
+            <h6 class="fw-bold m-0">{{#str}} help_tip_title, block_playerhud {{/str}}</h6>
+            <p class="mb-0 small text-muted">{{#str}} help_tip_desc, block_playerhud {{/str}}</p>
+        </div>
+    </div>
+</div>

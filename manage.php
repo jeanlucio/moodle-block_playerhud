@@ -400,10 +400,16 @@ if ($action == 'delete_chapter') {
 if ($action === 'save_keys' && confirm_sesskey()) {
     $gkey = optional_param('gemini_key', '', PARAM_TEXT);
     $qkey = optional_param('groq_key', '', PARAM_TEXT);
+    $okey = optional_param('openai_key', '', PARAM_TEXT);
+    $ourl = optional_param('openai_url', '', PARAM_URL);
+    $omodel = optional_param('openai_model', '', PARAM_TEXT);
 
     // Store keys as user preferences to prevent sensitive data from being stored in block config and potentially leaked in backups.
     set_user_preference('block_playerhud_gemini_key', trim($gkey));
     set_user_preference('block_playerhud_groq_key', trim($qkey));
+    set_user_preference('block_playerhud_openai_key', trim($okey));
+    set_user_preference('block_playerhud_openai_url', trim($ourl));
+    set_user_preference('block_playerhud_openai_model', trim($omodel));
 
     // Remove keys from block config if they exist to prevent confusion and ensure they are only stored in user preferences.
     $config = (array) unserialize(base64_decode($bi->configdata));

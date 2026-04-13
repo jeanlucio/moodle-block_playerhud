@@ -1,56 +1,12 @@
 // Gamification Tiers and Colors.
 
-.ph-progress-container {
-    height: 1.5rem;
-    background-color: var(--gray-200, #e9ecef);
-    border-radius: 1rem;
-    overflow: hidden;
-    margin-top: 5px;
-    width: 100%;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-}
+/* stylelint-disable csstree/validator */
 
-.ph-progress-text {
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
-    white-space: nowrap;
-    padding-inline: 5px;
-    display: inline-block;
-}
-
-.ph-progress-bar {
-    border-radius: 0;
-    transition: width 0.6s ease;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-weight: bold;
-    font-size: 0.75rem;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.btn-ph-level-border {
-    background-color: var(--card-bg, #fff);
-    border: 1px solid var(--gray-300, #dee2e6);
-    color: var(--gray-700, #495057);
-    font-weight: 700;
-    transition: all 0.2s ease-in-out;
-
-    &:hover {
-        background-color: var(--gray-200, #e9ecef);
-    }
-}
-
-// Mixin for Tiers.
+// Mixin for Tiers (Must be at the root level).
 @mixin ph-tier($color) {
     &.progress-bar,
     &.badge,
-    &.playerhud-widget-container .progress-bar,
-    .block_playerhud &.progress-bar {
+    &.playerhud-widget-container .progress-bar {
         background-color: $color;
         color: var(--light, #fff);
         border-color: $color;
@@ -72,80 +28,114 @@
     }
 }
 
-/* stylelint-disable csstree/validator */
-.ph-lvl-tier-1 {
-    @include ph-tier(var(--gray-600, #6c757d));
-}
-.ph-lvl-tier-2 {
-    @include ph-tier(var(--success, #208337));
-}
-.ph-lvl-tier-3 {
-    @include ph-tier(var(--primary, #0b55c4));
-}
-.ph-lvl-tier-4 {
-    @include ph-tier(var(--purple, #6f42c1));
-}
-/* stylelint-enable csstree/validator */
+.block_playerhud,
+.path-blocks-playerhud {
 
-// Tier 5 (Special Gradient).
-.ph-lvl-tier-5 {
-    &.progress-bar,
-    &.badge,
-    &.playerhud-widget-container .progress-bar,
-    .block_playerhud &.progress-bar {
-        /* stylelint-disable csstree/validator */
-        background:
-            linear-gradient(
-                45deg,
-                var(--primary, #0d6efd),
-                var(--purple, #6f42c1)
-            );
-        /* stylelint-enable csstree/validator */
-        color: var(--light, #fff);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+    .ph-progress-container {
+        height: 1.5rem;
+        background-color: var(--gray-200, #e9ecef);
+        border-radius: 1rem;
+        overflow: hidden;
+        margin-top: 5px;
+        width: 100%;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
     }
 
-    .btn-ph-level-border,
-    &.playerhud-widget-container .btn-ph-level-border {
-        border-color: var(--primary, #0d6efd);
-        color: var(--primary, #0d6efd);
+    .ph-progress-text {
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: #fff;
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+        white-space: nowrap;
+        padding-inline: 5px;
+        display: inline-block;
+    }
+
+    .ph-progress-bar {
+        border-radius: 0;
+        transition: width 0.6s ease;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 0.75rem;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-ph-level-border {
+        background-color: var(--card-bg, #fff);
+        border: 1px solid var(--gray-300, #dee2e6);
+        color: var(--gray-700, #495057);
+        font-weight: 700;
+        transition: all 0.2s ease-in-out;
 
         &:hover {
-            /* stylelint-disable csstree/validator */
-            background:
-                linear-gradient(
-                    45deg,
-                    var(--primary, #0d6efd),
-                    var(--purple, #6f42c1)
-                );
-            /* stylelint-enable csstree/validator */
-            border-color: transparent;
+            background-color: var(--gray-200, #e9ecef);
+        }
+    }
+
+    .ph-lvl-tier-1 {
+        @include ph-tier(var(--gray-600, #6c757d));
+    }
+    .ph-lvl-tier-2 {
+        @include ph-tier(var(--success, #208337));
+    }
+    .ph-lvl-tier-3 {
+        @include ph-tier(var(--primary, #0b55c4));
+    }
+    .ph-lvl-tier-4 {
+        @include ph-tier(var(--purple, #6f42c1));
+    }
+
+    // Tier 5 (Special Gradient).
+    .ph-lvl-tier-5 {
+        &.progress-bar,
+        &.badge,
+        &.playerhud-widget-container .progress-bar {
+            background: linear-gradient(45deg, var(--primary, #0d6efd), var(--purple, #6f42c1));
             color: var(--light, #fff);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-ph-level-border,
+        &.playerhud-widget-container .btn-ph-level-border {
+            border-color: var(--primary, #0d6efd);
+            color: var(--primary, #0d6efd);
+
+            &:hover {
+                background: linear-gradient(45deg, var(--primary, #0d6efd), var(--purple, #6f42c1));
+                border-color: transparent;
+                color: var(--light, #fff);
+            }
+        }
+
+        &.playerhud-widget-container {
+            border-inline-start-color: var(--primary, #0d6efd);
         }
     }
 
-    &.playerhud-widget-container {
-        border-inline-start-color: var(--primary, #0d6efd);
+    // Responsive overrides for borders.
+    @media (max-width: 767.98px) {
+        .playerhud-widget-container {
+            &.ph-lvl-tier-1 {
+                border-top-color: var(--gray-600, #6c757d);
+            }
+            &.ph-lvl-tier-2 {
+                border-top-color: var(--success, #208337);
+            }
+            &.ph-lvl-tier-3 {
+                border-top-color: var(--primary, #0b55c4);
+            }
+            &.ph-lvl-tier-4 {
+                border-top-color: var(--purple, #6f42c1);
+            }
+            &.ph-lvl-tier-5 {
+                border-top-color: var(--primary, #0d6efd);
+            }
+        }
     }
 }
 
-// Responsive overrides for borders.
-@media (max-width: 767.98px) {
-    .playerhud-widget-container {
-        &.ph-lvl-tier-1 {
-            border-top-color: var(--gray-600, #6c757d);
-        }
-        &.ph-lvl-tier-2 {
-            border-top-color: var(--success, #208337);
-        }
-        &.ph-lvl-tier-3 {
-            border-top-color: var(--primary, #0b55c4);
-        }
-        &.ph-lvl-tier-4 {
-            border-top-color: var(--purple, #6f42c1);
-        }
-        &.ph-lvl-tier-5 {
-            border-top-color: var(--primary, #0d6efd);
-        }
-    }
-}
+/* stylelint-enable csstree/validator */

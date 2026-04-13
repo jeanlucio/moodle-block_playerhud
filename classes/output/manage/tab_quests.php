@@ -342,7 +342,7 @@ class tab_quests implements renderable {
         foreach ($quests as $q) {
             $rewardtext = '';
             if ($q->reward_xp > 0) {
-                $rewardtext .= $q->reward_xp . ' XP';
+                $rewardtext .= $q->reward_xp . ' ' . get_string('xp', 'block_playerhud');
             }
             if ($q->reward_itemid > 0 && isset($itemnames[$q->reward_itemid])) {
                 $rewardtext .= ($rewardtext ? ' + ' : '') . $itemnames[$q->reward_itemid];

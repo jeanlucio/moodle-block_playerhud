@@ -95,6 +95,14 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 });
             });
 
+            // Handle sort selector redirects.
+            $(document).on('change', '.ph-sort-selector', function() {
+                const targetUrl = $(this).val();
+                if (targetUrl) {
+                    window.location.href = targetUrl;
+                }
+            });
+
             // Event Delegation for clicking on items.
             $(document).on('click', '.ph-item-trigger', function(e) {
                 e.preventDefault();

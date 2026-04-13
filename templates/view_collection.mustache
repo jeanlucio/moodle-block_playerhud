@@ -51,8 +51,7 @@
         <label for="ph-collection-sort" class="me-2 small text-muted fw-bold">
             <i class="fa fa-filter" aria-hidden="true"></i> {{#str}} sort_by, block_playerhud {{/str}}
         </label>
-        <select id="ph-collection-sort" class="form-select form-select-sm shadow-sm border-secondary w-auto"
-                onchange="window.location.href=this.value"
+        <select id="ph-collection-sort" class="form-select form-select-sm shadow-sm border-secondary w-auto ph-sort-selector"
                 aria-label="{{#str}} sort_by, block_playerhud {{/str}}">
             {{#sort_options}}
                 <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
@@ -92,8 +91,7 @@
 
         {{! MODAL STYLE ITEM COUNTER (Dark with "x") }}
         {{#count}}
-            <span class="badge bg-dark text-white rounded-pill position-absolute shadow-sm"
-                  style="top: 8px; inset-inline-end: 8px; z-index: 5; font-size: 0.85rem;"
+            <span class="badge bg-dark text-white rounded-pill position-absolute shadow-sm ph-count-badge"
                   title="{{#str}} qty, block_playerhud {{/str}}">
                 x{{count}}
             </span>
