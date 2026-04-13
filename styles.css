@@ -872,6 +872,13 @@
     border: 2px solid var(--success, #198754);
     box-shadow: 0 0.25rem 0.5rem var(--ph-quest-ready-shadow, rgba(25, 135, 84, 0.15));
 }
+.block_playerhud .ph-count-badge,
+.path-blocks-playerhud .ph-count-badge {
+    top: 8px;
+    inset-inline-end: 8px;
+    z-index: 5;
+    font-size: 0.85rem;
+}
 
 .block_playerhud .ph-col-select,
 .path-blocks-playerhud .ph-col-select,
@@ -1201,6 +1208,11 @@
 .filter_playerhud #ph-distribute-table .ph-dist-item-emoji {
     font-size: 28px;
     line-height: 1;
+}
+.block_playerhud .ph-ai-hidden,
+.path-blocks-playerhud .ph-ai-hidden,
+.filter_playerhud .ph-ai-hidden {
+    display: none;
 }
 
 .block_playerhud .ph-modal-zindex,
