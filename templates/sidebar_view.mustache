@@ -1,5 +1,5 @@
 {{!
-    This file is part of Moodle - http://moodle.org/
+    This file is part of Moodle - https://moodle.org/
 
     Moodle is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -12,13 +12,13 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 }}
 {{!
     @template block_playerhud/sidebar_view
     @package block_playerhud
     @copyright 2026 Jean Lúcio
-    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
     Example context (json):
     {
@@ -110,9 +110,9 @@
                 <span class="small">{{label}}</span>
                 <span class="small fw-semibold">{{value_display}}</span>
             </div>
-            <div class="ph-karma-bar" role="meter"
-                 aria-valuenow="{{value}}" aria-valuemin="-999" aria-valuemax="999"
-                 aria-label="{{label}}: {{value_display}}">
+                <div class="ph-karma-bar" role="progressbar"
+                    aria-valuenow="{{value}}" aria-valuemin="-999" aria-valuemax="999"
+                    aria-label="{{label}}: {{value_display}}">
                 <div class="ph-karma-fill {{bar_class}}" style="width: {{percent}}%;"></div>
             </div>
         </div>
