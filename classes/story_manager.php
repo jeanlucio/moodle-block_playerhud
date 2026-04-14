@@ -199,13 +199,7 @@ class story_manager {
 
         // Karma adjustment.
         if ((int) $choice->karma_delta !== 0) {
-            $newkarma = $progress->karma + (int) $choice->karma_delta;
-            $DB->set_field(
-                'block_playerhud_rpg_progress',
-                'karma',
-                $newkarma,
-                ['id' => $progress->id]
-            );
+            game::adjust_karma($instanceid, $userid, (int) $choice->karma_delta);
             $sign = ((int) $choice->karma_delta > 0) ? '+' : '';
             $events[] = [
                 'type' => 'karma',

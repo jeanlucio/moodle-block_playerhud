@@ -53,4 +53,65 @@
         border: 2px solid var(--white, #fff);
         pointer-events: none;
     }
+
+    // ── Character card (RPG identity block) ────────────────────────────────────
+
+    .ph-char-card {
+        background-color: var(--gray-100, #f8f9fa);
+        border-radius: 0.5rem;
+        border: 1px solid var(--gray-200, #e9ecef);
+    }
+
+    .ph-char-portrait-wrap {
+        display: inline-block;
+        position: relative;
+    }
+
+    .ph-char-portrait {
+        width: 80px;
+        height: 80px;
+        max-width: 80px;
+        max-height: 80px;
+        border-radius: 50%;
+        border: 3px solid var(--gray-300, #dee2e6);
+        object-fit: cover;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .ph-char-portrait-fallback {
+        font-size: 80px;
+        line-height: 1;
+        color: var(--gray-400, #ced4da);
+        display: block;
+        text-align: center;
+    }
+
+    .ph-char-fullname {
+        font-size: 0.95rem;
+    }
+
+    .ph-tier-name {
+        color: var(--gray-600, #6c757d);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .ph-tier-stars {
+        font-size: 1rem;
+        color: var(--bs-warning, #ffc107);
+        letter-spacing: 0.1em;
+    }
+
+    .ph-char-empty {
+        border: 2px dashed var(--gray-300, #dee2e6);
+        border-radius: 0.5rem;
+        opacity: 0.85;
+    }
+
+    .ph-section-divider {
+        margin-block: 0.5rem;
+        opacity: 0.2;
+    }
 }

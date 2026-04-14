@@ -248,6 +248,66 @@
     border: 2px solid var(--white, #fff);
     pointer-events: none;
 }
+.block_playerhud .ph-char-card,
+.path-blocks-playerhud .ph-char-card {
+    background-color: var(--gray-100, #f8f9fa);
+    border-radius: 0.5rem;
+    border: 1px solid var(--gray-200, #e9ecef);
+}
+.block_playerhud .ph-char-portrait-wrap,
+.path-blocks-playerhud .ph-char-portrait-wrap {
+    display: inline-block;
+    position: relative;
+}
+.block_playerhud .ph-char-portrait,
+.path-blocks-playerhud .ph-char-portrait {
+    width: 80px;
+    height: 80px;
+    max-width: 80px;
+    max-height: 80px;
+    border-radius: 50%;
+    border: 3px solid var(--gray-300, #dee2e6);
+    -o-object-fit: cover;
+    object-fit: cover;
+    display: block;
+    margin: 0 auto;
+}
+.block_playerhud .ph-char-portrait-fallback,
+.path-blocks-playerhud .ph-char-portrait-fallback {
+    font-size: 80px;
+    line-height: 1;
+    color: var(--gray-400, #ced4da);
+    display: block;
+    text-align: center;
+}
+.block_playerhud .ph-char-fullname,
+.path-blocks-playerhud .ph-char-fullname {
+    font-size: 0.95rem;
+}
+.block_playerhud .ph-tier-name,
+.path-blocks-playerhud .ph-tier-name {
+    color: var(--gray-600, #6c757d);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.block_playerhud .ph-tier-stars,
+.path-blocks-playerhud .ph-tier-stars {
+    font-size: 1rem;
+    color: var(--bs-warning, #ffc107);
+    letter-spacing: 0.1em;
+}
+.block_playerhud .ph-char-empty,
+.path-blocks-playerhud .ph-char-empty {
+    border: 2px dashed var(--gray-300, #dee2e6);
+    border-radius: 0.5rem;
+    opacity: 0.85;
+}
+.block_playerhud .ph-section-divider,
+.path-blocks-playerhud .ph-section-divider {
+    margin-block: 0.5rem;
+    opacity: 0.2;
+}
 
 .block_playerhud .playerhud-widget-container,
 .path-blocks-playerhud .playerhud-widget-container,

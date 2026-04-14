@@ -39,7 +39,7 @@ class block_playerhud extends block_base {
             return $this->content;
         }
 
-        global $USER, $COURSE, $OUTPUT;
+        global $USER, $COURSE, $OUTPUT, $DB;
 
         $this->content = new \stdClass();
         $this->content->text = '';
@@ -85,6 +85,7 @@ class block_playerhud extends block_base {
 
             // Default settings.
             $config->enable_ranking = isset($config->enable_ranking) ? $config->enable_ranking : 1;
+            $config->enable_rpg     = isset($config->enable_rpg) ? (int) $config->enable_rpg : 1;
 
             $stats = \block_playerhud\game::get_game_stats($config, $this->instance->id, $player->currentxp);
 
@@ -171,6 +172,63 @@ class block_playerhud extends block_base {
             // Grid Links.
             $urlbase = new \moodle_url('/blocks/playerhud/view.php', ['id' => $COURSE->id, 'instanceid' => $this->instance->id]);
 
+            // RPG character identity data (portrait, tier, karma) — only when RPG mode is on.
+            $classdata = null;
+            $karmadata = null;
+            $urlclassselect = null;
+            if (!empty($config->enable_rpg)) {
+                $rpgprogress = \block_playerhud\game::get_player_class($this->instance->id, $USER->id);
+                if ($rpgprogress && (int) $rpgprogress->classid > 0) {
+                    $class = $DB->get_record('block_playerhud_classes', ['id' => $rpgprogress->classid]);
+                    if ($class) {
+                        $portraittier = \block_playerhud\utils::get_class_portrait_tier(
+                            $this->instance->id,
+                            $USER->id
+                        );
+                        $portraiturl = \block_playerhud\utils::get_class_evolution_image_by_tier(
+                            $class,
+                            $portraittier,
+                            $context
+                        );
+                        $tierstars = [];
+                        for ($i = 1; $i <= 5; $i++) {
+                            $tierstars[] = ['filled' => ($i <= $portraittier)];
+                        }
+                        $classdata = [
+                            'classname'    => format_string($class->name),
+                            'fullname'     => format_string($class->name) . ' ' . $USER->firstname,
+                            'portrait_url' => $portraiturl,
+                            'tier'         => $portraittier,
+                            'tier_name'    => get_string('class_tier_' . $portraittier, 'block_playerhud'),
+                            'tier_stars'   => $tierstars,
+                        ];
+                    }
+                }
+
+                $karma = \block_playerhud\game::get_player_karma($this->instance->id, $USER->id);
+                $karmapercent = max(0, min(100, (int) round(($karma + 999) / 1998 * 100)));
+                if ($karma < 0) {
+                    $karmabarclass = 'ph-karma-fill--evil';
+                } else if ($karma > 0) {
+                    $karmabarclass = 'ph-karma-fill--good';
+                } else {
+                    $karmabarclass = 'ph-karma-fill--neutral';
+                }
+                $karmadata = [
+                    'value'         => $karma,
+                    'value_display' => ($karma > 0 ? '+' : '') . $karma,
+                    'percent'       => $karmapercent,
+                    'bar_class'     => $karmabarclass,
+                    'label'         => get_string('karma', 'filter_playerhud'),
+                ];
+
+                $urlclassselect = (new \moodle_url('/blocks/playerhud/view.php', [
+                    'id'         => $COURSE->id,
+                    'instanceid' => $this->instance->id,
+                    'tab'        => 'class_select',
+                ]))->out(false);
+            }
+
             // Quest notification dot: show when a reward is waiting to be claimed.
             $hasclaimable = \block_playerhud\quest::has_claimable_quests(
                 $this->instance->id,
@@ -182,8 +240,12 @@ class block_playerhud extends block_base {
 
             // Final Data.
             $renderdata = [
-                'username'    => fullname($USER),
-                'userpicture' => $OUTPUT->user_picture($USER, ['size' => 100]),
+                'username'         => fullname($USER),
+                'userpicture'      => $OUTPUT->user_picture($USER, ['size' => 50]),
+                'enable_rpg'       => !empty($config->enable_rpg),
+                'classdata'        => $classdata,
+                'karma_data'       => $karmadata,
+                'url_class_select' => $urlclassselect,
                 'xp'          => $xpdisplay,
                 'level'       => $stats['level'] . '/' . $stats['max_levels'],
                 'level_class' => $stats['level_class'],

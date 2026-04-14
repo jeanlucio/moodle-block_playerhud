@@ -62,6 +62,19 @@ $PAGE->set_pagelayout('incourse');
 $PAGE->set_title(get_string('pluginname', 'block_playerhud'));
 $PAGE->set_heading(format_string($course->fullname));
 
+// Load block config for feature flags.
+$blockconfig = unserialize(base64_decode($bi->configdata));
+if (!$blockconfig) {
+    $blockconfig = new stdClass();
+}
+$rpgmodeenabled = !empty($blockconfig->enable_rpg) || !isset($blockconfig->enable_rpg);
+
+// Redirect RPG tabs to items when RPG mode is disabled.
+$rpgtabs = ['classes', 'chapters'];
+if (in_array($activetab, $rpgtabs) && !$rpgmodeenabled) {
+    redirect(new moodle_url($baseurl, ['tab' => 'items']));
+}
+
 // Action processing (Global Controllers).
 
 // Action: Toggle Item Status.
@@ -584,14 +597,17 @@ $tabsdef = [
     'items'   => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
     'trades'  => ['icon' => '🛒', 'text' => get_string('tab_trades', 'block_playerhud')],
     'quests'  => ['icon' => '🎯', 'text' => get_string('tab_quests', 'block_playerhud')],
-    'classes'  => ['icon' => '⚔️', 'text' => get_string('tab_classes', 'block_playerhud')],
-    'chapters' => ['icon' => '📖', 'text' => get_string('tab_chapters', 'block_playerhud')],
+    'classes'  => $rpgmodeenabled ? ['icon' => '⚔️', 'text' => get_string('tab_classes', 'block_playerhud')] : null,
+    'chapters' => $rpgmodeenabled ? ['icon' => '📖', 'text' => get_string('tab_chapters', 'block_playerhud')] : null,
     'reports'  => ['icon' => '📊', 'text' => get_string('tab_reports', 'block_playerhud')],
     'config'  => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
 ];
 
 $tabsdata = [];
 foreach ($tabsdef as $key => $data) {
+    if ($data === null) {
+        continue;
+    }
     $tabsdata[] = [
         'active' => ($activetab == $key),
         'url' => (new moodle_url($baseurl, ['tab' => $key]))->out(false),

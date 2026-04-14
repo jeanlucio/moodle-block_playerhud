@@ -59,10 +59,12 @@ class block_playerhud_edit_form extends block_edit_form {
         $mform->setDefault('config_max_levels', 20);
         $mform->addHelpButton('config_max_levels', 'max_levels', 'block_playerhud');
 
-        // Section 2: RPG Mode (Hidden).
-        $mform->addElement('hidden', 'config_enable_rpg');
-        $mform->setType('config_enable_rpg', PARAM_INT);
+        // Section 2: RPG Mode.
+        $mform->addElement('header', 'config_rpg_hdr', get_string('rpg_mode_hdr', 'block_playerhud'));
+
+        $mform->addElement('selectyesno', 'config_enable_rpg', get_string('enable_rpg_mode', 'block_playerhud'));
         $mform->setDefault('config_enable_rpg', 1);
+        $mform->addHelpButton('config_enable_rpg', 'enable_rpg_mode', 'block_playerhud');
 
         // Section 3: Ranking.
         $mform->addElement('header', 'config_ranking_hdr', get_string('ranking_hdr', 'block_playerhud'));

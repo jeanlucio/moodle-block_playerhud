@@ -646,6 +646,46 @@ class game {
     }
 
     /**
+     * Get the current karma value for a player.
+     *
+     * Returns 0 when no RPG progress record exists yet.
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @param int $userid The user ID.
+     * @return int The current karma value.
+     */
+    public static function get_player_karma(int $blockinstanceid, int $userid): int {
+        global $DB;
+        $karma = $DB->get_field('block_playerhud_rpg_progress', 'karma', [
+            'blockinstanceid' => $blockinstanceid,
+            'userid' => $userid,
+        ]);
+        return ($karma !== false) ? (int) $karma : 0;
+    }
+
+    /**
+     * Adjust a player's karma by delta, clamped to [-999, 999].
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @param int $userid The user ID.
+     * @param int $delta Positive or negative karma change.
+     * @return int The new karma value after adjustment, or 0 if no record exists.
+     */
+    public static function adjust_karma(int $blockinstanceid, int $userid, int $delta): int {
+        global $DB;
+        $progress = $DB->get_record('block_playerhud_rpg_progress', [
+            'blockinstanceid' => $blockinstanceid,
+            'userid' => $userid,
+        ]);
+        if (!$progress) {
+            return 0;
+        }
+        $newkarma = max(-999, min(999, (int) $progress->karma + $delta));
+        $DB->set_field('block_playerhud_rpg_progress', 'karma', $newkarma, ['id' => $progress->id]);
+        return $newkarma;
+    }
+
+    /**
      * Get all trades with their requirements and rewards for a specific block instance.
      * Optimized to avoid N+1 query problems using single batch queries.
      *

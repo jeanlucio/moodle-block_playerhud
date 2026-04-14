@@ -64,6 +64,15 @@ class edit_quest_form extends \moodleform {
         );
         $tradeoptions = $nooption + ($alltrades ?: []);
 
+        // Chapters for story-chapter quest.
+        $allchapters = $DB->get_records_menu(
+            'block_playerhud_chapters',
+            ['blockinstanceid' => $instanceid],
+            'sortorder ASC',
+            'id, title'
+        );
+        $chapteroptions = [0 => '— ' . get_string('select') . ' —'] + ($allchapters ?: []);
+
         // Quest type options.
         $typeoptions = [
             \block_playerhud\quest::TYPE_LEVEL          => get_string('quest_type_level', 'block_playerhud'),
@@ -74,6 +83,7 @@ class edit_quest_form extends \moodleform {
             \block_playerhud\quest::TYPE_SPECIFIC_ITEM  => get_string('quest_type_specific_item', 'block_playerhud'),
             \block_playerhud\quest::TYPE_SPECIFIC_TRADE => get_string('quest_type_specific_trade', 'block_playerhud'),
             \block_playerhud\quest::TYPE_ACTIVITY       => get_string('quest_type_activity', 'block_playerhud'),
+            \block_playerhud\quest::TYPE_CHAPTER        => get_string('quest_type_chapter', 'block_playerhud'),
         ];
 
         // Course modules with completion enabled.
@@ -107,6 +117,7 @@ class edit_quest_form extends \moodleform {
         $mform->setType('target_value', PARAM_INT);
         $mform->setDefault('target_value', 1);
         $mform->hideIf('target_value', 'type', 'eq', (string)\block_playerhud\quest::TYPE_ACTIVITY);
+        $mform->hideIf('target_value', 'type', 'eq', (string)\block_playerhud\quest::TYPE_CHAPTER);
 
         $mform->addElement('select', 'req_itemid', get_string('quest_req_item', 'block_playerhud'), $itemoptions);
         $mform->setType('req_itemid', PARAM_INT);
@@ -122,6 +133,16 @@ class edit_quest_form extends \moodleform {
         $mform->setType('activity_cmid', PARAM_INT);
         $mform->setDefault('activity_cmid', 0);
         $mform->hideIf('activity_cmid', 'type', 'neq', (string)\block_playerhud\quest::TYPE_ACTIVITY);
+
+        $mform->addElement(
+            'select',
+            'chapter_id',
+            get_string('chapter_quest_label', 'block_playerhud'),
+            $chapteroptions
+        );
+        $mform->setType('chapter_id', PARAM_INT);
+        $mform->setDefault('chapter_id', 0);
+        $mform->hideIf('chapter_id', 'type', 'neq', (string)\block_playerhud\quest::TYPE_CHAPTER);
 
         // Rewards header.
         $mform->addElement('header', 'rewards_hdr', get_string('quest_rewards_hdr', 'block_playerhud'));
@@ -181,7 +202,11 @@ class edit_quest_form extends \moodleform {
             $errors['name'] = get_string('required');
         }
 
-        if ($type !== \block_playerhud\quest::TYPE_ACTIVITY) {
+        $nontarget = [
+            \block_playerhud\quest::TYPE_ACTIVITY,
+            \block_playerhud\quest::TYPE_CHAPTER,
+        ];
+        if (!in_array($type, $nontarget)) {
             if (!isset($data['target_value']) || (int)$data['target_value'] < 1) {
                 $errors['target_value'] = get_string('quest_validate_target', 'block_playerhud');
             }
@@ -197,6 +222,10 @@ class edit_quest_form extends \moodleform {
 
         if ($type === \block_playerhud\quest::TYPE_ACTIVITY && empty($data['activity_cmid'])) {
             $errors['activity_cmid'] = get_string('required');
+        }
+
+        if ($type === \block_playerhud\quest::TYPE_CHAPTER && empty($data['chapter_id'])) {
+            $errors['chapter_id'] = get_string('required');
         }
 
         if (!is_numeric($data['reward_xp']) || (int)$data['reward_xp'] < 0) {

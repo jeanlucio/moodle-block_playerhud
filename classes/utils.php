@@ -121,7 +121,8 @@ class utils {
     /**
      * Returns the class evolution image URL based on current level.
      *
-     * Logic: Proportional Visual Evolution (Tiers 1-5).
+     * Calculates the proportional tier (1-5) from the XP level and delegates
+     * to get_class_evolution_image_by_tier().
      *
      * @param \stdClass $class The class object.
      * @param int $level Current user level.
@@ -131,10 +132,7 @@ class utils {
     public static function get_class_evolution_image($class, $level, $context) {
         global $DB;
 
-        // 1. Fetch max level config from Block Instance settings.
-        // We no longer query a custom 'playerhud' table.
-        // $class->blockinstanceid must exist in the classes table.
-        $maxlevels = 20; // Default fallback.
+        $maxlevels = 20;
 
         if (!empty($class->blockinstanceid)) {
             $blockinstance = $DB->get_record('block_instances', ['id' => $class->blockinstanceid]);
@@ -146,16 +144,32 @@ class utils {
             }
         }
 
-        // 2. Calculate proportional tier (splits journey into 5 visual stages).
-        $tier = ceil(($level / $maxlevels) * 5);
+        $tier = max(1, min(5, (int) ceil(($level / $maxlevels) * 5)));
 
-        // Clamping tier between 1 and 5.
-        $tier = max(1, min(5, (int)$tier));
+        return self::get_class_evolution_image_by_tier($class, $tier, $context);
+    }
 
+    /**
+     * Returns the class evolution image URL for a pre-calculated tier (1-5).
+     *
+     * Performs a cascade fallback: if no image is configured for the requested
+     * tier, tries the previous tier until tier 1. Returns null if no image
+     * is found at any tier.
+     *
+     * @param \stdClass $class The class object (must have ->id).
+     * @param int $tier Desired tier, 1-5.
+     * @param \context $context The block context.
+     * @return string|null The image URL or null.
+     */
+    public static function get_class_evolution_image_by_tier(
+        \stdClass $class,
+        int $tier,
+        \context $context
+    ): ?string {
+        $tier = max(1, min(5, $tier));
         $chosentier = $tier;
-        $fs = get_file_storage(); // Instantiated outside loop for performance.
+        $fs = get_file_storage();
 
-        // 3. Reverse loop to find the nearest image (Cascade fallback).
         while ($chosentier >= 1) {
             $files = $fs->get_area_files(
                 $context->id,
@@ -182,5 +196,50 @@ class utils {
         }
 
         return null;
+    }
+
+    /**
+     * Calculate the class portrait tier (1-5) based on completed story chapters.
+     *
+     * This is independent from the XP-based tier used for widget colour coding.
+     * Mapping: 0 chapters → 1, 1 → 2, 2-3 → 3, 4-5 → 4, 6+ → 5.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $userid User ID.
+     * @return int Portrait tier between 1 and 5.
+     */
+    public static function get_class_portrait_tier(int $instanceid, int $userid): int {
+        global $DB;
+
+        $progress = $DB->get_record(
+            'block_playerhud_rpg_progress',
+            ['blockinstanceid' => $instanceid, 'userid' => $userid]
+        );
+
+        if (!$progress || empty($progress->completed_chapters)) {
+            return 1;
+        }
+
+        $completed = json_decode($progress->completed_chapters, true);
+
+        if (!is_array($completed)) {
+            return 1;
+        }
+
+        $count = count($completed);
+
+        if ($count === 0) {
+            return 1;
+        }
+        if ($count === 1) {
+            return 2;
+        }
+        if ($count <= 3) {
+            return 3;
+        }
+        if ($count <= 5) {
+            return 4;
+        }
+        return 5;
     }
 }

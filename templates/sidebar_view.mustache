@@ -29,7 +29,7 @@
         "xp": "100 / 500 XP",
         "viewurl": "#",
         "progress": 20,
-        "isteacher": true,
+        "isteacher": false,
         "manageurl": "#",
         "has_items": true,
         "items": [
@@ -41,6 +41,28 @@
                 "description": "Mana restore"
             }
         ],
+        "classdata": {
+            "classname": "Mago",
+            "fullname": "Mago Jean",
+            "portrait_url": "https://example.com/portrait.png",
+            "tier": 2,
+            "tier_name": "Iniciado",
+            "tier_stars": [
+                {"filled": true},
+                {"filled": true},
+                {"filled": false},
+                {"filled": false},
+                {"filled": false}
+            ]
+        },
+        "karma_data": {
+            "value": 30,
+            "value_display": "+30",
+            "percent": 65,
+            "bar_class": "ph-karma-fill--good",
+            "label": "Destino / Karma"
+        },
+        "url_class_select": "#",
         "url_quests": "#",
         "ranking": {
             "url": "#",
@@ -54,29 +76,91 @@
 }}
 <div class="block_playerhud_sidebar p-2">
 
-    {{! 1. PROFILE & AVATAR }}
+    {{! ── CARD 1: PERSONAGEM (só quando Modo RPG está ativo) ── }}
+    {{#enable_rpg}}
+    {{#classdata}}
+    <div class="ph-char-card text-center mb-2 p-2">
+
+        {{! Portrait }}
+        <div class="ph-char-portrait-wrap mb-1">
+            {{#portrait_url}}
+            <img src="{{portrait_url}}" alt="{{classname}}" class="ph-char-portrait">
+            {{/portrait_url}}
+            {{^portrait_url}}
+            <i class="fa fa-user-circle ph-char-portrait-fallback" aria-hidden="true"></i>
+            {{/portrait_url}}
+        </div>
+
+        {{! Nome: Classe + Primeiro nome }}
+        <div class="fw-bold ph-char-fullname text-truncate" title="{{fullname}}">
+            {{fullname}}
+        </div>
+
+        {{! Tier: nome + estrelas }}
+        <div class="ph-tier-name small mb-1">{{tier_name}}</div>
+        <div class="ph-tier-stars mb-1" role="img"
+             aria-label="{{tier_name}}: {{tier}} {{#str}} out_of_5, block_playerhud {{/str}}">
+            {{#tier_stars}}{{#filled}}★{{/filled}}{{^filled}}☆{{/filled}}{{/tier_stars}}
+        </div>
+
+        {{! Karma }}
+        {{#karma_data}}
+        <div class="ph-karma-wrap mt-1">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="small">{{label}}</span>
+                <span class="small fw-semibold">{{value_display}}</span>
+            </div>
+            <div class="ph-karma-bar" role="meter"
+                 aria-valuenow="{{value}}" aria-valuemin="-999" aria-valuemax="999"
+                 aria-label="{{label}}: {{value_display}}">
+                <div class="ph-karma-fill {{bar_class}}" style="width: {{percent}}%;"></div>
+            </div>
+        </div>
+        {{/karma_data}}
+
+    </div>
+    {{/classdata}}
+
+    {{! CTA quando sem classe }}
+    {{^classdata}}
+    <div class="ph-char-empty text-center mb-2 p-2">
+        <a href="{{url_class_select}}" class="btn btn-outline-primary btn-sm w-100">
+            <i class="fa fa-magic me-1" aria-hidden="true"></i>
+            {{#str}} choose_class_cta, block_playerhud {{/str}}
+        </a>
+    </div>
+    {{/classdata}}
+
+    <hr class="ph-section-divider">
+    {{/enable_rpg}}
+
+    {{! ── CARD 2: PROGRESSO NO CURSO ── }}
+
+    {{! Foto de perfil + nome }}
     <div class="text-center mb-2">
-        <div class="mb-2 ph-sidebar-avatar-container">
+        <div class="mb-1 ph-sidebar-avatar-container">
             {{{userpicture}}}
         </div>
-        <div class="fw-bold text-truncate px-1" title="{{username}}">
+        <div class="fw-bold text-truncate px-1 small" title="{{username}}">
             {{username}}
         </div>
     </div>
 
-    {{! 2. STATS }}
-    <div class="d-flex justify-content-between align-items-center mb-1 small text-muted px-1">
+    {{! Stats: level + XP }}
+    <div class="d-flex justify-content-between align-items-center mb-1 small px-1">
         <span class="badge {{level_class}} border">{{#str}} level, block_playerhud {{/str}} {{level}}</span>
         <div class="d-flex align-items-center">
-                <span class="badge rounded-pill {{level_class}}">{{xp}}</span>
-                <a href="{{url_history}}" class="ph-help-trigger ms-2"
-                   title="{{#str}} tab_history, block_playerhud {{/str}}" aria-label="{{#str}} tab_history, block_playerhud {{/str}}">
-                    <i class="fa fa-list-alt" aria-hidden="true"></i>
-                </a>
-                <a href="{{viewurl}}&tab=rules" class="ph-help-trigger ms-2"
-                   title="{{#str}} help_btn, block_playerhud {{/str}}" aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
-                    <i class="fa fa-question-circle" aria-hidden="true"></i>
-                </a>
+            <span class="badge rounded-pill {{level_class}}">{{xp}}</span>
+            <a href="{{url_history}}" class="ph-help-trigger ms-2"
+               title="{{#str}} tab_history, block_playerhud {{/str}}"
+               aria-label="{{#str}} tab_history, block_playerhud {{/str}}">
+                <i class="fa fa-list-alt" aria-hidden="true"></i>
+            </a>
+            <a href="{{viewurl}}&tab=rules" class="ph-help-trigger ms-2"
+               title="{{#str}} help_btn, block_playerhud {{/str}}"
+               aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
+            </a>
         </div>
     </div>
 
@@ -88,7 +172,7 @@
         </div>
     </div>
 
-    {{! 3. MASTER PANEL }}
+    {{! Botão Master Panel }}
     {{#isteacher}}
     <div class="mb-3">
         <a href="{{{manageurl}}}" class="btn btn-outline-dark btn-sm w-100 shadow-sm fw-bold">
@@ -97,10 +181,9 @@
     </div>
     {{/isteacher}}
 
-    {{! 4. ACTIONS GRID }}
+    {{! Grid de ações }}
     <div class="ph-sidebar-grid mb-4 {{level_class}}">
 
-        {{! A. Collection / Backpack }}
         <a href="{{viewurl}}"
            class="btn btn-ph-level-border shadow-sm"
            data-bs-toggle="tooltip" data-bs-placement="top"
@@ -109,7 +192,6 @@
             <span aria-hidden="true">🎒</span>
         </a>
 
-        {{! B. Shop }}
         <a href="{{url_shop}}"
            class="btn btn-ph-level-border shadow-sm"
            data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -118,7 +200,6 @@
             <span aria-hidden="true">🛒</span>
         </a>
 
-        {{! C. Quests }}
         <a href="{{url_quests}}"
            class="btn btn-ph-level-border shadow-sm position-relative"
            data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -130,7 +211,6 @@
             {{/has_claimable_quests}}
         </a>
 
-        {{! D. Ranking }}
         {{#ranking}}
         <a href="{{url}}"
            class="btn btn-ph-level-border shadow-sm"
@@ -141,7 +221,6 @@
         </a>
         {{/ranking}}
 
-        {{! E. Exit }}
         <a href="{{url_disable}}"
            class="btn btn-ph-level-border shadow-sm js-disable-hud"
            data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -155,7 +234,7 @@
 
     </div>
 
-    {{! 5. LATEST ITEMS }}
+    {{! Últimos itens }}
     <div class="ph-stash-wrapper {{^has_items}}d-none{{/has_items}}">
         <small class="text-muted text-uppercase fw-bold border-bottom d-block mb-2 pb-1 ph-text-xs">
             {{#str}} latest_items, block_playerhud {{/str}}
