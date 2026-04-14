@@ -82,8 +82,11 @@
                     </a>
                     {{#has_scenes}}
                     <button class="btn btn-sm btn-outline-success me-1"
-                            data-action="test-chapter"
                             data-chapterid="{{id}}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#ph-story-test-modal"
+                            data-toggle="modal"
+                            data-target="#ph-story-test-modal"
                             aria-label="{{str_test}}">
                         <i class="fa fa-gamepad" aria-hidden="true"></i> {{str_test}}
                     </button>
@@ -123,14 +126,14 @@
                 <div class="modal-header">
                     <h5 class="modal-title">{{str_delete_title}}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
-                            aria-label="{{str_close}}"></button>
+                            data-dismiss="modal" aria-label="{{str_close}}"></button>
                 </div>
                 <div class="modal-body">
                     <p id="ph-delete-chapter-msg"></p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary"
-                            data-bs-dismiss="modal">{{str_cancel}}</button>
+                            data-bs-dismiss="modal" data-dismiss="modal">{{str_cancel}}</button>
                     <a id="ph-delete-chapter-url" href="#" class="btn btn-danger">{{str_delete}}</a>
                 </div>
             </div>
@@ -146,8 +149,11 @@
                     <h5 class="modal-title fw-bold">
                         <i class="fa fa-gamepad me-2" aria-hidden="true"></i> {{str_test_title}}
                     </h5>
-                    <button type="button" class="btn-close btn-close-white"
-                            data-bs-dismiss="modal" aria-label="{{str_close}}"></button>
+                    <button type="button" class="ph-modal-close-btn"
+                            data-bs-dismiss="modal" data-dismiss="modal"
+                            aria-label="{{str_close}}">
+                        <i class="fa fa-times" aria-hidden="true"></i>
+                    </button>
                 </div>
                 <div class="modal-body ph-story-modal-body">
                     <div id="ph-test-content" class="ph-story-content"></div>

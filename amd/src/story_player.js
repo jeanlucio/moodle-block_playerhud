@@ -20,7 +20,7 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
+define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification, $) {
 
     var instanceid = 0;
     var courseid = 0;
@@ -30,7 +30,6 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
     var contentEl = null;
     var choicesEl = null;
     var titleEl = null;
-    var bsModal = null;
 
     /**
      * Show the loading spinner inside the modal body.
@@ -51,20 +50,6 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
     /**
      * Open the story modal.
      */
-    function openModal() {
-        if (!modal) {
-            return;
-        }
-        if (bsModal) {
-            bsModal.show();
-            return;
-        }
-        if (typeof window.bootstrap !== 'undefined' && window.bootstrap.Modal) {
-            bsModal = new window.bootstrap.Modal(modal);
-            bsModal.show();
-        }
-    }
-
     /**
      * Update the modal title text.
      *
@@ -96,7 +81,8 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             if (choicesEl) {
                 var footer = '';
                 footer += '<button type="button" class="btn btn-secondary me-2"' +
-                          ' data-bs-dismiss="modal">' + strings.close + '</button>';
+                          ' data-bs-dismiss="modal" data-dismiss="modal">' +
+                          strings.close + '</button>';
                 footer += '<button type="button" class="btn btn-outline-info"' +
                           ' data-action="read-recap"' +
                           ' data-chapterid="' + chapterid + '">' +
@@ -183,6 +169,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             closeBtn.type = 'button';
             closeBtn.className = 'btn btn-secondary';
             closeBtn.setAttribute('data-bs-dismiss', 'modal');
+            closeBtn.setAttribute('data-dismiss', 'modal');
             closeBtn.textContent = strings.close;
             choicesEl.appendChild(closeBtn);
         }
@@ -207,9 +194,16 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         if (!card) {
             return;
         }
+        // Capture the title before stripping data-* attrs used for modal targeting.
+        var chapterTitle = card.getAttribute('data-title') || '';
+
         card.classList.remove('list-group-item-action', 'ph-chapter-item--available');
         card.classList.add('ph-chapter-item--completed');
         card.removeAttribute('data-action');
+        card.removeAttribute('data-bs-toggle');
+        card.removeAttribute('data-bs-target');
+        card.removeAttribute('data-toggle');
+        card.removeAttribute('data-target');
         card.removeAttribute('role');
         card.removeAttribute('tabindex');
 
@@ -228,7 +222,10 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             recapDiv.innerHTML =
                 '<button class="btn btn-sm btn-outline-info"' +
                 ' data-action="read-recap"' +
-                ' data-chapterid="' + chapterid + '">' +
+                ' data-chapterid="' + chapterid + '"' +
+                ' data-title="' + chapterTitle.replace(/"/g, '&quot;') + '"' +
+                ' data-bs-toggle="modal" data-bs-target="#ph-story-modal"' +
+                ' data-toggle="modal" data-target="#ph-story-modal">' +
                 '<i class="fa fa-history" aria-hidden="true"></i> ' + strings.readAgain +
                 '</button>';
             card.appendChild(recapDiv);
@@ -319,6 +316,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     closeBtn.type = 'button';
                     closeBtn.className = 'btn btn-secondary';
                     closeBtn.setAttribute('data-bs-dismiss', 'modal');
+            closeBtn.setAttribute('data-dismiss', 'modal');
                     closeBtn.textContent = strings.close;
                     choicesEl.innerHTML = '';
                     choicesEl.appendChild(closeBtn);
@@ -354,38 +352,44 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             choicesEl = document.getElementById('ph-story-choices');
             titleEl = document.getElementById('ph-story-title');
 
-            document.body.addEventListener('click', function(e) {
-                var opener = e.target.closest('[data-action="open-chapter"]');
-                if (opener) {
-                    e.preventDefault();
-                    var cid = parseInt(opener.getAttribute('data-chapterid'), 10);
-                    var title = opener.getAttribute('data-title') || '';
-                    updateTitle(title);
-                    openModal();
-                    loadScene(cid);
-                    return;
-                }
-
-                var recap = e.target.closest('[data-action="read-recap"]');
-                if (recap) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    var rcid = parseInt(recap.getAttribute('data-chapterid'), 10);
-                    var rtitle = recap.getAttribute('data-title') || '';
-                    if (rtitle) {
-                        updateTitle(rtitle);
-                    }
-                    openModal();
-                    loadRecap(rcid);
-                    return;
-                }
-            });
-
+            // Move modal to <body> to avoid z-index conflicts with the block drawer.
             if (modal) {
-                modal.addEventListener('hidden.bs.modal', function() {
-                    bsModal = null;
+                document.body.appendChild(modal);
+            }
+
+            // Use jQuery's .on() so this works in both:
+            // - Moodle 4.5 (Bootstrap 4): show.bs.modal fires as a jQuery event.
+            // - Moodle 5.1 (Bootstrap 5): Bootstrap 5 also triggers a jQuery event
+            //   when window.jQuery is present (via its EventHandler layer).
+            if (modal) {
+                $(modal).on('show.bs.modal', function(e) {
+                    var trigger = e.relatedTarget;
+                    if (!trigger) {
+                        return;
+                    }
+                    var chid = parseInt(trigger.getAttribute('data-chapterid'), 10);
+                    var title = trigger.getAttribute('data-title') || '';
+                    updateTitle(title);
+                    showLoader();
+                    if (trigger.getAttribute('data-action') === 'read-recap') {
+                        loadRecap(chid);
+                    } else {
+                        loadScene(chid);
+                    }
                 });
             }
+
+            // The "Read again" button rendered inside the modal footer (by renderNode
+            // when a chapter finishes) has no data-toggle — handle it with delegation.
+            document.addEventListener('click', function(e) {
+                var btn = e.target.closest('[data-action="read-recap"]');
+                if (!btn || !modal || !modal.contains(btn)) {
+                    return;
+                }
+                var chid = parseInt(btn.getAttribute('data-chapterid'), 10);
+                showLoader();
+                loadRecap(chid);
+            });
         },
     };
 });

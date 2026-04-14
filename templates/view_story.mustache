@@ -66,6 +66,10 @@
              data-action="open-chapter"
              data-chapterid="{{id}}"
              data-title="{{title}}"
+             data-bs-toggle="modal"
+             data-bs-target="#ph-story-modal"
+             data-toggle="modal"
+             data-target="#ph-story-modal"
              role="button"
              tabindex="0"
              {{/is_available}}>
@@ -84,7 +88,11 @@
                 <button class="btn btn-sm btn-outline-info"
                         data-action="read-recap"
                         data-chapterid="{{id}}"
-                        data-title="{{title}}">
+                        data-title="{{title}}"
+                        data-bs-toggle="modal"
+                        data-bs-target="#ph-story-modal"
+                        data-toggle="modal"
+                        data-target="#ph-story-modal">
                     <i class="fa fa-history" aria-hidden="true"></i> {{str_recap}}
                 </button>
             </div>
@@ -111,8 +119,11 @@
                     <h5 class="modal-title fw-bold" id="ph-story-title">
                         <i class="fa fa-book me-2" aria-hidden="true"></i> {{str_story}}
                     </h5>
-                    <button type="button" class="btn-close btn-close-white"
-                            data-bs-dismiss="modal" aria-label="{{str_close}}"></button>
+                    <button type="button" class="ph-modal-close-btn"
+                            data-bs-dismiss="modal" data-dismiss="modal"
+                            aria-label="{{str_close}}">
+                        <i class="fa fa-times" aria-hidden="true"></i>
+                    </button>
                 </div>
                 <div class="modal-body ph-story-modal-body">
                     <div id="ph-story-content" class="ph-story-content">

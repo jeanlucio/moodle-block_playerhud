@@ -20,31 +20,19 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
+define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification, $) {
 
     var instanceid = 0;
     var courseid = 0;
+    var strings = {};
 
     var testModal = null;
     var testContent = null;
     var testChoices = null;
-    var bsTestModal = null;
 
     /**
      * Open the test/preview modal.
      */
-    function openTestModal() {
-        if (!testModal) {
-            return;
-        }
-        if (typeof window.bootstrap !== 'undefined' && window.bootstrap.Modal) {
-            if (!bsTestModal) {
-                bsTestModal = new window.bootstrap.Modal(testModal);
-            }
-            bsTestModal.show();
-        }
-    }
-
     /**
      * Show a loading spinner in the test modal body.
      */
@@ -58,6 +46,21 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         if (testChoices) {
             testChoices.innerHTML = '';
         }
+    }
+
+    /**
+     * Build a close button for the modal footer.
+     *
+     * @return {HTMLButtonElement} Close button element.
+     */
+    function buildCloseBtn() {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-secondary';
+        btn.setAttribute('data-bs-dismiss', 'modal');
+        btn.setAttribute('data-dismiss', 'modal');
+        btn.textContent = strings.close || 'Close';
+        return btn;
     }
 
     /**
@@ -75,9 +78,8 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     '</div>';
             }
             if (testChoices) {
-                testChoices.innerHTML =
-                    '<button type="button" class="btn btn-secondary"' +
-                    ' data-bs-dismiss="modal">Close</button>';
+                testChoices.innerHTML = '';
+                testChoices.appendChild(buildCloseBtn());
             }
             return;
         }
@@ -99,7 +101,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 var btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'btn ' + ch.btnclass + ' m-1 px-4 py-2';
-                btn.innerHTML = ch.text;
+                btn.textContent = ch.text;
                 if (ch.disabled) {
                     btn.disabled = true;
                 }
@@ -109,9 +111,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 testChoices.appendChild(btn);
             });
         } else {
-            testChoices.innerHTML =
-                '<button type="button" class="btn btn-secondary"' +
-                ' data-bs-dismiss="modal">Close</button>';
+            testChoices.appendChild(buildCloseBtn());
         }
     }
 
@@ -196,10 +196,12 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
          *
          * @param {number} iid Block instance ID.
          * @param {number} cid Course ID.
+         * @param {Object} strs Localised string map.
          */
-        init: function(iid, cid) {
+        init: function(iid, cid, strs) {
             instanceid = iid;
             courseid = cid;
+            strings = strs || {};
 
             initChapterDelete();
 
@@ -207,21 +209,26 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             testContent = document.getElementById('ph-test-content');
             testChoices = document.getElementById('ph-test-choices');
 
+            // Move modal to <body> to avoid z-index conflicts with the block drawer.
             if (testModal) {
-                testModal.addEventListener('hidden.bs.modal', function() {
-                    bsTestModal = null;
-                });
+                document.body.appendChild(testModal);
             }
 
-            document.body.addEventListener('click', function(e) {
-                var testBtn = e.target.closest('[data-action="test-chapter"]');
-                if (testBtn) {
-                    e.preventDefault();
-                    var cid = parseInt(testBtn.getAttribute('data-chapterid'), 10);
-                    openTestModal();
-                    previewStart(cid);
-                }
-            });
+            // Use jQuery's .on() so this works in both:
+            // - Moodle 4.5 (Bootstrap 4): show.bs.modal fires as a jQuery event.
+            // - Moodle 5.1 (Bootstrap 5): Bootstrap 5 also triggers a jQuery event
+            //   when window.jQuery is present (via its EventHandler layer).
+            if (testModal) {
+                $(testModal).on('show.bs.modal', function(e) {
+                    var trigger = e.relatedTarget;
+                    if (!trigger) {
+                        return;
+                    }
+                    var chid = parseInt(trigger.getAttribute('data-chapterid'), 10);
+                    showTestLoader();
+                    previewStart(chid);
+                });
+            }
         },
 
         /**

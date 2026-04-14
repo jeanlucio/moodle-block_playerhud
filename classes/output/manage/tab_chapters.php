@@ -139,7 +139,7 @@ class tab_chapters implements renderable {
         $PAGE->requires->js_call_amd(
             'block_playerhud/manage_story',
             'init',
-            [$this->instanceid, $this->courseid]
+            [$this->instanceid, $this->courseid, ['close' => get_string('close', 'block_playerhud')]]
         );
 
         return $OUTPUT->render_from_template('block_playerhud/manage_chapters', $data);

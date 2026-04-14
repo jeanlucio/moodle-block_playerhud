@@ -81,6 +81,22 @@
     border-bottom: 4px solid var(--bs-warning, #d4af37);
 }
 
+.ph-modal-close-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.25rem;
+    line-height: 1;
+    opacity: 0.75;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    margin-inline-start: auto;
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
 .ph-story-modal-body {
     background-color: var(--bs-body-bg, #fffbf2);
     font-family: Georgia, 'Times New Roman', serif;
