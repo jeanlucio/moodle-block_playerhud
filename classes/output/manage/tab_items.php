@@ -260,7 +260,6 @@ class tab_items implements renderable {
         $counter = ($page * $perpage) + 1;
 
         if ($items) {
-            require_once($GLOBALS['CFG']->dirroot . '/blocks/playerhud/lib.php');
 
             $dropscounts = [];
             $itemids = array_keys($items);
@@ -462,7 +461,6 @@ class tab_items implements renderable {
         $insertedmap = $this->get_inserted_cmids($drops, $modules);
 
         // 4. Bulk-load item images to avoid N+1.
-        require_once($GLOBALS['CFG']->dirroot . '/blocks/playerhud/lib.php');
         $context = \context_block::instance($this->instanceid);
         $itemsforimg = [];
         foreach ($drops as $drop) {

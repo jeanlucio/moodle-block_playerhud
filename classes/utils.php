@@ -242,4 +242,25 @@ class utils {
         }
         return 5;
     }
+
+    /**
+     * Check whether content (item, quest, or trade reward) is visible for the user's RPG class.
+     *
+     * An empty value or '0' in the required-class field means the content is public (no restriction).
+     * Otherwise the stored value is a comma-separated list of class IDs; '0' in that list also
+     * means public.
+     *
+     * @param string $requiredclassids Comma-separated class IDs allowed to see the content.
+     * @param int    $userclassid      The current user's RPG class ID (0 if none selected).
+     * @return bool True if the content should be visible to the user.
+     */
+    public static function is_visible_for_class(string $requiredclassids, int $userclassid): bool {
+        if (empty($requiredclassids) || $requiredclassids === '0') {
+            return true;
+        }
+
+        $allowedarray = explode(',', $requiredclassids);
+
+        return in_array('0', $allowedarray) || in_array((string) $userclassid, $allowedarray);
+    }
 }

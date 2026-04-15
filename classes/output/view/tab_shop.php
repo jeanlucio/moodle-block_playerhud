@@ -64,7 +64,6 @@ class tab_shop implements renderable, templatable {
      */
     public function export_for_template($output) {
         global $DB, $CFG;
-        require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
 
         $context = \context_block::instance($this->instanceid);
 
@@ -121,7 +120,7 @@ class tab_shop implements renderable, templatable {
                 $visibleforme = true;
                 foreach ($trade->rewards as $rew) {
                     if (!empty($rew->required_class_id)) {
-                        if (!block_playerhud_is_visible_for_class($rew->required_class_id, $myclassid)) {
+                        if (!\block_playerhud\utils::is_visible_for_class($rew->required_class_id, $myclassid)) {
                             $visibleforme = false;
                             break;
                         }

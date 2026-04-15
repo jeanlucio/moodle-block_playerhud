@@ -158,7 +158,7 @@ class trade_manager {
             foreach ($rewards as $rew) {
                 if (isset($itemsmap[$rew->itemid]) && !empty($itemsmap[$rew->itemid]->required_class_id)) {
                     $reqclass = $itemsmap[$rew->itemid]->required_class_id;
-                    if (!block_playerhud_is_visible_for_class($reqclass, $myclassid)) {
+                    if (!\block_playerhud\utils::is_visible_for_class($reqclass, $myclassid)) {
                         throw new \moodle_exception('error_trade_class', 'block_playerhud');
                     }
                 }

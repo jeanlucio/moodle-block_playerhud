@@ -112,15 +112,7 @@ function block_playerhud_get_drop_details_by_code($code, $blockinstanceid) {
  * @return bool True if visible.
  */
 function block_playerhud_is_visible_for_class($requiredclassids, $userclassid) {
-    // Empty or '0' means Public (All Classes).
-    if (empty($requiredclassids) || $requiredclassids === '0') {
-        return true;
-    }
-
-    $allowedarray = explode(',', $requiredclassids);
-
-    // Check if '0' is in array (explicit public) or user class is in array.
-    return (in_array('0', $allowedarray) || in_array((string)$userclassid, $allowedarray));
+    return \block_playerhud\utils::is_visible_for_class((string) $requiredclassids, (int) $userclassid);
 }
 
 /**

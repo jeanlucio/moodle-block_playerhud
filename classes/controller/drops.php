@@ -130,7 +130,6 @@ class drops {
         $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], '*', MUST_EXIST);
         $drops = $DB->get_records('block_playerhud_drops', ['itemid' => $itemid], "$sort $dir");
 
-        require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
         $mediadata = \block_playerhud\utils::get_item_display_data($item, $context);
 
         $dropsdata = [];

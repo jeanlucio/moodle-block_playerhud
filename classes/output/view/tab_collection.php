@@ -59,7 +59,6 @@ class tab_collection implements renderable, templatable {
      */
     public function export_for_template(renderer_base $output) {
         global $DB, $CFG, $PAGE;
-        require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
 
         // 1. Capture sort parameter (Default: recent).
         $currentsort = optional_param('sort', 'recent', PARAM_ALPHANUMEXT);
@@ -116,7 +115,7 @@ class tab_collection implements renderable, templatable {
                     if (!$item->enabled) {
                         continue;
                     }
-                    if (!block_playerhud_is_visible_for_class($item->required_class_id, $myclassid)) {
+                    if (!\block_playerhud\utils::is_visible_for_class($item->required_class_id, $myclassid)) {
                         continue;
                     }
                 }

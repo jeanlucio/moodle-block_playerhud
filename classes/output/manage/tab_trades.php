@@ -56,7 +56,6 @@ class tab_trades implements renderable, templatable {
      */
     public function export_for_template($output) {
         global $CFG, $PAGE;
-        require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
 
         $context = \context_block::instance($this->instanceid);
         $trades = \block_playerhud\game::get_full_trades($this->instanceid);

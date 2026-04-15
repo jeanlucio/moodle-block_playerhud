@@ -60,8 +60,6 @@ class trades {
         $PAGE->set_heading(format_string($course->fullname));
         $PAGE->set_pagelayout('standard');
 
-        require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
-
         $allitemsdata = $DB->get_records(
             'block_playerhud_items',
             ['blockinstanceid' => $instanceid, 'enabled' => 1]
