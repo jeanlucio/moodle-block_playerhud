@@ -107,14 +107,16 @@
             <div class="modal-header">
                 <h5 class="modal-title" id="ph-confirm-delete-scene-label">{{str_confirm_delete_title}}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"
-                        aria-label="{{str_close}}"></button>
+                        data-dismiss="modal" aria-label="{{str_close}}">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body">
                 <p id="ph-delete-scene-msg"></p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary"
-                        data-bs-dismiss="modal">{{str_cancel}}</button>
+                        data-bs-dismiss="modal" data-dismiss="modal">{{str_cancel}}</button>
                 <a id="ph-delete-scene-url" href="#"
                    class="btn btn-danger">{{str_delete}}</a>
             </div>

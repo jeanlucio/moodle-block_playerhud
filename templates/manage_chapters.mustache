@@ -189,7 +189,9 @@
                         <i class="fa fa-magic me-2" aria-hidden="true"></i>{{str_story_modal_title}}
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
-                            aria-label="{{str_close}}"></button>
+                            data-dismiss="modal" aria-label="{{str_close}}">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -203,7 +205,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal" data-dismiss="modal">
                         {{str_cancel}}
                     </button>
                     <button type="button" class="btn btn-primary" data-action="ai-story-submit">
