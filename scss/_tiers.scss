@@ -54,6 +54,7 @@
     .ph-progress-bar {
         border-radius: 0;
         transition: width 0.6s ease;
+        width: var(--ph-progress, 0%);
         height: 100%;
         display: flex;
         align-items: center;

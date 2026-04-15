@@ -151,7 +151,7 @@
                     {{/can_claim}}
                     {{^can_claim}}
                         <div class="progress ph-progress-container ph-progress-sm mb-1 w-100 position-relative" aria-hidden="true">
-                            <div class="progress-bar bg-info" style="width: {{progress_pct}}%;"></div>
+                            <div class="progress-bar bg-info" style="--ph-progress: {{progress_pct}}%;"></div>
                         </div>
                         <div class="text-center w-100 mb-2" aria-hidden="true">
                             {{^activity_url}}<i class="fa fa-lock text-muted me-1" aria-hidden="true"></i>{{/activity_url}}

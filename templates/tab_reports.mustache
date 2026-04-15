@@ -78,7 +78,7 @@
                                 <div class="fw-bold ph-w-50">{{str.level}} {{label}}</div>
                                 <div class="flex-grow-1 mx-2">
                                     <div class="progress ph-h-10" aria-hidden="true">
-                                        <div class="progress-bar bg-info" style="width: {{percent}}%"></div>
+                                        <div class="progress-bar bg-info" style="--ph-progress: {{percent}}%"></div>
                                     </div>
                                 </div>
                                 <div class="text-end ph-w-30">{{total}}</div>
@@ -121,7 +121,7 @@
                             <div class="ph-w-80 mx-2">
                                 <div class="progress ph-h-10" aria-hidden="true">
                                     <div class="progress-bar {{#no_claims}}bg-secondary{{/no_claims}}{{^no_claims}}bg-warning{{/no_claims}}"
-                                         style="width: {{percent}}%"></div>
+                                         style="--ph-progress: {{percent}}%"></div>
                                 </div>
                             </div>
                             <div class="text-end ph-w-30">{{total}}</div>

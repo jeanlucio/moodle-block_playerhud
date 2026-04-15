@@ -114,4 +114,31 @@
         margin-block: 0.5rem;
         opacity: 0.2;
     }
+
+    .ph-karma-bar {
+        position: relative;
+        height: 8px;
+        border-radius: 4px;
+        background-color: var(--gray-200, #e9ecef);
+        overflow: hidden;
+    }
+
+    .ph-karma-fill {
+        height: 100%;
+        width: var(--ph-progress, 50%);
+        border-radius: 4px;
+        transition: width 0.4s ease;
+
+        &.ph-karma-fill--good {
+            background-color: var(--success, #198754);
+        }
+
+        &.ph-karma-fill--evil {
+            background-color: var(--danger, #dc3545);
+        }
+
+        &.ph-karma-fill--neutral {
+            background-color: var(--secondary, #6c757d);
+        }
+    }
 }
