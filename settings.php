@@ -71,7 +71,7 @@ if ($ADMIN->fulltree) {
         'block_playerhud/openai_baseurl',
         get_string('openai_baseurl', 'block_playerhud'),
         get_string('openai_baseurl_desc', 'block_playerhud'),
-        'https://api.openai.com/v1/chat/completions',
+        '',
         PARAM_URL
     ));
 
@@ -80,7 +80,7 @@ if ($ADMIN->fulltree) {
         'block_playerhud/openai_model',
         get_string('openai_model', 'block_playerhud'),
         get_string('openai_model_desc', 'block_playerhud'),
-        'gpt-4o-mini',
+        '',
         PARAM_TEXT
     ));
 }
