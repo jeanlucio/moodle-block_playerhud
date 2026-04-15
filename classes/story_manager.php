@@ -237,6 +237,26 @@ class story_manager {
                 MUST_EXIST
             );
             $result['node'] = self::prepare_node_data($instanceid, $nextnode, $userid, false);
+
+            // Terminal node: no choices means this path has ended — mark chapter as finished.
+            if (empty($result['node']['choices'])) {
+                $completedarr = json_decode($progress->completed_chapters, true) ?: [];
+                $completedarr = array_map('intval', $completedarr);
+
+                if (!in_array($chapterid, $completedarr)) {
+                    $completedarr[] = $chapterid;
+                    $DB->set_field(
+                        'block_playerhud_rpg_progress',
+                        'completed_chapters',
+                        json_encode($completedarr),
+                        ['id' => $progress->id]
+                    );
+                }
+
+                $result['finished']  = true;
+                $result['chapterid'] = $chapterid;
+                $result['message']   = get_string('story_chapter_completed', 'block_playerhud');
+            }
         } else {
             $completedarr = json_decode($progress->completed_chapters, true) ?: [];
             $completedarr = array_map('intval', $completedarr);

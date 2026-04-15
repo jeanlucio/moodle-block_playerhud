@@ -70,8 +70,14 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
      * @param {number} chapterid Current chapter ID.
      */
     function renderNode(data, chapterid) {
+        // Render terminal node content before showing the completion UI.
+        if (data.node && contentEl) {
+            contentEl.innerHTML = data.node.content;
+        }
+
         if (data.finished) {
-            if (contentEl) {
+            // No node means nothing was rendered above — show the icon in the content area.
+            if (!data.node && contentEl) {
                 contentEl.innerHTML =
                     '<div class="text-center py-5">' +
                     '<i class="fa fa-check-circle fa-3x text-success" aria-hidden="true"></i>' +
@@ -79,7 +85,13 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                     '</div>';
             }
             if (choicesEl) {
-                var footer = '';
+                var completionbadge = data.node
+                    ? ('<div class="text-center mb-3">' +
+                       '<i class="fa fa-check-circle text-success me-1" aria-hidden="true"></i>' +
+                       '<span class="fw-bold text-success">' + strings.completed + '</span>' +
+                       '</div>')
+                    : '';
+                var footer = completionbadge;
                 footer += '<button type="button" class="btn btn-secondary me-2"' +
                           ' data-bs-dismiss="modal" data-dismiss="modal">' +
                           strings.close + '</button>';
@@ -98,9 +110,6 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             return;
         }
 
-        if (contentEl) {
-            contentEl.innerHTML = data.node.content;
-        }
         if (!choicesEl) {
             return;
         }
