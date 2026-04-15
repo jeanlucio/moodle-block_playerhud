@@ -104,13 +104,13 @@ class edit_item_form extends \moodleform {
             }
         }
         if (!empty($classoptions)) {
-            $select = $mform->addElement(
-                'select',
+            $mform->addElement(
+                'autocomplete',
                 'required_class_id',
                 get_string('restrict_class', 'block_playerhud'),
-                $classoptions
+                $classoptions,
+                ['multiple' => true]
             );
-            $select->setMultiple(true);
             $mform->setType('required_class_id', PARAM_INT);
             $mform->setDefault('required_class_id', []);
             $mform->addHelpButton('required_class_id', 'restrict_class', 'block_playerhud');
