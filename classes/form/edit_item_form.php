@@ -89,11 +89,36 @@ class edit_item_form extends \moodleform {
         $mform->addElement('selectyesno', 'enabled', get_string('enabled', 'block_playerhud'));
         $mform->setDefault('enabled', 1);
 
-        // 7. Class Restriction (Disabled for V1.0 launch).
-        // Set as '0' (Public) via hidden field to maintain Controller compatibility.
-        $mform->addElement('hidden', 'required_class_id');
-        $mform->setType('required_class_id', PARAM_INT);
-        $mform->setDefault('required_class_id', 0);
+        // 7. Class restriction.
+        $instanceid = $this->_customdata['instanceid'] ?? 0;
+        $classoptions = [];
+        if ($instanceid) {
+            $allclasses = $DB->get_records(
+                'block_playerhud_classes',
+                ['blockinstanceid' => $instanceid],
+                'name ASC',
+                'id, name'
+            );
+            foreach ($allclasses as $class) {
+                $classoptions[$class->id] = format_string($class->name);
+            }
+        }
+        if (!empty($classoptions)) {
+            $select = $mform->addElement(
+                'select',
+                'required_class_id',
+                get_string('restrict_class', 'block_playerhud'),
+                $classoptions
+            );
+            $select->setMultiple(true);
+            $mform->setType('required_class_id', PARAM_INT);
+            $mform->setDefault('required_class_id', []);
+            $mform->addHelpButton('required_class_id', 'restrict_class', 'block_playerhud');
+        } else {
+            $mform->addElement('hidden', 'required_class_id');
+            $mform->setType('required_class_id', PARAM_INT);
+            $mform->setDefault('required_class_id', 0);
+        }
 
         // 8. Secret.
         $mform->addElement(
