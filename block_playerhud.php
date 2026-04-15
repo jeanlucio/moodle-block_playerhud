@@ -289,9 +289,7 @@ class block_playerhud extends block_base {
 
             $this->content->text .= $OUTPUT->render_from_template('block_playerhud/modal_item', []);
         } catch (\Exception $e) {
-            if (debugging()) {
-                $this->content->text = 'Error: ' . $e->getMessage();
-            }
+            debugging($e->getMessage(), DEBUG_DEVELOPER);
         }
 
         return $this->content;
