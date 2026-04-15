@@ -241,6 +241,24 @@ class provider implements
             }
         }
 
+        // 6. Bulk fetch AI Oracle Logs.
+        $sqlai = "SELECT id, blockinstanceid, action_type, ai_provider, timecreated
+                    FROM {block_playerhud_ai_logs}
+                   WHERE userid = :userid AND blockinstanceid $insql
+                ORDER BY timecreated DESC";
+        $ailogrecords = $DB->get_records_sql($sqlai, $params);
+        $ailogsbyinstance = [];
+
+        if ($ailogrecords) {
+            foreach ($ailogrecords as $log) {
+                $ailogsbyinstance[$log->blockinstanceid][] = [
+                    'action' => $log->action_type,
+                    'provider' => $log->ai_provider,
+                    'date' => transform::datetime($log->timecreated),
+                ];
+            }
+        }
+
         // 7. Bulk fetch Trade Logs.
         $sqltrades = "SELECT tl.id, t.blockinstanceid, tl.timecreated, t.name as tradename
                         FROM {block_playerhud_trade_log} tl
@@ -313,6 +331,15 @@ class provider implements
                 writer::with_context($context)->export_data(
                     [get_string('pluginname', 'block_playerhud'), get_string('tab_shop', 'block_playerhud')],
                     (object) ['transactions' => $tradesbyinstance[$instid]]
+                );
+            }
+
+            // F. AI Oracle Logs.
+            if (!empty($ailogsbyinstance[$instid])) {
+                writer::with_context($context)->export_data(
+                    [get_string('pluginname', 'block_playerhud'),
+                        get_string('privacy_export_ai_logs', 'block_playerhud')],
+                    (object) ['logs' => $ailogsbyinstance[$instid]]
                 );
             }
         }
