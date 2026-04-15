@@ -132,11 +132,12 @@
     {{/has_chapters}}
 
     {{! Delete confirmation modal }}
-    <div class="modal fade" id="ph-confirm-delete-chapter" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="ph-confirm-delete-chapter" tabindex="-1"
+         aria-labelledby="ph-confirm-delete-chapter-label" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">{{str_delete_title}}</h5>
+                    <h5 class="modal-title" id="ph-confirm-delete-chapter-label">{{str_delete_title}}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                             data-dismiss="modal" aria-label="{{str_close}}"></button>
                 </div>
@@ -154,11 +155,11 @@
 
     {{! Test/preview modal }}
     <div class="modal fade" id="ph-story-test-modal" tabindex="-1" aria-hidden="true"
-         data-bs-backdrop="static">
+         aria-labelledby="ph-story-test-modal-label" data-bs-backdrop="static">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content ph-story-modal-content">
                 <div class="modal-header ph-story-modal-header">
-                    <h5 class="modal-title fw-bold">
+                    <h5 class="modal-title fw-bold" id="ph-story-test-modal-label">
                         <i class="fa fa-gamepad me-2" aria-hidden="true"></i> {{str_test_title}}
                     </h5>
                     <button type="button" class="ph-modal-close-btn"
@@ -177,11 +178,12 @@
     </div>
 
     {{! AI Story generation modal }}
-    <div class="modal fade" id="ph-ai-story-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="ph-ai-story-modal" tabindex="-1"
+         aria-labelledby="ph-ai-story-modal-label" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">
+                    <h5 class="modal-title" id="ph-ai-story-modal-label">
                         <i class="fa fa-magic me-2" aria-hidden="true"></i>{{str_story_modal_title}}
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"

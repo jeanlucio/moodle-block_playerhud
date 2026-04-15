@@ -100,11 +100,12 @@
 <div class="alert alert-info mt-3" role="alert">{{str_empty}}</div>
 {{/has_scenes}}
 
-<div class="modal fade" id="ph-confirm-delete-scene" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="ph-confirm-delete-scene" tabindex="-1"
+         aria-labelledby="ph-confirm-delete-scene-label" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{str_confirm_delete_title}}</h5>
+                <h5 class="modal-title" id="ph-confirm-delete-scene-label">{{str_confirm_delete_title}}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="{{str_close}}"></button>
             </div>

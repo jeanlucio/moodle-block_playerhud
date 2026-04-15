@@ -133,11 +133,12 @@
 </div>
 
 {{! Shared delete confirmation modal (Bootstrap 5) }}
-<div class="modal fade" id="ph-confirm-delete-class" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="ph-confirm-delete-class" tabindex="-1"
+         aria-labelledby="ph-confirm-delete-class-label" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{str_confirm_delete}}</h5>
+                <h5 class="modal-title" id="ph-confirm-delete-class-label">{{str_confirm_delete}}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                     aria-label="{{str_close}}"></button>
             </div>
@@ -157,11 +158,11 @@
 </div>
 
 {{! Class Oracle AI generation modal }}
-<div class="modal fade" id="ph-ai-oracle-modal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="ph-ai-oracle-modal" tabindex="-1" aria-labelledby="ph-ai-oracle-modal-label" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">
+                <h5 class="modal-title" id="ph-ai-oracle-modal-label">
                     <i class="fa fa-magic me-2" aria-hidden="true"></i>{{str_oracle_modal_title}}
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"
