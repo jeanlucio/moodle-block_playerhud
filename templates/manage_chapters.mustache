@@ -28,6 +28,11 @@
         "has_chapters": true,
         "url_new_chapter": "http://example.com/edit_chapter.php",
         "str_new_chapter": "New Chapter",
+        "str_ai_story_btn": "Generate with AI",
+        "str_story_modal_title": "Generate Story with AI",
+        "str_story_theme_label": "Theme or setting",
+        "str_story_theme_placeholder": "e.g. a dark dungeon with ancient mysteries...",
+        "str_story_generate": "Generate",
         "str_manage_scenes": "Manage Scenes",
         "str_test": "Test",
         "str_edit": "Edit",
@@ -55,7 +60,14 @@
 }}
 <div class="ph-manage-chapters">
 
-    <div class="d-flex justify-content-end mb-3">
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button type="button"
+                class="btn btn-outline-secondary shadow-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#ph-ai-story-modal"
+                aria-label="{{str_ai_story_btn}}">
+            <i class="fa fa-magic" aria-hidden="true"></i> {{str_ai_story_btn}}
+        </button>
         <a href="{{url_new_chapter}}" class="btn btn-primary shadow-sm">
             <i class="fa fa-plus-circle" aria-hidden="true"></i> {{str_new_chapter}}
         </a>
@@ -160,6 +172,40 @@
                 </div>
                 <div class="modal-footer ph-story-modal-footer justify-content-center"
                      id="ph-test-choices"></div>
+            </div>
+        </div>
+    </div>
+
+    {{! AI Story generation modal }}
+    <div class="modal fade" id="ph-ai-story-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fa fa-magic me-2" aria-hidden="true"></i>{{str_story_modal_title}}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="{{str_close}}"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="ph-story-theme" class="form-label fw-semibold">
+                            {{str_story_theme_label}}
+                        </label>
+                        <textarea id="ph-story-theme"
+                                  class="form-control"
+                                  rows="3"
+                                  placeholder="{{str_story_theme_placeholder}}"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        {{str_cancel}}
+                    </button>
+                    <button type="button" class="btn btn-primary" data-action="ai-story-submit">
+                        <i class="fa fa-magic" aria-hidden="true"></i> {{str_story_generate}}
+                    </button>
+                </div>
             </div>
         </div>
     </div>

@@ -89,4 +89,22 @@ $functions = [
         'ajax'          => true,
         'loginrequired' => true,
     ],
+
+    'block_playerhud_generate_class_oracle' => [
+        'classname'   => 'block_playerhud\external',
+        'methodname'  => 'generate_class_oracle',
+        'description' => 'Generate an RPG class via AI (Class Oracle) and save it',
+        'type'        => 'write',
+        'ajax'        => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_generate_story' => [
+        'classname'   => 'block_playerhud\external',
+        'methodname'  => 'generate_story',
+        'description' => 'Generate a branching story chapter via AI and save it',
+        'type'        => 'write',
+        'ajax'        => true,
+        'loginrequired' => true,
+    ],
 ];

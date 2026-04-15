@@ -145,6 +145,11 @@ class tab_classes implements renderable {
             'has_classes'  => !empty($classesdata),
             'url_new'      => $newclassurl->out(false),
             'str_new'      => get_string('class_new', 'block_playerhud'),
+            'str_oracle_btn'              => get_string('ai_oracle_btn', 'block_playerhud'),
+            'str_oracle_modal_title'      => get_string('ai_oracle_modal_title', 'block_playerhud'),
+            'str_oracle_theme_label'      => get_string('ai_theme_label', 'block_playerhud'),
+            'str_oracle_theme_placeholder' => get_string('ai_oracle_theme_placeholder', 'block_playerhud'),
+            'str_oracle_generate'         => get_string('ai_generate_btn', 'block_playerhud'),
             'str_edit'     => get_string('class_edit', 'block_playerhud'),
             'str_delete'   => get_string('delete', 'block_playerhud'),
             'str_empty'    => get_string('class_empty', 'block_playerhud'),
@@ -155,6 +160,16 @@ class tab_classes implements renderable {
         ];
 
         $PAGE->requires->js_call_amd('block_playerhud/manage_classes', 'init');
+        $PAGE->requires->js_call_amd('block_playerhud/ai_oracle', 'init', [
+            $this->instanceid,
+            $this->courseid,
+            [
+                'ai_creating'      => get_string('ai_creating', 'block_playerhud'),
+                'validation_theme' => get_string('ai_validation_theme', 'block_playerhud'),
+                'oracle_success'   => get_string('ai_oracle_success', 'block_playerhud'),
+                'ok_reload'        => get_string('ai_ok_reload', 'block_playerhud'),
+            ],
+        ]);
 
         return $OUTPUT->render_from_template('block_playerhud/manage_classes', $data);
     }

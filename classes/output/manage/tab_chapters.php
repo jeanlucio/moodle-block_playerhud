@@ -125,6 +125,11 @@ class tab_chapters implements renderable {
             'chapters'         => $chaptersdata,
             'url_new_chapter'  => $newchapurl->out(false),
             'str_new_chapter'  => get_string('chapter_new', 'block_playerhud'),
+            'str_ai_story_btn'          => get_string('ai_story_btn', 'block_playerhud'),
+            'str_story_modal_title'     => get_string('ai_story_modal_title', 'block_playerhud'),
+            'str_story_theme_label'     => get_string('ai_theme_label', 'block_playerhud'),
+            'str_story_theme_placeholder' => get_string('ai_story_theme_placeholder', 'block_playerhud'),
+            'str_story_generate'        => get_string('ai_generate_btn', 'block_playerhud'),
             'str_manage_scenes' => get_string('chapter_manage_scenes', 'block_playerhud'),
             'str_test'         => get_string('test', 'block_playerhud'),
             'str_edit'         => get_string('edit'),
@@ -141,6 +146,16 @@ class tab_chapters implements renderable {
             'init',
             [$this->instanceid, $this->courseid, ['close' => get_string('close', 'block_playerhud')]]
         );
+        $PAGE->requires->js_call_amd('block_playerhud/ai_story', 'init', [
+            $this->instanceid,
+            $this->courseid,
+            [
+                'ai_creating'      => get_string('ai_creating', 'block_playerhud'),
+                'validation_theme' => get_string('ai_validation_theme', 'block_playerhud'),
+                'story_success'    => get_string('ai_story_success', 'block_playerhud'),
+                'ok_reload'        => get_string('ai_ok_reload', 'block_playerhud'),
+            ],
+        ]);
 
         return $OUTPUT->render_from_template('block_playerhud/manage_chapters', $data);
     }

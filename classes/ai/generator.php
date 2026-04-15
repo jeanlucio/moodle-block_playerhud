@@ -424,6 +424,222 @@ class generator {
     }
 
     /**
+     * Loads AI API keys from user preferences with fallback to global config.
+     *
+     * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel].
+     */
+    protected function load_api_keys(): array {
+        $geminikey  = get_user_preferences('block_playerhud_gemini_key', '');
+        $groqkey    = get_user_preferences('block_playerhud_groq_key', '');
+        $openaikey  = get_user_preferences('block_playerhud_openai_key', '');
+        $openaiurl  = get_user_preferences('block_playerhud_openai_url', '');
+        $openaimodel = get_user_preferences('block_playerhud_openai_model', '');
+
+        if (empty($geminikey)) {
+            $geminikey = get_config('block_playerhud', 'apikey_gemini');
+        }
+        if (empty($groqkey)) {
+            $groqkey = get_config('block_playerhud', 'apikey_groq');
+        }
+        if (empty($openaikey)) {
+            $openaikey = get_config('block_playerhud', 'apikey_openai');
+        }
+        if (empty($openaiurl)) {
+            $openaiurl = get_config('block_playerhud', 'openai_baseurl');
+        }
+        if (empty($openaimodel)) {
+            $openaimodel = get_config('block_playerhud', 'openai_model');
+        }
+
+        return [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel];
+    }
+
+    /**
+     * Calls AI providers in sequence: Gemini → Groq → OpenAI-compatible.
+     *
+     * @param string $prompt The prompt text.
+     * @return array Result array with keys 'success', 'data', 'provider'.
+     * @throws \moodle_exception If all providers fail or no keys are configured.
+     */
+    protected function call_with_fallback(string $prompt): array {
+        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $this->load_api_keys();
+
+        if (empty($geminikey) && empty($groqkey) && empty($openaikey)) {
+            throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
+        }
+
+        $result = ['success' => false, 'message' => ''];
+
+        if (!empty($geminikey)) {
+            $result = $this->call_gemini($prompt, $geminikey);
+        }
+
+        if (!$result['success'] && !empty($groqkey)) {
+            $result = $this->call_groq($prompt, $groqkey);
+        }
+
+        if (!$result['success'] && !empty($openaikey) && !empty($openaiurl)) {
+            $result = $this->call_openai_compatible($prompt, $openaikey, $openaiurl, $openaimodel);
+        }
+
+        if (!$result['success']) {
+            $errormsg = !empty($result['message']) ?
+                $result['message'] :
+                get_string('ai_error_no_keys', 'block_playerhud');
+            throw new \moodle_exception('ai_error_offline', 'block_playerhud', '', $errormsg);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Builds the Class Oracle AI prompt.
+     *
+     * @param string $theme The theme or description for the class.
+     * @return string The constructed prompt.
+     */
+    protected function build_prompt_class_oracle(string $theme): string {
+        return get_string('ai_prompt_class_oracle', 'block_playerhud', $theme);
+    }
+
+    /**
+     * Builds the Story Generation AI prompt.
+     *
+     * @param string $theme The story theme or setting.
+     * @return string The constructed prompt.
+     */
+    protected function build_prompt_story(string $theme): string {
+        return get_string('ai_prompt_story', 'block_playerhud', $theme);
+    }
+
+    /**
+     * Generates an RPG class via the Class Oracle AI and saves it to the database.
+     *
+     * @param string $theme The theme or description for the class.
+     * @return array Result array with 'success', 'class_name', and 'provider'.
+     * @throws \moodle_exception If API keys are missing or parsing fails.
+     */
+    public function generate_class(string $theme): array {
+        global $DB;
+
+        $prompt = $this->build_prompt_class_oracle($theme);
+        $result = $this->call_with_fallback($prompt);
+
+        // Backtick markdown cleanup.
+        $cleanjson = preg_replace('/^\x60{3}json|\x60{3}$/m', '', $result['data']);
+        $aidata = json_decode($cleanjson, true);
+
+        if (!$aidata || empty($aidata['name'])) {
+            throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
+        }
+
+        // Normalize: some models wrap responses in an array.
+        if (isset($aidata[0])) {
+            $aidata = $aidata[0];
+        } else if (isset($aidata['classes'][0])) {
+            $aidata = $aidata['classes'][0];
+        }
+
+        $class = new \stdClass();
+        $class->blockinstanceid = $this->instanceid;
+        $class->name            = $aidata['name'];
+        $class->description     = $aidata['description'] ?? '';
+        $class->base_hp         = isset($aidata['hp']) ? max(1, (int)$aidata['hp']) : 100;
+        $class->timecreated     = time();
+        $class->timemodified    = time();
+
+        $DB->insert_record('block_playerhud_classes', $class);
+
+        return [
+            'success'    => true,
+            'class_name' => $class->name,
+            'provider'   => $result['provider'],
+        ];
+    }
+
+    /**
+     * Generates a story chapter with nodes and choices via AI and saves everything in a transaction.
+     *
+     * @param string $theme The story theme or setting.
+     * @return array Result array with 'success', 'chapter_title', and 'provider'.
+     * @throws \moodle_exception If parsing fails or key loading fails.
+     */
+    public function generate_story(string $theme): array {
+        global $DB;
+
+        $prompt = $this->build_prompt_story($theme);
+        $result = $this->call_with_fallback($prompt);
+
+        // Backtick markdown cleanup.
+        $cleanjson = preg_replace('/^\x60{3}json|\x60{3}$/m', '', $result['data']);
+        $aidata = json_decode($cleanjson, true);
+
+        if (!$aidata || empty($aidata['title']) || empty($aidata['nodes'])) {
+            throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
+        }
+
+        $transaction = $DB->start_delegated_transaction();
+
+        $chapter = new \stdClass();
+        $chapter->blockinstanceid = $this->instanceid;
+        $chapter->title           = $aidata['title'];
+        $chapter->intro_text      = $aidata['intro'] ?? '';
+        $chapter->unlock_date     = 0;
+        $chapter->required_level  = 0;
+        $chapter->sortorder       = $DB->count_records(
+            'block_playerhud_chapters',
+            ['blockinstanceid' => $this->instanceid]
+        ) + 1;
+
+        $chapterid = $DB->insert_record('block_playerhud_chapters', $chapter);
+
+        // First pass: insert all nodes and build index → real ID map.
+        $idxmap = [];
+        foreach ($aidata['nodes'] as $nodedata) {
+            $node           = new \stdClass();
+            $node->chapterid = $chapterid;
+            $node->content  = $nodedata['content'];
+            $node->is_start = !empty($nodedata['is_start']) ? 1 : 0;
+            $nid = $DB->insert_record('block_playerhud_story_nodes', $node);
+            $idxmap[(int)($nodedata['index'] ?? count($idxmap))] = $nid;
+        }
+
+        // Second pass: insert choices with resolved next_nodeid.
+        foreach ($aidata['nodes'] as $nodedata) {
+            if (empty($nodedata['choices'])) {
+                continue;
+            }
+
+            $nodeid = $idxmap[(int)($nodedata['index'] ?? -1)] ?? 0;
+            if (!$nodeid) {
+                continue;
+            }
+
+            foreach ($nodedata['choices'] as $choicedata) {
+                $choice               = new \stdClass();
+                $choice->nodeid       = $nodeid;
+                $choice->text         = $choicedata['text'];
+                $choice->next_nodeid  = $idxmap[(int)($choicedata['target_index'] ?? -1)] ?? 0;
+                $choice->req_class_id = 0;
+                $choice->req_karma_min = 0;
+                $choice->karma_delta  = 0;
+                $choice->set_class_id = 0;
+                $choice->cost_itemid  = 0;
+                $choice->cost_item_qty = 1;
+                $DB->insert_record('block_playerhud_choices', $choice);
+            }
+        }
+
+        $transaction->allow_commit();
+
+        return [
+            'success'       => true,
+            'chapter_title' => $aidata['title'],
+            'provider'      => $result['provider'],
+        ];
+    }
+
+    /**
      * Executes a HTTP request using Moodle's curl class.
      *
      * @param string $url The target URL.

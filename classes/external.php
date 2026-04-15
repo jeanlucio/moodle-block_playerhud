@@ -783,4 +783,158 @@ class external extends external_api {
             'html' => new external_value(PARAM_RAW, 'Full story recap HTML'),
         ]);
     }
+
+    /**
+     * Parameters for generate_class_oracle.
+     *
+     * @return external_function_parameters
+     */
+    public static function generate_class_oracle_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'theme'      => new external_value(PARAM_TEXT, 'Theme or description for the class'),
+        ]);
+    }
+
+    /**
+     * Generate an RPG class via AI (Class Oracle) and save it.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid   Course ID.
+     * @param string $theme   Theme or description for the class.
+     * @return array Result structure.
+     */
+    public static function generate_class_oracle(int $instanceid, int $courseid, string $theme): array {
+        global $USER, $DB;
+
+        $params = self::validate_parameters(self::generate_class_oracle_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'theme'      => $theme,
+        ]);
+
+        $context = context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:manage', $context);
+
+        try {
+            $generator = new \block_playerhud\ai\generator($params['instanceid']);
+            $result    = $generator->generate_class($params['theme']);
+
+            $log                  = new \stdClass();
+            $log->blockinstanceid = $params['instanceid'];
+            $log->userid          = $USER->id;
+            $log->action_type     = 'class';
+            $log->object_name     = $result['class_name'];
+            $log->ai_provider     = $result['provider'];
+            $log->timecreated     = time();
+            $DB->insert_record('block_playerhud_ai_logs', $log);
+
+            return [
+                'success'    => true,
+                'class_name' => $result['class_name'],
+                'provider'   => $result['provider'],
+                'message'    => '',
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success'    => false,
+                'class_name' => '',
+                'provider'   => '',
+                'message'    => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Return structure for generate_class_oracle.
+     *
+     * @return external_single_structure
+     */
+    public static function generate_class_oracle_returns(): external_single_structure {
+        return new external_single_structure([
+            'success'    => new external_value(PARAM_BOOL, 'Success status'),
+            'class_name' => new external_value(PARAM_TEXT, 'Name of the generated class', VALUE_DEFAULT, ''),
+            'provider'   => new external_value(PARAM_TEXT, 'AI provider used', VALUE_DEFAULT, ''),
+            'message'    => new external_value(PARAM_RAW, 'Error message if any', VALUE_DEFAULT, ''),
+        ]);
+    }
+
+    /**
+     * Parameters for generate_story.
+     *
+     * @return external_function_parameters
+     */
+    public static function generate_story_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'theme'      => new external_value(PARAM_TEXT, 'Theme or setting for the story'),
+        ]);
+    }
+
+    /**
+     * Generate a story chapter with nodes and choices via AI and save it.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid   Course ID.
+     * @param string $theme   Theme or setting for the story.
+     * @return array Result structure.
+     */
+    public static function generate_story(int $instanceid, int $courseid, string $theme): array {
+        global $USER, $DB;
+
+        $params = self::validate_parameters(self::generate_story_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'theme'      => $theme,
+        ]);
+
+        $context = context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:manage', $context);
+
+        try {
+            $generator = new \block_playerhud\ai\generator($params['instanceid']);
+            $result    = $generator->generate_story($params['theme']);
+
+            $log                  = new \stdClass();
+            $log->blockinstanceid = $params['instanceid'];
+            $log->userid          = $USER->id;
+            $log->action_type     = 'story';
+            $log->object_name     = $result['chapter_title'];
+            $log->ai_provider     = $result['provider'];
+            $log->timecreated     = time();
+            $DB->insert_record('block_playerhud_ai_logs', $log);
+
+            return [
+                'success'       => true,
+                'chapter_title' => $result['chapter_title'],
+                'provider'      => $result['provider'],
+                'message'       => '',
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success'       => false,
+                'chapter_title' => '',
+                'provider'      => '',
+                'message'       => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Return structure for generate_story.
+     *
+     * @return external_single_structure
+     */
+    public static function generate_story_returns(): external_single_structure {
+        return new external_single_structure([
+            'success'       => new external_value(PARAM_BOOL, 'Success status'),
+            'chapter_title' => new external_value(PARAM_TEXT, 'Title of the generated chapter', VALUE_DEFAULT, ''),
+            'provider'      => new external_value(PARAM_TEXT, 'AI provider used', VALUE_DEFAULT, ''),
+            'message'       => new external_value(PARAM_RAW, 'Error message if any', VALUE_DEFAULT, ''),
+        ]);
+    }
 }
