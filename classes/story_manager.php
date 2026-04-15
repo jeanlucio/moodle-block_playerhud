@@ -35,9 +35,9 @@ class story_manager {
      *
      * @param int $instanceid Block instance ID.
      * @param int $userid User ID.
-     * @return object Progress record.
+     * @return \stdClass Progress record.
      */
-    public static function get_or_create_progress(int $instanceid, int $userid): object {
+    public static function get_or_create_progress(int $instanceid, int $userid): \stdClass {
         global $DB;
 
         $progress = $DB->get_record(
@@ -392,14 +392,14 @@ class story_manager {
      * Bulk-fetches all referenced classes and items to avoid N+1 queries.
      *
      * @param int $instanceid Block instance ID.
-     * @param object $node The story node record.
+     * @param \stdClass $node The story node record.
      * @param int $userid User ID.
      * @param bool $ispreview True to show requirement labels without enforcing them.
      * @return array Node data with content HTML and choices array.
      */
     public static function prepare_node_data(
         int $instanceid,
-        object $node,
+        \stdClass $node,
         int $userid,
         bool $ispreview
     ): array {
