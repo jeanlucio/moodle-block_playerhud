@@ -308,6 +308,33 @@
     margin-block: 0.5rem;
     opacity: 0.2;
 }
+.block_playerhud .ph-karma-bar,
+.path-blocks-playerhud .ph-karma-bar {
+    position: relative;
+    height: 8px;
+    border-radius: 4px;
+    background-color: var(--gray-200, #e9ecef);
+    overflow: hidden;
+}
+.block_playerhud .ph-karma-fill,
+.path-blocks-playerhud .ph-karma-fill {
+    height: 100%;
+    width: var(--ph-progress, 50%);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+.block_playerhud .ph-karma-fill.ph-karma-fill--good,
+.path-blocks-playerhud .ph-karma-fill.ph-karma-fill--good {
+    background-color: var(--success, #198754);
+}
+.block_playerhud .ph-karma-fill.ph-karma-fill--evil,
+.path-blocks-playerhud .ph-karma-fill.ph-karma-fill--evil {
+    background-color: var(--danger, #dc3545);
+}
+.block_playerhud .ph-karma-fill.ph-karma-fill--neutral,
+.path-blocks-playerhud .ph-karma-fill.ph-karma-fill--neutral {
+    background-color: var(--secondary, #6c757d);
+}
 
 .block_playerhud .playerhud-widget-container,
 .path-blocks-playerhud .playerhud-widget-container,
@@ -551,6 +578,7 @@
 .path-blocks-playerhud .ph-progress-bar {
     border-radius: 0;
     transition: width 0.6s ease;
+    width: var(--ph-progress, 0%);
     height: 100%;
     display: flex;
     align-items: center;
@@ -888,6 +916,10 @@
 .block_playerhud .ph-progress-sm,
 .path-blocks-playerhud .ph-progress-sm {
     height: 6px;
+}
+.block_playerhud .ph-progress-sm .progress-bar,
+.path-blocks-playerhud .ph-progress-sm .progress-bar {
+    width: var(--ph-progress, 0%);
 }
 .block_playerhud .playerhud-item-card .ph-quest-info-btn,
 .path-blocks-playerhud .playerhud-item-card .ph-quest-info-btn {
@@ -1239,6 +1271,11 @@
     height: 6px;
     width: 80px;
     margin: 0 auto;
+}
+.block_playerhud .ph-report-progress-xs .progress-bar,
+.path-blocks-playerhud .ph-report-progress-xs .progress-bar,
+.filter_playerhud .ph-report-progress-xs .progress-bar {
+    width: var(--ph-progress, 0%);
 }
 .block_playerhud .ph-opacity-80,
 .path-blocks-playerhud .ph-opacity-80,
