@@ -42,11 +42,11 @@
             }
         ],
         "classdata": {
-            "classname": "Mago",
-            "fullname": "Mago Jean",
+            "classname": "Mage",
+            "fullname": "Mage Jean",
             "portrait_url": "https://example.com/portrait.png",
             "tier": 2,
-            "tier_name": "Iniciado",
+            "tier_name": "Initiate",
             "tier_stars": [
                 {"filled": true},
                 {"filled": true},
@@ -60,7 +60,7 @@
             "value_display": "+30",
             "percent": 65,
             "bar_class": "ph-karma-fill--good",
-            "label": "Destino / Karma"
+            "label": "Fate / Karma"
         },
         "url_class_select": "#",
         "url_quests": "#",
@@ -76,7 +76,7 @@
 }}
 <div class="block_playerhud_sidebar p-2">
 
-    {{! ── CARD 1: PERSONAGEM (só quando Modo RPG está ativo) ── }}
+    {{! ── CARD 1: CHARACTER (RPG mode only) ── }}
     {{#enable_rpg}}
     {{#classdata}}
     <div class="ph-char-card text-center mb-2 p-2">
@@ -91,12 +91,12 @@
             {{/portrait_url}}
         </div>
 
-        {{! Nome: Classe + Primeiro nome }}
+        {{! Name: Class + First name }}
         <div class="fw-bold ph-char-fullname text-truncate" title="{{fullname}}">
             {{fullname}}
         </div>
 
-        {{! Tier: nome + estrelas }}
+        {{! Tier: name + stars }}
         <div class="ph-tier-name small mb-1">{{tier_name}}</div>
         <div class="ph-tier-stars mb-1" role="img"
              aria-label="{{tier_name}}: {{tier}} {{#str}} out_of_5, block_playerhud {{/str}}">
@@ -121,7 +121,7 @@
     </div>
     {{/classdata}}
 
-    {{! CTA quando sem classe }}
+    {{! CTA when no class assigned }}
     {{^classdata}}
     <div class="ph-char-empty text-center mb-2 p-2">
         <a href="{{url_class_select}}" class="btn btn-outline-primary btn-sm w-100">
@@ -134,9 +134,9 @@
     <hr class="ph-section-divider">
     {{/enable_rpg}}
 
-    {{! ── CARD 2: PROGRESSO NO CURSO ── }}
+    {{! ── CARD 2: COURSE PROGRESS ── }}
 
-    {{! Foto de perfil + nome }}
+    {{! Profile picture + name }}
     <div class="text-center mb-2">
         <div class="mb-1 ph-sidebar-avatar-container">
             {{{userpicture}}}
@@ -172,7 +172,7 @@
         </div>
     </div>
 
-    {{! Botão Master Panel }}
+    {{! Master Panel button }}
     {{#isteacher}}
     <div class="mb-3">
         <a href="{{{manageurl}}}" class="btn btn-outline-dark btn-sm w-100 shadow-sm fw-bold">
@@ -181,7 +181,7 @@
     </div>
     {{/isteacher}}
 
-    {{! Grid de ações }}
+    {{! Action grid }}
     <div class="ph-sidebar-grid mb-4 {{level_class}}">
 
         <a href="{{viewurl}}"
@@ -234,7 +234,7 @@
 
     </div>
 
-    {{! Últimos itens }}
+    {{! Recent items }}
     <div class="ph-stash-wrapper {{^has_items}}d-none{{/has_items}}">
         <small class="text-muted text-uppercase fw-bold border-bottom d-block mb-2 pb-1 ph-text-xs">
             {{#str}} latest_items, block_playerhud {{/str}}
