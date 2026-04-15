@@ -115,7 +115,9 @@
                             data-confirm-msg="{{confirm_msg}}"
                             data-delete-url="{{url_delete}}"
                             data-bs-toggle="modal"
-                            data-bs-target="#ph-confirm-delete-chapter">
+                            data-bs-target="#ph-confirm-delete-chapter"
+                            data-toggle="modal"
+                            data-target="#ph-confirm-delete-chapter">
                         <i class="fa fa-trash" aria-hidden="true"></i> {{str_delete}}
                     </button>
                 </div>
@@ -141,7 +143,9 @@
                 <div class="modal-header">
                     <h5 class="modal-title" id="ph-confirm-delete-chapter-label">{{str_delete_title}}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
-                            data-dismiss="modal" aria-label="{{str_close}}"></button>
+                            data-dismiss="modal" aria-label="{{str_close}}">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
                 <div class="modal-body">
                     <p id="ph-delete-chapter-msg"></p>
