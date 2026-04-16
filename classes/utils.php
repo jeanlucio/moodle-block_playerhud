@@ -278,10 +278,11 @@ class utils {
         global $DB;
         do {
             $code = strtoupper(random_string(6));
-        } while ($DB->record_exists('block_playerhud_drops', [
-            'blockinstanceid' => $blockinstanceid,
-            'code'            => $code,
-        ]));
+            $exists = $DB->record_exists('block_playerhud_drops', [
+                'blockinstanceid' => $blockinstanceid,
+                'code'            => $code,
+            ]);
+        } while ($exists);
         return $code;
     }
 }
