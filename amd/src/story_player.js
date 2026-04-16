@@ -75,6 +75,16 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             contentEl.innerHTML = data.node.content;
         }
 
+        // Process events here so they are shown regardless of whether the chapter finishes.
+        if (data.events && data.events.length > 0) {
+            data.events.forEach(function(evt) {
+                Notification.addNotification({
+                    message: evt.msg,
+                    type: 'info',
+                });
+            });
+        }
+
         if (data.finished) {
             // No node means nothing was rendered above — show the icon in the content area.
             if (!data.node && contentEl) {
@@ -181,15 +191,6 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             closeBtn.setAttribute('data-dismiss', 'modal');
             closeBtn.textContent = strings.close;
             choicesEl.appendChild(closeBtn);
-        }
-
-        if (data.events && data.events.length > 0) {
-            data.events.forEach(function(evt) {
-                Notification.addNotification({
-                    message: evt.msg,
-                    type: 'info',
-                });
-            });
         }
     }
 

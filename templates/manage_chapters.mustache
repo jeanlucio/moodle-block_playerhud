@@ -33,6 +33,15 @@
         "str_story_theme_label": "Theme or setting",
         "str_story_theme_placeholder": "e.g. a dark dungeon with ancient mysteries...",
         "str_story_generate": "Generate",
+        "str_story_mechanics_title": "Mechanics",
+        "str_story_karma_gain": "Max reputation gain (optional)",
+        "str_story_karma_loss": "Max reputation loss (optional)",
+        "str_story_item_cost": "Item cost (optional)",
+        "str_story_item_qty": "Total quantity to distribute",
+        "story_items": [
+            {"id": 0, "name": "— No item cost —", "selected": true},
+            {"id": 1, "name": "Gold Coin", "selected": false}
+        ],
         "str_manage_scenes": "Manage Scenes",
         "str_test": "Test",
         "str_edit": "Edit",
@@ -206,6 +215,48 @@
                                   class="form-control"
                                   rows="3"
                                   placeholder="{{str_story_theme_placeholder}}"></textarea>
+                    </div>
+                    <hr class="my-3">
+                    <p class="fw-semibold small text-muted text-uppercase mb-2">
+                        {{str_story_mechanics_title}}
+                    </p>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label for="ph-story-karma-gain" class="form-label small">
+                                {{str_story_karma_gain}}
+                            </label>
+                            <input type="number" id="ph-story-karma-gain"
+                                   class="form-control form-control-sm"
+                                   min="0" value="0">
+                        </div>
+                        <div class="col-6">
+                            <label for="ph-story-karma-loss" class="form-label small">
+                                {{str_story_karma_loss}}
+                            </label>
+                            <input type="number" id="ph-story-karma-loss"
+                                   class="form-control form-control-sm"
+                                   min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-8">
+                            <label for="ph-story-item-id" class="form-label small">
+                                {{str_story_item_cost}}
+                            </label>
+                            <select id="ph-story-item-id" class="form-select form-select-sm">
+                                {{#story_items}}
+                                <option value="{{id}}"{{#selected}} selected{{/selected}}>{{name}}</option>
+                                {{/story_items}}
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <label for="ph-story-item-qty" class="form-label small">
+                                {{str_story_item_qty}}
+                            </label>
+                            <input type="number" id="ph-story-item-qty"
+                                   class="form-control form-control-sm"
+                                   min="0" value="0">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

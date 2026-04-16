@@ -31,6 +31,60 @@ namespace block_playerhud;
  */
 class story_manager {
     /**
+     * Return true if there is at least one available chapter the student has not yet completed.
+     *
+     * A chapter is "available" when its unlock_date has passed (or is zero) and the player's
+     * level meets the required_level. Only chapters with a start node are considered playable.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $userid User ID.
+     * @param int $playerlevel Current player level (0 = skip level check).
+     * @return bool True when an unread available chapter exists.
+     */
+    public static function has_unread_chapters(int $instanceid, int $userid, int $playerlevel = 0): bool {
+        global $DB;
+
+        $now    = time();
+        $params = [$instanceid, $now];
+
+        $levelsql = '';
+        if ($playerlevel > 0) {
+            $levelsql = 'AND (c.required_level = 0 OR c.required_level <= ?)';
+            $params[] = $playerlevel;
+        }
+
+        $sql = "SELECT c.id
+                  FROM {block_playerhud_chapters} c
+            INNER JOIN {block_playerhud_story_nodes} n ON n.chapterid = c.id AND n.is_start = 1
+                 WHERE c.blockinstanceid = ?
+                   AND (c.unlock_date = 0 OR c.unlock_date <= ?)
+                       $levelsql";
+        $availableids = array_map('intval', $DB->get_fieldset_sql($sql, $params));
+
+        if (empty($availableids)) {
+            return false;
+        }
+
+        $progress = $DB->get_record(
+            'block_playerhud_rpg_progress',
+            ['blockinstanceid' => $instanceid, 'userid' => $userid]
+        );
+
+        $completedids = [];
+        if ($progress && !empty($progress->completed_chapters)) {
+            $completedids = array_map('intval', json_decode($progress->completed_chapters, true) ?: []);
+        }
+
+        foreach ($availableids as $chid) {
+            if (!in_array($chid, $completedids)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Return the RPG progress record, creating one if it does not exist yet.
      *
      * @param int $instanceid Block instance ID.
@@ -258,22 +312,9 @@ class story_manager {
                 $result['message']   = get_string('story_chapter_completed', 'block_playerhud');
             }
         } else {
-            $completedarr = json_decode($progress->completed_chapters, true) ?: [];
-            $completedarr = array_map('intval', $completedarr);
-
-            if (!in_array($chapterid, $completedarr)) {
-                $completedarr[] = $chapterid;
-                $DB->set_field(
-                    'block_playerhud_rpg_progress',
-                    'completed_chapters',
-                    json_encode($completedarr),
-                    ['id' => $progress->id]
-                );
-            }
-
-            $result['finished']  = true;
-            $result['chapterid'] = $chapterid;
-            $result['message']   = get_string('story_chapter_completed', 'block_playerhud');
+            // Next_nodeid = 0 means the choice has no valid target — data integrity issue from
+            // AI generation. Reload the current node so the player stays in place.
+            $result['node'] = self::prepare_node_data($instanceid, $currentnode, $userid, false);
         }
 
         return $result;
@@ -377,13 +418,27 @@ class story_manager {
                 '*',
                 MUST_EXIST
             );
-            return ['node' => self::prepare_node_data($instanceid, $nextnode, $userid, true)];
+            $nodedata = self::prepare_node_data($instanceid, $nextnode, $userid, true);
+
+            if (empty($nodedata['choices'])) {
+                return [
+                    'node'     => $nodedata,
+                    'finished' => true,
+                    'message'  => get_string('story_test_finished', 'block_playerhud'),
+                ];
+            }
+
+            return ['node' => $nodedata];
         }
 
-        return [
-            'finished' => true,
-            'message'  => get_string('story_test_finished', 'block_playerhud'),
-        ];
+        // Next_nodeid = 0: broken choice from AI generation — reload current node.
+        $currentnode = $DB->get_record(
+            'block_playerhud_story_nodes',
+            ['id' => $choice->nodeid],
+            '*',
+            MUST_EXIST
+        );
+        return ['node' => self::prepare_node_data($instanceid, $currentnode, $userid, true)];
     }
 
     /**

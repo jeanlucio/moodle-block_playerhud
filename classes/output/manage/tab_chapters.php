@@ -120,16 +120,34 @@ class tab_chapters implements renderable {
             ];
         }
 
+        // Fetch items for AI story item cost selector.
+        $itemrecords = $DB->get_records_menu(
+            'block_playerhud_items',
+            ['blockinstanceid' => $this->instanceid, 'enabled' => 1],
+            'name ASC',
+            'id, name'
+        );
+        $storyitems = [['id' => 0, 'name' => get_string('ai_story_item_none', 'block_playerhud'), 'selected' => true]];
+        foreach ($itemrecords as $itemid => $itemname) {
+            $storyitems[] = ['id' => $itemid, 'name' => format_string($itemname), 'selected' => false];
+        }
+
         $data = [
             'has_chapters'     => !empty($chaptersdata),
             'chapters'         => $chaptersdata,
             'url_new_chapter'  => $newchapurl->out(false),
             'str_new_chapter'  => get_string('chapter_new', 'block_playerhud'),
-            'str_ai_story_btn'          => get_string('ai_story_btn', 'block_playerhud'),
-            'str_story_modal_title'     => get_string('ai_story_modal_title', 'block_playerhud'),
-            'str_story_theme_label'     => get_string('ai_theme_label', 'block_playerhud'),
+            'str_ai_story_btn'            => get_string('ai_story_btn', 'block_playerhud'),
+            'str_story_modal_title'       => get_string('ai_story_modal_title', 'block_playerhud'),
+            'str_story_theme_label'       => get_string('ai_theme_label', 'block_playerhud'),
             'str_story_theme_placeholder' => get_string('ai_story_theme_placeholder', 'block_playerhud'),
-            'str_story_generate'        => get_string('ai_generate_btn', 'block_playerhud'),
+            'str_story_generate'          => get_string('ai_generate_btn', 'block_playerhud'),
+            'str_story_mechanics_title'   => get_string('ai_story_mechanics_title', 'block_playerhud'),
+            'str_story_karma_gain'        => get_string('ai_story_karma_gain_label', 'block_playerhud'),
+            'str_story_karma_loss'        => get_string('ai_story_karma_loss_label', 'block_playerhud'),
+            'str_story_item_cost'         => get_string('ai_story_item_cost_label', 'block_playerhud'),
+            'str_story_item_qty'          => get_string('ai_story_item_qty_label', 'block_playerhud'),
+            'story_items'                 => $storyitems,
             'str_manage_scenes' => get_string('chapter_manage_scenes', 'block_playerhud'),
             'str_test'         => get_string('test', 'block_playerhud'),
             'str_edit'         => get_string('edit'),

@@ -33,6 +33,36 @@ define(['jquery', 'core/notification'], function($, Notification) {
             // Move modal to body end to avoid z-index issues.
             $('#ph-item-modal-view').appendTo('body');
 
+            // Hoist the history/help shortcut buttons into the block's title row
+            // so they appear on the same line as "PlayerHUD".
+            (function() {
+                var sidebar = document.querySelector('.block_playerhud_sidebar');
+                if (!sidebar) {
+                    return;
+                }
+                var btnRow = sidebar.querySelector('.ph-header-actions');
+                if (!btnRow) {
+                    return;
+                }
+                var block = sidebar.closest('.block_playerhud');
+                if (!block) {
+                    return;
+                }
+                var titleEl = block.querySelector('.card-title');
+                if (!titleEl) {
+                    return;
+                }
+                // Wrap the title + buttons in a flex row so they appear side by side.
+                var wrapper = document.createElement('div');
+                wrapper.className = 'd-flex align-items-center mb-2';
+                titleEl.parentElement.insertBefore(wrapper, titleEl);
+                titleEl.classList.add('mb-0');
+                wrapper.appendChild(titleEl);
+                btnRow.remove();
+                btnRow.classList.add('ms-auto');
+                wrapper.appendChild(btnRow);
+            }());
+
             // 1. Disable HUD Confirmation.
             $('.js-disable-hud').on('click', function(e) {
                 e.preventDefault();

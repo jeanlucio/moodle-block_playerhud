@@ -506,10 +506,31 @@ class generator {
      * Builds the Story Generation AI prompt.
      *
      * @param string $theme The story theme or setting.
+     * @param array $options Optional mechanics constraints (karma_gain, karma_loss, item_qty).
      * @return string The constructed prompt.
      */
-    protected function build_prompt_story(string $theme): string {
-        return get_string('ai_prompt_story', 'block_playerhud', $theme);
+    protected function build_prompt_story(string $theme, array $options = []): string {
+        $prompt = get_string('ai_prompt_story', 'block_playerhud', $theme);
+
+        $karmagain = max(0, (int)($options['karma_gain'] ?? 0));
+        $karmaloss = max(0, (int)($options['karma_loss'] ?? 0));
+        $itemqty   = max(0, (int)($options['item_qty'] ?? 0));
+
+        if ($karmagain > 0 || $karmaloss > 0) {
+            $prompt .= "\n\nReputation constraints: add a \"karma_delta\" integer field to every choice object. " .
+                "Distribute positive karma_delta values on virtuous choices, totalling approximately +{$karmagain}. " .
+                "Distribute negative karma_delta values on questionable choices, totalling approximately -{$karmaloss}. " .
+                "Choices with no moral weight should have karma_delta set to 0. " .
+                "Terminal nodes have no choices and therefore no karma_delta.";
+        }
+
+        if ($itemqty > 0) {
+            $prompt .= "\n\nItem cost constraints: add a \"cost_item_qty\" integer field (use 0 for free choices) " .
+                "to every choice object. Distribute item costs totalling approximately {$itemqty} " .
+                "across key choices where the player must pay a price to proceed.";
+        }
+
+        return $prompt;
     }
 
     /**
@@ -561,13 +582,14 @@ class generator {
      * Generates a story chapter with nodes and choices via AI and saves everything in a transaction.
      *
      * @param string $theme The story theme or setting.
+     * @param array $options Optional mechanics constraints: karma_gain, karma_loss, item_id, item_qty.
      * @return array Result array with 'success', 'chapter_title', and 'provider'.
      * @throws \moodle_exception If parsing fails or key loading fails.
      */
-    public function generate_story(string $theme): array {
+    public function generate_story(string $theme, array $options = []): array {
         global $DB;
 
-        $prompt = $this->build_prompt_story($theme);
+        $prompt = $this->build_prompt_story($theme, $options);
         $result = $this->call_with_fallback($prompt);
 
         // Backtick markdown cleanup.
@@ -616,16 +638,18 @@ class generator {
             }
 
             foreach ($nodedata['choices'] as $choicedata) {
+                $choiceitemqty        = max(0, (int)($choicedata['cost_item_qty'] ?? 0));
+                $choiceitemid         = (int)($options['item_id'] ?? 0);
                 $choice               = new \stdClass();
                 $choice->nodeid       = $nodeid;
                 $choice->text         = $choicedata['text'];
                 $choice->next_nodeid  = $idxmap[(int)($choicedata['target_index'] ?? -1)] ?? 0;
                 $choice->req_class_id = 0;
                 $choice->req_karma_min = 0;
-                $choice->karma_delta  = 0;
+                $choice->karma_delta  = (int)($choicedata['karma_delta'] ?? 0);
                 $choice->set_class_id = 0;
-                $choice->cost_itemid  = 0;
-                $choice->cost_item_qty = 1;
+                $choice->cost_itemid  = ($choiceitemid > 0 && $choiceitemqty > 0) ? $choiceitemid : 0;
+                $choice->cost_item_qty = ($choiceitemid > 0 && $choiceitemqty > 0) ? $choiceitemqty : 1;
                 $DB->insert_record('block_playerhud_choices', $choice);
             }
         }

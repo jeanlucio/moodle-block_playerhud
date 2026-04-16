@@ -245,6 +245,13 @@ class block_playerhud extends block_base {
                 $stats['level']
             );
 
+            // Story notification dot: show when there is an available unread chapter.
+            $hasunreadchapters = !$isteacher && \block_playerhud\story_manager::has_unread_chapters(
+                $this->instance->id,
+                $USER->id,
+                $stats['level']
+            );
+
             // Final Data.
             $renderdata = [
                 'username'         => fullname($USER),
@@ -263,6 +270,7 @@ class block_playerhud extends block_base {
                 'url_history' => (new \moodle_url($urlbase, ['tab' => 'history']))->out(false),
                 'url_quests'  => (new \moodle_url($urlbase, ['tab' => 'quests']))->out(false),
                 'url_story'   => (new \moodle_url($urlbase, ['tab' => 'chapters']))->out(false),
+                'has_unread_chapters' => $hasunreadchapters,
                 'isteacher'   => $isteacher,
                 'manageurl'   => $manageurl,
                 'has_claimable_quests' => $hasclaimable,

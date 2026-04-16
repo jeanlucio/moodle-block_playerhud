@@ -871,6 +871,10 @@ class external extends external_api {
             'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
             'courseid'   => new external_value(PARAM_INT, 'Course ID'),
             'theme'      => new external_value(PARAM_TEXT, 'Theme or setting for the story'),
+            'karma_gain' => new external_value(PARAM_INT, 'Max reputation gain to distribute', VALUE_DEFAULT, 0),
+            'karma_loss' => new external_value(PARAM_INT, 'Max reputation loss to distribute', VALUE_DEFAULT, 0),
+            'item_id'    => new external_value(PARAM_INT, 'Item ID for cost distribution', VALUE_DEFAULT, 0),
+            'item_qty'   => new external_value(PARAM_INT, 'Total item quantity to distribute', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -880,15 +884,31 @@ class external extends external_api {
      * @param int $instanceid Block instance ID.
      * @param int $courseid   Course ID.
      * @param string $theme   Theme or setting for the story.
+     * @param int $karmagain  Max reputation gain to distribute across choices.
+     * @param int $karmaloss  Max reputation loss to distribute across choices.
+     * @param int $itemid     Item ID for choice cost distribution.
+     * @param int $itemqty    Total item quantity to distribute across choices.
      * @return array Result structure.
      */
-    public static function generate_story(int $instanceid, int $courseid, string $theme): array {
+    public static function generate_story(
+        int $instanceid,
+        int $courseid,
+        string $theme,
+        int $karmagain = 0,
+        int $karmaloss = 0,
+        int $itemid = 0,
+        int $itemqty = 0
+    ): array {
         global $USER, $DB;
 
         $params = self::validate_parameters(self::generate_story_parameters(), [
             'instanceid' => $instanceid,
             'courseid'   => $courseid,
             'theme'      => $theme,
+            'karma_gain' => $karmagain,
+            'karma_loss' => $karmaloss,
+            'item_id'    => $itemid,
+            'item_qty'   => $itemqty,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -897,7 +917,13 @@ class external extends external_api {
 
         try {
             $generator = new \block_playerhud\ai\generator($params['instanceid']);
-            $result    = $generator->generate_story($params['theme']);
+            $options   = [
+                'karma_gain' => $params['karma_gain'],
+                'karma_loss' => $params['karma_loss'],
+                'item_id'    => $params['item_id'],
+                'item_qty'   => $params['item_qty'],
+            ];
+            $result = $generator->generate_story($params['theme'], $options);
 
             $log                  = new \stdClass();
             $log->blockinstanceid = $params['instanceid'];

@@ -53,6 +53,11 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
                     return;
                 }
 
+                var karmaGain = parseInt($('#ph-story-karma-gain').val(), 10) || 0;
+                var karmaLoss = parseInt($('#ph-story-karma-loss').val(), 10) || 0;
+                var itemId    = parseInt($('#ph-story-item-id').val(), 10) || 0;
+                var itemQty   = parseInt($('#ph-story-item-qty').val(), 10) || 0;
+
                 var originalText = $btn.html();
                 $btn.prop('disabled', true)
                     .html('<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> ' +
@@ -64,7 +69,11 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
                     args: {
                         instanceid: instanceid,
                         courseid:   courseid,
-                        theme:      theme
+                        theme:      theme,
+                        karma_gain: karmaGain,
+                        karma_loss: karmaLoss,
+                        item_id:    itemId,
+                        item_qty:   itemQty
                     }
                 }])[0].done(function(resp) {
                     $btn.prop('disabled', false).html(originalText).removeAttr('aria-busy');
