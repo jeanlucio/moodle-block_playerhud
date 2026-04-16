@@ -263,4 +263,25 @@ class utils {
 
         return in_array('0', $allowedarray) || in_array((string) $userclassid, $allowedarray);
     }
+
+    /**
+     * Generates a unique drop code for a given block instance.
+     *
+     * Uses Moodle's random_string(6) (base-36, 2.17 billion combinations) and
+     * retries until the code is not already in use within the same instance,
+     * matching the strategy used by block_stash.
+     *
+     * @param int $blockinstanceid The block instance ID to scope uniqueness.
+     * @return string A unique 6-character alphanumeric code (uppercase).
+     */
+    public static function generate_drop_code(int $blockinstanceid): string {
+        global $DB;
+        do {
+            $code = strtoupper(random_string(6));
+        } while ($DB->record_exists('block_playerhud_drops', [
+            'blockinstanceid' => $blockinstanceid,
+            'code'            => $code,
+        ]));
+        return $code;
+    }
 }

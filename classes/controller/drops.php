@@ -367,7 +367,7 @@ class drops {
             $DB->update_record('block_playerhud_drops', $record);
         } else {
             $record->timecreated = time();
-            $record->code = strtoupper(substr(md5(time() . $USER->id . rand()), 0, 6));
+            $record->code = \block_playerhud\utils::generate_drop_code($this->instanceid);
             $DB->insert_record('block_playerhud_drops', $record);
         }
     }

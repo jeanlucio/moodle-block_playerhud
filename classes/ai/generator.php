@@ -262,7 +262,7 @@ class generator {
 
         $dropcode = null;
         if ($createdrop) {
-            $dropcode = strtoupper(substr(md5(time() . $itemid . rand()), 0, 6));
+            $dropcode = \block_playerhud\utils::generate_drop_code($this->instanceid);
             $drop = new \stdClass();
             $drop->blockinstanceid = $this->instanceid;
             $drop->itemid = $itemid;
