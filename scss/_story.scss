@@ -63,6 +63,16 @@
         font-size: 0.65rem;
         letter-spacing: 0.05em;
     }
+
+    // Keeps the "Next Scene" select from stretching the title bar.
+    .ph-choice-next-select {
+        max-width: 220px;
+    }
+
+    // Fixed-width for numeric inputs (karma, quantity) inside choice cards.
+    .ph-choice-field-number {
+        width: 80px;
+    }
 }
 
 // ── Story reading modal ────────────────────────────────────────────────────

@@ -62,33 +62,44 @@
         border: 1px solid var(--gray-200, #e9ecef);
     }
 
+    // Row layout: portrait on the left, identity info on the right.
+    .ph-char-identity {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
     .ph-char-portrait-wrap {
         display: inline-block;
         position: relative;
+        flex-shrink: 0;
     }
 
     .ph-char-portrait {
-        width: 80px;
-        height: 80px;
-        max-width: 80px;
-        max-height: 80px;
+        width: 50px;
+        height: 50px;
+        max-width: 50px;
+        max-height: 50px;
         border-radius: 50%;
         border: 3px solid var(--gray-300, #dee2e6);
         object-fit: cover;
         display: block;
-        margin: 0 auto;
     }
 
     .ph-char-portrait-fallback {
-        font-size: 80px;
+        font-size: 50px;
         line-height: 1;
         color: var(--gray-400, #ced4da);
         display: block;
         text-align: center;
     }
 
+    .ph-char-info {
+        min-width: 0;
+    }
+
     .ph-char-fullname {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
     }
 
     .ph-tier-name {
@@ -115,30 +126,24 @@
         opacity: 0.2;
     }
 
-    .ph-karma-bar {
-        position: relative;
-        height: 8px;
-        border-radius: 4px;
-        background-color: var(--gray-200, #e9ecef);
-        overflow: hidden;
+    // Karma inline icon — color changes by alignment.
+    .ph-karma-inline {
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        margin-top: 0.2rem;
     }
 
-    .ph-karma-fill {
-        height: 100%;
-        width: var(--ph-progress, 50%);
-        border-radius: 4px;
-        transition: width 0.4s ease;
+    .ph-karma--good {
+        color: var(--success, #198754);
+    }
 
-        &.ph-karma-fill--good {
-            background-color: var(--success, #198754);
-        }
+    .ph-karma--neutral {
+        color: var(--secondary, #6c757d);
+    }
 
-        &.ph-karma-fill--evil {
-            background-color: var(--danger, #dc3545);
-        }
-
-        &.ph-karma-fill--neutral {
-            background-color: var(--secondary, #6c757d);
-        }
+    .ph-karma--evil {
+        color: var(--danger, #dc3545);
     }
 }

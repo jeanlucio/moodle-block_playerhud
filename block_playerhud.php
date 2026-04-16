@@ -209,16 +209,23 @@ class block_playerhud extends block_base {
                 $karmapercent = max(0, min(100, (int) round(($karma + 999) / 1998 * 100)));
                 if ($karma < 0) {
                     $karmabarclass = 'ph-karma-fill--evil';
+                    $karmaiconclass = 'ph-karma--evil';
                 } else if ($karma > 0) {
                     $karmabarclass = 'ph-karma-fill--good';
+                    $karmaiconclass = 'ph-karma--good';
                 } else {
                     $karmabarclass = 'ph-karma-fill--neutral';
+                    $karmaiconclass = 'ph-karma--neutral';
                 }
+                $karmavaluedisplay = ($karma === 0)
+                    ? get_string('karma_neutral', 'block_playerhud')
+                    : (($karma > 0 ? '+' : '') . $karma);
                 $karmadata = [
                     'value'         => $karma,
-                    'value_display' => ($karma > 0 ? '+' : '') . $karma,
+                    'value_display' => $karmavaluedisplay,
                     'percent'       => $karmapercent,
                     'bar_class'     => $karmabarclass,
+                    'icon_class'    => $karmaiconclass,
                     'label'         => get_string('karma', 'filter_playerhud'),
                 ];
 
@@ -241,7 +248,8 @@ class block_playerhud extends block_base {
             // Final Data.
             $renderdata = [
                 'username'         => fullname($USER),
-                'userpicture'      => $OUTPUT->user_picture($USER, ['size' => 50]),
+                // Change the size of the Block's profile picture.
+                'userpicture'      => $OUTPUT->user_picture($USER, ['size' => 120]),
                 'enable_rpg'       => !empty($config->enable_rpg),
                 'classdata'        => $classdata,
                 'karma_data'       => $karmadata,
