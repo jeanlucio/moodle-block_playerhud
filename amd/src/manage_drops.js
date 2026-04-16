@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/notification', 'core/copy_to_clipboard', 'core/str'], function($, Notification, unused, Str) {
+define(['jquery', 'core/notification', 'core/str'], function($, Notification, Str) {
 
     /**
      * Manage Drops module.
