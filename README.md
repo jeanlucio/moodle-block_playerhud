@@ -21,14 +21,19 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
 ### ✨ Features
 
 * 🎮 **XP & Level System:** Automatic level progression based on earned XP.
-* 🏅 **Level Tiers:** Visual progression system.
+* 🏅 **Level Tiers:** Visual color-coded progression (every 5 levels).
 * 🎛 **Configurable Progression:** Teachers define the number of levels and XP required for each level.
 * 🎒 **Inventory System:** Collectible items with configurable **Cooldown (Recharge Time)** and usage limits.
-* 📍 **Drop System:** Place collectible items across course sections.
-* 🏆 **Ranking System:** Leaderboard with tie-breaker logic.
+* 📍 **Drop System:** Place collectible items across course sections via shortcodes.
+* 🏪 **NPC Shop:** Item-to-reward exchange with configurable trade rules.
+* 🏆 **Ranking System:** Leaderboard with tie-breaker logic and visibility controls.
 * 🔐 **Optional Participation:** Students may choose to opt in or opt out of the gamification system.
 * ⚡ **Real-Time Updates:** AJAX-based collection using Moodle’s `core/ajax`.
-* 🤖 **AI Item Generator (Optional).**
+* 🧙 **RPG Classes:** Define character classes with portraits, karma alignment, and multi-tier evolution images.
+* 📖 **Story & Chapters:** Branching narrative system with choice nodes and per-class story paths.
+* ⚖️ **Karma System:** Moral alignment mechanic that evolves the student’s class portrait over time.
+* 📊 **Analytics:** Audit logs and game economy tracking for teacher oversight.
+* 🤖 **AI Item Generator (Optional):** Generates items, stories, and class backstories via external AI providers.
 * 📱 **Mobile-Ready:** Compatible with Moodle web services.
 
 ---
@@ -56,10 +61,10 @@ Suitable for:
 
 PlayerHUD works together with complementary plugins:
 
-* **PlayerHUD Filter (Required):** Enables item drops via shortcodes inside course content.  
+* **PlayerHUD Filter (Required):** Enables item drops via shortcodes inside course content.
   👉 https://github.com/jeanlucio/moodle-filter_playerhud
 
-* **PlayerHUD Availability Condition (Optional):** Allows restricting activities based on PlayerHUD level or collected items.  
+* **PlayerHUD Availability Condition (Optional):** Allows restricting activities based on PlayerHUD level or collected items.
   👉 https://github.com/jeanlucio/moodle-availability_playerhud
 
 ---
@@ -75,7 +80,7 @@ PlayerHUD works together with complementary plugins:
 
 1. Download the `.zip` file or clone this repository.
 2. Extract the folder into your Moodle `blocks/` directory.
-3. Rename the folder to `playerhud` (if necessary).  
+3. Rename the folder to `playerhud` (if necessary).
    Final path:
    `your-moodle/blocks/playerhud/`
 4. Install the required **PlayerHUD Filter** plugin.
@@ -125,8 +130,9 @@ The AI feature is only a productivity tool for automatic item generation.
 
 The AI feature supports the following third-party providers:
 
-- Google Gemini
-- Groq
+- **Google Gemini** — https://ai.google.dev/
+- **Groq** — https://console.groq.com/
+- **OpenAI-compatible APIs** — Any provider that follows the OpenAI API format (e.g. OpenRouter, self-hosted models via LM Studio, Ollama proxy, etc.)
 
 These services operate under their own terms of service and privacy policies.
 
@@ -136,8 +142,9 @@ API keys must be created directly on the provider’s official website:
 
 - Google Gemini: https://ai.google.dev/
 - Groq: https://console.groq.com/
+- OpenAI-compatible: refer to your specific provider’s documentation
 
-Both providers currently offer free usage tiers. However, pricing policies may change and paid plans may apply depending on usage limits.
+Both Gemini and Groq currently offer free usage tiers. However, pricing policies may change and paid plans may apply depending on usage limits.
 
 The PlayerHUD plugin does not provide API keys.
 
@@ -182,14 +189,19 @@ Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo q
 ### ✨ Funcionalidades
 
 * 🎮 **Sistema de XP e Níveis:** Progressão automática baseada no XP acumulado.
-* 🏅 **Tiers de Nível:** Sistema visual de progressão.
+* 🏅 **Tiers de Nível:** Sistema visual de progressão com código de cores a cada 5 níveis.
 * 🎛 **Progressão Configurável:** O professor define a quantidade de níveis e o XP necessário para cada nível.
 * 🎒 **Sistema de Inventário:** Itens colecionáveis com **Tempo de Recarga (intervalo mínimo entre coletas)** e limite configurável.
-* 📍 **Sistema de Drops:** Posicione itens nas seções do curso.
-* 🏆 **Ranking:** Classificação com critério de desempate.
+* 📍 **Sistema de Drops:** Posicione itens nas seções do curso via shortcodes.
+* 🏪 **Loja NPC:** Sistema de trocas configurável — itens por recompensas.
+* 🏆 **Ranking:** Classificação com critério de desempate e controle de visibilidade.
 * 🔐 **Participação Opcional:** O aluno pode escolher participar ou não da gamificação.
 * ⚡ **Atualização em Tempo Real:** Coleta via `core/ajax`.
-* 🤖 **Gerador de Itens com IA (Opcional).**
+* 🧙 **Classes RPG:** Defina classes de personagem com retratos, alinhamento de karma e imagens de evolução por tier.
+* 📖 **História e Capítulos:** Sistema narrativo ramificado com nós de escolha e caminhos por classe.
+* ⚖️ **Sistema de Karma:** Mecânica de alinhamento moral que evolui o retrato da classe do aluno ao longo do tempo.
+* 📊 **Analytics:** Logs de auditoria e rastreamento da economia do jogo para controle do professor.
+* 🤖 **Gerador de Itens com IA (Opcional):** Gera itens, histórias e backstories de classes via provedores externos de IA.
 * 📱 **Compatível com Mobile.**
 
 ---
@@ -217,10 +229,10 @@ Indicado para:
 
 O PlayerHUD funciona em conjunto com plugins complementares:
 
-* **Filtro PlayerHUD (Obrigatório):** Permite inserir drops de itens por meio de shortcodes no conteúdo do curso.  
+* **Filtro PlayerHUD (Obrigatório):** Permite inserir drops de itens por meio de shortcodes no conteúdo do curso.
   👉 https://github.com/jeanlucio/moodle-filter_playerhud
 
-* **Restrição de Acesso PlayerHUD (Opcional):** Permite liberar atividades com base no nível do aluno ou na posse de itens.  
+* **Restrição de Acesso PlayerHUD (Opcional):** Permite liberar atividades com base no nível do aluno ou na posse de itens.
   👉 https://github.com/jeanlucio/moodle-availability_playerhud
 
 ---
@@ -238,7 +250,7 @@ O PlayerHUD funciona em conjunto com plugins complementares:
 
 1. Baixe o arquivo `.zip` ou clone este repositório.
 2. Extraia na pasta `blocks/` do seu Moodle.
-3. Renomeie para `playerhud` (se necessário).  
+3. Renomeie para `playerhud` (se necessário).
    Caminho final:
    `seu-moodle/blocks/playerhud/`
 4. Instale o plugin obrigatório **Filtro PlayerHUD**.
@@ -288,8 +300,9 @@ A IA é apenas um recurso de produtividade para geração automática de itens.
 
 O recurso de IA oferece suporte aos seguintes provedores externos:
 
-- Google Gemini
-- Groq
+- **Google Gemini** — https://ai.google.dev/
+- **Groq** — https://console.groq.com/
+- **APIs compatíveis com OpenAI** — Qualquer provedor que siga o formato da API OpenAI (ex.: OpenRouter, modelos locais via LM Studio, proxy Ollama, etc.)
 
 Esses serviços seguem seus próprios termos de uso e políticas de privacidade.
 
@@ -299,8 +312,9 @@ As chaves de API devem ser criadas diretamente no site oficial do provedor:
 
 - Google Gemini: https://ai.google.dev/
 - Groq: https://console.groq.com/
+- APIs compatíveis com OpenAI: consulte a documentação do provedor específico
 
-Atualmente, ambos oferecem planos gratuitos, porém as políticas de preços podem variar conforme o volume de uso.
+Gemini e Groq atualmente oferecem planos gratuitos, porém as políticas de preços podem variar conforme o volume de uso.
 
 O PlayerHUD não fornece chaves de API.
 
