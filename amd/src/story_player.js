@@ -48,9 +48,6 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
     }
 
     /**
-     * Open the story modal.
-     */
-    /**
      * Update the modal title text.
      *
      * @param {string} title New title text.
@@ -219,7 +216,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
 
         var icon = card.querySelector('i.fa');
         if (icon) {
-            icon.className = 'fa fa-check-circle text-success';
+            icon.className = 'fa fa-check-circle text-success ph-chapter-status-icon';
         }
         if (!card.querySelector('[data-action="read-recap"]')) {
             var footerEl = card.querySelector('.mt-auto.w-100.text-center');
@@ -327,7 +324,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                     closeBtn.type = 'button';
                     closeBtn.className = 'btn btn-secondary';
                     closeBtn.setAttribute('data-bs-dismiss', 'modal');
-            closeBtn.setAttribute('data-dismiss', 'modal');
+                    closeBtn.setAttribute('data-dismiss', 'modal');
                     closeBtn.textContent = strings.close;
                     choicesEl.innerHTML = '';
                     choicesEl.appendChild(closeBtn);
