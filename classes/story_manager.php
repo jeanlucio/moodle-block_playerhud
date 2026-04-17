@@ -312,7 +312,7 @@ class story_manager {
                 $result['message']   = get_string('story_chapter_completed', 'block_playerhud');
             }
         } else {
-            // next_nodeid = 0 is an explicit terminal choice - mark chapter complete.
+            // Next_nodeid = 0 is an explicit terminal choice - mark chapter complete.
             $completedarr = json_decode($progress->completed_chapters, true) ?: [];
             $completedarr = array_map('intval', $completedarr);
 
