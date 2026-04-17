@@ -89,15 +89,15 @@ class tab_chapters implements renderable {
 
             if ($iscompleted) {
                 $statusicon  = 'fa-check-circle text-success';
-                $itemclasses = 'list-group-item ph-chapter-item ph-chapter-item--completed';
+                $itemclasses = 'ph-chapter-item ph-chapter-item--completed';
                 $statustext  = get_string('completed', 'block_playerhud');
             } else if ($islocked) {
                 $statusicon  = 'fa-lock text-danger';
-                $itemclasses = 'list-group-item ph-chapter-item ph-chapter-item--locked';
+                $itemclasses = 'ph-chapter-item ph-chapter-item--locked';
                 $statustext  = get_string('available', 'block_playerhud') . ': ' . userdate($chap->unlock_date);
             } else {
                 $statusicon  = 'fa-book text-primary';
-                $itemclasses = 'list-group-item list-group-item-action ph-chapter-item ph-chapter-item--available';
+                $itemclasses = 'ph-chapter-item ph-chapter-item--available';
                 $statustext  = get_string('click_to_read', 'block_playerhud');
             }
 
@@ -111,7 +111,7 @@ class tab_chapters implements renderable {
                 'is_available' => (!$islocked && !$iscompleted),
                 'is_completed' => $iscompleted,
                 'is_locked'    => $islocked,
-                'str_recap'    => get_string('recap_story', 'block_playerhud'),
+                'str_recap'    => get_string('read_again', 'block_playerhud'),
             ];
         }
 

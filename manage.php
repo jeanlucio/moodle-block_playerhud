@@ -409,6 +409,82 @@ if ($action == 'delete_chapter') {
     }
 }
 
+// Action: Move Chapter Up.
+if ($action === 'move_chapter_up' && confirm_sesskey()) {
+    $chapterid = optional_param('chapterid', 0, PARAM_INT);
+    if ($chapterid) {
+        $chapter = $DB->get_record(
+            'block_playerhud_chapters',
+            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
+            '*',
+            MUST_EXIST
+        );
+
+        // Get the previous chapter (lower sortorder).
+        $prevchapter = $DB->get_record_sql(
+            "SELECT * FROM {block_playerhud_chapters}
+             WHERE blockinstanceid = ? AND sortorder < ?
+             ORDER BY sortorder DESC
+             LIMIT 1",
+            [$instanceid, $chapter->sortorder]
+        );
+
+        if ($prevchapter) {
+            // Swap sortorder values.
+            $temporder = $chapter->sortorder;
+            $chapter->sortorder = $prevchapter->sortorder;
+            $prevchapter->sortorder = $temporder;
+
+            $DB->update_record('block_playerhud_chapters', $chapter);
+            $DB->update_record('block_playerhud_chapters', $prevchapter);
+        }
+
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'chapters']),
+            null,
+            \core\output\notification::NOTIFY_INFO
+        );
+    }
+}
+
+// Action: Move Chapter Down.
+if ($action === 'move_chapter_down' && confirm_sesskey()) {
+    $chapterid = optional_param('chapterid', 0, PARAM_INT);
+    if ($chapterid) {
+        $chapter = $DB->get_record(
+            'block_playerhud_chapters',
+            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
+            '*',
+            MUST_EXIST
+        );
+
+        // Get the next chapter (higher sortorder).
+        $nextchapter = $DB->get_record_sql(
+            "SELECT * FROM {block_playerhud_chapters}
+             WHERE blockinstanceid = ? AND sortorder > ?
+             ORDER BY sortorder ASC
+             LIMIT 1",
+            [$instanceid, $chapter->sortorder]
+        );
+
+        if ($nextchapter) {
+            // Swap sortorder values.
+            $temporder = $chapter->sortorder;
+            $chapter->sortorder = $nextchapter->sortorder;
+            $nextchapter->sortorder = $temporder;
+
+            $DB->update_record('block_playerhud_chapters', $chapter);
+            $DB->update_record('block_playerhud_chapters', $nextchapter);
+        }
+
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'chapters']),
+            null,
+            \core\output\notification::NOTIFY_INFO
+        );
+    }
+}
+
 // Action: Save API Keys.
 if ($action === 'save_keys' && confirm_sesskey()) {
     $gkey = optional_param('gemini_key', '', PARAM_TEXT);

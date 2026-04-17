@@ -89,9 +89,14 @@ class tab_chapters implements renderable {
         ]);
 
         $chaptersdata = [];
-        foreach ($chapters as $chap) {
+        $chapterslist = array_values($chapters);
+        $chaptercount = count($chapterslist);
+        foreach ($chapterslist as $index => $chap) {
             $scenecount = $scenecounts[$chap->id] ?? 0;
-            $chaptersdata[] = [
+            $isfirst = ($index === 0);
+            $islast = ($index === $chaptercount - 1);
+
+            $data = [
                 'id'           => (int) $chap->id,
                 'title'        => format_string($chap->title),
                 'intro_text'   => format_string($chap->intro_text),
@@ -117,7 +122,22 @@ class tab_chapters implements renderable {
                     'tab'       => 'chapters',
                 ]))->out(false),
                 'confirm_msg'  => s(get_string('chapter_delete_confirm', 'block_playerhud')),
+                'can_move_up'   => !$isfirst,
+                'can_move_down' => !$islast,
+                'url_move_up'   => !$isfirst ? (new moodle_url($baseurl, [
+                    'action'    => 'move_chapter_up',
+                    'chapterid' => $chap->id,
+                    'sesskey'   => sesskey(),
+                    'tab'       => 'chapters',
+                ]))->out(false) : '',
+                'url_move_down' => !$islast ? (new moodle_url($baseurl, [
+                    'action'    => 'move_chapter_down',
+                    'chapterid' => $chap->id,
+                    'sesskey'   => sesskey(),
+                    'tab'       => 'chapters',
+                ]))->out(false) : '',
             ];
+            $chaptersdata[] = $data;
         }
 
         // Fetch items for AI story item cost selector.
@@ -152,6 +172,8 @@ class tab_chapters implements renderable {
             'str_test'         => get_string('test', 'block_playerhud'),
             'str_edit'         => get_string('edit'),
             'str_delete'       => get_string('delete'),
+            'str_move_up'      => get_string('chapter_move_up', 'block_playerhud'),
+            'str_move_down'    => get_string('chapter_move_down', 'block_playerhud'),
             'str_empty'        => get_string('chapters_empty', 'block_playerhud'),
             'str_delete_title' => get_string('confirm_delete', 'block_playerhud'),
             'str_cancel'       => get_string('cancel', 'block_playerhud'),

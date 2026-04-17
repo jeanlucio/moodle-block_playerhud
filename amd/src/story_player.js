@@ -221,16 +221,12 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
         if (icon) {
             icon.className = 'fa fa-check-circle text-success';
         }
-        var statusEl = card.querySelector('small');
-        if (statusEl) {
-            statusEl.textContent = strings.completed;
-        }
-
         if (!card.querySelector('[data-action="read-recap"]')) {
+            var footerEl = card.querySelector('.mt-auto.w-100.text-center');
             var recapDiv = document.createElement('div');
-            recapDiv.className = 'mt-2 pt-2 border-top';
+            recapDiv.className = 'ph-chapter-recap-wrap';
             recapDiv.innerHTML =
-                '<button class="btn btn-sm btn-outline-info"' +
+                '<button class="btn btn-sm btn-outline-info w-100"' +
                 ' data-action="read-recap"' +
                 ' data-chapterid="' + chapterid + '"' +
                 ' data-title="' + chapterTitle.replace(/"/g, '&quot;') + '"' +
@@ -238,7 +234,12 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                 ' data-toggle="modal" data-target="#ph-story-modal">' +
                 '<i class="fa fa-history" aria-hidden="true"></i> ' + strings.readAgain +
                 '</button>';
-            card.appendChild(recapDiv);
+
+            if (footerEl) {
+                footerEl.appendChild(recapDiv);
+            } else {
+                card.appendChild(recapDiv);
+            }
         }
     }
 
