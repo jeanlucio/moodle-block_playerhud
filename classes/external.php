@@ -871,10 +871,10 @@ class external extends external_api {
             'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
             'courseid'   => new external_value(PARAM_INT, 'Course ID'),
             'theme'      => new external_value(PARAM_TEXT, 'Theme or setting for the story'),
-            'karma_gain' => new external_value(PARAM_INT, 'Max reputation gain to distribute', VALUE_DEFAULT, 0),
-            'karma_loss' => new external_value(PARAM_INT, 'Max reputation loss to distribute', VALUE_DEFAULT, 0),
-            'item_id'    => new external_value(PARAM_INT, 'Item ID for cost distribution', VALUE_DEFAULT, 0),
-            'item_qty'   => new external_value(PARAM_INT, 'Total item quantity to distribute', VALUE_DEFAULT, 0),
+            'karmagain' => new external_value(PARAM_INT, 'Max reputation gain to distribute', VALUE_DEFAULT, 0),
+            'karmaloss' => new external_value(PARAM_INT, 'Max reputation loss to distribute', VALUE_DEFAULT, 0),
+            'itemid'    => new external_value(PARAM_INT, 'Item ID for cost distribution', VALUE_DEFAULT, 0),
+            'itemqty'   => new external_value(PARAM_INT, 'Total item quantity to distribute', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -905,10 +905,10 @@ class external extends external_api {
             'instanceid' => $instanceid,
             'courseid'   => $courseid,
             'theme'      => $theme,
-            'karma_gain' => $karmagain,
-            'karma_loss' => $karmaloss,
-            'item_id'    => $itemid,
-            'item_qty'   => $itemqty,
+            'karmagain' => $karmagain,
+            'karmaloss' => $karmaloss,
+            'itemid'    => $itemid,
+            'itemqty'   => $itemqty,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -918,10 +918,10 @@ class external extends external_api {
         try {
             $generator = new \block_playerhud\ai\generator($params['instanceid']);
             $options   = [
-                'karma_gain' => $params['karma_gain'],
-                'karma_loss' => $params['karma_loss'],
-                'item_id'    => $params['item_id'],
-                'item_qty'   => $params['item_qty'],
+                'karma_gain' => $params['karmagain'],
+                'karma_loss' => $params['karmaloss'],
+                'item_id'    => $params['itemid'],
+                'item_qty'   => $params['itemqty'],
             ];
             $result = $generator->generate_story($params['theme'], $options);
 

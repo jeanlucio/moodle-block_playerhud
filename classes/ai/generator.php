@@ -640,7 +640,7 @@ class generator {
             foreach ($nodedata['choices'] as $choicedata) {
                 $nextnodeid = $idxmap[(int)($choicedata['target_index'] ?? -1)] ?? 0;
                 if ($nextnodeid === 0) {
-                    // target_index out of range - skip to avoid false chapter completion.
+                    // Target_index out of range - skip to avoid false chapter completion.
                     continue;
                 }
                 $choiceitemqty        = max(0, (int)($choicedata['cost_item_qty'] ?? 0));

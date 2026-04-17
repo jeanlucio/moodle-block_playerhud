@@ -55,8 +55,8 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
 
                 var karmaGain = parseInt($('#ph-story-karma-gain').val(), 10) || 0;
                 var karmaLoss = parseInt($('#ph-story-karma-loss').val(), 10) || 0;
-                var itemId    = parseInt($('#ph-story-item-id').val(), 10) || 0;
-                var itemQty   = parseInt($('#ph-story-item-qty').val(), 10) || 0;
+                var itemId = parseInt($('#ph-story-item-id').val(), 10) || 0;
+                var itemQty = parseInt($('#ph-story-item-qty').val(), 10) || 0;
 
                 var originalText = $btn.html();
                 $btn.prop('disabled', true)
@@ -68,12 +68,12 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
                     methodname: 'block_playerhud_generate_story',
                     args: {
                         instanceid: instanceid,
-                        courseid:   courseid,
-                        theme:      theme,
-                        karma_gain: karmaGain,
-                        karma_loss: karmaLoss,
-                        item_id:    itemId,
-                        item_qty:   itemQty
+                        courseid: courseid,
+                        theme: theme,
+                        karmagain: karmaGain,
+                        karmaloss: karmaLoss,
+                        itemid: itemId,
+                        itemqty: itemQty
                     }
                 }])[0].done(function(resp) {
                     $btn.prop('disabled', false).html(originalText).removeAttr('aria-busy');
