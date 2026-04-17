@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Story manager — business logic for chapters, scenes and choices.
+ * Story manager - business logic for chapters, scenes and choices.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
@@ -292,7 +292,7 @@ class story_manager {
             );
             $result['node'] = self::prepare_node_data($instanceid, $nextnode, $userid, false);
 
-            // Terminal node: no choices means this path has ended — mark chapter as finished.
+            // Terminal node: no choices means this path has ended - mark chapter as finished.
             if (empty($result['node']['choices'])) {
                 $completedarr = json_decode($progress->completed_chapters, true) ?: [];
                 $completedarr = array_map('intval', $completedarr);
@@ -312,7 +312,7 @@ class story_manager {
                 $result['message']   = get_string('story_chapter_completed', 'block_playerhud');
             }
         } else {
-            // next_nodeid = 0 is an explicit terminal choice — mark chapter complete.
+            // next_nodeid = 0 is an explicit terminal choice - mark chapter complete.
             $completedarr = json_decode($progress->completed_chapters, true) ?: [];
             $completedarr = array_map('intval', $completedarr);
 
@@ -445,7 +445,7 @@ class story_manager {
             return ['node' => $nodedata];
         }
 
-        // Next_nodeid = 0: broken choice from AI generation — reload current node.
+        // Next_nodeid = 0: broken choice from AI generation - reload current node.
         $currentnode = $DB->get_record(
             'block_playerhud_story_nodes',
             ['id' => $choice->nodeid],
