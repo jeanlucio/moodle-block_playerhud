@@ -638,12 +638,17 @@ class generator {
             }
 
             foreach ($nodedata['choices'] as $choicedata) {
+                $nextnodeid = $idxmap[(int)($choicedata['target_index'] ?? -1)] ?? 0;
+                if ($nextnodeid === 0) {
+                    // target_index out of range — skip to avoid false chapter completion.
+                    continue;
+                }
                 $choiceitemqty        = max(0, (int)($choicedata['cost_item_qty'] ?? 0));
                 $choiceitemid         = (int)($options['item_id'] ?? 0);
                 $choice               = new \stdClass();
                 $choice->nodeid       = $nodeid;
                 $choice->text         = $choicedata['text'];
-                $choice->next_nodeid  = $idxmap[(int)($choicedata['target_index'] ?? -1)] ?? 0;
+                $choice->next_nodeid  = $nextnodeid;
                 $choice->req_class_id = 0;
                 $choice->req_karma_min = 0;
                 $choice->karma_delta  = (int)($choicedata['karma_delta'] ?? 0);

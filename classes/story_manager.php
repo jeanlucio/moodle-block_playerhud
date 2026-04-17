@@ -312,9 +312,23 @@ class story_manager {
                 $result['message']   = get_string('story_chapter_completed', 'block_playerhud');
             }
         } else {
-            // Next_nodeid = 0 means the choice has no valid target — data integrity issue from
-            // AI generation. Reload the current node so the player stays in place.
-            $result['node'] = self::prepare_node_data($instanceid, $currentnode, $userid, false);
+            // next_nodeid = 0 is an explicit terminal choice — mark chapter complete.
+            $completedarr = json_decode($progress->completed_chapters, true) ?: [];
+            $completedarr = array_map('intval', $completedarr);
+
+            if (!in_array($chapterid, $completedarr)) {
+                $completedarr[] = $chapterid;
+                $DB->set_field(
+                    'block_playerhud_rpg_progress',
+                    'completed_chapters',
+                    json_encode($completedarr),
+                    ['id' => $progress->id]
+                );
+            }
+
+            $result['finished']  = true;
+            $result['chapterid'] = $chapterid;
+            $result['message']   = get_string('story_chapter_completed', 'block_playerhud');
         }
 
         return $result;
