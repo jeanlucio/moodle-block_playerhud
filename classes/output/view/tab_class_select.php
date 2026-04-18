@@ -135,7 +135,6 @@ class tab_class_select implements renderable {
             'str_title'       => get_string('class_select_title', 'block_playerhud'),
             'str_intro'       => get_string('class_select_intro', 'block_playerhud'),
             'str_select_btn'  => get_string('class_select_btn', 'block_playerhud'),
-            'str_hp'          => get_string('class_hp_label', 'block_playerhud'),
             'str_selected'    => get_string('class_selected_badge', 'block_playerhud'),
             'str_empty'       => get_string('class_empty', 'block_playerhud'),
         ];

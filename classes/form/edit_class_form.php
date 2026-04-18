@@ -53,15 +53,6 @@ class edit_class_form extends \moodleform {
         ]);
         $mform->setType('description', PARAM_CLEANHTML);
 
-        // Base HP.
-        $mform->addElement('text', 'base_hp', get_string('class_base_hp', 'block_playerhud'), [
-            'type' => 'number',
-            'min' => '1',
-        ]);
-        $mform->setType('base_hp', PARAM_INT);
-        $mform->setDefault('base_hp', 100);
-        $mform->addRule('base_hp', null, 'required', null, 'client');
-
         // Evolution images header.
         $mform->addElement('header', 'images_hdr', get_string('class_images_hdr', 'block_playerhud'));
         $mform->setExpanded('images_hdr');

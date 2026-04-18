@@ -35,7 +35,6 @@
         "str_title": "Choose Your Class",
         "str_intro": "Select the class that best represents your style.",
         "str_select_btn": "Choose This Class",
-        "str_hp": "HP:",
         "str_selected": "Selected",
         "str_empty": "No classes available.",
         "classes": [
@@ -43,7 +42,6 @@
                 "id": 1,
                 "name": "Warrior",
                 "description": "A brave fighter.",
-                "base_hp": 150,
                 "has_portrait": true,
                 "portrait": "http://example.com/portrait.png",
                 "is_selected": false
@@ -78,9 +76,6 @@
             {{#description}}
             <p class="ph-class-desc text-muted small text-center mb-2">{{{description}}}</p>
             {{/description}}
-            <p class="text-center small mb-3">
-                <i class="fa fa-heart text-danger" aria-hidden="true"></i> {{str_hp}} {{base_hp}}
-            </p>
 
             {{! Action button }}
             {{#is_selected}}

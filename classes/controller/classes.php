@@ -144,7 +144,6 @@ class classes {
         if ($data->classid && $record) {
             $record->name         = $data->name;
             $record->description  = $data->description;
-            $record->base_hp      = (int) $data->base_hp;
             $record->timemodified = $now;
             $DB->update_record('block_playerhud_classes', $record);
             $classid = (int) $record->id;
@@ -153,7 +152,7 @@ class classes {
             $newrecord->blockinstanceid = $data->instanceid;
             $newrecord->name            = $data->name;
             $newrecord->description     = $data->description;
-            $newrecord->base_hp         = (int) $data->base_hp;
+            $newrecord->base_hp         = 100;
             $newrecord->timecreated     = $now;
             $newrecord->timemodified    = $now;
             $classid = $DB->insert_record('block_playerhud_classes', $newrecord);
