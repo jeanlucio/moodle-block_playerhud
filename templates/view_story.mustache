@@ -40,6 +40,10 @@
         "str_loading": "Loading...",
         "str_completed": "Chapter completed!",
         "str_read_again": "Read again",
+        "str_filter_by": "Filter by",
+        "str_filter_all": "All",
+        "str_filter_read": "Read",
+        "str_filter_unread": "Unread",
         "chapters": [
             {
                 "id": 1,
@@ -49,6 +53,7 @@
                 "is_available": true,
                 "is_completed": false,
                 "is_locked": false,
+                "chapter_status": "available",
                 "str_recap": "Read recap"
             }
         ]
@@ -57,9 +62,25 @@
 <div class="ph-tab-story">
 
     {{#has_chapters}}
-    <div class="playerhud-inventory-grid animate__animated animate__fadeIn">
+    <div class="d-flex justify-content-end mb-3">
+        <div class="d-flex align-items-center">
+            <label for="ph-story-filter" class="me-2 small text-muted fw-bold">
+                <i class="fa fa-filter" aria-hidden="true"></i> {{str_filter_by}}
+            </label>
+            <select id="ph-story-filter"
+                    class="form-select form-select-sm shadow-sm border-secondary w-auto ph-story-filter-selector"
+                    aria-label="{{str_filter_by}}">
+                <option value="all">{{str_filter_all}}</option>
+                <option value="unread">{{str_filter_unread}}</option>
+                <option value="read">{{str_filter_read}}</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="playerhud-inventory-grid animate__animated animate__fadeIn" id="ph-story-grid">
         {{#chapters}}
         <div class="playerhud-item-card card {{item_classes}}"
+             data-status="{{chapter_status}}"
              {{#is_available}}
              data-action="open-chapter"
              data-chapterid="{{id}}"

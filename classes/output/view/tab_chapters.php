@@ -101,29 +101,42 @@ class tab_chapters implements renderable {
                 $statustext  = get_string('click_to_read', 'block_playerhud');
             }
 
+            if ($iscompleted) {
+                $chapterstatus = 'completed';
+            } else if ($islocked) {
+                $chapterstatus = 'locked';
+            } else {
+                $chapterstatus = 'available';
+            }
+
             $chaptersdata[] = [
-                'id'           => (int) $chap->id,
-                'title'        => format_string($chap->title),
-                'intro_text'   => format_string($chap->intro_text),
-                'status_icon'  => $statusicon,
-                'item_classes' => $itemclasses,
-                'status_text'  => $statustext,
-                'is_available' => (!$islocked && !$iscompleted),
-                'is_completed' => $iscompleted,
-                'is_locked'    => $islocked,
-                'str_recap'    => get_string('read_again', 'block_playerhud'),
+                'id'             => (int) $chap->id,
+                'title'          => format_string($chap->title),
+                'intro_text'     => format_string($chap->intro_text),
+                'status_icon'    => $statusicon,
+                'item_classes'   => $itemclasses,
+                'status_text'    => $statustext,
+                'is_available'   => (!$islocked && !$iscompleted),
+                'is_completed'   => $iscompleted,
+                'is_locked'      => $islocked,
+                'chapter_status' => $chapterstatus,
+                'str_recap'      => get_string('read_again', 'block_playerhud'),
             ];
         }
 
         $data = [
-            'has_chapters'  => !empty($chaptersdata),
-            'chapters'      => $chaptersdata,
-            'str_story'     => get_string('story_shortcut', 'block_playerhud'),
-            'str_close'     => get_string('close', 'block_playerhud'),
-            'str_empty'     => get_string('chapters_empty', 'block_playerhud'),
-            'str_loading'   => get_string('story_loading', 'block_playerhud'),
-            'str_completed' => get_string('story_chapter_completed', 'block_playerhud'),
-            'str_read_again' => get_string('read_again', 'block_playerhud'),
+            'has_chapters'    => !empty($chaptersdata),
+            'chapters'        => $chaptersdata,
+            'str_story'       => get_string('story_shortcut', 'block_playerhud'),
+            'str_close'       => get_string('close', 'block_playerhud'),
+            'str_empty'       => get_string('chapters_empty', 'block_playerhud'),
+            'str_loading'     => get_string('story_loading', 'block_playerhud'),
+            'str_completed'   => get_string('story_chapter_completed', 'block_playerhud'),
+            'str_read_again'  => get_string('read_again', 'block_playerhud'),
+            'str_filter_by'   => get_string('story_filter_by', 'block_playerhud'),
+            'str_filter_all'  => get_string('story_filter_all', 'block_playerhud'),
+            'str_filter_read' => get_string('story_filter_read', 'block_playerhud'),
+            'str_filter_unread' => get_string('story_filter_unread', 'block_playerhud'),
         ];
 
         $PAGE->requires->js_call_amd(

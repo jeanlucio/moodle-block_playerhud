@@ -134,6 +134,18 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
             });
 
+            // Client-side filter for story chapters.
+            $(document).on('change', '.ph-story-filter-selector', function() {
+                const value = $(this).val();
+                $('#ph-story-grid .playerhud-item-card').each(function() {
+                    const status = $(this).data('status');
+                    const show = value === 'all' ||
+                        (value === 'read' && status === 'completed') ||
+                        (value === 'unread' && status !== 'completed');
+                    $(this).toggle(show);
+                });
+            });
+
             // Event Delegation for clicking on items.
             $(document).on('click', '.ph-item-trigger', function(e) {
                 e.preventDefault();
