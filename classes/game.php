@@ -620,6 +620,9 @@ class game {
         global $DB;
         $progress = self::get_player_class($blockinstanceid, $userid);
         if ($progress) {
+            if (!empty($progress->classid)) {
+                return;
+            }
             $progress->classid = $classid;
             $DB->update_record('block_playerhud_rpg_progress', $progress);
         } else {

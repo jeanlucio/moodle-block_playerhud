@@ -194,13 +194,16 @@ class block_playerhud extends block_base {
                         for ($i = 1; $i <= 5; $i++) {
                             $tierstars[] = ['filled' => ($i <= $portraittier)];
                         }
+                        $classdesc = format_text($class->description ?? '', FORMAT_HTML, ['context' => $context]);
                         $classdata = [
-                            'classname'    => format_string($class->name),
-                            'fullname'     => format_string($class->name) . ' ' . $USER->firstname,
-                            'portrait_url' => $portraiturl,
-                            'tier'         => $portraittier,
-                            'tier_name'    => get_string('class_tier_' . $portraittier, 'block_playerhud'),
-                            'tier_stars'   => $tierstars,
+                            'classname'       => format_string($class->name),
+                            'fullname'        => format_string($class->name) . ' ' . $USER->firstname,
+                            'portrait_url'    => $portraiturl,
+                            'tier'            => $portraittier,
+                            'tier_name'       => get_string('class_tier_' . $portraittier, 'block_playerhud'),
+                            'tier_stars'      => $tierstars,
+                            'description'     => $classdesc,
+                            'has_description' => !empty(trim(strip_tags($classdesc))),
                         ];
                     }
                 }

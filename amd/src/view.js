@@ -30,8 +30,9 @@ define(['jquery', 'core/notification'], function($, Notification) {
          * @param {Object} config The configuration object passed from PHP.
          */
         init: function(config) {
-            // Move modal to body end to avoid z-index issues.
+            // Move modals to body end to avoid z-index/stacking-context issues.
             $('#ph-item-modal-view').appendTo('body');
+            $('#ph-char-modal').appendTo('body');
 
             // Hoist the history/help shortcut buttons into the block's title row
             // so they appear on the same line as "PlayerHUD".

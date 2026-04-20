@@ -34,6 +34,7 @@
         "action_url": "http://example.com/view.php?action=select_class",
         "str_title": "Choose Your Class",
         "str_intro": "Select the class that best represents your style.",
+        "str_warning": "Attention: this choice is permanent. Once you select a class, it cannot be changed later.",
         "str_select_btn": "Choose This Class",
         "str_selected": "Selected",
         "str_empty": "No classes available.",
@@ -55,6 +56,13 @@
         <h3 class="fw-bold">{{str_title}}</h3>
         <p class="text-muted">{{str_intro}}</p>
     </div>
+
+    {{^has_selection}}
+    <div class="alert alert-warning d-flex align-items-start gap-2" role="alert">
+        <i class="fa fa-exclamation-triangle mt-1" aria-hidden="true"></i>
+        <span>{{str_warning}}</span>
+    </div>
+    {{/has_selection}}
 
     {{#has_classes}}
     <div class="ph-class-select-grid">

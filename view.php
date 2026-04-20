@@ -244,12 +244,6 @@ if ($isoptin) {
         'shop'       => ['icon' => '🛒', 'text' => get_string('tab_shop', 'block_playerhud')],
         'quests'     => ['icon' => '🎯', 'text' => get_string('tab_quests', 'block_playerhud')],
 
-        // RPG class selection (only if RPG mode is enabled).
-        'class_select' => (!empty($config->enable_rpg)) ? [
-            'icon' => '⚔️',
-            'text' => get_string('tab_classes', 'block_playerhud'),
-        ] : null,
-
         // Story/Chapters tab (only if RPG mode is enabled).
         'chapters' => (!empty($config->enable_rpg)) ? [
             'icon' => '📖',

@@ -57,7 +57,9 @@
                 {"filled": false},
                 {"filled": false},
                 {"filled": false}
-            ]
+            ],
+            "description": "<p>A mage of great wisdom and arcane power.</p>",
+            "has_description": true
         },
         "karma_data": {
             "value": 30,
@@ -230,8 +232,17 @@
 
     <div class="ph-char-card p-2 mt-2">
 
-        {{! Portrait + identity side by side }}
+        {{! Portrait + identity — clickable to open lore modal when a description is set }}
+        {{#has_description}}
+        <button type="button"
+                class="ph-char-identity ph-char-identity--clickable mb-2 border-0 bg-transparent p-0 w-100 text-start"
+                data-bs-toggle="modal" data-bs-target="#ph-char-modal"
+                data-toggle="modal" data-target="#ph-char-modal"
+                aria-haspopup="dialog">
+        {{/has_description}}
+        {{^has_description}}
         <div class="ph-char-identity mb-2">
+        {{/has_description}}
 
             {{! Portrait }}
             <div class="ph-char-portrait-wrap">
@@ -261,20 +272,17 @@
                 {{/karma_data}}
             </div>
 
+        {{#has_description}}
+        </button>
+        {{/has_description}}
+        {{^has_description}}
         </div>
+        {{/has_description}}
 
     </div>
-    {{/classdata}}
 
-    {{! CTA when no class assigned }}
-    {{^classdata}}
-    <hr class="ph-section-divider mt-3">
-    <div class="ph-char-empty text-center mt-2 p-2">
-        <a href="{{url_class_select}}" class="btn btn-outline-primary btn-sm w-100">
-            <i class="fa fa-magic me-1" aria-hidden="true"></i>
-            {{#str}} choose_class_cta, block_playerhud {{/str}}
-        </a>
-    </div>
+    {{> block_playerhud/modal_char }}
+
     {{/classdata}}
 
     {{/enable_rpg}}

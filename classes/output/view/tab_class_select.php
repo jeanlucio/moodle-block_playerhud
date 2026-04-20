@@ -134,6 +134,7 @@ class tab_class_select implements renderable {
             'has_selection'   => ($currentclassid > 0),
             'str_title'       => get_string('class_select_title', 'block_playerhud'),
             'str_intro'       => get_string('class_select_intro', 'block_playerhud'),
+            'str_warning'     => get_string('class_select_warning', 'block_playerhud'),
             'str_select_btn'  => get_string('class_select_btn', 'block_playerhud'),
             'str_selected'    => get_string('class_selected_badge', 'block_playerhud'),
             'str_empty'       => get_string('class_empty', 'block_playerhud'),
