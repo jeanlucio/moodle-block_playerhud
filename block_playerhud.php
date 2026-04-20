@@ -197,7 +197,7 @@ class block_playerhud extends block_base {
                         $classdesc = format_text($class->description ?? '', FORMAT_HTML, ['context' => $context]);
                         $classdata = [
                             'classname'       => format_string($class->name),
-                            'fullname'        => format_string($class->name) . ' ' . $USER->firstname,
+                            'fullname'        => format_string($class->name),
                             'portrait_url'    => $portraiturl,
                             'tier'            => $portraittier,
                             'tier_name'       => get_string('class_tier_' . $portraittier, 'block_playerhud'),
@@ -229,7 +229,7 @@ class block_playerhud extends block_base {
                     'percent'       => $karmapercent,
                     'bar_class'     => $karmabarclass,
                     'icon_class'    => $karmaiconclass,
-                    'label'         => get_string('karma', 'filter_playerhud'),
+                    'label'         => get_string('karma', 'block_playerhud'),
                 ];
 
                 $urlclassselect = (new \moodle_url('/blocks/playerhud/view.php', [
