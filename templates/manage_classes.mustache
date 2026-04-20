@@ -48,6 +48,7 @@
         "str_oracle_theme_label": "Theme or description",
         "str_oracle_theme_placeholder": "e.g. a brave warrior who fights with fire...",
         "str_oracle_generate": "Generate",
+        "str_oracle_count_label": "Quantity",
         "str_edit": "Edit",
         "str_delete": "Delete",
         "str_empty": "No classes defined yet.",
@@ -98,10 +99,6 @@
                         {{#description}}
                         <div class="ph-class-desc ph-text-truncate-2lines small text-muted">{{{description}}}</div>
                         {{/description}}
-                        <div class="small mt-1">
-                            <i class="fa fa-heart text-danger" aria-hidden="true"></i>
-                            {{str_hp}} {{base_hp}}
-                        </div>
                     </div>
 
                 </div>
@@ -186,6 +183,18 @@
                               class="form-control"
                               rows="3"
                               placeholder="{{str_oracle_theme_placeholder}}"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="ph-oracle-count" class="form-label fw-semibold">
+                        {{str_oracle_count_label}}
+                    </label>
+                    <select id="ph-oracle-count" class="form-select w-auto">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
                 </div>
             </div>
             <div class="modal-footer">

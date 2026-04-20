@@ -41,6 +41,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
             $('body').on('click', '[data-action="ai-oracle-submit"]', function() {
                 var $btn = $(this);
                 var theme = $('#ph-oracle-theme').val().trim();
+                var count = parseInt($('#ph-oracle-count').val(), 10) || 1;
 
                 if (!theme) {
                     Str.get_strings([
@@ -54,30 +55,70 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
                 }
 
                 var originalText = $btn.html();
-                $btn.prop('disabled', true)
-                    .html('<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> ' +
-                          strings.ai_creating)
-                    .attr('aria-busy', 'true');
+                var names = [];
+                var current = 0;
 
-                Ajax.call([{
-                    methodname: 'block_playerhud_generate_class_oracle',
-                    args: {
-                        instanceid: instanceid,
-                        courseid:   courseid,
-                        theme:      theme
-                    }
-                }])[0].done(function(resp) {
+                /**
+                 * Update button label showing generation progress.
+                 */
+                function updateProgress() {
+                    $btn.html(
+                        '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> ' +
+                        strings.ai_creating + ' (' + current + '/' + count + ')'
+                    );
+                }
+
+                /**
+                 * Generate the next character and recurse until count is reached.
+                 *
+                 * @returns {Promise}
+                 */
+                function generateNext() {
+                    current++;
+                    updateProgress();
+
+                    return Ajax.call([{
+                        methodname: 'block_playerhud_generate_class_oracle',
+                        args: {
+                            instanceid: instanceid,
+                            courseid:   courseid,
+                            theme:      theme
+                        }
+                    }])[0].then(function(resp) {
+                        if (resp.success) {
+                            names.push(resp.class_name);
+                        }
+                        if (current < count) {
+                            return generateNext();
+                        }
+                        return true;
+                    });
+                }
+
+                $btn.prop('disabled', true).attr('aria-busy', 'true');
+
+                generateNext().then(function() {
                     $btn.prop('disabled', false).html(originalText).removeAttr('aria-busy');
 
-                    if (resp.success) {
-                        // Replace modal body with success message.
-                        var successMsg = strings.oracle_success.replace('{$a}', resp.class_name);
-
+                    if (names.length > 0) {
                         var html = '<div class="text-center py-3 ph-animate-fadein" tabindex="-1" id="ph-oracle-result">';
                         html += '<div class="mb-3 text-success" style="font-size:3rem" aria-hidden="true">';
                         html += '<i class="fa fa-check-circle"></i></div>';
-                        html += '<h5 class="fw-bold mb-1">' + resp.class_name + '</h5>';
-                        html += '<p class="text-muted small">' + successMsg + '</p>';
+
+                        if (names.length === 1) {
+                            var successMsg = strings.oracle_success.replace('{$a}', names[0]);
+                            html += '<h5 class="fw-bold mb-1">' + names[0] + '</h5>';
+                            html += '<p class="text-muted small">' + successMsg + '</p>';
+                        } else {
+                            var successMsgMulti = strings.oracle_success_multi.replace('{$a}', names.length);
+                            html += '<ul class="list-unstyled mb-2">';
+                            for (var i = 0; i < names.length; i++) {
+                                html += '<li class="fw-bold">' + names[i] + '</li>';
+                            }
+                            html += '</ul>';
+                            html += '<p class="text-muted small">' + successMsgMulti + '</p>';
+                        }
+
                         html += '</div>';
 
                         $('#ph-ai-oracle-modal .modal-body').html(html);
@@ -89,15 +130,8 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
                         setTimeout(function() {
                             $('#ph-oracle-result').focus();
                         }, 200);
-                    } else {
-                        Str.get_strings([
-                            {key: 'error', component: 'core'},
-                            {key: 'ok', component: 'core'}
-                        ]).then(function(strs) {
-                            Notification.alert(strs[0], resp.message, strs[1]);
-                            return true;
-                        }).catch(Notification.exception);
                     }
+                    return true;
                 }).fail(function(ex) {
                     $btn.prop('disabled', false).html(originalText).removeAttr('aria-busy');
                     Notification.exception(ex);
