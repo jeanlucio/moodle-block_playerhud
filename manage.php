@@ -695,11 +695,11 @@ foreach ($tabsdef as $key => $data) {
 // Data for Layout.
 $layoutdata = [
     'str_title' => get_string('master_panel', 'block_playerhud'),
-    'url_backpack' => (new moodle_url('/blocks/playerhud/view.php', [
+    'url_student_area' => (new moodle_url('/blocks/playerhud/view.php', [
         'id' => $courseid,
         'instanceid' => $instanceid,
     ]))->out(false),
-    'str_backpack' => get_string('openbackpack', 'block_playerhud'),
+    'str_student_area' => get_string('student_area', 'block_playerhud'),
     'url_course' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
     'str_back_course' => get_string('back_to_course', 'block_playerhud'),
     'tabs' => $tabsdata,
