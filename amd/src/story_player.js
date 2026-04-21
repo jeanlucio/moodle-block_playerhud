@@ -17,7 +17,7 @@
  * Story player AMD module — handles the chapter reading modal for students.
  *
  * @module     block_playerhud/story_player
- * @copyright  2026 Jean Lúcio
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification, $) {

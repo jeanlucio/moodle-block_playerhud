@@ -23,7 +23,7 @@ use moodle_url;
  * Controller for RPG class creation and editing.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class classes {

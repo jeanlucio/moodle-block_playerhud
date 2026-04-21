@@ -17,7 +17,7 @@
  * Manage story AMD module — chapter delete confirmation and teacher preview.
  *
  * @module     block_playerhud/manage_story
- * @copyright  2026 Jean Lúcio
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification, $) {

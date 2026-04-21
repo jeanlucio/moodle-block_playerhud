@@ -25,7 +25,7 @@ use block_playerhud\story_manager;
  *
  * @package    block_playerhud
  * @category   test
- * @copyright  2026 Jean Lúcio
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\story_manager
  */

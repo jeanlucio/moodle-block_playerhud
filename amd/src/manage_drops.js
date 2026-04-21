@@ -20,7 +20,7 @@ define(['jquery', 'core/notification', 'core/str'], function($, Notification, St
      * Manage Drops module.
      *
      * @module     block_playerhud/manage_drops
-     * @copyright  2026 Jean Lúcio
+     * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
      * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
      */
     return {

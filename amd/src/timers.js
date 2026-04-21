@@ -17,7 +17,7 @@
  * Timer logic for PlayerHUD Block.
  *
  * @module     block_playerhud/timers
- * @copyright  2026 Jean Lúcio
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 define(['jquery'], function($) {

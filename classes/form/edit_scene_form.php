@@ -24,7 +24,7 @@ require_once($CFG->libdir . '/formslib.php');
  * Form for creating and editing story scenes (nodes) with their choices.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class edit_scene_form extends \moodleform {

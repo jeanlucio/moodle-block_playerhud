@@ -21,7 +21,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
      * Handles the AI-powered class generation modal on the manage classes tab.
      *
      * @module     block_playerhud/ai_oracle
-     * @copyright  2026 Jean Lúcio
+     * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
      * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
      */
     return {
