@@ -18,7 +18,7 @@
  * Portuguese (Brazil) language strings for PlayerHUD.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -91,10 +91,11 @@ $string['back'] = 'Voltar';
 $string['back_to_chapters'] = 'Voltar para Capítulos';
 $string['back_to_course'] = 'Voltar ao Curso';
 $string['back_to_library'] = 'Voltar para a Biblioteca';
-$string['bal_msg_easy'] = 'Fácil demais! Há <strong>{$a->total} XP</strong> disponíveis. O estudante chegará ao topo muito rápido.';
-$string['bal_msg_empty'] = 'O jogo está vazio. Crie itens para começar.';
-$string['bal_msg_hard'] = 'Difícil! Há apenas <strong>{$a->total} XP</strong> disponíveis, mas o estudante precisa de <strong>{$a->req} XP</strong> para zerar.';
-$string['bal_msg_perfect'] = 'Excelente! O jogo está balanceado ({$a->ratio}% de cobertura).';
+$string['back_to_manage'] = 'Voltar ao Painel do Professor';
+$string['bal_msg_easy'] = 'Atenção: há <strong>{$a->total} XP</strong> distribuídos, mas o teto configurado é <strong>{$a->req} XP</strong>. Aumente o teto nas Configurações ou reduza o valor de itens e missões.';
+$string['bal_msg_empty'] = 'O jogo está vazio. Crie itens ou missões para começar.';
+$string['bal_msg_hard'] = 'Atenção: há apenas <strong>{$a->total} XP</strong> distribuídos, mas o teto configurado é <strong>{$a->req} XP</strong>. Adicione mais itens ou missões, ou reduza o teto nas Configurações.';
+$string['bal_msg_perfect'] = 'Configuração equilibrada! O XP disponível cobre {$a->ratio}% do teto configurado.';
 $string['cancel'] = 'Cancelar';
 $string['changessaved'] = 'Alterações salvas com sucesso.';
 $string['chapter_delete_confirm'] = 'Tem certeza que deseja excluir o capítulo "{$a}"? Todas as cenas e escolhas serão removidas permanentemente.';
@@ -306,6 +307,23 @@ $string['help_shop_desc'] = 'A loja serve para troca/comercialização de itens.
 $string['help_shop_title'] = 'Loja';
 $string['help_story_desc'] = 'Os módulos de história apresentam a narrativa do curso em capítulos. Um capítulo pode conceder um personagem, consumir itens do seu inventário como parte da trama, e pode ter sua disponibilidade restrita por data ou pelo seu nível atual. Leia cada capítulo com atenção: as escolhas e eventos da história fazem parte da sua jornada no curso.';
 $string['help_story_title'] = 'História';
+$string['help_teacher_section_classes'] = 'Personagens são arquétipos RPG que os estudantes podem escolher durante a história. Crie-os na aba Personagens. Cada personagem tem nome, descrição, imagem e uma faixa de karma opcional que determina a disponibilidade. Personagens podem desbloquear ou restringir escolhas na história. Uma vez que o estudante escolhe um personagem, ele permanece ativo durante todo o curso.';
+$string['help_teacher_section_classes_title'] = 'Personagens (Classes RPG)';
+$string['help_teacher_section_config'] = 'Use a aba Configurações para ajustar o plugin neste curso. Defina o teto de XP e a quantidade de níveis, escolha o rótulo de XP, ative ou desative o modo RPG e personalize o texto de ajuda exibido aos estudantes. As alterações entram em vigor imediatamente para todos os estudantes do curso.';
+$string['help_teacher_section_config_title'] = 'Configurações';
+$string['help_teacher_section_items'] = 'Itens são recompensas coletáveis que os estudantes encontram ao longo do curso. Crie itens na aba Itens e, em seguida, adicione Drops a cada item — um shortcode que você cola na descrição de qualquer atividade. Quando o estudante abre a atividade, o shortcode é renderizado como um botão de coleta. Configure valor de XP, limite de coletas, tempo de espera (cooldown) e imagem por item.';
+$string['help_teacher_section_items_title'] = 'Itens e Drops';
+$string['help_teacher_section_overview'] = 'O PlayerHUD adiciona uma camada de gamificação ao seu curso no Moodle. Comece criando pelo menos um item e inserindo o shortcode de Drop na descrição de uma atividade. Os estudantes visualizam seu XP, nível e inventário no bloco PlayerHUD na página do curso. Use as abas do Painel do Professor para gerenciar todos os elementos do jogo: itens, trocas, missões, personagens e capítulos da história.';
+$string['help_teacher_section_overview_title'] = 'Primeiros Passos';
+$string['help_teacher_section_quests'] = 'Missões são objetivos que os estudantes cumprem para ganhar XP ou itens. Acesse a aba Missões para criá-las. Escolha o tipo: completar uma atividade específica, atingir um nível ou coletar um item. Você pode definir uma recompensa em item e, opcionalmente, restringir a missão a uma classe de personagem. A ferramenta de sugestão por IA gera missões equilibradas com base na estrutura do seu curso automaticamente.';
+$string['help_teacher_section_quests_title'] = 'Missões';
+$string['help_teacher_section_reports'] = 'A aba Relatórios exibe a atividade dos estudantes: itens coletados, missões concluídas, trocas realizadas e progresso na história. O ranking classifica os estudantes por XP. Você pode visualizar o histórico individual de cada estudante e monitorar o engajamento geral do curso. Use esses dados para identificar estudantes que possam precisar de incentivo ou que ainda não iniciaram a jornada de gamificação.';
+$string['help_teacher_section_reports_title'] = 'Relatórios e Ranking';
+$string['help_teacher_section_story'] = 'O módulo de história permite criar narrativas interativas com escolhas e efeitos de karma. Crie capítulos na aba Capítulos. Cada capítulo contém nós (momentos da narrativa) e escolhas (transições entre nós). As escolhas podem conceder ou deduzir karma, consumir itens do inventário do estudante e ser bloqueadas por classe de personagem, faixa de karma ou posse de item. Construa histórias ramificadas no editor de capítulos.';
+$string['help_teacher_section_story_title'] = 'História e Capítulos';
+$string['help_teacher_section_trades'] = 'A aba Trocas permite configurar itens disponíveis para compra na loja. Defina um preço em XP ou exija um item específico para desbloquear uma troca. Os estudantes acessam a loja pelo bloco PlayerHUD. As trocas também podem ser incorporadas diretamente na descrição de atividades por meio de shortcodes, criando oportunidades de compra no contexto do conteúdo do curso.';
+$string['help_teacher_section_trades_title'] = 'Loja e Trocas';
+$string['help_teacher_title'] = 'Manual do Professor';
 $string['help_timers_desc'] = 'Itens com mais de uma quantidade para coleta exibirão um contador após a primeira coleta com a indicação de tempo para resgate do próximo. Fique atento ao prazo do curso/disciplina para não perder nenhum item, em especial aqueles com altos valores de XP.';
 $string['help_timers_title'] = 'Tempo & Limites';
 $string['help_tip_desc'] = 'Explore o curso com cuidado, participe das atividades e engaje-se com o conteúdo. XP é resultado do envolvimento — o aprendizado continua sendo o verdadeiro objetivo.';

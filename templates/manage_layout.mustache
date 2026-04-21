@@ -17,7 +17,7 @@
 {{!
     @template block_playerhud/manage_layout
     @package block_playerhud
-    @copyright 2026 Jean Lúcio
+    @copyright 2026 Jean Lúcio <jeanlucio@gmail.com>
     @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
     Example context (json):
@@ -25,6 +25,8 @@
         "str_title": "Game Master Panel",
         "url_student_area": "#",
         "str_student_area": "Student Area",
+        "url_help": "#",
+        "str_help": "Help",
         "url_course": "#",
         "str_back_course": "Back to Course",
         "tabs": [
@@ -42,6 +44,9 @@
         <div class="d-flex">
             <a href="{{url_student_area}}" class="btn btn-outline-primary shadow-sm fw-bold me-2">
                 <i class="fa fa-graduation-cap me-1" aria-hidden="true"></i> {{str_student_area}}
+            </a>
+            <a href="{{url_help}}" class="btn btn-outline-info shadow-sm me-2">
+                <i class="fa fa-question-circle me-1" aria-hidden="true"></i> {{str_help}}
             </a>
             <a href="{{url_course}}" class="btn btn-outline-secondary shadow-sm">
                  <i class="fa fa-arrow-left me-1" aria-hidden="true"></i> {{str_back_course}}

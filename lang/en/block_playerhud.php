@@ -18,7 +18,7 @@
  * English language strings for PlayerHUD.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -91,10 +91,11 @@ $string['back'] = 'Back';
 $string['back_to_chapters'] = 'Back to Chapters';
 $string['back_to_course'] = 'Back to Course';
 $string['back_to_library'] = 'Back to Library';
-$string['bal_msg_easy'] = 'Too easy! There is <strong>{$a->total} XP</strong> available. Students will max out too fast.';
-$string['bal_msg_empty'] = 'The game is empty. Create items to start.';
-$string['bal_msg_hard'] = 'Hard! There is only <strong>{$a->total} XP</strong> available, but student needs <strong>{$a->req} XP</strong> to max out.';
-$string['bal_msg_perfect'] = 'Balanced! The game economy is healthy ({$a->ratio}% coverage).';
+$string['back_to_manage'] = 'Back to Game Master Panel';
+$string['bal_msg_easy'] = 'Warning: there are <strong>{$a->total} XP</strong> distributed, but the configured cap is <strong>{$a->req} XP</strong>. Increase the cap in Settings or reduce the XP value of items and quests.';
+$string['bal_msg_empty'] = 'The game is empty. Create items or quests to get started.';
+$string['bal_msg_hard'] = 'Warning: there are only <strong>{$a->total} XP</strong> distributed, but the configured cap is <strong>{$a->req} XP</strong>. Add more items or quests, or lower the cap in Settings.';
+$string['bal_msg_perfect'] = 'Balanced configuration! The available XP covers {$a->ratio}% of the configured cap.';
 $string['cancel'] = 'Cancel';
 $string['changessaved'] = 'Changes saved successfully.';
 $string['chapter_delete_confirm'] = 'Are you sure you want to delete the chapter "{$a}"? All its scenes and choices will be permanently removed.';
@@ -306,6 +307,23 @@ $string['help_shop_desc'] = 'The shop is used for trading items. The instructor 
 $string['help_shop_title'] = 'Shop';
 $string['help_story_desc'] = 'Story modules present the course narrative in chapters. A chapter may grant you a character, consume items from your inventory as part of the plot, and may have its availability restricted by date or by your current level. Read each chapter carefully — the choices and events in the story are part of your journey through the course.';
 $string['help_story_title'] = 'Story';
+$string['help_teacher_section_classes'] = 'Characters are RPG archetypes students can choose during the story. Create them in the Characters tab. Each character has a name, description, image, and an optional karma range that determines availability. Characters can unlock or restrict story choices. Once a student selects a character, it stays active throughout the entire course.';
+$string['help_teacher_section_classes_title'] = 'Characters (RPG Classes)';
+$string['help_teacher_section_config'] = 'Use the Settings tab to configure the plugin for this course. Set the XP cap and level count, choose the XP label, enable or disable RPG mode, and customise the help text shown to students. Changes take effect immediately for all students in the course.';
+$string['help_teacher_section_config_title'] = 'Settings';
+$string['help_teacher_section_items'] = 'Items are collectible rewards students find during the course. Create items in the Items tab, then add Drops to each item — a shortcode you paste inside any activity description. When a student opens that activity, the shortcode renders as a collection button. Configure XP value, collection limit, cooldown timer, and image per item.';
+$string['help_teacher_section_items_title'] = 'Items & Drops';
+$string['help_teacher_section_overview'] = 'PlayerHUD adds a gamification layer to your Moodle course. Start by creating at least one item and placing its Drop shortcode inside an activity description. Students see their XP, level, and inventory in the PlayerHUD block on the course page. Use the tabs in the Game Master Panel to manage all game elements: items, trades, quests, characters, and story chapters.';
+$string['help_teacher_section_overview_title'] = 'Getting Started';
+$string['help_teacher_section_quests'] = 'Quests are goals students complete to earn XP or items. Go to the Quests tab to create them. Choose a type: complete a specific activity, reach a level, or collect an item. You can set an item reward and optionally restrict a quest to a specific character class. The AI suggestion tool can generate balanced quests based on your course structure automatically.';
+$string['help_teacher_section_quests_title'] = 'Quests';
+$string['help_teacher_section_reports'] = 'The Reports tab shows student activity: items collected, quests completed, trades, and story progress. The leaderboard ranks students by XP. You can view individual student histories and monitor overall course engagement. Use this data to identify students who may need encouragement or have not yet started the gamification journey.';
+$string['help_teacher_section_reports_title'] = 'Reports & Leaderboard';
+$string['help_teacher_section_story'] = 'The Story module lets you create interactive narratives with choices and karma effects. Create chapters in the Chapters tab. Each chapter contains nodes (story moments) and choices (transitions between nodes). Choices can grant or deduct karma, consume items from the student\'s inventory, and be gated by character class, karma range, or item possession. Build branching storylines in the chapter editor.';
+$string['help_teacher_section_story_title'] = 'Story & Chapters';
+$string['help_teacher_section_trades'] = 'The Trades tab lets you configure items available for purchase in the shop. Set a price in XP or require a specific item to unlock a trade. Students access the shop from their PlayerHUD block. Trades can also be embedded directly in activity descriptions using shortcodes, creating in-context shopping opportunities within course content.';
+$string['help_teacher_section_trades_title'] = 'Shop & Trades';
+$string['help_teacher_title'] = 'Teacher Manual';
 $string['help_timers_desc'] = 'Items with more than one collectible quantity will display a timer after the first collection, indicating the wait time for the next one. Pay attention to the course deadlines so you don\'t miss any items, especially those with high XP values.';
 $string['help_timers_title'] = 'Timers & Limits';
 $string['help_tip_desc'] = 'Explore the course carefully, participate in activities, and engage with the content. XP is a result of involvement — learning remains the true goal.';

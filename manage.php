@@ -700,6 +700,11 @@ $layoutdata = [
         'instanceid' => $instanceid,
     ]))->out(false),
     'str_student_area' => get_string('student_area', 'block_playerhud'),
+    'url_help' => (new moodle_url('/blocks/playerhud/help.php', [
+        'id'         => $courseid,
+        'instanceid' => $instanceid,
+    ]))->out(false),
+    'str_help' => get_string('help_btn', 'block_playerhud'),
     'url_course' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
     'str_back_course' => get_string('back_to_course', 'block_playerhud'),
     'tabs' => $tabsdata,
