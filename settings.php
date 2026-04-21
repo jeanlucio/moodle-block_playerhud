@@ -28,8 +28,8 @@ if ($ADMIN->fulltree) {
     // AI Settings Section.
     $settings->add(new admin_setting_heading(
         'block_playerhud/aisettings',
-        get_string('api_settings_title', 'block_playerhud'),
-        get_string('api_settings_desc', 'block_playerhud')
+        get_string('api_admin_settings_title', 'block_playerhud'),
+        get_string('api_admin_settings_desc', 'block_playerhud')
     ));
 
     // Gemini Key.
@@ -82,5 +82,47 @@ if ($ADMIN->fulltree) {
         get_string('openai_model_desc', 'block_playerhud'),
         '',
         PARAM_TEXT
+    ));
+
+    // Companion Plugins Section.
+    $pluginmanager = \core_plugin_manager::instance();
+    $companionplugins = [
+        'availability_playerhud' => [
+            'name' => get_string('companion_availability_name', 'block_playerhud'),
+            'desc' => get_string('companion_availability_desc', 'block_playerhud'),
+        ],
+        'filter_playerhud' => [
+            'name' => get_string('companion_filter_name', 'block_playerhud'),
+            'desc' => get_string('companion_filter_desc', 'block_playerhud'),
+        ],
+    ];
+
+    $companionhtml = \html_writer::start_tag('ul', ['class' => 'list-unstyled mt-2']);
+    foreach ($companionplugins as $pluginname => $info) {
+        $installed = $pluginmanager->get_plugin_info($pluginname) !== null;
+        if ($installed) {
+            $statusbadge = \html_writer::tag(
+                'span',
+                '&#10003; ' . get_string('companion_present', 'block_playerhud'),
+                ['class' => 'badge bg-success']
+            );
+        } else {
+            $statusbadge = \html_writer::tag(
+                'span',
+                '&#10007; ' . get_string('companion_absent', 'block_playerhud'),
+                ['class' => 'badge bg-danger']
+            );
+        }
+        $namehtml = \html_writer::tag('strong', $info['name']);
+        $deschtml = \html_writer::tag('span', ' &mdash; ' . $info['desc'], ['class' => 'text-muted']);
+        $itemcontent = $namehtml . $deschtml . \html_writer::tag('div', $statusbadge, ['class' => 'mt-1']);
+        $companionhtml .= \html_writer::tag('li', $itemcontent, ['class' => 'mb-3']);
+    }
+    $companionhtml .= \html_writer::end_tag('ul');
+
+    $settings->add(new admin_setting_heading(
+        'block_playerhud/companionplugins',
+        get_string('companion_plugins_title', 'block_playerhud'),
+        get_string('companion_plugins_desc', 'block_playerhud') . $companionhtml
     ));
 }
