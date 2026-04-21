@@ -82,12 +82,12 @@
     </div>
 
     {{! --- LIVE SEARCH BAR & SHOW ALL TOGGLE --- }}
-    <div class="mb-4 d-flex gap-2">
+    <div class="mb-4 d-flex gap-2 flex-wrap">
         <div class="input-group shadow-sm flex-grow-1 ph-min-w-250">
             <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-muted" aria-hidden="true"></i></span>
             <input type="text" id="ph-live-search" class="form-control border-start-0 ps-0" placeholder="{{str.search_any}}" aria-label="{{str.search_any}}">
         </div>
-        <div>
+        <div class="flex-shrink-0">
             {{#showall}}
                 <a href="{{url_toggle_showall}}" class="btn btn-outline-primary shadow-sm h-100 d-flex align-items-center text-nowrap">
                     <i class="fa fa-compress me-2" aria-hidden="true"></i> {{str.btn_showpaged}}
