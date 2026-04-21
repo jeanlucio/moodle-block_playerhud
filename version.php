@@ -18,7 +18,7 @@
  * Plugin version and other meta-data are defined here.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

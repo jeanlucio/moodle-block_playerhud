@@ -24,7 +24,7 @@ require_once($CFG->libdir . '/formslib.php');
  * Form for creating and editing RPG classes.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class edit_class_form extends \moodleform {

@@ -24,7 +24,7 @@ use advanced_testcase;
  *
  * @package    block_playerhud
  * @category   test
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \backup_playerhud_stepslib
  * @covers     \restore_playerhud_stepslib

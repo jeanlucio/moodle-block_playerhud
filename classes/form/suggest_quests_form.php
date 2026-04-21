@@ -24,8 +24,8 @@ require_once($CFG->libdir . '/formslib.php');
  * Form for suggesting quests automatically.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class suggest_quests_form extends \moodleform {
     /**
