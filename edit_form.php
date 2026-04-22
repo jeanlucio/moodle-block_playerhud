@@ -59,21 +59,35 @@ class block_playerhud_edit_form extends block_edit_form {
         $mform->setDefault('config_max_levels', 20);
         $mform->addHelpButton('config_max_levels', 'max_levels', 'block_playerhud');
 
-        // Section 2: RPG Mode.
+        // Section 2: Items and Commerce.
+        $mform->addElement('header', 'config_items_hdr', get_string('items_commerce_hdr', 'block_playerhud'));
+
+        $mform->addElement('selectyesno', 'config_enable_items', get_string('enable_items', 'block_playerhud'));
+        $mform->setDefault('config_enable_items', 1);
+        $mform->addHelpButton('config_enable_items', 'enable_items', 'block_playerhud');
+
+        // Section 3: Quests.
+        $mform->addElement('header', 'config_quests_hdr', get_string('quests_hdr', 'block_playerhud'));
+
+        $mform->addElement('selectyesno', 'config_enable_quests', get_string('enable_quests', 'block_playerhud'));
+        $mform->setDefault('config_enable_quests', 1);
+        $mform->addHelpButton('config_enable_quests', 'enable_quests', 'block_playerhud');
+
+        // Section 4: RPG Mode.
         $mform->addElement('header', 'config_rpg_hdr', get_string('rpg_mode_hdr', 'block_playerhud'));
 
         $mform->addElement('selectyesno', 'config_enable_rpg', get_string('enable_rpg_mode', 'block_playerhud'));
         $mform->setDefault('config_enable_rpg', 1);
         $mform->addHelpButton('config_enable_rpg', 'enable_rpg_mode', 'block_playerhud');
 
-        // Section 3: Ranking.
+        // Section 5: Ranking.
         $mform->addElement('header', 'config_ranking_hdr', get_string('ranking_hdr', 'block_playerhud'));
 
         $mform->addElement('selectyesno', 'config_enable_ranking', get_string('enable_ranking', 'block_playerhud'));
         $mform->setDefault('config_enable_ranking', 1);
         $mform->addHelpButton('config_enable_ranking', 'enable_ranking', 'block_playerhud');
 
-        // Section 4: Help Page Settings (NEW).
+        // Section 6: Help Page Settings.
         $mform->addElement('header', 'config_help_hdr', get_string('help_title', 'block_playerhud'));
 
         // Help Content Editor.

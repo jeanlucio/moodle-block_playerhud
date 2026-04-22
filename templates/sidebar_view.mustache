@@ -77,7 +77,10 @@
         },
         "url_disable": "#",
         "str_confirm_msg": "Sure?",
-        "str_disable_gamification": "Disable"
+        "str_disable_gamification": "Disable",
+        "enable_rpg": true,
+        "enable_items": true,
+        "enable_quests": true
     }
 }}
 <div class="block_playerhud_sidebar p-2">
@@ -134,6 +137,7 @@
     {{! Action grid }}
     <div class="ph-sidebar-grid mb-4 {{level_class}}">
 
+        {{#enable_items}}
         <a href="{{viewurl}}"
            class="btn btn-ph-level-border shadow-sm"
            data-bs-toggle="tooltip" data-bs-placement="top"
@@ -141,7 +145,6 @@
            aria-label="{{#str}} openbackpack, block_playerhud {{/str}}">
             <span aria-hidden="true">🎒</span>
         </a>
-
         <a href="{{url_shop}}"
            class="btn btn-ph-level-border shadow-sm"
            data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -149,7 +152,9 @@
            aria-label="{{#str}} tab_shop, block_playerhud {{/str}}">
             <span aria-hidden="true">🛒</span>
         </a>
+        {{/enable_items}}
 
+        {{#enable_quests}}
         <a href="{{url_quests}}"
            class="btn btn-ph-level-border shadow-sm position-relative"
            data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -160,7 +165,9 @@
             <span class="ph-quest-notify-dot" aria-hidden="true"></span>
             {{/has_claimable_quests}}
         </a>
+        {{/enable_quests}}
 
+        {{#enable_rpg}}
         <a href="{{url_story}}"
            class="btn btn-ph-level-border shadow-sm position-relative"
            data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -171,6 +178,7 @@
             <span class="ph-quest-notify-dot" aria-hidden="true"></span>
             {{/has_unread_chapters}}
         </a>
+        {{/enable_rpg}}
 
         {{#ranking}}
         <a href="{{url}}"
@@ -195,7 +203,8 @@
 
     </div>
 
-    {{! Recent items }}
+    {{! Recent items — only when items feature is enabled }}
+    {{#enable_items}}
     <div class="ph-stash-wrapper {{^has_items}}d-none{{/has_items}}">
         <div class="ph-sidebar-stash mt-1 justify-content-center">
             {{#items}}
@@ -223,6 +232,7 @@
             {{/items}}
         </div>
     </div>
+    {{/enable_items}}
 
     {{! ── CARD 2: CHARACTER (RPG mode only) ── }}
     {{#enable_rpg}}

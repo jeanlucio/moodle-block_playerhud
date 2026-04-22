@@ -67,12 +67,28 @@ $blockconfig = unserialize(base64_decode($bi->configdata));
 if (!$blockconfig) {
     $blockconfig = new stdClass();
 }
-$rpgmodeenabled = !empty($blockconfig->enable_rpg) || !isset($blockconfig->enable_rpg);
+$rpgmodeenabled  = !empty($blockconfig->enable_rpg) || !isset($blockconfig->enable_rpg);
+$itemsenabled    = !empty($blockconfig->enable_items) || !isset($blockconfig->enable_items);
+$questsenabled   = !empty($blockconfig->enable_quests) || !isset($blockconfig->enable_quests);
 
-// Redirect RPG tabs to items when RPG mode is disabled.
+// Determine a sensible fallback tab when a feature group is disabled.
+$fallbacktab = $itemsenabled ? 'items' : ($questsenabled ? 'quests' : 'reports');
+
+// Redirect RPG tabs when RPG mode is disabled.
 $rpgtabs = ['classes', 'chapters'];
 if (in_array($activetab, $rpgtabs) && !$rpgmodeenabled) {
-    redirect(new moodle_url($baseurl, ['tab' => 'items']));
+    redirect(new moodle_url($baseurl, ['tab' => $fallbacktab]));
+}
+
+// Redirect items/drops/trades tabs when items feature is disabled.
+$itemstabs = ['items', 'drops', 'trades'];
+if (in_array($activetab, $itemstabs) && !$itemsenabled) {
+    redirect(new moodle_url($baseurl, ['tab' => $questsenabled ? 'quests' : 'reports']));
+}
+
+// Redirect quests tab when quests feature is disabled.
+if ($activetab === 'quests' && !$questsenabled) {
+    redirect(new moodle_url($baseurl, ['tab' => $fallbacktab]));
 }
 
 // Action processing (Global Controllers).
@@ -670,13 +686,13 @@ echo $OUTPUT->header();
 
 // Tab Definitions.
 $tabsdef = [
-    'items'   => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
-    'trades'  => ['icon' => '🛒', 'text' => get_string('tab_trades', 'block_playerhud')],
-    'quests'  => ['icon' => '🎯', 'text' => get_string('tab_quests', 'block_playerhud')],
+    'items'    => $itemsenabled ? ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')] : null,
+    'trades'   => $itemsenabled ? ['icon' => '🛒', 'text' => get_string('tab_trades', 'block_playerhud')] : null,
+    'quests'   => $questsenabled ? ['icon' => '🎯', 'text' => get_string('tab_quests', 'block_playerhud')] : null,
     'classes'  => $rpgmodeenabled ? ['icon' => '⚔️', 'text' => get_string('tab_classes', 'block_playerhud')] : null,
     'chapters' => $rpgmodeenabled ? ['icon' => '📖', 'text' => get_string('tab_chapters', 'block_playerhud')] : null,
     'reports'  => ['icon' => '📊', 'text' => get_string('tab_reports', 'block_playerhud')],
-    'config'  => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
+    'config'   => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
 ];
 
 $tabsdata = [];

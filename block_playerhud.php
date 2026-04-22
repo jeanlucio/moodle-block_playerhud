@@ -86,45 +86,46 @@ class block_playerhud extends block_base {
             // Default settings.
             $config->enable_ranking = isset($config->enable_ranking) ? $config->enable_ranking : 1;
             $config->enable_rpg     = isset($config->enable_rpg) ? (int) $config->enable_rpg : 1;
+            $config->enable_items   = isset($config->enable_items) ? (int) $config->enable_items : 1;
+            $config->enable_quests  = isset($config->enable_quests) ? (int) $config->enable_quests : 1;
 
             $stats = \block_playerhud\game::get_game_stats($config, $this->instance->id, $player->currentxp);
 
-            // Recent Items Logic (Stash).
-            $rawinventory = \block_playerhud\game::get_inventory($USER->id, $this->instance->id);
-            $limit = 6;
-            $count = 0;
-            $seenitems = [];
-            $itemstodisplay = [];
-
-            // 1. Gather unique items needed.
-            foreach ($rawinventory as $invitem) {
-                if ($count >= $limit) {
-                    break;
-                }
-                if (in_array($invitem->id, $seenitems)) {
-                    continue;
-                }
-                $seenitems[] = $invitem->id;
-                $itemstodisplay[$invitem->id] = $invitem;
-                $count++;
-            }
-
-            // 2. Bulk load media to prevent N+1.
-            $allmedia = \block_playerhud\utils::get_items_display_data($itemstodisplay, $context);
-
-            // 3. Prepare template data.
+            // Recent Items Logic (Stash) — only when items feature is enabled.
             $recentitems = [];
-            foreach ($itemstodisplay as $invitem) {
-                $media = $allmedia[$invitem->id];
-                $recentitems[] = [
-                    'name' => format_string($invitem->name),
-                    'xp' => $invitem->xp . ' XP',
-                    'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
-                    'isimage' => $media['is_image'],
-                    'description' => !empty($invitem->description) ? format_text($invitem->description, FORMAT_HTML) : '',
-                    'date' => userdate($invitem->collecteddate, get_string('strftimedatefullshort', 'langconfig')),
-                    'timestamp' => $invitem->collecteddate,
-                ];
+            if (!empty($config->enable_items)) {
+                $rawinventory = \block_playerhud\game::get_inventory($USER->id, $this->instance->id);
+                $limit = 6;
+                $count = 0;
+                $seenitems = [];
+                $itemstodisplay = [];
+
+                foreach ($rawinventory as $invitem) {
+                    if ($count >= $limit) {
+                        break;
+                    }
+                    if (in_array($invitem->id, $seenitems)) {
+                        continue;
+                    }
+                    $seenitems[] = $invitem->id;
+                    $itemstodisplay[$invitem->id] = $invitem;
+                    $count++;
+                }
+
+                $allmedia = \block_playerhud\utils::get_items_display_data($itemstodisplay, $context);
+
+                foreach ($itemstodisplay as $invitem) {
+                    $media = $allmedia[$invitem->id];
+                    $recentitems[] = [
+                        'name' => format_string($invitem->name),
+                        'xp' => $invitem->xp . ' XP',
+                        'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
+                        'isimage' => $media['is_image'],
+                        'description' => !empty($invitem->description) ? format_text($invitem->description, FORMAT_HTML) : '',
+                        'date' => userdate($invitem->collecteddate, get_string('strftimedatefullshort', 'langconfig')),
+                        'timestamp' => $invitem->collecteddate,
+                    ];
+                }
             }
 
             $manageurl = '';
@@ -240,7 +241,7 @@ class block_playerhud extends block_base {
             }
 
             // Quest notification dot: show when a reward is waiting to be claimed.
-            $hasclaimable = \block_playerhud\quest::has_claimable_quests(
+            $hasclaimable = !empty($config->enable_quests) && \block_playerhud\quest::has_claimable_quests(
                 $this->instance->id,
                 $USER->id,
                 $COURSE->id,
@@ -261,6 +262,8 @@ class block_playerhud extends block_base {
                 // Change the size of the Block's profile picture.
                 'userpicture'      => $OUTPUT->user_picture($USER, ['size' => 120]),
                 'enable_rpg'       => !empty($config->enable_rpg),
+                'enable_items'     => !empty($config->enable_items),
+                'enable_quests'    => !empty($config->enable_quests),
                 'classdata'        => $classdata,
                 'karma_data'       => $karmadata,
                 'url_class_select' => $urlclassselect,

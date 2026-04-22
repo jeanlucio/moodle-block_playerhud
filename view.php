@@ -44,8 +44,10 @@ $config = unserialize(base64_decode($bi->configdata));
 if (!$config) {
     $config = new stdClass();
 }
-$config->enable_rpg = isset($config->enable_rpg) ? $config->enable_rpg : 1;
-$config->enable_ranking = isset($config->enable_ranking) ? $config->enable_ranking : 1;
+$config->enable_rpg      = isset($config->enable_rpg) ? $config->enable_rpg : 1;
+$config->enable_ranking  = isset($config->enable_ranking) ? $config->enable_ranking : 1;
+$config->enable_items    = isset($config->enable_items) ? $config->enable_items : 1;
+$config->enable_quests   = isset($config->enable_quests) ? $config->enable_quests : 1;
 
 // 2. Page Setup.
 $PAGE->set_url('/blocks/playerhud/view.php', ['id' => $courseid, 'instanceid' => $instanceid]);
@@ -103,7 +105,7 @@ if ($action === 'select_class' && confirm_sesskey()) {
 }
 
 // Logic: Claim Quest Reward.
-if ($action === 'claim_quest' && confirm_sesskey()) {
+if ($action === 'claim_quest' && !empty($config->enable_quests) && confirm_sesskey()) {
     $questid  = required_param('questid', PARAM_INT);
     $questurl = new moodle_url($PAGE->url, ['tab' => 'quests']);
     try {
@@ -239,10 +241,21 @@ if ($isoptin) {
     // C. Navigation Data.
     $tabslist = [];
     $tabsdef = [
-        // 1. Collection (Base).
-        'collection' => ['icon' => '🎒', 'text' => get_string('tab_collection', 'block_playerhud')],
-        'shop'       => ['icon' => '🛒', 'text' => get_string('tab_shop', 'block_playerhud')],
-        'quests'     => ['icon' => '🎯', 'text' => get_string('tab_quests', 'block_playerhud')],
+        // 1. Collection and commerce (only if items feature is enabled).
+        'collection' => (!empty($config->enable_items)) ? [
+            'icon' => '🎒',
+            'text' => get_string('tab_collection', 'block_playerhud'),
+        ] : null,
+        'shop' => (!empty($config->enable_items)) ? [
+            'icon' => '🛒',
+            'text' => get_string('tab_shop', 'block_playerhud'),
+        ] : null,
+
+        // 2. Quests tab (only if quests feature is enabled).
+        'quests' => (!empty($config->enable_quests)) ? [
+            'icon' => '🎯',
+            'text' => get_string('tab_quests', 'block_playerhud'),
+        ] : null,
 
         // Story/Chapters tab (only if RPG mode is enabled).
         'chapters' => (!empty($config->enable_rpg)) ? [

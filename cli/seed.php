@@ -181,6 +181,8 @@ if (!$blockinstance) {
         'max_levels'     => 10,
         'enable_rpg'     => 1,
         'enable_ranking' => 1,
+        'enable_items'   => 1,
+        'enable_quests'  => 1,
         'help_content'   => ['text' => '', 'format' => FORMAT_HTML],
     ];
 
