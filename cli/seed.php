@@ -347,11 +347,11 @@ function seed_upsert_drop(
     return $record;
 }
 
-$dropforest  = seed_upsert_drop($instanceid, $itemsword->id, 'Dark Forest', 5, 0);
-$droptavern  = seed_upsert_drop($instanceid, $itempotionhp->id, 'Harbor Tavern', 0, 3600);
-$droplibrary = seed_upsert_drop($instanceid, $itemscroll->id, 'Royal Library', 3, 0);
-$dropcave    = seed_upsert_drop($instanceid, $itemkey->id, 'Dwarf Cave', 10, 0);
-$dropsecret  = seed_upsert_drop($instanceid, $itemgem->id, "Dragon's Vault", 1, 0);
+$dropforest  = seed_upsert_drop($instanceid, $itemsword->id, 'Dark Forest', 5, 900);       // 15 min.
+$droptavern  = seed_upsert_drop($instanceid, $itempotionhp->id, 'Harbor Tavern', 0, 3600); // 1 h.
+$droplibrary = seed_upsert_drop($instanceid, $itemscroll->id, 'Royal Library', 3, 1800);   // 30 min.
+$dropcave    = seed_upsert_drop($instanceid, $itemkey->id, 'Dwarf Cave', 10, 600);         // 10 min.
+$dropsecret  = seed_upsert_drop($instanceid, $itemgem->id, "Dragon's Vault", 1, 0);        // Single collection.
 cli_writeln("Drops ready: Dark Forest, Harbor Tavern, Royal Library, Dwarf Cave, Dragon's Vault.");
 
 // 9. Quests.
@@ -695,12 +695,13 @@ function seed_give_item(int $userid, int $itemid, int $dropid, string $source = 
         return;
     }
 
+    // Set timecreated 2 hours in the past so no pre-seeded item starts in cooldown.
     $DB->insert_record('block_playerhud_inventory', (object) [
         'userid'      => $userid,
         'itemid'      => $itemid,
         'dropid'      => $dropid,
         'source'      => $source,
-        'timecreated' => $now,
+        'timecreated' => $now - 7200,
     ]);
 }
 
@@ -903,15 +904,73 @@ function seed_create_module(stdClass $course, string $modulename, array $extra):
     return get_coursemodule_from_id($modulename, $moduleinfo->coursemodule);
 }
 
+// Section 1 — Card (default): full interactive card with button.
 $cmpage = seed_create_module($course, 'page', [
     'name'          => 'Reading: The Kingdom\'s History',
-    'content'       => '<p>Once upon a time there was a kingdom where adventurers earned XP by exploring the world.</p>',
+    'intro'         => 'Collect your reward for reading this page.',
+    'content'       => '<p>Once upon a time there was a kingdom where adventurers earned XP'
+        . ' by exploring the world.</p>'
+        . '[PLAYERHUD_DROP code=' . $droplibrary->code . ']',
     'contentformat' => FORMAT_HTML,
+    'section'       => 1,
     'display'       => 5,
 ]);
 
+// Section 1 — Image: floating clickable icon only.
+$cmpageforest = seed_create_module($course, 'page', [
+    'name'          => 'Exploration: The Dark Forest',
+    'intro'         => 'A hidden reward awaits inside the forest.',
+    'content'       => '<p>The forest hides ancient secrets. Those brave enough to enter'
+        . ' may find something useful.</p>'
+        . '[PLAYERHUD_DROP code=' . $dropforest->code . ' mode=image]',
+    'contentformat' => FORMAT_HTML,
+    'section'       => 1,
+    'display'       => 5,
+]);
+
+// Section 2 — Text: inline text link, minimal footprint.
+$cmpagetavern = seed_create_module($course, 'page', [
+    'name'          => 'Rest: The Harbor Tavern',
+    'intro'         => 'Rest and recover — something awaits you here.',
+    'content'       => '<p>A warm fire, a cold drink, and a friendly innkeeper.'
+        . ' Rest here to recover your strength.</p>'
+        . '[PLAYERHUD_DROP code=' . $droptavern->code . ' mode=text]',
+    'contentformat' => FORMAT_HTML,
+    'section'       => 2,
+    'display'       => 5,
+]);
+
+// Section 2 — Card: full interactive card with button.
 $cmassign = seed_create_module($course, 'assign', [
     'name'                                => 'Assignment: Adventure Report',
+    'intro'                               => '[PLAYERHUD_DROP code=' . $dropcave->code . ']',
+    'section'                             => 2,
+    'assignsubmission_onlinetext_enabled' => 1,
+    'assignsubmission_file_enabled'       => 0,
+    'assignfeedback_comments_enabled'     => 1,
+    'submissiondrafts'                    => 0,
+    'requiresubmissionstatement'          => 0,
+    'sendnotifications'                   => 0,
+    'sendlatenotifications'               => 0,
+    'duedate'                             => 0,
+    'cutoffdate'                          => 0,
+    'gradingduedate'                      => 0,
+    'allowsubmissionsfromdate'            => 0,
+    'grade'                               => 100,
+    'teamsubmission'                      => 0,
+    'requireallteammemberssubmit'         => 0,
+    'blindmarking'                        => 0,
+    'attemptreopenmethod'                 => 'none',
+    'maxattempts'                         => -1,
+    'markingworkflow'                     => 0,
+    'markingallocation'                   => 0,
+]);
+
+// Section 3 — Card: secret item renders as mystery until collected.
+$cmassignsecret = seed_create_module($course, 'assign', [
+    'name'                                => 'Challenge: Dragon\'s Vault',
+    'intro'                               => '[PLAYERHUD_DROP code=' . $dropsecret->code . ']',
+    'section'                             => 3,
     'assignsubmission_onlinetext_enabled' => 1,
     'assignsubmission_file_enabled'       => 0,
     'assignfeedback_comments_enabled'     => 1,
@@ -947,14 +1006,42 @@ if ($cmpage) {
     cli_writeln("Module 'page' unavailable — reading activity skipped.");
 }
 
+if ($cmpageforest) {
+    // Carol and Dave explored the forest.
+    foreach ([$students[2], $students[3]] as $s) {
+        $completion->update_state($cmpageforest, COMPLETION_COMPLETE, $s->id);
+    }
+    cli_writeln("Activity 'Dark Forest' created — Carol and Dave marked as complete.");
+} else {
+    cli_writeln("Module 'page' unavailable — forest activity skipped.");
+}
+
+if ($cmpagetavern) {
+    // Alice, Dave and Eve rested at the tavern.
+    foreach ([$students[0], $students[3], $students[4]] as $s) {
+        $completion->update_state($cmpagetavern, COMPLETION_COMPLETE, $s->id);
+    }
+    cli_writeln("Activity 'Harbor Tavern' created — Alice, Dave and Eve marked as complete.");
+} else {
+    cli_writeln("Module 'page' unavailable — tavern activity skipped.");
+}
+
 if ($cmassign) {
     // Bob and Carol completed the assignment.
     foreach ([$students[1], $students[2]] as $s) {
         $completion->update_state($cmassign, COMPLETION_COMPLETE, $s->id);
     }
-    cli_writeln("Activity 'Assignment' created — Bob and Carol marked as complete.");
+    cli_writeln("Activity 'Adventure Report' created — Bob and Carol marked as complete.");
 } else {
     cli_writeln("Module 'assign' unavailable — assignment activity skipped.");
+}
+
+if ($cmassignsecret) {
+    // Carol completed the secret challenge.
+    $completion->update_state($cmassignsecret, COMPLETION_COMPLETE, $students[2]->id);
+    cli_writeln("Activity 'Dragon\'s Vault' created — Carol marked as complete.");
+} else {
+    cli_writeln("Module 'assign' unavailable — secret challenge activity skipped.");
 }
 
 // 17. Summary.

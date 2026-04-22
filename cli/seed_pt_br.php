@@ -346,11 +346,11 @@ function seed_upsert_drop(
     return $record;
 }
 
-$dropforest = seed_upsert_drop($instanceid, $itemsword->id, 'Floresta Sombria', 5, 0);
-$droptavern = seed_upsert_drop($instanceid, $itempotionhp->id, 'Taverna do Porto', 0, 3600);
-$droplibrary = seed_upsert_drop($instanceid, $itemscroll->id, 'Biblioteca Real', 3, 0);
-$dropcave = seed_upsert_drop($instanceid, $itemkey->id, 'Caverna dos Anões', 10, 0);
-$dropsecret = seed_upsert_drop($instanceid, $itemgem->id, 'Cofre do Dragão', 1, 0);
+$dropforest  = seed_upsert_drop($instanceid, $itemsword->id, 'Floresta Sombria', 5, 900);      // 15 min.
+$droptavern  = seed_upsert_drop($instanceid, $itempotionhp->id, 'Taverna do Porto', 0, 3600);  // 1 h.
+$droplibrary = seed_upsert_drop($instanceid, $itemscroll->id, 'Biblioteca Real', 3, 1800);     // 30 min.
+$dropcave    = seed_upsert_drop($instanceid, $itemkey->id, 'Caverna dos Anões', 10, 600);      // 10 min.
+$dropsecret  = seed_upsert_drop($instanceid, $itemgem->id, 'Cofre do Dragão', 1, 0);           // Coleta única.
 cli_writeln("Drops prontos: Floresta, Taverna, Biblioteca, Caverna, Cofre.");
 
 // 9. Quests.
@@ -694,12 +694,13 @@ function seed_give_item(int $userid, int $itemid, int $dropid, string $source = 
         return;
     }
 
+    // Define timecreated 2 horas no passado para nenhum item pré-inserido iniciar em cooldown.
     $DB->insert_record('block_playerhud_inventory', (object) [
         'userid'      => $userid,
         'itemid'      => $itemid,
         'dropid'      => $dropid,
         'source'      => $source,
-        'timecreated' => $now,
+        'timecreated' => $now - 7200,
     ]);
 }
 
@@ -902,15 +903,72 @@ function seed_create_module(stdClass $course, string $modulename, array $extra):
     return get_coursemodule_from_id($modulename, $moduleinfo->coursemodule);
 }
 
+// Seção 1 — Card (padrão): cartão interativo completo com botão.
 $cmpage = seed_create_module($course, 'page', [
     'name'          => 'Leitura: A História do Reino',
-    'content'       => '<p>Era uma vez um reino onde aventureiros ganhavam XP explorando o mundo.</p>',
+    'intro'         => 'Colete sua recompensa por ler esta página.',
+    'content'       => '<p>Era uma vez um reino onde aventureiros ganhavam XP explorando o mundo.</p>'
+        . '[PLAYERHUD_DROP code=' . $droplibrary->code . ']',
     'contentformat' => FORMAT_HTML,
+    'section'       => 1,
     'display'       => 5,
 ]);
 
+// Seção 1 — Image: ícone flutuante clicável.
+$cmpageforest = seed_create_module($course, 'page', [
+    'name'          => 'Exploração: A Floresta Sombria',
+    'intro'         => 'Uma recompensa oculta aguarda dentro da floresta.',
+    'content'       => '<p>A floresta esconde segredos ancestrais.'
+        . ' Os corajosos que entrarem podem encontrar algo útil.</p>'
+        . '[PLAYERHUD_DROP code=' . $dropforest->code . ' mode=image]',
+    'contentformat' => FORMAT_HTML,
+    'section'       => 1,
+    'display'       => 5,
+]);
+
+// Seção 2 — Text: link de texto simples.
+$cmpagetavern = seed_create_module($course, 'page', [
+    'name'          => 'Descanso: A Taverna do Porto',
+    'intro'         => 'Descanse e recupere suas forças — algo te aguarda aqui.',
+    'content'       => '<p>Uma lareira quente, uma bebida gelada e um estalajadeiro simpático.'
+        . ' Descanse aqui para recuperar suas forças.</p>'
+        . '[PLAYERHUD_DROP code=' . $droptavern->code . ' mode=text]',
+    'contentformat' => FORMAT_HTML,
+    'section'       => 2,
+    'display'       => 5,
+]);
+
+// Seção 2 — Card: cartão interativo completo com botão.
 $cmassign = seed_create_module($course, 'assign', [
     'name'                                => 'Tarefa: Relato de Aventura',
+    'intro'                               => '[PLAYERHUD_DROP code=' . $dropcave->code . ']',
+    'section'                             => 2,
+    'assignsubmission_onlinetext_enabled' => 1,
+    'assignsubmission_file_enabled'       => 0,
+    'assignfeedback_comments_enabled'     => 1,
+    'submissiondrafts'                    => 0,
+    'requiresubmissionstatement'          => 0,
+    'sendnotifications'                   => 0,
+    'sendlatenotifications'               => 0,
+    'duedate'                             => 0,
+    'cutoffdate'                          => 0,
+    'gradingduedate'                      => 0,
+    'allowsubmissionsfromdate'            => 0,
+    'grade'                               => 100,
+    'teamsubmission'                      => 0,
+    'requireallteammemberssubmit'         => 0,
+    'blindmarking'                        => 0,
+    'attemptreopenmethod'                 => 'none',
+    'maxattempts'                         => -1,
+    'markingworkflow'                     => 0,
+    'markingallocation'                   => 0,
+]);
+
+// Seção 3 — Card: item secreto renderiza como mistério até ser coletado.
+$cmassignsecret = seed_create_module($course, 'assign', [
+    'name'                                => 'Desafio: O Cofre do Dragão',
+    'intro'                               => '[PLAYERHUD_DROP code=' . $dropsecret->code . ']',
+    'section'                             => 3,
     'assignsubmission_onlinetext_enabled' => 1,
     'assignsubmission_file_enabled'       => 0,
     'assignfeedback_comments_enabled'     => 1,
@@ -946,14 +1004,42 @@ if ($cmpage) {
     cli_writeln("Módulo 'page' indisponível — atividade de leitura ignorada.");
 }
 
+if ($cmpageforest) {
+    // Carol e Dave exploraram a floresta.
+    foreach ([$students[2], $students[3]] as $s) {
+        $completion->update_state($cmpageforest, COMPLETION_COMPLETE, $s->id);
+    }
+    cli_writeln("Atividade 'Floresta Sombria' criada — Carol e Dave marcados como concluídos.");
+} else {
+    cli_writeln("Módulo 'page' indisponível — atividade da floresta ignorada.");
+}
+
+if ($cmpagetavern) {
+    // Alice, Dave e Eve descansaram na taverna.
+    foreach ([$students[0], $students[3], $students[4]] as $s) {
+        $completion->update_state($cmpagetavern, COMPLETION_COMPLETE, $s->id);
+    }
+    cli_writeln("Atividade 'Taverna do Porto' criada — Alice, Dave e Eve marcados como concluídos.");
+} else {
+    cli_writeln("Módulo 'page' indisponível — atividade da taverna ignorada.");
+}
+
 if ($cmassign) {
     // Bob e Carol concluíram a tarefa.
     foreach ([$students[1], $students[2]] as $s) {
         $completion->update_state($cmassign, COMPLETION_COMPLETE, $s->id);
     }
-    cli_writeln("Atividade 'Tarefa' criada — Bob e Carol marcados como concluídos.");
+    cli_writeln("Atividade 'Relato de Aventura' criada — Bob e Carol marcados como concluídos.");
 } else {
     cli_writeln("Módulo 'assign' indisponível — atividade de tarefa ignorada.");
+}
+
+if ($cmassignsecret) {
+    // Carol concluiu o desafio secreto.
+    $completion->update_state($cmassignsecret, COMPLETION_COMPLETE, $students[2]->id);
+    cli_writeln("Atividade 'Cofre do Dragão' criada — Carol marcada como concluída.");
+} else {
+    cli_writeln("Módulo 'assign' indisponível — desafio secreto ignorado.");
 }
 
 // 17. Summary.
