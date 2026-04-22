@@ -93,7 +93,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             }
             if (choicesEl) {
                 var completionbadge = data.node
-                    ? ('<div class="text-center mb-3">' +
+                    ? ('<div class="w-100 text-center mb-2">' +
                        '<i class="fa fa-check-circle text-success me-1" aria-hidden="true"></i>' +
                        '<span class="fw-bold text-success">' + strings.completed + '</span>' +
                        '</div>')
