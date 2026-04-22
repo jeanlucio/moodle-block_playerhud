@@ -155,6 +155,8 @@ class tab_chapters implements renderable {
         $data = [
             'has_chapters'     => !empty($chaptersdata),
             'chapters'         => $chaptersdata,
+            'summary_text'     => get_string('chapters_summary', 'block_playerhud', count($chaptersdata)),
+            'summary_hint'     => get_string('chapters_summary_hint', 'block_playerhud'),
             'url_new_chapter'  => $newchapurl->out(false),
             'str_new_chapter'  => get_string('chapter_new', 'block_playerhud'),
             'str_ai_story_btn'            => get_string('ai_story_btn', 'block_playerhud'),

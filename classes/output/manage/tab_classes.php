@@ -143,6 +143,8 @@ class tab_classes implements renderable {
         $data = [
             'classes'      => $classesdata,
             'has_classes'  => !empty($classesdata),
+            'summary_text' => get_string('classes_summary', 'block_playerhud', count($classesdata)),
+            'summary_hint' => get_string('classes_summary_hint', 'block_playerhud'),
             'url_new'      => $newclassurl->out(false),
             'str_new'      => get_string('class_new', 'block_playerhud'),
             'str_oracle_btn'              => get_string('ai_oracle_btn', 'block_playerhud'),
