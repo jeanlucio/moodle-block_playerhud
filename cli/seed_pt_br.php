@@ -257,6 +257,7 @@ cli_writeln("Classes RPG prontas: Guerreiro, Mago, Ladino.");
  * @param int $xp XP value.
  * @param string $description Item description.
  * @param int $secret Whether item is secret.
+ * @param string $image Image filename for the item.
  * @return stdClass Item record.
  */
 function seed_upsert_item(

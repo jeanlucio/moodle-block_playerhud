@@ -87,6 +87,10 @@ jobs:
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
         run: moodle-plugin-ci validate
 
+      - name: PHPDoc checks
+        if: ${{ !cancelled() && matrix.runchecks == 'all' }}
+        run: moodle-plugin-ci phpdoc
+
       - name: Mustache Lint
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
         run: moodle-plugin-ci mustache
