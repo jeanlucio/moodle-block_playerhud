@@ -255,32 +255,32 @@
         {{/has_description}}
 
             {{! Portrait }}
-            <div class="ph-char-portrait-wrap">
+            <span class="ph-char-portrait-wrap">
                 {{#portrait_url}}
                 <img src="{{portrait_url}}" alt="{{classname}}" class="ph-char-portrait">
                 {{/portrait_url}}
                 {{^portrait_url}}
                 <i class="fa fa-user-circle ph-char-portrait-fallback" aria-hidden="true"></i>
                 {{/portrait_url}}
-            </div>
+            </span>
 
             {{! Name + tier + stars + karma }}
-            <div class="ph-char-info">
-                <div class="fw-bold ph-char-fullname" title="{{fullname}}">
+            <span class="ph-char-info">
+                <span class="d-block fw-bold ph-char-fullname" title="{{fullname}}">
                     {{fullname}}
-                </div>
-                <div class="ph-tier-name">{{tier_name}}</div>
-                <div class="ph-tier-stars" role="img"
+                </span>
+                <span class="d-block ph-tier-name">{{tier_name}}</span>
+                <span class="d-block ph-tier-stars" role="img"
                      aria-label="{{tier_name}}: {{tier}} {{#str}} out_of_5, block_playerhud {{/str}}">
                     {{#tier_stars}}{{#filled}}★{{/filled}}{{^filled}}☆{{/filled}}{{/tier_stars}}
-                </div>
+                </span>
                 {{#karma_data}}
-                <div class="ph-karma-inline {{icon_class}}"
+                <span class="d-block ph-karma-inline {{icon_class}}"
                      aria-label="{{label}}: {{value_display}}">
                     <i class="fa fa-balance-scale me-1" aria-hidden="true"></i>{{value_display}}
-                </div>
+                </span>
                 {{/karma_data}}
-            </div>
+            </span>
 
         {{#has_description}}
         </button>
