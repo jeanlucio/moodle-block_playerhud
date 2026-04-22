@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Item editing form.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_playerhud\form;
@@ -32,8 +32,8 @@ require_once($CFG->libdir . '/formslib.php');
  * Form for editing or creating items.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class edit_item_form extends \moodleform {
     /**
@@ -89,11 +89,36 @@ class edit_item_form extends \moodleform {
         $mform->addElement('selectyesno', 'enabled', get_string('enabled', 'block_playerhud'));
         $mform->setDefault('enabled', 1);
 
-        // 7. Class Restriction (Disabled for V1.0 launch).
-        // Set as '0' (Public) via hidden field to maintain Controller compatibility.
-        $mform->addElement('hidden', 'required_class_id');
-        $mform->setType('required_class_id', PARAM_INT);
-        $mform->setDefault('required_class_id', 0);
+        // 7. Class restriction.
+        $instanceid = $this->_customdata['instanceid'] ?? 0;
+        $classoptions = [];
+        if ($instanceid) {
+            $allclasses = $DB->get_records(
+                'block_playerhud_classes',
+                ['blockinstanceid' => $instanceid],
+                'name ASC',
+                'id, name'
+            );
+            foreach ($allclasses as $class) {
+                $classoptions[$class->id] = format_string($class->name);
+            }
+        }
+        if (!empty($classoptions)) {
+            $mform->addElement(
+                'autocomplete',
+                'required_class_id',
+                get_string('restrict_class', 'block_playerhud'),
+                $classoptions,
+                ['multiple' => true]
+            );
+            $mform->setType('required_class_id', PARAM_INT);
+            $mform->setDefault('required_class_id', []);
+            $mform->addHelpButton('required_class_id', 'restrict_class', 'block_playerhud');
+        } else {
+            $mform->addElement('hidden', 'required_class_id');
+            $mform->setType('required_class_id', PARAM_INT);
+            $mform->setDefault('required_class_id', 0);
+        }
 
         // 8. Secret.
         $mform->addElement(

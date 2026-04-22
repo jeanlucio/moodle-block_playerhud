@@ -18,7 +18,7 @@
  * Quest logic class for PlayerHUD block.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -55,6 +55,9 @@ class quest {
 
     /** @var int Quest type: Perform a specific trade N times. */
     const TYPE_SPECIFIC_TRADE = 8;
+
+    /** @var int Quest type: Complete a specific story chapter. */
+    const TYPE_CHAPTER = 9;
 
     /**
      * Checks the status of a quest for a specific user.
@@ -201,6 +204,24 @@ class quest {
                     $status->label = get_string('quest_status_removed', 'block_playerhud');
                 }
                 break;
+
+            case self::TYPE_CHAPTER:
+                $chapterid = (int)$quest->requirement;
+                $chapjson = $DB->get_field(
+                    'block_playerhud_rpg_progress',
+                    'completed_chapters',
+                    ['blockinstanceid' => $quest->blockinstanceid, 'userid' => $userid]
+                );
+                $donechapters = ($chapjson) ? json_decode($chapjson, true) : [];
+                if (!is_array($donechapters)) {
+                    $donechapters = [];
+                }
+                $status->completed = in_array($chapterid, $donechapters);
+                $status->progress  = $status->completed ? 100 : 0;
+                $status->label     = $status->completed
+                    ? get_string('quest_status_completed', 'block_playerhud')
+                    : get_string('quest_status_pending', 'block_playerhud');
+                break;
         }
 
         return $status;
@@ -344,6 +365,7 @@ class quest {
         $specificitemcnt = [];
         $specifictradecnt = [];
         $modinfo = null;
+        $completedchapters = null;
 
         foreach ($unclaimed as $q) {
             $completed = false;
@@ -430,6 +452,21 @@ class quest {
                         $completiondata->completionstate,
                         [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS]
                     );
+                    break;
+
+                case self::TYPE_CHAPTER:
+                    if ($completedchapters === null) {
+                        $chapjson = $DB->get_field(
+                            'block_playerhud_rpg_progress',
+                            'completed_chapters',
+                            ['blockinstanceid' => $instanceid, 'userid' => $userid]
+                        );
+                        $completedchapters = $chapjson ? json_decode($chapjson, true) : [];
+                        if (!is_array($completedchapters)) {
+                            $completedchapters = [];
+                        }
+                    }
+                    $completed = in_array((int)$q->requirement, $completedchapters);
                     break;
             }
 

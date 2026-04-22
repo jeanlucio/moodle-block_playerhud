@@ -53,4 +53,112 @@
         border: 2px solid var(--white, #fff);
         pointer-events: none;
     }
+
+    // ── Character card (RPG identity block) ────────────────────────────────────
+
+    .ph-char-card {
+        background-color: var(--gray-100, #f8f9fa);
+        border-radius: 0.5rem;
+        border: 1px solid var(--gray-200, #e9ecef);
+    }
+
+    // Row layout: portrait on the left, identity info on the right.
+    .ph-char-identity {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .ph-char-identity--clickable {
+        cursor: pointer;
+        border-radius: 0.375rem;
+        transition: background-color 0.15s ease;
+
+        &:hover {
+            background-color: var(--gray-200, #e9ecef);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--bs-primary, #0d6efd);
+            outline-offset: 2px;
+        }
+    }
+
+    .ph-char-portrait-wrap {
+        display: inline-block;
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .ph-char-portrait {
+        width: 50px;
+        height: 50px;
+        max-width: 50px;
+        max-height: 50px;
+        border-radius: 50%;
+        border: 3px solid var(--gray-300, #dee2e6);
+        object-fit: cover;
+        display: block;
+    }
+
+    .ph-char-portrait-fallback {
+        font-size: 50px;
+        line-height: 1;
+        color: var(--gray-400, #ced4da);
+        display: block;
+        text-align: center;
+    }
+
+    .ph-char-info {
+        min-width: 0;
+    }
+
+    .ph-char-fullname {
+        font-size: 0.9rem;
+    }
+
+    .ph-tier-name {
+        color: var(--gray-600, #6c757d);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .ph-tier-stars {
+        font-size: 1rem;
+        color: var(--bs-warning, #ffc107);
+        letter-spacing: 0.1em;
+    }
+
+    .ph-char-empty {
+        border: 2px dashed var(--gray-300, #dee2e6);
+        border-radius: 0.5rem;
+        opacity: 0.85;
+    }
+
+    .ph-section-divider {
+        margin-block: 0.5rem;
+        opacity: 0.2;
+    }
+
+    // Karma inline icon — color changes by alignment.
+    .ph-karma-inline {
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        margin-top: 0.2rem;
+    }
+
+    .ph-karma--good {
+        color: var(--success, #198754);
+    }
+
+    .ph-karma--neutral {
+        color: var(--secondary, #6c757d);
+    }
+
+    .ph-karma--evil {
+        color: var(--danger, #dc3545);
+    }
 }

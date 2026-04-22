@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace block_playerhud\controller;
 
@@ -24,8 +24,8 @@ use html_table;
  * Controller for managing Drops (Location-based items).
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class drops {
     /**
@@ -130,7 +130,6 @@ class drops {
         $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], '*', MUST_EXIST);
         $drops = $DB->get_records('block_playerhud_drops', ['itemid' => $itemid], "$sort $dir");
 
-        require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
         $mediadata = \block_playerhud\utils::get_item_display_data($item, $context);
 
         $dropsdata = [];
@@ -368,7 +367,7 @@ class drops {
             $DB->update_record('block_playerhud_drops', $record);
         } else {
             $record->timecreated = time();
-            $record->code = strtoupper(substr(md5(time() . $USER->id . rand()), 0, 6));
+            $record->code = \block_playerhud\utils::generate_drop_code($data->instanceid);
             $DB->insert_record('block_playerhud_drops', $record);
         }
     }

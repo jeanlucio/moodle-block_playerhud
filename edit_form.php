@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,22 +12,22 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Block configuration form.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
  * Block configuration form class.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class block_playerhud_edit_form extends block_edit_form {
     /**
@@ -59,10 +59,12 @@ class block_playerhud_edit_form extends block_edit_form {
         $mform->setDefault('config_max_levels', 20);
         $mform->addHelpButton('config_max_levels', 'max_levels', 'block_playerhud');
 
-        // Section 2: RPG Mode (Hidden).
-        $mform->addElement('hidden', 'config_enable_rpg');
-        $mform->setType('config_enable_rpg', PARAM_INT);
+        // Section 2: RPG Mode.
+        $mform->addElement('header', 'config_rpg_hdr', get_string('rpg_mode_hdr', 'block_playerhud'));
+
+        $mform->addElement('selectyesno', 'config_enable_rpg', get_string('enable_rpg_mode', 'block_playerhud'));
         $mform->setDefault('config_enable_rpg', 1);
+        $mform->addHelpButton('config_enable_rpg', 'enable_rpg_mode', 'block_playerhud');
 
         // Section 3: Ranking.
         $mform->addElement('header', 'config_ranking_hdr', get_string('ranking_hdr', 'block_playerhud'));

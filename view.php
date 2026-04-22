@@ -18,7 +18,7 @@
  * Main student view script for PlayerHUD Block.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -86,6 +86,18 @@ if ($tab == 'toggle_ranking_pref' && confirm_sesskey()) {
             'tab' => 'ranking',
         ]),
         get_string('privacy_updated', 'block_playerhud'),
+        \core\output\notification::NOTIFY_SUCCESS
+    );
+}
+
+// Logic: Select RPG Class.
+if ($action === 'select_class' && confirm_sesskey()) {
+    $classid = required_param('classid', PARAM_INT);
+    $DB->get_record('block_playerhud_classes', ['id' => $classid, 'blockinstanceid' => $instanceid], '*', MUST_EXIST);
+    \block_playerhud\game::assign_class($instanceid, $USER->id, $classid);
+    redirect(
+        new moodle_url($PAGE->url, ['tab' => 'class_select']),
+        get_string('class_selected_success', 'block_playerhud'),
         \core\output\notification::NOTIFY_SUCCESS
     );
 }
@@ -162,9 +174,20 @@ if ($isoptin) {
                 );
             }
             break;
+        case 'class_select':
+            if (class_exists('\block_playerhud\output\view\tab_class_select')) {
+                $render = new \block_playerhud\output\view\tab_class_select(
+                    $config,
+                    $player,
+                    $instanceid,
+                    $courseid
+                );
+                $tabcontenthtml = $render->display();
+            }
+            break;
         case 'chapters':
             if (class_exists('\block_playerhud\output\view\tab_chapters')) {
-                $render = new \block_playerhud\output\view\tab_chapters($config, $player, $instanceid);
+                $render = new \block_playerhud\output\view\tab_chapters($config, $player, $instanceid, $courseid);
                 $tabcontenthtml = $render->display();
             }
             break;
@@ -221,7 +244,11 @@ if ($isoptin) {
         'shop'       => ['icon' => '🛒', 'text' => get_string('tab_shop', 'block_playerhud')],
         'quests'     => ['icon' => '🎯', 'text' => get_string('tab_quests', 'block_playerhud')],
 
-        // Note: Chapters are hidden until the Story system is fully implemented.
+        // Story/Chapters tab (only if RPG mode is enabled).
+        'chapters' => (!empty($config->enable_rpg)) ? [
+            'icon' => '📖',
+            'text' => get_string('tab_chapters', 'block_playerhud'),
+        ] : null,
 
         // Ranking (Social - If enabled in configs).
         'ranking' => ($config->enable_ranking) ? [

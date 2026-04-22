@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * External service definitions for the PlayerHUD block.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -58,6 +58,51 @@ $functions = [
         'classname'   => 'block_playerhud\external',
         'methodname'  => 'remove_drop_shortcode',
         'description' => 'Remove a drop shortcode from a course module field',
+        'type'        => 'write',
+        'ajax'        => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_load_scene' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'load_scene',
+        'description'   => 'Load the current or starting scene for a story chapter',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_make_choice' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'make_choice',
+        'description'   => 'Process a story choice and return the next scene',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_load_recap' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'load_recap',
+        'description'   => 'Return the full story recap HTML for a completed chapter',
+        'type'          => 'read',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_generate_class_oracle' => [
+        'classname'   => 'block_playerhud\external',
+        'methodname'  => 'generate_class_oracle',
+        'description' => 'Generate an RPG class via AI (Class Oracle) and save it',
+        'type'        => 'write',
+        'ajax'        => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_generate_story' => [
+        'classname'   => 'block_playerhud\external',
+        'methodname'  => 'generate_story',
+        'description' => 'Generate a branching story chapter via AI and save it',
         'type'        => 'write',
         'ajax'        => true,
         'loginrequired' => true,

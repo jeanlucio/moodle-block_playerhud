@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Main management page for PlayerHUD Block.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require_once('../../config.php');
@@ -61,6 +61,19 @@ $PAGE->set_context($context);
 $PAGE->set_pagelayout('incourse');
 $PAGE->set_title(get_string('pluginname', 'block_playerhud'));
 $PAGE->set_heading(format_string($course->fullname));
+
+// Load block config for feature flags.
+$blockconfig = unserialize(base64_decode($bi->configdata));
+if (!$blockconfig) {
+    $blockconfig = new stdClass();
+}
+$rpgmodeenabled = !empty($blockconfig->enable_rpg) || !isset($blockconfig->enable_rpg);
+
+// Redirect RPG tabs to items when RPG mode is disabled.
+$rpgtabs = ['classes', 'chapters'];
+if (in_array($activetab, $rpgtabs) && !$rpgmodeenabled) {
+    redirect(new moodle_url($baseurl, ['tab' => 'items']));
+}
 
 // Action processing (Global Controllers).
 
@@ -396,6 +409,82 @@ if ($action == 'delete_chapter') {
     }
 }
 
+// Action: Move Chapter Up.
+if ($action === 'move_chapter_up' && confirm_sesskey()) {
+    $chapterid = optional_param('chapterid', 0, PARAM_INT);
+    if ($chapterid) {
+        $chapter = $DB->get_record(
+            'block_playerhud_chapters',
+            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
+            '*',
+            MUST_EXIST
+        );
+
+        // Get the previous chapter (lower sortorder).
+        $prevchapter = $DB->get_record_sql(
+            "SELECT * FROM {block_playerhud_chapters}
+             WHERE blockinstanceid = ? AND sortorder < ?
+             ORDER BY sortorder DESC
+             LIMIT 1",
+            [$instanceid, $chapter->sortorder]
+        );
+
+        if ($prevchapter) {
+            // Swap sortorder values.
+            $temporder = $chapter->sortorder;
+            $chapter->sortorder = $prevchapter->sortorder;
+            $prevchapter->sortorder = $temporder;
+
+            $DB->update_record('block_playerhud_chapters', $chapter);
+            $DB->update_record('block_playerhud_chapters', $prevchapter);
+        }
+
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'chapters']),
+            null,
+            \core\output\notification::NOTIFY_INFO
+        );
+    }
+}
+
+// Action: Move Chapter Down.
+if ($action === 'move_chapter_down' && confirm_sesskey()) {
+    $chapterid = optional_param('chapterid', 0, PARAM_INT);
+    if ($chapterid) {
+        $chapter = $DB->get_record(
+            'block_playerhud_chapters',
+            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
+            '*',
+            MUST_EXIST
+        );
+
+        // Get the next chapter (higher sortorder).
+        $nextchapter = $DB->get_record_sql(
+            "SELECT * FROM {block_playerhud_chapters}
+             WHERE blockinstanceid = ? AND sortorder > ?
+             ORDER BY sortorder ASC
+             LIMIT 1",
+            [$instanceid, $chapter->sortorder]
+        );
+
+        if ($nextchapter) {
+            // Swap sortorder values.
+            $temporder = $chapter->sortorder;
+            $chapter->sortorder = $nextchapter->sortorder;
+            $nextchapter->sortorder = $temporder;
+
+            $DB->update_record('block_playerhud_chapters', $chapter);
+            $DB->update_record('block_playerhud_chapters', $nextchapter);
+        }
+
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'chapters']),
+            null,
+            \core\output\notification::NOTIFY_INFO
+        );
+    }
+}
+
 // Action: Save API Keys.
 if ($action === 'save_keys' && confirm_sesskey()) {
     $gkey = optional_param('gemini_key', '', PARAM_TEXT);
@@ -584,12 +673,17 @@ $tabsdef = [
     'items'   => ['icon' => '📚', 'text' => get_string('tab_items', 'block_playerhud')],
     'trades'  => ['icon' => '🛒', 'text' => get_string('tab_trades', 'block_playerhud')],
     'quests'  => ['icon' => '🎯', 'text' => get_string('tab_quests', 'block_playerhud')],
-    'reports' => ['icon' => '📊', 'text' => get_string('tab_reports', 'block_playerhud')],
+    'classes'  => $rpgmodeenabled ? ['icon' => '⚔️', 'text' => get_string('tab_classes', 'block_playerhud')] : null,
+    'chapters' => $rpgmodeenabled ? ['icon' => '📖', 'text' => get_string('tab_chapters', 'block_playerhud')] : null,
+    'reports'  => ['icon' => '📊', 'text' => get_string('tab_reports', 'block_playerhud')],
     'config'  => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
 ];
 
 $tabsdata = [];
 foreach ($tabsdef as $key => $data) {
+    if ($data === null) {
+        continue;
+    }
     $tabsdata[] = [
         'active' => ($activetab == $key),
         'url' => (new moodle_url($baseurl, ['tab' => $key]))->out(false),
@@ -601,11 +695,16 @@ foreach ($tabsdef as $key => $data) {
 // Data for Layout.
 $layoutdata = [
     'str_title' => get_string('master_panel', 'block_playerhud'),
-    'url_backpack' => (new moodle_url('/blocks/playerhud/view.php', [
+    'url_student_area' => (new moodle_url('/blocks/playerhud/view.php', [
         'id' => $courseid,
         'instanceid' => $instanceid,
     ]))->out(false),
-    'str_backpack' => get_string('openbackpack', 'block_playerhud'),
+    'str_student_area' => get_string('student_area', 'block_playerhud'),
+    'url_help' => (new moodle_url('/blocks/playerhud/help.php', [
+        'id'         => $courseid,
+        'instanceid' => $instanceid,
+    ]))->out(false),
+    'str_help' => get_string('help_btn', 'block_playerhud'),
     'url_course' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
     'str_back_course' => get_string('back_to_course', 'block_playerhud'),
     'tabs' => $tabsdata,

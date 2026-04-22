@@ -17,3 +17,6 @@ playerhud.code-workspace
 .eslintrc
 .eslintrc.json
 .eslintignore
+
+.roo
+.claude

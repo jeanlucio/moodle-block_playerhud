@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Define the complete structure for backup of playerhud block.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class backup_playerhud_block_structure_step extends backup_block_structure_step {
     /**
@@ -68,6 +68,30 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $traderewards = new backup_nested_element('trade_rewards');
         $tradereward = new backup_nested_element('trade_reward', ['id'], ['tradeid', 'itemid', 'qty']);
 
+        // RPG Classes.
+        $classes = new backup_nested_element('classes');
+        $class = new backup_nested_element('class', ['id'], [
+            'name', 'description', 'base_hp', 'timecreated', 'timemodified',
+        ]);
+
+        // Story Chapters with nested nodes and choices.
+        $chapters = new backup_nested_element('chapters');
+        $chapter = new backup_nested_element('chapter', ['id'], [
+            'title', 'intro_text', 'unlock_date', 'required_level', 'sortorder',
+        ]);
+
+        $storynodes = new backup_nested_element('story_nodes');
+        $storynode = new backup_nested_element('story_node', ['id'], [
+            'chapterid', 'content', 'is_start',
+        ]);
+
+        $choices = new backup_nested_element('choices');
+        $choice = new backup_nested_element('choice', ['id'], [
+            'nodeid', 'text', 'next_nodeid', 'req_class_id',
+            'req_karma_min', 'karma_delta', 'set_class_id',
+            'cost_itemid', 'cost_item_qty',
+        ]);
+
         // 3. User Data Structure.
         $players = new backup_nested_element('players');
         $player = new backup_nested_element('player', ['id'], [
@@ -83,6 +107,11 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
 
         $tradelogs = new backup_nested_element('trade_logs');
         $tradelog = new backup_nested_element('trade_log', ['id'], ['userid', 'tradeid', 'timecreated']);
+
+        $rpgprogresses = new backup_nested_element('rpg_progresses');
+        $rpgprogress = new backup_nested_element('rpg_progress', ['id'], [
+            'userid', 'classid', 'karma', 'current_nodes', 'completed_chapters',
+        ]);
 
         // 4. Hierarchy.
         $playerhud->add_child($items);
@@ -103,6 +132,16 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $trade->add_child($traderewards);
         $traderewards->add_child($tradereward);
 
+        $playerhud->add_child($classes);
+        $classes->add_child($class);
+
+        $playerhud->add_child($chapters);
+        $chapters->add_child($chapter);
+        $chapter->add_child($storynodes);
+        $storynodes->add_child($storynode);
+        $storynode->add_child($choices);
+        $choices->add_child($choice);
+
         $playerhud->add_child($players);
         $players->add_child($player);
 
@@ -111,6 +150,9 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
 
         $playerhud->add_child($tradelogs);
         $tradelogs->add_child($tradelog);
+
+        $playerhud->add_child($rpgprogresses);
+        $rpgprogresses->add_child($rpgprogress);
 
         // 5. Data Sources.
         $item->set_source_table('block_playerhud_items', ['blockinstanceid' => backup::VAR_BLOCKID]);
@@ -121,6 +163,18 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $trade->set_source_table('block_playerhud_trades', ['blockinstanceid' => backup::VAR_BLOCKID]);
         $tradereq->set_source_table('block_playerhud_trade_reqs', ['tradeid' => backup::VAR_PARENTID]);
         $tradereward->set_source_table('block_playerhud_trade_rewards', ['tradeid' => backup::VAR_PARENTID]);
+
+        $class->set_source_table('block_playerhud_classes', ['blockinstanceid' => backup::VAR_BLOCKID]);
+
+        $chapter->set_source_table(
+            'block_playerhud_chapters',
+            ['blockinstanceid' => backup::VAR_BLOCKID]
+        );
+        $storynode->set_source_table(
+            'block_playerhud_story_nodes',
+            ['chapterid' => backup::VAR_PARENTID]
+        );
+        $choice->set_source_table('block_playerhud_choices', ['nodeid' => backup::VAR_PARENTID]);
 
         if ($this->task->get_setting_value('users')) {
             $player->set_source_table('block_playerhud_user', ['blockinstanceid' => backup::VAR_BLOCKID]);
@@ -138,6 +192,12 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
                              WHERE t.blockinstanceid = :blockid";
             $tradelog->set_source_sql($sqltradelog, ['blockid' => backup::VAR_BLOCKID]);
 
+            $rpgprogress->set_source_table(
+                'block_playerhud_rpg_progress',
+                ['blockinstanceid' => backup::VAR_BLOCKID]
+            );
+            $rpgprogress->annotate_ids('user', 'userid');
+
             // Annotate User IDs for core Moodle GDPR/Rollback systems.
             $player->annotate_ids('user', 'userid');
             $inventory->annotate_ids('user', 'userid');
@@ -146,6 +206,9 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
 
         // 6. File annotations.
         $item->annotate_files('block_playerhud', 'item_image', 'id');
+        for ($i = 1; $i <= 5; $i++) {
+            $class->annotate_files('block_playerhud', 'class_image_' . $i, 'id');
+        }
 
         return $this->prepare_block_structure($playerhud);
     }

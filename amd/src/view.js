@@ -1,5 +1,5 @@
 /* global bootstrap */
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Student View JS for PlayerHUD.
  *
  * @module     block_playerhud/view
  * @copyright  2026 Jean Lúcio
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 define(['jquery', 'core/notification'], function($, Notification) {
 
@@ -30,8 +30,39 @@ define(['jquery', 'core/notification'], function($, Notification) {
          * @param {Object} config The configuration object passed from PHP.
          */
         init: function(config) {
-            // Move modal to body end to avoid z-index issues.
+            // Move modals to body end to avoid z-index/stacking-context issues.
             $('#ph-item-modal-view').appendTo('body');
+            $('#ph-char-modal').appendTo('body');
+
+            // Hoist the history/help shortcut buttons into the block's title row
+            // so they appear on the same line as "PlayerHUD".
+            (function() {
+                var sidebar = document.querySelector('.block_playerhud_sidebar');
+                if (!sidebar) {
+                    return;
+                }
+                var btnRow = sidebar.querySelector('.ph-header-actions');
+                if (!btnRow) {
+                    return;
+                }
+                var block = sidebar.closest('.block_playerhud');
+                if (!block) {
+                    return;
+                }
+                var titleEl = block.querySelector('.card-title');
+                if (!titleEl) {
+                    return;
+                }
+                // Wrap the title + buttons in a flex row so they appear side by side.
+                var wrapper = document.createElement('div');
+                wrapper.className = 'd-flex align-items-center mb-2';
+                titleEl.parentElement.insertBefore(wrapper, titleEl);
+                titleEl.classList.add('mb-0');
+                wrapper.appendChild(titleEl);
+                btnRow.remove();
+                btnRow.classList.add('ms-auto');
+                wrapper.appendChild(btnRow);
+            }());
 
             // 1. Disable HUD Confirmation.
             $('.js-disable-hud').on('click', function(e) {
@@ -101,6 +132,18 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 if (targetUrl) {
                     window.location.href = targetUrl;
                 }
+            });
+
+            // Client-side filter for story chapters.
+            $(document).on('change', '.ph-story-filter-selector', function() {
+                const value = $(this).val();
+                $('#ph-story-grid .playerhud-item-card').each(function() {
+                    const status = $(this).data('status');
+                    const show = value === 'all' ||
+                        (value === 'read' && status === 'completed') ||
+                        (value === 'unread' && status !== 'completed');
+                    $(this).toggle(show);
+                });
             });
 
             // Event Delegation for clicking on items.

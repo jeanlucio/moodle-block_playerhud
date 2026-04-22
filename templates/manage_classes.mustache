@@ -1,0 +1,233 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/manage_classes
+
+    Template for the RPG Classes management tab.
+
+    Classes:
+    * .ph-class-card         - Card wrapper for a single class
+    * .ph-class-portrait     - Portrait image container (circular, 60×60)
+    * .ph-class-portrait-img - The <img> element inside the portrait
+    * .ph-class-no-portrait  - Fallback placeholder when no image is uploaded
+
+    Example context (json):
+    {
+        "has_classes": true,
+        "classes": [
+            {
+                "id": 1,
+                "name": "Warrior",
+                "description": "A brave fighter.",
+                "base_hp": 150,
+                "has_portrait": true,
+                "portrait": "http://example.com/portrait.png",
+                "url_edit": "http://example.com/edit_class.php?classid=1",
+                "url_delete": "http://example.com/manage.php?action=delete_class&classid=1",
+                "confirm_msg": "Delete this class?"
+            }
+        ],
+        "url_new": "http://example.com/edit_class.php",
+        "str_new": "New Class",
+        "str_oracle_btn": "Class Oracle",
+        "str_oracle_modal_title": "Class Oracle",
+        "str_oracle_theme_label": "Theme or description",
+        "str_oracle_theme_placeholder": "e.g. a brave warrior who fights with fire...",
+        "str_oracle_generate": "Generate",
+        "str_oracle_count_label": "Quantity",
+        "str_edit": "Edit",
+        "str_delete": "Delete",
+        "str_empty": "No classes defined yet.",
+        "str_hp": "HP:",
+        "str_confirm_delete": "Are you sure?",
+        "str_cancel": "Cancel",
+        "str_close": "Close",
+        "summary_text": "You have 1 character(s) created.",
+        "summary_hint": "Each character defines the student avatar and visual evolution."
+    }
+}}
+<div class="ph-tab-classes">
+
+    {{! Header: counter + help + action buttons }}
+    <div class="d-flex flex-column mb-3 p-3 bg-light rounded border shadow-sm ph-manage-header">
+        <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
+            <div class="d-flex align-items-center flex-grow-1">
+                <button class="btn btn-link p-0 text-primary text-decoration-none me-2" type="button"
+                        data-toggle="collapse" data-bs-toggle="collapse"
+                        data-target="#ph-classes-hint" data-bs-target="#ph-classes-hint"
+                        aria-expanded="false" aria-controls="ph-classes-hint"
+                        aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
+                    <i class="fa fa-question-circle fa-lg" aria-hidden="true"></i>
+                </button>
+                <span class="fw-bold text-dark">{{summary_text}}</span>
+            </div>
+            <div class="d-flex flex-shrink-0 gap-2">
+                <button type="button"
+                        class="btn btn-outline-secondary shadow-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#ph-ai-oracle-modal"
+                        data-toggle="modal"
+                        data-target="#ph-ai-oracle-modal"
+                        aria-label="{{str_oracle_btn}}">
+                    <i class="fa fa-magic" aria-hidden="true"></i> {{str_oracle_btn}}
+                </button>
+                <a href="{{url_new}}" class="btn btn-primary shadow-sm">
+                    <i class="fa fa-plus-circle" aria-hidden="true"></i> {{str_new}}
+                </a>
+            </div>
+        </div>
+        <div class="collapse w-100" id="ph-classes-hint">
+            <div class="alert alert-info border-info mb-0 mt-3 small py-2 shadow-sm d-flex align-items-start">
+                <i class="fa fa-lightbulb-o fa-lg me-2 mt-1 text-warning" aria-hidden="true"></i>
+                <div>{{summary_hint}}</div>
+            </div>
+        </div>
+    </div>
+
+    {{#has_classes}}
+    <div class="row">
+        {{#classes}}
+        <div class="col-md-4 mb-4">
+            <div class="ph-class-card card h-100 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+
+                    {{! Portrait }}
+                    <div class="ph-class-portrait me-3">
+                        {{#has_portrait}}
+                            <img src="{{portrait}}" alt="" class="ph-class-portrait-img">
+                        {{/has_portrait}}
+                        {{^has_portrait}}
+                            <div class="ph-class-no-portrait" aria-hidden="true">⚔️</div>
+                        {{/has_portrait}}
+                    </div>
+
+                    {{! Info }}
+                    <div class="flex-grow-1 ph-text-truncate-100">
+                        <h5 class="mb-1 fw-bold ph-text-truncate-100">{{name}}</h5>
+                        {{#description}}
+                        <div class="ph-class-desc ph-text-truncate-2lines small text-muted">{{{description}}}</div>
+                        {{/description}}
+                    </div>
+
+                </div>
+                <div class="card-footer bg-transparent border-0 text-end">
+                    <a href="{{url_edit}}" class="btn btn-sm btn-outline-primary me-1">
+                        <i class="fa fa-pencil" aria-hidden="true"></i> {{str_edit}}
+                    </a>
+                    <button type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        data-action="delete-class"
+                        data-confirm-msg="{{confirm_msg}}"
+                        data-delete-url="{{url_delete}}"
+                        data-bs-toggle="modal"
+                        data-bs-target="#ph-confirm-delete-class"
+                        data-toggle="modal"
+                        data-target="#ph-confirm-delete-class">
+                        <i class="fa fa-trash" aria-hidden="true"></i> {{str_delete}}
+                    </button>
+                </div>
+            </div>
+        </div>
+        {{/classes}}
+    </div>
+    {{/has_classes}}
+
+    {{^has_classes}}
+    <div class="alert alert-light text-center py-5">
+        <i class="fa fa-users fa-2x mb-2 d-block" aria-hidden="true"></i>
+        {{str_empty}}
+    </div>
+    {{/has_classes}}
+
+</div>
+
+{{! Shared delete confirmation modal (Bootstrap 5) }}
+<div class="modal fade" id="ph-confirm-delete-class" tabindex="-1"
+         aria-labelledby="ph-confirm-delete-class-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ph-confirm-delete-class-label">{{str_confirm_delete}}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                    data-dismiss="modal" aria-label="{{str_close}}">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="ph-delete-class-msg"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary"
+                    data-bs-dismiss="modal" data-dismiss="modal">
+                    {{str_cancel}}
+                </button>
+                <a id="ph-delete-class-url" href="#" class="btn btn-danger">
+                    {{str_delete}}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{! Class Oracle AI generation modal }}
+<div class="modal fade" id="ph-ai-oracle-modal" tabindex="-1" aria-labelledby="ph-ai-oracle-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ph-ai-oracle-modal-label">
+                    <i class="fa fa-magic me-2" aria-hidden="true"></i>{{str_oracle_modal_title}}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                    data-dismiss="modal" aria-label="{{str_close}}">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="ph-oracle-theme" class="form-label fw-semibold">
+                        {{str_oracle_theme_label}}
+                    </label>
+                    <textarea id="ph-oracle-theme"
+                              class="form-control"
+                              rows="3"
+                              placeholder="{{str_oracle_theme_placeholder}}"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="ph-oracle-count" class="form-label fw-semibold">
+                        {{str_oracle_count_label}}
+                    </label>
+                    <select id="ph-oracle-count" class="form-select w-auto">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary"
+                    data-bs-dismiss="modal" data-dismiss="modal">
+                    {{str_cancel}}
+                </button>
+                <button type="button" class="btn btn-primary" data-action="ai-oracle-submit">
+                    <i class="fa fa-magic" aria-hidden="true"></i> {{str_oracle_generate}}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -153,6 +153,10 @@
 
     .ph-progress-sm {
         height: 6px;
+
+        .progress-bar {
+            width: var(--ph-progress, 0%);
+        }
     }
 
     .playerhud-item-card {

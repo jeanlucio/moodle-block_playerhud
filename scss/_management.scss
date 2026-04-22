@@ -250,6 +250,10 @@
         height: 6px;
         width: 80px;
         margin: 0 auto;
+
+        .progress-bar {
+            width: var(--ph-progress, 0%);
+        }
     }
 
     .ph-opacity-80 {

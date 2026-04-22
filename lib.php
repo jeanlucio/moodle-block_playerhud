@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Library of functions for the PlayerHUD block.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
@@ -112,15 +112,7 @@ function block_playerhud_get_drop_details_by_code($code, $blockinstanceid) {
  * @return bool True if visible.
  */
 function block_playerhud_is_visible_for_class($requiredclassids, $userclassid) {
-    // Empty or '0' means Public (All Classes).
-    if (empty($requiredclassids) || $requiredclassids === '0') {
-        return true;
-    }
-
-    $allowedarray = explode(',', $requiredclassids);
-
-    // Check if '0' is in array (explicit public) or user class is in array.
-    return (in_array('0', $allowedarray) || in_array((string)$userclassid, $allowedarray));
+    return \block_playerhud\utils::is_visible_for_class((string) $requiredclassids, (int) $userclassid);
 }
 
 /**

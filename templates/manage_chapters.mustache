@@ -1,0 +1,316 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/manage_chapters
+
+    Template for the story chapters management tab (teacher panel).
+
+    Classes:
+    * .ph-manage-chapters   - Root wrapper
+    * .ph-chapter-card      - Individual chapter list item
+
+    Example context (json):
+    {
+        "has_chapters": true,
+        "url_new_chapter": "http://example.com/edit_chapter.php",
+        "str_new_chapter": "New Chapter",
+        "str_ai_story_btn": "Generate with AI",
+        "str_story_modal_title": "Generate Story with AI",
+        "str_story_theme_label": "Theme or setting",
+        "str_story_theme_placeholder": "e.g. a dark dungeon with ancient mysteries...",
+        "str_story_generate": "Generate",
+        "str_story_mechanics_title": "Mechanics",
+        "str_story_karma_gain": "Max reputation gain (optional)",
+        "str_story_karma_loss": "Max reputation loss (optional)",
+        "str_story_item_cost": "Item cost (optional)",
+        "str_story_item_qty": "Total quantity to distribute",
+        "story_items": [
+            {"id": 0, "name": "— No item cost —", "selected": true},
+            {"id": 1, "name": "Gold Coin", "selected": false}
+        ],
+        "str_manage_scenes": "Manage Scenes",
+        "str_test": "Test",
+        "str_edit": "Edit",
+        "str_delete": "Delete",
+        "str_move_up": "Move Up",
+        "str_move_down": "Move Down",
+        "str_empty": "No chapters defined yet.",
+        "str_delete_title": "Are you sure?",
+        "str_cancel": "Cancel",
+        "str_close": "Close",
+        "str_test_title": "Test Mode",
+        "summary_text": "You have 1 chapter(s) created.",
+        "summary_hint": "Each chapter is made up of scenes with text, images, and choices.",
+        "chapters": [
+            {
+                "id": 1,
+                "title": "Chapter One",
+                "intro_text": "Intro.",
+                "unlock_label": "Immediate",
+                "scene_count": 3,
+                "has_scenes": true,
+                "url_scenes": "http://example.com/manage_scenes.php",
+                "can_move_up": false,
+                "can_move_down": true,
+                "url_move_up": "",
+                "url_move_down": "http://example.com/manage.php?action=move_chapter_down",
+                "url_edit": "http://example.com/edit_chapter.php?chapterid=1",
+                "url_delete": "http://example.com/manage.php?action=delete_chapter",
+                "confirm_msg": "Delete this chapter?"
+            }
+        ]
+    }
+}}
+<div class="ph-manage-chapters">
+
+    {{! Header: counter + help + action buttons }}
+    <div class="d-flex flex-column mb-3 p-3 bg-light rounded border shadow-sm ph-manage-header">
+        <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
+            <div class="d-flex align-items-center flex-grow-1">
+                <button class="btn btn-link p-0 text-primary text-decoration-none me-2" type="button"
+                        data-toggle="collapse" data-bs-toggle="collapse"
+                        data-target="#ph-chapters-hint" data-bs-target="#ph-chapters-hint"
+                        aria-expanded="false" aria-controls="ph-chapters-hint"
+                        aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
+                    <i class="fa fa-question-circle fa-lg" aria-hidden="true"></i>
+                </button>
+                <span class="fw-bold text-dark">{{summary_text}}</span>
+            </div>
+            <div class="d-flex flex-shrink-0 gap-2">
+                <button type="button"
+                        class="btn btn-outline-secondary shadow-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#ph-ai-story-modal"
+                        data-toggle="modal"
+                        data-target="#ph-ai-story-modal"
+                        aria-label="{{str_ai_story_btn}}">
+                    <i class="fa fa-magic" aria-hidden="true"></i> {{str_ai_story_btn}}
+                </button>
+                <a href="{{url_new_chapter}}" class="btn btn-primary shadow-sm">
+                    <i class="fa fa-plus-circle" aria-hidden="true"></i> {{str_new_chapter}}
+                </a>
+            </div>
+        </div>
+        <div class="collapse w-100" id="ph-chapters-hint">
+            <div class="alert alert-info border-info mb-0 mt-3 small py-2 shadow-sm d-flex align-items-start">
+                <i class="fa fa-lightbulb-o fa-lg me-2 mt-1 text-warning" aria-hidden="true"></i>
+                <div>{{summary_hint}}</div>
+            </div>
+        </div>
+    </div>
+
+    {{#has_chapters}}
+    <div class="list-group">
+        {{#chapters}}
+        <div class="ph-chapter-card list-group-item p-4 mb-3 border rounded shadow-sm">
+
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1 fw-bold">
+                    <i class="fa fa-bookmark text-muted" aria-hidden="true"></i> {{title}}
+                </h5>
+                <small class="text-muted">{{unlock_label}}</small>
+            </div>
+            <p class="mb-3 text-muted">{{intro_text}}</p>
+
+            <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                <div>
+                    <a href="{{url_scenes}}" class="btn btn-dark btn-sm shadow-sm me-1">
+                        <i class="fa fa-film" aria-hidden="true"></i> {{str_manage_scenes}}
+                        <span class="badge bg-light text-dark ms-1">{{scene_count}}</span>
+                    </a>
+                    {{#has_scenes}}
+                    <button class="btn btn-sm btn-outline-success me-1"
+                            data-chapterid="{{id}}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#ph-story-test-modal"
+                            data-toggle="modal"
+                            data-target="#ph-story-test-modal"
+                            aria-label="{{str_test}}">
+                        <i class="fa fa-gamepad" aria-hidden="true"></i> {{str_test}}
+                    </button>
+                    {{/has_scenes}}
+                </div>
+                <div>
+                    {{#can_move_up}}
+                    <a href="{{url_move_up}}" class="btn btn-sm btn-outline-info me-1"
+                       aria-label="{{str_move_up}}">
+                        <i class="fa fa-arrow-up" aria-hidden="true"></i> {{str_move_up}}
+                    </a>
+                    {{/can_move_up}}
+                    {{#can_move_down}}
+                    <a href="{{url_move_down}}" class="btn btn-sm btn-outline-info me-1"
+                       aria-label="{{str_move_down}}">
+                        <i class="fa fa-arrow-down" aria-hidden="true"></i> {{str_move_down}}
+                    </a>
+                    {{/can_move_down}}
+                    <a href="{{url_edit}}" class="btn btn-sm btn-outline-primary me-1">
+                        <i class="fa fa-pencil" aria-hidden="true"></i> {{str_edit}}
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger"
+                            data-action="delete-chapter"
+                            data-confirm-msg="{{confirm_msg}}"
+                            data-delete-url="{{url_delete}}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#ph-confirm-delete-chapter"
+                            data-toggle="modal"
+                            data-target="#ph-confirm-delete-chapter">
+                        <i class="fa fa-trash" aria-hidden="true"></i> {{str_delete}}
+                    </button>
+                </div>
+            </div>
+
+        </div>
+        {{/chapters}}
+    </div>
+    {{/has_chapters}}
+
+    {{^has_chapters}}
+    <div class="alert alert-light text-center py-5">
+        <i class="fa fa-book fa-2x mb-2 d-block" aria-hidden="true"></i>
+        {{str_empty}}
+    </div>
+    {{/has_chapters}}
+
+    {{! Delete confirmation modal }}
+    <div class="modal fade" id="ph-confirm-delete-chapter" tabindex="-1"
+         aria-labelledby="ph-confirm-delete-chapter-label" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ph-confirm-delete-chapter-label">{{str_delete_title}}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            data-dismiss="modal" aria-label="{{str_close}}">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p id="ph-delete-chapter-msg"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal" data-dismiss="modal">{{str_cancel}}</button>
+                    <a id="ph-delete-chapter-url" href="#" class="btn btn-danger">{{str_delete}}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{! Test/preview modal }}
+    <div class="modal fade" id="ph-story-test-modal" tabindex="-1" aria-hidden="true"
+         aria-labelledby="ph-story-test-modal-label" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content ph-story-modal-content">
+                <div class="modal-header ph-story-modal-header">
+                    <h5 class="modal-title fw-bold" id="ph-story-test-modal-label">
+                        <i class="fa fa-gamepad me-2" aria-hidden="true"></i> {{str_test_title}}
+                    </h5>
+                    <button type="button" class="ph-modal-close-btn"
+                            data-bs-dismiss="modal" data-dismiss="modal"
+                            aria-label="{{str_close}}">
+                        <i class="fa fa-times" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="modal-body ph-story-modal-body">
+                    <div id="ph-test-content" class="ph-story-content"></div>
+                </div>
+                <div class="modal-footer ph-story-modal-footer justify-content-center"
+                     id="ph-test-choices"></div>
+            </div>
+        </div>
+    </div>
+
+    {{! AI Story generation modal }}
+    <div class="modal fade" id="ph-ai-story-modal" tabindex="-1"
+         aria-labelledby="ph-ai-story-modal-label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ph-ai-story-modal-label">
+                        <i class="fa fa-magic me-2" aria-hidden="true"></i>{{str_story_modal_title}}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            data-dismiss="modal" aria-label="{{str_close}}">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="ph-story-theme" class="form-label fw-semibold">
+                            {{str_story_theme_label}}
+                        </label>
+                        <textarea id="ph-story-theme"
+                                  class="form-control"
+                                  rows="3"
+                                  placeholder="{{str_story_theme_placeholder}}"></textarea>
+                    </div>
+                    <hr class="my-3">
+                    <p class="fw-semibold small text-muted text-uppercase mb-2">
+                        {{str_story_mechanics_title}}
+                    </p>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label for="ph-story-karma-gain" class="form-label small">
+                                {{str_story_karma_gain}}
+                            </label>
+                            <input type="number" id="ph-story-karma-gain"
+                                   class="form-control form-control-sm"
+                                   min="0" value="0">
+                        </div>
+                        <div class="col-6">
+                            <label for="ph-story-karma-loss" class="form-label small">
+                                {{str_story_karma_loss}}
+                            </label>
+                            <input type="number" id="ph-story-karma-loss"
+                                   class="form-control form-control-sm"
+                                   min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-8">
+                            <label for="ph-story-item-id" class="form-label small">
+                                {{str_story_item_cost}}
+                            </label>
+                            <select id="ph-story-item-id" class="form-select form-select-sm">
+                                {{#story_items}}
+                                <option value="{{id}}"{{#selected}} selected{{/selected}}>{{name}}</option>
+                                {{/story_items}}
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <label for="ph-story-item-qty" class="form-label small">
+                                {{str_story_item_qty}}
+                            </label>
+                            <input type="number" id="ph-story-item-qty"
+                                   class="form-control form-control-sm"
+                                   min="0" value="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal" data-dismiss="modal">
+                        {{str_cancel}}
+                    </button>
+                    <button type="button" class="btn btn-primary" data-action="ai-story-submit">
+                        <i class="fa fa-magic" aria-hidden="true"></i> {{str_story_generate}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

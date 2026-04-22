@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Items tab management for Block PlayerHUD.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_playerhud\output\manage;
@@ -33,8 +33,8 @@ use block_playerhud\form\edit_item_form;
  * Items tab management for Block PlayerHUD.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class tab_items implements renderable {
     /** @var int Block Instance ID */
@@ -140,7 +140,11 @@ class tab_items implements renderable {
                 if ($item) {
                     $data = (array)$item;
                     $data['itemid'] = $item->id;
-                    $data['required_class_id'] = '0';
+                    if (!empty($item->required_class_id) && $item->required_class_id !== '0') {
+                        $data['required_class_id'] = array_map('intval', explode(',', $item->required_class_id));
+                    } else {
+                        $data['required_class_id'] = [];
+                    }
                     $data['description'] = ['text' => $item->description, 'format' => FORMAT_HTML];
 
                     $draftitemid = file_get_submitted_draft_itemid('image_file');
@@ -260,8 +264,6 @@ class tab_items implements renderable {
         $counter = ($page * $perpage) + 1;
 
         if ($items) {
-            require_once($GLOBALS['CFG']->dirroot . '/blocks/playerhud/lib.php');
-
             $dropscounts = [];
             $itemids = array_keys($items);
             if (!empty($itemids)) {
@@ -462,7 +464,6 @@ class tab_items implements renderable {
         $insertedmap = $this->get_inserted_cmids($drops, $modules);
 
         // 4. Bulk-load item images to avoid N+1.
-        require_once($GLOBALS['CFG']->dirroot . '/blocks/playerhud/lib.php');
         $context = \context_block::instance($this->instanceid);
         $itemsforimg = [];
         foreach ($drops as $drop) {

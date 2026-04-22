@@ -1,5 +1,5 @@
 {{!
-    This file is part of Moodle - http://moodle.org/
+    This file is part of Moodle - https://moodle.org/
 
     Moodle is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -12,19 +12,21 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 }}
 {{!
     @template block_playerhud/manage_layout
     @package block_playerhud
     @copyright 2026 Jean Lúcio
-    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
     Example context (json):
     {
         "str_title": "Game Master Panel",
-        "url_backpack": "#",
-        "str_backpack": "Backpack",
+        "url_student_area": "#",
+        "str_student_area": "Student Area",
+        "url_help": "#",
+        "str_help": "Help",
         "url_course": "#",
         "str_back_course": "Back to Course",
         "tabs": [
@@ -40,8 +42,11 @@
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <h2 class="m-0">{{str_title}}</h2>
         <div class="d-flex">
-            <a href="{{url_backpack}}" class="btn btn-outline-primary shadow-sm fw-bold me-2">
-                <span aria-hidden="true" class="me-1">🎒</span> {{str_backpack}}
+            <a href="{{url_student_area}}" class="btn btn-outline-primary shadow-sm fw-bold me-2">
+                <i class="fa fa-graduation-cap me-1" aria-hidden="true"></i> {{str_student_area}}
+            </a>
+            <a href="{{url_help}}" class="btn btn-outline-info shadow-sm me-2">
+                <i class="fa fa-question-circle me-1" aria-hidden="true"></i> {{str_help}}
             </a>
             <a href="{{url_course}}" class="btn btn-outline-secondary shadow-sm">
                  <i class="fa fa-arrow-left me-1" aria-hidden="true"></i> {{str_back_course}}

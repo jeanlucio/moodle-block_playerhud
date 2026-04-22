@@ -1,5 +1,5 @@
 {{!
-	This file is part of Moodle - http://moodle.org/
+	This file is part of Moodle - https://moodle.org/
 
 	Moodle is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 	GNU General Public License for more details.
 
 	You should have received a copy of the GNU General Public License
-	along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+	along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 }}
 {{!
     @template block_playerhud/tab_reports
@@ -20,8 +20,8 @@
     Template for the Reports tab in PlayerHUD management.
 
     @package    block_playerhud
-    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
-    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @copyright  2026 Jean Lúcio
+    @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
     Example context (json):
     {
@@ -78,7 +78,7 @@
                                 <div class="fw-bold ph-w-50">{{str.level}} {{label}}</div>
                                 <div class="flex-grow-1 mx-2">
                                     <div class="progress ph-h-10" aria-hidden="true">
-                                        <div class="progress-bar bg-info" style="width: {{percent}}%"></div>
+                                        <div class="progress-bar bg-info" style="--ph-progress: {{percent}}%"></div>
                                     </div>
                                 </div>
                                 <div class="text-end ph-w-30">{{total}}</div>
@@ -121,7 +121,7 @@
                             <div class="ph-w-80 mx-2">
                                 <div class="progress ph-h-10" aria-hidden="true">
                                     <div class="progress-bar {{#no_claims}}bg-secondary{{/no_claims}}{{^no_claims}}bg-warning{{/no_claims}}"
-                                         style="width: {{percent}}%"></div>
+                                         style="--ph-progress: {{percent}}%"></div>
                                 </div>
                             </div>
                             <div class="text-end ph-w-30">{{total}}</div>

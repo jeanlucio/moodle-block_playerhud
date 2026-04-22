@@ -1,5 +1,5 @@
 {{!
-	This file is part of Moodle - http://moodle.org/
+	This file is part of Moodle - https://moodle.org/
 
 	Moodle is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 	GNU General Public License for more details.
 
 	You should have received a copy of the GNU General Public License
-	along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+	along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 }}
 {{!
     @template block_playerhud/tab_history
@@ -20,8 +20,8 @@
     History tab output renderer for students.
 
     @package    block_playerhud
-    @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
-    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @copyright  2026 Jean Lúcio
+    @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
     Example context (json):
     {
@@ -76,12 +76,9 @@
 }}
 <div class="playerhud-history-container animate__animated animate__fadeIn">
 
-    <div class="alert alert-light border shadow-sm mb-4 d-flex align-items-center">
-        <i class="fa fa-list-alt fa-2x text-primary me-3" aria-hidden="true"></i>
-        <div>
-            <h5 class="m-0 fw-bold">{{str.title}}</h5>
-            <small class="text-muted">{{str.desc}}</small>
-        </div>
+    <div class="alert alert-info border-0 shadow-sm mb-4 d-flex align-items-center">
+        <i class="fa fa-info-circle me-2" aria-hidden="true"></i>
+        <div>{{str.desc}}</div>
     </div>
 
     {{! --- LIVE SEARCH BAR & SHOW ALL TOGGLE --- }}
@@ -90,7 +87,7 @@
             <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-muted" aria-hidden="true"></i></span>
             <input type="text" id="ph-live-search" class="form-control border-start-0 ps-0" placeholder="{{str.search_any}}" aria-label="{{str.search_any}}">
         </div>
-        <div>
+        <div class="flex-shrink-0">
             {{#showall}}
                 <a href="{{url_toggle_showall}}" class="btn btn-outline-primary shadow-sm h-100 d-flex align-items-center text-nowrap">
                     <i class="fa fa-compress me-2" aria-hidden="true"></i> {{str.btn_showpaged}}

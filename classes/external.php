@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace block_playerhud;
 
@@ -28,7 +28,7 @@ use context_block;
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class external extends external_api {
     /**
@@ -558,6 +558,409 @@ class external extends external_api {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Success status'),
             'message' => new external_value(PARAM_RAW, 'Message', VALUE_DEFAULT, ''),
+        ]);
+    }
+
+    /**
+     * Shared return structure for node data (used by load_scene, make_choice and previews).
+     *
+     * @return external_single_structure
+     */
+    private static function node_returns(): external_single_structure {
+        return new external_single_structure([
+            'node' => new external_single_structure([
+                'content' => new external_value(PARAM_RAW, 'Scene HTML content'),
+                'choices' => new external_multiple_structure(
+                    new external_single_structure([
+                        'id'               => new external_value(PARAM_INT, 'Choice ID'),
+                        'text'             => new external_value(PARAM_TEXT, 'Choice label text'),
+                        'btnclass'         => new external_value(PARAM_TEXT, 'Bootstrap button class'),
+                        'disabled'         => new external_value(PARAM_BOOL, 'Whether the button is disabled'),
+                        'req_class_name'   => new external_value(PARAM_TEXT, 'Required class name, empty if none'),
+                        'req_class_met'    => new external_value(PARAM_BOOL, 'Whether class requirement is met'),
+                        'req_karma_min'    => new external_value(PARAM_INT, 'Minimum karma required, 0 if none'),
+                        'req_karma_met'    => new external_value(PARAM_BOOL, 'Whether karma requirement is met'),
+                        'cost_item_name'   => new external_value(PARAM_TEXT, 'Cost item name, empty if none'),
+                        'cost_item_qty'    => new external_value(PARAM_INT, 'Cost item quantity'),
+                        'cost_item_met'    => new external_value(PARAM_BOOL, 'Whether item cost is met'),
+                        'str_req_class'    => new external_value(PARAM_TEXT, 'Localised class requirement label'),
+                        'str_req_karma'    => new external_value(PARAM_TEXT, 'Localised karma requirement label'),
+                        'str_low_karma'    => new external_value(PARAM_TEXT, 'Localised low karma warning'),
+                        'str_cost_item'    => new external_value(PARAM_TEXT, 'Localised item cost label'),
+                        'str_missing_item' => new external_value(PARAM_TEXT, 'Localised missing item message'),
+                        'is_preview'       => new external_value(PARAM_BOOL, 'Preview mode flag'),
+                    ])
+                ),
+            ], 'Node data', VALUE_OPTIONAL),
+            'finished'  => new external_value(PARAM_BOOL, 'Chapter finished flag', VALUE_OPTIONAL),
+            'chapterid' => new external_value(PARAM_INT, 'Chapter ID', VALUE_OPTIONAL),
+            'message'   => new external_value(PARAM_TEXT, 'Completion message', VALUE_OPTIONAL),
+            'events'    => new external_multiple_structure(
+                new external_single_structure([
+                    'type' => new external_value(PARAM_TEXT, 'Event type'),
+                    'msg'  => new external_value(PARAM_TEXT, 'Event message'),
+                ]),
+                'Game events (karma, class change, item loss)',
+                VALUE_OPTIONAL
+            ),
+        ]);
+    }
+
+    /**
+     * Parameters for load_scene.
+     *
+     * @return external_function_parameters
+     */
+    public static function load_scene_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'chapterid'  => new external_value(PARAM_INT, 'Chapter ID'),
+            'preview'    => new external_value(PARAM_BOOL, 'Preview mode (no progress saved)', VALUE_DEFAULT, false),
+        ]);
+    }
+
+    /**
+     * Load the current or starting scene for a chapter.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int $chapterid Chapter ID.
+     * @param bool $preview Preview mode flag.
+     * @return array Scene data.
+     */
+    public static function load_scene(int $instanceid, int $courseid, int $chapterid, bool $preview = false): array {
+        global $USER;
+
+        $params = self::validate_parameters(self::load_scene_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'chapterid'  => $chapterid,
+            'preview'    => $preview,
+        ]);
+
+        $context = context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:view', $context);
+
+        if ($params['preview']) {
+            require_capability('block/playerhud:manage', $context);
+            return \block_playerhud\story_manager::load_preview_start(
+                $params['instanceid'],
+                $USER->id,
+                $params['chapterid']
+            );
+        }
+
+        return \block_playerhud\story_manager::load_scene(
+            $params['instanceid'],
+            $USER->id,
+            $params['chapterid']
+        );
+    }
+
+    /**
+     * Return structure for load_scene.
+     *
+     * @return external_single_structure
+     */
+    public static function load_scene_returns(): external_single_structure {
+        return self::node_returns();
+    }
+
+    /**
+     * Parameters for make_choice.
+     *
+     * @return external_function_parameters
+     */
+    public static function make_choice_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'choiceid'   => new external_value(PARAM_INT, 'Choice ID'),
+            'preview'    => new external_value(PARAM_BOOL, 'Preview mode (no progress saved)', VALUE_DEFAULT, false),
+        ]);
+    }
+
+    /**
+     * Process a player's choice and return the next scene.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int $choiceid Choice ID.
+     * @param bool $preview Preview mode flag.
+     * @return array Next scene data.
+     */
+    public static function make_choice(int $instanceid, int $courseid, int $choiceid, bool $preview = false): array {
+        global $USER;
+
+        $params = self::validate_parameters(self::make_choice_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'choiceid'   => $choiceid,
+            'preview'    => $preview,
+        ]);
+
+        $context = context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:view', $context);
+
+        if ($params['preview']) {
+            require_capability('block/playerhud:manage', $context);
+            return \block_playerhud\story_manager::preview_nav(
+                $params['instanceid'],
+                $USER->id,
+                $params['choiceid']
+            );
+        }
+
+        return \block_playerhud\story_manager::make_choice(
+            $params['instanceid'],
+            $USER->id,
+            $params['choiceid']
+        );
+    }
+
+    /**
+     * Return structure for make_choice.
+     *
+     * @return external_single_structure
+     */
+    public static function make_choice_returns(): external_single_structure {
+        return self::node_returns();
+    }
+
+    /**
+     * Parameters for load_recap.
+     *
+     * @return external_function_parameters
+     */
+    public static function load_recap_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'chapterid'  => new external_value(PARAM_INT, 'Chapter ID'),
+        ]);
+    }
+
+    /**
+     * Return the full story recap HTML for a completed chapter.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int $chapterid Chapter ID.
+     * @return array Recap HTML.
+     */
+    public static function load_recap(int $instanceid, int $courseid, int $chapterid): array {
+        global $USER;
+
+        $params = self::validate_parameters(self::load_recap_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'chapterid'  => $chapterid,
+        ]);
+
+        $context = context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:view', $context);
+
+        $html = \block_playerhud\story_manager::load_recap(
+            $params['instanceid'],
+            $USER->id,
+            $params['chapterid']
+        );
+
+        return ['html' => $html];
+    }
+
+    /**
+     * Return structure for load_recap.
+     *
+     * @return external_single_structure
+     */
+    public static function load_recap_returns(): external_single_structure {
+        return new external_single_structure([
+            'html' => new external_value(PARAM_RAW, 'Full story recap HTML'),
+        ]);
+    }
+
+    /**
+     * Parameters for generate_class_oracle.
+     *
+     * @return external_function_parameters
+     */
+    public static function generate_class_oracle_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'theme'      => new external_value(PARAM_TEXT, 'Theme or description for the class'),
+        ]);
+    }
+
+    /**
+     * Generate an RPG class via AI (Class Oracle) and save it.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid   Course ID.
+     * @param string $theme   Theme or description for the class.
+     * @return array Result structure.
+     */
+    public static function generate_class_oracle(int $instanceid, int $courseid, string $theme): array {
+        global $USER, $DB;
+
+        $params = self::validate_parameters(self::generate_class_oracle_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'theme'      => $theme,
+        ]);
+
+        $context = context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:manage', $context);
+
+        try {
+            $generator = new \block_playerhud\ai\generator($params['instanceid']);
+            $result    = $generator->generate_class($params['theme']);
+
+            $log                  = new \stdClass();
+            $log->blockinstanceid = $params['instanceid'];
+            $log->userid          = $USER->id;
+            $log->action_type     = 'class';
+            $log->object_name     = $result['class_name'];
+            $log->ai_provider     = $result['provider'];
+            $log->timecreated     = time();
+            $DB->insert_record('block_playerhud_ai_logs', $log);
+
+            return [
+                'success'    => true,
+                'class_name' => $result['class_name'],
+                'provider'   => $result['provider'],
+                'message'    => '',
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success'    => false,
+                'class_name' => '',
+                'provider'   => '',
+                'message'    => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Return structure for generate_class_oracle.
+     *
+     * @return external_single_structure
+     */
+    public static function generate_class_oracle_returns(): external_single_structure {
+        return new external_single_structure([
+            'success'    => new external_value(PARAM_BOOL, 'Success status'),
+            'class_name' => new external_value(PARAM_TEXT, 'Name of the generated class', VALUE_DEFAULT, ''),
+            'provider'   => new external_value(PARAM_TEXT, 'AI provider used', VALUE_DEFAULT, ''),
+            'message'    => new external_value(PARAM_RAW, 'Error message if any', VALUE_DEFAULT, ''),
+        ]);
+    }
+
+    /**
+     * Parameters for generate_story.
+     *
+     * @return external_function_parameters
+     */
+    public static function generate_story_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'theme'      => new external_value(PARAM_TEXT, 'Theme or setting for the story'),
+            'karmagain' => new external_value(PARAM_INT, 'Max reputation gain to distribute', VALUE_DEFAULT, 0),
+            'karmaloss' => new external_value(PARAM_INT, 'Max reputation loss to distribute', VALUE_DEFAULT, 0),
+            'itemid'    => new external_value(PARAM_INT, 'Item ID for cost distribution', VALUE_DEFAULT, 0),
+            'itemqty'   => new external_value(PARAM_INT, 'Total item quantity to distribute', VALUE_DEFAULT, 0),
+        ]);
+    }
+
+    /**
+     * Generate a story chapter with nodes and choices via AI and save it.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid   Course ID.
+     * @param string $theme   Theme or setting for the story.
+     * @param int $karmagain  Max reputation gain to distribute across choices.
+     * @param int $karmaloss  Max reputation loss to distribute across choices.
+     * @param int $itemid     Item ID for choice cost distribution.
+     * @param int $itemqty    Total item quantity to distribute across choices.
+     * @return array Result structure.
+     */
+    public static function generate_story(
+        int $instanceid,
+        int $courseid,
+        string $theme,
+        int $karmagain = 0,
+        int $karmaloss = 0,
+        int $itemid = 0,
+        int $itemqty = 0
+    ): array {
+        global $USER, $DB;
+
+        $params = self::validate_parameters(self::generate_story_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'theme'      => $theme,
+            'karmagain' => $karmagain,
+            'karmaloss' => $karmaloss,
+            'itemid'    => $itemid,
+            'itemqty'   => $itemqty,
+        ]);
+
+        $context = context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:manage', $context);
+
+        try {
+            $generator = new \block_playerhud\ai\generator($params['instanceid']);
+            $options   = [
+                'karma_gain' => $params['karmagain'],
+                'karma_loss' => $params['karmaloss'],
+                'item_id'    => $params['itemid'],
+                'item_qty'   => $params['itemqty'],
+            ];
+            $result = $generator->generate_story($params['theme'], $options);
+
+            $log                  = new \stdClass();
+            $log->blockinstanceid = $params['instanceid'];
+            $log->userid          = $USER->id;
+            $log->action_type     = 'story';
+            $log->object_name     = $result['chapter_title'];
+            $log->ai_provider     = $result['provider'];
+            $log->timecreated     = time();
+            $DB->insert_record('block_playerhud_ai_logs', $log);
+
+            return [
+                'success'       => true,
+                'chapter_title' => $result['chapter_title'],
+                'provider'      => $result['provider'],
+                'message'       => '',
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success'       => false,
+                'chapter_title' => '',
+                'provider'      => '',
+                'message'       => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Return structure for generate_story.
+     *
+     * @return external_single_structure
+     */
+    public static function generate_story_returns(): external_single_structure {
+        return new external_single_structure([
+            'success'       => new external_value(PARAM_BOOL, 'Success status'),
+            'chapter_title' => new external_value(PARAM_TEXT, 'Title of the generated chapter', VALUE_DEFAULT, ''),
+            'provider'      => new external_value(PARAM_TEXT, 'AI provider used', VALUE_DEFAULT, ''),
+            'message'       => new external_value(PARAM_RAW, 'Error message if any', VALUE_DEFAULT, ''),
         ]);
     }
 }

@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Quests tab for the management interface.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_playerhud\output\manage;
@@ -33,8 +33,8 @@ use block_playerhud\quest;
  * Quests management tab renderer.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class tab_quests implements renderable {
     /** @var int Block instance ID. */
@@ -119,6 +119,9 @@ class tab_quests implements renderable {
             if ($type === quest::TYPE_ACTIVITY) {
                 $record->requirement = (string)(int)$data->activity_cmid;
                 $record->req_itemid  = 0;
+            } else if ($type === quest::TYPE_CHAPTER) {
+                $record->requirement = (string)(int)$data->chapter_id;
+                $record->req_itemid  = 0;
             } else {
                 $record->requirement = (string)(int)$data->target_value;
                 if ($type === quest::TYPE_SPECIFIC_ITEM) {
@@ -161,9 +164,15 @@ class tab_quests implements renderable {
                 if ($quest->type == quest::TYPE_ACTIVITY) {
                     $formdata['activity_cmid'] = (int)$quest->requirement;
                     $formdata['target_value']  = 1;
+                    $formdata['chapter_id']    = 0;
+                } else if ($quest->type == quest::TYPE_CHAPTER) {
+                    $formdata['chapter_id']    = (int)$quest->requirement;
+                    $formdata['target_value']  = 1;
+                    $formdata['activity_cmid'] = 0;
                 } else {
                     $formdata['target_value']  = (int)$quest->requirement;
                     $formdata['activity_cmid'] = 0;
+                    $formdata['chapter_id']    = 0;
                 }
 
                 if ($quest->type == quest::TYPE_SPECIFIC_TRADE) {
@@ -284,6 +293,7 @@ class tab_quests implements renderable {
         // Preload reward item names to avoid N+1 queries.
         $itemids = [];
         $tradeids = [];
+        $chapterids = [];
         foreach ($quests as $q) {
             if ($q->reward_itemid > 0) {
                 $itemids[$q->reward_itemid] = $q->reward_itemid;
@@ -293,6 +303,9 @@ class tab_quests implements renderable {
             }
             if ($q->type == quest::TYPE_SPECIFIC_TRADE && $q->req_itemid > 0) {
                 $tradeids[$q->req_itemid] = $q->req_itemid;
+            }
+            if ($q->type == quest::TYPE_CHAPTER && (int)$q->requirement > 0) {
+                $chapterids[(int)$q->requirement] = (int)$q->requirement;
             }
         }
 
@@ -314,6 +327,15 @@ class tab_quests implements renderable {
             }
         }
 
+        $chapternames = [];
+        if (!empty($chapterids)) {
+            [$csql, $cparams] = $DB->get_in_or_equal(array_values($chapterids));
+            $crows = $DB->get_records_select('block_playerhud_chapters', "id $csql", $cparams, '', 'id, title');
+            foreach ($crows as $row) {
+                $chapternames[$row->id] = format_string($row->title);
+            }
+        }
+
         $typelabels = [
             quest::TYPE_LEVEL          => get_string('quest_type_level', 'block_playerhud'),
             quest::TYPE_XP_TOTAL       => get_string('quest_type_xp_total', 'block_playerhud'),
@@ -323,6 +345,7 @@ class tab_quests implements renderable {
             quest::TYPE_SPECIFIC_ITEM  => get_string('quest_type_specific_item', 'block_playerhud'),
             quest::TYPE_SPECIFIC_TRADE => get_string('quest_type_specific_trade', 'block_playerhud'),
             quest::TYPE_ACTIVITY       => get_string('quest_type_activity', 'block_playerhud'),
+            quest::TYPE_CHAPTER        => get_string('quest_type_chapter', 'block_playerhud'),
         ];
 
         // Standardized neutral badges to avoid cognitive overload.
@@ -335,6 +358,7 @@ class tab_quests implements renderable {
             quest::TYPE_TOTAL_ITEMS    => 'bg-light text-dark border',
             quest::TYPE_TRADES         => 'bg-light text-dark border',
             quest::TYPE_SPECIFIC_TRADE => 'bg-light text-dark border',
+            quest::TYPE_CHAPTER        => 'bg-light text-dark border',
         ];
 
         $questsdata = [];
@@ -353,6 +377,8 @@ class tab_quests implements renderable {
                 $requirementtext = ($itemnames[$q->req_itemid] ?? '?') . ' x' . $q->requirement;
             } else if ($q->type == quest::TYPE_SPECIFIC_TRADE && $q->req_itemid > 0) {
                 $requirementtext = ($tradenames[$q->req_itemid] ?? '?') . ' x' . $q->requirement;
+            } else if ($q->type == quest::TYPE_CHAPTER) {
+                $requirementtext = $chapternames[(int)$q->requirement] ?? '#' . $q->requirement;
             } else if ($q->type !== quest::TYPE_ACTIVITY) {
                 $requirementtext = $q->requirement;
             }

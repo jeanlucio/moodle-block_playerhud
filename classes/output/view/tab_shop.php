@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace block_playerhud\output\view;
 
@@ -25,8 +25,8 @@ use moodle_url;
  * Shop tab output renderer.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class tab_shop implements renderable, templatable {
     /** @var \stdClass Block configuration. */
@@ -64,7 +64,6 @@ class tab_shop implements renderable, templatable {
      */
     public function export_for_template($output) {
         global $DB, $CFG;
-        require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
 
         $context = \context_block::instance($this->instanceid);
 
@@ -121,7 +120,7 @@ class tab_shop implements renderable, templatable {
                 $visibleforme = true;
                 foreach ($trade->rewards as $rew) {
                     if (!empty($rew->required_class_id)) {
-                        if (!block_playerhud_is_visible_for_class($rew->required_class_id, $myclassid)) {
+                        if (!\block_playerhud\utils::is_visible_for_class($rew->required_class_id, $myclassid)) {
                             $visibleforme = false;
                             break;
                         }

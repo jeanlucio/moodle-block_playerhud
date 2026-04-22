@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace block_playerhud;
 
@@ -20,8 +20,8 @@ namespace block_playerhud;
  * Game logic class for PlayerHUD block.
  *
  * @package    block_playerhud
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class game {
     /**
@@ -592,6 +592,97 @@ class game {
         }
 
         return ['individual' => $individualranking, 'groups' => $groupranking];
+    }
+
+    /**
+     * Get the RPG progress record for a user (includes classid, karma, chapter history).
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @param int $userid The user ID.
+     * @return \stdClass|false The rpg_progress record or false if not found.
+     */
+    public static function get_player_class($blockinstanceid, $userid) {
+        global $DB;
+        return $DB->get_record('block_playerhud_rpg_progress', [
+            'blockinstanceid' => $blockinstanceid,
+            'userid' => $userid,
+        ]);
+    }
+
+    /**
+     * Assign an RPG class to a player, creating the progress record if needed.
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @param int $userid The user ID.
+     * @param int $classid The class ID to assign.
+     */
+    public static function assign_class($blockinstanceid, $userid, $classid) {
+        global $DB;
+        $progress = self::get_player_class($blockinstanceid, $userid);
+        if ($progress) {
+            $progress->classid = $classid;
+            $DB->update_record('block_playerhud_rpg_progress', $progress);
+        } else {
+            $progress = new \stdClass();
+            $progress->blockinstanceid = $blockinstanceid;
+            $progress->userid = $userid;
+            $progress->classid = $classid;
+            $progress->karma = 0;
+            $progress->current_nodes = null;
+            $progress->completed_chapters = null;
+            $DB->insert_record('block_playerhud_rpg_progress', $progress);
+        }
+    }
+
+    /**
+     * Get all RPG classes for a block instance, ordered by name.
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @return array Array of class objects keyed by ID.
+     */
+    public static function get_all_classes($blockinstanceid) {
+        global $DB;
+        return $DB->get_records('block_playerhud_classes', ['blockinstanceid' => $blockinstanceid], 'name ASC');
+    }
+
+    /**
+     * Get the current karma value for a player.
+     *
+     * Returns 0 when no RPG progress record exists yet.
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @param int $userid The user ID.
+     * @return int The current karma value.
+     */
+    public static function get_player_karma(int $blockinstanceid, int $userid): int {
+        global $DB;
+        $karma = $DB->get_field('block_playerhud_rpg_progress', 'karma', [
+            'blockinstanceid' => $blockinstanceid,
+            'userid' => $userid,
+        ]);
+        return ($karma !== false) ? (int) $karma : 0;
+    }
+
+    /**
+     * Adjust a player's karma by delta, clamped to [-999, 999].
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @param int $userid The user ID.
+     * @param int $delta Positive or negative karma change.
+     * @return int The new karma value after adjustment, or 0 if no record exists.
+     */
+    public static function adjust_karma(int $blockinstanceid, int $userid, int $delta): int {
+        global $DB;
+        $progress = $DB->get_record('block_playerhud_rpg_progress', [
+            'blockinstanceid' => $blockinstanceid,
+            'userid' => $userid,
+        ]);
+        if (!$progress) {
+            return 0;
+        }
+        $newkarma = max(-999, min(999, (int) $progress->karma + $delta));
+        $DB->set_field('block_playerhud_rpg_progress', 'karma', $newkarma, ['id' => $progress->id]);
+        return $newkarma;
     }
 
     /**

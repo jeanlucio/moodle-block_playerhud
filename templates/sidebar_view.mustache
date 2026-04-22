@@ -1,5 +1,5 @@
 {{!
-    This file is part of Moodle - http://moodle.org/
+    This file is part of Moodle - https://moodle.org/
 
     Moodle is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -12,13 +12,13 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 }}
 {{!
     @template block_playerhud/sidebar_view
     @package block_playerhud
     @copyright 2026 Jean Lúcio
-    @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+    @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
     Example context (json):
     {
@@ -28,8 +28,12 @@
         "level": "1 / 10",
         "xp": "100 / 500 XP",
         "viewurl": "#",
+        "url_history": "#",
+        "url_shop": "#",
+        "url_quests": "#",
+        "url_story": "#",
         "progress": 20,
-        "isteacher": true,
+        "isteacher": false,
         "manageurl": "#",
         "has_items": true,
         "items": [
@@ -41,7 +45,31 @@
                 "description": "Mana restore"
             }
         ],
-        "url_quests": "#",
+        "classdata": {
+            "classname": "Mage",
+            "fullname": "Mage Jean",
+            "portrait_url": "https://example.com/portrait.png",
+            "tier": 2,
+            "tier_name": "Initiate",
+            "tier_stars": [
+                {"filled": true},
+                {"filled": true},
+                {"filled": false},
+                {"filled": false},
+                {"filled": false}
+            ],
+            "description": "<p>A mage of great wisdom and arcane power.</p>",
+            "has_description": true
+        },
+        "karma_data": {
+            "value": 30,
+            "value_display": "+30",
+            "percent": 65,
+            "bar_class": "ph-karma-fill--good",
+            "icon_class": "ph-karma--good",
+            "label": "Fate / Karma"
+        },
+        "url_class_select": "#",
         "ranking": {
             "url": "#",
             "tooltip": "Rank #1",
@@ -54,41 +82,47 @@
 }}
 <div class="block_playerhud_sidebar p-2">
 
-    {{! 1. PROFILE & AVATAR }}
+    {{! ── CARD 1: COURSE PROGRESS ── }}
+
+    {{! Top shortcut buttons: history and help — hoisted into block title by view.js }}
+    <div class="ph-header-actions d-flex align-items-center gap-1">
+        <a href="{{url_history}}" class="ph-help-trigger"
+           title="{{#str}} tab_history, block_playerhud {{/str}}"
+           aria-label="{{#str}} tab_history, block_playerhud {{/str}}">
+            <i class="fa fa-list-alt" aria-hidden="true"></i>
+        </a>
+        <a href="{{viewurl}}&tab=rules" class="ph-help-trigger ms-1"
+           title="{{#str}} help_btn, block_playerhud {{/str}}"
+           aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+        </a>
+    </div>
+
+    {{! Profile picture + name }}
     <div class="text-center mb-2">
-        <div class="mb-2 ph-sidebar-avatar-container">
+        <div class="mb-1 ph-sidebar-avatar-container">
             {{{userpicture}}}
         </div>
-        <div class="fw-bold text-truncate px-1" title="{{username}}">
+        <div class="fw-bold text-truncate px-1 small" title="{{username}}">
             {{username}}
         </div>
     </div>
 
-    {{! 2. STATS }}
-    <div class="d-flex justify-content-between align-items-center mb-1 small text-muted px-1">
+    {{! Stats: level + XP }}
+    <div class="d-flex justify-content-between align-items-center mb-1 small px-1">
         <span class="badge {{level_class}} border">{{#str}} level, block_playerhud {{/str}} {{level}}</span>
-        <div class="d-flex align-items-center">
-                <span class="badge rounded-pill {{level_class}}">{{xp}}</span>
-                <a href="{{url_history}}" class="ph-help-trigger ms-2"
-                   title="{{#str}} tab_history, block_playerhud {{/str}}" aria-label="{{#str}} tab_history, block_playerhud {{/str}}">
-                    <i class="fa fa-list-alt" aria-hidden="true"></i>
-                </a>
-                <a href="{{viewurl}}&tab=rules" class="ph-help-trigger ms-2"
-                   title="{{#str}} help_btn, block_playerhud {{/str}}" aria-label="{{#str}} help_btn, block_playerhud {{/str}}">
-                    <i class="fa fa-question-circle" aria-hidden="true"></i>
-                </a>
-        </div>
+        <span class="badge rounded-pill {{level_class}}">{{xp}}</span>
     </div>
 
     <div class="progress ph-progress-container mb-3">
         <div class="progress-bar ph-progress-bar {{level_class}}" role="progressbar"
-             style="width: {{progress}}%;"
+             style="--ph-progress: {{progress}}%;"
              aria-valuenow="{{progress}}" aria-valuemin="0" aria-valuemax="100">
              <span class="ph-progress-text">{{progress}}%</span>
         </div>
     </div>
 
-    {{! 3. MASTER PANEL }}
+    {{! Master Panel button }}
     {{#isteacher}}
     <div class="mb-3">
         <a href="{{{manageurl}}}" class="btn btn-outline-dark btn-sm w-100 shadow-sm fw-bold">
@@ -97,10 +131,9 @@
     </div>
     {{/isteacher}}
 
-    {{! 4. ACTIONS GRID }}
+    {{! Action grid }}
     <div class="ph-sidebar-grid mb-4 {{level_class}}">
 
-        {{! A. Collection / Backpack }}
         <a href="{{viewurl}}"
            class="btn btn-ph-level-border shadow-sm"
            data-bs-toggle="tooltip" data-bs-placement="top"
@@ -109,7 +142,6 @@
             <span aria-hidden="true">🎒</span>
         </a>
 
-        {{! B. Shop }}
         <a href="{{url_shop}}"
            class="btn btn-ph-level-border shadow-sm"
            data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -118,7 +150,6 @@
             <span aria-hidden="true">🛒</span>
         </a>
 
-        {{! C. Quests }}
         <a href="{{url_quests}}"
            class="btn btn-ph-level-border shadow-sm position-relative"
            data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -130,7 +161,17 @@
             {{/has_claimable_quests}}
         </a>
 
-        {{! D. Ranking }}
+        <a href="{{url_story}}"
+           class="btn btn-ph-level-border shadow-sm position-relative"
+           data-bs-toggle="tooltip" data-bs-placement="bottom"
+           title="{{#str}} story_shortcut, block_playerhud {{/str}}"
+           aria-label="{{#str}} story_shortcut, block_playerhud {{/str}}">
+            <span aria-hidden="true">📖</span>
+            {{#has_unread_chapters}}
+            <span class="ph-quest-notify-dot" aria-hidden="true"></span>
+            {{/has_unread_chapters}}
+        </a>
+
         {{#ranking}}
         <a href="{{url}}"
            class="btn btn-ph-level-border shadow-sm"
@@ -141,7 +182,6 @@
         </a>
         {{/ranking}}
 
-        {{! E. Exit }}
         <a href="{{url_disable}}"
            class="btn btn-ph-level-border shadow-sm js-disable-hud"
            data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -155,11 +195,8 @@
 
     </div>
 
-    {{! 5. LATEST ITEMS }}
+    {{! Recent items }}
     <div class="ph-stash-wrapper {{^has_items}}d-none{{/has_items}}">
-        <small class="text-muted text-uppercase fw-bold border-bottom d-block mb-2 pb-1 ph-text-xs">
-            {{#str}} latest_items, block_playerhud {{/str}}
-        </small>
         <div class="ph-sidebar-stash mt-1 justify-content-center">
             {{#items}}
             <div class="ph-mini-item ph-item-trigger"
@@ -186,5 +223,68 @@
             {{/items}}
         </div>
     </div>
+
+    {{! ── CARD 2: CHARACTER (RPG mode only) ── }}
+    {{#enable_rpg}}
+    {{#classdata}}
+
+    <hr class="ph-section-divider mt-3">
+
+    <div class="ph-char-card p-2 mt-2">
+
+        {{! Portrait + identity — clickable to open lore modal when a description is set }}
+        {{#has_description}}
+        <button type="button"
+                class="ph-char-identity ph-char-identity--clickable mb-2 border-0 bg-transparent p-0 w-100 text-start"
+                data-bs-toggle="modal" data-bs-target="#ph-char-modal"
+                data-toggle="modal" data-target="#ph-char-modal"
+                aria-haspopup="dialog">
+        {{/has_description}}
+        {{^has_description}}
+        <div class="ph-char-identity mb-2">
+        {{/has_description}}
+
+            {{! Portrait }}
+            <div class="ph-char-portrait-wrap">
+                {{#portrait_url}}
+                <img src="{{portrait_url}}" alt="{{classname}}" class="ph-char-portrait">
+                {{/portrait_url}}
+                {{^portrait_url}}
+                <i class="fa fa-user-circle ph-char-portrait-fallback" aria-hidden="true"></i>
+                {{/portrait_url}}
+            </div>
+
+            {{! Name + tier + stars + karma }}
+            <div class="ph-char-info">
+                <div class="fw-bold ph-char-fullname" title="{{fullname}}">
+                    {{fullname}}
+                </div>
+                <div class="ph-tier-name">{{tier_name}}</div>
+                <div class="ph-tier-stars" role="img"
+                     aria-label="{{tier_name}}: {{tier}} {{#str}} out_of_5, block_playerhud {{/str}}">
+                    {{#tier_stars}}{{#filled}}★{{/filled}}{{^filled}}☆{{/filled}}{{/tier_stars}}
+                </div>
+                {{#karma_data}}
+                <div class="ph-karma-inline {{icon_class}}"
+                     aria-label="{{label}}: {{value_display}}">
+                    <i class="fa fa-balance-scale me-1" aria-hidden="true"></i>{{value_display}}
+                </div>
+                {{/karma_data}}
+            </div>
+
+        {{#has_description}}
+        </button>
+        {{/has_description}}
+        {{^has_description}}
+        </div>
+        {{/has_description}}
+
+    </div>
+
+    {{> block_playerhud/modal_char }}
+
+    {{/classdata}}
+
+    {{/enable_rpg}}
 
 </div>
