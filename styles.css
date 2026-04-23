@@ -117,13 +117,10 @@
     color: #fff;
 }
 .block_playerhud .btn-close,
-.block_playerhud #ph-item-modal-view .btn-close,
-.block_playerhud #ph-ai-modal .btn-close,
-.path-blocks-playerhud .btn-close,
-.path-blocks-playerhud #ph-item-modal-view .btn-close,
-.path-blocks-playerhud #ph-ai-modal .btn-close {
+.path-blocks-playerhud .btn-close {
     opacity: 1;
-    background: transparent;
+    background-image: none;
+    background-color: transparent;
     border: 0;
     font-size: 1.5rem;
     font-weight: 700;
@@ -196,6 +193,40 @@
 .block_playerhud .ph-h-10,
 .path-blocks-playerhud .ph-h-10 {
     height: 10px;
+}
+
+#ph-item-modal-view .btn-close,
+#ph-char-modal .btn-close,
+#ph-ai-modal .btn-close,
+#ph-ai-oracle-modal .btn-close,
+#ph-ai-story-modal .btn-close {
+    background-image: none;
+    background-color: transparent;
+    border: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #000;
+    text-shadow: 0 1px 0 #fff;
+    padding: 0.5rem;
+    margin: -0.5rem -0.5rem -0.5rem auto;
+    opacity: 1;
+    cursor: pointer;
+}
+
+#ph-codegen-modal .btn-close {
+    background-image: none;
+    background-color: transparent;
+    border: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    text-shadow: none;
+    padding: 0.5rem;
+    margin: -0.5rem -0.5rem -0.5rem auto;
+    opacity: 1;
+    cursor: pointer;
 }
 
 .block_playerhud .userpicture,

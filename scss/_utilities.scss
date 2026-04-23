@@ -82,12 +82,11 @@
         color: #fff;
     }
 
-    // Modal close button fixes.
-    .btn-close,
-    #ph-item-modal-view .btn-close,
-    #ph-ai-modal .btn-close {
+    // Non-hoisted modals on management pages (path-blocks-playerhud on body).
+    .btn-close {
         opacity: 1;
-        background: transparent;
+        background-image: none;
+        background-color: transparent;
         border: 0;
         font-size: 1.5rem;
         font-weight: 700;
@@ -155,5 +154,49 @@
     }
     .ph-h-10 {
         height: 10px;
+    }
+}
+
+// Hoisted modal close button fixes.
+// All playerhud modals are moved to body via appendTo before opening,
+// so ancestor-scoped selectors do not apply. Target by specific modal ID instead.
+// Bootstrap 5 renders .btn-close via SVG background; removing it leaves
+// <span>&times;</span> as the visible X in both Bootstrap 4 and 5.
+#ph-item-modal-view,
+#ph-char-modal,
+#ph-ai-modal,
+#ph-ai-oracle-modal,
+#ph-ai-story-modal {
+    .btn-close {
+        background-image: none;
+        background-color: transparent;
+        border: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #000;
+        text-shadow: 0 1px 0 #fff;
+        padding: 0.5rem;
+        margin: -0.5rem -0.5rem -0.5rem auto;
+        opacity: 1;
+        cursor: pointer;
+    }
+}
+
+// Code generator modal has a coloured header — close button must be white.
+#ph-codegen-modal {
+    .btn-close {
+        background-image: none;
+        background-color: transparent;
+        border: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #fff;
+        text-shadow: none;
+        padding: 0.5rem;
+        margin: -0.5rem -0.5rem -0.5rem auto;
+        opacity: 1;
+        cursor: pointer;
     }
 }
