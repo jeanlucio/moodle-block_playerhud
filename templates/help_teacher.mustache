@@ -64,6 +64,8 @@
                     type="button"
                     data-bs-toggle="collapse"
                     data-bs-target="#{{target}}"
+                    data-toggle="collapse"
+                    data-target="#{{target}}"
                     aria-expanded="{{#open}}true{{/open}}{{^open}}false{{/open}}"
                     aria-controls="{{target}}"
                 >
@@ -75,6 +77,7 @@
                 class="accordion-collapse collapse{{#open}} show{{/open}}"
                 aria-labelledby="heading-{{id}}"
                 data-bs-parent="#ph-help-accordion"
+                data-parent="#ph-help-accordion"
             >
                 <div class="accordion-body text-muted">
                     {{content}}

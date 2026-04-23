@@ -285,4 +285,72 @@
     .ph-ai-hidden {
         display: none;
     }
+
+    // Bootstrap 5 accordion polyfill — classes absent in BS4 (Moodle 4.5).
+    .accordion {
+        .accordion-item {
+            background-color: var(--card-bg, #fff);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+
+            & + .accordion-item {
+                border-top: 0;
+            }
+
+            &:first-of-type {
+                border-top-left-radius: 0.25rem;
+                border-top-right-radius: 0.25rem;
+
+                .accordion-button {
+                    border-top-left-radius: calc(0.25rem - 1px);
+                    border-top-right-radius: calc(0.25rem - 1px);
+                }
+            }
+
+            &:last-of-type {
+                border-bottom-right-radius: 0.25rem;
+                border-bottom-left-radius: 0.25rem;
+
+                .accordion-button.collapsed {
+                    border-bottom-right-radius: calc(0.25rem - 1px);
+                    border-bottom-left-radius: calc(0.25rem - 1px);
+                }
+            }
+        }
+
+        .accordion-header {
+            margin-bottom: 0;
+        }
+
+        .accordion-button {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 1rem 1.25rem;
+            font-size: 1rem;
+            color: var(--body-color, #212529);
+            text-align: start;
+            background-color: var(--card-bg, #fff);
+            border: 0;
+            border-radius: 0;
+            overflow-anchor: none;
+            cursor: pointer;
+            transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+            &:not(.collapsed) {
+                color: var(--primary, #0d6efd);
+                background-color: var(--blue-100, #cfe2ff);
+                box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.125);
+            }
+
+            &:focus {
+                outline: 0;
+                box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            }
+        }
+
+        .accordion-body {
+            padding: 1rem 1.25rem;
+        }
+    }
 }

@@ -1360,6 +1360,82 @@
 .filter_playerhud .ph-ai-hidden {
     display: none;
 }
+.block_playerhud .accordion .accordion-item,
+.path-blocks-playerhud .accordion .accordion-item,
+.filter_playerhud .accordion .accordion-item {
+    background-color: var(--card-bg, #fff);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+.block_playerhud .accordion .accordion-item + .accordion-item,
+.path-blocks-playerhud .accordion .accordion-item + .accordion-item,
+.filter_playerhud .accordion .accordion-item + .accordion-item {
+    border-top: 0;
+}
+.block_playerhud .accordion .accordion-item:first-of-type,
+.path-blocks-playerhud .accordion .accordion-item:first-of-type,
+.filter_playerhud .accordion .accordion-item:first-of-type {
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+}
+.block_playerhud .accordion .accordion-item:first-of-type .accordion-button,
+.path-blocks-playerhud .accordion .accordion-item:first-of-type .accordion-button,
+.filter_playerhud .accordion .accordion-item:first-of-type .accordion-button {
+    border-top-left-radius: calc(0.25rem - 1px);
+    border-top-right-radius: calc(0.25rem - 1px);
+}
+.block_playerhud .accordion .accordion-item:last-of-type,
+.path-blocks-playerhud .accordion .accordion-item:last-of-type,
+.filter_playerhud .accordion .accordion-item:last-of-type {
+    border-bottom-right-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+}
+.block_playerhud .accordion .accordion-item:last-of-type .accordion-button.collapsed,
+.path-blocks-playerhud .accordion .accordion-item:last-of-type .accordion-button.collapsed,
+.filter_playerhud .accordion .accordion-item:last-of-type .accordion-button.collapsed {
+    border-bottom-right-radius: calc(0.25rem - 1px);
+    border-bottom-left-radius: calc(0.25rem - 1px);
+}
+.block_playerhud .accordion .accordion-header,
+.path-blocks-playerhud .accordion .accordion-header,
+.filter_playerhud .accordion .accordion-header {
+    margin-bottom: 0;
+}
+.block_playerhud .accordion .accordion-button,
+.path-blocks-playerhud .accordion .accordion-button,
+.filter_playerhud .accordion .accordion-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+    color: var(--body-color, #212529);
+    text-align: start;
+    background-color: var(--card-bg, #fff);
+    border: 0;
+    border-radius: 0;
+    overflow-anchor: none;
+    cursor: pointer;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.block_playerhud .accordion .accordion-button:not(.collapsed),
+.path-blocks-playerhud .accordion .accordion-button:not(.collapsed),
+.filter_playerhud .accordion .accordion-button:not(.collapsed) {
+    color: var(--primary, #0d6efd);
+    background-color: var(--blue-100, #cfe2ff);
+    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.125);
+}
+.block_playerhud .accordion .accordion-button:focus,
+.path-blocks-playerhud .accordion .accordion-button:focus,
+.filter_playerhud .accordion .accordion-button:focus {
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+.block_playerhud .accordion .accordion-body,
+.path-blocks-playerhud .accordion .accordion-body,
+.filter_playerhud .accordion .accordion-body {
+    padding: 1rem 1.25rem;
+}
 
 .block_playerhud .ph-modal-zindex,
 .path-blocks-playerhud .ph-modal-zindex,
