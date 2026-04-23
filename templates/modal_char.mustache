@@ -75,7 +75,9 @@
                         <div class="ph-tier-name">{{tier_name}}</div>
                     </div>
                 </div>
+                {{#has_description}}
                 <div class="ph-char-modal-desc">{{{description}}}</div>
+                {{/has_description}}
                 {{#karma_data}}
                 <div class="ph-karma-inline {{icon_class}} mt-3 pt-2 border-top"
                      aria-label="{{label}}: {{value_display}}">

@@ -242,17 +242,11 @@
 
     <div class="ph-char-card p-2 mt-2">
 
-        {{! Portrait + identity — clickable to open lore modal when a description is set }}
-        {{#has_description}}
+        {{! Portrait + identity — always clickable to open the character lore modal }}
         <button type="button"
                 class="ph-char-identity ph-char-identity--clickable mb-2 border-0 bg-transparent p-0 w-100 text-start"
-                data-bs-toggle="modal" data-bs-target="#ph-char-modal"
-                data-toggle="modal" data-target="#ph-char-modal"
+                data-ph-modal="ph-char-modal"
                 aria-haspopup="dialog">
-        {{/has_description}}
-        {{^has_description}}
-        <div class="ph-char-identity mb-2">
-        {{/has_description}}
 
             {{! Portrait }}
             <span class="ph-char-portrait-wrap">
@@ -282,12 +276,7 @@
                 {{/karma_data}}
             </span>
 
-        {{#has_description}}
         </button>
-        {{/has_description}}
-        {{^has_description}}
-        </div>
-        {{/has_description}}
 
     </div>
 

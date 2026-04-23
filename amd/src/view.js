@@ -34,6 +34,21 @@ define(['jquery', 'core/notification'], function($, Notification) {
             $('#ph-item-modal-view').appendTo('body');
             $('#ph-char-modal').appendTo('body');
 
+            // Char modal — explicit handler (cross-version safe: BS4 + BS5).
+            // data-bs-toggle declarative may not fire in Moodle 4.5 if Bootstrap's
+            // document-level listener hasn't been registered yet via AMD.
+            $(document).on('click', '[data-ph-modal="ph-char-modal"]', function() {
+                var el = document.getElementById('ph-char-modal');
+                if (!el) {
+                    return;
+                }
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    bootstrap.Modal.getOrCreateInstance(el).show();
+                } else {
+                    $(el).modal('show');
+                }
+            });
+
             // Hoist the history/help shortcut buttons into the block's title row
             // so they appear on the same line as "PlayerHUD".
             (function() {
