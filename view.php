@@ -157,7 +157,7 @@ if ($isoptin) {
     // A. Header Stats.
     $headerhtml = '';
     if (class_exists('\block_playerhud\output\view\header')) {
-        $header = new \block_playerhud\output\view\header($config, $player, $USER);
+        $header = new \block_playerhud\output\view\header($config, $player, $USER, $courseid);
         $headerhtml = $OUTPUT->render_from_template(
             'block_playerhud/view_header',
             $header->export_for_template($OUTPUT)

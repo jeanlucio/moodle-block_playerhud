@@ -37,17 +37,22 @@ class header implements renderable, templatable {
     /** @var \stdClass User object. */
     protected $user;
 
+    /** @var int Course ID. */
+    protected $courseid;
+
     /**
      * Constructor.
      *
      * @param \stdClass $config Block configuration.
      * @param \stdClass $player Player object.
      * @param \stdClass $user User object.
+     * @param int $courseid Course ID.
      */
-    public function __construct($config, $player, $user) {
-        $this->config = $config;
-        $this->player = $player;
-        $this->user = $user;
+    public function __construct($config, $player, $user, int $courseid = 0) {
+        $this->config   = $config;
+        $this->player   = $player;
+        $this->user     = $user;
+        $this->courseid = $courseid;
     }
 
     /**
@@ -72,14 +77,29 @@ class header implements renderable, templatable {
             $xpdisplay .= ' 🏆';
         }
 
-        // 3. Return Data.
-        return [
+        // 3. Load PlayerGroup info (soft dependency).
+        $groupinfo = null;
+        if ($this->courseid > 0 && class_exists('\mod_playergroup\api\group_info')) {
+            $groupinfo = \mod_playergroup\api\group_info::get_player_group_in_course(
+                $this->courseid,
+                (int) $this->user->id
+            );
+        }
+
+        // 4. Return Data.
+        $data = [
             'userpicture' => $output->user_picture($this->user, ['size' => 100, 'class' => 'rounded-circle shadow-sm']),
             'fullname' => fullname($this->user),
             'level_display' => $stats['level'] . '/' . $stats['max_levels'],
             'xp_display' => $xpdisplay,
             'progress' => $stats['progress'],
             'level_class' => !empty($stats['level_class']) ? $stats['level_class'] : 'bg-primary',
+            'hasgroup' => $groupinfo !== null,
+            'groupbadge' => $groupinfo ? $groupinfo->badge : '',
+            'groupname' => $groupinfo ? format_string($groupinfo->groupname) : '',
+            'groupmembers' => $groupinfo ? $groupinfo->membercount . '/' . $groupinfo->maxmembers : '',
         ];
+
+        return $data;
     }
 }
