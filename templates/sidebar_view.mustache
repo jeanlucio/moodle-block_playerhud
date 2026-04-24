@@ -129,14 +129,6 @@
         </div>
     </div>
 
-    {{#hasgroup}}
-    <div class="ph-group-line mb-3 small text-muted text-center">
-        <span aria-hidden="true">{{groupbadge}}</span>
-        <span class="fw-semibold ms-1">{{groupname}}</span>
-        <span class="ms-1">· {{groupmembers}}</span>
-    </div>
-    {{/hasgroup}}
-
     {{! Master Panel button }}
     {{#isteacher}}
     <div class="mb-3">
@@ -216,6 +208,13 @@
     </div>
 
     {{! Recent items — only when items feature is enabled }}
+    {{#hasgroup}}
+    <div class="ph-group-line mb-2 small text-muted text-center">
+        <span aria-hidden="true">{{groupbadge}}</span>
+        <span class="fw-semibold ms-1">{{groupname}}</span>
+        <span class="ms-1">· {{groupmembers}}</span>
+    </div>
+    {{/hasgroup}}
     {{#enable_items}}
     <div class="ph-stash-wrapper {{^has_items}}d-none{{/has_items}}">
         <div class="ph-sidebar-stash mt-1 justify-content-center">
