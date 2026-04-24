@@ -106,8 +106,8 @@ const updateStash = (itemData) => {
 
         newItem.hide().prependTo(stash).fadeIn();
 
-        // Limit items in stash (Widget vs Sidebar).
-        const limit = stash.hasClass('ph-widget-stash') ? 14 : 6;
+        // Limit items in stash to 6 for both widget and sidebar.
+        const limit = 6;
         if (stash.children('.ph-mini-item').length > limit) {
             stash.children('.ph-mini-item').last().remove();
         }
