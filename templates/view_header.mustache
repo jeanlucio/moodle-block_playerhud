@@ -27,7 +27,11 @@
         "level_class": "ph-lvl-tier-2",
         "level_display": "5 / 20",
         "xp_display": "1200 / 5000 XP",
-        "progress": 45
+        "progress": 45,
+        "hasgroup": true,
+        "groupbadge": "🛡️",
+        "groupname": "Alpha Squad",
+        "groupmembers": "3/5"
     }
 }}
 <div class="card shadow-sm mb-4 border-0 ph-card-rounded">
@@ -56,6 +60,14 @@
                          <span class="ph-progress-text">{{progress}}%</span>
                     </div>
                 </div>
+
+                {{#hasgroup}}
+                <div class="ph-group-line mt-2 small text-muted">
+                    <span aria-hidden="true">{{groupbadge}}</span>
+                    <span class="fw-semibold ms-1">{{groupname}}</span>
+                    <span class="ms-2">· {{groupmembers}}</span>
+                </div>
+                {{/hasgroup}}
             </div>
         </div>
     </div>

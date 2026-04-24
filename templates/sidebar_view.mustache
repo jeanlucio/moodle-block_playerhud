@@ -80,7 +80,11 @@
         "str_disable_gamification": "Disable",
         "enable_rpg": true,
         "enable_items": true,
-        "enable_quests": true
+        "enable_quests": true,
+        "hasgroup": true,
+        "groupbadge": "🛡️",
+        "groupname": "Alpha Squad",
+        "groupmembers": "3/5"
     }
 }}
 <div class="block_playerhud_sidebar p-2">
@@ -204,6 +208,13 @@
     </div>
 
     {{! Recent items — only when items feature is enabled }}
+    {{#hasgroup}}
+    <div class="ph-group-line mb-2 small text-muted text-center">
+        <span aria-hidden="true">{{groupbadge}}</span>
+        <span class="fw-semibold ms-1">{{groupname}}</span>
+        <span class="ms-1">· {{groupmembers}}</span>
+    </div>
+    {{/hasgroup}}
     {{#enable_items}}
     <div class="ph-stash-wrapper {{^has_items}}d-none{{/has_items}}">
         <div class="ph-sidebar-stash mt-1 justify-content-center">
