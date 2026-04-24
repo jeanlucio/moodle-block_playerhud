@@ -324,13 +324,13 @@ class generator {
 
                 // JSON structure example constructed with strings.
                 $jsonstruct = '{ "items": [ { "name": "' . $exname . '", "description": "' . $exdesc .
-                    '", "emoji": "📦", "location_name": "' . $exloc . '" }, ... ] }';
+                    '", "emoji": "<emoji>", "location_name": "' . $exloc . '" }, ... ] }';
             } else {
                 $taskstr = get_string('ai_task_single', 'block_playerhud', $theme);
 
                 // JSON structure example constructed with strings.
                 $jsonstruct = '{ "name": "' . $exname . '", "description": "' . $exdesc .
-                    '", "emoji": "📦", "location_name": "' . $exloc . '" }';
+                    '", "emoji": "<emoji>", "location_name": "' . $exloc . '" }';
             }
 
             $rolestr = get_string('ai_role_item', 'block_playerhud');

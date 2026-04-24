@@ -63,7 +63,7 @@ $string['ai_prompt_theme_item'] = 'Theme (e.g. Mythology, Chemistry)';
 $string['ai_reply_lang'] = 'Reply strictly in the language: {$a}.';
 $string['ai_rnd_xp'] = 'Empty = Random';
 $string['ai_role_item'] = 'Act as a Subject Matter Expert and Educator.';
-$string['ai_rules_item'] = 'IMPORTANT: Create a factual, realistic, and educational description of the item. RULES: 1. The "name" must be short (maximum 4 words). 2. The "description" must be extremely concise and direct (maximum 150 characters). 3. Do NOT invent fantasy stories or "lore", and do NOT mention XP, levels, or game mechanics.';
+$string['ai_rules_item'] = 'IMPORTANT: Create a factual, realistic, and educational description of the item. RULES: 1. The "name" must be short (maximum 4 words). 2. The "description" must be extremely concise and direct (maximum 150 characters). 3. Do NOT invent fantasy stories or "lore", and do NOT mention XP, levels, or game mechanics. 4. The "emoji" field must be a single Unicode emoji that visually represents the item; choose it thematically and never use 📦 unless the item is literally a box or package.';
 $string['ai_story_btn'] = 'Generate with AI';
 $string['ai_story_item_cost_label'] = 'Item cost (optional)';
 $string['ai_story_item_none'] = '— No item cost —';
