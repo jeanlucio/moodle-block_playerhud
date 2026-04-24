@@ -256,6 +256,15 @@ class block_playerhud extends block_base {
                 $stats['level']
             );
 
+            // PlayerGroup info (soft dependency — only when mod_playergroup is installed).
+            $groupinfo = null;
+            if (class_exists('\mod_playergroup\api\group_info')) {
+                $groupinfo = \mod_playergroup\api\group_info::get_player_group_in_course(
+                    (int) $COURSE->id,
+                    (int) $USER->id
+                );
+            }
+
             // Final Data.
             $renderdata = [
                 'username'         => fullname($USER),
@@ -283,6 +292,12 @@ class block_playerhud extends block_base {
                 'has_items'   => !empty($recentitems),
                 'items'       => $recentitems,
                 'ranking'     => $rankdata,
+                'hasgroup'     => $groupinfo !== null,
+                'groupbadge'   => $groupinfo ? $groupinfo->badge : '',
+                'groupname'    => $groupinfo ? format_string($groupinfo->groupname) : '',
+                'groupmembers' => $groupinfo
+                    ? $groupinfo->membercount . '/' . $groupinfo->maxmembers
+                    : '',
                 'url_disable' => (new \moodle_url('/blocks/playerhud/view.php', [
                     'id' => $COURSE->id,
                     'instanceid' => $this->instance->id,

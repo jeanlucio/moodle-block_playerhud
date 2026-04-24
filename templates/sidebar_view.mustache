@@ -80,7 +80,11 @@
         "str_disable_gamification": "Disable",
         "enable_rpg": true,
         "enable_items": true,
-        "enable_quests": true
+        "enable_quests": true,
+        "hasgroup": true,
+        "groupbadge": "🛡️",
+        "groupname": "Alpha Squad",
+        "groupmembers": "3/5"
     }
 }}
 <div class="block_playerhud_sidebar p-2">
@@ -124,6 +128,14 @@
              <span class="ph-progress-text">{{progress}}%</span>
         </div>
     </div>
+
+    {{#hasgroup}}
+    <div class="ph-group-line mb-3 small text-muted text-center">
+        <span aria-hidden="true">{{groupbadge}}</span>
+        <span class="fw-semibold ms-1">{{groupname}}</span>
+        <span class="ms-1">· {{groupmembers}}</span>
+    </div>
+    {{/hasgroup}}
 
     {{! Master Panel button }}
     {{#isteacher}}
