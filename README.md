@@ -1,10 +1,12 @@
 # Moodle Block PlayerHUD
 
+[![Moodle Plugin CI](https://github.com/jeanlucio/moodle-block_playerhud/actions/workflows/ci.yml/badge.svg)](https://github.com/jeanlucio/moodle-block_playerhud/actions/workflows/ci.yml)
 ![Moodle](https://img.shields.io/badge/Moodle-4.5%2B-orange?style=flat-square&logo=moodle&logoColor=white)
 ![License](https://img.shields.io/badge/License-GPLv3-blue?style=flat-square)
 ![Status](https://img.shields.io/badge/Status-Stable-green?style=flat-square)
 [![PlayerHUD Ecosystem](https://img.shields.io/badge/PlayerHUD-Ecosystem-6f42c1?style=flat-square&logo=gamepad&logoColor=white)](https://github.com/jeanlucio/moodle-block_playerhud)
 ![Core Component](https://img.shields.io/badge/Role-Core_Component-198754?style=flat-square)
+![GitHub release](https://img.shields.io/github/v/release/jeanlucio/moodle-block_playerhud?style=flat-square)
 
 [English](#english) | [Português](#português)
 
