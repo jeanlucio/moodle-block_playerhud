@@ -73,8 +73,10 @@ PlayerHUD works together with complementary plugins:
 
 ### 📦 Requirements
 
-* **Moodle:** 4.5 or higher
-* **PHP:** Compatible with your Moodle version
+| Component | Version |
+|-----------|---------|
+| Moodle    | 4.5+    |
+| PHP       | 8.1+    |
 
 ---
 
@@ -241,10 +243,10 @@ O PlayerHUD funciona em conjunto com plugins complementares:
 
 ### 📦 Requisitos
 
-* **Moodle:** 4.5 ou superior
-* **PHP:** Compatível com a versão do Moodle
-
-### 🔗 Plugins Complementares
+| Componente | Versão |
+|------------|--------|
+| Moodle     | 4.5+   |
+| PHP        | 8.1+   |
 
 ---
 
