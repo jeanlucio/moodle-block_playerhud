@@ -68,8 +68,10 @@ if (empty($options['password'])) {
 
 // Guard: refuse to run if this looks like a production environment.
 // Use --force to bypass when running on a custom development domain.
-if (!$options['force'] && !empty($CFG->wwwroot)
-        && !preg_match('/localhost|127\.0\.0\.1|\.local(:|\/|$)|\.test(:|\/|$)/i', $CFG->wwwroot)) {
+if (
+    !$options['force'] && !empty($CFG->wwwroot)
+    && !preg_match('/localhost|127\.0\.0\.1|\.local(:|\/|$)|\.test(:|\/|$)/i', $CFG->wwwroot)
+) {
     cli_error(
         "ERROR: This script must not be run on a non-development site ({$CFG->wwwroot}).\n" .
         "If this is intentional, re-run with --force."
