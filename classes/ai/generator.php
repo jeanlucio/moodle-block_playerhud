@@ -41,7 +41,7 @@ class generator {
         global $DB;
         $this->instanceid = $instanceid;
         $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
-        $this->config = unserialize(base64_decode($bi->configdata));
+        $this->config = unserialize_object(base64_decode($bi->configdata));
         if (!$this->config) {
             $this->config = new \stdClass();
         }

@@ -88,7 +88,7 @@ class collect {
                 // A. Player Data.
                 $player = \block_playerhud\game::get_player($instanceid, $USER->id);
                 $bi = $DB->get_record('block_instances', ['id' => $instanceid]);
-                $config = unserialize(base64_decode($bi->configdata));
+                $config = unserialize_object(base64_decode($bi->configdata));
                 if (!$config) {
                     $config = new \stdClass();
                 }

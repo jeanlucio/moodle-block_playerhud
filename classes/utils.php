@@ -137,7 +137,7 @@ class utils {
         if (!empty($class->blockinstanceid)) {
             $blockinstance = $DB->get_record('block_instances', ['id' => $class->blockinstanceid]);
             if ($blockinstance && !empty($blockinstance->configdata)) {
-                $config = unserialize(base64_decode($blockinstance->configdata));
+                $config = unserialize_object(base64_decode($blockinstance->configdata));
                 if (isset($config->max_levels) && $config->max_levels > 0) {
                     $maxlevels = $config->max_levels;
                 }

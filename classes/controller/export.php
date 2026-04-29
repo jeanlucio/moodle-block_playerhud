@@ -38,7 +38,7 @@ class export {
 
         // 1. Load block configuration.
         $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
-        $config = unserialize(base64_decode($bi->configdata));
+        $config = unserialize_object(base64_decode($bi->configdata));
         if (!$config) {
             $config = new \stdClass();
         }

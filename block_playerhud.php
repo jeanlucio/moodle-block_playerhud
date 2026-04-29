@@ -78,7 +78,7 @@ class block_playerhud extends block_base {
             }
 
             // Continue normal rendering.
-            $config = unserialize(base64_decode($this->instance->configdata));
+            $config = unserialize_object(base64_decode($this->instance->configdata));
             if (!$config) {
                 $config = new \stdClass();
             }

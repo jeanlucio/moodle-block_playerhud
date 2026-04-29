@@ -63,7 +63,7 @@ $PAGE->set_title(get_string('pluginname', 'block_playerhud'));
 $PAGE->set_heading(format_string($course->fullname));
 
 // Load block config for feature flags.
-$blockconfig = unserialize(base64_decode($bi->configdata));
+$blockconfig = unserialize_object(base64_decode($bi->configdata));
 if (!$blockconfig) {
     $blockconfig = new stdClass();
 }
@@ -517,7 +517,7 @@ if ($action === 'save_keys' && confirm_sesskey()) {
     set_user_preference('block_playerhud_openai_model', trim($omodel));
 
     // Remove keys from block config if they exist to prevent confusion and ensure they are only stored in user preferences.
-    $config = (array) unserialize(base64_decode($bi->configdata));
+    $config = (array) unserialize_object(base64_decode($bi->configdata));
     if (isset($config['apikey_gemini']) || isset($config['apikey_groq'])) {
         unset($config['apikey_gemini'], $config['apikey_groq']);
         $bi->configdata = base64_encode(serialize((object)$config));
@@ -585,7 +585,7 @@ if ($action === 'grant_item' && confirm_sesskey()) {
 
 // Action: Auto Suggest Quests (Heuristic).
 if ($action === 'suggest_quests' || $action === 'save_suggestions') {
-    $config = unserialize(base64_decode($bi->configdata));
+    $config = unserialize_object(base64_decode($bi->configdata));
     if (!$config) {
         $config = new \stdClass();
     }

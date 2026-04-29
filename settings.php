@@ -33,21 +33,19 @@ if ($ADMIN->fulltree) {
     ));
 
     // Gemini Key.
-    $settings->add(new admin_setting_configtext(
+    $settings->add(new admin_setting_configpasswordunmask(
         'block_playerhud/apikey_gemini',
         get_string('gemini_apikey', 'block_playerhud'),
         get_string('gemini_apikey_desc', 'block_playerhud'),
-        '',
-        PARAM_TEXT
+        ''
     ));
 
     // Groq Key.
-    $settings->add(new admin_setting_configtext(
+    $settings->add(new admin_setting_configpasswordunmask(
         'block_playerhud/apikey_groq',
         get_string('groq_apikey', 'block_playerhud'),
         get_string('groq_apikey_desc', 'block_playerhud'),
-        '',
-        PARAM_TEXT
+        ''
     ));
 
     // Custom AI (OpenAI-compatible) Section.
@@ -58,12 +56,11 @@ if ($ADMIN->fulltree) {
     ));
 
     // Custom AI Key.
-    $settings->add(new admin_setting_configtext(
+    $settings->add(new admin_setting_configpasswordunmask(
         'block_playerhud/apikey_openai',
         get_string('openai_apikey', 'block_playerhud'),
         get_string('openai_apikey_desc', 'block_playerhud'),
-        '',
-        PARAM_TEXT
+        ''
     ));
 
     // Custom AI Base URL.

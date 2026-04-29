@@ -40,23 +40,34 @@ require_once($CFG->dirroot . '/user/lib.php');
 $CFG->noemailever = true;
 
 [$options, $unrecognised] = cli_get_params(
-    ['reset' => false, 'help' => false],
-    ['h' => 'help', 'r' => 'reset']
+    ['reset' => false, 'help' => false, 'password' => ''],
+    ['h' => 'help', 'r' => 'reset', 'p' => 'password']
 );
 
 if ($options['help']) {
     cli_writeln("Seed script for block_playerhud manual testing.\n");
     cli_writeln("Options:");
-    cli_writeln("  --reset   Wipe the demo course and recreate everything from scratch.");
-    cli_writeln("  --help    Show this message.");
+    cli_writeln("  --password=<pass>  Required. Password for all seed users.");
+    cli_writeln("  --reset            Wipe the demo course and recreate everything from scratch.");
+    cli_writeln("  --help             Show this message.");
     exit(0);
+}
+
+// Refuse to run without an explicit password to avoid known-credential accounts in production.
+if (empty($options['password'])) {
+    cli_error("ERROR: --password=<pass> is required. Aborting to prevent known-credential accounts.");
+}
+
+// Guard: refuse to run if this looks like a production environment.
+if (!empty($CFG->wwwroot) && !preg_match('/localhost|127\.0\.0\.1|\.local(:|\/|$)|\.test(:|\/|$)/i', $CFG->wwwroot)) {
+    cli_error("ERROR: This script must not be run on a non-development site ({$CFG->wwwroot}). Aborting.");
 }
 
 /** @var string Shortname of the demo course created by this seed script. */
 const SEED_COURSE_SHORTNAME = 'playerhud-demo';
 
-/** @var string Default password for all seed users. */
-const SEED_PASSWORD = 'Demo1234!';
+/** @var string Password for all seed users, supplied via --password flag. */
+define('SEED_PASSWORD', $options['password']);
 
 cli_writeln("=== block_playerhud seed ===\n");
 

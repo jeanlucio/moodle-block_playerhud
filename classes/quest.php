@@ -256,7 +256,7 @@ class quest {
 
         // Retrieve block configuration to calculate stats correctly.
         $blockinstance = $DB->get_record('block_instances', ['id' => $blockinstanceid]);
-        $config = unserialize(base64_decode($blockinstance->configdata));
+        $config = unserialize_object(base64_decode($blockinstance->configdata));
         if (!$config) {
             $config = new \stdClass(); // Fallback to defaults.
         }

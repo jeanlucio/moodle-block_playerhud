@@ -179,7 +179,7 @@ class external extends external_api {
 
         // 2. Logic (Balance Context).
         $bi = $DB->get_record('block_instances', ['id' => $params['instanceid']], '*', MUST_EXIST);
-        $config = unserialize(base64_decode($bi->configdata));
+        $config = unserialize_object(base64_decode($bi->configdata));
         if (!$config) {
             $config = new \stdClass();
         }

@@ -40,7 +40,7 @@ $context = context_block::instance($instanceid);
 require_capability('block/playerhud:view', $context);
 
 // Load Block Configuration.
-$config = unserialize(base64_decode($bi->configdata));
+$config = unserialize_object(base64_decode($bi->configdata));
 if (!$config) {
     $config = new stdClass();
 }
@@ -225,7 +225,7 @@ if ($isoptin) {
                 $cleanconfig->help_content = isset($config->help_content) ?
                     $config->help_content : null;
 
-                $render = new \block_playerhud\output\view\tab_rules($cleanconfig);
+                $render = new \block_playerhud\output\view\tab_rules($cleanconfig, $instanceid);
                 $tabcontenthtml = $render->display();
             }
             break;

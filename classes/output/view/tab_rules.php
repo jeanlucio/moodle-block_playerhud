@@ -35,14 +35,18 @@ use stdClass;
 class tab_rules implements renderable, templatable {
     /** @var stdClass Block instance configuration. */
     protected $config;
+    /** @var int Block instance ID. */
+    protected int $instanceid;
 
     /**
      * Constructor.
      *
      * @param stdClass $config Block configuration object.
+     * @param int $instanceid Block instance ID.
      */
-    public function __construct($config) {
-        $this->config = $config;
+    public function __construct($config, int $instanceid = 0) {
+        $this->config     = $config;
+        $this->instanceid = $instanceid;
     }
 
     /**
@@ -92,8 +96,12 @@ class tab_rules implements renderable, templatable {
             ];
         }
 
+        $context = $this->instanceid > 0
+            ? \context_block::instance($this->instanceid)
+            : \context_system::instance();
+
         // Process Moodle filters (multilang, media players, etc.) before outputting.
-        $content = format_text($rawcontent, FORMAT_HTML, ['noclean' => true]);
+        $content = format_text($rawcontent, FORMAT_HTML, ['context' => $context]);
 
         return [
             'use_default' => false,

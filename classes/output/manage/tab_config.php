@@ -64,7 +64,7 @@ class tab_config implements renderable, templatable {
 
         // 1. Load Configuration.
         $bi = $DB->get_record('block_instances', ['id' => $this->instanceid], '*', MUST_EXIST);
-        $config = unserialize(base64_decode($bi->configdata));
+        $config = unserialize_object(base64_decode($bi->configdata));
         if (!$config) {
             $config = new \stdClass();
         }
