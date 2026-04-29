@@ -906,10 +906,12 @@ function seed_create_module(stdClass $course, string $modulename, array $extra):
         "SELECT cm.* FROM {course_modules} cm
            JOIN {{$modulename}} m ON m.id = cm.instance
           WHERE cm.course = :course AND m.name = :name",
-        ['course' => $course->id, 'name' => $extra['name']]
+        ['course' => $course->id, 'name' => $extra['name']],
+        IGNORE_MULTIPLE
     );
     if ($existingcm) {
-        return get_coursemodule_from_id($modulename, $existingcm->id);
+        $cm = get_coursemodule_from_id($modulename, $existingcm->id);
+        return $cm ?: null;
     }
 
     $moduleinfo = (object) array_merge([
