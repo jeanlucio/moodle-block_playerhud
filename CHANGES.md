@@ -5,16 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [v1.3.4] — 2026-04-30
+## [v1.3.3] — 2026-04-29
 
 ### Added
 - Behat acceptance tests covering block access control, student gamification controls,
   and teacher management panel navigation (13 scenarios, 136 steps). Tests run on all
   CI matrix combinations via `moodle-plugin-ci behat --profile chrome`.
-
----
-
-## [v1.3.3] — 2026-04-29
 
 ### Security
 - **High:** `make_choice` and `preview_nav` now load story choices via a JOIN through
