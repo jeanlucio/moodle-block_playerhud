@@ -64,10 +64,17 @@ class tab_chapters implements renderable {
     public function display(): string {
         global $DB, $OUTPUT, $PAGE, $USER;
 
-        $chapters = $DB->get_records(
-            'block_playerhud_chapters',
-            ['blockinstanceid' => $this->instanceid],
-            'sortorder ASC, id ASC'
+        // Only load chapters that have a starting scene; chapters without one are skipped silently.
+        $chapters = $DB->get_records_sql(
+            "SELECT c.*
+               FROM {block_playerhud_chapters} c
+              WHERE c.blockinstanceid = :instanceid
+                AND EXISTS (
+                    SELECT 1 FROM {block_playerhud_story_nodes} n
+                     WHERE n.chapterid = c.id AND n.is_start = 1
+                )
+              ORDER BY c.sortorder ASC, c.id ASC",
+            ['instanceid' => $this->instanceid]
         );
 
         $progress = $DB->get_record(

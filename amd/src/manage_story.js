@@ -175,11 +175,17 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
      * Wire up the delete confirmation modal for chapters.
      */
     function initChapterDelete() {
+        var modal = document.getElementById('ph-confirm-delete-chapter');
         var msgEl = document.getElementById('ph-delete-chapter-msg');
         var urlEl = document.getElementById('ph-delete-chapter-url');
 
         if (!msgEl || !urlEl) {
             return;
+        }
+
+        // Move modal to <body> to avoid z-index conflicts with the block drawer.
+        if (modal) {
+            document.body.appendChild(modal);
         }
 
         document.querySelectorAll('[data-action="delete-chapter"]').forEach(function(btn) {
@@ -235,11 +241,17 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
          * Initialise the scene delete confirmation on manage_scenes.php.
          */
         initSceneDelete: function() {
-            var msgEl = document.getElementById('ph-delete-scene-msg');
-            var urlEl = document.getElementById('ph-delete-scene-url');
+            var modal  = document.getElementById('ph-confirm-delete-scene');
+            var msgEl  = document.getElementById('ph-delete-scene-msg');
+            var urlEl  = document.getElementById('ph-delete-scene-url');
 
             if (!msgEl || !urlEl) {
                 return;
+            }
+
+            // Move modal to <body> to avoid z-index conflicts with the block drawer.
+            if (modal) {
+                document.body.appendChild(modal);
             }
 
             document.querySelectorAll('[data-action="delete-scene"]').forEach(function(btn) {

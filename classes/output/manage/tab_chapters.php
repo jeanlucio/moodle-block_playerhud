@@ -65,8 +65,9 @@ class tab_chapters implements renderable {
             'sortorder ASC, id ASC'
         );
 
-        // Bulk-fetch scene counts per chapter.
+        // Bulk-fetch scene counts and start-scene presence per chapter (two queries, no N+1).
         $scenecounts = [];
+        $hasstartids = [];
         if ($chapters) {
             $chapterids = array_keys($chapters);
             [$insql, $inparams] = $DB->get_in_or_equal($chapterids);
@@ -76,6 +77,15 @@ class tab_chapters implements renderable {
                   GROUP BY chapterid";
             foreach ($DB->get_records_sql($sql, $inparams) as $row) {
                 $scenecounts[(int) $row->chapterid] = (int) $row->cnt;
+            }
+
+            [$insql2, $inparams2] = $DB->get_in_or_equal($chapterids);
+            $startsql = "SELECT chapterid
+                           FROM {block_playerhud_story_nodes}
+                          WHERE chapterid $insql2 AND is_start = 1
+                          GROUP BY chapterid";
+            foreach ($DB->get_records_sql($startsql, $inparams2) as $row) {
+                $hasstartids[(int) $row->chapterid] = true;
             }
         }
 
@@ -103,8 +113,9 @@ class tab_chapters implements renderable {
                 'unlock_label' => $chap->unlock_date
                     ? userdate($chap->unlock_date)
                     : get_string('drops_immediate', 'block_playerhud'),
-                'scene_count'  => $scenecount,
-                'has_scenes'   => ($scenecount > 0),
+                'scene_count'     => $scenecount,
+                'has_scenes'      => ($scenecount > 0),
+                'no_start_warning' => empty($hasstartids[(int) $chap->id]),
                 'url_scenes'   => (new moodle_url('/blocks/playerhud/manage_scenes.php', [
                     'courseid'   => $this->courseid,
                     'instanceid' => $this->instanceid,
@@ -121,7 +132,7 @@ class tab_chapters implements renderable {
                     'sesskey'   => sesskey(),
                     'tab'       => 'chapters',
                 ]))->out(false),
-                'confirm_msg'  => s(get_string('chapter_delete_confirm', 'block_playerhud')),
+                'confirm_msg'  => get_string('chapter_delete_confirm', 'block_playerhud', format_string($chap->title)),
                 'can_move_up'   => !$isfirst,
                 'can_move_down' => !$islast,
                 'url_move_up'   => !$isfirst ? (new moodle_url($baseurl, [
@@ -176,7 +187,8 @@ class tab_chapters implements renderable {
             'str_delete'       => get_string('delete'),
             'str_move_up'      => get_string('chapter_move_up', 'block_playerhud'),
             'str_move_down'    => get_string('chapter_move_down', 'block_playerhud'),
-            'str_empty'        => get_string('chapters_empty', 'block_playerhud'),
+            'str_empty'            => get_string('chapters_empty', 'block_playerhud'),
+            'str_no_start_warning' => get_string('chapter_no_start_warning', 'block_playerhud'),
             'str_delete_title' => get_string('confirm_delete', 'block_playerhud'),
             'str_cancel'       => get_string('cancel', 'block_playerhud'),
             'str_close'        => get_string('close', 'block_playerhud'),
