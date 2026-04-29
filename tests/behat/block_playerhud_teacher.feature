@@ -30,17 +30,17 @@ Feature: PlayerHUD teacher management panel
   Scenario: Teacher navigates to the item library tab
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I follow "Item Library"
-    Then I should see "Item Library" in the ".ph-manage-content" "css_element"
+    Then I should see "Item Library" in the "#ph-manage-tabs .active" "css_element"
 
   Scenario: Teacher navigates to the quests tab
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I follow "Quests"
-    Then I should see "Quests" in the ".ph-manage-content" "css_element"
+    Then I should see "Quests" in the "#ph-manage-tabs .active" "css_element"
 
   Scenario: Teacher navigates to the reports tab
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
-    And I follow "Reports"
-    Then I should see "Reports" in the ".ph-manage-content" "css_element"
+    And I click on "Reports" "link" in the "#ph-manage-tabs" "css_element"
+    Then I should see "Reports" in the "#ph-manage-tabs .active" "css_element"
 
   Scenario: Teacher can return to the course from the management panel
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
