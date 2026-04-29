@@ -21,29 +21,29 @@ Feature: PlayerHUD teacher management panel
     Then I should see "Game Master Panel" in the "PlayerHUD" "block"
 
   Scenario: Teacher accesses the management panel and sees item library tab
-    When I follow "Game Master Panel" in the "PlayerHUD" "block"
+    When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     Then I should see the PlayerHUD management tabs
     And I should see "Item Library" in the "#ph-manage-tabs" "css_element"
     And I should see "Quests" in the "#ph-manage-tabs" "css_element"
     And I should see "Reports" in the "#ph-manage-tabs" "css_element"
 
   Scenario: Teacher navigates to the item library tab
-    When I follow "Game Master Panel" in the "PlayerHUD" "block"
+    When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I follow "Item Library"
     Then I should see "Item Library" in the ".ph-manage-content" "css_element"
 
   Scenario: Teacher navigates to the quests tab
-    When I follow "Game Master Panel" in the "PlayerHUD" "block"
+    When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I follow "Quests"
     Then I should see "Quests" in the ".ph-manage-content" "css_element"
 
   Scenario: Teacher navigates to the reports tab
-    When I follow "Game Master Panel" in the "PlayerHUD" "block"
+    When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I follow "Reports"
     Then I should see "Reports" in the ".ph-manage-content" "css_element"
 
   Scenario: Teacher can return to the course from the management panel
-    When I follow "Game Master Panel" in the "PlayerHUD" "block"
+    When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     Then I should see the PlayerHUD management tabs
     When I follow "Back to Course"
     Then I am on "Course 1" course homepage

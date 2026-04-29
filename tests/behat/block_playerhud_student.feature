@@ -29,7 +29,7 @@ Feature: PlayerHUD student gamification controls
   Scenario: Student can disable gamification with confirmation
     When I log in as "student1"
     And I am on "Course 1" course homepage
-    And I follow "Game Master Panel" in the "PlayerHUD" "block"
+    And I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I click on ".js-disable-hud" "css_element"
     And I click on "Yes" "button"
     Then I am on "Course 1" course homepage
@@ -42,13 +42,14 @@ Feature: PlayerHUD student gamification controls
     And I am on "Course 1" course homepage
     Then I should see the PlayerHUD paused state
     When I click on ".ph-sidebar-rejoin .btn-primary" "css_element"
+    And I am on "Course 1" course homepage
     Then I should see the PlayerHUD XP bar
     And I should not see the PlayerHUD paused state
 
   Scenario: Student dismisses disable confirmation and HUD remains active
     When I log in as "student1"
     And I am on "Course 1" course homepage
-    And I follow "Game Master Panel" in the "PlayerHUD" "block"
+    And I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I click on ".js-disable-hud" "css_element"
     And I click on "Cancel" "button"
     Then I should see the PlayerHUD XP bar

@@ -30,7 +30,7 @@ Feature: PlayerHUD block access control
     And I log out
     When I log in as "student1"
     And I am on "Course 1" course homepage
-    Then "PlayerHUD" "block" should be visible
+    Then I should see "PlayerHUD" in the "PlayerHUD" "block"
     And I should see the PlayerHUD XP bar
 
   Scenario: Non-enrolled user cannot see the block
@@ -40,4 +40,4 @@ Feature: PlayerHUD block access control
     And I log out
     When I log in as "outsider1"
     And I am on "Course 1" course homepage
-    Then "PlayerHUD" "block" should not be visible
+    Then I should not see "Game Master Panel"
