@@ -49,5 +49,6 @@ Feature: PlayerHUD student gamification controls
     When I log in as "student1"
     And I am on "Course 1" course homepage
     And I click on ".js-disable-hud" "css_element"
-    And I click on "Cancel" "button"
+    And I am on "Course 1" course homepage
     Then I should see the PlayerHUD XP bar
+    And I should not see the PlayerHUD paused state
