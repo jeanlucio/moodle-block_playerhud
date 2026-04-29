@@ -241,9 +241,9 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
          * Initialise the scene delete confirmation on manage_scenes.php.
          */
         initSceneDelete: function() {
-            var modal  = document.getElementById('ph-confirm-delete-scene');
-            var msgEl  = document.getElementById('ph-delete-scene-msg');
-            var urlEl  = document.getElementById('ph-delete-scene-url');
+            var modal = document.getElementById('ph-confirm-delete-scene');
+            var msgEl = document.getElementById('ph-delete-scene-msg');
+            var urlEl = document.getElementById('ph-delete-scene-url');
 
             if (!msgEl || !urlEl) {
                 return;

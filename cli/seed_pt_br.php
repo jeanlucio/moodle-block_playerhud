@@ -21,8 +21,13 @@
  * Run with --reset to wipe and recreate everything.
  *
  * Usage:
- *   php blocks/playerhud/cli/seed_pt_br.php
- *   php blocks/playerhud/cli/seed_pt_br.php --reset
+ *   php blocks/playerhud/cli/seed_pt_br.php --password=SuaSenhaDev
+ *   php blocks/playerhud/cli/seed_pt_br.php --password=SuaSenhaDev --reset
+ *
+ * O parâmetro --password é obrigatório e define a senha de login de todos os
+ * usuários demo criados pelo script (ex.: seed_teacher, seed_student1, …).
+ * Use-a para entrar no Moodle como um desses usuários de teste.
+ * O script recusa execução em sites que não sejam de desenvolvimento.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
