@@ -23,11 +23,12 @@
  * Usage:
  *   php blocks/playerhud/cli/seed.php --password=YourDevPassword
  *   php blocks/playerhud/cli/seed.php --password=YourDevPassword --reset
+ *   php blocks/playerhud/cli/seed.php --password=YourDevPassword --force
  *
  * The --password flag is required and sets the login password for all demo
  * users created by this script (e.g. seed_teacher, seed_student1, …).
  * Use it to log in to the Moodle instance as one of those test accounts.
- * The script refuses to run on non-development sites.
+ * The script refuses to run on non-development sites unless --force is passed.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
@@ -45,8 +46,8 @@ require_once($CFG->dirroot . '/user/lib.php');
 $CFG->noemailever = true;
 
 [$options, $unrecognised] = cli_get_params(
-    ['reset' => false, 'help' => false, 'password' => ''],
-    ['h' => 'help', 'r' => 'reset', 'p' => 'password']
+    ['reset' => false, 'help' => false, 'password' => '', 'force' => false],
+    ['h' => 'help', 'r' => 'reset', 'p' => 'password', 'f' => 'force']
 );
 
 if ($options['help']) {
@@ -54,6 +55,7 @@ if ($options['help']) {
     cli_writeln("Options:");
     cli_writeln("  --password=<pass>  Required. Password for all seed users.");
     cli_writeln("  --reset            Wipe the demo course and recreate everything from scratch.");
+    cli_writeln("  --force            Skip the development-site guard (use on custom dev domains).");
     cli_writeln("  --help             Show this message.");
     exit(0);
 }
@@ -64,8 +66,13 @@ if (empty($options['password'])) {
 }
 
 // Guard: refuse to run if this looks like a production environment.
-if (!empty($CFG->wwwroot) && !preg_match('/localhost|127\.0\.0\.1|\.local(:|\/|$)|\.test(:|\/|$)/i', $CFG->wwwroot)) {
-    cli_error("ERROR: This script must not be run on a non-development site ({$CFG->wwwroot}). Aborting.");
+// Use --force to bypass when running on a custom development domain.
+if (!$options['force'] && !empty($CFG->wwwroot)
+        && !preg_match('/localhost|127\.0\.0\.1|\.local(:|\/|$)|\.test(:|\/|$)/i', $CFG->wwwroot)) {
+    cli_error(
+        "ERROR: This script must not be run on a non-development site ({$CFG->wwwroot}).\n" .
+        "If this is intentional, re-run with --force."
+    );
 }
 
 /** @var string Shortname of the demo course created by this seed script. */
