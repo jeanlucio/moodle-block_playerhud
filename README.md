@@ -6,7 +6,6 @@
 ![Status](https://img.shields.io/badge/Status-Stable-green?style=flat-square)
 [![PlayerHUD Ecosystem](https://img.shields.io/badge/PlayerHUD-Ecosystem-6f42c1?style=flat-square&logo=gamepad&logoColor=white)](https://github.com/jeanlucio/moodle-block_playerhud)
 ![Core Component](https://img.shields.io/badge/Role-Core_Component-198754?style=flat-square)
-![GitHub release](https://img.shields.io/github/v/release/jeanlucio/moodle-block_playerhud?style=flat-square)
 
 [English](#english) | [Português](#português)
 
@@ -107,6 +106,25 @@ PlayerHUD works together with complementary plugins:
    * Collection limits
 4. Students collect items directly within course sections.
 5. XP, levels, and ranking update automatically.
+
+---
+
+### 🧪 Automated Tests
+
+PlayerHUD ships with **Behat acceptance tests** that run on every CI push across the full matrix (Moodle 4.5 → 5.x, PostgreSQL & MariaDB):
+
+| Test file | Scenarios covered |
+|-----------|------------------|
+| `block_playerhud_access.feature` | Role-based block visibility (teacher, student, non-enrolled) |
+| `block_playerhud_student.feature` | HUD active on first visit, disable/re-enable gamification flow |
+| `block_playerhud_teacher.feature` | Game Master Panel access and management tab navigation |
+
+Run them locally with:
+
+```bash
+php admin/tool/behat/cli/init.php
+vendor/bin/behat --tags=@block_playerhud --profile=chrome
+```
 
 ---
 
@@ -277,6 +295,25 @@ O PlayerHUD funciona em conjunto com plugins complementares:
    - Limites de coleta
 4. Os alunos coletam itens diretamente nas seções do curso.
 5. O sistema atualiza automaticamente XP, níveis e ranking.
+
+---
+
+### 🧪 Testes Automatizados
+
+O PlayerHUD inclui **testes de aceitação Behat** executados em todo push de CI na matriz completa (Moodle 4.5 → 5.x, PostgreSQL e MariaDB):
+
+| Arquivo de teste | Cenários cobertos |
+|------------------|------------------|
+| `block_playerhud_access.feature` | Visibilidade do bloco por perfil (professor, aluno, não matriculado) |
+| `block_playerhud_student.feature` | HUD ativo na primeira visita, fluxo de desativar/reativar gamificação |
+| `block_playerhud_teacher.feature` | Acesso ao Painel do Mestre e navegação entre abas de gerenciamento |
+
+Para executar localmente:
+
+```bash
+php admin/tool/behat/cli/init.php
+vendor/bin/behat --tags=@block_playerhud --profile=chrome
+```
 
 ---
 
