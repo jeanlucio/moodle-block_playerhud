@@ -202,9 +202,25 @@ class story_manager {
     public static function make_choice(int $instanceid, int $userid, int $choiceid): array {
         global $DB;
 
-        $choice = $DB->get_record('block_playerhud_choices', ['id' => $choiceid], '*', MUST_EXIST);
+        $choice = $DB->get_record_sql(
+            "SELECT c.*
+               FROM {block_playerhud_choices} c
+               JOIN {block_playerhud_story_nodes} n ON n.id = c.nodeid
+               JOIN {block_playerhud_chapters} ch ON ch.id = n.chapterid
+              WHERE c.id = :choiceid AND ch.blockinstanceid = :instanceid",
+            ['choiceid' => $choiceid, 'instanceid' => $instanceid],
+            MUST_EXIST
+        );
         $progress = self::get_or_create_progress($instanceid, $userid);
         $events = [];
+
+        // Server-side requirement validation (mirrors prepare_node_data).
+        if ((int) $choice->req_class_id > 0 && (int) $choice->req_class_id !== (int) $progress->classid) {
+            throw new \moodle_exception('story_error_class_required', 'block_playerhud');
+        }
+        if ((int) $choice->req_karma_min !== 0 && (int) $progress->karma < (int) $choice->req_karma_min) {
+            throw new \moodle_exception('story_error_karma_required', 'block_playerhud');
+        }
 
         // Item cost: validate and consume.
         if ($choice->cost_itemid > 0) {
@@ -346,6 +362,15 @@ class story_manager {
         global $DB;
 
         $progress = self::get_or_create_progress($instanceid, $userid);
+
+        // Verify the chapter belongs to this block instance to prevent cross-instance data leakage.
+        $DB->get_record(
+            'block_playerhud_chapters',
+            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
+            '*',
+            MUST_EXIST
+        );
+
         $savednodesmap = json_decode($progress->current_nodes, true) ?: [];
 
         if (!isset($savednodesmap[$chapterid]) || empty($savednodesmap[$chapterid])) {
@@ -423,7 +448,15 @@ class story_manager {
     public static function preview_nav(int $instanceid, int $userid, int $choiceid): array {
         global $DB;
 
-        $choice = $DB->get_record('block_playerhud_choices', ['id' => $choiceid], '*', MUST_EXIST);
+        $choice = $DB->get_record_sql(
+            "SELECT c.*
+               FROM {block_playerhud_choices} c
+               JOIN {block_playerhud_story_nodes} n ON n.id = c.nodeid
+               JOIN {block_playerhud_chapters} ch ON ch.id = n.chapterid
+              WHERE c.id = :choiceid AND ch.blockinstanceid = :instanceid",
+            ['choiceid' => $choiceid, 'instanceid' => $instanceid],
+            MUST_EXIST
+        );
 
         if ((int) $choice->next_nodeid > 0) {
             $nextnode = $DB->get_record(

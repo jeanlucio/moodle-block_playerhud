@@ -212,9 +212,16 @@ class scenes {
 
         $existingchoices = [];
         if ($nodeid) {
-            $existingchoices = array_values(
-                $DB->get_records('block_playerhud_choices', ['nodeid' => $nodeid], 'id ASC')
+            // Only load choices if the node actually belongs to the validated chapter.
+            $nodebelongs = $DB->record_exists(
+                'block_playerhud_story_nodes',
+                ['id' => $nodeid, 'chapterid' => $chapterid]
             );
+            if ($nodebelongs) {
+                $existingchoices = array_values(
+                    $DB->get_records('block_playerhud_choices', ['nodeid' => $nodeid], 'id ASC')
+                );
+            }
         }
 
         $currentdata = [];
@@ -252,7 +259,12 @@ class scenes {
         ]);
 
         if ($nodeid && !$mform->is_submitted()) {
-            $node     = $DB->get_record('block_playerhud_story_nodes', ['id' => $nodeid], '*', MUST_EXIST);
+            $node = $DB->get_record(
+                'block_playerhud_story_nodes',
+                ['id' => $nodeid, 'chapterid' => $chapterid],
+                '*',
+                MUST_EXIST
+            );
             $formdata = array_merge($currentdata, [
                 'courseid'   => $courseid,
                 'instanceid' => $instanceid,
@@ -280,6 +292,13 @@ class scenes {
             $record->is_start  = (int) $data->is_start;
 
             if ($data->nodeid) {
+                // Verify the node belongs to the validated chapter before updating.
+                $DB->get_record(
+                    'block_playerhud_story_nodes',
+                    ['id' => $data->nodeid, 'chapterid' => $chapterid],
+                    'id',
+                    MUST_EXIST
+                );
                 $record->id    = $data->nodeid;
                 $DB->update_record('block_playerhud_story_nodes', $record);
                 $currentnodeid = $data->nodeid;

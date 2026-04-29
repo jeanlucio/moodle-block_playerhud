@@ -96,7 +96,16 @@ class drops {
 
         // 3. Actions (Delete).
         if ($action === 'delete' && $dropid && confirm_sesskey()) {
-            $DB->delete_records('block_playerhud_drops', ['id' => $dropid]);
+            $drop = $DB->get_record_sql(
+                "SELECT d.id
+                   FROM {block_playerhud_drops} d
+                   JOIN {block_playerhud_items} i ON i.id = d.itemid
+                  WHERE d.id = :dropid AND i.blockinstanceid = :instanceid",
+                ['dropid' => $dropid, 'instanceid' => $instanceid]
+            );
+            if ($drop) {
+                $DB->delete_records('block_playerhud_drops', ['id' => $drop->id]);
+            }
             redirect(
                 $baseurl,
                 get_string('deleted', 'block_playerhud'),
@@ -108,15 +117,21 @@ class drops {
             if (!empty($bulkids)) {
                 [$insql, $inparams] = $DB->get_in_or_equal($bulkids, SQL_PARAMS_NAMED, 'did');
 
-                $params = array_merge($inparams, ['itemid' => $itemid]);
-
-                $DB->delete_records_select(
-                    'block_playerhud_drops',
-                    "id $insql AND itemid = :itemid",
-                    $params
+                // Pre-filter: only keep IDs that truly belong to this block instance.
+                $validids = $DB->get_fieldset_sql(
+                    "SELECT d.id
+                       FROM {block_playerhud_drops} d
+                       JOIN {block_playerhud_items} i ON i.id = d.itemid
+                      WHERE d.id $insql AND i.blockinstanceid = :instanceid",
+                    array_merge($inparams, ['instanceid' => $instanceid])
                 );
 
-                $count = count($bulkids);
+                $count = 0;
+                if (!empty($validids)) {
+                    [$delsql, $delparams] = $DB->get_in_or_equal($validids);
+                    $DB->delete_records_select('block_playerhud_drops', "id $delsql", $delparams);
+                    $count = count($validids);
+                }
 
                 redirect(
                     $baseurl,
@@ -307,8 +322,14 @@ class drops {
         $mform = new \block_playerhud\form\edit_drop_form(null, ['itemname' => $item->name]);
 
         if ($dropid && !$mform->is_submitted()) {
-            $drop = $DB->get_record('block_playerhud_drops', ['id' => $dropid]);
-            $data = (array)$drop;
+            $drop = $DB->get_record_sql(
+                "SELECT d.*
+                   FROM {block_playerhud_drops} d
+                   JOIN {block_playerhud_items} i ON i.id = d.itemid
+                  WHERE d.id = :dropid AND i.blockinstanceid = :instanceid",
+                ['dropid' => $dropid, 'instanceid' => $instanceid]
+            );
+            $data = $drop ? (array) $drop : [];
             $data['unlimited'] = ($drop->maxusage == 0) ? 1 : 0;
             $data['maxusage']  = ($drop->maxusage == 0) ? 1 : $drop->maxusage;
             $data['instanceid'] = $instanceid;
@@ -363,7 +384,21 @@ class drops {
         $record->maxusage = (!empty($data->unlimited)) ? 0 : max(1, (int)$data->maxusage);
 
         if (!empty($data->id)) {
-            $record->id = $data->id;
+            // Verify the drop belongs to this instance before updating to prevent cross-instance edits.
+            $existing = $DB->get_record_sql(
+                "SELECT d.id, d.blockinstanceid, d.itemid
+                   FROM {block_playerhud_drops} d
+                   JOIN {block_playerhud_items} i ON i.id = d.itemid
+                  WHERE d.id = :dropid AND i.blockinstanceid = :instanceid",
+                ['dropid' => $data->id, 'instanceid' => $data->instanceid]
+            );
+            if (!$existing) {
+                throw new \moodle_exception('accessdenied', 'admin');
+            }
+            // Preserve ownership fields from the DB record — never trust form input for these.
+            $record->blockinstanceid = $existing->blockinstanceid;
+            $record->itemid          = $existing->itemid;
+            $record->id              = $existing->id;
             $DB->update_record('block_playerhud_drops', $record);
         } else {
             $record->timecreated = time();
