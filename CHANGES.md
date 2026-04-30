@@ -5,6 +5,63 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.4] — 2026-04-30
+
+### Security
+- **Medium:** `story_manager::make_choice` now validates that the submitted choice
+  belongs to the player's current node before applying any side effect (karma, class
+  change, item cost). Previously, any authenticated student could submit an arbitrary
+  `choiceid` from the same block instance to skip story progression, saturate karma,
+  switch RPG class, or mark chapters complete and claim their quest rewards without
+  playing through the narrative. The fix computes the expected node from
+  `rpg_progress.current_nodes` (falling back to the chapter's `is_start` node for
+  first-time visitors) and throws `story_error_invalid_choice` on mismatch. Choices
+  in already-completed chapters are also rejected upfront, preventing repeat reward
+  farming via terminal choices.
+- **Medium:** Items management table no longer emits raw HTML attribute strings via
+  Mustache triple-mustache (`{{{preview_attributes}}}`). The `data-name`, `data-xp`,
+  `data-image`, and `data-isimage` attributes are now rendered individually through
+  escaped double-mustache placeholders (`{{preview_data_*}}`), closing an attribute
+  injection path that allowed a teacher to plant JavaScript event handlers (e.g.
+  `onfocus`, `autofocus`) visible to any other teacher or admin who opened the items
+  management tab.
+- **Low:** AI-generated item and class names are no longer concatenated directly into
+  HTML strings in `manage_items.js` and `ai_oracle.js`. The success modals now use
+  jQuery's `.text()` and `.appendTo()` DOM methods for AI-sourced values, and
+  `.val()` for the shortcode input, eliminating the self-XSS vector in teacher-only
+  modals and hardening the pattern against future callers.
+
+### Changed
+- `block_playerhud_inventory` query in `tab_collection` now joins `block_playerhud_items`
+  and filters by `blockinstanceid`, scoping the result set explicitly to the current
+  block instance (was previously filtered only by userid, with the instance scope
+  enforced post-query by iteration).
+- `controller/drops.php` sort and direction parameters now go through the same
+  allow-list pattern used by the other management tabs (`tab_items`, `tab_quests`,
+  `tab_reports`): `$sort` is validated against `['id', 'mapcode', 'maxusage',
+  'respawntime', 'timecreated']` and `$dir` is normalised to `ASC`/`DESC`.
+- Exception handler in `block_playerhud::get_content()` broadened from `\Exception`
+  to `\Throwable` and log level raised from `DEBUG_DEVELOPER` to `DEBUG_NORMAL`,
+  so render errors are visible in production logs instead of disappearing silently.
+
+### Removed
+- Dead stub `block_playerhud_upgrade($oldversion, $block)` removed from `lib.php`.
+  The real Moodle upgrade hook (`xmldb_block_playerhud_upgrade`) lives in
+  `db/upgrade.php` and was never affected.
+
+### Tests
+- `story_manager_test`: replaced `test_make_choice_does_not_duplicate_completed_chapter`
+  with three targeted tests — `test_make_choice_records_chapter_completion_once`,
+  `test_make_choice_throws_for_completed_chapter`, and
+  `test_make_choice_throws_for_out_of_sequence_choice` — covering the new
+  path-validation and completed-chapter rejection behaviour.
+
+### Strings added
+- `story_error_invalid_choice` (en / pt_br): shown when a player submits a choice
+  that is not reachable from their current story position.
+
+---
+
 ## [v1.3.3] — 2026-04-29
 
 ### Added

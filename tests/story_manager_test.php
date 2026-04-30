@@ -445,23 +445,22 @@ final class story_manager_test extends advanced_testcase {
     }
 
     /**
-     * make_choice does not add the chapter to completed_chapters twice.
+     * make_choice adds the chapter to completed_chapters exactly once on the first call.
      *
      * @covers ::make_choice
      */
-    public function test_make_choice_does_not_duplicate_completed_chapter(): void {
+    public function test_make_choice_records_chapter_completion_once(): void {
         global $DB;
 
         $this->resetAfterTest(true);
         $this->setup_block_instance();
 
         $user = $this->getDataGenerator()->create_user();
-        $chapter = $this->create_chapter('Replayable Chapter');
+        $chapter = $this->create_chapter('One-shot Chapter');
 
         $nodea = $this->create_node($chapter->id, 'Start', true);
         $choice = $this->create_choice($nodea->id, 'End', 0);
 
-        story_manager::make_choice($this->instanceid, $user->id, $choice->id);
         story_manager::make_choice($this->instanceid, $user->id, $choice->id);
 
         $completedjson = $DB->get_field(
@@ -471,5 +470,64 @@ final class story_manager_test extends advanced_testcase {
         );
         $completed = array_map('intval', json_decode($completedjson, true));
         $this->assertCount(1, array_unique($completed));
+        $this->assertContains($chapter->id, $completed);
+    }
+
+    /**
+     * make_choice throws story_error_invalid_choice when the chapter is already completed,
+     * preventing karma/class/reward re-farming.
+     *
+     * @covers ::make_choice
+     */
+    public function test_make_choice_throws_for_completed_chapter(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Completed Chapter');
+
+        $nodea = $this->create_node($chapter->id, 'Start', true);
+        $choice = $this->create_choice($nodea->id, 'End', 0, 50);
+
+        // First call: legitimate completion.
+        story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+
+        // Second call: chapter is now complete — must be rejected.
+        try {
+            story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+            $this->fail('Expected story_error_invalid_choice exception not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertEquals('story_error_invalid_choice', $e->errorcode);
+        }
+    }
+
+    /**
+     * make_choice throws story_error_invalid_choice when the choice does not belong
+     * to the player's current node (intra-instance story bypass attempt).
+     *
+     * @covers ::make_choice
+     */
+    public function test_make_choice_throws_for_out_of_sequence_choice(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Sequential Chapter');
+
+        $nodea = $this->create_node($chapter->id, 'Node A', true);
+        $nodeb = $this->create_node($chapter->id, 'Node B');
+        $nodec = $this->create_node($chapter->id, 'Node C');
+
+        // A → B → C.
+        $this->create_choice($nodea->id, 'Go to B', $nodeb->id);
+        $choicebc = $this->create_choice($nodeb->id, 'Go to C', $nodec->id);
+
+        // Player is at Node A (start). Submitting a choice that belongs to Node B is invalid.
+        try {
+            story_manager::make_choice($this->instanceid, $user->id, $choicebc->id);
+            $this->fail('Expected story_error_invalid_choice exception not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertEquals('story_error_invalid_choice', $e->errorcode);
+        }
     }
 }

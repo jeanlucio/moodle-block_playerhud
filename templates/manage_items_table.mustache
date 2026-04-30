@@ -163,7 +163,11 @@
                             <td class="align-middle text-center text-muted small text-nowrap">{{counter}}</td>
                             <td class="align-middle text-center position-relative text-nowrap">
                                  <a href="#" class="ph-preview-trigger text-decoration-none d-block"
-                                    {{{preview_attributes}}} data-desc-target="desc_hidden_{{id}}" aria-label="{{name}}">
+                                    data-name="{{preview_data_name}}"
+                                    data-xp="{{preview_data_xp}}"
+                                    data-image="{{preview_data_image}}"
+                                    data-isimage="{{preview_data_isimage}}"
+                                    data-desc-target="desc_hidden_{{id}}" aria-label="{{name}}">
                                     {{#is_image}}
                                         <img src="{{image_url}}" class="ph-img-xs" alt="">
                                     {{/is_image}}
@@ -174,7 +178,11 @@
                             </td>
                             <td class="align-middle">
                                  <a href="#" class="ph-preview-trigger fw-bold"
-                                    {{{preview_attributes}}} data-desc-target="desc_hidden_{{id}}">
+                                    data-name="{{preview_data_name}}"
+                                    data-xp="{{preview_data_xp}}"
+                                    data-image="{{preview_data_image}}"
+                                    data-isimage="{{preview_data_isimage}}"
+                                    data-desc-target="desc_hidden_{{id}}">
                                      {{name}}
                                     {{#secret}}
                                         <i class="fa fa-user-secret text-warning ms-1"

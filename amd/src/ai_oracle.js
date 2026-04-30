@@ -101,27 +101,32 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
                     $btn.prop('disabled', false).html(originalText).removeAttr('aria-busy');
 
                     if (names.length > 0) {
-                        var html = '<div class="text-center py-3 ph-animate-fadein" tabindex="-1" id="ph-oracle-result">';
-                        html += '<div class="mb-3 text-success" style="font-size:3rem" aria-hidden="true">';
-                        html += '<i class="fa fa-check-circle"></i></div>';
+                        // Build result using jQuery DOM methods so AI-returned names are never
+                        // treated as markup, regardless of what the model returns.
+                        var $result = $('<div>', {
+                            class: 'text-center py-3 ph-animate-fadein',
+                            tabindex: '-1',
+                            id: 'ph-oracle-result'
+                        });
+                        $('<div>', {class: 'mb-3 text-success', 'aria-hidden': 'true', css: {'font-size': '3rem'}})
+                            .html('<i class="fa fa-check-circle"></i>')
+                            .appendTo($result);
 
                         if (names.length === 1) {
                             var successMsg = strings.oracle_success.replace('{$a}', names[0]);
-                            html += '<h5 class="fw-bold mb-1">' + names[0] + '</h5>';
-                            html += '<p class="text-muted small">' + successMsg + '</p>';
+                            $('<h5>', {class: 'fw-bold mb-1'}).text(names[0]).appendTo($result);
+                            $('<p>', {class: 'text-muted small'}).text(successMsg).appendTo($result);
                         } else {
                             var successMsgMulti = strings.oracle_success_multi.replace('{$a}', names.length);
-                            html += '<ul class="list-unstyled mb-2">';
+                            var $ul = $('<ul>', {class: 'list-unstyled mb-2'});
                             for (var i = 0; i < names.length; i++) {
-                                html += '<li class="fw-bold">' + names[i] + '</li>';
+                                $('<li>', {class: 'fw-bold'}).text(names[i]).appendTo($ul);
                             }
-                            html += '</ul>';
-                            html += '<p class="text-muted small">' + successMsgMulti + '</p>';
+                            $ul.appendTo($result);
+                            $('<p>', {class: 'text-muted small'}).text(successMsgMulti).appendTo($result);
                         }
 
-                        html += '</div>';
-
-                        $('#ph-ai-oracle-modal .modal-body').html(html);
+                        $('#ph-ai-oracle-modal .modal-body').empty().append($result);
                         $('#ph-ai-oracle-modal .modal-footer').html(
                             '<button type="button" class="btn btn-success fw-bold px-4" ' +
                             'data-action="oracle-reload">' + strings.ok_reload + '</button>'

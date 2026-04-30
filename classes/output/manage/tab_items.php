@@ -281,14 +281,6 @@ class tab_items implements renderable {
             foreach ($items as $item) {
                 $mediadata = $allmedia[$item->id];
 
-                // Preview attributes for JS.
-                $previewattrs = 'data-name="' . s($item->name) . '" ' .
-                                 'data-xp="' . $item->xp . ' XP" ' .
-                                 'data-image="' . ($mediadata['is_image'] ?
-                                        $mediadata['url'] :
-                                        strip_tags($mediadata['content'])) . '" ' .
-                                 'data-isimage="' . ($mediadata['is_image'] ? 1 : 0) . '"';
-
                 $dropscount = isset($dropscounts[$item->id]) ? $dropscounts[$item->id] : 0;
 
                 $itemsdata[] = [
@@ -306,7 +298,14 @@ class tab_items implements renderable {
 
                     // Description (Safe HTML).
                     'description_html' => !empty($item->description) ? format_text($item->description, FORMAT_HTML) : "",
-                    'preview_attributes' => $previewattrs,
+
+                    // Preview data-* attributes rendered individually via {{...}} in template.
+                    'preview_data_name' => $item->name,
+                    'preview_data_xp' => $item->xp . ' XP',
+                    'preview_data_image' => $mediadata['is_image']
+                        ? $mediadata['url']
+                        : strip_tags($mediadata['content']),
+                    'preview_data_isimage' => $mediadata['is_image'] ? 1 : 0,
 
                     // Drops & Buttons.
                     'drops_count' => $dropscount,

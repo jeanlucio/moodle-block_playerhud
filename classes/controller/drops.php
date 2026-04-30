@@ -77,6 +77,12 @@ class drops {
         $sort       = optional_param('sort', 'id', PARAM_ALPHA);
         $dir        = optional_param('dir', 'DESC', PARAM_ALPHA);
 
+        $allowedsorts = ['id', 'mapcode', 'maxusage', 'respawntime', 'timecreated'];
+        if (!in_array($sort, $allowedsorts, true)) {
+            $sort = 'id';
+        }
+        $dir = (strtoupper($dir) === 'ASC') ? 'ASC' : 'DESC';
+
         // 2. Security.
         require_login($courseid);
         $context = \context_block::instance($instanceid);

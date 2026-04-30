@@ -251,30 +251,25 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                         const $modalTitle = $('#phAiModalLabel');
                         $modalTitle.text(config.strings.success_title);
 
-                        // Main Container.
-                        let successHtml = '<div id="ph-success-container" tabindex="-1" ';
-                        successHtml += 'class="text-center py-3 ph-animate-fadein" style="outline: none;">';
-
-                        // Success Icon.
-                        successHtml += '<div class="mb-3 text-success" style="font-size: 3rem;" aria-hidden="true">';
-                        successHtml += '<i class="fa fa-check-circle"></i></div>';
-
                         // Handle item list display.
                         const items = resp.created_items || [];
                         if (items.length === 0 && resp.item_name) {
                             items.push(resp.item_name);
                         }
-                        const itemsList = items.join(', ');
                         const count = items.length;
 
                         // Title.
                         const titleText = config.strings.created_count.replace('{$a}', count);
+
+                        // Build the static structure; AI-sourced text is set via .text() below.
+                        let successHtml = '<div id="ph-success-container" tabindex="-1" ';
+                        successHtml += 'class="text-center py-3 ph-animate-fadein" style="outline: none;">';
+                        successHtml += '<div class="mb-3 text-success" style="font-size: 3rem;" aria-hidden="true">';
+                        successHtml += '<i class="fa fa-check-circle"></i></div>';
                         successHtml += '<h5 class="text-muted text-uppercase small fw-bold mb-2">' + titleText + '</h5>';
+                        successHtml += '<h2 class="fw-bold text-dark mb-4 display-6" id="ph-gen-names-heading"></h2>';
 
-                        // Highlight.
-                        successHtml += '<h2 class="fw-bold text-dark mb-4 display-6">' + itemsList + '</h2>';
-
-                        // Warnings and Info messages.
+                        // Warnings and Info messages (sourced from PHP get_string — trusted).
                         if (resp.warning_msg) {
                             successHtml += '<div class="alert alert-warning small mb-3 text-start">';
                             successHtml += '<i class="fa fa-exclamation-triangle me-2" aria-hidden="true"></i> ';
@@ -288,14 +283,12 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
 
                         // Drop Code.
                         if (resp.drop_code && count === 1) {
-                            const fullCode = '[PLAYERHUD_DROP code=' + resp.drop_code + ']';
-
                             successHtml += '<div class="card bg-light border-0 p-3 mx-auto mt-4" style="max-width: 90%;">';
                             successHtml += '<label class="small text-muted mb-1 fw-bold text-start w-100" ';
                             successHtml += 'for="ph-gen-code-input">' + config.strings.copy + ':</label>';
                             successHtml += '<div class="input-group">';
                             successHtml += '<input type="text" class="form-control font-monospace text-center ph-code-input" ';
-                            successHtml += 'value="' + fullCode + '" id="ph-gen-code-input" readonly>';
+                            successHtml += 'id="ph-gen-code-input" value="" readonly>';
                             successHtml += '<button class="btn btn-primary" type="button" ';
                             successHtml += 'data-action="copytoclipboard" data-clipboard-target="#ph-gen-code-input">';
                             successHtml += '<i class="fa fa-copy" aria-hidden="true"></i> ';
@@ -306,6 +299,12 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                         successHtml += '</div>';
 
                         $('#ph-ai-modal .modal-body').html(successHtml);
+
+                        // Set AI-generated content safely via .text() to prevent XSS.
+                        $('#ph-gen-names-heading').text(items.join(', '));
+                        if (resp.drop_code && count === 1) {
+                            $('#ph-gen-code-input').val('[PLAYERHUD_DROP code=' + resp.drop_code + ']');
+                        }
 
                         // Reload/Close Button.
                         const $btnReload = $('<button class="btn btn-success w-100 py-2 fw-bold">' +

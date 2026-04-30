@@ -114,14 +114,3 @@ function block_playerhud_get_drop_details_by_code($code, $blockinstanceid) {
 function block_playerhud_is_visible_for_class($requiredclassids, $userclassid) {
     return \block_playerhud\utils::is_visible_for_class((string) $requiredclassids, (int) $userclassid);
 }
-
-/**
- * Standard upgrade function.
- *
- * @param int $oldversion The version we are upgrading from.
- * @param object $block The block object.
- * @return bool True on success.
- */
-function block_playerhud_upgrade($oldversion, $block) {
-    return true;
-}

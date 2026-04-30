@@ -63,13 +63,19 @@ class tab_collection implements renderable, templatable {
         // 1. Capture sort parameter (Default: recent).
         $currentsort = optional_param('sort', 'recent', PARAM_ALPHANUMEXT);
 
-        // 2. Fetch Inventory from DB.
+        // 2. Fetch Inventory from DB, scoped to this block instance.
         $sql = "SELECT inv.*, d.maxusage as drop_maxusage
                   FROM {block_playerhud_inventory} inv
+                  JOIN {block_playerhud_items} it ON it.id = inv.itemid
              LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
-                 WHERE inv.userid = :userid AND inv.source != 'revoked'";
+                 WHERE inv.userid = :userid
+                   AND it.blockinstanceid = :instanceid
+                   AND inv.source != 'revoked'";
 
-        $rawinventory = $DB->get_records_sql($sql, ['userid' => $this->player->userid]);
+        $rawinventory = $DB->get_records_sql($sql, [
+            'userid' => $this->player->userid,
+            'instanceid' => $this->instanceid,
+        ]);
 
         $inventorybyitem = [];
         if ($rawinventory) {

@@ -627,6 +627,7 @@ $string['story_end'] = 'End of chapter.';
 $string['story_error_chapter_empty'] = 'This chapter has no starting scene.';
 $string['story_error_class_required'] = 'You do not have the required character to choose this path.';
 $string['story_error_history_empty'] = 'No story history found for this chapter.';
+$string['story_error_invalid_choice'] = 'This choice is not available from your current position in the story.';
 $string['story_error_karma_required'] = 'You do not have the required reputation to choose this path.';
 $string['story_error_need_item'] = 'You need {$a} to choose this path.';
 $string['story_error_no_history'] = 'No completed progress found for this chapter.';

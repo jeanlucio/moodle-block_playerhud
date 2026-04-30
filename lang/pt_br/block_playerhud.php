@@ -627,6 +627,7 @@ $string['story_end'] = 'Fim do capítulo.';
 $string['story_error_chapter_empty'] = 'Este capítulo não possui cena inicial.';
 $string['story_error_class_required'] = 'Você não possui o personagem necessário para escolher este caminho.';
 $string['story_error_history_empty'] = 'Nenhum histórico de história encontrado para este capítulo.';
+$string['story_error_invalid_choice'] = 'Esta escolha não está disponível na sua posição atual na história.';
 $string['story_error_karma_required'] = 'Você não possui a reputação necessária para escolher este caminho.';
 $string['story_error_need_item'] = 'Você precisa de {$a} para escolher este caminho.';
 $string['story_error_no_history'] = 'Nenhum progresso concluído encontrado para este capítulo.';

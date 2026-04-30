@@ -325,8 +325,8 @@ class block_playerhud extends block_base {
             $this->page->requires->js_call_amd('block_playerhud/view', 'init', [$jsvars]);
 
             $this->content->text .= $OUTPUT->render_from_template('block_playerhud/modal_item', []);
-        } catch (\Exception $e) {
-            debugging($e->getMessage(), DEBUG_DEVELOPER);
+        } catch (\Throwable $e) {
+            debugging($e->getMessage(), DEBUG_NORMAL);
         }
 
         return $this->content;

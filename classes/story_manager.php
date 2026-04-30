@@ -214,6 +214,41 @@ class story_manager {
         $progress = self::get_or_create_progress($instanceid, $userid);
         $events = [];
 
+        // Verify that the choice's parent node is the player's current position for its chapter.
+        $choicenode = $DB->get_record(
+            'block_playerhud_story_nodes',
+            ['id' => $choice->nodeid],
+            '*',
+            MUST_EXIST
+        );
+        $chapterid = (int) $choicenode->chapterid;
+
+        // Reject choices from already-completed chapters to prevent reward re-farming.
+        $completedarr = json_decode($progress->completed_chapters, true) ?: [];
+        $completedarr = array_map('intval', $completedarr);
+        if (in_array($chapterid, $completedarr)) {
+            throw new \moodle_exception('story_error_invalid_choice', 'block_playerhud');
+        }
+
+        // Determine the node the player is currently at for this chapter.
+        $savednodesmap = json_decode($progress->current_nodes, true) ?: [];
+        $savedpath = isset($savednodesmap[$chapterid]) ? (array) $savednodesmap[$chapterid] : [];
+        if ($savedpath) {
+            $expectednodeid = (int) end($savedpath);
+        } else {
+            $startnode = $DB->get_record(
+                'block_playerhud_story_nodes',
+                ['chapterid' => $chapterid, 'is_start' => 1],
+                'id',
+                IGNORE_MISSING
+            );
+            $expectednodeid = $startnode ? (int) $startnode->id : 0;
+        }
+
+        if ((int) $choice->nodeid !== $expectednodeid) {
+            throw new \moodle_exception('story_error_invalid_choice', 'block_playerhud');
+        }
+
         // Server-side requirement validation (mirrors prepare_node_data).
         if ((int) $choice->req_class_id > 0 && (int) $choice->req_class_id !== (int) $progress->classid) {
             throw new \moodle_exception('story_error_class_required', 'block_playerhud');
@@ -277,19 +312,10 @@ class story_manager {
             ];
         }
 
-        $currentnode = $DB->get_record(
-            'block_playerhud_story_nodes',
-            ['id' => $choice->nodeid],
-            '*',
-            MUST_EXIST
-        );
-        $chapterid = (int) $currentnode->chapterid;
-
         $result = ['events' => $events];
 
         if ((int) $choice->next_nodeid > 0) {
-            $savednodesmap = json_decode($progress->current_nodes, true) ?: [];
-            $path = isset($savednodesmap[$chapterid]) ? (array) $savednodesmap[$chapterid] : [];
+            $path = $savedpath;
             $path[] = (int) $choice->next_nodeid;
             $savednodesmap[$chapterid] = $path;
 
