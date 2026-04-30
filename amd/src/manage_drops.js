@@ -61,8 +61,13 @@ define(['jquery', 'core/notification', 'core/str'], function($, Notification, St
 
                     code = '[PLAYERHUD_DROP ' + param + ' mode=text text="' + linkTxt + '"]';
 
-                    // eslint-disable-next-line max-len
-                    previewHtml = `<a href="#" onclick="return false;" class="text-primary fw-bold text-decoration-underline">${linkTxt}</a>`;
+                    // Use DOM construction so user-typed linkTxt is never treated as markup.
+                    const $link = $('<a>', {
+                        href: '#',
+                        class: 'text-primary fw-bold text-decoration-underline',
+                        click: function() { return false; }
+                    }).text(linkTxt);
+                    $previewBox.empty().append($link);
 
                 } else if (mode === 'image') {
                     $groupTextLink.hide();
@@ -70,11 +75,13 @@ define(['jquery', 'core/notification', 'core/str'], function($, Notification, St
 
                     code = '[PLAYERHUD_DROP ' + param + ' mode=image]';
 
+                    // currentItem.url and currentItem.content come from server-side PHP (sanitised).
                     const imgContent = currentItem.isImage ?
                         `<img src="${currentItem.url}" class="ph-gen-img-lg" alt="">` :
                         `<span class="ph-gen-emoji-lg" aria-hidden="true">${currentItem.content}</span>`;
 
                     previewHtml = `<div class="ph-gen-preview-wrapper-img">${imgContent}</div>`;
+                    $previewBox.html(previewHtml);
 
                 } else {
                     // Card Mode.
@@ -96,28 +103,32 @@ define(['jquery', 'core/notification', 'core/str'], function($, Notification, St
 
                     code = '[PLAYERHUD_DROP ' + param + extraAttrs + ']';
 
+                    // Build card preview with jQuery DOM methods so user-typed text and
+                    // server item data are never interpreted as HTML markup.
                     const iconHtml = currentItem.isImage ?
                         `<img src="${currentItem.url}" class="ph-icon-contain" alt="">` :
                         `<div class="fs-1 lh-1">${currentItem.content}</div>`;
 
-                    let btnContent = previewTxt;
-                    if (previewEmo) {
-                        btnContent = `<span aria-hidden="true" class="me-1">${previewEmo}</span> ${previewTxt}`;
-                    }
+                    const $card = $('<div>', {class: 'ph-gen-preview-real-card card p-2 border shadow-sm position-relative'});
+                    $('<span>', {class: 'badge bg-info text-dark rounded-pill ph-badge-preview-corner'})
+                        .text(langStrings.yours).appendTo($card);
+                    $('<div>', {class: 'mb-2 d-flex align-items-center justify-content-center ph-h-60'})
+                        .html(iconHtml).appendTo($card);
+                    $('<strong>', {class: 'd-block mb-2 text-truncate ph-fs-09'})
+                        .text(currentItem.name).appendTo($card);
 
-                    previewHtml = `
-                        <div class="ph-gen-preview-real-card card p-2 border shadow-sm position-relative">
-                            <span class="badge bg-info text-dark rounded-pill ph-badge-preview-corner">${langStrings.yours}</span>
-                            <div class="mb-2 d-flex align-items-center justify-content-center ph-h-60">
-                                ${iconHtml}
-                            </div>
-                            <strong class="d-block mb-2 text-truncate ph-fs-09">${currentItem.name}</strong>
-                            <button class="btn btn-primary btn-sm w-100 shadow-sm">${btnContent}</button>
-                        </div>`;
+                    const $btn = $('<button>', {class: 'btn btn-primary btn-sm w-100 shadow-sm', type: 'button'});
+                    if (previewEmo) {
+                        $('<span>', {'aria-hidden': 'true', class: 'me-1'}).text(previewEmo).appendTo($btn);
+                        $btn.append(document.createTextNode(' ' + previewTxt));
+                    } else {
+                        $btn.text(previewTxt);
+                    }
+                    $btn.appendTo($card);
+                    $previewBox.empty().append($card);
                 }
 
                 $inputCode.val(code);
-                $previewBox.html(previewHtml);
             };
 
             /**

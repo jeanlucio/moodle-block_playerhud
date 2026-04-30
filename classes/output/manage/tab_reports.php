@@ -62,7 +62,7 @@ class tab_reports implements renderable, templatable {
         $this->courseid = $courseid;
         $this->selecteduserid = optional_param('r_userid', 0, PARAM_INT);
         $this->sort = empty($sort) ? 'xp' : $sort;
-        $this->dir  = empty($dir) ? 'DESC' : $dir;
+        $this->dir  = strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC';
     }
 
     /**

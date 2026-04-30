@@ -356,6 +356,12 @@ class external extends external_api {
         $coursecontext = \context_course::instance($params['courseid']);
         require_capability('moodle/course:manageactivities', $coursecontext);
 
+        // Verify the block instance actually belongs to the supplied course.
+        $blockcoursectx = $context->get_course_context(false);
+        if (!$blockcoursectx || (int) $blockcoursectx->instanceid !== (int) $params['courseid']) {
+            throw new \moodle_exception('accessdenied', 'admin');
+        }
+
         // Validate position.
         if (!in_array($params['position'], ['top', 'bottom'])) {
             $params['position'] = 'top';
@@ -482,6 +488,12 @@ class external extends external_api {
 
         $coursecontext = \context_course::instance($params['courseid']);
         require_capability('moodle/course:manageactivities', $coursecontext);
+
+        // Verify the block instance actually belongs to the supplied course.
+        $blockcoursectx = $context->get_course_context(false);
+        if (!$blockcoursectx || (int) $blockcoursectx->instanceid !== (int) $params['courseid']) {
+            throw new \moodle_exception('accessdenied', 'admin');
+        }
 
         // Validate field name.
         if (!in_array($params['field'], ['intro', 'content'])) {

@@ -86,6 +86,11 @@ class generator {
             $openaimodel = get_config('block_playerhud', 'openai_model');
         }
 
+        // Reject URLs pointing to private/loopback addresses (SSRF prevention).
+        if (!empty($openaiurl) && !$this->is_safe_url($openaiurl)) {
+            $openaiurl = '';
+        }
+
         if (empty($geminikey) && empty($groqkey) && empty($openaikey)) {
             // Error: correct language file key used.
             throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
@@ -451,7 +456,48 @@ class generator {
             $openaimodel = get_config('block_playerhud', 'openai_model');
         }
 
+        // Reject URLs that could be used to probe internal network addresses (SSRF).
+        if (!empty($openaiurl) && !$this->is_safe_url($openaiurl)) {
+            $openaiurl = '';
+        }
+
         return [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel];
+    }
+
+    /**
+     * Returns true only if the URL is safe to use as an external AI endpoint.
+     *
+     * Enforces HTTPS and blocks loopback, link-local, and RFC-1918 private addresses
+     * to prevent Server-Side Request Forgery (SSRF) via teacher-configured endpoints.
+     *
+     * @param string $url The URL to validate.
+     * @return bool True if safe; false otherwise.
+     */
+    private function is_safe_url(string $url): bool {
+        $parsed = parse_url($url);
+        if (!$parsed || ($parsed['scheme'] ?? '') !== 'https') {
+            return false;
+        }
+        $host = $parsed['host'] ?? '';
+        if (empty($host)) {
+            return false;
+        }
+        if (in_array(strtolower($host), ['localhost', '127.0.0.1', '::1'], true)) {
+            return false;
+        }
+        $ip = filter_var($host, FILTER_VALIDATE_IP);
+        if ($ip !== false) {
+            // Block private and reserved IP ranges (RFC-1918, loopback, link-local, etc.).
+            $ispublic = filter_var(
+                $ip,
+                FILTER_VALIDATE_IP,
+                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+            );
+            if ($ispublic === false) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

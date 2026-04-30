@@ -407,6 +407,13 @@ class drops {
             $record->id              = $existing->id;
             $DB->update_record('block_playerhud_drops', $record);
         } else {
+            // Verify the item belongs to this block instance before creating the drop.
+            $DB->get_record(
+                'block_playerhud_items',
+                ['id' => $record->itemid, 'blockinstanceid' => $record->blockinstanceid],
+                'id',
+                MUST_EXIST
+            );
             $record->timecreated = time();
             $record->code = \block_playerhud\utils::generate_drop_code($data->instanceid);
             $DB->insert_record('block_playerhud_drops', $record);
