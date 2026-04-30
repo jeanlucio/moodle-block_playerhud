@@ -64,8 +64,10 @@ define(['jquery', 'core/notification', 'core/str'], function($, Notification, St
                     // Use DOM construction so user-typed linkTxt is never treated as markup.
                     const $link = $('<a>', {
                         href: '#',
-                        class: 'text-primary fw-bold text-decoration-underline',
-                        click: function() { return false; }
+                        'class': 'text-primary fw-bold text-decoration-underline',
+                        click: function() {
+                            return false;
+                        }
                     }).text(linkTxt);
                     $previewBox.empty().append($link);
 
@@ -75,7 +77,7 @@ define(['jquery', 'core/notification', 'core/str'], function($, Notification, St
 
                     code = '[PLAYERHUD_DROP ' + param + ' mode=image]';
 
-                    // currentItem.url and currentItem.content come from server-side PHP (sanitised).
+                    // Server-sourced values: url and content are sanitised by PHP before reaching JS.
                     const imgContent = currentItem.isImage ?
                         `<img src="${currentItem.url}" class="ph-gen-img-lg" alt="">` :
                         `<span class="ph-gen-emoji-lg" aria-hidden="true">${currentItem.content}</span>`;
@@ -109,17 +111,17 @@ define(['jquery', 'core/notification', 'core/str'], function($, Notification, St
                         `<img src="${currentItem.url}" class="ph-icon-contain" alt="">` :
                         `<div class="fs-1 lh-1">${currentItem.content}</div>`;
 
-                    const $card = $('<div>', {class: 'ph-gen-preview-real-card card p-2 border shadow-sm position-relative'});
-                    $('<span>', {class: 'badge bg-info text-dark rounded-pill ph-badge-preview-corner'})
+                    const $card = $('<div>', {'class': 'ph-gen-preview-real-card card p-2 border shadow-sm position-relative'});
+                    $('<span>', {'class': 'badge bg-info text-dark rounded-pill ph-badge-preview-corner'})
                         .text(langStrings.yours).appendTo($card);
-                    $('<div>', {class: 'mb-2 d-flex align-items-center justify-content-center ph-h-60'})
+                    $('<div>', {'class': 'mb-2 d-flex align-items-center justify-content-center ph-h-60'})
                         .html(iconHtml).appendTo($card);
-                    $('<strong>', {class: 'd-block mb-2 text-truncate ph-fs-09'})
+                    $('<strong>', {'class': 'd-block mb-2 text-truncate ph-fs-09'})
                         .text(currentItem.name).appendTo($card);
 
-                    const $btn = $('<button>', {class: 'btn btn-primary btn-sm w-100 shadow-sm', type: 'button'});
+                    const $btn = $('<button>', {'class': 'btn btn-primary btn-sm w-100 shadow-sm', type: 'button'});
                     if (previewEmo) {
-                        $('<span>', {'aria-hidden': 'true', class: 'me-1'}).text(previewEmo).appendTo($btn);
+                        $('<span>', {'aria-hidden': 'true', 'class': 'me-1'}).text(previewEmo).appendTo($btn);
                         $btn.append(document.createTextNode(' ' + previewTxt));
                     } else {
                         $btn.text(previewTxt);

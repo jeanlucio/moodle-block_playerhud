@@ -5,40 +5,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [v1.3.5] — 2026-04-30
-
-### Security
-- **Medium:** OpenAI-compatible provider URL (teacher user preference and admin config) is
-  now validated by a new `generator::is_safe_url()` method before any HTTP request is made.
-  The check enforces `https://` scheme and blocks loopback addresses (`localhost`,
-  `127.0.0.1`, `::1`) and RFC-1918 / link-local / reserved IP ranges, preventing a
-  teacher-configured endpoint from being used to probe the Moodle server's internal
-  network (SSRF). URLs that fail validation are silently ignored, causing the OpenAI
-  provider to be skipped and the fallback chain to continue normally.
-- **Medium:** `controller/drops.php` `save_drop()` INSERT path now verifies that the
-  supplied `itemid` belongs to the current block instance before creating the drop
-  record, matching the existing validation on the UPDATE path. This closes a
-  cross-instance confusion window where a teacher could forge the hidden `itemid` form
-  field to create a drop pointing to an item from a different instance.
-- **Medium:** `external::insert_drop_shortcode` and `external::remove_drop_shortcode`
-  now verify that the block instance (`instanceid`) belongs to the course (`courseid`)
-  passed in the same call, by comparing `context_block::get_course_context()->instanceid`
-  against the supplied `courseid`. Previously a teacher with `manage` on Block A and
-  `manageactivities` on Course B could combine both to write or remove shortcodes in
-  Course B's activities using drops from Block A.
-
-### Changed
-- `tab_reports.php` constructor normalises `$dir` to `ASC` or `DESC` (defaulting to
-  `DESC`) instead of accepting any alphabetic string. Aligns with the pattern already
-  used by the audit-log query inside the same class and by other management tabs.
-- `manage_drops.js` drop preview now uses jQuery DOM methods (`.text()`, `.appendTo()`,
-  `document.createTextNode()`) for all user-typed values (`linkTxt`, `previewTxt`,
-  `previewEmo`, `currentItem.name`) instead of template-literal HTML concatenation.
-  Server-sourced image URLs and emoji content (sanitised server-side) retain their
-  existing `innerHTML`/template-literal form.
-
----
-
 ## [v1.3.4] — 2026-04-30
 
 ### Security
@@ -59,11 +25,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   injection path that allowed a teacher to plant JavaScript event handlers (e.g.
   `onfocus`, `autofocus`) visible to any other teacher or admin who opened the items
   management tab.
+- **Medium:** OpenAI-compatible provider URL (teacher user preference and admin config)
+  is now validated by `generator::is_safe_url()` before any HTTP request is made.
+  The check enforces `https://` scheme and blocks loopback addresses (`localhost`,
+  `127.0.0.1`, `::1`) and RFC-1918 / link-local / reserved IP ranges, preventing a
+  teacher-configured endpoint from being used to probe the Moodle server's internal
+  network (SSRF). Invalid URLs are silently skipped, falling through to the next
+  configured provider.
+- **Medium:** `controller/drops.php` `save_drop()` INSERT path now verifies that the
+  supplied `itemid` belongs to the current block instance before creating the drop
+  record, matching the existing validation on the UPDATE path. This closes a
+  cross-instance confusion window where a teacher could forge the hidden `itemid` form
+  field to create a drop pointing to an item from a different instance.
+- **Medium:** `external::insert_drop_shortcode` and `external::remove_drop_shortcode`
+  now verify that the block instance (`instanceid`) belongs to the course (`courseid`)
+  passed in the same call, by comparing `context_block::get_course_context()->instanceid`
+  against the supplied `courseid`. Previously a teacher with `manage` on Block A and
+  `manageactivities` on Course B could combine both to write or remove shortcodes in
+  Course B's activities using drops from Block A.
 - **Low:** AI-generated item and class names are no longer concatenated directly into
   HTML strings in `manage_items.js` and `ai_oracle.js`. The success modals now use
-  jQuery's `.text()` and `.appendTo()` DOM methods for AI-sourced values, and
-  `.val()` for the shortcode input, eliminating the self-XSS vector in teacher-only
-  modals and hardening the pattern against future callers.
+  jQuery's `.text()` and `.appendTo()` DOM methods for AI-sourced values, and `.val()`
+  for the shortcode input, eliminating the self-XSS vector in teacher-only modals.
 
 ### Changed
 - `block_playerhud_inventory` query in `tab_collection` now joins `block_playerhud_items`
@@ -74,6 +57,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   allow-list pattern used by the other management tabs (`tab_items`, `tab_quests`,
   `tab_reports`): `$sort` is validated against `['id', 'mapcode', 'maxusage',
   'respawntime', 'timecreated']` and `$dir` is normalised to `ASC`/`DESC`.
+- `tab_reports.php` constructor normalises `$dir` to `ASC` or `DESC` (defaulting to
+  `DESC`) instead of accepting any alphabetic string, aligning with the pattern used
+  by the audit-log query inside the same class and by other management tabs.
+- `manage_drops.js` drop preview now uses jQuery DOM methods (`.text()`, `.appendTo()`,
+  `document.createTextNode()`) for all user-typed values (`linkTxt`, `previewTxt`,
+  `previewEmo`, `currentItem.name`) instead of template-literal HTML concatenation.
+  Server-sourced image URLs and emoji content (sanitised server-side) retain their
+  existing `innerHTML`/template-literal form.
 - Exception handler in `block_playerhud::get_content()` broadened from `\Exception`
   to `\Throwable` and log level raised from `DEBUG_DEVELOPER` to `DEBUG_NORMAL`,
   so render errors are visible in production logs instead of disappearing silently.
