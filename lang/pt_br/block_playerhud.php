@@ -604,6 +604,7 @@ $string['shop_empty'] = 'Nenhuma troca disponível no momento.';
 $string['shop_pay'] = 'Você paga';
 $string['shop_receive'] = 'Você recebe';
 $string['shop_xp_warning'] = '<strong>Equilíbrio do jogo:</strong> Itens adquiridos na loja não concedem XP. Eles são usados para criação, missões ou coleções.';
+$string['show_hide_key'] = 'Mostrar ou ocultar chave';
 $string['show_in_shop'] = 'Exibir na loja centralizada?';
 $string['single_collection'] = 'Coleta única';
 $string['sort'] = 'Ordenar coluna';

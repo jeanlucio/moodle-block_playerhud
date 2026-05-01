@@ -123,7 +123,14 @@
                         <div class="input-group">
                             <span class="input-group-text"><i class="fa fa-google" aria-hidden="true"></i></span>
                             <input type="password" class="form-control" name="gemini_key" id="gemini_key"
-                                   value="{{val_gemini}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}">
+                                   value="{{val_gemini}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}"
+                                   autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary ph-toggle-key"
+                                    data-target="gemini_key"
+                                    aria-label="{{#str}} show_hide_key, block_playerhud {{/str}}"
+                                    aria-pressed="false">
+                                <span aria-hidden="true">&#128065;</span>
+                            </button>
                         </div>
                     </div>
 
@@ -135,7 +142,14 @@
                         <div class="input-group">
                             <span class="input-group-text"><i class="fa fa-bolt" aria-hidden="true"></i></span>
                             <input type="password" class="form-control" name="groq_key" id="groq_key"
-                                   value="{{val_groq}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}">
+                                   value="{{val_groq}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}"
+                                   autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary ph-toggle-key"
+                                    data-target="groq_key"
+                                    aria-label="{{#str}} show_hide_key, block_playerhud {{/str}}"
+                                    aria-pressed="false">
+                                <span aria-hidden="true">&#128065;</span>
+                            </button>
                         </div>
                     </div>
 
@@ -147,7 +161,14 @@
                         <div class="input-group">
                             <span class="input-group-text"><i class="fa fa-plug" aria-hidden="true"></i></span>
                             <input type="password" class="form-control" name="openai_key" id="openai_key"
-                                   value="{{val_openai}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}">
+                                   value="{{val_openai}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}"
+                                   autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary ph-toggle-key"
+                                    data-target="openai_key"
+                                    aria-label="{{#str}} show_hide_key, block_playerhud {{/str}}"
+                                    aria-pressed="false">
+                                <span aria-hidden="true">&#128065;</span>
+                            </button>
                         </div>
                     </div>
 
@@ -187,5 +208,7 @@
     </div>
 </div>
 {{#js}}
-require(['core/copy_to_clipboard']);
+require(['core/copy_to_clipboard', 'block_playerhud/tab_config'], function(Clipboard, TabConfig) {
+    TabConfig.init();
+});
 {{/js}}

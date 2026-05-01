@@ -604,6 +604,7 @@ $string['shop_empty'] = 'No trades available at the moment.';
 $string['shop_pay'] = 'You pay';
 $string['shop_receive'] = 'You receive';
 $string['shop_xp_warning'] = '<strong>Game Balance:</strong> Items acquired in the shop do not grant XP. They are used for crafting, quests, or collections.';
+$string['show_hide_key'] = 'Show or hide key';
 $string['show_in_shop'] = 'Show in centralized Shop?';
 $string['single_collection'] = 'Single collection';
 $string['sort'] = 'Sort column';
