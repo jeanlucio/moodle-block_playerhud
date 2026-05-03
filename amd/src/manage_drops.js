@@ -1,4 +1,3 @@
-/* global bootstrap */
 // This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -220,11 +219,10 @@ define(['jquery', 'core/notification', 'core/str'], function($, Notification, St
 
                     const modalEl = document.getElementById('ph-codegen-modal');
                     if (modalEl) {
-                        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                            bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                        } else {
-                            $(modalEl).modal('show');
-                        }
+                        document.body.appendChild(modalEl);
+                        require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+                            new BootstrapModal(modalEl).show();
+                        });
                     }
                 }
             });

@@ -1,4 +1,3 @@
-/* global bootstrap */
 // This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -562,11 +561,10 @@ export const init = (config) => {
         }
 
         const modalEl = modalEls.root[0];
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            bootstrap.Modal.getOrCreateInstance(modalEl).show();
-        } else {
-            modalEls.root.modal('show');
-        }
+        document.body.appendChild(modalEl);
+        require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+            new BootstrapModal(modalEl).show();
+        });
     });
 
     // ACTION: COLLECT ITEM.

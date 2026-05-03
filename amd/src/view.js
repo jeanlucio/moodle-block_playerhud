@@ -42,11 +42,10 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 if (!el) {
                     return;
                 }
-                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    bootstrap.Modal.getOrCreateInstance(el).show();
-                } else {
-                    $(el).modal('show');
-                }
+                document.body.appendChild(el);
+                require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+                    new BootstrapModal(el).show();
+                });
             });
 
             // Hoist the history/help shortcut buttons into the block's title row
@@ -117,19 +116,10 @@ define(['jquery', 'core/notification'], function($, Notification) {
              */
             const openItemModal = () => {
                 const el = document.getElementById('ph-item-modal-view');
-                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    // Bootstrap 5 (Moodle 4.x Default).
-                    try {
-                        const m = bootstrap.Modal.getOrCreateInstance(el);
-                        m.show();
-                    } catch (e) {
-                        // eslint-disable-next-line no-console
-                        console.error(e);
-                    }
-                } else {
-                    // Fallback for older themes.
-                    $(el).modal('show');
-                }
+                document.body.appendChild(el);
+                require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+                    new BootstrapModal(el).show();
+                });
             };
 
             // Live Search for History.

@@ -1,4 +1,3 @@
-/* global bootstrap */
 // This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -41,12 +40,10 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                 e.preventDefault();
                 const modalEl = document.getElementById('ph-ai-modal');
                 if (modalEl) {
-                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-                        modal.show();
-                    } else if ($(modalEl).modal) {
-                        $(modalEl).modal('show');
-                    }
+                    document.body.appendChild(modalEl);
+                    require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+                        new BootstrapModal(modalEl).show();
+                    });
                 }
             });
 
@@ -145,12 +142,10 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                 // Open Modal (Bootstrap 5 compatible).
                 const modalEl = document.getElementById('ph-item-modal-view');
 
-                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                } else {
-                    // Fallback for older themes.
-                    $(modalEl).modal('show');
-                }
+                document.body.appendChild(modalEl);
+                require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+                    new BootstrapModal(modalEl).show();
+                });
             });
 
             // --- 3. AI GENERATION (EXTERNAL API) ---
