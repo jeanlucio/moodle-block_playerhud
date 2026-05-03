@@ -5,6 +5,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.5] — 2026-05-03
+
+### Fixed
+- Bootstrap modal opening in `view.js`, `manage_items.js`, `manage_drops.js`, and
+  `filter_collect.js` now uses `document.body.appendChild()` +
+  `require(['theme_boost/bootstrap/modal'])` instead of the unreliable `bootstrap`
+  global and `jQuery.fn.modal()` patterns, ensuring modals open correctly on both
+  Bootstrap 4 (Moodle 4.5) and Bootstrap 5 (Moodle 5.x). Obsolete
+  `/* global bootstrap */` declarations removed from affected modules.
+
+### Added
+- Show/hide toggle buttons on all three API key fields (`apikey_gemini`, `apikey_groq`,
+  `apikey_openai`) in the plugin configuration tab (`tab_config`). Pressing the button
+  switches the input between `type="password"` and `type="text"`, making it easier for
+  teachers to verify keys without leaving the page. The toggle label is localised
+  (`toggle_visibility` string, EN / PT-BR).
+
+### Strings added
+- `toggle_visibility` (en / pt_br): accessible label for the show/hide API key button.
+
+---
+
 ## [v1.3.4] — 2026-04-30
 
 ### Security
