@@ -110,7 +110,7 @@
                 <i class="fa fa-key me-2" aria-hidden="true"></i> {{#str}} api_settings_title, block_playerhud {{/str}}
             </div>
             <div class="card-body">
-                <p class="text-muted small">{{#str}} api_settings_desc, block_playerhud {{/str}}</p>
+                <p class="card-text small">{{#str}} api_settings_desc, block_playerhud {{/str}}</p>
 
                 <form action="{{action_url}}" method="post">
                     <input type="hidden" name="sesskey" value="{{sesskey}}">
@@ -120,7 +120,7 @@
                             <span class="badge bg-dark me-1" aria-hidden="true">1°</span>
                             {{#str}} gemini_apikey, block_playerhud {{/str}}
                         </label>
-                        <div class="input-group">
+                        <div class="input-group ph-key-input-group">
                             <span class="input-group-text"><i class="fa fa-google" aria-hidden="true"></i></span>
                             <input type="password" class="form-control" name="gemini_key" id="gemini_key"
                                    value="{{val_gemini}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}"
@@ -139,7 +139,7 @@
                             <span class="badge bg-dark me-1" aria-hidden="true">2°</span>
                             {{#str}} groq_apikey, block_playerhud {{/str}}
                         </label>
-                        <div class="input-group">
+                        <div class="input-group ph-key-input-group">
                             <span class="input-group-text"><i class="fa fa-bolt" aria-hidden="true"></i></span>
                             <input type="password" class="form-control" name="groq_key" id="groq_key"
                                    value="{{val_groq}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}"
@@ -158,7 +158,7 @@
                             <span class="badge bg-dark me-1" aria-hidden="true">3°</span>
                             {{#str}} custom_ai_apikey, block_playerhud {{/str}}
                         </label>
-                        <div class="input-group">
+                        <div class="input-group ph-key-input-group">
                             <span class="input-group-text"><i class="fa fa-plug" aria-hidden="true"></i></span>
                             <input type="password" class="form-control" name="openai_key" id="openai_key"
                                    value="{{val_openai}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}"
@@ -173,14 +173,14 @@
                     </div>
 
                     <div class="mb-3">
-                        <a class="text-muted small text-decoration-none d-block mb-2"
+                        <a class="small text-decoration-none d-block mb-2"
                            data-bs-toggle="collapse" data-toggle="collapse"
                            href="#customai-advanced" role="button" aria-expanded="false" aria-controls="customai-advanced">
                             <i class="fa fa-caret-right me-1" aria-hidden="true"></i>
                             {{#str}} custom_ai_advanced, block_playerhud {{/str}}
                         </a>
                         <div class="collapse" id="customai-advanced">
-                            <p class="text-muted small mb-2">{{#str}} custom_ai_advanced_hint, block_playerhud {{/str}}</p>
+                            <p class="small mb-2">{{#str}} custom_ai_advanced_hint, block_playerhud {{/str}}</p>
                             <div class="mb-2">
                                 <label class="form-label small fw-semibold" for="openai_url">
                                     {{#str}} custom_ai_baseurl, block_playerhud {{/str}}
