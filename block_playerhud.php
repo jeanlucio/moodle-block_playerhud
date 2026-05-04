@@ -52,6 +52,10 @@ class block_playerhud extends block_base {
         try {
             $context = \context_block::instance($this->instance->id);
 
+            if (!has_capability('block/playerhud:view', $context)) {
+                return $this->content;
+            }
+
             // 1. Load Player.
             $player = \block_playerhud\game::get_player($this->instance->id, $USER->id);
             $isteacher = has_capability('block/playerhud:manage', $context);
