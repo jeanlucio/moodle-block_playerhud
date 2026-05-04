@@ -5,6 +5,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.6] — 2026-05-04
+
+### Fixed
+- **Quests tab:** `get_records_select` on `block_playerhud_quest_log` was keyed by
+  `questid`, triggering Moodle's *"Duplicate value found in column"* debugging notice
+  when a user had more than one log entry for the same quest. The query now selects `id`
+  (PK) as the first column; a PHP loop builds the `$claimedrows` lookup keyed by
+  `questid`, keeping the earliest claim per quest.
+- **Config tab / Moove theme:** corrected visual regressions on Moodle 4.5 with the
+  Moove theme (Bootstrap 4 environment):
+  - Numbered rank badges (`1°/2°/3°`) now render with white text (`color: #fff` on
+    `badge.bg-dark`).
+  - API key input groups restore correct border-radius via new `ph-key-input-group`
+    CSS class, replacing the broken BS4 `input-group-prepend/append` wrappers.
+  - Description text in the API settings card uses `card-text` instead of
+    `text-muted` to maintain proper contrast.
+  - Advanced-config toggle anchor and hint paragraph no longer inherit `text-muted`
+    colour, restoring legibility.
+  - Tab anchor underlines forced by Moove's high-specificity rule
+    `body.pagelayout-incourse #region-main a:not(.btn)` are now suppressed via an
+    elevated selector (`0,1,3,1`) scoped to `#ph-*-tabs .nav-item a.nav-link`.
+
+---
+
 ## [v1.3.5] — 2026-05-03
 
 ### Fixed
