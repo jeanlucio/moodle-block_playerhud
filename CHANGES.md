@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.4.0] — 2026-05-04
+
+### Fixed
+- **Permissions:** `block/playerhud:view` capability is now enforced in `get_content()`,
+  making the Permissions UI effective. Previously, restricting the capability via the
+  block's Permissions screen had no effect because `get_content()` never checked it.
+- **Access defaults:** removed `guest` from `block/playerhud:view` archetypes — guests
+  are already blocked by `isguestuser()` checks and `require_login()`, but the archetype
+  declaration was semantically incorrect and confusing in the Permissions UI.
+- **Access defaults:** restricted `myaddinstance` to `editingteacher` and `manager`;
+  students can no longer add the PlayerHUD block to their personal Dashboard.
+- **Upgrade:** existing installations have the guest permission removed automatically
+  from `block/playerhud:view` via an upgrade step.
+
+---
+
 ## [v1.3.6] — 2026-05-04
 
 ### Fixed

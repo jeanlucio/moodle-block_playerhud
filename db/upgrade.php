@@ -35,5 +35,18 @@ function xmldb_block_playerhud_upgrade($oldversion) {
 
     // Past upgrade steps were merged into install.xml for the current baseline version.
 
+    if ($oldversion < 2026050402) {
+        // Remove guest default permission from block/playerhud:view.
+        // The capability was never effective (guests are blocked earlier in get_content
+        // and require_login), but the archetype declaration was misleading and prevented
+        // the Permissions UI from working as expected when an admin restricted the role.
+        $guestrole = $DB->get_record('role', ['shortname' => 'guest']);
+        if ($guestrole) {
+            unassign_capability('block/playerhud:view', $guestrole->id);
+        }
+
+        upgrade_block_savepoint(true, 2026050402, 'playerhud');
+    }
+
     return true;
 }
