@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.7] — 2026-05-04
+
+### Security
+- **Capability enforcement in `get_content()`:** the block now checks
+  `block/playerhud:view` before rendering any content, making the capability
+  effective when restricted via the Permissions UI (previously the block rendered
+  regardless of the capability setting).
+- **`db/access.php` clean-up:** removed `guest` from `block/playerhud:view`
+  archetypes (guests are already blocked by `isguestuser()` checks; the
+  declaration was misleading). Restricted `myaddinstance` to `editingteacher` and
+  `manager` — students should not be able to add the block to their personal
+  Dashboard.
+
+---
+
 ## [v1.3.6] — 2026-05-04
 
 ### Fixed
