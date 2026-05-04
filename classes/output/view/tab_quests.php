@@ -91,13 +91,21 @@ class tab_quests implements renderable {
         // Preload claimed quests for the current user (avoid N+1).
         $questids = array_keys($quests);
         [$qinsql, $qinparams] = $DB->get_in_or_equal($questids);
-        $claimedrows = $DB->get_records_select(
+        $logrows = $DB->get_records_select(
             'block_playerhud_quest_log',
             "userid = ? AND questid $qinsql",
             array_merge([$USER->id], $qinparams),
-            '',
-            'questid, timecreated'
+            'timecreated ASC',
+            'id, questid, timecreated'
         );
+
+        // Build a lookup keyed by questid (one entry per quest; keeps the earliest claim).
+        $claimedrows = [];
+        foreach ($logrows as $row) {
+            if (!isset($claimedrows[$row->questid])) {
+                $claimedrows[$row->questid] = $row;
+            }
+        }
 
         // Preload reward item names (avoid N+1).
         $rewarditemids = [];
