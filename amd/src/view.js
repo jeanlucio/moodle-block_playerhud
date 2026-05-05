@@ -44,7 +44,10 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
                 document.body.appendChild(el);
                 require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
-                    new BootstrapModal(el).show();
+                    var inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(el))
+                        || $(el).data('bs.modal')
+                        || new BootstrapModal(el);
+                    inst.show();
                 });
             });
 
@@ -116,9 +119,15 @@ define(['jquery', 'core/notification'], function($, Notification) {
              */
             const openItemModal = () => {
                 const el = document.getElementById('ph-item-modal-view');
+                if (!el) {
+                    return;
+                }
                 document.body.appendChild(el);
                 require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
-                    new BootstrapModal(el).show();
+                    var inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(el))
+                        || $(el).data('bs.modal')
+                        || new BootstrapModal(el);
+                    inst.show();
                 });
             };
 
