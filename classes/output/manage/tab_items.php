@@ -143,7 +143,7 @@ class tab_items implements renderable {
                     if (!empty($item->required_class_id) && $item->required_class_id !== '0') {
                         $data['required_class_id'] = array_map('intval', explode(',', $item->required_class_id));
                     } else {
-                        $data['required_class_id'] = [];
+                        $data['required_class_id'] = 0;
                     }
                     $data['description'] = ['text' => $item->description, 'format' => FORMAT_HTML];
 
