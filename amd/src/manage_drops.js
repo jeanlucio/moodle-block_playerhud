@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/notification', 'core/str'], function($, Notification, Str) {
+define(['jquery', 'core/notification', 'core/str', 'core/copy_to_clipboard'], function($, Notification, Str, CopyToClipboard) {
 
     /**
      * Manage Drops module.
@@ -235,37 +235,35 @@ define(['jquery', 'core/notification', 'core/str'], function($, Notification, St
                 const $btn = $(this);
                 const text = $btn.attr('data-clipboard-text');
 
-                if (text && navigator.clipboard) {
-                    // eslint-disable-next-line promise/always-return
-                    navigator.clipboard.writeText(text).then(function() {
-                        const originalHtml = $btn.html();
-                        const originalWidth = $btn.outerWidth();
-
-                        $btn.css('width', (originalWidth + 25) + 'px');
-                        $btn.removeClass('btn-outline-secondary').addClass('btn-success');
-                        $btn.html('<i class="fa fa-check"></i> ' + langStrings.gen_copied);
-
-                        setTimeout(function() {
-                            $btn.html(originalHtml);
-                            $btn.removeClass('btn-success').addClass('btn-outline-secondary');
-                            $btn.css('width', '');
-                        }, 2000);
-
-                    }).catch(function(err) {
-                        // eslint-disable-next-line no-console
-                        console.error('Clipboard error:', err);
-
-                        // eslint-disable-next-line promise/no-nesting
-                        return Str.get_strings([
-                            {key: 'error', component: 'core'},
-                            {key: 'err_clipboard', component: 'block_playerhud'},
-                            {key: 'ok', component: 'core'}
-                        ]).then(function(strs) {
-                            Notification.alert(strs[0], strs[1], strs[2]);
-                            return true;
-                        }).catch(Notification.exception);
-                    });
+                if (!text) {
+                    return;
                 }
+
+                CopyToClipboard.copyToClipboard(text).then(function() {
+                    const originalHtml = $btn.html();
+                    const originalWidth = $btn.outerWidth();
+
+                    $btn.css('width', (originalWidth + 25) + 'px');
+                    $btn.removeClass('btn-outline-secondary').addClass('btn-success');
+                    $btn.html('<i class="fa fa-check"></i> ' + langStrings.gen_copied);
+
+                    setTimeout(function() {
+                        $btn.html(originalHtml);
+                        $btn.removeClass('btn-success').addClass('btn-outline-secondary');
+                        $btn.css('width', '');
+                    }, 2000);
+
+                    return true;
+                }).catch(function() {
+                    return Str.get_strings([
+                        {key: 'error', component: 'core'},
+                        {key: 'err_clipboard', component: 'block_playerhud'},
+                        {key: 'ok', component: 'core'}
+                    ]).then(function(strs) {
+                        Notification.alert(strs[0], strs[1], strs[2]);
+                        return true;
+                    }).catch(Notification.exception);
+                });
             });
         }
     };
