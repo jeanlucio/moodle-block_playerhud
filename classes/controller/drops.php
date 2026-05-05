@@ -286,6 +286,9 @@ class drops {
                 'yes' => get_string('yes'),
                 'cancel' => get_string('cancel'),
                 'gen_copied' => get_string('gen_copied', 'block_playerhud'),
+                'error' => get_string('error'),
+                'err_clipboard' => get_string('err_clipboard', 'block_playerhud'),
+                'ok' => get_string('ok'),
             ],
         ];
         $PAGE->requires->js_call_amd('block_playerhud/manage_drops', 'init', [$jsconfig]);

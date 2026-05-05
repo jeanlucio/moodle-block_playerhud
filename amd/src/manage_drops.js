@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/notification', 'core/str', 'core/copy_to_clipboard'], function($, Notification, Str, CopyToClipboard) {
+define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, Notification, CopyToClipboard) {
 
     /**
      * Manage Drops module.
@@ -255,14 +255,7 @@ define(['jquery', 'core/notification', 'core/str', 'core/copy_to_clipboard'], fu
 
                     return true;
                 }).catch(function() {
-                    return Str.get_strings([
-                        {key: 'error', component: 'core'},
-                        {key: 'err_clipboard', component: 'block_playerhud'},
-                        {key: 'ok', component: 'core'}
-                    ]).then(function(strs) {
-                        Notification.alert(strs[0], strs[1], strs[2]);
-                        return true;
-                    }).catch(Notification.exception);
+                    Notification.alert(langStrings.error, langStrings.err_clipboard, langStrings.ok);
                 });
             });
         }
