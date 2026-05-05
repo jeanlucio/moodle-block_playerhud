@@ -37,7 +37,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
             // Char modal — explicit handler (cross-version safe: BS4 + BS5).
             // data-bs-toggle declarative may not fire in Moodle 4.5 if Bootstrap's
             // document-level listener hasn't been registered yet via AMD.
-            $(document).on('click', '[data-ph-modal="ph-char-modal"]', function() {
+            $(document).off('click.phcharmodal').on('click.phcharmodal', '[data-ph-modal="ph-char-modal"]', function() {
                 var el = document.getElementById('ph-char-modal');
                 if (!el) {
                     return;
@@ -152,7 +152,8 @@ define(['jquery', 'core/notification'], function($, Notification) {
             });
 
             // Event Delegation for clicking on items.
-            $(document).on('click', '.ph-item-trigger', function(e) {
+            // Use namespaced event to prevent duplicate handlers when init() is called more than once.
+            $(document).off('click.phitemview').on('click.phitemview', '.ph-item-trigger', function(e) {
                 e.preventDefault();
                 const trigger = $(this);
 
