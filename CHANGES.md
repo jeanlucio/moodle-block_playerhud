@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.8] — 2026-05-05
+
+### Added
+- **Balance breakdown accordion:** the Game Economy card on the Config tab now
+  includes a collapsible table listing every item and quest reward with their
+  individual XP contribution (XP each × max uses per drop). Makes it easy to
+  diagnose unexpected economy totals without database access.
+
+### Improved
+- **AI item generation — system-level rules:** the AI prompt for item generation
+  now sends the role and rules (including the 4-word title limit) as a `system`
+  instruction instead of embedding them in the user message. This makes models
+  (Groq, OpenAI-compatible, Gemini) treat the rules as hard constraints, improving
+  compliance with the title length restriction.
+
+---
+
 ## [v1.3.7] — 2026-05-04
 
 ### Security

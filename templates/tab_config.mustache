@@ -28,6 +28,27 @@
         "alert_class": "alert-info",
         "alert_icon": "fa-info-circle",
         "balance_message": "Game economy is balanced.",
+        "breakdown_count": 2,
+        "breakdown_rows": [
+            {
+                "name": "Sword of Knowledge",
+                "xp_each": 100,
+                "drop_count": 2,
+                "total_uses": 2,
+                "xp_total": 200,
+                "is_quest": false,
+                "infinite": false
+            },
+            {
+                "name": "First Quest",
+                "xp_each": 50,
+                "drop_count": 0,
+                "total_uses": 1,
+                "xp_total": 50,
+                "is_quest": true,
+                "infinite": false
+            }
+        ],
         "widget_code_tip_html": "Tip: Paste this code...",
         "action_url": "#",
         "sesskey": "12345",
@@ -65,6 +86,80 @@
                     </div>
                 </div>
             </div>
+            {{#breakdown_count}}
+            <div class="card-footer p-0 border-top-0">
+                <div class="accordion accordion-flush" id="ph-balance-breakdown">
+                    <div class="accordion-item border-0">
+                        <h2 class="accordion-header" id="ph-breakdown-heading">
+                            <button class="accordion-button collapsed py-2 small text-muted bg-light"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-toggle="collapse"
+                                    data-bs-target="#ph-breakdown-body"
+                                    data-target="#ph-breakdown-body"
+                                    aria-expanded="false"
+                                    aria-controls="ph-breakdown-body">
+                                <i class="fa fa-table me-2" aria-hidden="true"></i>
+                                {{#str}} balance_breakdown_title, block_playerhud {{/str}}
+                                <span class="badge bg-secondary ms-2">{{breakdown_count}}</span>
+                            </button>
+                        </h2>
+                        <div id="ph-breakdown-body"
+                             class="accordion-collapse collapse"
+                             aria-labelledby="ph-breakdown-heading">
+                            <div class="accordion-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th scope="col" class="ps-3">{{#str}} balance_col_name, block_playerhud {{/str}}</th>
+                                                <th scope="col" class="text-center">{{#str}} balance_col_type, block_playerhud {{/str}}</th>
+                                                <th scope="col" class="text-center">{{#str}} balance_col_xp_each, block_playerhud {{/str}}</th>
+                                                <th scope="col" class="text-center">{{#str}} balance_col_drops, block_playerhud {{/str}}</th>
+                                                <th scope="col" class="text-center">{{#str}} balance_col_uses, block_playerhud {{/str}}</th>
+                                                <th scope="col" class="text-end pe-3">{{#str}} balance_col_xp_total, block_playerhud {{/str}}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {{#breakdown_rows}}
+                                            <tr>
+                                                <td class="ps-3">{{name}}</td>
+                                                <td class="text-center">
+                                                    {{#is_quest}}
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="fa fa-star me-1" aria-hidden="true"></i>{{#str}} quest, block_playerhud {{/str}}
+                                                    </span>
+                                                    {{/is_quest}}
+                                                    {{^is_quest}}
+                                                    <span class="badge bg-info text-dark">
+                                                        <i class="fa fa-cube me-1" aria-hidden="true"></i>{{#str}} item, block_playerhud {{/str}}
+                                                    </span>
+                                                    {{/is_quest}}
+                                                </td>
+                                                <td class="text-center">+{{xp_each}} XP</td>
+                                                <td class="text-center">{{drop_count}}</td>
+                                                <td class="text-center">
+                                                    {{#infinite}}<span class="text-muted">∞</span>{{/infinite}}
+                                                    {{^infinite}}{{total_uses}}{{/infinite}}
+                                                </td>
+                                                <td class="text-end pe-3 fw-bold text-primary">+{{xp_total}} XP</td>
+                                            </tr>
+                                            {{/breakdown_rows}}
+                                        </tbody>
+                                        <tfoot class="table-light">
+                                            <tr>
+                                                <td colspan="5" class="ps-3 fw-bold">{{#str}} total_items_xp, block_playerhud {{/str}}</td>
+                                                <td class="text-end pe-3 fw-bold text-primary">+{{total_items_xp}} XP</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{/breakdown_count}}
         </div>
     </div>
 

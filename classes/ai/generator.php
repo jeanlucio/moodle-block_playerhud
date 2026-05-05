@@ -122,23 +122,23 @@ class generator {
         }
 
         // 4. Build Prompt.
-        $prompt = $this->build_prompt($mode, $theme, $xp, $balance, $amount);
+        $parts = $this->build_prompt($mode, $theme, $xp, $balance, $amount);
 
         // 5. Call API.
         $result = ['success' => false, 'message' => ''];
 
         if (!empty($geminikey)) {
-            $result = $this->call_gemini($prompt, $geminikey);
+            $result = $this->call_gemini($parts, $geminikey);
         }
 
         // Try Groq only if Gemini failed or was not configured.
         if ((!$result['success']) && !empty($groqkey)) {
-            $result = $this->call_groq($prompt, $groqkey);
+            $result = $this->call_groq($parts, $groqkey);
         }
 
         // Try custom OpenAI-compatible provider if both Gemini and Groq failed or were not configured.
         if ((!$result['success']) && !empty($openaikey) && !empty($openaiurl)) {
-            $result = $this->call_openai_compatible($prompt, $openaikey, $openaiurl, $openaimodel);
+            $result = $this->call_openai_compatible($parts, $openaikey, $openaiurl, $openaimodel);
         }
 
         if (!$result['success']) {
@@ -294,16 +294,20 @@ class generator {
     }
 
     /**
-     * Builds the AI prompt string.
+     * Builds the AI prompt parts (system and user).
+     *
+     * Splits the prompt into a system instruction (role + rules) and a user
+     * message (task + context + JSON schema). This ensures the model treats
+     * the rules as hard constraints rather than conversational context.
      *
      * @param string $mode Generation mode.
      * @param string $theme The theme.
      * @param int $xp XP value.
      * @param array|null $balance Balance context.
      * @param int $amount Amount to generate.
-     * @return string The constructed prompt.
+     * @return array Associative array with 'system' and 'user' string keys.
      */
-    protected function build_prompt($mode, $theme, $xp, $balance = null, $amount = 1) {
+    protected function build_prompt($mode, $theme, $xp, $balance = null, $amount = 1): array {
         $currentlang = get_string('thislanguage', 'langconfig');
 
         if ($mode === 'item') {
@@ -344,10 +348,12 @@ class generator {
             $jsoninst = get_string('ai_json_instruction', 'block_playerhud');
             $langinst = get_string('ai_reply_lang', 'block_playerhud', $currentlang);
 
-            $prompt = implode("\n\n", [
-                $rolestr,
+            // Role + rules go to the system slot so the model treats them as
+            // hard constraints, not part of the user conversation.
+            $system = implode("\n\n", [$rolestr, $rulesstr]);
+
+            $user = implode("\n\n", [
                 $taskstr,
-                $rulesstr,
                 $contextstr,
                 $techxpstr,
                 $jsoninst,
@@ -355,22 +361,25 @@ class generator {
                 $langinst,
             ]);
 
-            return $prompt;
+            return ['system' => $system, 'user' => $user];
         }
 
-        return "";
+        return ['system' => '', 'user' => ''];
     }
 
     /**
      * Calls the Gemini API.
      *
-     * @param string $prompt The prompt text.
+     * @param array $parts Prompt parts with 'system' and 'user' keys.
      * @param string $key The API key.
      * @return array Response array.
      */
-    protected function call_gemini($prompt, $key) {
+    protected function call_gemini(array $parts, string $key): array {
         $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" . $key;
-        $data = ["contents" => [["parts" => [["text" => $prompt]]]]];
+        $data = [
+            "systemInstruction" => ["parts" => [["text" => $parts['system']]]],
+            "contents" => [["parts" => [["text" => $parts['user']]]]],
+        ];
         return $this->curl_request(
             $url,
             json_encode($data),
@@ -382,15 +391,18 @@ class generator {
     /**
      * Calls the Groq API.
      *
-     * @param string $prompt The prompt text.
+     * @param array $parts Prompt parts with 'system' and 'user' keys.
      * @param string $key The API key.
      * @return array Response array.
      */
-    protected function call_groq($prompt, $key) {
+    protected function call_groq(array $parts, string $key): array {
         $url = "https://api.groq.com/openai/v1/chat/completions";
         $data = [
             "model" => "llama-3.3-70b-versatile",
-            "messages" => [["role" => "user", "content" => $prompt]],
+            "messages" => [
+                ["role" => "system", "content" => $parts['system']],
+                ["role" => "user", "content" => $parts['user']],
+            ],
             "response_format" => ["type" => "json_object"],
         ];
         return $this->curl_request(
@@ -407,17 +419,20 @@ class generator {
      * Works with OpenAI, DeepSeek, Alibaba Qwen, Mistral, OpenRouter, Ollama, and others
      * that expose the standard /v1/chat/completions endpoint.
      *
-     * @param string $prompt The prompt text.
+     * @param array $parts Prompt parts with 'system' and 'user' keys.
      * @param string $key The API key.
      * @param string $baseurl The provider base URL (e.g. https://api.openai.com).
      * @param string $model The model identifier (e.g. gpt-4o-mini).
      * @return array Response array.
      */
-    protected function call_openai_compatible(string $prompt, string $key, string $baseurl, string $model): array {
+    protected function call_openai_compatible(array $parts, string $key, string $baseurl, string $model): array {
         $url = $baseurl;
         $data = [
             "model" => !empty($model) ? $model : 'gpt-4o-mini',
-            "messages" => [["role" => "user", "content" => $prompt]],
+            "messages" => [
+                ["role" => "system", "content" => $parts['system']],
+                ["role" => "user", "content" => $parts['user']],
+            ],
             "response_format" => ["type" => "json_object"],
         ];
         return $this->curl_request(

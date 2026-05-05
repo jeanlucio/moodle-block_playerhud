@@ -76,6 +76,7 @@ class tab_config implements renderable, templatable {
 
         // Calculate Total Game XP.
         $totalitemsxp = 0;
+        $breakdownrows = [];
         $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid, 'enabled' => 1]);
 
         if ($items) {
@@ -93,26 +94,61 @@ class tab_config implements renderable, templatable {
             }
 
             foreach ($items as $item) {
+                $itemxp = 0;
+                $dropcount = 0;
+                $totaldropuses = 0;
+                $hasinfinite = false;
+
                 if (!empty($dropsbyitem[$item->id])) {
+                    $dropcount = count($dropsbyitem[$item->id]);
                     foreach ($dropsbyitem[$item->id] as $drop) {
-                        // Infinite drops (0) do not count towards the economy.
                         if ($drop->maxusage > 0) {
-                            $totalitemsxp += ($item->xp * $drop->maxusage);
+                            $itemxp += ($item->xp * $drop->maxusage);
+                            $totaldropuses += $drop->maxusage;
+                        } else {
+                            $hasinfinite = true;
                         }
                     }
                 } else {
-                    $totalitemsxp += $item->xp;
+                    // Item without a drop still contributes 1× its XP (available in library).
+                    $itemxp = $item->xp;
+                    $dropcount = 0;
+                    $totaldropuses = 1;
                 }
+
+                $totalitemsxp += $itemxp;
+                $breakdownrows[] = [
+                    'name' => s($item->name),
+                    'xp_each' => $item->xp,
+                    'drop_count' => $dropcount,
+                    'total_uses' => $hasinfinite ? '∞' : $totaldropuses,
+                    'xp_total' => $itemxp,
+                    'is_quest' => false,
+                    'infinite' => $hasinfinite,
+                ];
             }
         }
 
         // Add XP from enabled quest rewards.
-        $questxp = $DB->get_field_sql(
-            "SELECT COALESCE(SUM(reward_xp), 0) FROM {block_playerhud_quests}
-              WHERE blockinstanceid = :instanceid AND enabled = 1",
-            ['instanceid' => $this->instanceid]
+        $quests = $DB->get_records_select(
+            'block_playerhud_quests',
+            'blockinstanceid = :instanceid AND enabled = 1 AND reward_xp > 0',
+            ['instanceid' => $this->instanceid],
+            '',
+            'id, name, reward_xp'
         );
-        $totalitemsxp += (int)$questxp;
+        foreach ($quests as $quest) {
+            $totalitemsxp += (int)$quest->reward_xp;
+            $breakdownrows[] = [
+                'name' => s($quest->name),
+                'xp_each' => $quest->reward_xp,
+                'drop_count' => 0,
+                'total_uses' => 1,
+                'xp_total' => $quest->reward_xp,
+                'is_quest' => true,
+                'infinite' => false,
+            ];
+        }
 
         // Coverage Ratio.
         $ratio = ($xpceiling > 0) ? ($totalitemsxp / $xpceiling) * 100 : 0;
@@ -161,6 +197,14 @@ class tab_config implements renderable, templatable {
             ?: 'https://api.openai.com/v1/chat/completions';
         $defaultmodel = get_config('block_playerhud', 'openai_model') ?: 'gpt-4o-mini';
 
+        // Sort breakdown: items first (by xp_total desc), then quests.
+        usort($breakdownrows, function (array $a, array $b): int {
+            if ($a['is_quest'] !== $b['is_quest']) {
+                return $a['is_quest'] <=> $b['is_quest'];
+            }
+            return $b['xp_total'] <=> $a['xp_total'];
+        });
+
         return [
             'total_items_xp' => $totalitemsxp,
             'xp_ceiling' => $xpceiling,
@@ -168,6 +212,8 @@ class tab_config implements renderable, templatable {
             'alert_border_class' => $borderclass,
             'alert_icon' => $icon,
             'balance_message' => $strmessage,
+            'breakdown_rows' => $breakdownrows,
+            'breakdown_count' => count($breakdownrows),
             'widget_code_tip_html' => get_string('widget_code_tip', 'block_playerhud'),
             'action_url' => $actionurl->out(false),
             'sesskey' => sesskey(),
