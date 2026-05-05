@@ -27,6 +27,10 @@
     {
         "summary_text": "You have 5 items created and 3 drops available.",
         "summary_hint": "Click the drop button of an item to generate its shortcode.",
+        "str_legend_title": "Drop button icons:",
+        "str_legend_locations": "Number of locations where this item is hidden.",
+        "str_legend_uses": "Total maximum collections across all finite locations.",
+        "str_legend_infinite": "Infinite drops (no XP granted, unlimited collections).",
         "str_ai_create": "AI Create",
         "str_distribute": "Distribute Drops",
         "url_distribute": "#",
@@ -42,6 +46,7 @@
             "enabled": { "url": "#", "label": "Enabled", "icon_class": "fa-sort" }
         },
         "str_col_drops": "Drops",
+        "str_infinite_drops": "Infinite drops",
         "str_actions": "Actions",
         "items": [
             {
@@ -65,6 +70,9 @@
                 "url_drops": "#",
                 "btn_drops_class": "btn-info",
                 "str_manage_drops": "Manage Drops",
+                "drops_total_uses": 6,
+                "drops_has_finite": true,
+                "drops_has_infinite": false,
                 "drops_count": 2,
                 "url_edit": "#",
                 "str_edit": "Edit",
@@ -111,7 +119,25 @@
     <div class="collapse w-100" id="ph-summary-hint">
         <div class="alert alert-info border-info mb-0 mt-3 small py-2 shadow-sm d-flex align-items-start">
             <i class="fa fa-lightbulb-o fa-lg me-2 mt-1 text-warning" aria-hidden="true"></i>
-            <div>{{summary_hint}}</div>
+            <div>
+                <div>{{summary_hint}}</div>
+                <hr class="my-2">
+                <strong>{{str_legend_title}}</strong>
+                <ul class="mb-0 mt-1 ps-3">
+                    <li>
+                        <i class="fa fa-map-marker" aria-hidden="true"></i>
+                        {{str_legend_locations}}
+                    </li>
+                    <li>
+                        <i class="fa fa-refresh" aria-hidden="true"></i>
+                        {{str_legend_uses}}
+                    </li>
+                    <li>
+                        <span aria-hidden="true">&#8734;</span>
+                        {{str_legend_infinite}}
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 </div>
@@ -211,6 +237,14 @@
                             <td class="align-middle text-nowrap">
                                 <a href="{{url_drops}}" class="btn btn-sm {{btn_drops_class}} w-100" aria-label="{{str_manage_drops}}">
                                     <i class="fa fa-map-marker" aria-hidden="true"></i> <strong>{{drops_count}}</strong>
+                                    {{#drops_has_finite}}
+                                        <span class="ms-1 border-start ps-1">
+                                            <i class="fa fa-refresh" aria-hidden="true"></i> <strong>{{drops_total_uses}}</strong>
+                                        </span>
+                                    {{/drops_has_finite}}
+                                    {{#drops_has_infinite}}
+                                        <span class="ms-1 border-start ps-1" aria-label="{{str_infinite_drops}}">&#8734;</span>
+                                    {{/drops_has_infinite}}
                                 </a>
                             </td>
                             <td class="align-middle text-end text-nowrap">

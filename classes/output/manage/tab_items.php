@@ -229,6 +229,7 @@ class tab_items implements renderable {
             'manage_drops' => get_string('manage_drops_title', 'block_playerhud', ''),
             'empty' => get_string('items_none', 'block_playerhud'),
             'delete_selected' => get_string('delete_selected', 'block_playerhud'),
+            'infinite_drops' => get_string('infinite_drops', 'block_playerhud'),
         ];
 
         // 2. Statistics.
@@ -265,14 +266,24 @@ class tab_items implements renderable {
 
         if ($items) {
             $dropscounts = [];
+            $dropstotals = [];
+            $dropsinfinite = [];
             $itemids = array_keys($items);
             if (!empty($itemids)) {
                 [$insql, $inparams] = $DB->get_in_or_equal($itemids);
-                $sql = "SELECT itemid, COUNT(id) as count
+                $sql = "SELECT itemid,
+                               COUNT(id) AS count,
+                               SUM(CASE WHEN maxusage > 0 THEN maxusage ELSE 0 END) AS totaluses,
+                               MAX(CASE WHEN maxusage = 0 THEN 1 ELSE 0 END) AS hasinfinite
                           FROM {block_playerhud_drops}
                          WHERE itemid $insql
                       GROUP BY itemid";
-                $dropscounts = $DB->get_records_sql_menu($sql, $inparams);
+                $dropsrows = $DB->get_records_sql($sql, $inparams);
+                foreach ($dropsrows as $row) {
+                    $dropscounts[$row->itemid] = (int)$row->count;
+                    $dropstotals[$row->itemid] = (int)$row->totaluses;
+                    $dropsinfinite[$row->itemid] = (bool)$row->hasinfinite;
+                }
             }
 
             // Bulk load media.
@@ -281,7 +292,9 @@ class tab_items implements renderable {
             foreach ($items as $item) {
                 $mediadata = $allmedia[$item->id];
 
-                $dropscount = isset($dropscounts[$item->id]) ? $dropscounts[$item->id] : 0;
+                $dropscount = $dropscounts[$item->id] ?? 0;
+                $dropstotaluses = $dropstotals[$item->id] ?? 0;
+                $dropisinfinite = $dropsinfinite[$item->id] ?? false;
 
                 $itemsdata[] = [
                     'id' => $item->id,
@@ -309,6 +322,9 @@ class tab_items implements renderable {
 
                     // Drops & Buttons.
                     'drops_count' => $dropscount,
+                    'drops_total_uses' => $dropstotaluses,
+                    'drops_has_infinite' => $dropisinfinite,
+                    'drops_has_finite' => ($dropstotaluses > 0),
                     'btn_drops_class' => ($dropscount > 0) ? 'btn-info text-white' : 'btn-outline-secondary',
                     'confirm_msg' => s(get_string('confirm_delete', 'block_playerhud') . " '" . format_string($item->name) . "'?"),
 
@@ -362,6 +378,10 @@ class tab_items implements renderable {
             'sesskey' => sesskey(),
             'summary_text' => $summarytext,
             'summary_hint' => get_string('summary_stats_hint', 'block_playerhud'),
+            'str_legend_title' => get_string('drops_legend_title', 'block_playerhud'),
+            'str_legend_locations' => get_string('drops_legend_locations', 'block_playerhud'),
+            'str_legend_uses' => get_string('drops_legend_uses', 'block_playerhud'),
+            'str_legend_infinite' => get_string('drops_legend_infinite', 'block_playerhud'),
             'url_add' => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
             'url_distribute' => (new moodle_url($baseurl, ['action' => 'distribute']))->out(false),
             'str_distribute' => get_string('distribute_btn', 'block_playerhud'),
@@ -377,6 +397,7 @@ class tab_items implements renderable {
             'str_select_all' => $str['select_all'],
             'str_col_image' => $str['col_image'],
             'str_col_drops' => $str['col_drops'],
+            'str_infinite_drops' => $str['infinite_drops'],
             'str_actions' => $str['actions'],
             'str_empty' => $str['empty'],
             'str_delete_selected' => $str['delete_selected'],
