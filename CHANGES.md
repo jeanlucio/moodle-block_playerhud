@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.9] — 2026-05-05
+
+### Added
+- **Drop usage indicator in items table:** the drop button now shows the number
+  of locations (📍), the total finite max-uses across all locations (🔄), and an
+  infinity symbol (∞) when at least one location has unlimited drops. A legend
+  explaining each icon was added to the expandable help box.
+
+### Fixed
+- **Crash when editing an item without RPG classes configured:** passing an empty
+  array to a hidden form field caused `htmlspecialchars()` to fail. Fixed by
+  using scalar `0` instead of `[]` when no class restriction is set.
+
+---
+
 ## [v1.3.8] — 2026-05-05
 
 ### Added
