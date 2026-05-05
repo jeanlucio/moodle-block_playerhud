@@ -48,6 +48,15 @@ class suggest_quests_form extends \moodleform {
                 get_string('quest_sug_info', 'block_playerhud') . '</div>'
             );
 
+            $mform->addElement(
+                'static',
+                'toggleall',
+                '',
+                '<button type="button" id="ph-sug-toggle-all" class="btn btn-sm btn-outline-secondary mb-2">' .
+                '<i class="fa fa-check-square-o me-1" aria-hidden="true"></i>' .
+                get_string('quest_sug_toggle_all', 'block_playerhud') . '</button>'
+            );
+
             foreach ($suggestions as $sug) {
                 $label = '<span aria-hidden="true" class="fs-5 me-2">' . $sug['image_done'] . '</span> ' .
                          '<span class="fw-bold text-dark">' . $sug['name'] . '</span> ' .

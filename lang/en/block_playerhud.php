@@ -512,6 +512,7 @@ $string['quest_sug_info'] = 'The system mapped your course and suggests the miss
 $string['quest_sug_items'] = 'Collect {$a} unique items';
 $string['quest_sug_level'] = 'Reach Level {$a}';
 $string['quest_sug_save'] = 'Create Selected Quests';
+$string['quest_sug_toggle_all'] = 'Select / Deselect All';
 $string['quest_sug_trades'] = 'Perform {$a} trades in the shop';
 $string['quest_suggestions'] = 'Auto Quest Suggestions';
 $string['quest_target_value'] = 'Target Value (Level, XP or Qty)';

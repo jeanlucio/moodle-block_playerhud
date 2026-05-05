@@ -54,6 +54,13 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 $('.ph-bulk-check').prop('checked', isChecked).trigger('change');
             });
 
+            // Suggestion form: toggle all checkboxes.
+            $('body').on('click', '#ph-sug-toggle-all', function() {
+                var $checks = $('input[type="checkbox"][name^="sug_"]');
+                var allChecked = $checks.length === $checks.filter(':checked').length;
+                $checks.prop('checked', !allChecked);
+            });
+
             // Update "Delete Selected" button state.
             $('body').on('change', '.ph-bulk-check, #ph-select-all', function() {
                 var count = $('.ph-bulk-check:checked').length;

@@ -512,6 +512,7 @@ $string['quest_sug_info'] = 'O sistema mapeou seu curso e sugere as missões aba
 $string['quest_sug_items'] = 'Colecionar {$a} itens únicos';
 $string['quest_sug_level'] = 'Alcançar o Nível {$a}';
 $string['quest_sug_save'] = 'Criar Missões Selecionadas';
+$string['quest_sug_toggle_all'] = 'Selecionar / Desselecionar Todos';
 $string['quest_sug_trades'] = 'Realizar {$a} trocas na loja';
 $string['quest_suggestions'] = 'Sugestões de Missões Automáticas';
 $string['quest_target_value'] = 'Valor Alvo (Nível, XP ou Qty)';
