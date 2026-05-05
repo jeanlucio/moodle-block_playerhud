@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.10] — 2026-05-05
+
+### Fixed
+- **Copy button broken on HTTP:** replaced `navigator.clipboard` (unavailable
+  outside HTTPS) with `core/copy_to_clipboard`, the Moodle-approved API that
+  falls back to `execCommand` and works on plain HTTP (Moodle 4.5).
+- **Duplicate modal on item card click:** `$(document).on()` accumulated
+  handlers each time `init()` was called. Fixed with namespaced jQuery events
+  (`.off()` before `.on()`), preventing double-open when the block appears
+  more than once on the page.
+
+---
+
 ## [v1.3.9] — 2026-05-05
 
 ### Added
