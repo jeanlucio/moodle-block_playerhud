@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.11] — 2026-05-06
+
+### Fixed
+- **Item modal not opening intermittently in Moodle 4.5 (Bootstrap 4):** when
+  `openItemModal()` was called a second time on the same element, Bootstrap 4
+  detected the existing instance stored in `$(el).data('bs.modal')` and
+  silently ignored the `show()` call. Fixed by reusing the existing instance
+  (`getInstance` in BS5, `$(el).data` in BS4) before creating a new one.
+  Same fix applied to the character (`ph-char-modal`) modal.
+- **ESLint `promise/no-nesting` in `manage_drops.js`:** the clipboard error
+  handler used `Str.get_strings().then()` nested inside a `.catch()`. Replaced
+  with strings pre-loaded via PHP `config.strings`, eliminating the nesting.
+
+---
+
 ## [v1.3.10] — 2026-05-05
 
 ### Fixed
