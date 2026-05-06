@@ -363,12 +363,28 @@ const safeB64Decode = (str) => {
 
 /**
  * Initialize.
- *
- * @param {Object} config Configuration object passed from PHP.
  */
-export const init = (config) => {
-    appStrings = config.strings || {};
+export const init = () => {
+    // Load strings registered via $PAGE->requires->strings_for_js() in text_filter.php.
+    // M.util.get_string() reads from Moodle's pre-loaded string cache (no extra requests).
+    appStrings = {
+        collected: M.util.get_string('collected', 'block_playerhud'),
+        respawntime: M.util.get_string('respawntime', 'block_playerhud'),
+        infinite: M.util.get_string('infinite', 'block_playerhud'),
+        immediate: M.util.get_string('drops_immediate', 'block_playerhud'),
+        singleCollection: M.util.get_string('single_collection', 'block_playerhud'),
+        error: M.util.get_string('error_connection', 'block_playerhud'),
+        lastCollected: M.util.get_string('last_collected', 'block_playerhud'),
+        level: M.util.get_string('level', 'block_playerhud'),
+        xp: M.util.get_string('xp', 'block_playerhud'),
+        noDescription: M.util.get_string('no_description', 'block_playerhud'),
+        confirmTitle: M.util.get_string('confirmation', 'admin'),
+        yes: M.util.get_string('yes', 'moodle'),
+        cancel: M.util.get_string('cancel', 'moodle'),
+    };
 
+    // The modal HTML is now appended directly to $text by text_filter.php,
+    // so it is already in the DOM. Just hoist it to <body> to avoid z-index issues.
     const $filterModal = $('#phItemModalFilter');
     if ($filterModal.length) {
         $filterModal.appendTo('body');
@@ -380,7 +396,7 @@ export const init = (config) => {
         const msg = $(this).attr('data-confirm-msg');
 
         Notification.confirm(
-            appStrings.confirm_title,
+            appStrings.confirmTitle,
             msg,
             appStrings.yes,
             appStrings.cancel,
@@ -455,7 +471,7 @@ export const init = (config) => {
         }
 
         if (!descHtml || descHtml.trim() === '') {
-            const fallbackText = appStrings.no_description || '- no description -';
+            const fallbackText = appStrings.noDescription || '- no description -';
             modalEls.desc.empty().append(
                 $('<i>', {
                     'class': 'text-muted',
@@ -489,7 +505,7 @@ export const init = (config) => {
 
             // 2. Cooldown Badge (Single, Immediate, or Timer).
             if (maxUsage === 1) {
-                const textStr = appStrings.single_collection || 'Single collection';
+                const textStr = appStrings.singleCollection || 'Single collection';
                 const iconHtml = '<i class="fa fa-lock me-1" aria-hidden="true"></i>';
                 modalEls.dropCooldown.html(`${iconHtml}${textStr}`).show();
                 showStats = true;
@@ -522,7 +538,7 @@ export const init = (config) => {
 
         let formattedDate = data.date;
         if (data.timestamp && data.timestamp > 0) {
-            const lang = $('html').attr('lang').replace('_', '-') || 'en';
+            const lang = ($('html').attr('lang') || 'en').replace('_', '-');
             try {
                 formattedDate = new Date(parseInt(data.timestamp) * 1000).toLocaleDateString(lang, {
                     day: '2-digit', month: '2-digit', year: '2-digit'
@@ -531,7 +547,7 @@ export const init = (config) => {
         }
 
         if (formattedDate) {
-            const prefix = appStrings.last_collected ? `${appStrings.last_collected} ` : '';
+            const prefix = appStrings.lastCollected ? `${appStrings.lastCollected} ` : '';
             if (modalEls.root.attr('id') === 'phItemModalView') {
                 modalEls.date.find('span').text(prefix + formattedDate);
                 modalEls.date.show();
@@ -563,7 +579,10 @@ export const init = (config) => {
         const modalEl = modalEls.root[0];
         document.body.appendChild(modalEl);
         require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
-            new BootstrapModal(modalEl).show();
+            var inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(modalEl))
+                || $(modalEl).data('bs.modal')
+                || new BootstrapModal(modalEl);
+            inst.show();
         });
     });
 
