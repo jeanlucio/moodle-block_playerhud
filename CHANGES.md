@@ -5,6 +5,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.12] — 2026-05-06
+
+### Fixed
+- **Item modal not opening in forum posts (filter context):** `filter_collect.js`
+  was searching for `#phItemModalFilter` in the DOM but the modal HTML was
+  never added there. Fixed by having `text_filter.php` append the modal HTML
+  to `$text` so it lands in the DOM, and updating `filter_collect.js` to read
+  strings via `M.util.get_string()` (registered server-side with
+  `strings_for_js`) instead of AMD arguments, removing the dependency on a
+  large `config.modalsHtml` blob that exceeded Moodle 4.5's 1024-character
+  `js_call_amd` argument limit. Also applies the Bootstrap `getInstance`
+  reuse pattern to prevent duplicate modal instances on repeated clicks, and
+  guards against a null `lang` attribute in `toLocaleDateString`.
+- **Copy button in drops table broken on HTTP:** replaced the custom
+  `execCommand`-based fallback in `manage_drops.js` with Moodle's
+  `core/copy_to_clipboard`, which handles both HTTPS and plain HTTP. Removed
+  orphan lang strings `gen_yours` and `err_clipboard`.
+- **Natural sort for quest and collection names:** replaced `strcmp()` with
+  `strnatcasecmp()` in the quest and collection tabs so entries like "Nível 3"
+  and "Nível 10" sort in human-expected numeric order instead of lexicographic.
+- **Leaderboard — last score date shown for users with zero XP:** `timemodified`
+  is set on record creation, not only on XP gain, so every enrolled user
+  previously showed a timestamp before earning anything. The column now displays
+  `–` when `currentxp == 0`.
+
+---
+
 ## [v1.3.11] — 2026-05-06
 
 ### Fixed
