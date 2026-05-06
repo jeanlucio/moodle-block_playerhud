@@ -311,7 +311,6 @@ $string['gen_style_image_desc'] = 'Ícone flutuante clicável.';
 $string['gen_style_text'] = 'Apenas Texto';
 $string['gen_style_text_desc'] = 'Um link de texto simples.';
 $string['gen_title'] = 'Gerador de Código';
-$string['gen_yours'] = 'Possui: 0';
 $string['grant_item_select'] = 'Conceder Item';
 $string['great'] = 'Legal!';
 $string['groq_apikey'] = 'Chave da API Groq';

@@ -184,11 +184,13 @@
 
                         <td class="align-middle text-nowrap">
                             <div class="d-flex justify-content-start">
-                                <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm js-copy-code me-2"
-                                        data-clipboard-text="{{full_default_code}}"
+                                <input type="hidden" id="ph-cp-{{display_code}}" value="{{full_default_code}}">
+                                <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm me-2"
+                                        data-action="copytoclipboard"
+                                        data-clipboard-target="#ph-cp-{{display_code}}"
                                         title="{{str_quick_copy}}"
                                         aria-label="{{str_quick_copy}} {{name}}">
-                                     <i class="fa fa-copy" aria-hidden="true"></i> {{str_quick_copy}}
+                                    <i class="fa fa-copy" aria-hidden="true"></i> {{str_quick_copy}}
                                 </button>
 
                                 <button type="button" class="btn btn-outline-dark btn-sm js-open-gen-modal shadow-sm"

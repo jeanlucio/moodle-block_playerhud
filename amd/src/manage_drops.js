@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, Notification, CopyToClipboard) {
+define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, Notification) {
 
     /**
      * Manage Drops module.
@@ -111,8 +111,6 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                         `<div class="fs-1 lh-1">${currentItem.content}</div>`;
 
                     const $card = $('<div>', {'class': 'ph-gen-preview-real-card card p-2 border shadow-sm position-relative'});
-                    $('<span>', {'class': 'badge bg-info text-dark rounded-pill ph-badge-preview-corner'})
-                        .text(langStrings.yours).appendTo($card);
                     $('<div>', {'class': 'mb-2 d-flex align-items-center justify-content-center ph-h-60'})
                         .html(iconHtml).appendTo($card);
                     $('<strong>', {'class': 'd-block mb-2 text-truncate ph-fs-09'})
@@ -229,35 +227,6 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
 
             $('body').on('change input', handleChange);
 
-            // Copy to Clipboard with Visual Feedback.
-            $('body').on('click', '.js-copy-code', function(e) {
-                e.preventDefault();
-                const $btn = $(this);
-                const text = $btn.attr('data-clipboard-text');
-
-                if (!text) {
-                    return;
-                }
-
-                CopyToClipboard.copyToClipboard(text).then(function() {
-                    const originalHtml = $btn.html();
-                    const originalWidth = $btn.outerWidth();
-
-                    $btn.css('width', (originalWidth + 25) + 'px');
-                    $btn.removeClass('btn-outline-secondary').addClass('btn-success');
-                    $btn.html('<i class="fa fa-check"></i> ' + langStrings.gen_copied);
-
-                    setTimeout(function() {
-                        $btn.html(originalHtml);
-                        $btn.removeClass('btn-success').addClass('btn-outline-secondary');
-                        $btn.css('width', '');
-                    }, 2000);
-
-                    return true;
-                }).catch(function() {
-                    Notification.alert(langStrings.error, langStrings.err_clipboard, langStrings.ok);
-                });
-            });
         }
     };
 });

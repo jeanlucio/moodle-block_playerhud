@@ -311,7 +311,6 @@ $string['gen_style_image_desc'] = 'Floating clickable icon.';
 $string['gen_style_text'] = 'Text Only';
 $string['gen_style_text_desc'] = 'A simple text link.';
 $string['gen_title'] = 'Code Generator';
-$string['gen_yours'] = 'Owned: 0';
 $string['grant_item_select'] = 'Grant Item';
 $string['great'] = 'Great!';
 $string['groq_apikey'] = 'Groq API Key';
