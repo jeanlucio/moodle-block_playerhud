@@ -519,7 +519,9 @@ class game {
             // Data Formatting.
             $mygroups = isset($usergroupsmap[$usr->userid]) ? $usergroupsmap[$usr->userid] : [];
             $usr->group_name = empty($mygroups) ? '-' : implode(', ', $mygroups);
-            $usr->last_score_date = userdate($usr->timemodified, get_string('strftimedatetimeshort', 'langconfig'));
+            $usr->last_score_date = ($usr->currentxp > 0)
+                ? userdate($usr->timemodified, get_string('strftimedatetimeshort', 'langconfig'))
+                : '-';
 
             $usr->is_me = $isme;
             $usr->is_paused = $ispaused;
