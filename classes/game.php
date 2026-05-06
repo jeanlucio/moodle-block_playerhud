@@ -341,13 +341,15 @@ class game {
     /**
      * Get the rank of a specific user considering tie-breakers.
      * EXCLUDES users with 'manage' capability (Teachers/Admins) from the count.
+     * When SEPARATEGROUPS is active, only counts users in the same group.
      *
      * @param int $blockinstanceid Instance ID.
      * @param int $userid User ID.
      * @param int $currentxp Current XP.
+     * @param int $courseid Course ID for SEPARATEGROUPS support (0 = disabled).
      * @return int The rank.
      */
-    public static function get_user_rank($blockinstanceid, $userid, $currentxp) {
+    public static function get_user_rank($blockinstanceid, $userid, $currentxp, $courseid = 0) {
         global $DB;
 
         // Search for 'timemodified' of current user for tie-breaking.
@@ -366,6 +368,7 @@ class game {
         $context = \context::instance_by_id($bi->parentcontextid);
 
         // Get IDs of users with capability 'block/playerhud:manage' (Teachers).
+        // $doanything = true ensures site admins are included, matching has_capability() behaviour.
         $managers = get_users_by_capability(
             $context,
             'block/playerhud:manage',
@@ -375,12 +378,15 @@ class game {
             '',
             '',
             '',
+            true,
             false,
-            false,
-            true
+            false
         );
 
         $managerids = array_keys($managers);
+        // Get_users_by_capability does not enumerate site admins (they bypass the capability
+        // system via $CFG->siteadmins). Merge them explicitly so they are excluded from the count.
+        $managerids = array_unique(array_merge($managerids, array_keys(get_admins())));
 
         // Build exclusion clause.
         $excludeclause = "";
@@ -398,6 +404,28 @@ class game {
             $params = array_merge($params, $inparams);
         }
 
+        // SEPARATEGROUPS: restrict count to same-group members only.
+        $groupclause = '';
+        if ($courseid > 0) {
+            $course = get_course($courseid);
+            if (groups_get_course_groupmode($course) == SEPARATEGROUPS) {
+                $usergroups = groups_get_user_groups($courseid, $userid);
+                $usergroupids = $usergroups[0] ?? [];
+                if (!empty($usergroupids)) {
+                    [$sgsql, $sgparams] = $DB->get_in_or_equal(
+                        array_values($usergroupids),
+                        SQL_PARAMS_NAMED,
+                        'grp'
+                    );
+                    $groupclause = "AND userid IN "
+                        . "(SELECT DISTINCT gm.userid FROM {groups_members} gm WHERE gm.groupid $sgsql)";
+                    $params = array_merge($params, $sgparams);
+                } else {
+                    return 1;
+                }
+            }
+        }
+
         // RANKING LOGIC:
         // Count users who:
         // 1. Have MORE XP than me.
@@ -409,6 +437,7 @@ class game {
                    AND enable_gamification = 1
                    AND ranking_visibility = 1
                    $excludeclause
+                   $groupclause
                    AND (
                        currentxp > :xp
                        OR (currentxp = :xp_tie AND timemodified < :tm)
@@ -444,6 +473,29 @@ class game {
         }
         $memberships->close();
 
+        // SEPARATEGROUPS: build the set of allowed user IDs for individual ranking.
+        $alloweduserids = null; // Null = no restriction.
+        if (!$isteacher) {
+            $course = get_course($courseid);
+            if (groups_get_course_groupmode($course) == SEPARATEGROUPS) {
+                $usergroups = groups_get_user_groups($courseid, $currentuserid);
+                $usergroupids = $usergroups[0] ?? [];
+                if (!empty($usergroupids)) {
+                    [$sgsql, $sgparams] = $DB->get_in_or_equal(
+                        array_values($usergroupids),
+                        SQL_PARAMS_NAMED,
+                        'sgm'
+                    );
+                    $membersql = "SELECT DISTINCT gm.userid FROM {groups_members} gm WHERE gm.groupid $sgsql";
+                    $memberids = $DB->get_fieldset_sql($membersql, $sgparams);
+                    $alloweduserids = array_flip($memberids);
+                } else {
+                    // No groups: show only the current user.
+                    $alloweduserids = [$currentuserid => true];
+                }
+            }
+        }
+
         // 2. Search Users.
         $userfieldsapi = \core_user\fields::for_userpic();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
@@ -472,6 +524,11 @@ class game {
             $isme = ($usr->userid == $currentuserid);
 
             if (has_capability('block/playerhud:manage', $coursecontext, $usr->userid)) {
+                continue;
+            }
+
+            // SEPARATEGROUPS: skip users outside the current user's groups.
+            if ($alloweduserids !== null && !isset($alloweduserids[$usr->userid])) {
                 continue;
             }
 

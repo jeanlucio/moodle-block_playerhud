@@ -582,6 +582,9 @@ class tab_reports implements renderable, templatable {
         $coursecontext = \context_course::instance($this->courseid);
         $managers = get_users_by_capability($coursecontext, 'block/playerhud:manage', 'u.id');
         $managerids = array_keys($managers);
+        // Get_users_by_capability does not enumerate site admins (they bypass the capability
+        // system via $CFG->siteadmins). Merge them explicitly so they are excluded from the report.
+        $managerids = array_unique(array_merge($managerids, array_keys(get_admins())));
 
         $excludeclause = '';
         $excludeparams = [];
@@ -593,13 +596,14 @@ class tab_reports implements renderable, templatable {
         $userfieldsapi = \core_user\fields::for_name();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
 
-        $sortsql = "pu.currentxp DESC";
+        // Default sort mirrors the ranking tiebreaker: XP DESC, then earliest timemodified wins.
+        $sortsql = "pu.currentxp DESC, pu.timemodified ASC, u.lastname ASC";
         switch ($this->sort) {
             case 'student':
                 $sortsql = "u.lastname {$this->dir}, u.firstname {$this->dir}";
                 break;
             case 'xp':
-                $sortsql = "pu.currentxp {$this->dir}";
+                $sortsql = "pu.currentxp {$this->dir}, pu.timemodified ASC, u.lastname ASC";
                 break;
             case 'items':
                 $sortsql = "total_items {$this->dir}";
