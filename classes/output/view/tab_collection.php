@@ -263,20 +263,20 @@ class tab_collection implements renderable, templatable {
         usort($itemsdata, function ($a, $b) use ($currentsort) {
             switch ($currentsort) {
                 case 'name_asc':
-                    return strcmp($a['sort_name'], $b['sort_name']);
+                    return strnatcasecmp($a['sort_name'], $b['sort_name']);
 
                 case 'name_desc':
-                    return strcmp($b['sort_name'], $a['sort_name']);
+                    return strnatcasecmp($b['sort_name'], $a['sort_name']);
 
                 case 'count_desc':
                     if ($a['count'] == $b['count']) {
-                        return strcmp($a['sort_name'], $b['sort_name']);
+                        return strnatcasecmp($a['sort_name'], $b['sort_name']);
                     }
                     return $b['count'] <=> $a['count'];
 
                 case 'count_asc':
                     if ($a['count'] == $b['count']) {
-                        return strcmp($a['sort_name'], $b['sort_name']);
+                        return strnatcasecmp($a['sort_name'], $b['sort_name']);
                     }
                     return $a['count'] <=> $b['count'];
 
@@ -284,7 +284,7 @@ class tab_collection implements renderable, templatable {
                     $hasa = ($a['count'] > 0) ? 1 : 0;
                     $hasb = ($b['count'] > 0) ? 1 : 0;
                     if ($hasa == $hasb) {
-                        return strcmp($a['sort_name'], $b['sort_name']);
+                        return strnatcasecmp($a['sort_name'], $b['sort_name']);
                     }
                     return $hasb <=> $hasa;
 
@@ -292,7 +292,7 @@ class tab_collection implements renderable, templatable {
                     $hasa = ($a['count'] > 0) ? 1 : 0;
                     $hasb = ($b['count'] > 0) ? 1 : 0;
                     if ($hasa == $hasb) {
-                        return strcmp($a['sort_name'], $b['sort_name']);
+                        return strnatcasecmp($a['sort_name'], $b['sort_name']);
                     }
                     return $hasa <=> $hasb;
 
