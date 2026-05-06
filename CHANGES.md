@@ -5,6 +5,43 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.13] — 2026-05-06
+
+### Added
+- **Group ranking toggle:** new `config_enable_group_ranking` option in block settings
+  (visible only when ranking is enabled); when disabled, the Groups tab is hidden from
+  the leaderboard.
+- **Conditional help cards:** help page cards for Items, Shop/Timers, Quests, RPG, and
+  Ranking are now shown only when the corresponding feature is enabled in block settings.
+- **`use_default_help` setting:** new block config option replacing the previous reset
+  checkbox; when enabled (default), the help content editor is pre-populated with the
+  current default HTML when the field is empty.
+
+### Fixed
+- **Leaderboard — unenrolled users excluded:** individual ranking and rank-in-sidebar no
+  longer include users who have been unenrolled from the course.
+- **Reports — unenrolled students excluded:** teacher reports tab now filters out
+  unenrolled students.
+- **SEPARATEGROUPS support in ranking:** when a course uses Separate Groups mode,
+  students see only members of their own group in the individual leaderboard tab;
+  teachers see all.
+- **Site admins excluded from ranking and reports:** `get_admins()` is now merged into
+  the capability-based exclusion list; site admins bypass `has_capability` checks
+  (they appear via `CFG->siteadmins`), causing them to previously appear in rankings
+  and teacher reports.
+- **Reports default sort matches ranking tiebreaker:** the N. column in the reports tab
+  now sorts by `currentxp DESC, timemodified ASC, lastname ASC`, consistent with the
+  position students see in the ranking tab.
+- **`.btn-close` style no longer bleeds into Moodle's block-config modal:** the CSS rule
+  was scoped to `.block_playerhud` only, preventing accidental override of the close
+  button in the native block editing drawer on `path-blocks-playerhud` pages.
+
+### Strings changed
+- `help_reset_checkbox` replaced by `help_use_default` and `help_use_default_note`
+  (en / pt_br).
+
+---
+
 ## [v1.3.12] — 2026-05-06
 
 ### Fixed
