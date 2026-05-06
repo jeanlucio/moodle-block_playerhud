@@ -431,6 +431,18 @@ class game {
         // 1. Have MORE XP than me.
         // 2. OR have the SAME XP, but arrived earlier.
         // 3. AND are NOT managers/teachers.
+        // 4. AND are still actively enrolled in the course.
+        $enrolledclause = '';
+        if ($courseid > 0) {
+            $enrolledclause = "AND userid IN (
+                SELECT ue.userid
+                  FROM {user_enrolments} ue
+                  JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = :enrol_courseid
+                 WHERE ue.status = 0 AND e.status = 0
+            )";
+            $params['enrol_courseid'] = $courseid;
+        }
+
         $sql = "SELECT COUNT(id)
                   FROM {block_playerhud_user}
                  WHERE blockinstanceid = :pid
@@ -438,6 +450,7 @@ class game {
                    AND ranking_visibility = 1
                    $excludeclause
                    $groupclause
+                   $enrolledclause
                    AND (
                        currentxp > :xp
                        OR (currentxp = :xp_tie AND timemodified < :tm)
@@ -502,14 +515,17 @@ class game {
 
         // SQL Modification:
         // Sort by XP (Descending) and then by DATE (Ascending - first comes first wins).
+        // Only include users actively enrolled in the course.
         $sql = "SELECT $userfields, u.id as userid,
                        pu.currentxp, pu.ranking_visibility, pu.enable_gamification, pu.timemodified
                   FROM {block_playerhud_user} pu
                   JOIN {user} u ON pu.userid = u.id
+                  JOIN {user_enrolments} ue ON ue.userid = u.id AND ue.status = 0
+                  JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = :enrolcourseid AND e.status = 0
                  WHERE pu.blockinstanceid = :pid
               ORDER BY pu.currentxp DESC, pu.timemodified ASC, u.lastname ASC";
 
-        $rawusers = $DB->get_records_sql($sql, ['pid' => $blockinstanceid]);
+        $rawusers = $DB->get_records_sql($sql, ['pid' => $blockinstanceid, 'enrolcourseid' => $courseid]);
 
         $individualranking = [];
         $coursecontext = \context_course::instance($courseid);

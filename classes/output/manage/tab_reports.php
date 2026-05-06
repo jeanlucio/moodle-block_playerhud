@@ -618,6 +618,8 @@ class tab_reports implements renderable, templatable {
                    WHERE inv.userid = u.id AND it.blockinstanceid = :p1 AND inv.source != 'revoked') as total_items
               FROM {user} u
               JOIN {block_playerhud_user} pu ON pu.userid = u.id
+              JOIN {user_enrolments} ue ON ue.userid = u.id AND ue.status = 0
+              JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = :enrolcourseid AND e.status = 0
              WHERE pu.blockinstanceid = :p2
                $excludeclause
           ORDER BY $sortsql";
@@ -625,6 +627,7 @@ class tab_reports implements renderable, templatable {
         $params = [
             'p1' => $this->instanceid,
             'p2' => $this->instanceid,
+            'enrolcourseid' => $this->courseid,
         ];
 
         if (!empty($excludeparams)) {

@@ -152,7 +152,7 @@ class tab_ranking implements renderable, templatable {
             );
 
             $individual = $data['individual'];
-            $groups = $data['groups'];
+            $groups = !empty($this->config->enable_group_ranking) ? $data['groups'] : [];
 
             // Apply filter to list if teacher requested.
             if ($this->isteacher && !empty($hideghosts)) {

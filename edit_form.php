@@ -87,6 +87,15 @@ class block_playerhud_edit_form extends block_edit_form {
         $mform->setDefault('config_enable_ranking', 1);
         $mform->addHelpButton('config_enable_ranking', 'enable_ranking', 'block_playerhud');
 
+        $mform->addElement(
+            'selectyesno',
+            'config_enable_group_ranking',
+            get_string('enable_group_ranking', 'block_playerhud')
+        );
+        $mform->setDefault('config_enable_group_ranking', 1);
+        $mform->addHelpButton('config_enable_group_ranking', 'enable_group_ranking', 'block_playerhud');
+        $mform->hideIf('config_enable_group_ranking', 'config_enable_ranking', 'eq', 0);
+
         // Section 6: Help Page Settings.
         $mform->addElement('header', 'config_help_hdr', get_string('help_title', 'block_playerhud'));
 
