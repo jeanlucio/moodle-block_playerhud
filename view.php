@@ -44,10 +44,11 @@ $config = unserialize_object(base64_decode($bi->configdata));
 if (!$config) {
     $config = new stdClass();
 }
-$config->enable_rpg      = isset($config->enable_rpg) ? $config->enable_rpg : 1;
-$config->enable_ranking  = isset($config->enable_ranking) ? $config->enable_ranking : 1;
-$config->enable_items    = isset($config->enable_items) ? $config->enable_items : 1;
-$config->enable_quests   = isset($config->enable_quests) ? $config->enable_quests : 1;
+$config->enable_rpg        = isset($config->enable_rpg) ? $config->enable_rpg : 1;
+$config->enable_ranking    = isset($config->enable_ranking) ? $config->enable_ranking : 1;
+$config->enable_items      = isset($config->enable_items) ? $config->enable_items : 1;
+$config->enable_quests     = isset($config->enable_quests) ? $config->enable_quests : 1;
+$config->use_default_help  = isset($config->use_default_help) ? (int)$config->use_default_help : 1;
 
 // 2. Page Setup.
 $PAGE->set_url('/blocks/playerhud/view.php', ['id' => $courseid, 'instanceid' => $instanceid]);
@@ -222,8 +223,13 @@ if ($isoptin) {
                 // Prepare config object for the renderer.
                 $cleanconfig = new stdClass();
                 // Map the help_content (Moodle strips the 'config_' prefix when saving to DB).
-                $cleanconfig->help_content = isset($config->help_content) ?
+                $cleanconfig->help_content       = isset($config->help_content) ?
                     $config->help_content : null;
+                $cleanconfig->use_default_help   = $config->use_default_help;
+                $cleanconfig->enable_items       = $config->enable_items;
+                $cleanconfig->enable_quests      = $config->enable_quests;
+                $cleanconfig->enable_rpg         = $config->enable_rpg;
+                $cleanconfig->enable_ranking     = $config->enable_ranking;
 
                 $render = new \block_playerhud\output\view\tab_rules($cleanconfig, $instanceid);
                 $tabcontenthtml = $render->display();

@@ -107,21 +107,6 @@
         }
     }
 
-    // Non-hoisted modals on management pages (path-blocks-playerhud on body).
-    .btn-close {
-        opacity: 1;
-        background-image: none;
-        background-color: transparent;
-        border: 0;
-        font-size: 1.5rem;
-        font-weight: 700;
-        line-height: 1;
-        color: #000;
-        text-shadow: 0 1px 0 #fff;
-        padding: 0.5rem;
-        margin: -0.5rem -0.5rem -0.5rem auto;
-    }
-
     // Custom Styling for Navigation Tabs.
     // Selector specificity is intentionally elevated to 0,1,3,1 to beat
     // Moove's accessibility rule: body.pagelayout-incourse #region-main a:not(.btn)
@@ -185,6 +170,25 @@
     }
     .ph-h-10 {
         height: 10px;
+    }
+}
+
+// Non-hoisted modal close button fix (block in course sidebar).
+// Scoped strictly to .block_playerhud to avoid bleeding into Moodle's own modals.
+.block_playerhud {
+    .btn-close {
+        opacity: 1;
+        background-image: none;
+        background-color: transparent;
+        border: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #000;
+        text-shadow: 0 1px 0 #fff;
+        padding: 0.5rem;
+        margin: -0.5rem -0.5rem -0.5rem auto;
+        cursor: pointer;
     }
 }
 

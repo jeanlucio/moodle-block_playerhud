@@ -61,7 +61,7 @@ class tab_rules implements renderable, templatable {
 
         // If the default fallback flag is set, render the system-wide help template.
         if (!empty($data['use_default'])) {
-            return $OUTPUT->render_from_template('block_playerhud/help_default', []);
+            return $OUTPUT->render_from_template('block_playerhud/help_default', $data);
         }
 
         // Otherwise, render the custom content provided via block settings.
@@ -87,12 +87,20 @@ class tab_rules implements renderable, templatable {
             }
         }
 
-        // Check if content is truly empty (ignoring white spaces).
-        // If empty, signal the display method to use the default help_default template.
-        if (empty(trim($rawcontent))) {
+        // Use explicit flag when present; legacy blocks without the flag fall back
+        // to empty-content detection to preserve their existing behaviour.
+        $usedefault = isset($this->config->use_default_help)
+            ? !empty($this->config->use_default_help)
+            : empty(trim($rawcontent));
+
+        if ($usedefault || empty(trim($rawcontent))) {
             return [
-                'use_default' => true,
+                'use_default'  => true,
                 'help_content' => '',
+                'show_items'   => !empty($this->config->enable_items),
+                'show_quests'  => !empty($this->config->enable_quests),
+                'show_rpg'     => !empty($this->config->enable_rpg),
+                'show_ranking' => !empty($this->config->enable_ranking),
             ];
         }
 
@@ -104,7 +112,7 @@ class tab_rules implements renderable, templatable {
         $content = format_text($rawcontent, FORMAT_HTML, ['context' => $context]);
 
         return [
-            'use_default' => false,
+            'use_default'  => false,
             'help_content' => $content,
         ];
     }

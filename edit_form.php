@@ -99,15 +99,24 @@ class block_playerhud_edit_form extends block_edit_form {
         // Section 6: Help Page Settings.
         $mform->addElement('header', 'config_help_hdr', get_string('help_title', 'block_playerhud'));
 
-        // Help Content Editor.
-        $mform->addElement('editor', 'config_help_content', get_string('help_content_label', 'block_playerhud'));
-        $mform->setType('config_help_content', PARAM_RAW); // Allow HTML.
-        $mform->addHelpButton('config_help_content', 'help_content_label', 'block_playerhud');
+        $mform->addElement('selectyesno', 'config_use_default_help', get_string('help_use_default', 'block_playerhud'));
+        $mform->setDefault('config_use_default_help', 1);
 
-        // Reset Checkbox.
-        $mform->addElement('checkbox', 'config_reset_help', get_string('help_reset_checkbox', 'block_playerhud'));
-        $mform->setType('config_reset_help', PARAM_INT);
-        $mform->setDefault('config_reset_help', 0);
+        $notenote = '<div class="alert alert-info py-2 mb-2">' .
+            get_string('help_use_default_note', 'block_playerhud') .
+            '</div>';
+        $mform->addElement(
+            'static',
+            'help_use_default_note',
+            '',
+            $notenote
+        );
+        $mform->hideIf('help_use_default_note', 'config_use_default_help', 'neq', 1);
+
+        // Help Content Editor (always visible so TinyMCE initialises correctly).
+        $mform->addElement('editor', 'config_help_content', get_string('help_content_label', 'block_playerhud'));
+        $mform->setType('config_help_content', PARAM_RAW);
+        $mform->addHelpButton('config_help_content', 'help_content_label', 'block_playerhud');
     }
 
     /**
@@ -117,12 +126,9 @@ class block_playerhud_edit_form extends block_edit_form {
      * @param object $defaults Default data loaded from the DB.
      */
     public function set_data($defaults) {
-        // Force checkbox to always start unchecked and clear any legacy DB state
-        // to prevent parent::set_data from marking it as checked automatically.
-        $defaults->config_reset_help = 0;
         if (isset($this->block->config)) {
+            // Remove legacy reset flag if still present in DB.
             unset($this->block->config->reset_help);
-            unset($this->block->config->config_reset_help);
         }
 
         $text = '';
@@ -151,55 +157,25 @@ class block_playerhud_edit_form extends block_edit_form {
             }
         }
 
-        // When empty, pre-populate with the rendered default template so the teacher
-        // can edit on top of it. Saving persists the custom content; the reset
-        // checkbox clears it back to the template.
+        // When the editor is empty, pre-populate with the full default template so
+        // the teacher has a starting point. Saving this content is harmless because
+        // use_default_help controls what students see, not the emptiness of help_content.
         if (empty(trim($text))) {
             global $OUTPUT;
-            $text = $OUTPUT->render_from_template('block_playerhud/help_default', []);
+            $allflags = ['show_items' => true, 'show_quests' => true, 'show_rpg' => true, 'show_ranking' => true];
+            $text = $OUTPUT->render_from_template('block_playerhud/help_default', $allflags);
             // TinyMCE strips empty inline elements (e.g. Font Awesome <i> tags).
             // A zero-width space inside each empty <i> prevents that.
             $text = preg_replace('/<i\b([^>]*)>\s*<\/i>/i', '<i$1>&#8203;</i>', $text);
         }
 
-        // The Moodle editor element strictly requires an array with 'text' and 'format' keys.
-        $editordata = [
-            'text' => $text,
-            'format' => $format,
-        ];
-
+        $editordata = ['text' => $text, 'format' => $format];
         $defaults->config_help_content = $editordata;
 
-        // CRITICAL: Update block config before parent::set_data maps it,
-        // preventing the parent from reverting our injected default back to empty.
         if (isset($this->block->config)) {
             $this->block->config->help_content = $editordata;
         }
 
         parent::set_data($defaults);
-    }
-
-    /**
-     * Intercept submitted data before Moodle saves it.
-     *
-     * @return object|void Processed data.
-     */
-    public function get_data() {
-        $data = parent::get_data();
-
-        if ($data) {
-            // If reset is checked: save empty to force use of default template.
-            if (!empty($data->config_reset_help)) {
-                $data->config_help_content = [
-                    'text' => '',
-                    'format' => FORMAT_HTML,
-                ];
-            }
-
-            // Prevent reset checkbox state from saving to the database.
-            unset($data->config_reset_help);
-        }
-
-        return $data;
     }
 }

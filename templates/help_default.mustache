@@ -20,7 +20,12 @@
     Template for the default help and rules page.
 
     Example context (json):
-    {}
+    {
+        "show_items": true,
+        "show_quests": true,
+        "show_rpg": true,
+        "show_ranking": true
+    }
 }}
 <div class="alert alert-info shadow-sm mb-4">
     <div class="d-flex align-items-center">
@@ -44,6 +49,7 @@
         </div>
     </div>
 
+    {{#show_items}}
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
@@ -73,7 +79,9 @@
             </div>
         </div>
     </div>
+    {{/show_items}}
 
+    {{#show_quests}}
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
@@ -83,7 +91,9 @@
             </div>
         </div>
     </div>
+    {{/show_quests}}
 
+    {{#show_rpg}}
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
@@ -103,7 +113,9 @@
             </div>
         </div>
     </div>
+    {{/show_rpg}}
 
+    {{#show_ranking}}
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
             <div class="card-body text-center">
@@ -113,6 +125,7 @@
             </div>
         </div>
     </div>
+    {{/show_ranking}}
 
     <div class="col-md-6 mb-3">
         <div class="card h-100 border shadow-sm">
