@@ -383,8 +383,14 @@ export const init = () => {
         cancel: M.util.get_string('cancel', 'moodle'),
     };
 
-    // The modal HTML is now appended directly to $text by text_filter.php,
-    // so it is already in the DOM. Just hoist it to <body> to avoid z-index issues.
+    // Modal HTML is delivered via $PAGE->requires->data_for_js (no AMD arg size limit).
+    // Injecting from JS into <body> bypasses HTML Purifier and ensures the modal is
+    // present before AJAX-loaded forum posts render their drop shortcodes.
+    const filterData = window.block_playerhud_filter || {};
+    if (filterData.modalsHtml && !document.getElementById('phItemModalFilter')) {
+        document.body.insertAdjacentHTML('beforeend', filterData.modalsHtml);
+    }
+
     const $filterModal = $('#phItemModalFilter');
     if ($filterModal.length) {
         $filterModal.appendTo('body');
