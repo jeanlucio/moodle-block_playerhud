@@ -484,6 +484,7 @@ $string['privacy_export_ai_logs'] = 'AI Oracle Logs';
 $string['privacy_export_quest_log'] = 'Claimed Quests';
 $string['privacy_export_rpg'] = 'RPG Progress';
 $string['privacy_updated'] = 'Privacy preference updated.';
+$string['profile_no_items'] = 'No items collected yet.';
 $string['progress_card_title'] = 'Course Progress';
 $string['qty'] = 'Quantity';
 $string['quest'] = 'Quest';

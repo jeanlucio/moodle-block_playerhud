@@ -484,6 +484,7 @@ $string['privacy_export_ai_logs'] = 'Registros do Oráculo IA';
 $string['privacy_export_quest_log'] = 'Missões Reivindicadas';
 $string['privacy_export_rpg'] = 'Progresso do RPG';
 $string['privacy_updated'] = 'Preferência de privacidade atualizada.';
+$string['profile_no_items'] = 'Nenhum item coletado ainda.';
 $string['progress_card_title'] = 'Progresso no Curso';
 $string['qty'] = 'Quantidade';
 $string['quest'] = 'Missão';

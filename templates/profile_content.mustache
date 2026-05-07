@@ -1,0 +1,96 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
+    @template block_playerhud/profile_content
+
+    Displays XP level progress and recent items on the user profile page.
+
+    Example context (json):
+    {
+        "hasgamification": true,
+        "level": 7,
+        "maxlevels": 20,
+        "xpdisplay": "350 / 500 XP",
+        "levelprogress": 70,
+        "hasitems": true,
+        "items": [
+            {
+                "name": "Combustível",
+                "isimage": true,
+                "imageurl": "https://example.com/fuel.png",
+                "imagecontent": ""
+            },
+            {
+                "name": "Moeda",
+                "isimage": false,
+                "imageurl": "",
+                "imagecontent": "💰"
+            }
+        ],
+        "hasmore": true,
+        "morebadge": "+4"
+    }
+}}
+{{#hasgamification}}
+<div class="ph-profile-wrap">
+    <div class="ph-profile-level d-flex align-items-center mb-2">
+        <span class="badge bg-primary ph-profile-badge me-2">
+            {{#str}}level, block_playerhud{{/str}} {{level}}
+        </span>
+        <div class="progress flex-grow-1 ph-profile-xpbar"
+             role="progressbar"
+             aria-valuenow="{{levelprogress}}"
+             aria-valuemin="0"
+             aria-valuemax="100"
+             aria-label="{{xpdisplay}}">
+            <div class="progress-bar ph-profile-levelbar" style="--ph-progress: {{levelprogress}}%"></div>
+        </div>
+        <small class="text-muted ms-2 ph-profile-xptext">{{xpdisplay}}</small>
+    </div>
+    {{#hasitems}}
+    <div class="ph-profile-items d-flex flex-wrap">
+        {{#items}}
+        <div class="ph-profile-item ph-profile-item-clickable"
+             role="img"
+             aria-label="{{name}}"
+             tabindex="0"
+             data-name="{{name}}"
+             data-isimage="{{isimageint}}"
+             data-imageurl="{{imageurl}}"
+             data-imagecontent="{{imagecontent}}"
+             data-xptext="{{xptext}}">
+            {{#isimage}}
+            <img src="{{imageurl}}" alt="" class="ph-profile-item-img">
+            {{/isimage}}
+            {{^isimage}}
+            <span aria-hidden="true">{{imagecontent}}</span>
+            {{/isimage}}
+            <div class="d-none ph-item-desc-profile">{{{description}}}</div>
+        </div>
+        {{/items}}
+        {{#hasmore}}
+        <div class="ph-profile-item ph-profile-more" aria-hidden="true">{{morebadge}}</div>
+        {{/hasmore}}
+    </div>
+    {{/hasitems}}
+    {{^hasitems}}
+    <p class="text-muted small mb-0">{{#str}}profile_no_items, block_playerhud{{/str}}</p>
+    {{/hasitems}}
+    {{#hasitems}}
+    {{> block_playerhud/modal_item }}
+    {{/hasitems}}
+</div>
+{{/hasgamification}}

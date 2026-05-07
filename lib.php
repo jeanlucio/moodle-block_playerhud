@@ -82,6 +82,76 @@ function block_playerhud_pluginfile($course, $birecord, $context, $filearea, $ar
 }
 
 /**
+ * Adds a PlayerHUD section to the user profile page.
+ *
+ * Only shown when viewing a profile within a course that has a PlayerHUD block
+ * and the student has gamification enabled.
+ *
+ * @param \core_user\output\myprofile\tree $tree The profile navigation tree.
+ * @param stdClass $user The user being viewed.
+ * @param bool $iscurrentuser True if the viewer is viewing their own profile.
+ * @param stdClass|null $course The current course, or null outside course context.
+ */
+function block_playerhud_myprofile_navigation(
+    \core_user\output\myprofile\tree $tree,
+    stdClass $user,
+    bool $iscurrentuser,
+    ?stdClass $course
+): void {
+    global $DB, $OUTPUT, $PAGE;
+
+    if (empty($course) || (int)$course->id === SITEID) {
+        return;
+    }
+
+    $coursecontext = \context_course::instance($course->id);
+    $instances = $DB->get_records(
+        'block_instances',
+        ['blockname' => 'playerhud', 'parentcontextid' => $coursecontext->id],
+        'id DESC',
+        'id',
+        0,
+        1
+    );
+
+    if (empty($instances)) {
+        return;
+    }
+
+    $instance = reset($instances);
+    $player = $DB->get_record('block_playerhud_user', [
+        'blockinstanceid' => $instance->id,
+        'userid' => $user->id,
+    ]);
+
+    if (!$player || !$player->enable_gamification) {
+        return;
+    }
+
+    $content = new \block_playerhud\output\profile_content((int)$instance->id, (int)$user->id);
+    $data = $content->export_for_template($OUTPUT);
+    $html = $OUTPUT->render_from_template('block_playerhud/profile_content', $data);
+
+    if (trim($html) === '') {
+        return;
+    }
+
+    if (!empty($data->hasitems)) {
+        $PAGE->requires->js_call_amd('block_playerhud/profile_items', 'init');
+    }
+
+    $category = new \core_user\output\myprofile\category(
+        'playerhud',
+        get_string('pluginname', 'block_playerhud'),
+        null
+    );
+    $tree->add_category($category);
+
+    $node = new \core_user\output\myprofile\node('playerhud', 'playerhud', '', null, null, $html);
+    $tree->add_node($node);
+}
+
+/**
  * Fetches Drop details using the hash CODE and instance ID.
  *
  * @param string $code The alphanumeric code (e.g. 3C815F).
