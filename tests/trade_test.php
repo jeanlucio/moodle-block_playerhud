@@ -230,8 +230,10 @@ final class trade_test extends advanced_testcase {
         $this->assertEquals(0, $activecoins, 'No active coins should remain after trade.');
 
         // Records are preserved with source=consumed for drop-limit tracking.
-        $consumedcoins = $DB->count_records('block_playerhud_inventory',
-            ['userid' => $user->id, 'itemid' => $coin->id, 'source' => 'consumed']);
+        $consumedcoins = $DB->count_records(
+            'block_playerhud_inventory',
+            ['userid' => $user->id, 'itemid' => $coin->id, 'source' => 'consumed']
+        );
         $this->assertEquals(5, $consumedcoins, 'Spent coins must be retained as consumed.');
 
         $potionsowned = $DB->count_records('block_playerhud_inventory', ['userid' => $user->id, 'itemid' => $potion->id]);
@@ -280,8 +282,11 @@ final class trade_test extends advanced_testcase {
             trade_manager::execute_trade($tradeid, $user->id, $this->instanceid, $this->course->id);
             $this->fail('Expected moodle_exception — consumed items must not be reusable.');
         } catch (\moodle_exception $e) {
-            $this->assertEquals('error_trade_insufficient', $e->errorcode,
-                'Trade should fail with insufficient items, not pass with consumed ones.');
+            $this->assertEquals(
+                'error_trade_insufficient',
+                $e->errorcode,
+                'Trade should fail with insufficient items, not pass with consumed ones.'
+            );
         }
     }
 
@@ -350,8 +355,11 @@ final class trade_test extends advanced_testcase {
             'userid' => $user->id,
             'dropid' => $dropid,
         ]);
-        $this->assertEquals(5, $pickupcount,
-            'Consumed records must be retained so the drop pickup limit is not reset.');
+        $this->assertEquals(
+            5,
+            $pickupcount,
+            'Consumed records must be retained so the drop pickup limit is not reset.'
+        );
 
         // Sanity: no active pills remain in inventory.
         $activepills = $DB->count_records_select(

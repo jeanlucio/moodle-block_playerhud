@@ -67,7 +67,12 @@ class collect {
             }
 
             // Check Game Rules (Limits and Cooldown).
-            $this->process_game_rules($drop, $USER->id);
+            \block_playerhud\drop_guard::check_pickup_allowed(
+                $drop->id,
+                $USER->id,
+                (int)$drop->maxusage,
+                (int)$drop->respawntime
+            );
 
             // Execute Transaction (Give item and XP).
             $earnedxp = $this->process_transaction($drop, $item, $instanceid, $USER->id);
@@ -156,36 +161,6 @@ class collect {
             );
         } catch (\Exception $e) {
             $this->respond($isajax, false, $e->getMessage(), $returnurl);
-        }
-    }
-
-    /**
-     * Checks if the user can collect the item (Cooldown and Limits).
-     *
-     * @param \stdClass $drop The drop object.
-     * @param int $userid The user ID.
-     * @throws \moodle_exception If limits are reached or cooldown is active.
-     */
-    private function process_game_rules($drop, $userid) {
-        global $DB;
-        $inventory = $DB->get_records('block_playerhud_inventory', [
-            'userid' => $userid,
-            'dropid' => $drop->id,
-        ], 'timecreated DESC');
-
-        $count = count($inventory);
-        $lastcollected = reset($inventory);
-
-        if ($drop->maxusage > 0 && $count >= $drop->maxusage) {
-            throw new \moodle_exception('limitreached', 'block_playerhud');
-        }
-
-        if ($lastcollected && $drop->respawntime > 0) {
-            $readytime = $lastcollected->timecreated + $drop->respawntime;
-            if (time() < $readytime) {
-                $minutesleft = ceil(($readytime - time()) / 60);
-                throw new \moodle_exception('waitmore', 'block_playerhud', '', $minutesleft);
-            }
         }
     }
 
