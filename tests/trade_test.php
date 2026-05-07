@@ -221,11 +221,145 @@ final class trade_test extends advanced_testcase {
 
         $this->assertStringContainsString('Health Potion', $result);
 
-        $coinsleft = $DB->count_records('block_playerhud_inventory', ['userid' => $user->id, 'itemid' => $coin->id]);
-        $this->assertEquals(0, $coinsleft, 'Coins should be fully deducted.');
+        // Consumed items are marked, not deleted — none should remain active.
+        $activecoins = $DB->count_records_select(
+            'block_playerhud_inventory',
+            "userid = :uid AND itemid = :iid AND source NOT IN ('revoked', 'consumed')",
+            ['uid' => $user->id, 'iid' => $coin->id]
+        );
+        $this->assertEquals(0, $activecoins, 'No active coins should remain after trade.');
+
+        // Records are preserved with source=consumed for drop-limit tracking.
+        $consumedcoins = $DB->count_records('block_playerhud_inventory',
+            ['userid' => $user->id, 'itemid' => $coin->id, 'source' => 'consumed']);
+        $this->assertEquals(5, $consumedcoins, 'Spent coins must be retained as consumed.');
 
         $potionsowned = $DB->count_records('block_playerhud_inventory', ['userid' => $user->id, 'itemid' => $potion->id]);
         $this->assertEquals(1, $potionsowned, 'Potion should be awarded.');
+    }
+
+    /**
+     * Test 5: Consumed items cannot be reused in a subsequent trade.
+     *
+     * Regression test for the drop-limit reset bug: items spent in a trade
+     * must not be counted as available inventory in future trades.
+     */
+    public function test_trade_consumed_items_not_reusable(): void {
+        global $DB;
+        $user = $this->getDataGenerator()->create_user();
+        $pill = $this->create_dummy_item('Pill');
+        $book = $this->create_dummy_item('Book');
+
+        $this->give_item_to_user($user->id, $pill->id, 5);
+
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object)[
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'Buy Book',
+            'groupid'         => 0,
+            'onetime'         => 0,
+            'timecreated'     => time(),
+        ]);
+
+        $DB->insert_record('block_playerhud_trade_reqs', (object)[
+            'tradeid' => $tradeid,
+            'itemid'  => $pill->id,
+            'qty'     => 5,
+        ]);
+
+        $DB->insert_record('block_playerhud_trade_rewards', (object)[
+            'tradeid' => $tradeid,
+            'itemid'  => $book->id,
+            'qty'     => 1,
+        ]);
+
+        // First trade consumes the 5 pills.
+        trade_manager::execute_trade($tradeid, $user->id, $this->instanceid, $this->course->id);
+
+        // Second attempt must fail: consumed records must not count as available.
+        try {
+            trade_manager::execute_trade($tradeid, $user->id, $this->instanceid, $this->course->id);
+            $this->fail('Expected moodle_exception — consumed items must not be reusable.');
+        } catch (\moodle_exception $e) {
+            $this->assertEquals('error_trade_insufficient', $e->errorcode,
+                'Trade should fail with insufficient items, not pass with consumed ones.');
+        }
+    }
+
+    /**
+     * Test 6: Drop pickup limit is preserved after items are consumed in a trade.
+     *
+     * A drop with maxusage=5 must stay exhausted after the student trades away
+     * the collected items. The consumed inventory records are the only signal
+     * that keeps the pickup counter from resetting.
+     */
+    public function test_drop_limit_preserved_after_trade(): void {
+        global $DB;
+        $user = $this->getDataGenerator()->create_user();
+        $pill = $this->create_dummy_item('Pill');
+        $book = $this->create_dummy_item('Book');
+
+        // Simulate a drop with maxusage = 5.
+        $dropid = $DB->insert_record('block_playerhud_drops', (object)[
+            'blockinstanceid' => $this->instanceid,
+            'itemid'          => $pill->id,
+            'name'            => 'Forum drop',
+            'maxusage'        => 5,
+            'respawntime'     => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        // Give the student 5 pills as if collected from that drop.
+        $records = [];
+        for ($i = 0; $i < 5; $i++) {
+            $records[] = (object)[
+                'userid'      => $user->id,
+                'itemid'      => $pill->id,
+                'dropid'      => $dropid,
+                'source'      => 'map',
+                'timecreated' => time(),
+            ];
+        }
+        $DB->insert_records('block_playerhud_inventory', $records);
+
+        // Execute trade: 5 pills → 1 book.
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object)[
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'Buy Book',
+            'groupid'         => 0,
+            'onetime'         => 0,
+            'timecreated'     => time(),
+        ]);
+
+        $DB->insert_record('block_playerhud_trade_reqs', (object)[
+            'tradeid' => $tradeid,
+            'itemid'  => $pill->id,
+            'qty'     => 5,
+        ]);
+
+        $DB->insert_record('block_playerhud_trade_rewards', (object)[
+            'tradeid' => $tradeid,
+            'itemid'  => $book->id,
+            'qty'     => 1,
+        ]);
+
+        trade_manager::execute_trade($tradeid, $user->id, $this->instanceid, $this->course->id);
+
+        // After trade, drop pickup counter must still read 5 (consumed records retained).
+        $pickupcount = $DB->count_records('block_playerhud_inventory', [
+            'userid' => $user->id,
+            'dropid' => $dropid,
+        ]);
+        $this->assertEquals(5, $pickupcount,
+            'Consumed records must be retained so the drop pickup limit is not reset.');
+
+        // Sanity: no active pills remain in inventory.
+        $activepills = $DB->count_records_select(
+            'block_playerhud_inventory',
+            "userid = :uid AND itemid = :iid AND source NOT IN ('revoked', 'consumed')",
+            ['uid' => $user->id, 'iid' => $pill->id]
+        );
+        $this->assertEquals(0, $activepills, 'No active pills should remain after trade.');
     }
 
     /**
