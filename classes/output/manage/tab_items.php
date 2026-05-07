@@ -181,6 +181,9 @@ class tab_items implements renderable {
         if ($action === 'distribute') {
             return $this->render_distribute_view($baseurl);
         }
+        if ($action === 'alldrops') {
+            return $this->render_all_drops_view($baseurl);
+        }
         return $this->render_list_view($baseurl);
     }
 
@@ -385,6 +388,9 @@ class tab_items implements renderable {
             'url_add' => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
             'url_distribute' => (new moodle_url($baseurl, ['action' => 'distribute']))->out(false),
             'str_distribute' => get_string('distribute_btn', 'block_playerhud'),
+            'url_all_drops' => (new moodle_url($baseurl, ['action' => 'alldrops']))->out(false),
+            'str_all_drops_btn' => get_string('all_drops_btn', 'block_playerhud'),
+            'str_all_drops_more' => get_string('all_drops_more', 'block_playerhud'),
             'items' => $itemsdata,
             'paging_bar' => $OUTPUT->paging_bar($totalitems, $page, $perpage, $baseurl, 'page'),
 
@@ -431,6 +437,86 @@ class tab_items implements renderable {
         $PAGE->requires->js_call_amd('block_playerhud/manage_items', 'init', [$jsvars]);
 
         return $OUTPUT->render_from_template('block_playerhud/manage_items_table', $templatedata);
+    }
+
+    /**
+     * Render the all-drops overview (flat list across all items).
+     *
+     * @param moodle_url $baseurl Base URL for the items tab.
+     * @return string HTML content.
+     */
+    protected function render_all_drops_view(moodle_url $baseurl): string {
+        global $DB, $OUTPUT;
+
+        $page    = optional_param('page', 0, PARAM_INT);
+        $perpage = 30;
+
+        $sql = "SELECT d.id, d.name AS drop_name, d.code, d.maxusage, d.respawntime,
+                       i.id AS itemid, i.name AS item_name
+                  FROM {block_playerhud_drops} d
+                  JOIN {block_playerhud_items} i ON i.id = d.itemid
+                 WHERE i.blockinstanceid = :instanceid
+              ORDER BY i.name ASC, d.name ASC";
+        $alldrops = array_values($DB->get_records_sql($sql, ['instanceid' => $this->instanceid]));
+
+        // Assign a sequential number per unique item (same item → same number).
+        $itemnumbers = [];
+        $itemcounter = 0;
+        foreach ($alldrops as $drop) {
+            if (!isset($itemnumbers[$drop->itemid])) {
+                $itemnumbers[$drop->itemid] = ++$itemcounter;
+            }
+        }
+
+        $total       = count($alldrops);
+        $pageslice   = array_slice($alldrops, $page * $perpage, $perpage);
+        $coursecontext = \context_course::instance($this->courseid);
+        $fmtopts     = ['context' => $coursecontext, 'para' => false, 'newlines' => false];
+
+        $dropsdata = [];
+        foreach ($pageslice as $drop) {
+            $dropsdata[] = [
+                'item_number'     => $itemnumbers[$drop->itemid],
+                'item_name'       => format_string($drop->item_name),
+                'drop_name'       => format_text(s($drop->drop_name), FORMAT_HTML, $fmtopts),
+                'drop_name_plain' => format_string($drop->drop_name),
+                'code'            => s($drop->code),
+                'is_infinite'     => ($drop->maxusage == 0),
+                'maxusage'        => $drop->maxusage,
+                'is_immediate'    => ($drop->respawntime == 0),
+                'respawntime_fmt' => format_time($drop->respawntime),
+                'url_edit'        => (new moodle_url('/blocks/playerhud/edit_drop.php', [
+                    'instanceid' => $this->instanceid,
+                    'courseid'   => $this->courseid,
+                    'itemid'     => $drop->itemid,
+                    'dropid'     => $drop->id,
+                ]))->out(false),
+            ];
+        }
+
+        $templatedata = [
+            'url_back'        => $baseurl->out(false),
+            'has_drops'       => !empty($dropsdata),
+            'drops'           => $dropsdata,
+            'paging_bar'      => $OUTPUT->paging_bar($total, $page, $perpage, $baseurl, 'page'),
+            'has_paging'      => ($total > $perpage),
+            'str_title'       => get_string('all_drops_title', 'block_playerhud'),
+            'str_desc'        => get_string('all_drops_desc', 'block_playerhud'),
+            'str_back'        => get_string('back', 'block_playerhud'),
+            'str_col_num'     => '#',
+            'str_col_item'    => get_string('item_name', 'block_playerhud'),
+            'str_col_drop'    => get_string('drop_name_label', 'block_playerhud'),
+            'str_col_code'    => get_string('drops_col_code', 'block_playerhud'),
+            'str_col_usage'   => get_string('maxusage', 'block_playerhud'),
+            'str_col_respawn' => get_string('respawntime', 'block_playerhud'),
+            'str_col_actions' => get_string('actions'),
+            'str_edit'        => get_string('edit'),
+            'str_empty'       => get_string('all_drops_empty', 'block_playerhud'),
+            'str_infinite'    => get_string('infinite_drops', 'block_playerhud'),
+            'str_immediate'   => get_string('drops_immediate', 'block_playerhud'),
+        ];
+
+        return $OUTPUT->render_from_template('block_playerhud/all_drops_list', $templatedata);
     }
 
     /**

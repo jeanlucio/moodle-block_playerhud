@@ -1,0 +1,125 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/all_drops_list
+
+    Overview table listing all drops across all items in a block instance.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio
+    @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "url_back": "#",
+        "has_drops": true,
+        "str_title": "All Drops",
+        "str_desc": "Complete list of all drops registered in this block.",
+        "str_back": "Back",
+        "str_col_num": "#",
+        "str_col_item": "Item Name",
+        "str_col_drop": "Location / Name",
+        "str_col_code": "Code",
+        "str_col_usage": "Collection Limit",
+        "str_col_respawn": "Cooldown Time",
+        "str_col_actions": "Actions",
+        "str_edit": "Edit",
+        "str_empty": "No drops registered yet.",
+        "str_infinite": "Infinite drops",
+        "str_immediate": "Immediate",
+        "has_paging": false,
+        "paging_bar": "",
+        "drops": [
+            {
+                "item_number": 1,
+                "item_name": "Magic Sword",
+                "drop_name": "Section 1 - Introduction",
+                "drop_name_plain": "Section 1 - Introduction",
+                "code": "A1B2C3",
+                "is_infinite": false,
+                "maxusage": 1,
+                "is_immediate": true,
+                "respawntime_fmt": "Immediate",
+                "url_edit": "#"
+            }
+        ]
+    }
+}}
+<div class="ph-all-drops-view">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h4 class="mb-1">{{str_title}}</h4>
+            <p class="text-muted small mb-0">{{str_desc}}</p>
+        </div>
+        <a href="{{url_back}}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa fa-arrow-left me-1" aria-hidden="true"></i> {{str_back}}
+        </a>
+    </div>
+
+    {{#has_drops}}
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col" class="text-center" style="width:3rem">{{str_col_num}}</th>
+                    <th scope="col">{{str_col_item}}</th>
+                    <th scope="col">{{str_col_drop}}</th>
+                    <th scope="col">{{str_col_code}}</th>
+                    <th scope="col" class="text-center">{{str_col_usage}}</th>
+                    <th scope="col" class="text-center">{{str_col_respawn}}</th>
+                    <th scope="col" class="text-center">{{str_col_actions}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#drops}}
+                <tr>
+                    <td class="text-center text-muted small">{{item_number}}</td>
+                    <td class="fw-semibold">{{item_name}}</td>
+                    <td>{{{drop_name}}}</td>
+                    <td><code>{{code}}</code></td>
+                    <td class="text-center">
+                        {{#is_infinite}}
+                        <span class="badge bg-secondary" title="{{str_infinite}}">
+                            <i class="fa fa-infinity" aria-hidden="true"></i>
+                        </span>
+                        {{/is_infinite}}
+                        {{^is_infinite}}{{maxusage}}{{/is_infinite}}
+                    </td>
+                    <td class="text-center text-muted small">
+                        {{#is_immediate}}{{str_immediate}}{{/is_immediate}}
+                        {{^is_immediate}}{{respawntime_fmt}}{{/is_immediate}}
+                    </td>
+                    <td class="text-center">
+                        <a href="{{url_edit}}" class="btn btn-sm btn-outline-primary"
+                           aria-label="{{str_edit}} {{drop_name_plain}}">
+                            <i class="fa fa-pencil" aria-hidden="true"></i>
+                        </a>
+                    </td>
+                </tr>
+                {{/drops}}
+            </tbody>
+        </table>
+    </div>
+    {{#has_paging}}
+    <div class="mt-2">{{{paging_bar}}}</div>
+    {{/has_paging}}
+    {{/has_drops}}
+
+    {{^has_drops}}
+    <div class="alert alert-info">{{str_empty}}</div>
+    {{/has_drops}}
+</div>

@@ -643,6 +643,17 @@ if ($action === 'suggest_quests' || $action === 'save_suggestions') {
         );
     }
 
+    $PAGE->requires->js_call_amd('block_playerhud/manage_quests', 'init', [[
+        'strings' => [
+            'confirm_title'   => get_string('confirmation', 'admin'),
+            'yes'             => get_string('yes'),
+            'cancel'          => get_string('cancel'),
+            'delete_selected' => get_string('delete_selected', 'block_playerhud'),
+            'delete_n_items'  => get_string('delete_n_items', 'block_playerhud'),
+            'confirm_bulk'    => get_string('confirm_bulk_delete', 'block_playerhud'),
+        ],
+    ]]);
+
     echo $OUTPUT->header();
     $sugform->display();
     echo $OUTPUT->footer();
