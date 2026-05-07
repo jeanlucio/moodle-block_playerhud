@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.14] — 2026-05-07
+
+### Added
+- **All-drops overview:** new `action=alldrops` view in the Items management tab shows a
+  flat paginated table of every drop across all items (item number, item name, drop name,
+  code, collection limit, cooldown).
+- **Distribute split button:** the Distribute Drops button is converted to a split-button
+  dropdown so teachers can reach both Distribute and All Drops from the same control.
+- **Group filter in ranking (teacher):** a group selector dropdown appears above the
+  individual leaderboard when the course has groups; selecting a group filters the
+  individual tab to show only members of that group (group ranking tab is unaffected).
+- **Per-user visibility toggle (teacher):** teachers can toggle any enrolled student's
+  ranking visibility directly from the leaderboard table without impersonating the student;
+  the action validates capability, sesskey, and course enrolment.
+
+---
+
 ## [v1.3.13] — 2026-05-06
 
 ### Added
