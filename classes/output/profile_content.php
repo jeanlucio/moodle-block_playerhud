@@ -31,7 +31,6 @@ use stdClass;
  * Renderable for the PlayerHUD section on the user profile page.
  */
 class profile_content implements \renderable, \templatable {
-
     /** @var int Maximum items shown in the profile section. */
     private const ITEM_LIMIT = 6;
 
@@ -42,7 +41,9 @@ class profile_content implements \renderable, \templatable {
      * @param int $userid The user ID.
      */
     public function __construct(
+        /** @var int The block instance ID. */
         private readonly int $blockinstanceid,
+        /** @var int The user ID. */
         private readonly int $userid
     ) {
     }
