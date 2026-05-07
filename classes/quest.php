@@ -520,13 +520,14 @@ class quest {
             }
         }
 
-        // 2. Level Milestones (25%, 50%, 75%, 100% of Max Level).
+        // 2. Level Milestones (25%, 50%, 75% of Max Level).
+        // The max level is intentionally excluded: its XP reward has no progression value, and
+        // if the reward is the only way to reach that level it creates an unreachable deadlock.
         $maxlevels = isset($config->max_levels) ? (int)$config->max_levels : 20;
         $levelsteps = [
             (int)ceil($maxlevels * 0.25),
             (int)ceil($maxlevels * 0.50),
             (int)ceil($maxlevels * 0.75),
-            (int)$maxlevels,
         ];
         $levelsteps = array_unique(array_filter($levelsteps, function ($v) {
             return $v > 1;
@@ -571,7 +572,15 @@ class quest {
         // 4. Economy Milestones.
         $totaltrades = $DB->count_records('block_playerhud_trades', ['blockinstanceid' => $instanceid]);
         if ($totaltrades > 0) {
-            $tradesteps = [1, 5, 10];
+            $unlimitedtrades = $DB->count_records(
+                'block_playerhud_trades',
+                ['blockinstanceid' => $instanceid, 'onetime' => 0]
+            );
+            if ($unlimitedtrades > 0) {
+                $tradesteps = [1, 5, 10];
+            } else {
+                $tradesteps = array_filter([1, 5, 10], fn($s) => $s <= $totaltrades);
+            }
             foreach ($tradesteps as $trds) {
                 if (!$hasquest(self::TYPE_TRADES, $trds)) {
                     $suggestions[] = [
