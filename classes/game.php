@@ -468,9 +468,10 @@ class game {
      * @param int $courseid The course ID.
      * @param int $currentuserid Current user ID.
      * @param bool $isteacher Is user teacher?
+     * @param int $filtergroup Group ID to filter individual ranking (teacher only, 0 = no filter).
      * @return array
      */
-    public static function get_leaderboard($blockinstanceid, $courseid, $currentuserid, $isteacher) {
+    public static function get_leaderboard($blockinstanceid, $courseid, $currentuserid, $isteacher, $filtergroup = 0) {
         global $DB;
 
         // 1. Groups Map.
@@ -540,6 +541,11 @@ class game {
             $isme = ($usr->userid == $currentuserid);
 
             if (has_capability('block/playerhud:manage', $coursecontext, $usr->userid)) {
+                continue;
+            }
+
+            // Teacher group filter: skip users outside the selected group.
+            if ($isteacher && $filtergroup > 0 && !groups_is_member($filtergroup, $usr->userid)) {
                 continue;
             }
 

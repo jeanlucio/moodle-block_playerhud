@@ -89,6 +89,9 @@
 
     {{! --- CONTENT AREA --- }}
     {{#show_content}}
+        {{#has_groups_menu}}
+        <div class="mb-3">{{{groups_menu}}}</div>
+        {{/has_groups_menu}}
         <ul class="nav nav-tabs mb-3" id="rankingTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 {{!
@@ -130,6 +133,9 @@
                                     <th scope="col" class="text-center small text-muted font-monospace">
                                         <i class="fa fa-clock-o me-1" aria-hidden="true"></i> {{str_col_date}}
                                     </th>
+                                    {{#is_teacher}}
+                                    <th scope="col" class="text-center">{{str_col_visibility}}</th>
+                                    {{/is_teacher}}
                                 </tr>
                             </thead>
                             <tbody>
@@ -176,6 +182,16 @@
                                     <td class="text-center small text-muted font-monospace">
                                         {{last_score_date}}
                                     </td>
+                                    {{#is_teacher}}
+                                    <td class="text-center">
+                                        <a href="{{url_toggle_visibility}}"
+                                           class="btn btn-sm {{#is_ranking_visible}}btn-outline-success{{/is_ranking_visible}}{{^is_ranking_visible}}btn-outline-secondary{{/is_ranking_visible}}"
+                                           aria-label="{{str_toggle_ranking}}">
+                                            <i class="fa {{#is_ranking_visible}}fa-eye{{/is_ranking_visible}}{{^is_ranking_visible}}fa-eye-slash{{/is_ranking_visible}}"
+                                               aria-hidden="true"></i>
+                                        </a>
+                                    </td>
+                                    {{/is_teacher}}
                                 </tr>
                                 {{/individual}}
                             </tbody>

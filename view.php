@@ -78,6 +78,27 @@ if ($action === 'toggle_hud' && confirm_sesskey()) {
     redirect($returnurl ? new moodle_url($returnurl) : $PAGE->url);
 }
 
+// Logic: Teacher toggles another user's ranking visibility.
+if ($tab === 'toggle_ranking_user' && confirm_sesskey()) {
+    require_capability('block/playerhud:manage', $context);
+    $targetuserid = required_param('targetuserid', PARAM_INT);
+    $enrolled = is_enrolled(context_course::instance($courseid), $targetuserid, '', true);
+    if (!$enrolled) {
+        throw new moodle_exception('invaliduserid');
+    }
+    $targetplayer = \block_playerhud\game::get_player($instanceid, $targetuserid);
+    $newvis = ($targetplayer->ranking_visibility == 1) ? 0 : 1;
+    \block_playerhud\game::toggle_ranking_visibility($instanceid, $targetuserid, $newvis);
+    redirect(
+        new moodle_url('/blocks/playerhud/view.php', [
+            'id' => $courseid,
+            'instanceid' => $instanceid,
+            'tab' => 'ranking',
+            'group' => optional_param('group', 0, PARAM_INT),
+        ])
+    );
+}
+
 // Logic: Privacy Toggle.
 if ($tab == 'toggle_ranking_pref' && confirm_sesskey()) {
     $newvis = ($player->ranking_visibility == 1) ? 0 : 1;

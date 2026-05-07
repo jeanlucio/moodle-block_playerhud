@@ -118,16 +118,20 @@ class tab_ranking implements renderable, templatable {
         $urlteacherfilter = '';
         $strteacherfilter = '';
         $btnteacherclass = '';
+        $groupsmenu = '';
+        $filtergroup = 0;
 
         if ($this->isteacher) {
             // Check if teacher asked to hide ghosts.
             $hideghosts = optional_param('hide_ghosts', 0, PARAM_INT);
+            $filtergroup = optional_param('group', 0, PARAM_INT);
             $teacherfilteractive = true;
 
             $urlteacherfilter = new moodle_url('/blocks/playerhud/view.php', [
                 'id' => $this->courseid,
                 'instanceid' => $this->instanceid,
                 'tab' => 'ranking',
+                'group' => $filtergroup,
                 'hide_ghosts' => $hideghosts ? 0 : 1,
             ]);
 
@@ -140,6 +144,22 @@ class tab_ranking implements renderable, templatable {
                 $strteacherfilter = get_string('ranking_filter_hide', 'block_playerhud');
                 $btnteacherclass = 'btn-outline-primary';
             }
+
+            // Groups selector menu (single_select — blocks don't have cm_info for groups_print_activity_menu).
+            $coursegroups = groups_get_all_groups($this->courseid);
+            if (!empty($coursegroups)) {
+                $baseurl = new moodle_url('/blocks/playerhud/view.php', [
+                    'id' => $this->courseid,
+                    'instanceid' => $this->instanceid,
+                    'tab' => 'ranking',
+                    'hide_ghosts' => $hideghosts,
+                ]);
+                $groupoptions = [0 => get_string('allparticipants', 'core')];
+                foreach ($coursegroups as $grp) {
+                    $groupoptions[$grp->id] = format_string($grp->name);
+                }
+                $groupsmenu = $output->single_select($baseurl, 'group', $groupoptions, $filtergroup, []);
+            }
         }
 
         if ($isvisible || $this->isteacher) {
@@ -148,7 +168,8 @@ class tab_ranking implements renderable, templatable {
                 $this->instanceid,
                 $this->courseid,
                 $this->player->userid,
-                $this->isteacher
+                $this->isteacher,
+                $filtergroup
             );
 
             $individual = $data['individual'];
@@ -162,6 +183,25 @@ class tab_ranking implements renderable, templatable {
                 });
                 // Re-index array for mustache.
                 $individual = array_values($individual);
+            }
+
+            // Enrich each entry with teacher-only toggle URL.
+            if ($this->isteacher) {
+                $strhide = get_string('ranking_hide_user', 'block_playerhud');
+                $strshow = get_string('ranking_show_user', 'block_playerhud');
+                foreach ($individual as $entry) {
+                    $isrankingvisible = ($entry->ranking_visibility == 1);
+                    $entry->url_toggle_visibility = (new moodle_url('/blocks/playerhud/view.php', [
+                        'id'           => $this->courseid,
+                        'instanceid'   => $this->instanceid,
+                        'tab'          => 'toggle_ranking_user',
+                        'targetuserid' => $entry->userid,
+                        'group'        => $filtergroup,
+                        'sesskey'      => sesskey(),
+                    ]))->out(false);
+                    $entry->is_ranking_visible = $isrankingvisible;
+                    $entry->str_toggle_ranking = $isrankingvisible ? $strhide : $strshow;
+                }
             }
 
             $hasgroups = !empty($groups);
@@ -186,6 +226,9 @@ class tab_ranking implements renderable, templatable {
             'url_teacher_filter' => $urlteacherfilter ? $urlteacherfilter->out(false) : '',
             'str_teacher_filter' => $strteacherfilter,
             'btn_teacher_class' => $btnteacherclass,
+            'groups_menu' => $groupsmenu,
+            'has_groups_menu' => !empty($groupsmenu),
+            'str_col_visibility' => get_string('ranking_visibility', 'block_playerhud'),
 
             'str_privacy_title' => get_string('my_visibility', 'block_playerhud'),
             'str_visible' => get_string('visible', 'block_playerhud'),
