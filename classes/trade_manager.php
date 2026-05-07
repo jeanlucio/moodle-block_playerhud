@@ -190,7 +190,8 @@ class trade_manager {
 
                 $sql = "SELECT id, itemid
                           FROM {block_playerhud_inventory}
-                         WHERE userid = :userid AND itemid $invinsql AND source != 'revoked'
+                         WHERE userid = :userid AND itemid $invinsql
+                               AND source NOT IN ('revoked', 'consumed')
                       ORDER BY timecreated ASC";
 
                 $invrecords = $DB->get_records_sql($sql, $invparams);
@@ -222,7 +223,8 @@ class trade_manager {
             $transaction = $DB->start_delegated_transaction();
 
             if (!empty($itemstoremove)) {
-                $DB->delete_records_list('block_playerhud_inventory', 'id', $itemstoremove);
+                [$delsql, $delparams] = $DB->get_in_or_equal($itemstoremove, SQL_PARAMS_NAMED, 'del');
+                $DB->set_field_select('block_playerhud_inventory', 'source', 'consumed', "id $delsql", $delparams);
             }
 
             $rewardsnames = [];

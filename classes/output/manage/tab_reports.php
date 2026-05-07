@@ -705,7 +705,9 @@ class tab_reports implements renderable, templatable {
 
         $innersql = "
             SELECT {$concatitem} AS uniqueid,
-                   CASE WHEN inv.source = 'revoked' THEN 'item_revoked' ELSE 'item' END AS event_type,
+                   CASE WHEN inv.source = 'revoked' THEN 'item_revoked'
+                        WHEN inv.source = 'consumed' THEN 'item_consumed'
+                        ELSE 'item' END AS event_type,
                    i.name AS object_name, inv.timecreated,
                    inv.source AS details, i.image AS icon,
                    CASE
@@ -833,6 +835,16 @@ class tab_reports implements renderable, templatable {
                 } else if ($log->event_type === 'item_revoked') {
                     $badgeclass = 'bg-danger text-white';
                     $badgetext  = get_string('report_type_revoked', 'block_playerhud');
+                    if (isset($allmedia[$log->itemid])) {
+                        $media = $allmedia[$log->itemid];
+                        $isimageicon = $media['is_image'];
+                        $iconurl = $media['is_image'] ? $media['url'] : '';
+                        $iconemoji = $media['is_image'] ? '' : strip_tags($media['content']);
+                    }
+                    $log->inventory_id = 0;
+                } else if ($log->event_type === 'item_consumed') {
+                    $badgeclass = 'bg-warning text-dark';
+                    $badgetext  = get_string('report_type_consumed', 'block_playerhud');
                     if (isset($allmedia[$log->itemid])) {
                         $media = $allmedia[$log->itemid];
                         $isimageicon = $media['is_image'];

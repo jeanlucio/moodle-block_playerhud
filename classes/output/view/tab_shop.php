@@ -86,7 +86,7 @@ class tab_shop implements renderable, templatable {
         // Fetch user inventory counts in a single query.
         $sqlinv = "SELECT itemid, COUNT(id) as qty
                      FROM {block_playerhud_inventory}
-                    WHERE userid = :userid AND source != 'revoked'
+                    WHERE userid = :userid AND source NOT IN ('revoked', 'consumed')
                  GROUP BY itemid";
         $myinventory = $DB->get_records_sql_menu($sqlinv, ['userid' => $this->player->userid]);
 
