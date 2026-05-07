@@ -5,6 +5,38 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.15] — 2026-05-07
+
+### Fixed
+- **Quest suggestions — max level deadlock:** the suggestion engine no longer proposes a
+  "Reach level N" mission for the maximum configured level. The mission would create an
+  unreachable state if its XP reward was the only remaining source to cross the threshold.
+  Level milestones are now suggested at 25 %, 50 % and 75 % of `max_levels` only.
+- **Quest suggestions — trade milestones capped to available trades:** trade milestone steps
+  (1 / 5 / 10) are now filtered against the total number of trades configured. If all trades
+  are single-use, steps exceeding that count are suppressed. If at least one trade is
+  unlimited the full progression is kept, since the student can accumulate many executions.
+- **Drop pickup limit reset after trade:** items spent in a trade were previously deleted
+  from `block_playerhud_inventory`, which reset the per-drop pickup counter to zero and
+  allowed students to re-collect items indefinitely after trading them away. Consumed items
+  are now retained with `source = 'consumed'`; the pickup guard counts all records
+  (including consumed) so the limit is preserved. The history views show consumed items with
+  a distinct yellow badge ("Consumido / Consumed") and no delete button.
+
+### Refactored
+- Drop pickup rules (limit and cooldown) extracted from the collect controller into the new
+  `\block_playerhud\drop_guard` class, making the logic unit-testable independently of the
+  HTTP request lifecycle.
+
+### Tests
+- New `drop_guard_test` covers seven scenarios: below-limit allowed, blocked at limit,
+  blocked when limit is reached via consumed records (trade regression), mixed
+  active + consumed, unlimited drops, cooldown blocking, and cooldown elapsed.
+- `trade_test` updated: `test_trade_success_atomic` now asserts `source = 'consumed'`
+  retention; two new tests cover consumed-item reuse prevention and drop-limit preservation.
+
+---
+
 ## [v1.3.14] — 2026-05-07
 
 ### Added
