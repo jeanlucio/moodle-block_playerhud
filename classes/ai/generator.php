@@ -518,11 +518,11 @@ class generator {
     /**
      * Calls AI providers in sequence: Gemini → Groq → OpenAI-compatible.
      *
-     * @param string $prompt The prompt text.
+     * @param array $parts Prompt parts with 'system' and 'user' keys.
      * @return array Result array with keys 'success', 'data', 'provider'.
      * @throws \moodle_exception If all providers fail or no keys are configured.
      */
-    protected function call_with_fallback(string $prompt): array {
+    protected function call_with_fallback(array $parts): array {
         [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $this->load_api_keys();
 
         if (empty($geminikey) && empty($groqkey) && empty($openaikey)) {
@@ -532,15 +532,15 @@ class generator {
         $result = ['success' => false, 'message' => ''];
 
         if (!empty($geminikey)) {
-            $result = $this->call_gemini($prompt, $geminikey);
+            $result = $this->call_gemini($parts, $geminikey);
         }
 
         if (!$result['success'] && !empty($groqkey)) {
-            $result = $this->call_groq($prompt, $groqkey);
+            $result = $this->call_groq($parts, $groqkey);
         }
 
         if (!$result['success'] && !empty($openaikey) && !empty($openaiurl)) {
-            $result = $this->call_openai_compatible($prompt, $openaikey, $openaiurl, $openaimodel);
+            $result = $this->call_openai_compatible($parts, $openaikey, $openaiurl, $openaimodel);
         }
 
         if (!$result['success']) {
@@ -557,10 +557,10 @@ class generator {
      * Builds the Class Oracle AI prompt.
      *
      * @param string $theme The theme or description for the class.
-     * @return string The constructed prompt.
+     * @return array Prompt parts with 'system' and 'user' keys.
      */
-    protected function build_prompt_class_oracle(string $theme): string {
-        return get_string('ai_prompt_class_oracle', 'block_playerhud', $theme);
+    protected function build_prompt_class_oracle(string $theme): array {
+        return ['system' => '', 'user' => get_string('ai_prompt_class_oracle', 'block_playerhud', $theme)];
     }
 
     /**
@@ -568,9 +568,9 @@ class generator {
      *
      * @param string $theme The story theme or setting.
      * @param array $options Optional mechanics constraints (karma_gain, karma_loss, item_qty).
-     * @return string The constructed prompt.
+     * @return array Prompt parts with 'system' and 'user' keys.
      */
-    protected function build_prompt_story(string $theme, array $options = []): string {
+    protected function build_prompt_story(string $theme, array $options = []): array {
         $prompt = get_string('ai_prompt_story', 'block_playerhud', $theme);
 
         $karmagain = max(0, (int)($options['karma_gain'] ?? 0));
@@ -591,7 +591,7 @@ class generator {
                 "across key choices where the player must pay a price to proceed.";
         }
 
-        return $prompt;
+        return ['system' => '', 'user' => $prompt];
     }
 
     /**

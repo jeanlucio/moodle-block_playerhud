@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.16] — 2026-05-11
+
+### Fixed
+- **AI story and class generation broken:** `build_prompt_story` and
+  `build_prompt_class_oracle` were returning a plain `string` while all API
+  call helpers (`call_gemini`, `call_groq`, `call_openai_compatible`) expected
+  an `array ['system' => ..., 'user' => ...]` since v1.3.8. The mismatch
+  caused a `TypeError` at runtime whenever story or class generation was
+  triggered; item generation was unaffected because it called the API helpers
+  directly with the correct array. Both builder functions now return the same
+  structured array, and `call_with_fallback` signature updated accordingly.
+
+### Changed
+- Plugin icon updated.
+
+---
+
 ## [v1.3.15] — 2026-05-07
 
 ### Fixed
