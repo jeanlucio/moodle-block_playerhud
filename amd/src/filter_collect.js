@@ -365,8 +365,9 @@ const safeB64Decode = (str) => {
  * Initialize.
  */
 export const init = () => {
-    // Load strings registered via $PAGE->requires->strings_for_js() in text_filter.php.
-    // M.util.get_string() reads from Moodle's pre-loaded string cache (no extra requests).
+    // Initialize synchronously from strings_for_js cache (populated by text_filter.php).
+    // M.util.get_string() never throws — returns "[[key,component]]" on cache miss.
+    // Handlers are registered synchronously below, so this must never throw.
     appStrings = {
         collected: M.util.get_string('collected', 'block_playerhud'),
         respawntime: M.util.get_string('respawntime', 'block_playerhud'),
@@ -383,6 +384,47 @@ export const init = () => {
         cancel: M.util.get_string('cancel', 'moodle'),
     };
 
+    // Async update via Str module for AJAX-fragment contexts (e.g. forum posts with
+    // shortcodes) where strings_for_js may not yet have been processed.
+    // Wrapped in try/catch: if Str.get_strings is unavailable for any reason (e.g.
+    // core/str interop differs between Moodle versions), execution continues and the
+    // synchronous M.util values above are used as-is.
+    try {
+        Str.get_strings([
+            {key: 'collected', component: 'block_playerhud'},
+            {key: 'respawntime', component: 'block_playerhud'},
+            {key: 'infinite', component: 'block_playerhud'},
+            {key: 'drops_immediate', component: 'block_playerhud'},
+            {key: 'single_collection', component: 'block_playerhud'},
+            {key: 'error_connection', component: 'block_playerhud'},
+            {key: 'last_collected', component: 'block_playerhud'},
+            {key: 'level', component: 'block_playerhud'},
+            {key: 'xp', component: 'block_playerhud'},
+            {key: 'no_description', component: 'block_playerhud'},
+            {key: 'confirmation', component: 'admin'},
+            {key: 'yes', component: 'moodle'},
+            {key: 'cancel', component: 'moodle'},
+        ]).then(([collected, respawntime, infinite, immediate, singleCollection,
+                  strError, lastCollected, level, xp, noDescription,
+                  confirmTitle, yes, cancel]) => {
+            appStrings.collected = collected;
+            appStrings.respawntime = respawntime;
+            appStrings.infinite = infinite;
+            appStrings.immediate = immediate;
+            appStrings.singleCollection = singleCollection;
+            appStrings.error = strError;
+            appStrings.lastCollected = lastCollected;
+            appStrings.level = level;
+            appStrings.xp = xp;
+            appStrings.noDescription = noDescription;
+            appStrings.confirmTitle = confirmTitle;
+            appStrings.yes = yes;
+            appStrings.cancel = cancel;
+        }).catch(() => { /* keep M.util fallbacks */ });
+    } catch (e) {
+        // Str.get_strings unavailable; M.util fallbacks remain active.
+    }
+
     // Modal HTML is delivered via $PAGE->requires->data_for_js (no AMD arg size limit).
     // Injecting from JS into <body> bypasses HTML Purifier and ensures the modal is
     // present before AJAX-loaded forum posts render their drop shortcodes.
@@ -396,7 +438,7 @@ export const init = () => {
         $filterModal.appendTo('body');
     }
 
-    $('body').on('click', '.js-disable-hud', function(e) {
+    $('body').off('click.phcollect').on('click.phcollect', '.js-disable-hud', function(e) {
         e.preventDefault();
         const url = $(this).attr('href');
         const msg = $(this).attr('data-confirm-msg');
@@ -414,7 +456,8 @@ export const init = () => {
 
     // Item Details Modal.
     // eslint-disable-next-line complexity
-    $('body').on('click keydown', '.ph-item-details-trigger', function(e) {
+    $('body').off('click.phdetails keydown.phdetails')
+        .on('click.phdetails keydown.phdetails', '.ph-item-details-trigger', function(e) {
         if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') {
             return;
         }
@@ -593,7 +636,7 @@ export const init = () => {
     });
 
     // ACTION: COLLECT ITEM.
-    $('body').on('click', '.ph-action-collect', function(e) {
+    $('body').off('click.phaction').on('click.phaction', '.ph-action-collect', function(e) {
         e.preventDefault();
         const trigger = $(this);
 

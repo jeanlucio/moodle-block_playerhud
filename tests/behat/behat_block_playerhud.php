@@ -153,4 +153,291 @@ class behat_block_playerhud extends behat_base {
             $DB->update_record('block_playerhud_user', $player);
         }
     }
+
+    // Step definitions for modal behaviour tests (block_playerhud_modals.feature).
+
+    /**
+     * Creates a PlayerHUD item and associated drop with the given code in the given course.
+     *
+     * @param string $itemname Display name for the item.
+     * @param string $dropcode Short alphanumeric code used in the [PLAYERHUD_DROP] shortcode.
+     * @param string $shortname Course shortname.
+     * @Given a PlayerHUD item :itemname with drop code :dropcode exists in course :shortname
+     */
+    public function playerhud_item_with_drop_exists(string $itemname, string $dropcode, string $shortname): void {
+        global $DB;
+
+        $course  = $DB->get_record('course', ['shortname' => $shortname], '*', MUST_EXIST);
+        $context = context_course::instance($course->id);
+
+        $instance = $DB->get_record(
+            'block_instances',
+            ['blockname' => 'playerhud', 'parentcontextid' => $context->id],
+            '*',
+            MUST_EXIST
+        );
+
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instance->id,
+            'name'            => $itemname,
+            'description'     => '',
+            'image'           => '🏆',
+            'xp'              => 10,
+            'secret'          => 0,
+            'enabled'         => 1,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $instance->id,
+            'itemid'          => $itemid,
+            'code'            => strtoupper($dropcode),
+            'maxusage'        => 0,
+            'respawntime'     => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+    }
+
+    /**
+     * Programmatically records a drop collection for a user.
+     *
+     * @param string $username  Moodle username.
+     * @param string $dropcode  Drop code.
+     * @param string $shortname Course shortname.
+     * @Given :username has collected drop :dropcode in course :shortname
+     */
+    public function user_has_collected_drop(string $username, string $dropcode, string $shortname): void {
+        global $DB;
+
+        $user    = $DB->get_record('user', ['username' => $username], '*', MUST_EXIST);
+        $course  = $DB->get_record('course', ['shortname' => $shortname], '*', MUST_EXIST);
+        $context = context_course::instance($course->id);
+
+        $instance = $DB->get_record(
+            'block_instances',
+            ['blockname' => 'playerhud', 'parentcontextid' => $context->id],
+            '*',
+            MUST_EXIST
+        );
+
+        $drop = $DB->get_record(
+            'block_playerhud_drops',
+            ['blockinstanceid' => $instance->id, 'code' => strtoupper($dropcode)],
+            '*',
+            MUST_EXIST
+        );
+
+        // Ensure player record exists with gamification enabled.
+        $player = $DB->get_record('block_playerhud_user', [
+            'blockinstanceid' => $instance->id,
+            'userid'          => $user->id,
+        ]);
+        if (!$player) {
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid'     => $instance->id,
+                'userid'              => $user->id,
+                'currentxp'           => 10,
+                'enable_gamification' => 1,
+                'ranking_visibility'  => 1,
+                'timecreated'         => time(),
+                'timemodified'        => time(),
+            ]);
+        }
+
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid'      => $user->id,
+            'dropid'      => $drop->id,
+            'timecreated' => time(),
+        ]);
+    }
+
+    /**
+     * Clicks the first element matching a CSS selector on the page.
+     *
+     * @param string $selector CSS selector.
+     * @When I click on the first :selector element
+     */
+    public function i_click_on_first_css_element(string $selector): void {
+        $node = $this->find('css', $selector);
+        $node->click();
+    }
+
+    /**
+     * Asserts that the PlayerHUD item details modal is visible in the DOM.
+     *
+     * Checks for either the filter modal (#phItemModalFilter) or the
+     * sidebar/view modal (#phItemModalView / #ph-item-modal-view).
+     *
+     * @Then the PlayerHUD item details modal is visible
+     */
+    public function playerhud_item_details_modal_is_visible(): void {
+        $this->spin(function () {
+            $candidates = ['#phItemModalFilter', '#phItemModalView', '#ph-item-modal-view'];
+            foreach ($candidates as $sel) {
+                try {
+                    $node = $this->find('css', $sel);
+                    if ($node && $node->isVisible()) {
+                        return true;
+                    }
+                } catch (\Exception $e) {
+                    // Not found, try next selector.
+                    continue;
+                }
+            }
+            return false;
+        });
+    }
+
+    /**
+     * Asserts that the PlayerHUD item details modal is NOT visible.
+     *
+     * @Then the PlayerHUD item details modal is not visible
+     */
+    public function playerhud_item_details_modal_is_not_visible(): void {
+        $candidates = ['#phItemModalFilter', '#phItemModalView', '#ph-item-modal-view'];
+        foreach ($candidates as $sel) {
+            try {
+                $node = $this->find('css', $sel);
+                if ($node && $node->isVisible()) {
+                    throw new \Exception("PlayerHUD modal {$sel} is still visible but should not be.");
+                }
+            } catch (\Behat\Mink\Exception\ElementNotFoundException $e) {
+                // Element not found means it is not visible — expected state.
+                continue;
+            }
+        }
+    }
+
+    /**
+     * Asserts that the given text appears inside the visible PlayerHUD modal.
+     *
+     * @param string $text Text to search for.
+     * @Then I should see :text in the PlayerHUD modal
+     */
+    public function i_should_see_text_in_playerhud_modal(string $text): void {
+        $candidates = ['#phItemModalFilter', '#phItemModalView', '#ph-item-modal-view'];
+        foreach ($candidates as $sel) {
+            try {
+                $node = $this->find('css', $sel);
+                if ($node && $node->isVisible() && str_contains($node->getText(), $text)) {
+                    return;
+                }
+            } catch (\Exception $e) {
+                // Element not found, try next selector.
+                continue;
+            }
+        }
+        throw new \Exception("Text '{$text}' not found in any visible PlayerHUD modal.");
+    }
+
+    /**
+     * Asserts that the given text does NOT appear inside the visible PlayerHUD modal.
+     *
+     * @param string $text Text that must be absent.
+     * @Then I should not see :text in the PlayerHUD modal
+     */
+    public function i_should_not_see_text_in_playerhud_modal(string $text): void {
+        $candidates = ['#phItemModalFilter', '#phItemModalView', '#ph-item-modal-view'];
+        foreach ($candidates as $sel) {
+            try {
+                $node = $this->find('css', $sel);
+                if ($node && $node->isVisible() && str_contains($node->getText(), $text)) {
+                    throw new \Exception("Text '{$text}' was found in PlayerHUD modal {$sel} but should not be.");
+                }
+            } catch (\Behat\Mink\Exception\ElementNotFoundException $e) {
+                // Element not found means text is absent — expected state.
+                continue;
+            }
+        }
+    }
+
+    /**
+     * Closes the currently visible PlayerHUD modal by clicking its dismiss button.
+     *
+     * @When I close the PlayerHUD modal
+     */
+    public function i_close_the_playerhud_modal(): void {
+        $candidates = [
+            '#phItemModalFilter [data-bs-dismiss="modal"]',
+            '#phItemModalView [data-bs-dismiss="modal"]',
+            '#ph-item-modal-view [data-bs-dismiss="modal"]',
+        ];
+        foreach ($candidates as $sel) {
+            try {
+                $node = $this->find('css', $sel);
+                if ($node && $node->isVisible()) {
+                    $node->click();
+                    $this->getSession()->wait(500);
+                    return;
+                }
+            } catch (\Exception $e) {
+                // Element not found, try next selector.
+                continue;
+            }
+        }
+        throw new \Exception("No visible PlayerHUD modal dismiss button found.");
+    }
+
+    /**
+     * Asserts that only one PlayerHUD item details modal element exists in the DOM.
+     *
+     * Catches the "modal opened multiple times" regression: each extra call to
+     * appendTo('body') or insertAdjacentHTML duplicates the element.
+     *
+     * @Then there is only one PlayerHUD modal in the DOM
+     */
+    public function there_is_only_one_playerhud_modal_in_dom(): void {
+        $js = "return document.querySelectorAll(
+            '#phItemModalFilter, #phItemModalView, #ph-item-modal-view'
+        ).length;";
+        $count = $this->getSession()->evaluateScript($js);
+        if ((int) $count > 1) {
+            throw new \Exception("Expected 1 PlayerHUD modal in DOM but found {$count}. Modal is being duplicated.");
+        }
+    }
+
+    /**
+     * Stores the current page URL for later comparison.
+     *
+     * @When I remember the current page URL
+     */
+    public function i_remember_current_page_url(): void {
+        $this->pageurl = $this->getSession()->getCurrentUrl();
+    }
+
+    /** @var string|null Remembered URL for redirect detection. */
+    protected ?string $pageurl = null;
+
+    /**
+     * Asserts that the current URL has not changed since it was remembered.
+     *
+     * @Then the page URL has not changed
+     */
+    public function the_page_url_has_not_changed(): void {
+        if ($this->pageurl === null) {
+            throw new \Exception("No URL was remembered. Use 'I remember the current page URL' first.");
+        }
+        $current = $this->getSession()->getCurrentUrl();
+        if ($current !== $this->pageurl) {
+            throw new \Exception("Page was redirected. Expected: {$this->pageurl} — Got: {$current}");
+        }
+    }
+
+    /**
+     * Waits for a PlayerHUD AJAX collect response (success indicator in DOM).
+     *
+     * Waits until the collect button disappears or changes state (disabled / replaced).
+     *
+     * @When I wait for the PlayerHUD AJAX collect to complete
+     */
+    public function i_wait_for_playerhud_ajax_collect(): void {
+        $this->spin(function () {
+            $js = "return document.querySelector('.ph-action-collect') === null
+                || document.querySelector('.ph-action-collect.disabled') !== null
+                || document.querySelector('.ph-action-collect[aria-disabled]') !== null;";
+            return (bool) $this->getSession()->evaluateScript($js);
+        }, false, 10);
+    }
 }
