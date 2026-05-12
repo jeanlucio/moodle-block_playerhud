@@ -270,14 +270,13 @@ class behat_block_playerhud extends behat_base {
 
         $url     = $this->getSession()->getCurrentUrl();
         $matches = [];
-        preg_match('/course=(\d+)/', $url, $matches);
+        // Moodle course view URL format: course/view.php?id=NNN.
+        preg_match('/[?&]id=(\d+)/', $url, $matches);
         if (empty($matches[1])) {
             throw new \Exception('Cannot determine course id from current URL: ' . $url);
         }
         $courseid = (int) $matches[1];
         $course   = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
-
-        $sectionid = $DB->get_field('course_sections', 'id', ['course' => $course->id, 'section' => 0]);
 
         $moduleinfo              = new \stdClass();
         $moduleinfo->modulename  = 'label';
