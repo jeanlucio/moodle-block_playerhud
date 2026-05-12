@@ -62,6 +62,9 @@ jobs:
           sudo locale-gen en_AU.UTF-8
           echo "NVM_DIR=$HOME/.nvm" >> $GITHUB_ENV
 
+      - name: Add filter_playerhud plugin
+        run: moodle-plugin-ci add-plugin jeanlucio/moodle-filter_playerhud
+
       - name: Install moodle-plugin-ci
         # Sem workaround manual: o CI instala e linka o plugin corretamente.
         # Sem --db-port: usa as portas padrão dos services acima (5432 / 3306).

@@ -37,7 +37,8 @@ let appStrings = {};
  * @return {Object} jQuery objects for modal elements.
  */
 const getModalElements = () => {
-    let root = $('#phItemModalView');
+    // Look for both the camelCase id (older) and the dash-separated id (modal_item.mustache).
+    let root = $('#phItemModalView, #ph-item-modal-view').first();
     let suffix = 'View';
 
     if (!root.length) {
@@ -430,7 +431,10 @@ export const init = () => {
     // Injecting from JS into <body> bypasses HTML Purifier and ensures the modal is
     // present before AJAX-loaded forum posts render their drop shortcodes.
     const filterData = window.block_playerhud_filter || {};
-    if (filterData.modalsHtml && !document.getElementById('phItemModalFilter')) {
+    if (filterData.modalsHtml
+            && !document.getElementById('phItemModalFilter')
+            && !document.getElementById('ph-item-modal-view')
+            && !document.getElementById('phItemModalView')) {
         document.body.insertAdjacentHTML('beforeend', filterData.modalsHtml);
     }
 
