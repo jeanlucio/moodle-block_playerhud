@@ -248,9 +248,67 @@ class behat_block_playerhud extends behat_base {
 
         $DB->insert_record('block_playerhud_inventory', (object) [
             'userid'      => $user->id,
+            'itemid'      => $drop->itemid,
             'dropid'      => $drop->id,
+            'source'      => 'map',
             'timecreated' => time(),
         ]);
+    }
+
+    /**
+     * Creates a Moodle label (mod_label) in the current course containing the given shortcode text.
+     *
+     * Used to embed a [PLAYERHUD_DROP] shortcode in course content without
+     * going through the UI, so the filter renders the collect button.
+     *
+     * @param string $shortcode Raw shortcode string, e.g. [PLAYERHUD_DROP code=GEM01].
+     * @Given a label with shortcode :shortcode exists in the course
+     */
+    public function label_with_shortcode_exists_in_course(string $shortcode): void {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $url     = $this->getSession()->getCurrentUrl();
+        $matches = [];
+        preg_match('/course=(\d+)/', $url, $matches);
+        if (empty($matches[1])) {
+            throw new \Exception('Cannot determine course id from current URL: ' . $url);
+        }
+        $courseid = (int) $matches[1];
+        $course   = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
+
+        $sectionid = $DB->get_field('course_sections', 'id', ['course' => $course->id, 'section' => 0]);
+
+        $moduleinfo              = new \stdClass();
+        $moduleinfo->modulename  = 'label';
+        $moduleinfo->course      = $course->id;
+        $moduleinfo->section     = 0;
+        $moduleinfo->visible     = 1;
+        $moduleinfo->intro       = $shortcode;
+        $moduleinfo->introformat = FORMAT_HTML;
+        $moduleinfo->name        = 'PlayerHUD shortcode label';
+        create_module($moduleinfo);
+    }
+
+    /**
+     * Asserts that the given CSS element is not visible on the page.
+     *
+     * Matches the pattern used in block_playerhud_modals.feature:
+     *   Then the ".ph-action-collect" element is not visible
+     *
+     * @param string $selector CSS selector.
+     * @Then the :selector element is not visible
+     */
+    public function element_is_not_visible(string $selector): void {
+        try {
+            $node = $this->find('css', $selector);
+            if ($node && $node->isVisible()) {
+                throw new \Exception("Element '{$selector}' is visible but expected to be hidden.");
+            }
+        } catch (\Behat\Mink\Exception\ElementNotFoundException $e) {
+            // Element absent from DOM — considered not visible, return normally.
+            return;
+        }
     }
 
     /**

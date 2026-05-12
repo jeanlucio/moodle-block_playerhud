@@ -143,7 +143,7 @@
         <div class="card-body p-3 bg-light d-flex align-items-center flex-wrap">
             <strong class="me-3 mb-2 mb-md-0"><i class="fa fa-filter" aria-hidden="true"></i> {{str.audit}}</strong>
             <div class="flex-grow-1 ph-max-w-500">
-                <label for="r_userid" class="sr-only visually-hidden">{{str.audit}}</label>
+                <label for="r_userid" class="visually-hidden">{{str.audit}}</label>
                 <select id="r_userid" class="form-select w-100">
                     {{#user_selector.options}}
                         <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>

@@ -218,3 +218,17 @@ div.modal.ph-modal-zindex {
 div.modal.ph-z-index-high {
     z-index: 10500;
 }
+
+// Moodle 4.5 (Bootstrap 4) fallback: .visually-hidden does not exist in BS4.
+// Ensures modal ARIA headings are visually hidden in both Bootstrap versions.
+div.modal-dialog .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

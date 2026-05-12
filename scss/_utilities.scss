@@ -54,6 +54,20 @@
     .ph-display-none {
         display: none;
     }
+
+    // Moodle 4.5 (Bootstrap 4) fallback: .visually-hidden does not exist in BS4.
+    // Defined here so screen-reader spans inside the block are always hidden.
+    .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
     .ph-h-60 {
         height: 60px;
     }
