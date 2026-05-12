@@ -265,8 +265,7 @@ class behat_block_playerhud extends behat_base {
      * @Given a label with shortcode :shortcode exists in the course
      */
     public function label_with_shortcode_exists_in_course(string $shortcode): void {
-        global $DB, $CFG;
-        require_once($CFG->dirroot . '/course/lib.php');
+        global $DB;
 
         $url     = $this->getSession()->getCurrentUrl();
         $matches = [];
@@ -278,15 +277,12 @@ class behat_block_playerhud extends behat_base {
         $courseid = (int) $matches[1];
         $course   = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
 
-        $moduleinfo              = new \stdClass();
-        $moduleinfo->modulename  = 'label';
-        $moduleinfo->course      = $course->id;
-        $moduleinfo->section     = 0;
-        $moduleinfo->visible     = 1;
-        $moduleinfo->intro       = $shortcode;
-        $moduleinfo->introformat = FORMAT_HTML;
-        $moduleinfo->name        = 'PlayerHUD shortcode label';
-        create_module($moduleinfo);
+        $this->getDataGenerator()->create_module('label', [
+            'course'      => $course->id,
+            'section'     => 0,
+            'intro'       => $shortcode,
+            'introformat' => FORMAT_HTML,
+        ]);
     }
 
     /**
