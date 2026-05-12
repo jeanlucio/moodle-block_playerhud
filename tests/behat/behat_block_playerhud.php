@@ -277,6 +277,9 @@ class behat_block_playerhud extends behat_base {
         $courseid = (int) $matches[1];
         $course   = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
 
+        // Ensure filter_playerhud is active so the shortcode renders as a collect button.
+        filter_set_global_state('playerhud', TEXTFILTER_ON);
+
         \testing_util::get_data_generator()->create_module('label', [
             'course'      => $course->id,
             'section'     => 0,

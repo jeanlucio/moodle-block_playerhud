@@ -420,7 +420,8 @@ export const init = () => {
             appStrings.confirmTitle = confirmTitle;
             appStrings.yes = yes;
             appStrings.cancel = cancel;
-        }).catch(() => { /* keep M.util fallbacks */ });
+            return;
+        }).catch(() => { /* Keep M.util fallbacks. */ });
     } catch (e) {
         // Str.get_strings unavailable; M.util fallbacks remain active.
     }
@@ -455,7 +456,7 @@ export const init = () => {
     });
 
     // Item Details Modal.
-    // eslint-disable-next-line complexity
+    /* eslint-disable complexity */
     $('body').off('click.phdetails keydown.phdetails')
         .on('click.phdetails keydown.phdetails', '.ph-item-details-trigger', function(e) {
         if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') {
@@ -634,6 +635,7 @@ export const init = () => {
             inst.show();
         });
     });
+    /* eslint-enable complexity */
 
     // ACTION: COLLECT ITEM.
     $('body').off('click.phaction').on('click.phaction', '.ph-action-collect', function(e) {
