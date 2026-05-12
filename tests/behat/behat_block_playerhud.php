@@ -193,7 +193,7 @@ class behat_block_playerhud extends behat_base {
             'blockinstanceid' => $instance->id,
             'itemid'          => $itemid,
             'code'            => strtoupper($dropcode),
-            'maxusage'        => 0,
+            'maxusage'        => 1,
             'respawntime'     => 0,
             'timecreated'     => time(),
             'timemodified'    => time(),
@@ -489,11 +489,20 @@ class behat_block_playerhud extends behat_base {
      * @When I wait for the PlayerHUD AJAX collect to complete
      */
     public function i_wait_for_playerhud_ajax_collect(): void {
+        // Phase 1: wait for the button to enter loading state (click handler ran).
         $this->spin(function () {
             $js = "return document.querySelector('.ph-action-collect') === null
                 || document.querySelector('.ph-action-collect.disabled') !== null
                 || document.querySelector('.ph-action-collect[aria-disabled]') !== null;";
             return (bool) $this->getSession()->evaluateScript($js);
-        }, false, 10);
+        }, false, 5);
+
+        // Phase 2: wait until loading state ends, meaning AJAX completed and UI updated.
+        $this->spin(function () {
+            $js = "return document.querySelector('.ph-action-collect') === null
+                || (document.querySelector('.ph-action-collect.disabled') === null
+                    && document.querySelector('.ph-action-collect[aria-disabled]') === null);";
+            return (bool) $this->getSession()->evaluateScript($js);
+        }, false, 15);
     }
 }
