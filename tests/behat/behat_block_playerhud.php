@@ -277,7 +277,7 @@ class behat_block_playerhud extends behat_base {
         $courseid = (int) $matches[1];
         $course   = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
 
-        \core\testing\generator::instance()->create_module('label', [
+        \testing_util::get_data_generator()->create_module('label', [
             'course'      => $course->id,
             'section'     => 0,
             'intro'       => $shortcode,
