@@ -97,24 +97,28 @@ class block_playerhud extends block_base {
 
             // Recent Items Logic (Stash) — only when items feature is enabled.
             $recentitems = [];
+            $stashhasmore = false;
+            $stashmorebadge = '';
             if (!empty($config->enable_items)) {
                 $rawinventory = \block_playerhud\game::get_inventory($USER->id, $this->instance->id);
-                $limit = 6;
-                $count = 0;
+                $stashlimit = 5;
                 $seenitems = [];
                 $itemstodisplay = [];
 
                 foreach ($rawinventory as $invitem) {
-                    if ($count >= $limit) {
-                        break;
-                    }
                     if (in_array($invitem->id, $seenitems)) {
                         continue;
                     }
                     $seenitems[] = $invitem->id;
-                    $itemstodisplay[$invitem->id] = $invitem;
-                    $count++;
+                    if (count($itemstodisplay) < $stashlimit) {
+                        $itemstodisplay[$invitem->id] = $invitem;
+                    }
                 }
+
+                $totalunique = count($seenitems);
+                $morecount = max(0, $totalunique - $stashlimit);
+                $stashhasmore = $morecount > 0;
+                $stashmorebadge = $stashhasmore ? '+' . $morecount : '';
 
                 $allmedia = \block_playerhud\utils::get_items_display_data($itemstodisplay, $context);
 
@@ -300,6 +304,8 @@ class block_playerhud extends block_base {
                 'has_claimable_quests' => $hasclaimable,
                 'has_items'   => !empty($recentitems),
                 'items'       => $recentitems,
+                'hasmore'     => $stashhasmore,
+                'morebadge'   => $stashmorebadge,
                 'ranking'     => $rankdata,
                 'hasgroup'     => $groupinfo !== null,
                 'groupbadge'   => $groupinfo ? $groupinfo->badge : '',

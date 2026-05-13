@@ -109,17 +109,89 @@ PlayerHUD works together with complementary plugins:
 
 ---
 
+### 🌱 Demo Environment (Quick Start)
+
+The plugin includes two CLI seed scripts that create a fully configured demo course in minutes — useful for local development or for evaluating the full feature set without manual setup.
+
+| Script | Course language |
+|--------|----------------|
+| `cli/seed.php` | English |
+| `cli/seed_pt_br.php` | Brazilian Portuguese |
+
+**What is created:**
+
+* 1 course (`playerhud-demo`) with 3 sections and completion tracking
+* 1 teacher (`seed_teacher`) + 5 students (`seed_alice` … `seed_eve`)
+* 3 RPG classes: Warrior, Mage, Rogue
+* 5 items with different XP values, cooldowns and collection limits
+* 5 drops embedded in course activities via shortcodes (card, image and text render modes)
+* 7 quests covering all completion types (level, XP, items, trades)
+* 2 story chapters with branching choices and karma effects
+* 2 trade offers (NPC shop)
+* Pre-seeded inventory, quest logs and activity completions — ranking is ready to browse immediately
+
+**Resulting ranking after seed:**
+
+| Rank | Username | Name | XP |
+|-----:|----------|------|----|
+| 1 | `seed_carol` | Carol Staff | 155 |
+| 2 | `seed_bob` | Bob Bow | 150 |
+| 3 | `seed_alice` | Alice Sword | 65 |
+| 4 | `seed_dave` | Dave Shield | 10 |
+| 5 | `seed_eve` | Eve Dagger | 10 |
+
+**Usage:**
+
+```bash
+# Run once
+php blocks/playerhud/cli/seed.php --password=YourDevPassword
+
+# Wipe and recreate from scratch
+php blocks/playerhud/cli/seed.php --password=YourDevPassword --reset
+
+# Bypass the non-development-site guard (custom dev domains)
+php blocks/playerhud/cli/seed.php --password=YourDevPassword --force
+```
+
+The `--password` flag is **required** and sets the login password for all seed accounts. The script refuses to run on non-development URLs (`localhost`, `*.local`, `*.test`) unless `--force` is passed.
+
+> Via Docker Compose: `docker compose exec <webserver-service> php blocks/playerhud/cli/seed.php --password=YourDevPassword`
+
+---
+
 ### 🧪 Automated Tests
 
-PlayerHUD ships with **Behat acceptance tests** that run on every CI push across the full matrix (Moodle 4.5 → 5.x, PostgreSQL & MariaDB):
+PlayerHUD ships with an extensive test suite covering both business logic (PHPUnit) and browser acceptance (Behat). Every CI push runs against the full matrix (Moodle 4.5 → 5.x, PostgreSQL & MariaDB).
 
-| Test file | Scenarios covered |
-|-----------|------------------|
-| `block_playerhud_access.feature` | Role-based block visibility (teacher, student, non-enrolled) |
-| `block_playerhud_student.feature` | HUD active on first visit, disable/re-enable gamification flow |
-| `block_playerhud_teacher.feature` | Game Master Panel access and management tab navigation |
+#### PHPUnit — Unit & Integration Tests
 
-Run them locally with:
+| Test file | Cases | What is covered |
+|-----------|------:|----------------|
+| `backup_restore_test.php` | 3 | Backup/restore step definitions cover all RPG tables; round-trip preserves data |
+| `drop_guard_test.php` | 7 | Collection limits, trade-consumed items, cooldown enforcement |
+| `game_test.php` | 6 | XP and level aggregation, quest XP inclusion/exclusion, collection anti-farm and cooldown |
+| `gamemaster_test.php` | 6 | Grant/revoke/delete item and quest while preserving leaderboard timestamps; XP floor at zero |
+| `karma_test.php` | 11 | Karma read/write, positive/negative deltas, clamping at ±999 boundaries, successive accumulation |
+| `privacy_provider_test.php` | 2 | GDPR: delete all data for user; delete user preferences |
+| `quest_test.php` | 22 | Completion checks (level, XP, items, trades); claim rewards; disabled quest; idempotency |
+| `rpg_classes_test.php` | 7 | Class assignment, duplicate guard, karma initialisation, portrait tier boundaries |
+| `story_manager_test.php` | 15 | Scene loading, progress persistence, choice navigation, karma delta, chapter completion, error cases |
+| `trade_test.php` | 7 | Trade assembly, insufficient funds, atomic success, one-time limit, group restriction |
+| **Total** | **86** | |
+
+```bash
+vendor/bin/phpunit --testsuite block_playerhud
+```
+
+#### Behat — Acceptance Tests
+
+| Feature file | Scenarios | What is covered |
+|--------------|----------:|----------------|
+| `block_playerhud_access.feature` | 3 | Role-based block visibility (teacher adds block, student sees HUD, non-enrolled user cannot) |
+| `block_playerhud_student.feature` | 4 | HUD active on first visit, disable/re-enable gamification, dismiss confirmation |
+| `block_playerhud_teacher.feature` | 6 | Game Master Panel button, management panel access, tab navigation, return to course |
+| `block_playerhud_modals.feature` | 5 | Item detail modal open/close, duplicate-open guard, AJAX collect without redirect, no raw placeholders |
+| **Total** | **18** | |
 
 ```bash
 php admin/tool/behat/cli/init.php
@@ -298,17 +370,89 @@ O PlayerHUD funciona em conjunto com plugins complementares:
 
 ---
 
+### 🌱 Ambiente de Demonstração (Quick Start)
+
+O plugin inclui dois scripts CLI de seed que criam um curso de demonstração completamente configurado em minutos — útil para desenvolvimento local ou para avaliar o conjunto completo de funcionalidades sem configuração manual.
+
+| Script | Idioma do curso |
+|--------|----------------|
+| `cli/seed.php` | Inglês |
+| `cli/seed_pt_br.php` | Português (Brasil) |
+
+**O que é criado:**
+
+* 1 curso (`playerhud-demo`) com 3 seções e acompanhamento de conclusão
+* 1 professor (`seed_teacher`) + 5 alunos (`seed_alice` … `seed_eve`)
+* 3 classes RPG: Warrior, Mage, Rogue
+* 5 itens com diferentes valores de XP, cooldowns e limites de coleta
+* 5 drops inseridos em atividades do curso via shortcodes (modos de exibição: card, imagem e texto)
+* 7 quests cobrindo todos os tipos de conclusão (nível, XP, itens, trocas)
+* 2 capítulos de história com escolhas ramificadas e efeitos de karma
+* 2 ofertas de troca (loja NPC)
+* Inventário, log de quests e conclusão de atividades pré-populados — o ranking já está pronto para navegar imediatamente
+
+**Ranking resultante após o seed:**
+
+| Pos. | Usuário | Nome | XP |
+|-----:|---------|------|----|
+| 1 | `seed_carol` | Carol Staff | 155 |
+| 2 | `seed_bob` | Bob Bow | 150 |
+| 3 | `seed_alice` | Alice Sword | 65 |
+| 4 | `seed_dave` | Dave Shield | 10 |
+| 5 | `seed_eve` | Eve Dagger | 10 |
+
+**Uso:**
+
+```bash
+# Executar uma vez
+php blocks/playerhud/cli/seed_pt_br.php --password=SuaSenhaDev
+
+# Apagar e recriar do zero
+php blocks/playerhud/cli/seed_pt_br.php --password=SuaSenhaDev --reset
+
+# Ignorar o guard de site não-desenvolvimento (domínios customizados)
+php blocks/playerhud/cli/seed_pt_br.php --password=SuaSenhaDev --force
+```
+
+O parâmetro `--password` é **obrigatório** e define a senha de login de todas as contas seed. O script recusa executar em URLs que não sejam de desenvolvimento (`localhost`, `*.local`, `*.test`), a menos que `--force` seja passado.
+
+> Via Docker Compose: `docker compose exec <servico-webserver> php blocks/playerhud/cli/seed_pt_br.php --password=SuaSenhaDev`
+
+---
+
 ### 🧪 Testes Automatizados
 
-O PlayerHUD inclui **testes de aceitação Behat** executados em todo push de CI na matriz completa (Moodle 4.5 → 5.x, PostgreSQL e MariaDB):
+O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de negócio (PHPUnit) quanto a aceitação em navegador (Behat). Todo push de CI executa a matriz completa (Moodle 4.5 → 5.x, PostgreSQL e MariaDB).
 
-| Arquivo de teste | Cenários cobertos |
-|------------------|------------------|
-| `block_playerhud_access.feature` | Visibilidade do bloco por perfil (professor, aluno, não matriculado) |
-| `block_playerhud_student.feature` | HUD ativo na primeira visita, fluxo de desativar/reativar gamificação |
-| `block_playerhud_teacher.feature` | Acesso ao Painel do Mestre e navegação entre abas de gerenciamento |
+#### PHPUnit — Testes Unitários e de Integração
 
-Para executar localmente:
+| Arquivo de teste | Casos | O que é coberto |
+|-----------------|------:|----------------|
+| `backup_restore_test.php` | 3 | Definições de backup/restore cobrem todas as tabelas RPG; round-trip preserva os dados |
+| `drop_guard_test.php` | 7 | Limites de coleta, itens consumidos por troca, aplicação de cooldown |
+| `game_test.php` | 6 | Agregação de XP e nível, XP de quests (inclusão/exclusão), anti-farm de coleta e cooldown |
+| `gamemaster_test.php` | 6 | Conceder/revogar/excluir item e quest preservando timestamps do ranking; XP mínimo em zero |
+| `karma_test.php` | 11 | Leitura/escrita de karma, deltas positivos/negativos, clamping nos limites ±999, acumulação sucessiva |
+| `privacy_provider_test.php` | 2 | LGPD: exclusão de todos os dados do usuário; exclusão de preferências |
+| `quest_test.php` | 22 | Verificações de conclusão (nível, XP, itens, trocas); reivindicar recompensas; quest desabilitada; idempotência |
+| `rpg_classes_test.php` | 7 | Atribuição de classe, proteção contra duplicatas, inicialização de karma, limites de tier de retrato |
+| `story_manager_test.php` | 15 | Carregamento de cena, persistência de progresso, navegação de escolhas, delta de karma, conclusão de capítulo, casos de erro |
+| `trade_test.php` | 7 | Montagem de trocas, fundos insuficientes, sucesso atômico, limite único, restrição por grupo |
+| **Total** | **86** | |
+
+```bash
+vendor/bin/phpunit --testsuite block_playerhud
+```
+
+#### Behat — Testes de Aceitação
+
+| Arquivo de feature | Cenários | O que é coberto |
+|-------------------|--------:|----------------|
+| `block_playerhud_access.feature` | 3 | Visibilidade do bloco por perfil (professor adiciona bloco, aluno vê HUD, não matriculado não vê) |
+| `block_playerhud_student.feature` | 4 | HUD ativo na primeira visita, desativar/reativar gamificação, dispensar confirmação |
+| `block_playerhud_teacher.feature` | 6 | Botão do Painel do Mestre, acesso ao painel de gerenciamento, navegação entre abas, retorno ao curso |
+| `block_playerhud_modals.feature` | 5 | Abrir/fechar modal de detalhes do item, proteção contra abertura duplicada, coleta AJAX sem redirecionamento, sem placeholders brutos |
+| **Total** | **18** | |
 
 ```bash
 php admin/tool/behat/cli/init.php

@@ -80,7 +80,7 @@ class game {
                   FROM {block_playerhud_items} i
                   JOIN {block_playerhud_inventory} inv ON inv.itemid = i.id
                  WHERE inv.userid = :userid AND i.blockinstanceid = :pid AND inv.source != 'revoked'
-              ORDER BY inv.timecreated DESC";
+              ORDER BY inv.timecreated DESC, inv.id DESC";
         return $DB->get_records_sql($sql, ['userid' => $userid, 'pid' => $blockinstanceid]);
     }
 

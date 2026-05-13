@@ -180,4 +180,12 @@
         font-size: 1.2rem;
         line-height: 1;
     }
+
+    .ph-stash-more {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--secondary, #6c757d);
+        border-style: dashed;
+        cursor: default;
+    }
 }

@@ -113,6 +113,13 @@
         <div class="fw-bold text-truncate px-1 small" title="{{username}}">
             {{username}}
         </div>
+        {{#hasgroup}}
+        <div class="ph-group-line mt-1 small text-muted">
+            <span aria-hidden="true">{{groupbadge}}</span>
+            <span class="fw-semibold ms-1">{{groupname}}</span>
+            <span class="ms-1">· {{groupmembers}}</span>
+        </div>
+        {{/hasgroup}}
     </div>
 
     {{! Stats: level + XP }}
@@ -207,14 +214,6 @@
 
     </div>
 
-    {{! Recent items — only when items feature is enabled }}
-    {{#hasgroup}}
-    <div class="ph-group-line mb-2 small text-muted text-center">
-        <span aria-hidden="true">{{groupbadge}}</span>
-        <span class="fw-semibold ms-1">{{groupname}}</span>
-        <span class="ms-1">· {{groupmembers}}</span>
-    </div>
-    {{/hasgroup}}
     {{#enable_items}}
     <div class="ph-stash-wrapper {{^has_items}}d-none{{/has_items}}">
         <div class="ph-sidebar-stash mt-1 justify-content-center">
@@ -241,6 +240,9 @@
                  {{/isimage}}
             </div>
             {{/items}}
+            {{#hasmore}}
+            <div class="ph-mini-item ph-stash-more" aria-hidden="true">{{morebadge}}</div>
+            {{/hasmore}}
         </div>
     </div>
     {{/enable_items}}

@@ -640,6 +640,15 @@
     font-size: 1.2rem;
     line-height: 1;
 }
+.block_playerhud .ph-stash-more,
+.path-blocks-playerhud .ph-stash-more,
+.filter_playerhud .ph-stash-more {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--secondary, #6c757d);
+    border-style: dashed;
+    cursor: default;
+}
 
 /* stylelint-disable csstree/validator */
 .block_playerhud .ph-progress-container,

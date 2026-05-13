@@ -32,7 +32,7 @@ use stdClass;
  */
 class profile_content implements \renderable, \templatable {
     /** @var int Maximum items shown in the profile section. */
-    private const ITEM_LIMIT = 6;
+    private const ITEM_LIMIT = 5;
 
     /**
      * Constructor.
@@ -102,7 +102,7 @@ class profile_content implements \renderable, \templatable {
     private function get_recent_items(): array {
         global $DB;
 
-        $sql = "SELECT inv.itemid, MAX(inv.timecreated) AS lastcollected
+        $sql = "SELECT inv.itemid, MAX(inv.timecreated) AS lastcollected, MAX(inv.id) AS lastinvid
                   FROM {block_playerhud_inventory} inv
                   JOIN {block_playerhud_items} i ON inv.itemid = i.id
                  WHERE inv.userid = :userid
@@ -110,7 +110,7 @@ class profile_content implements \renderable, \templatable {
                    AND inv.source != 'revoked'
                    AND i.enabled = 1
                  GROUP BY inv.itemid
-                 ORDER BY lastcollected DESC";
+                 ORDER BY lastcollected DESC, lastinvid DESC";
 
         $rows = $DB->get_records_sql($sql, [
             'userid' => $this->userid,
