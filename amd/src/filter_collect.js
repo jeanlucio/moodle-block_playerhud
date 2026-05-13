@@ -579,13 +579,7 @@ export const init = () => {
         }
 
         if (showStats) {
-            modalEls.dropStats.removeClass('ph-display-none d-none').show();
-        } else {
-            modalEls.dropStats.hide();
-        }
-
-        if (showStats) {
-            modalEls.dropStats.removeClass('ph-display-none d-none').show();
+            modalEls.dropStats.removeClass('ph-display-none d-none').css('display', 'flex');
         } else {
             modalEls.dropStats.hide();
         }
@@ -602,20 +596,18 @@ export const init = () => {
 
         if (formattedDate) {
             const prefix = appStrings.lastCollected ? `${appStrings.lastCollected} ` : '';
-            if (modalEls.root.attr('id') === 'phItemModalView') {
+            if (modalEls.dateContainer.length) {
+                modalEls.date.text(prefix + formattedDate);
+                modalEls.dateContainer.removeClass('d-none');
+            } else {
                 modalEls.date.find('span').text(prefix + formattedDate);
                 modalEls.date.show();
-            } else {
-                modalEls.date.text(prefix + formattedDate);
-                if (modalEls.dateContainer) {
-                    modalEls.dateContainer.removeClass('d-none');
-                }
             }
         } else {
-            if (modalEls.root.attr('id') === 'phItemModalView') {
-                modalEls.date.hide();
-            } else if (modalEls.dateContainer) {
+            if (modalEls.dateContainer.length) {
                 modalEls.dateContainer.addClass('d-none');
+            } else {
+                modalEls.date.hide();
             }
         }
 

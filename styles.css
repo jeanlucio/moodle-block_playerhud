@@ -1682,6 +1682,11 @@
     text-decoration: none;
     cursor: pointer;
 }
+.block_playerhud .ph-help-trigger + .ph-help-trigger,
+.path-blocks-playerhud .ph-help-trigger + .ph-help-trigger,
+.filter_playerhud .ph-help-trigger + .ph-help-trigger {
+    margin-inline-start: 0.25rem;
+}
 .block_playerhud .ph-help-trigger:hover,
 .path-blocks-playerhud .ph-help-trigger:hover,
 .filter_playerhud .ph-help-trigger:hover {

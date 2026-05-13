@@ -175,6 +175,10 @@
         text-decoration: none;
         cursor: pointer;
 
+        & + .ph-help-trigger {
+            margin-inline-start: 0.25rem;
+        }
+
         &:hover {
             color: var(--info, #0dcaf0);
             opacity: 1;
