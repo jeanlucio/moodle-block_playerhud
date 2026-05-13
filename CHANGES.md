@@ -5,6 +5,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.17] — 2026-05-13
+
+### Added
+- **Stash overflow badge:** the item stash in the block sidebar now shows at
+  most 5 unique items; a +N badge with a dashed border appears when the
+  inventory exceeds that limit, consistent with the existing profile-page style.
+- **Behat acceptance test suite:** covers modal open/close, DOM duplication,
+  page redirect and string placeholder regressions across Moodle 4.5 and 5.x.
+
+### Fixed
+- **Item order consistency:** items collected at the same Unix second now
+  appear in the same order across the sidebar, profile page, and filter widget.
+  A stable `inv.id DESC` tiebreaker was added to all inventory SQL queries.
+- **Bootstrap 4/5 compatibility:** calendar icon changed to `fa-calendar` (FA6
+  Free compatible); modal date container fix prevents DOM corruption; badge row
+  uses `display:flex` instead of `.show()`; `ph-help-trigger` spacing applied
+  via CSS instead of BS5-only utility classes.
+- **Bootstrap 4 visually-hidden fallback:** `.visually-hidden` CSS rule added
+  for Moodle 4.5, where Bootstrap 4 does not define this utility class.
+- **Modal tripling:** `filter_collect.js` now uses namespaced events with
+  `.off().on()` to prevent handler stacking on repeated `init()` calls.
+
+---
+
 ## [v1.3.16] — 2026-05-11
 
 ### Fixed
