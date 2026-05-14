@@ -5,6 +5,39 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.18] — 2026-05-14
+
+### Security
+- Cross-instance record tampering: item, quest, chapter and trade controllers
+  now verify record ownership against the active block instance before every
+  update, preventing a teacher with manage rights on instance A from
+  overwriting content that belongs to instance B.
+- Story choice references validated against the current chapter and instance:
+  `next_nodeid`, `req_class_id`, `set_class_id` and `cost_itemid` are now
+  filtered through allow-lists loaded from the database before being saved.
+- `revoke_item` action now loads the inventory row via a JOIN on
+  `block_playerhud_items`, ensuring it belongs to the managed instance.
+- SSRF guard for the custom OpenAI endpoint now resolves A/AAAA DNS records
+  and rejects any resolved IP in a private or reserved range, closing a
+  DNS-rebinding gap.
+- Gemini API key moved from the request URL to the `x-goog-api-key` header,
+  reducing the risk of the key being captured in proxy or server logs.
+
+### Fixed
+- Sort direction parameter for the items management table now normalised to
+  exactly `ASC` or `DESC`, preventing a potential SQL syntax error from a
+  crafted `dir` value.
+- `format_text()` calls in student-facing views now pass the block context,
+  ensuring multilang filters and pluginfile URL rewriting work correctly.
+
+### Tests
+- 12 new PHPUnit tests covering cross-instance isolation for item, quest,
+  chapter and trade update paths (Finding #1 from the MDL Shield review).
+- 13 new PHPUnit tests covering create, update, delete and instance scoping
+  for items, chapters and trades, which previously had no persistence tests.
+
+---
+
 ## [v1.3.17] — 2026-05-13
 
 ### Added
