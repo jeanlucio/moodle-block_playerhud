@@ -61,7 +61,7 @@ class tab_items implements renderable {
         $this->instanceid = $instanceid;
         $this->courseid = $courseid;
         $this->sort = $sort ?: 'xp';
-        $this->dir = $dir ?: 'ASC';
+        $this->dir = (strtoupper($dir) === 'DESC') ? 'DESC' : 'ASC';
     }
 
     /**
@@ -94,6 +94,12 @@ class tab_items implements renderable {
 
                 $record = new \stdClass();
                 if ($itemid > 0) {
+                    $DB->get_record(
+                        'block_playerhud_items',
+                        ['id' => $itemid, 'blockinstanceid' => $this->instanceid],
+                        'id',
+                        MUST_EXIST
+                    );
                     $record->id = $itemid;
                 }
                 $record->blockinstanceid = $this->instanceid;

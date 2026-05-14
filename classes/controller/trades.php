@@ -143,7 +143,7 @@ class trades {
         if ($mform->is_cancelled()) {
             redirect($returnurl);
         } else if ($data = $mform->get_data()) {
-            $this->save_trade($data);
+            $this->save_trade($data, $instanceid);
             redirect(
                 $returnurl,
                 get_string('trade_saved', 'block_playerhud'),
@@ -164,20 +164,27 @@ class trades {
      * Persists a trade record together with its requirements and rewards in a single transaction.
      *
      * @param \stdClass $data Form data from edit_trade_form.
+     * @param int $instanceid The URL-validated block instance ID (from capability check).
      */
-    private function save_trade(\stdClass $data): void {
+    private function save_trade(\stdClass $data, int $instanceid): void {
         global $DB;
 
         $transaction = $DB->start_delegated_transaction();
 
         $record                   = new \stdClass();
-        $record->blockinstanceid  = $data->instanceid;
+        $record->blockinstanceid  = $instanceid;
         $record->name             = $data->name;
         $record->centralized      = $data->centralized;
         $record->onetime          = $data->onetime;
         $record->groupid          = $data->groupid;
 
         if (!empty($data->tradeid)) {
+            $DB->get_record(
+                'block_playerhud_trades',
+                ['id' => $data->tradeid, 'blockinstanceid' => $instanceid],
+                'id',
+                MUST_EXIST
+            );
             $record->id     = $data->tradeid;
             $DB->update_record('block_playerhud_trades', $record);
             $currenttradeid = $data->tradeid;

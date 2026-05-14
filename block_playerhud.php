@@ -129,7 +129,9 @@ class block_playerhud extends block_base {
                         'xp' => $invitem->xp . ' XP',
                         'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
                         'isimage' => $media['is_image'],
-                        'description' => !empty($invitem->description) ? format_text($invitem->description, FORMAT_HTML) : '',
+                        'description' => !empty($invitem->description)
+                            ? format_text($invitem->description, FORMAT_HTML, ['context' => $context])
+                            : '',
                         'date' => userdate($invitem->collecteddate, get_string('strftimedatefullshort', 'langconfig')),
                         'timestamp' => $invitem->collecteddate,
                     ];

@@ -193,7 +193,9 @@ class game {
             'xp' => ((int)$drop->maxusage === 0) ? 0 : (int)$item->xp,
             'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
             'isimage' => $media['is_image'] ? 1 : 0,
-            'description' => !empty($item->description) ? format_text($item->description, FORMAT_HTML) : '',
+            'description' => !empty($item->description)
+                ? format_text($item->description, FORMAT_HTML, ['context' => $context])
+                : '',
             'date' => userdate(time(), get_string('strftimedatefullshort', 'langconfig')),
             'timestamp' => time(),
         ];

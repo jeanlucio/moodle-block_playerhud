@@ -96,6 +96,12 @@ class chapters {
             $record->sortorder       = $data->sortorder ?? 1;
 
             if ($data->chapterid) {
+                $DB->get_record(
+                    'block_playerhud_chapters',
+                    ['id' => $data->chapterid, 'blockinstanceid' => $instanceid],
+                    'id',
+                    MUST_EXIST
+                );
                 $record->id = $data->chapterid;
                 $DB->update_record('block_playerhud_chapters', $record);
             } else {

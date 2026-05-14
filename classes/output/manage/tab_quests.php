@@ -134,6 +134,12 @@ class tab_quests implements renderable {
             }
 
             if ($questid > 0) {
+                $DB->get_record(
+                    'block_playerhud_quests',
+                    ['id' => $questid, 'blockinstanceid' => $this->instanceid],
+                    'id',
+                    MUST_EXIST
+                );
                 $record->id = $questid;
                 $DB->update_record('block_playerhud_quests', $record);
             } else {

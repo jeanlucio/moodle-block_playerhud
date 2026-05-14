@@ -375,7 +375,7 @@ class generator {
      * @return array Response array.
      */
     protected function call_gemini(array $parts, string $key): array {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" . $key;
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
         $data = [
             "systemInstruction" => ["parts" => [["text" => $parts['system']]]],
             "contents" => [["parts" => [["text" => $parts['user']]]]],
@@ -383,7 +383,7 @@ class generator {
         return $this->curl_request(
             $url,
             json_encode($data),
-            ['Content-Type: application/json'],
+            ['Content-Type: application/json', 'x-goog-api-key: ' . $key],
             'Gemini'
         );
     }
@@ -510,6 +510,36 @@ class generator {
             );
             if ($ispublic === false) {
                 return false;
+            }
+        } else {
+            // Hostname: resolve all A/AAAA records and re-apply the private/reserved check
+            // to prevent DNS rebinding attacks where a public domain resolves to an internal IP.
+            $resolvedips = [];
+            $arecords = dns_get_record($host, DNS_A);
+            if (is_array($arecords)) {
+                foreach ($arecords as $r) {
+                    if (!empty($r['ip'])) {
+                        $resolvedips[] = $r['ip'];
+                    }
+                }
+            }
+            $aaaarecords = dns_get_record($host, DNS_AAAA);
+            if (is_array($aaaarecords)) {
+                foreach ($aaaarecords as $r) {
+                    if (!empty($r['ipv6'])) {
+                        $resolvedips[] = $r['ipv6'];
+                    }
+                }
+            }
+            foreach ($resolvedips as $resolvedip) {
+                $ispublic = filter_var(
+                    $resolvedip,
+                    FILTER_VALIDATE_IP,
+                    FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+                );
+                if ($ispublic === false) {
+                    return false;
+                }
             }
         }
         return true;

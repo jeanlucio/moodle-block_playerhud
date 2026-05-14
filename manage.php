@@ -536,7 +536,13 @@ if ($action === 'revoke_item' && confirm_sesskey()) {
     $invid = required_param('invid', PARAM_INT);
     $ruserid = required_param('r_userid', PARAM_INT);
 
-    $inv = $DB->get_record('block_playerhud_inventory', ['id' => $invid]);
+    $inv = $DB->get_record_sql(
+        "SELECT inv.*
+           FROM {block_playerhud_inventory} inv
+           JOIN {block_playerhud_items} i ON i.id = inv.itemid
+          WHERE inv.id = :invid AND i.blockinstanceid = :instanceid",
+        ['invid' => $invid, 'instanceid' => $instanceid]
+    );
     if ($inv) {
         $item = $DB->get_record('block_playerhud_items', ['id' => $inv->itemid, 'blockinstanceid' => $instanceid]);
         if ($item) {

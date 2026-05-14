@@ -170,7 +170,7 @@ class tab_collection implements renderable, templatable {
                     } else {
                         $itemobj['name'] = $visiblename;
                         $itemobj['xp_text'] = "{$item->xp} XP";
-                        $itemobj['description'] = format_text($item->description, FORMAT_HTML);
+                        $itemobj['description'] = format_text($item->description, FORMAT_HTML, ['context' => $context]);
                         $itemobj['is_image'] = $media['is_image'];
                         $itemobj['image_url'] = $media['is_image'] ? $media['url'] : '';
                         $itemobj['image_content'] = $media['is_image'] ? '' : $media['content'];
@@ -182,7 +182,7 @@ class tab_collection implements renderable, templatable {
                         'card_class' => 'ph-owned',
                         'name' => $visiblename,
                         'xp_text' => "{$item->xp} XP",
-                        'description' => format_text($item->description, FORMAT_HTML),
+                        'description' => format_text($item->description, FORMAT_HTML, ['context' => $context]),
                         'is_image' => $media['is_image'],
                         'image_url' => $media['is_image'] ? $media['url'] : '',
                         'image_content' => $media['is_image'] ? '' : $media['content'],

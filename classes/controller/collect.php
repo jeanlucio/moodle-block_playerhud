@@ -136,7 +136,9 @@ class collect {
                 $isimage = $media['is_image'] ? 1 : 0;
                 $imageurl = $media['is_image'] ? $media['url'] : strip_tags($media['content']);
                 $strxp = get_string('xp', 'block_playerhud');
-                $desc = !empty($item->description) ? format_text($item->description, FORMAT_HTML) : '';
+                $desc = !empty($item->description)
+                    ? format_text($item->description, FORMAT_HTML, ['context' => $context])
+                    : '';
 
                 $itemdata = [
                     'name' => format_string($item->name),

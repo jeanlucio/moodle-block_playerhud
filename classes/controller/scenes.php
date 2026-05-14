@@ -310,6 +310,25 @@ class scenes {
             $previousdestid = 0;
             $repeatscount   = optional_param('repeats', 0, PARAM_INT);
 
+            $validnodeids  = $DB->get_fieldset_select(
+                'block_playerhud_story_nodes',
+                'id',
+                'chapterid = ?',
+                [$chapterid]
+            );
+            $validclassids = $DB->get_fieldset_select(
+                'block_playerhud_classes',
+                'id',
+                'blockinstanceid = ?',
+                [$instanceid]
+            );
+            $validitemids  = $DB->get_fieldset_select(
+                'block_playerhud_items',
+                'id',
+                'blockinstanceid = ?',
+                [$instanceid]
+            );
+
             for ($i = 0; $i < $repeatscount; $i++) {
                 $textval = optional_param("choice_text_$i", '', PARAM_TEXT);
 
@@ -341,15 +360,18 @@ class scenes {
                             $previousdestid     = $createdid;
                         }
                     } else {
-                        $ch->next_nodeid = $rawnextid;
-                        $previousdestid  = $rawnextid;
+                        $ch->next_nodeid = in_array($rawnextid, $validnodeids, true) ? $rawnextid : 0;
+                        $previousdestid  = $ch->next_nodeid;
                     }
 
-                    $ch->req_class_id  = optional_param("choice_req_class_$i", 0, PARAM_INT);
+                    $reqclassid        = optional_param("choice_req_class_$i", 0, PARAM_INT);
+                    $setclassid        = optional_param("choice_set_class_$i", 0, PARAM_INT);
+                    $costitemid        = optional_param("choice_cost_$i", 0, PARAM_INT);
+                    $ch->req_class_id  = in_array($reqclassid, $validclassids, true) ? $reqclassid : 0;
                     $ch->req_karma_min = optional_param("choice_req_karma_$i", 0, PARAM_INT);
                     $ch->karma_delta   = optional_param("choice_karma_$i", 0, PARAM_INT);
-                    $ch->set_class_id  = optional_param("choice_set_class_$i", 0, PARAM_INT);
-                    $ch->cost_itemid   = optional_param("choice_cost_$i", 0, PARAM_INT);
+                    $ch->set_class_id  = in_array($setclassid, $validclassids, true) ? $setclassid : 0;
+                    $ch->cost_itemid   = in_array($costitemid, $validitemids, true) ? $costitemid : 0;
                     $qty               = optional_param("choice_cost_qty_$i", 1, PARAM_INT);
                     $ch->cost_item_qty = max(1, $qty);
 
