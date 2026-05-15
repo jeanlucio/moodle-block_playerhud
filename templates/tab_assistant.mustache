@@ -85,7 +85,12 @@
                         <button id="ph-assistant-action-confirm"
                                 type="button"
                                 class="btn btn-sm btn-success">
-                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{confirm_label}}
+                            <span class="ph-confirm-label">
+                                <i class="fa fa-check me-1" aria-hidden="true"></i>{{confirm_label}}
+                            </span>
+                            <span class="ph-confirming-label d-none">
+                                <i class="fa fa-spinner fa-spin me-1" aria-hidden="true"></i>{{thinking_label}}
+                            </span>
                         </button>
                         <button id="ph-assistant-action-cancel"
                                 type="button"

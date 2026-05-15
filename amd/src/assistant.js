@@ -196,6 +196,13 @@ define(['core/ajax'], function(Ajax) {
             sendBtn.querySelector('.ph-thinking-label').classList.toggle('d-none', !sending);
         };
 
+        const setExecuting = (executing) => {
+            confirmBtn.disabled = executing;
+            cancelBtn.disabled = executing;
+            confirmBtn.querySelector('.ph-confirm-label').classList.toggle('d-none', executing);
+            confirmBtn.querySelector('.ph-confirming-label').classList.toggle('d-none', !executing);
+        };
+
         // ------------------------------------------------------------------ //
         // Send a message                                                      //
         // ------------------------------------------------------------------ //
@@ -262,8 +269,8 @@ define(['core/ajax'], function(Ajax) {
 
             const action = pendingAction;
             pendingAction = null;
-            hideActionCard();
 
+            setExecuting(true);
             const thinkingEl = showThinking();
 
             try {
@@ -278,6 +285,7 @@ define(['core/ajax'], function(Ajax) {
                 }])[0];
 
                 removeThinking(thinkingEl);
+                hideActionCard();
                 appendMessage('system', result.message);
 
                 if (result.redirect_url) {
@@ -296,8 +304,11 @@ define(['core/ajax'], function(Ajax) {
                 }
             } catch (e) {
                 removeThinking(thinkingEl);
+                hideActionCard();
                 const msg = (e && e.message) ? e.message : String(e);
                 appendMessage('error', msg);
+            } finally {
+                setExecuting(false);
             }
         };
 
