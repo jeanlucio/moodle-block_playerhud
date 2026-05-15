@@ -92,6 +92,7 @@ $string['api_admin_settings_title'] = 'Institution AI Keys';
 $string['api_key_placeholder'] = 'Leave empty to use the institution\'s key';
 $string['api_settings_desc'] = 'Configure your personal AI key. Your key takes priority over the institution\'s global key. You only need to fill in one field — if more than one is filled in, the system follows the priority order shown below.';
 $string['api_settings_title'] = 'Your AI Keys (Optional)';
+$string['assistant_action_chapter_created'] = 'Chapter created: {$a}';
 $string['assistant_action_item_created'] = 'Item created: {$a}';
 $string['assistant_action_opening_tab'] = 'Opening {$a} tab...';
 $string['assistant_action_prompt'] = 'Suggested action:';

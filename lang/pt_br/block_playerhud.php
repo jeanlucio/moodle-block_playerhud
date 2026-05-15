@@ -92,6 +92,7 @@ $string['api_admin_settings_title'] = 'Chaves de IA da Instituição';
 $string['api_key_placeholder'] = 'Deixe vazio para usar a da instituição';
 $string['api_settings_desc'] = 'Configure sua chave de IA pessoal. Ela tem prioridade sobre a chave global da instituição. Basta preencher um campo — se mais de um estiver preenchido, o sistema segue a ordem de prioridade indicada abaixo.';
 $string['api_settings_title'] = 'Suas Chaves de IA (Opcional)';
+$string['assistant_action_chapter_created'] = 'Capítulo criado: {$a}';
 $string['assistant_action_item_created'] = 'Item criado: {$a}';
 $string['assistant_action_opening_tab'] = 'Abrindo aba {$a}…';
 $string['assistant_action_prompt'] = 'Ação sugerida:';

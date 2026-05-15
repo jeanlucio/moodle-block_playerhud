@@ -1115,7 +1115,7 @@ class external extends external_api {
         require_capability('block/playerhud:manage', $context);
 
         // Validate action type against explicit allow-list.
-        $allowedtypes = ['create_item', 'create_quest', 'open_tab'];
+        $allowedtypes = ['create_item', 'create_quest', 'create_chapter', 'open_tab'];
         if (!in_array($params['actiontype'], $allowedtypes, true)) {
             return [
                 'success'      => false,
@@ -1144,6 +1144,14 @@ class external extends external_api {
 
             if ($params['actiontype'] === 'create_quest') {
                 return self::action_create_quest(
+                    $params['instanceid'],
+                    $params['courseid'],
+                    $aparams
+                );
+            }
+
+            if ($params['actiontype'] === 'create_chapter') {
+                return self::action_create_chapter(
                     $params['instanceid'],
                     $params['courseid'],
                     $aparams
@@ -1293,6 +1301,66 @@ class external extends external_api {
             'id'         => $courseid,
             'instanceid' => $instanceid,
             'tab'        => 'quests',
+        ]))->out(false);
+
+        return [
+            'success'      => true,
+            'message'      => $msg,
+            'redirect_url' => $redirecturl,
+        ];
+    }
+
+    /**
+     * Executes the create_chapter action.
+     *
+     * Delegates to the existing generate_story generator, which creates the
+     * chapter record, all story nodes, and branching choices in a single
+     * DB transaction.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param array $p Action parameters: theme, karma_gain, karma_loss, item_qty.
+     * @return array Result with success, message, redirect_url.
+     */
+    private static function action_create_chapter(int $instanceid, int $courseid, array $p): array {
+        global $DB, $USER;
+
+        $theme = isset($p['theme']) ? clean_param($p['theme'], PARAM_TEXT) : '';
+
+        if ($theme === '') {
+            return [
+                'success'      => false,
+                'message'      => get_string('assistant_error_bad_params', 'block_playerhud'),
+                'redirect_url' => '',
+            ];
+        }
+
+        $options = [
+            'karma_gain' => max(0, (int)($p['karma_gain'] ?? 0)),
+            'karma_loss' => max(0, (int)($p['karma_loss'] ?? 0)),
+            'item_qty'   => max(0, (int)($p['item_qty']   ?? 0)),
+        ];
+
+        $generator = new \block_playerhud\ai\generator($instanceid);
+        $result = $generator->generate_story($theme, $options);
+
+        $chaptertitle = $result['chapter_title'] ?? '';
+
+        $log = new \stdClass();
+        $log->blockinstanceid = $instanceid;
+        $log->userid          = (int) $USER->id;
+        $log->action_type     = 'chapter';
+        $log->object_name     = substr($chaptertitle, 0, 255);
+        $log->ai_provider     = substr($result['provider'] ?? '', 0, 50);
+        $log->timecreated     = time();
+        $DB->insert_record('block_playerhud_ai_logs', $log, false);
+
+        $msg = get_string('assistant_action_chapter_created', 'block_playerhud', $chaptertitle);
+
+        $redirecturl = (new \moodle_url('/blocks/playerhud/manage.php', [
+            'id'         => $courseid,
+            'instanceid' => $instanceid,
+            'tab'        => 'chapters',
         ]))->out(false);
 
         return [

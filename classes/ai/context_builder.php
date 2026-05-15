@@ -208,6 +208,18 @@ class context_builder {
             $lines[] = "- target_value and reward_xp must be positive integers\n";
         }
 
+        $lines[] = "### create_chapter";
+        $lines[] = "Generate a full interactive story chapter with branching nodes and choices.";
+        $lines[] = "Use this when the teacher wants to create narrative content for the course.";
+        $lines[] = "\x60\x60\x60";
+        $lines[] = '{"type":"create_chapter","label":"Create chapter: <title>",'
+            . '"params":{"theme":"<theme>","karma_gain":<int>,"karma_loss":<int>,"item_qty":<int>}}';
+        $lines[] = "\x60\x60\x60";
+        $lines[] = "- theme: narrative description in the course language (can be long and detailed)";
+        $lines[] = "- karma_gain: total positive karma to distribute across choices (0 = none)";
+        $lines[] = "- karma_loss: total negative karma to distribute across choices (0 = none)";
+        $lines[] = "- item_qty: total item cost to distribute across key choices (0 = no item cost)\n";
+
         $lines[] = "### open_tab";
         $lines[] = "Navigate the teacher to a management tab.";
         $lines[] = "\x60\x60\x60";
