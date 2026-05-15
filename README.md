@@ -61,15 +61,18 @@ Suitable for:
 
 ---
 
-### 🔗 PlayerHUD Ecosystem
+### 🕹️ PlayerGames Ecosystem
 
-PlayerHUD works together with complementary plugins:
+PlayerHUD is part of the **PlayerGames** gamification ecosystem. Together, these plugins transform Moodle into an immersive experience:
 
-* **PlayerHUD Filter (Required):** Enables item drops via shortcodes inside course content.
-  👉 https://github.com/jeanlucio/moodle-filter_playerhud
+* **PlayerHUD Filter:** Enables item drops via shortcodes inside course content.
+  👉 https://moodle.org/plugins/filter_playerhud
 
-* **PlayerHUD Availability Condition (Optional):** Allows restricting activities based on PlayerHUD level or collected items.
-  👉 https://github.com/jeanlucio/moodle-availability_playerhud
+* **PlayerHUD Availability Restriction:** Restricts access to course activities based on the student's current level or collected items.
+  👉 https://moodle.org/plugins/availability_playerhud
+
+* **PlayerGroup:** Lets students autonomously form their own groups directly from the activity page — no teacher intervention needed.
+  👉 https://moodle.org/plugins/mod_playergroup
 
 ---
 
@@ -324,15 +327,18 @@ Indicado para:
 
 ---
 
-### 🔗 Ecossistema PlayerHUD
+### 🕹️ Ecossistema PlayerGames
 
-O PlayerHUD funciona em conjunto com plugins complementares:
+O PlayerHUD faz parte do ecossistema de gamificação **PlayerGames**. Juntos, esses plugins transformam o Moodle em uma experiência imersiva:
 
-* **Filtro PlayerHUD (Obrigatório):** Permite inserir drops de itens por meio de shortcodes no conteúdo do curso.
-  👉 https://github.com/jeanlucio/moodle-filter_playerhud
+* **Filtro PlayerHUD:** Permite inserir drops de itens por meio de shortcodes no conteúdo do curso.
+  👉 https://moodle.org/plugins/filter_playerhud
 
-* **Restrição de Acesso PlayerHUD (Opcional):** Permite liberar atividades com base no nível do aluno ou na posse de itens.
-  👉 https://github.com/jeanlucio/moodle-availability_playerhud
+* **Restrição de Acesso PlayerHUD:** Restringe o acesso a atividades com base no nível atual do aluno ou nos itens coletados.
+  👉 https://moodle.org/plugins/availability_playerhud
+
+* **PlayerGroup:** Permite que os alunos formem seus próprios grupos de forma autônoma diretamente na página da atividade — sem necessidade de intervenção do professor.
+  👉 https://moodle.org/plugins/mod_playergroup
 
 ---
 
