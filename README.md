@@ -35,7 +35,9 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
 * 📖 **Story & Chapters:** Branching narrative system with choice nodes and per-class story paths.
 * ⚖️ **Karma System:** Moral alignment mechanic that evolves the student’s class portrait over time.
 * 📊 **Analytics:** Audit logs and game economy tracking for teacher oversight.
-* 🤖 **AI Item Generator (Optional):** Generates items, stories, and class backstories via external AI providers.
+* 🤖 **AI Tools (Optional):** Two AI-powered features powered by Gemini, Groq, or any OpenAI-compatible provider:
+  * **Content Generator** — creates items, story chapters with branching nodes, and RPG class backstories on demand.
+  * **Game Master Assistant** — a conversational chat tab for teachers. Ask questions about game design, get suggestions, and trigger actions (create item, create quest, generate chapter) with a confirmation step before anything is saved.
 * 📱 **Mobile-Ready:** Compatible with Moodle web services.
 
 ---
@@ -213,13 +215,13 @@ vendor/bin/behat --tags=@block_playerhud --profile=chrome
 
 ### 🔎 Third-party Service Disclosure
 
-PlayerHUD includes an optional AI-powered item generation feature.
+PlayerHUD includes optional AI-powered features: a **Content Generator** (items, chapters, class backstories) and a **Game Master Assistant** (a conversational chat for teachers that can also trigger game actions).
 
 ### Is the AI feature required?
 
 No. The plugin works fully without any external AI service.
-All items can be created manually inside Moodle.
-The AI feature is only a productivity tool for automatic item generation.
+All content can be created manually inside Moodle.
+The AI features are productivity tools — the assistant also accepts confirmation before saving anything.
 
 ### Supported Providers
 
@@ -257,11 +259,11 @@ API keys are stored within Moodle configuration settings.
 When the AI feature is used, user-entered prompts are transmitted to the selected provider for processing.
 
 The plugin:
-- Does not store prompts
+- Does not store prompts or conversation history (chat history is session-only, in the browser)
 - Does not store raw AI responses
-- Only stores the generated items created inside Moodle
+- Only stores the game objects created inside Moodle (items, quests, chapters)
 
-No external communication occurs unless the AI feature is explicitly used.
+No external communication occurs unless an AI feature is explicitly used.
 
 ---
 
@@ -296,7 +298,9 @@ Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo q
 * 📖 **História e Capítulos:** Sistema narrativo ramificado com nós de escolha e caminhos por classe.
 * ⚖️ **Sistema de Karma:** Mecânica de alinhamento moral que evolui o retrato da classe do aluno ao longo do tempo.
 * 📊 **Analytics:** Logs de auditoria e rastreamento da economia do jogo para controle do professor.
-* 🤖 **Gerador de Itens com IA (Opcional):** Gera itens, histórias e backstories de classes via provedores externos de IA.
+* 🤖 **Ferramentas de IA (Opcional):** Dois recursos com suporte a Gemini, Groq ou qualquer API compatível com OpenAI:
+  * **Gerador de Conteúdo** — cria itens, capítulos de história com nós ramificados e backstories de classes RPG sob demanda.
+  * **Assistente Game Master** — aba de chat conversacional para professores. Tire dúvidas sobre design de jogo, receba sugestões e acione ações (criar item, missão, capítulo) com uma etapa de confirmação antes de salvar.
 * 📱 **Compatível com Mobile.**
 
 ---
@@ -474,13 +478,13 @@ vendor/bin/behat --tags=@block_playerhud --profile=chrome
 
 ### 🔎 Divulgação de Serviço de Terceiros
 
-O PlayerHUD inclui um recurso opcional de geração automática de itens com IA.
+O PlayerHUD inclui recursos opcionais de IA: um **Gerador de Conteúdo** (itens, capítulos, backstories de classes) e um **Assistente Game Master** (chat conversacional para professores que também pode acionar ações no jogo).
 
 ### O recurso de IA é obrigatório?
 
 Não. O plugin funciona de forma completa sem qualquer serviço externo.
-Todos os itens podem ser criados manualmente dentro do Moodle.
-A IA é apenas um recurso de produtividade para geração automática de itens.
+Todo o conteúdo pode ser criado manualmente dentro do Moodle.
+Os recursos de IA são ferramentas de produtividade — o assistente exige confirmação antes de salvar qualquer coisa.
 
 ### Provedores suportados
 
@@ -518,11 +522,11 @@ As chaves são armazenadas nas configurações do Moodle.
 Quando o recurso de IA é utilizado, os prompts informados são enviados ao provedor selecionado para processamento.
 
 O plugin:
-- Não armazena os prompts
+- Não armazena prompts nem histórico de conversa (o histórico do chat é apenas da sessão, no navegador)
 - Não armazena respostas brutas da IA
-- Apenas salva os itens gerados dentro do Moodle
+- Apenas salva os objetos do jogo criados dentro do Moodle (itens, missões, capítulos)
 
-Nenhuma comunicação externa ocorre sem ativação explícita do recurso.
+Nenhuma comunicação externa ocorre sem ativação explícita de um recurso de IA.
 
 ---
 
