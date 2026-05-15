@@ -5,7 +5,7 @@
 ![Moodle](https://img.shields.io/badge/Moodle-4.5%2B-orange?style=flat-square&logo=moodle&logoColor=white)
 ![License](https://img.shields.io/badge/License-GPLv3-blue?style=flat-square)
 ![Status](https://img.shields.io/badge/Status-Stable-green?style=flat-square)
-[![PlayerHUD Ecosystem](https://img.shields.io/badge/PlayerHUD-Ecosystem-6f42c1?style=flat-square&logo=gamepad&logoColor=white)](https://github.com/jeanlucio/moodle-block_playerhud)
+[![PlayerGames Ecosystem](https://img.shields.io/badge/PlayerGames-Ecosystem-6f42c1?style=flat-square&logo=gamepad&logoColor=white)](https://moodle.org/plugins/browse.php?list=contributor&id=3970322)
 ![Core Component](https://img.shields.io/badge/Role-Core_Component-198754?style=flat-square)
 
 [English](#english) | [Português](#português)
@@ -66,13 +66,13 @@ Suitable for:
 PlayerHUD is part of the **PlayerGames** gamification ecosystem. Together, these plugins transform Moodle into an immersive experience:
 
 * **PlayerHUD Filter:** Enables item drops via shortcodes inside course content.
-  👉 https://moodle.org/plugins/filter_playerhud
+  👉 https://github.com/jeanlucio/moodle-filter_playerhud
 
 * **PlayerHUD Availability Restriction:** Restricts access to course activities based on the student's current level or collected items.
-  👉 https://moodle.org/plugins/availability_playerhud
+  👉 https://github.com/jeanlucio/moodle-availability_playerhud
 
 * **PlayerGroup:** Lets students autonomously form their own groups directly from the activity page — no teacher intervention needed.
-  👉 https://moodle.org/plugins/mod_playergroup
+  👉 https://github.com/jeanlucio/moodle-mod_playergroup
 
 ---
 
@@ -332,13 +332,13 @@ Indicado para:
 O PlayerHUD faz parte do ecossistema de gamificação **PlayerGames**. Juntos, esses plugins transformam o Moodle em uma experiência imersiva:
 
 * **Filtro PlayerHUD:** Permite inserir drops de itens por meio de shortcodes no conteúdo do curso.
-  👉 https://moodle.org/plugins/filter_playerhud
+  👉 https://github.com/jeanlucio/moodle-filter_playerhud
 
 * **Restrição de Acesso PlayerHUD:** Restringe o acesso a atividades com base no nível atual do aluno ou nos itens coletados.
-  👉 https://moodle.org/plugins/availability_playerhud
+  👉 https://github.com/jeanlucio/moodle-availability_playerhud
 
 * **PlayerGroup:** Permite que os alunos formem seus próprios grupos de forma autônoma diretamente na página da atividade — sem necessidade de intervenção do professor.
-  👉 https://moodle.org/plugins/mod_playergroup
+  👉 https://github.com/jeanlucio/moodle-mod_playergroup
 
 ---
 
