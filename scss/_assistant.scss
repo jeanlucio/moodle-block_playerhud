@@ -1,0 +1,96 @@
+/**
+ * This file is part of Moodle - https://moodle.org/
+ *
+ * Moodle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Moodle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * Game Master AI Assistant tab styles.
+ *
+ * @package    block_playerhud
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+#ph-assistant-tab {
+    .ph-assistant-messages {
+        min-height: 300px;
+        max-height: 460px;
+        overflow-y: auto;
+        background-color: var(--card-bg, #fff);
+    }
+
+    .ph-assistant-textarea {
+        resize: none;
+    }
+
+    .ph-msg-bubble {
+        max-width: 75%;
+        word-break: break-word;
+    }
+
+    .ph-msg-user .ph-msg-bubble {
+        background-color: var(--primary, #0d6efd);
+        color: #fff;
+    }
+
+    .ph-msg-assistant .ph-msg-bubble {
+        background-color: var(--light, #f8f9fa);
+        border: 1px solid var(--border-color, #dee2e6);
+    }
+
+    .ph-provider-badge {
+        font-size: 0.7rem;
+        opacity: 0.75;
+    }
+
+    .ph-assistant-action-card {
+        border-inline-start: 4px solid var(--info, #0dcaf0);
+    }
+
+    .ph-action-label-text {
+        font-weight: 500;
+    }
+
+    // Animated three-dot thinking indicator.
+    .ph-thinking-bubble {
+        background-color: var(--light, #f8f9fa);
+        border: 1px solid var(--border-color, #dee2e6);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 10px 14px;
+        min-width: 52px;
+    }
+
+    .ph-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--secondary, #6c757d);
+        animation: ph-bounce 1.2s infinite ease-in-out;
+
+        &:nth-child(1) { animation-delay: 0s; }
+        &:nth-child(2) { animation-delay: 0.2s; }
+        &:nth-child(3) { animation-delay: 0.4s; }
+    }
+}
+
+@keyframes ph-bounce {
+    0%,
+    80%,
+    100% { transform: scale(0.6); opacity: 0.4; }
+    40%   { transform: scale(1);   opacity: 1; }
+}

@@ -1,0 +1,140 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/tab_assistant
+    @package block_playerhud
+    @copyright 2026 Jean Lúcio
+    @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "instanceid": 1,
+        "courseid": 2,
+        "has_key": true,
+        "no_key_msg": "No AI key configured.",
+        "no_key_link_label": "Go to settings",
+        "no_key_config_url": "/blocks/playerhud/manage.php?id=2&instanceid=1&tab=config",
+        "heading": "Game Master Assistant",
+        "intro": "Ask me anything about your game.",
+        "placeholder": "Type your message...",
+        "send_label": "Send",
+        "clear_label": "Clear chat",
+        "confirm_label": "Confirm",
+        "cancel_label": "Cancel",
+        "thinking_label": "Thinking...",
+        "error_label": "Error",
+        "action_prompt_label": "Suggested action:",
+        "disclaimer": "AI may make mistakes. Review responses and confirm actions before applying them."
+    }
+}}
+
+<div id="ph-assistant-tab"
+     data-instanceid="{{instanceid}}"
+     data-courseid="{{courseid}}">
+
+    {{^has_key}}
+    <div class="alert alert-warning d-flex align-items-center gap-2" role="alert">
+        <i class="fa fa-key me-2" aria-hidden="true"></i>
+        <span>{{no_key_msg}}</span>
+        <a href="{{no_key_config_url}}" class="ms-2 alert-link">{{no_key_link_label}}</a>
+    </div>
+    {{/has_key}}
+
+    {{#has_key}}
+    <div class="ph-assistant-wrap">
+
+        <div class="ph-assistant-header mb-3">
+            <h4 class="ph-assistant-heading">
+                <i class="fa fa-robot me-2" aria-hidden="true"></i>{{heading}}
+            </h4>
+            <p class="text-muted small mb-0">{{intro}}</p>
+        </div>
+
+        {{! Messages area — populated by AMD }}
+        <div id="ph-assistant-messages"
+             class="ph-assistant-messages border rounded p-3 mb-3"
+             aria-live="polite"
+             aria-label="{{heading}}">
+        </div>
+
+        {{! Action confirmation card — hidden until AI proposes an action }}
+        <div id="ph-assistant-action-card"
+             class="ph-assistant-action-card alert alert-info d-none mb-3"
+             role="region"
+             aria-label="{{action_prompt_label}}">
+            <div class="d-flex align-items-start gap-2">
+                <i class="fa fa-magic mt-1" aria-hidden="true"></i>
+                <div class="flex-grow-1">
+                    <strong class="ph-action-prompt-label">{{action_prompt_label}}</strong>
+                    <p id="ph-assistant-action-label" class="mb-2 mt-1 ph-action-label-text"></p>
+                    <div class="d-flex gap-2">
+                        <button id="ph-assistant-action-confirm"
+                                type="button"
+                                class="btn btn-sm btn-success">
+                            <span class="ph-confirm-label">
+                                <i class="fa fa-check me-1" aria-hidden="true"></i>{{confirm_label}}
+                            </span>
+                            <span class="ph-confirming-label d-none">
+                                <i class="fa fa-spinner fa-spin me-1" aria-hidden="true"></i>{{thinking_label}}
+                            </span>
+                        </button>
+                        <button id="ph-assistant-action-cancel"
+                                type="button"
+                                class="btn btn-sm btn-secondary">
+                            {{cancel_label}}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{! Input area }}
+        <div class="ph-assistant-input-row">
+            <div class="input-group">
+                <textarea id="ph-assistant-input"
+                          class="form-control ph-assistant-textarea"
+                          rows="2"
+                          placeholder="{{placeholder}}"
+                          aria-label="{{placeholder}}"></textarea>
+                <button id="ph-assistant-send"
+                        type="button"
+                        class="btn btn-primary"
+                        aria-label="{{send_label}}">
+                    <i class="fa fa-paper-plane" aria-hidden="true"></i>
+                    <span class="ph-send-label">{{send_label}}</span>
+                    <span class="ph-thinking-label d-none">
+                        <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
+                        {{thinking_label}}
+                    </span>
+                </button>
+            </div>
+            <div class="mt-2 d-flex justify-content-between align-items-center">
+                <p class="ph-assistant-disclaimer text-muted small mb-0">
+                    <i class="fa fa-info-circle me-1" aria-hidden="true"></i>{{disclaimer}}
+                </p>
+                <button id="ph-assistant-clear"
+                        type="button"
+                        class="btn btn-sm btn-link text-muted">
+                    <i class="fa fa-trash me-1" aria-hidden="true"></i>{{clear_label}}
+                </button>
+            </div>
+        </div>
+
+    </div>
+    {{/has_key}}
+
+</div>
