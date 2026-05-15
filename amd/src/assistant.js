@@ -286,6 +286,12 @@ define(['core/ajax'], function(Ajax) {
 
                 removeThinking(thinkingEl);
                 hideActionCard();
+
+                if (!result.success) {
+                    appendMessage('error', result.message);
+                    return;
+                }
+
                 appendMessage('system', result.message);
 
                 if (result.redirect_url) {

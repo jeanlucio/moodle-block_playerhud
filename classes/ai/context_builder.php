@@ -205,8 +205,8 @@ class context_builder {
             $lines[] = "### create_quest";
             $lines[] = "Create a new quest milestone.";
             $lines[] = "\x60\x60\x60";
-            $lines[] = '{"type":"create_quest","label":"Create quest: <title>",'
-                . '"params":{"title":"<title>","description":"<desc>",'
+            $lines[] = '{"type":"create_quest","label":"Create quest: <name>",'
+                . '"params":{"name":"<name>","description":"<desc>",'
                 . '"type":<1|2|3|7>,"target_value":<int>,"reward_xp":<int>}}';
             $lines[] = "\x60\x60\x60";
             $lines[] = "- type: 1=reach level, 2=accumulate XP, 3=collect unique items, 7=complete trades";
