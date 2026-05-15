@@ -1338,7 +1338,7 @@ class external extends external_api {
         $options = [
             'karma_gain' => max(0, (int)($p['karma_gain'] ?? 0)),
             'karma_loss' => max(0, (int)($p['karma_loss'] ?? 0)),
-            'item_qty'   => max(0, (int)($p['item_qty']   ?? 0)),
+            'item_qty'   => max(0, (int)($p['item_qty'] ?? 0)),
         ];
 
         $generator = new \block_playerhud\ai\generator($instanceid);

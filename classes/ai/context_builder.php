@@ -232,6 +232,12 @@ class context_builder {
         $lines[] = "\x60\x60\x60";
         $lines[] = "- tab: one of: items, quests, classes, chapters, reports, config";
 
+        $lines[] = "\n## Limitations";
+        $lines[] = "You cannot create or edit trades directly. If the teacher asks about trades,"
+            . " explain what a trade is (an item exchange offer students can complete),"
+            . " describe the required fields (name, items to pay, items to receive),"
+            . " and offer to open the items tab so they can set it up manually.";
+
         return implode("\n", $lines);
     }
 
