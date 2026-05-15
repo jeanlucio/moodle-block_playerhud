@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.19] — 2026-05-15
+
+### Security
+- Quest and trade forms now validate that submitted item and trade IDs belong
+  to the current block instance before saving, preventing a teacher with
+  manage rights from injecting cross-instance references via crafted POST data.
+
+### Fixed
+- `revoke_item` no longer deducts XP when the inventory entry originated from
+  an infinite drop (maxusage = 0), which never granted XP at collection time.
+- Chapter reorder queries no longer use a literal `LIMIT 1` clause; the
+  redundant clause broke on MSSQL and Oracle installs.
+
+### Added
+- Automated release workflow: pushing a `v*` tag now publishes the version
+  directly to the Moodle Plugin Directory.
+
+---
+
 ## [v1.3.18] — 2026-05-14
 
 ### Security
