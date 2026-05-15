@@ -715,8 +715,9 @@ $tabsdef = [
     'quests'   => $questsenabled ? ['icon' => '🎯', 'text' => get_string('tab_quests', 'block_playerhud')] : null,
     'classes'  => $rpgmodeenabled ? ['icon' => '⚔️', 'text' => get_string('tab_classes', 'block_playerhud')] : null,
     'chapters' => $rpgmodeenabled ? ['icon' => '📖', 'text' => get_string('tab_chapters', 'block_playerhud')] : null,
-    'reports'  => ['icon' => '📊', 'text' => get_string('tab_reports', 'block_playerhud')],
-    'config'   => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
+    'reports'   => ['icon' => '📊', 'text' => get_string('tab_reports', 'block_playerhud')],
+    'assistant' => ['icon' => '🤖', 'text' => get_string('tab_assistant', 'block_playerhud')],
+    'config'    => ['icon' => '🛠️', 'text' => get_string('tab_config', 'block_playerhud')],
 ];
 
 $tabsdata = [];

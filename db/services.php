@@ -107,4 +107,22 @@ $functions = [
         'ajax'        => true,
         'loginrequired' => true,
     ],
+
+    'block_playerhud_chat_message' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'chat_message',
+        'description'   => 'Send a message to the Game Master AI assistant and get a reply',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_execute_chat_action' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'execute_chat_action',
+        'description'   => 'Execute a game action proposed by the AI after teacher confirmation',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
 ];

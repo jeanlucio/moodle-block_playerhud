@@ -975,4 +975,374 @@ class external extends external_api {
             'message'       => new external_value(PARAM_RAW, 'Error message if any', VALUE_DEFAULT, ''),
         ]);
     }
+
+    /**
+     * Parameters for chat_message.
+     *
+     * @return external_function_parameters
+     */
+    public static function chat_message_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'history'    => new external_multiple_structure(
+                new external_single_structure([
+                    'role'    => new external_value(PARAM_ALPHA, 'Message role: user or assistant'),
+                    'content' => new external_value(PARAM_TEXT, 'Message content'),
+                ]),
+                'Conversation history',
+                VALUE_DEFAULT,
+                []
+            ),
+        ]);
+    }
+
+    /**
+     * Sends a chat message to the Game Master AI and returns its reply.
+     *
+     * The full conversation history is received from the client (session-based,
+     * never stored in the DB) so the AI has multi-turn context.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param array $history Conversation history [{role, content}].
+     * @return array {reply, action, provider}
+     */
+    public static function chat_message(int $instanceid, int $courseid, array $history): array {
+        global $USER;
+
+        $params = self::validate_parameters(self::chat_message_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'history'    => $history,
+        ]);
+
+        $context = context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:manage', $context);
+
+        // Sanitise history: only allow known roles, strip excessive messages.
+        $cleanhistory = [];
+        foreach ($params['history'] as $msg) {
+            if (!in_array($msg['role'], ['user', 'assistant'], true)) {
+                continue;
+            }
+            $cleanhistory[] = ['role' => $msg['role'], 'content' => $msg['content']];
+        }
+
+        // Limit history depth to avoid very large prompts.
+        if (count($cleanhistory) > 30) {
+            $cleanhistory = array_slice($cleanhistory, -30);
+        }
+
+        $builder      = new \block_playerhud\ai\context_builder(
+            $params['instanceid'],
+            $params['courseid']
+        );
+        $systemprompt = $builder->build();
+
+        $chat   = new \block_playerhud\ai\chat($params['instanceid']);
+        $result = $chat->send($systemprompt, $cleanhistory);
+
+        $actionjson = '';
+        if (!empty($result['action']) && is_array($result['action'])) {
+            $actionjson = json_encode($result['action']);
+        }
+
+        return [
+            'reply'    => $result['reply'],
+            'action'   => $actionjson,
+            'provider' => $result['provider'],
+            'message'  => '',
+        ];
+    }
+
+    /**
+     * Return structure for chat_message.
+     *
+     * @return external_single_structure
+     */
+    public static function chat_message_returns(): external_single_structure {
+        return new external_single_structure([
+            'reply'    => new external_value(PARAM_RAW, 'AI reply text', VALUE_DEFAULT, ''),
+            'action'   => new external_value(PARAM_RAW, 'JSON-encoded action object or empty', VALUE_DEFAULT, ''),
+            'provider' => new external_value(PARAM_TEXT, 'AI provider used', VALUE_DEFAULT, ''),
+            'message'  => new external_value(PARAM_RAW, 'Error message if any', VALUE_DEFAULT, ''),
+        ]);
+    }
+
+    /**
+     * Parameters for execute_chat_action.
+     *
+     * @return external_function_parameters
+     */
+    public static function execute_chat_action_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid'   => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'     => new external_value(PARAM_INT, 'Course ID'),
+            'actiontype'   => new external_value(PARAM_ALPHANUMEXT, 'Action type identifier'),
+            'actionparams' => new external_value(PARAM_RAW, 'JSON-encoded action parameters'),
+        ]);
+    }
+
+    /**
+     * Executes a game action proposed by the AI after teacher confirmation.
+     *
+     * Supported action types: create_item, create_quest, open_tab.
+     * Each type is validated against an explicit allow-list before execution.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param string $actiontype Action type identifier.
+     * @param string $actionparams JSON-encoded parameters for the action.
+     * @return array {success, message, redirect_url}
+     */
+    public static function execute_chat_action(
+        int $instanceid,
+        int $courseid,
+        string $actiontype,
+        string $actionparams
+    ): array {
+        $params = self::validate_parameters(self::execute_chat_action_parameters(), [
+            'instanceid'   => $instanceid,
+            'courseid'     => $courseid,
+            'actiontype'   => $actiontype,
+            'actionparams' => $actionparams,
+        ]);
+
+        $context = context_block::instance($params['instanceid']);
+        self::validate_context($context);
+        require_capability('block/playerhud:manage', $context);
+
+        // Validate action type against explicit allow-list.
+        $allowedtypes = ['create_item', 'create_quest', 'open_tab'];
+        if (!in_array($params['actiontype'], $allowedtypes, true)) {
+            return [
+                'success'      => false,
+                'message'      => get_string('assistant_error_unknown_action', 'block_playerhud'),
+                'redirect_url' => '',
+            ];
+        }
+
+        $aparams = json_decode($params['actionparams'], true);
+        if (!is_array($aparams)) {
+            return [
+                'success'      => false,
+                'message'      => get_string('assistant_error_bad_params', 'block_playerhud'),
+                'redirect_url' => '',
+            ];
+        }
+
+        try {
+            if ($params['actiontype'] === 'create_item') {
+                return self::action_create_item(
+                    $params['instanceid'],
+                    $params['courseid'],
+                    $aparams
+                );
+            }
+
+            if ($params['actiontype'] === 'create_quest') {
+                return self::action_create_quest(
+                    $params['instanceid'],
+                    $params['courseid'],
+                    $aparams
+                );
+            }
+
+            if ($params['actiontype'] === 'open_tab') {
+                return self::action_open_tab(
+                    $params['instanceid'],
+                    $params['courseid'],
+                    $aparams
+                );
+            }
+        } catch (\Exception $e) {
+            return [
+                'success'      => false,
+                'message'      => $e->getMessage(),
+                'redirect_url' => '',
+            ];
+        }
+
+        return [
+            'success'      => false,
+            'message'      => get_string('assistant_error_unknown_action', 'block_playerhud'),
+            'redirect_url' => '',
+        ];
+    }
+
+    /**
+     * Executes the create_item action.
+     *
+     * Reuses the existing generator to create an item with an optional drop.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param array $p Action parameters: theme, xp, create_drop.
+     * @return array Result with success, message, redirect_url.
+     */
+    private static function action_create_item(int $instanceid, int $courseid, array $p): array {
+        global $DB, $USER;
+
+        $theme      = isset($p['theme']) ? clean_param($p['theme'], PARAM_TEXT) : '';
+        $xp         = isset($p['xp']) ? max(1, (int)$p['xp']) : 10;
+        $createdrop = !empty($p['create_drop']);
+
+        if ($theme === '') {
+            return [
+                'success'      => false,
+                'message'      => get_string('assistant_error_bad_params', 'block_playerhud'),
+                'redirect_url' => '',
+            ];
+        }
+
+        $generator = new \block_playerhud\ai\generator($instanceid);
+        $result = $generator->generate('item', $theme, $xp, $createdrop);
+
+        $itemname = $result['item_name'] ?? '';
+
+        $log = new \stdClass();
+        $log->blockinstanceid = $instanceid;
+        $log->userid          = (int) $USER->id;
+        $log->action_type     = 'item';
+        $log->object_name     = substr($itemname, 0, 255);
+        $log->ai_provider     = substr($result['provider'] ?? '', 0, 50);
+        $log->timecreated     = time();
+        $DB->insert_record('block_playerhud_ai_logs', $log, false);
+
+        $msg = get_string('assistant_action_item_created', 'block_playerhud', $itemname);
+
+        $redirecturl = (new \moodle_url('/blocks/playerhud/manage.php', [
+            'id'         => $courseid,
+            'instanceid' => $instanceid,
+            'tab'        => 'items',
+        ]))->out(false);
+
+        return [
+            'success'      => true,
+            'message'      => $msg,
+            'redirect_url' => $redirecturl,
+        ];
+    }
+
+    /**
+     * Executes the create_quest action.
+     *
+     * Validates and inserts a quest record with the AI-provided parameters.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param array $p Action parameters: name, description, type, target_value, reward_xp.
+     * @return array Result with success, message, redirect_url.
+     */
+    private static function action_create_quest(int $instanceid, int $courseid, array $p): array {
+        global $DB, $USER;
+
+        $allowedtypes = [
+            \block_playerhud\quest::TYPE_LEVEL,
+            \block_playerhud\quest::TYPE_XP_TOTAL,
+            \block_playerhud\quest::TYPE_UNIQUE_ITEMS,
+            \block_playerhud\quest::TYPE_TRADES,
+        ];
+
+        $name        = isset($p['name']) ? clean_param($p['name'], PARAM_TEXT) : '';
+        $description = isset($p['description']) ? clean_param($p['description'], PARAM_TEXT) : '';
+        $type        = isset($p['type']) ? (int)$p['type'] : 0;
+        $targetvalue = isset($p['target_value']) ? max(1, (int)$p['target_value']) : 1;
+        $rewardxp    = isset($p['reward_xp']) ? max(0, (int)$p['reward_xp']) : 0;
+
+        if ($name === '' || !in_array($type, $allowedtypes, true)) {
+            return [
+                'success'      => false,
+                'message'      => get_string('assistant_error_bad_params', 'block_playerhud'),
+                'redirect_url' => '',
+            ];
+        }
+
+        $now = time();
+        $quest = new \stdClass();
+        $quest->blockinstanceid  = $instanceid;
+        $quest->name             = $name;
+        $quest->description      = $description;
+        $quest->type             = $type;
+        $quest->requirement      = (string)$targetvalue;
+        $quest->req_itemid       = 0;
+        $quest->reward_xp        = $rewardxp;
+        $quest->reward_itemid    = 0;
+        $quest->required_class_id = '0';
+        $quest->image_todo       = '';
+        $quest->image_done       = '';
+        $quest->enabled          = 1;
+        $quest->timecreated      = $now;
+        $quest->timemodified     = $now;
+        $DB->insert_record('block_playerhud_quests', $quest);
+
+        $log = new \stdClass();
+        $log->blockinstanceid = $instanceid;
+        $log->userid          = (int) $USER->id;
+        $log->action_type     = 'quest';
+        $log->object_name     = substr($name, 0, 255);
+        $log->ai_provider     = 'assistant';
+        $log->timecreated     = time();
+        $DB->insert_record('block_playerhud_ai_logs', $log, false);
+
+        $msg = get_string('assistant_action_quest_created', 'block_playerhud', $name);
+
+        $redirecturl = (new \moodle_url('/blocks/playerhud/manage.php', [
+            'id'         => $courseid,
+            'instanceid' => $instanceid,
+            'tab'        => 'quests',
+        ]))->out(false);
+
+        return [
+            'success'      => true,
+            'message'      => $msg,
+            'redirect_url' => $redirecturl,
+        ];
+    }
+
+    /**
+     * Executes the open_tab action.
+     *
+     * Returns a redirect URL to the requested management tab.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param array $p Action parameters: tab.
+     * @return array Result with success, message, redirect_url.
+     */
+    private static function action_open_tab(int $instanceid, int $courseid, array $p): array {
+        $allowedtabs = ['items', 'quests', 'classes', 'chapters', 'reports', 'config'];
+        $tab = isset($p['tab']) ? clean_param($p['tab'], PARAM_ALPHA) : '';
+
+        if (!in_array($tab, $allowedtabs, true)) {
+            $tab = 'items';
+        }
+
+        $redirecturl = (new \moodle_url('/blocks/playerhud/manage.php', [
+            'id'         => $courseid,
+            'instanceid' => $instanceid,
+            'tab'        => $tab,
+        ]))->out(false);
+
+        return [
+            'success'      => true,
+            'message'      => get_string('assistant_action_opening_tab', 'block_playerhud', $tab),
+            'redirect_url' => $redirecturl,
+        ];
+    }
+
+    /**
+     * Return structure for execute_chat_action.
+     *
+     * @return external_single_structure
+     */
+    public static function execute_chat_action_returns(): external_single_structure {
+        return new external_single_structure([
+            'success'      => new external_value(PARAM_BOOL, 'Whether the action succeeded'),
+            'message'      => new external_value(PARAM_RAW, 'Result or error message', VALUE_DEFAULT, ''),
+            'redirect_url' => new external_value(PARAM_URL, 'URL to redirect to', VALUE_DEFAULT, ''),
+        ]);
+    }
 }
