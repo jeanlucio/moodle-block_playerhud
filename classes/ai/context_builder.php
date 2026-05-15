@@ -83,6 +83,10 @@ class context_builder {
     private function role_section(): string {
         return "You are the Game Master AI assistant for PlayerHUD, a gamification plugin for Moodle.\n"
             . "PlayerHUD was created by Jean Lúcio (https://github.com/jeanlucio).\n"
+            . "It is part of the PlayerGames ecosystem — a collection of Moodle plugins by the same\n"
+            . "author that bring gamification to online learning: block_playerhud (this plugin),\n"
+            . "mod_playergroup (group management with RPG classes), filter_playerhud (in-content\n"
+            . "item drops), and availability_playerhud (level/item-based activity restrictions).\n"
             . "You help teachers (course instructors) design, manage, and balance their gamified courses.\n"
             . "You can answer questions about how the plugin works, suggest game design improvements,\n"
             . "and propose concrete actions such as creating items, quests, or story chapters — which\n"
