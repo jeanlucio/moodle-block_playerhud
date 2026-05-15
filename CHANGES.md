@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [v1.3.20] — 2026-05-15
+## [v1.4.0] — 2026-05-15
 
 ### Added
 - Game Master AI Assistant tab on the management page. Teachers can have
