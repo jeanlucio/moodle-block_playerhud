@@ -440,8 +440,7 @@ if ($action === 'move_chapter_up' && confirm_sesskey()) {
         $prevchapter = $DB->get_record_sql(
             "SELECT * FROM {block_playerhud_chapters}
              WHERE blockinstanceid = ? AND sortorder < ?
-             ORDER BY sortorder DESC
-             LIMIT 1",
+             ORDER BY sortorder DESC",
             [$instanceid, $chapter->sortorder]
         );
 
@@ -478,8 +477,7 @@ if ($action === 'move_chapter_down' && confirm_sesskey()) {
         $nextchapter = $DB->get_record_sql(
             "SELECT * FROM {block_playerhud_chapters}
              WHERE blockinstanceid = ? AND sortorder > ?
-             ORDER BY sortorder ASC
-             LIMIT 1",
+             ORDER BY sortorder ASC",
             [$instanceid, $chapter->sortorder]
         );
 
@@ -548,8 +546,17 @@ if ($action === 'revoke_item' && confirm_sesskey()) {
         if ($item) {
             $player = $DB->get_record('block_playerhud_user', ['blockinstanceid' => $instanceid, 'userid' => $inv->userid]);
             if ($player) {
-                $player->currentxp = max(0, $player->currentxp - $item->xp);
-                $DB->update_record('block_playerhud_user', $player);
+                // Only deduct XP if the originating drop was finite — infinite drops (maxusage=0)
+                // deliberately grant 0 XP in process_collection, so reverting them must not deduct.
+                $isinfinite = false;
+                if ($inv->dropid > 0) {
+                    $drop = $DB->get_record('block_playerhud_drops', ['id' => $inv->dropid]);
+                    $isinfinite = $drop && (int)$drop->maxusage === 0;
+                }
+                if (!$isinfinite && $item->xp > 0) {
+                    $player->currentxp = max(0, $player->currentxp - $item->xp);
+                    $DB->update_record('block_playerhud_user', $player);
+                }
             }
 
             // Soft Revoke: Mark the inventory record as revoked instead of deleting.

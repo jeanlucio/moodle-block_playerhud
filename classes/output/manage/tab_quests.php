@@ -103,6 +103,21 @@ class tab_quests implements renderable {
         if ($data = $this->mform->get_data()) {
             $type = (int)$data->type;
 
+            $validitemids = $DB->get_fieldset_select(
+                'block_playerhud_items',
+                'id',
+                'blockinstanceid = ?',
+                [$this->instanceid]
+            );
+            $validtradeids = $DB->get_fieldset_select(
+                'block_playerhud_trades',
+                'id',
+                'blockinstanceid = ?',
+                [$this->instanceid]
+            );
+
+            $rewarditemid = (int)$data->reward_itemid;
+
             $record                    = new \stdClass();
             $record->blockinstanceid   = $this->instanceid;
             $record->name              = $data->name;
@@ -110,7 +125,7 @@ class tab_quests implements renderable {
             $record->type              = $type;
             $record->enabled           = (int)$data->enabled;
             $record->reward_xp         = max(0, (int)$data->reward_xp);
-            $record->reward_itemid     = (int)$data->reward_itemid;
+            $record->reward_itemid     = in_array($rewarditemid, $validitemids, true) ? $rewarditemid : 0;
             $record->required_class_id = '0';
             $record->image_todo        = trim($data->image_todo ?? '');
             $record->image_done        = trim($data->image_done ?? '');
@@ -125,9 +140,11 @@ class tab_quests implements renderable {
             } else {
                 $record->requirement = (string)(int)$data->target_value;
                 if ($type === quest::TYPE_SPECIFIC_ITEM) {
-                    $record->req_itemid = (int)$data->req_itemid;
+                    $reqitemid = (int)$data->req_itemid;
+                    $record->req_itemid = in_array($reqitemid, $validitemids, true) ? $reqitemid : 0;
                 } else if ($type === quest::TYPE_SPECIFIC_TRADE) {
-                    $record->req_itemid = (int)$data->req_tradeid;
+                    $reqtradeid = (int)$data->req_tradeid;
+                    $record->req_itemid = in_array($reqtradeid, $validtradeids, true) ? $reqtradeid : 0;
                 } else {
                     $record->req_itemid = 0;
                 }

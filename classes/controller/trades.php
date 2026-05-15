@@ -195,18 +195,24 @@ class trades {
             $currenttradeid      = $DB->insert_record('block_playerhud_trades', $record);
         }
 
+        $validitemids = $DB->get_fieldset_select(
+            'block_playerhud_items',
+            'id',
+            'blockinstanceid = ?',
+            [$instanceid]
+        );
+
         $reqstoinsert = [];
         for ($i = 0; $i < $data->repeats_req; $i++) {
-            $itemfield = "req_itemid_$i";
-            $qtyfield  = "req_qty_$i";
-
-            if (!empty($data->$itemfield) && $data->$itemfield > 0) {
-                $req          = new \stdClass();
-                $req->tradeid = $currenttradeid;
-                $req->itemid  = $data->$itemfield;
-                $req->qty     = max(1, (int) $data->$qtyfield);
-                $reqstoinsert[] = $req;
+            $itemid = (int)($data->{"req_itemid_$i"} ?? 0);
+            if ($itemid <= 0 || !in_array($itemid, $validitemids, true)) {
+                continue;
             }
+            $req          = new \stdClass();
+            $req->tradeid = $currenttradeid;
+            $req->itemid  = $itemid;
+            $req->qty     = max(1, (int)($data->{"req_qty_$i"} ?? 1));
+            $reqstoinsert[] = $req;
         }
         if (!empty($reqstoinsert)) {
             $DB->insert_records('block_playerhud_trade_reqs', $reqstoinsert);
@@ -214,16 +220,15 @@ class trades {
 
         $rewardstoinsert = [];
         for ($i = 0; $i < $data->repeats_give; $i++) {
-            $itemfield = "give_itemid_$i";
-            $qtyfield  = "give_qty_$i";
-
-            if (!empty($data->$itemfield) && $data->$itemfield > 0) {
-                $rew          = new \stdClass();
-                $rew->tradeid = $currenttradeid;
-                $rew->itemid  = $data->$itemfield;
-                $rew->qty     = max(1, (int) $data->$qtyfield);
-                $rewardstoinsert[] = $rew;
+            $itemid = (int)($data->{"give_itemid_$i"} ?? 0);
+            if ($itemid <= 0 || !in_array($itemid, $validitemids, true)) {
+                continue;
             }
+            $rew          = new \stdClass();
+            $rew->tradeid = $currenttradeid;
+            $rew->itemid  = $itemid;
+            $rew->qty     = max(1, (int)($data->{"give_qty_$i"} ?? 1));
+            $rewardstoinsert[] = $rew;
         }
         if (!empty($rewardstoinsert)) {
             $DB->insert_records('block_playerhud_trade_rewards', $rewardstoinsert);
