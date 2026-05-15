@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.3.20] — 2026-05-15
+
+### Added
+- Game Master AI Assistant tab on the management page. Teachers can have
+  a multi-turn conversation with Gemini, Groq, or OpenAI to get game design
+  advice and trigger actions directly from the chat.
+- AI actions with teacher confirmation: create item, create quest, and
+  generate a full branching story chapter (using the existing chapter
+  generator with nodes and choices).
+- Action audit log entries now use the correct `action_type` ('item',
+  'quest', 'chapter') and record the created object name instead of the
+  raw chat message.
+- Post-action link opens the relevant management tab in a new browser tab,
+  preserving the chat history.
+
+---
+
 ## [v1.3.19] — 2026-05-15
 
 ### Security
