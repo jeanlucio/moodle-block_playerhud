@@ -90,6 +90,10 @@ jobs:
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
         run: moodle-plugin-ci validate
 
+      - name: Upgrade savepoints
+        if: ${{ !cancelled() && matrix.runchecks == 'all' }}
+        run: moodle-plugin-ci savepoints
+
       - name: PHPDoc checks
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
         run: moodle-plugin-ci phpdoc
@@ -107,8 +111,18 @@ jobs:
         run: moodle-plugin-ci phpunit
 
       - name: Behat tests
+        id: behat
         if: ${{ !cancelled() }}
         run: moodle-plugin-ci behat --profile chrome
+
+      - name: Upload Behat Faildump
+        if: ${{ failure() && steps.behat.outcome == 'failure' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Behat Faildump (${{ join(matrix.*, ', ') }})
+          path: ${{ github.workspace }}/moodledata/behat_dump
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Mark cancelled jobs as failed
         if: ${{ cancelled() }}
