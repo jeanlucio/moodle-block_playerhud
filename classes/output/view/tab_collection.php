@@ -70,7 +70,7 @@ class tab_collection implements renderable, templatable {
              LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
                  WHERE inv.userid = :userid
                    AND it.blockinstanceid = :instanceid
-                   AND inv.source != 'revoked'";
+                   AND inv.source NOT IN ('revoked', 'consumed')";
 
         $rawinventory = $DB->get_records_sql($sql, [
             'userid' => $this->player->userid,

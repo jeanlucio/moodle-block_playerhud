@@ -68,7 +68,7 @@ class export {
                           JOIN {block_playerhud_items} it ON inv.itemid = it.id
                          WHERE inv.userid = u.id
                            AND it.blockinstanceid = :p1
-                           AND inv.source != 'revoked') AS total_items
+                           AND inv.source NOT IN ('revoked', 'consumed')) AS total_items
                   FROM {user} u
                   JOIN {block_playerhud_user} pu ON pu.userid = u.id
                  WHERE pu.blockinstanceid = :p2

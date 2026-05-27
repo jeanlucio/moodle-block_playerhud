@@ -371,7 +371,7 @@ class tab_reports implements renderable, templatable {
                FROM {block_playerhud_user} p
                JOIN {user} u ON p.userid = u.id
               WHERE p.blockinstanceid = ?
-           ORDER BY p.currentxp DESC",
+           ORDER BY p.currentxp DESC, p.timemodified ASC, u.lastname ASC",
             [$this->instanceid],
             IGNORE_MULTIPLE
         );
@@ -615,7 +615,8 @@ class tab_reports implements renderable, templatable {
                    pu.currentxp, pu.enable_gamification, pu.timemodified,
                    (SELECT COUNT(inv.id) FROM {block_playerhud_inventory} inv
                     JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                   WHERE inv.userid = u.id AND it.blockinstanceid = :p1 AND inv.source != 'revoked') as total_items
+                   WHERE inv.userid = u.id AND it.blockinstanceid = :p1
+                         AND inv.source NOT IN ('revoked', 'consumed')) as total_items
               FROM {user} u
               JOIN {block_playerhud_user} pu ON pu.userid = u.id
               JOIN {user_enrolments} ue ON ue.userid = u.id AND ue.status = 0

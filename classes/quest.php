@@ -127,7 +127,7 @@ class quest {
                 $sql = "SELECT COUNT(inv.id)
                           FROM {block_playerhud_inventory} inv
                           JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                         WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source != 'revoked'";
+                         WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source NOT IN ('revoked', 'consumed')";
                 $current = $DB->count_records_sql($sql, [$userid, $quest->blockinstanceid]);
                 $target = (int)$quest->requirement;
 
@@ -395,7 +395,7 @@ class quest {
                         $sql = "SELECT COUNT(inv.id)
                                   FROM {block_playerhud_inventory} inv
                                   JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                                 WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source != 'revoked'";
+                                 WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source NOT IN ('revoked', 'consumed')";
                         $totalitems = (int)$DB->count_records_sql($sql, [$userid, $instanceid]);
                     }
                     $completed = ($totalitems >= (int)$q->requirement);

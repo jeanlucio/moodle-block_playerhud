@@ -107,7 +107,7 @@ class profile_content implements \renderable, \templatable {
                   JOIN {block_playerhud_items} i ON inv.itemid = i.id
                  WHERE inv.userid = :userid
                    AND i.blockinstanceid = :bid
-                   AND inv.source != 'revoked'
+                   AND inv.source NOT IN ('revoked', 'consumed')
                    AND i.enabled = 1
                  GROUP BY inv.itemid
                  ORDER BY lastcollected DESC, lastinvid DESC";
@@ -167,7 +167,7 @@ class profile_content implements \renderable, \templatable {
                JOIN {block_playerhud_items} i ON inv.itemid = i.id
               WHERE inv.userid = :userid
                 AND i.blockinstanceid = :bid
-                AND inv.source != 'revoked'
+                AND inv.source NOT IN ('revoked', 'consumed')
                 AND i.enabled = 1",
             ['userid' => $this->userid, 'bid' => $this->blockinstanceid]
         );

@@ -63,7 +63,6 @@ class game {
         global $DB;
         $player = self::get_player($blockinstanceid, $userid);
         $player->enable_gamification = ($status) ? 1 : 0;
-        $player->timemodified = time();
         $DB->update_record('block_playerhud_user', $player);
     }
 
@@ -79,7 +78,7 @@ class game {
         $sql = "SELECT inv.id as unique_inventory_id, i.*, inv.timecreated as collecteddate
                   FROM {block_playerhud_items} i
                   JOIN {block_playerhud_inventory} inv ON inv.itemid = i.id
-                 WHERE inv.userid = :userid AND i.blockinstanceid = :pid AND inv.source != 'revoked'
+                 WHERE inv.userid = :userid AND i.blockinstanceid = :pid AND inv.source NOT IN ('revoked', 'consumed')
               ORDER BY inv.timecreated DESC, inv.id DESC";
         return $DB->get_records_sql($sql, ['userid' => $userid, 'pid' => $blockinstanceid]);
     }
