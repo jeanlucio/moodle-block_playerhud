@@ -104,6 +104,13 @@ jobs:
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
         run: moodle-plugin-ci grunt --max-lint-warnings 0
 
+      - name: Stylelint
+        if: ${{ !cancelled() && matrix.runchecks == 'all' }}
+        run: |
+          cd plugin
+          npm install --no-save stylelint@15 postcss-scss stylelint-csstree-validator
+          npx stylelint "scss/**/*.scss"
+
       - name: PHPUnit tests
         if: ${{ !cancelled() }}
         run: moodle-plugin-ci phpunit --fail-on-warning
