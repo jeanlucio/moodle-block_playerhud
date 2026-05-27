@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.4.2] — 2026-05-27
+
+### Fixed
+- SCSS single-line blocks in `_assistant.scss` (`&:nth-child` selectors and
+  `@keyframes ph-bounce`) expanded to multi-line to satisfy the Moodle Plugin
+  Directory stylelint precheckers (`block-opening-brace-newline-after`,
+  `block-closing-brace-newline-before`,
+  `declaration-block-single-line-max-declarations`).
+
+### CI
+- Added `.stylelintrc.json` mirroring Moodle core stylelint rules
+  (`postcss-scss` + `stylelint-csstree-validator@3`).
+- Added dedicated Stylelint step to `ci.yml` so SCSS formatting errors are
+  caught before reaching the Plugin Directory precheckers.
+
+---
+
 ## [v1.4.1] — 2026-05-27
 
 ### Fixed
