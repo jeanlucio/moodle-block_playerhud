@@ -440,7 +440,6 @@
     border-inline-start: 5px solid var(--gray-600, #6c757d);
     transition: border-color 0.3s ease;
 }
-
 @media (max-width: 767.98px) {
     .block_playerhud .playerhud-widget-container,
     .path-blocks-playerhud .playerhud-widget-container,
@@ -464,7 +463,6 @@
     border-inline-end: 1px solid var(--gray-300, #dee2e6);
     padding: 1rem;
 }
-
 @media (max-width: 767.98px) {
     .block_playerhud .ph-widget-left,
     .path-blocks-playerhud .ph-widget-left,
@@ -495,7 +493,6 @@
     padding: 1rem 1.5rem;
     min-width: 0;
 }
-
 @media (max-width: 767.98px) {
     .block_playerhud .ph-widget-center,
     .path-blocks-playerhud .ph-widget-center,
@@ -518,7 +515,6 @@
     text-align: left;
     line-height: 1.2;
 }
-
 @media (max-width: 767.98px) {
     .block_playerhud .ph-widget-name,
     .path-blocks-playerhud .ph-widget-name,
@@ -542,7 +538,6 @@
     gap: 0.5rem;
     padding: 0.5rem;
 }
-
 @media (max-width: 767.98px) {
     .block_playerhud .ph-widget-right,
     .path-blocks-playerhud .ph-widget-right,
@@ -574,7 +569,6 @@
     font-size: 1.2rem;
     padding-block: 0.5rem;
 }
-
 @media (max-width: 767.98px) {
     .block_playerhud .ph-widget-actions-grid,
     .path-blocks-playerhud .ph-widget-actions-grid,
@@ -697,9 +691,7 @@
 .path-blocks-playerhud .btn-ph-level-border:hover {
     background-color: var(--gray-200, #e9ecef);
 }
-.block_playerhud .ph-lvl-tier-1.progress-bar,
-.block_playerhud .ph-lvl-tier-1.badge,
-.block_playerhud .ph-lvl-tier-1.playerhud-widget-container .progress-bar,
+.block_playerhud .ph-lvl-tier-1.progress-bar, .block_playerhud .ph-lvl-tier-1.badge, .block_playerhud .ph-lvl-tier-1.playerhud-widget-container .progress-bar,
 .path-blocks-playerhud .ph-lvl-tier-1.progress-bar,
 .path-blocks-playerhud .ph-lvl-tier-1.badge,
 .path-blocks-playerhud .ph-lvl-tier-1.playerhud-widget-container .progress-bar {
@@ -707,15 +699,13 @@
     color: var(--light, #fff);
     border-color: var(--gray-600, #6c757d);
 }
-.block_playerhud .ph-lvl-tier-1 .btn-ph-level-border,
-.block_playerhud .ph-lvl-tier-1.playerhud-widget-container .btn-ph-level-border,
+.block_playerhud .ph-lvl-tier-1 .btn-ph-level-border, .block_playerhud .ph-lvl-tier-1.playerhud-widget-container .btn-ph-level-border,
 .path-blocks-playerhud .ph-lvl-tier-1 .btn-ph-level-border,
 .path-blocks-playerhud .ph-lvl-tier-1.playerhud-widget-container .btn-ph-level-border {
     border-color: var(--gray-600, #6c757d);
     color: var(--gray-600, #6c757d);
 }
-.block_playerhud .ph-lvl-tier-1 .btn-ph-level-border:hover,
-.block_playerhud .ph-lvl-tier-1.playerhud-widget-container .btn-ph-level-border:hover,
+.block_playerhud .ph-lvl-tier-1 .btn-ph-level-border:hover, .block_playerhud .ph-lvl-tier-1.playerhud-widget-container .btn-ph-level-border:hover,
 .path-blocks-playerhud .ph-lvl-tier-1 .btn-ph-level-border:hover,
 .path-blocks-playerhud .ph-lvl-tier-1.playerhud-widget-container .btn-ph-level-border:hover {
     background-color: var(--gray-600, #6c757d);
@@ -725,9 +715,7 @@
 .path-blocks-playerhud .ph-lvl-tier-1.playerhud-widget-container {
     border-inline-start-color: var(--gray-600, #6c757d);
 }
-.block_playerhud .ph-lvl-tier-2.progress-bar,
-.block_playerhud .ph-lvl-tier-2.badge,
-.block_playerhud .ph-lvl-tier-2.playerhud-widget-container .progress-bar,
+.block_playerhud .ph-lvl-tier-2.progress-bar, .block_playerhud .ph-lvl-tier-2.badge, .block_playerhud .ph-lvl-tier-2.playerhud-widget-container .progress-bar,
 .path-blocks-playerhud .ph-lvl-tier-2.progress-bar,
 .path-blocks-playerhud .ph-lvl-tier-2.badge,
 .path-blocks-playerhud .ph-lvl-tier-2.playerhud-widget-container .progress-bar {
@@ -735,15 +723,13 @@
     color: var(--light, #fff);
     border-color: var(--success, #208337);
 }
-.block_playerhud .ph-lvl-tier-2 .btn-ph-level-border,
-.block_playerhud .ph-lvl-tier-2.playerhud-widget-container .btn-ph-level-border,
+.block_playerhud .ph-lvl-tier-2 .btn-ph-level-border, .block_playerhud .ph-lvl-tier-2.playerhud-widget-container .btn-ph-level-border,
 .path-blocks-playerhud .ph-lvl-tier-2 .btn-ph-level-border,
 .path-blocks-playerhud .ph-lvl-tier-2.playerhud-widget-container .btn-ph-level-border {
     border-color: var(--success, #208337);
     color: var(--success, #208337);
 }
-.block_playerhud .ph-lvl-tier-2 .btn-ph-level-border:hover,
-.block_playerhud .ph-lvl-tier-2.playerhud-widget-container .btn-ph-level-border:hover,
+.block_playerhud .ph-lvl-tier-2 .btn-ph-level-border:hover, .block_playerhud .ph-lvl-tier-2.playerhud-widget-container .btn-ph-level-border:hover,
 .path-blocks-playerhud .ph-lvl-tier-2 .btn-ph-level-border:hover,
 .path-blocks-playerhud .ph-lvl-tier-2.playerhud-widget-container .btn-ph-level-border:hover {
     background-color: var(--success, #208337);
@@ -753,9 +739,7 @@
 .path-blocks-playerhud .ph-lvl-tier-2.playerhud-widget-container {
     border-inline-start-color: var(--success, #208337);
 }
-.block_playerhud .ph-lvl-tier-3.progress-bar,
-.block_playerhud .ph-lvl-tier-3.badge,
-.block_playerhud .ph-lvl-tier-3.playerhud-widget-container .progress-bar,
+.block_playerhud .ph-lvl-tier-3.progress-bar, .block_playerhud .ph-lvl-tier-3.badge, .block_playerhud .ph-lvl-tier-3.playerhud-widget-container .progress-bar,
 .path-blocks-playerhud .ph-lvl-tier-3.progress-bar,
 .path-blocks-playerhud .ph-lvl-tier-3.badge,
 .path-blocks-playerhud .ph-lvl-tier-3.playerhud-widget-container .progress-bar {
@@ -763,15 +747,13 @@
     color: var(--light, #fff);
     border-color: var(--primary, #0b55c4);
 }
-.block_playerhud .ph-lvl-tier-3 .btn-ph-level-border,
-.block_playerhud .ph-lvl-tier-3.playerhud-widget-container .btn-ph-level-border,
+.block_playerhud .ph-lvl-tier-3 .btn-ph-level-border, .block_playerhud .ph-lvl-tier-3.playerhud-widget-container .btn-ph-level-border,
 .path-blocks-playerhud .ph-lvl-tier-3 .btn-ph-level-border,
 .path-blocks-playerhud .ph-lvl-tier-3.playerhud-widget-container .btn-ph-level-border {
     border-color: var(--primary, #0b55c4);
     color: var(--primary, #0b55c4);
 }
-.block_playerhud .ph-lvl-tier-3 .btn-ph-level-border:hover,
-.block_playerhud .ph-lvl-tier-3.playerhud-widget-container .btn-ph-level-border:hover,
+.block_playerhud .ph-lvl-tier-3 .btn-ph-level-border:hover, .block_playerhud .ph-lvl-tier-3.playerhud-widget-container .btn-ph-level-border:hover,
 .path-blocks-playerhud .ph-lvl-tier-3 .btn-ph-level-border:hover,
 .path-blocks-playerhud .ph-lvl-tier-3.playerhud-widget-container .btn-ph-level-border:hover {
     background-color: var(--primary, #0b55c4);
@@ -781,9 +763,7 @@
 .path-blocks-playerhud .ph-lvl-tier-3.playerhud-widget-container {
     border-inline-start-color: var(--primary, #0b55c4);
 }
-.block_playerhud .ph-lvl-tier-4.progress-bar,
-.block_playerhud .ph-lvl-tier-4.badge,
-.block_playerhud .ph-lvl-tier-4.playerhud-widget-container .progress-bar,
+.block_playerhud .ph-lvl-tier-4.progress-bar, .block_playerhud .ph-lvl-tier-4.badge, .block_playerhud .ph-lvl-tier-4.playerhud-widget-container .progress-bar,
 .path-blocks-playerhud .ph-lvl-tier-4.progress-bar,
 .path-blocks-playerhud .ph-lvl-tier-4.badge,
 .path-blocks-playerhud .ph-lvl-tier-4.playerhud-widget-container .progress-bar {
@@ -791,15 +771,13 @@
     color: var(--light, #fff);
     border-color: var(--purple, #6f42c1);
 }
-.block_playerhud .ph-lvl-tier-4 .btn-ph-level-border,
-.block_playerhud .ph-lvl-tier-4.playerhud-widget-container .btn-ph-level-border,
+.block_playerhud .ph-lvl-tier-4 .btn-ph-level-border, .block_playerhud .ph-lvl-tier-4.playerhud-widget-container .btn-ph-level-border,
 .path-blocks-playerhud .ph-lvl-tier-4 .btn-ph-level-border,
 .path-blocks-playerhud .ph-lvl-tier-4.playerhud-widget-container .btn-ph-level-border {
     border-color: var(--purple, #6f42c1);
     color: var(--purple, #6f42c1);
 }
-.block_playerhud .ph-lvl-tier-4 .btn-ph-level-border:hover,
-.block_playerhud .ph-lvl-tier-4.playerhud-widget-container .btn-ph-level-border:hover,
+.block_playerhud .ph-lvl-tier-4 .btn-ph-level-border:hover, .block_playerhud .ph-lvl-tier-4.playerhud-widget-container .btn-ph-level-border:hover,
 .path-blocks-playerhud .ph-lvl-tier-4 .btn-ph-level-border:hover,
 .path-blocks-playerhud .ph-lvl-tier-4.playerhud-widget-container .btn-ph-level-border:hover {
     background-color: var(--purple, #6f42c1);
@@ -809,9 +787,7 @@
 .path-blocks-playerhud .ph-lvl-tier-4.playerhud-widget-container {
     border-inline-start-color: var(--purple, #6f42c1);
 }
-.block_playerhud .ph-lvl-tier-5.progress-bar,
-.block_playerhud .ph-lvl-tier-5.badge,
-.block_playerhud .ph-lvl-tier-5.playerhud-widget-container .progress-bar,
+.block_playerhud .ph-lvl-tier-5.progress-bar, .block_playerhud .ph-lvl-tier-5.badge, .block_playerhud .ph-lvl-tier-5.playerhud-widget-container .progress-bar,
 .path-blocks-playerhud .ph-lvl-tier-5.progress-bar,
 .path-blocks-playerhud .ph-lvl-tier-5.badge,
 .path-blocks-playerhud .ph-lvl-tier-5.playerhud-widget-container .progress-bar {
@@ -819,15 +795,13 @@
     color: var(--light, #fff);
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
-.block_playerhud .ph-lvl-tier-5 .btn-ph-level-border,
-.block_playerhud .ph-lvl-tier-5.playerhud-widget-container .btn-ph-level-border,
+.block_playerhud .ph-lvl-tier-5 .btn-ph-level-border, .block_playerhud .ph-lvl-tier-5.playerhud-widget-container .btn-ph-level-border,
 .path-blocks-playerhud .ph-lvl-tier-5 .btn-ph-level-border,
 .path-blocks-playerhud .ph-lvl-tier-5.playerhud-widget-container .btn-ph-level-border {
     border-color: var(--primary, #0d6efd);
     color: var(--primary, #0d6efd);
 }
-.block_playerhud .ph-lvl-tier-5 .btn-ph-level-border:hover,
-.block_playerhud .ph-lvl-tier-5.playerhud-widget-container .btn-ph-level-border:hover,
+.block_playerhud .ph-lvl-tier-5 .btn-ph-level-border:hover, .block_playerhud .ph-lvl-tier-5.playerhud-widget-container .btn-ph-level-border:hover,
 .path-blocks-playerhud .ph-lvl-tier-5 .btn-ph-level-border:hover,
 .path-blocks-playerhud .ph-lvl-tier-5.playerhud-widget-container .btn-ph-level-border:hover {
     background: linear-gradient(45deg, var(--primary, #0d6efd), var(--purple, #6f42c1));
@@ -838,7 +812,6 @@
 .path-blocks-playerhud .ph-lvl-tier-5.playerhud-widget-container {
     border-inline-start-color: var(--primary, #0d6efd);
 }
-
 @media (max-width: 767.98px) {
     .block_playerhud .playerhud-widget-container.ph-lvl-tier-1,
     .path-blocks-playerhud .playerhud-widget-container.ph-lvl-tier-1 {
@@ -1031,8 +1004,7 @@
     line-height: 1;
     cursor: pointer;
 }
-.block_playerhud .playerhud-item-card .ph-quest-info-btn:hover,
-.block_playerhud .playerhud-item-card .ph-quest-info-btn:focus-visible,
+.block_playerhud .playerhud-item-card .ph-quest-info-btn:hover, .block_playerhud .playerhud-item-card .ph-quest-info-btn:focus-visible,
 .path-blocks-playerhud .playerhud-item-card .ph-quest-info-btn:hover,
 .path-blocks-playerhud .playerhud-item-card .ph-quest-info-btn:focus-visible {
     color: var(--primary, #0d6efd);
@@ -2072,4 +2044,73 @@ div.modal-dialog .visually-hidden {
 .ph-profile-item-clickable:focus-visible {
     outline: 2px solid var(--primary, #0f6cbf);
     outline-offset: 2px;
+}
+
+#ph-assistant-tab .ph-assistant-messages {
+    min-height: 300px;
+    max-height: 460px;
+    overflow-y: auto;
+    background-color: var(--card-bg, #fff);
+}
+#ph-assistant-tab .ph-assistant-textarea {
+    resize: none;
+}
+#ph-assistant-tab .ph-msg-bubble {
+    max-width: 75%;
+    word-break: break-word;
+}
+#ph-assistant-tab .ph-msg-user .ph-msg-bubble {
+    background-color: var(--primary, #0d6efd);
+    color: #fff;
+}
+#ph-assistant-tab .ph-msg-assistant .ph-msg-bubble {
+    background-color: var(--light, #f8f9fa);
+    border: 1px solid var(--border-color, #dee2e6);
+}
+#ph-assistant-tab .ph-provider-badge {
+    font-size: 0.7rem;
+    opacity: 0.75;
+}
+#ph-assistant-tab .ph-assistant-action-card {
+    border-inline-start: 4px solid var(--info, #0dcaf0);
+}
+#ph-assistant-tab .ph-action-label-text {
+    font-weight: 500;
+}
+#ph-assistant-tab .ph-thinking-bubble {
+    background-color: var(--light, #f8f9fa);
+    border: 1px solid var(--border-color, #dee2e6);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 14px;
+    min-width: 52px;
+}
+#ph-assistant-tab .ph-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--secondary, #6c757d);
+    animation: ph-bounce 1.2s infinite ease-in-out;
+}
+#ph-assistant-tab .ph-dot:nth-child(1) {
+    animation-delay: 0s;
+}
+#ph-assistant-tab .ph-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+#ph-assistant-tab .ph-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes ph-bounce {
+    0%, 80%, 100% {
+        transform: scale(0.6);
+        opacity: 0.4;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
