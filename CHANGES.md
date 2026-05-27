@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.4.1] — 2026-05-27
+
+### Fixed
+- Leader card showed an arbitrary student when multiple students shared the
+  top XP score. The query was missing the tiebreaker (`timemodified ASC`,
+  `lastname ASC`) used by the ranking table, so the database could return any
+  tied student. Now the leader is always the same person shown as rank 1.
+- Items consumed in a trade (`source = 'consumed'`) were still counted in the
+  student collection, profile display, ranking item totals, and CSV/Excel
+  exports. All six query sites now exclude `consumed` alongside `revoked`.
+- `toggle_gamification` was updating `timemodified` on `block_playerhud_user`,
+  corrupting the time-based ranking tiebreaker. Toggling visibility is not a
+  scoring event; only XP gains (item collection, teacher grant, quest reward)
+  should advance the tiebreaker timestamp.
+
+---
+
 ## [v1.4.0] — 2026-05-15
 
 ### Added
