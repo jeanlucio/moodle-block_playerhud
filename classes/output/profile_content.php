@@ -139,6 +139,7 @@ class profile_content implements \renderable, \templatable {
             }
             $item = $items[$iid];
             $media = $mediamap[$iid] ?? ['is_image' => false, 'url' => '', 'content' => ''];
+            $lastts = (int)$rows[$iid]->lastcollected;
             $result[] = [
                 'name' => format_string($item->name),
                 'isimage' => (bool)$media['is_image'],
@@ -146,7 +147,8 @@ class profile_content implements \renderable, \templatable {
                 'imageurl' => $media['is_image'] ? $media['url'] : '',
                 'imagecontent' => !$media['is_image'] ? $media['content'] : '',
                 'description' => format_text($item->description, FORMAT_HTML, ['context' => $context]),
-                'xptext' => $item->xp . ' XP',
+                'lasttimestamp' => $lastts,
+                'lastdate' => $lastts > 0 ? userdate($lastts, get_string('strftimedatefullshort', 'langconfig')) : '',
             ];
         }
 

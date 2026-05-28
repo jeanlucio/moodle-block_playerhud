@@ -137,7 +137,11 @@ function block_playerhud_myprofile_navigation(
     }
 
     if (!empty($data->hasitems)) {
-        $PAGE->requires->js_call_amd('block_playerhud/profile_items', 'init');
+        $PAGE->requires->js_call_amd('block_playerhud/profile_items', 'init', [[
+            'strings' => [
+                'last_collected' => get_string('last_collected', 'block_playerhud'),
+            ],
+        ]]);
     }
 
     $category = new \core_user\output\myprofile\category(

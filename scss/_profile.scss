@@ -30,8 +30,14 @@
 }
 
 // Profile page injection (myprofile hook) — rendered outside .block_playerhud.
-// Scoped to .path-user-profile (body class Moodle adds on all profile pages).
-.path-user-profile {
+// Moodle adds path classes from pagetype segments: for 'user-profile' (2 parts)
+// the loop runs i=1..1, producing only 'path-user'. No 'path-user-profile' exists.
+.path-user {
+
+    // Bootstrap 4 (Moodle 4.5) does not guarantee white text on coloured badges.
+    .badge.bg-primary {
+        color: #fff;
+    }
 
     .ph-profile-wrap {
         padding: 0.25rem 0;

@@ -26,6 +26,7 @@
 define(['jquery', 'theme_boost/bootstrap/modal'], function($, BootstrapModal) {
 
     let modalEl = null;
+    let strings = {};
 
     /**
      * Show the Bootstrap modal.
@@ -52,12 +53,13 @@ define(['jquery', 'theme_boost/bootstrap/modal'], function($, BootstrapModal) {
         const imageurl = el.dataset.imageurl || '';
         const imagecontent = el.dataset.imagecontent || '';
         const description = $(el).find('.ph-item-desc-profile').html() || '';
-        const xptext = el.dataset.xptext || '';
+        const timestamp = el.dataset.timestamp || '';
+        const date = el.dataset.date || '';
 
         const $m = $(modalEl);
         $m.find('#phModalNameView').text(name);
         $m.find('#phModalDescView').html(description);
-        $m.find('#phModalDateView').hide();
+        $m.find('#phModalXPView').hide().addClass('ph-display-none');
         $m.find('#phModalCountBadgeView').hide().addClass('ph-display-none');
 
         const imgCont = $m.find('#phModalImageContainerView');
@@ -77,10 +79,31 @@ define(['jquery', 'theme_boost/bootstrap/modal'], function($, BootstrapModal) {
             }));
         }
 
-        if (xptext) {
-            $m.find('#phModalXPView').text(xptext).show().removeClass('ph-display-none');
+        const dateEl = $m.find('#phModalDateView');
+        let formattedDate = '';
+
+        if (timestamp && timestamp > 0) {
+            let lang = $('html').attr('lang') || 'en';
+            lang = lang.replace('_', '-');
+            try {
+                formattedDate = new Date(parseInt(timestamp) * 1000).toLocaleDateString(lang, {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: '2-digit'
+                });
+            } catch (err) {
+                formattedDate = date;
+            }
         } else {
-            $m.find('#phModalXPView').hide().addClass('ph-display-none');
+            formattedDate = date;
+        }
+
+        if (formattedDate) {
+            const prefix = strings.last_collected ? strings.last_collected + ' ' : '';
+            dateEl.find('span').text(prefix + formattedDate);
+            dateEl.show().removeClass('ph-display-none');
+        } else {
+            dateEl.hide();
         }
 
         openModal();
@@ -89,14 +112,15 @@ define(['jquery', 'theme_boost/bootstrap/modal'], function($, BootstrapModal) {
     /**
      * Initialize click and keyboard handlers on all profile items.
      *
-     * The modal HTML is embedded in the page via the profile_content template
-     * ({{> block_playerhud/modal_item }}), so no config is needed.
+     * Looks for the modal inside .ph-profile-wrap to avoid conflicts when the
+     * block is also rendered in the page sidebar (two #ph-item-modal-view in DOM).
      *
-     * We look for the modal that lives INSIDE the profile content wrapper to avoid
-     * conflicts when the block is also rendered on the page sidebar (which causes
-     * two elements with id="ph-item-modal-view" in the DOM).
+     * @param {Object} config Optional config object with strings.
      */
-    const init = () => {
+    const init = (config) => {
+        if (config && config.strings) {
+            strings = config.strings;
+        }
         const profileWrap = document.querySelector('.ph-profile-wrap');
         modalEl = profileWrap
             ? profileWrap.querySelector('#ph-item-modal-view')
