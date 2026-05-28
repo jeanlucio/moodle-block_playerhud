@@ -42,6 +42,33 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
 
 ---
 
+### 🏆 Group Ranking Behavior
+
+When the group ranking is enabled, each group's average XP is calculated **only from members who are actively participating** — meaning members who have both:
+
+* **Gamification enabled** (`enable_gamification = 1`)
+* **Ranking visible** (`ranking_visibility = 1`)
+
+Members who have opted out of gamification or hidden their ranking are completely excluded from the group's sum and count. The denominator used to calculate the average reflects only the number of active participants, not the total group size.
+
+**Practical implication:** a group with many opted-out members may show a higher average than expected, because the average is computed over a smaller subset. Teachers should be aware that a group's displayed average does not represent all enrolled members — only those actively participating in the ranking.
+
+#### Integration with PlayerGroup
+
+The group ranking reads directly from Moodle's native group tables (`{groups}` / `{groups_members}`). It works with **any** Moodle group — whether created manually by a teacher or automatically via the **PlayerGroup** activity module.
+
+When **PlayerGroup** (`mod_playergroup`) is installed alongside PlayerHUD, an additional integration activates **inside the HUD header** (not the ranking tab): the student's group badge, group name, member count, and capacity (e.g. `3/5`) are displayed at the top of the block. This information is fetched via PlayerGroup's public API (`\mod_playergroup\api\group_info`) and is only available for groups created through PlayerGroup activities — manually created Moodle groups are not shown there.
+
+The two features are independent:
+
+| Scenario | Group Ranking tab | HUD header group info |
+|---|---|---|
+| No PlayerGroup installed | ✅ Works with any Moodle group | — Not shown |
+| PlayerGroup installed, student has a PlayerGroup group | ✅ Group appears in ranking | ✅ Badge + name + slots displayed |
+| PlayerGroup installed, student is in a manual group only | ✅ Group appears in ranking | — Not shown (manual groups not in PlayerGroup API) |
+
+---
+
 ### 🎓 Educational Purpose
 
 PlayerHUD is designed to:
@@ -305,6 +332,33 @@ Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo q
   * **Gerador de Conteúdo** — cria itens, capítulos de história com nós ramificados e backstories de classes RPG sob demanda.
   * **Assistente Game Master** — aba de chat conversacional para professores. Tire dúvidas sobre design de jogo, receba sugestões e acione ações (criar item, missão, capítulo) com uma etapa de confirmação antes de salvar.
 * 📱 **Compatível com Mobile.**
+
+---
+
+### 🏆 Comportamento do Ranking de Grupos
+
+Quando o ranking de grupos está habilitado, a média de XP de cada grupo é calculada **apenas com os membros que estão participando ativamente** — ou seja, membros que tenham simultaneamente:
+
+* **Gamificação ativa** (`enable_gamification = 1`)
+* **Ranking visível** (`ranking_visibility = 1`)
+
+Membros que optaram por não participar da gamificação ou que ocultaram seu ranking são completamente excluídos da soma e da contagem do grupo. O denominador usado para calcular a média reflete apenas a quantidade de participantes ativos, não o total de membros do grupo.
+
+**Implicação prática:** um grupo com muitos membros inativos pode apresentar uma média mais alta do que o esperado, pois o cálculo é feito sobre um subconjunto menor. Professores devem ter em mente que a média exibida não representa todos os matriculados no grupo — apenas os que estão participando ativamente do ranking.
+
+#### Integração com o PlayerGroup
+
+O ranking de grupos lê diretamente das tabelas nativas de grupos do Moodle (`{groups}` / `{groups_members}`). Funciona com **qualquer** grupo do Moodle — criado manualmente pelo professor ou automaticamente pela atividade **PlayerGroup**.
+
+Quando o **PlayerGroup** (`mod_playergroup`) está instalado junto ao PlayerHUD, uma integração adicional é ativada **no cabeçalho do bloco** (não na aba de ranking): o badge do grupo do estudante, o nome do grupo, a quantidade de membros e a capacidade (ex.: `3/5`) são exibidos no topo do bloco. Essa informação é obtida via API pública do PlayerGroup (`\mod_playergroup\api\group_info`) e está disponível apenas para grupos criados por atividades do PlayerGroup — grupos manuais do Moodle não aparecem ali.
+
+As duas funcionalidades são independentes:
+
+| Cenário | Aba de Ranking de Grupos | Info de grupo no cabeçalho do HUD |
+|---|---|---|
+| PlayerGroup não instalado | ✅ Funciona com qualquer grupo do Moodle | — Não exibido |
+| PlayerGroup instalado, estudante tem grupo do PlayerGroup | ✅ Grupo aparece no ranking | ✅ Badge + nome + vagas exibidos |
+| PlayerGroup instalado, estudante está só em grupo manual | ✅ Grupo aparece no ranking | — Não exibido (grupos manuais não estão na API do PlayerGroup) |
 
 ---
 
