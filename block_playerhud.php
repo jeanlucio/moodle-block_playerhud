@@ -102,8 +102,10 @@ class block_playerhud extends block_base {
             if (!empty($config->enable_items)) {
                 $rawinventory = \block_playerhud\game::get_inventory($USER->id, $this->instance->id);
                 $stashlimit = 5;
+                $overflowlimit = 20;
                 $seenitems = [];
                 $itemstodisplay = [];
+                $overflowdisplay = [];
 
                 foreach ($rawinventory as $invitem) {
                     if (in_array($invitem->id, $seenitems)) {
@@ -112,6 +114,8 @@ class block_playerhud extends block_base {
                     $seenitems[] = $invitem->id;
                     if (count($itemstodisplay) < $stashlimit) {
                         $itemstodisplay[$invitem->id] = $invitem;
+                    } else if (count($overflowdisplay) < $overflowlimit) {
+                        $overflowdisplay[$invitem->id] = $invitem;
                     }
                 }
 
@@ -120,7 +124,11 @@ class block_playerhud extends block_base {
                 $stashhasmore = $morecount > 0;
                 $stashmorebadge = $stashhasmore ? '+' . $morecount : '';
 
-                $allmedia = \block_playerhud\utils::get_items_display_data($itemstodisplay, $context);
+                // Single bulk call covers both stash and overflow items.
+                $allmedia = \block_playerhud\utils::get_items_display_data(
+                    $itemstodisplay + $overflowdisplay,
+                    $context
+                );
 
                 foreach ($itemstodisplay as $invitem) {
                     $media = $allmedia[$invitem->id];
@@ -135,6 +143,21 @@ class block_playerhud extends block_base {
                         'date' => userdate($invitem->collecteddate, get_string('strftimedatefullshort', 'langconfig')),
                         'timestamp' => $invitem->collecteddate,
                     ];
+                }
+
+                // Build JSON for the overflow popover (+N badge).
+                $stashoverflowjson = '';
+                if (!empty($overflowdisplay)) {
+                    $overflowjsonitems = [];
+                    foreach ($overflowdisplay as $oid => $ovitem) {
+                        $m = $allmedia[$oid] ?? ['is_image' => false, 'url' => '', 'content' => ''];
+                        $overflowjsonitems[] = [
+                            'n' => format_string($ovitem->name),
+                            'i' => (int)(bool)$m['is_image'],
+                            'u' => $m['is_image'] ? $m['url'] : strip_tags($m['content']),
+                        ];
+                    }
+                    $stashoverflowjson = json_encode($overflowjsonitems);
                 }
             }
 
@@ -308,6 +331,7 @@ class block_playerhud extends block_base {
                 'items'       => $recentitems,
                 'hasmore'     => $stashhasmore,
                 'morebadge'   => $stashmorebadge,
+                'overflowjson' => $stashoverflowjson ?? '',
                 'ranking'     => $rankdata,
                 'hasgroup'     => $groupinfo !== null,
                 'groupbadge'   => $groupinfo ? $groupinfo->badge : '',
