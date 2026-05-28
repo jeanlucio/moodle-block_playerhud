@@ -1,5 +1,34 @@
 // PlayerHUD section on the Moodle user profile page.
 
+// Header card (view_header.mustache) — responsive fixes.
+.block_playerhud,
+.path-blocks-playerhud {
+
+    // Prevents the flex child from overflowing the card on narrow viewports.
+    .ph-header-info {
+        min-width: 0;
+    }
+
+    .ph-header-name {
+        word-break: break-word;
+    }
+
+    .ph-header-avatar {
+        margin-inline-end: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    @media (max-width: 575.98px) {
+        .ph-card-rounded .card-body {
+            padding: 0.75rem;
+        }
+
+        .ph-header-avatar {
+            margin-inline-end: 0.75rem;
+        }
+    }
+}
+
 .ph-profile-wrap {
     padding: 0.25rem 0;
 }

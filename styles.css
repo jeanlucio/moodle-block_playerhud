@@ -1976,6 +1976,30 @@ div.modal-dialog .visually-hidden {
     min-height: 120px;
 }
 
+.block_playerhud .ph-header-info,
+.path-blocks-playerhud .ph-header-info {
+    min-width: 0;
+}
+.block_playerhud .ph-header-name,
+.path-blocks-playerhud .ph-header-name {
+    word-break: break-word;
+}
+.block_playerhud .ph-header-avatar,
+.path-blocks-playerhud .ph-header-avatar {
+    margin-inline-end: 1.5rem;
+    flex-shrink: 0;
+}
+@media (max-width: 575.98px) {
+    .block_playerhud .ph-card-rounded .card-body,
+    .path-blocks-playerhud .ph-card-rounded .card-body {
+        padding: 0.75rem;
+    }
+    .block_playerhud .ph-header-avatar,
+    .path-blocks-playerhud .ph-header-avatar {
+        margin-inline-end: 0.75rem;
+    }
+}
+
 .ph-profile-wrap {
     padding: 0.25rem 0;
 }

@@ -37,14 +37,14 @@
 <div class="card shadow-sm mb-4 border-0 ph-card-rounded">
     <div class="card-body p-4">
         <div class="d-flex align-items-center">
-            <div class="flex-shrink-0 me-4">
+            <div class="flex-shrink-0 ph-header-avatar">
                 {{{userpicture}}}
             </div>
-            <div class="flex-grow-1">
-                <div class="d-flex align-items-center mb-1">
-                    <h2 class="m-0 fw-bold text-dark me-3">{{fullname}}</h2>
+            <div class="flex-grow-1 ph-header-info">
+                <div class="d-flex align-items-center flex-wrap mb-1">
+                    <h2 class="m-0 fw-bold text-dark me-3 ph-header-name">{{fullname}}</h2>
 
-                    <span class="badge {{level_class}} border shadow-sm px-3 py-2 ph-text-sm">
+                    <span class="badge {{level_class}} border shadow-sm px-3 py-2 ph-text-sm flex-shrink-0">
                         {{#str}} level, block_playerhud {{/str}} {{level_display}}
                     </span>
                 </div>
