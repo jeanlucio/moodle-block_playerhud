@@ -363,6 +363,100 @@ const safeB64Decode = (str) => {
 };
 
 /**
+ * Opens a floating thumbnail card for the overflow items in the +N stash badge.
+ *
+ * @param {HTMLElement} trigger The .ph-stash-more element that was clicked.
+ */
+const openOverflowCard = (trigger) => {
+    let items;
+    try {
+        items = JSON.parse(trigger.dataset.overflow);
+    } catch (err) {
+        return;
+    }
+    if (!items || !items.length) {
+        return;
+    }
+
+    const existing = document.getElementById('ph-overflow-card');
+    if (existing) {
+        existing.remove();
+        if (existing._trigger === trigger) {
+            return;
+        }
+    }
+
+    const card = document.createElement('div');
+    card.id = 'ph-overflow-card';
+    card.className = 'ph-overflow-card';
+    card._trigger = trigger;
+
+    const grid = document.createElement('div');
+    grid.className = 'ph-overflow-grid';
+
+    items.forEach(item => {
+        const thumb = document.createElement('div');
+        thumb.className = 'ph-overflow-thumb';
+        thumb.title = item.n;
+
+        if (item.i === 1) {
+            const img = document.createElement('img');
+            img.src = item.u;
+            img.alt = '';
+            img.className = 'ph-overflow-img';
+            thumb.appendChild(img);
+        } else {
+            const span = document.createElement('span');
+            span.className = 'ph-overflow-emoji';
+            span.setAttribute('aria-hidden', 'true');
+            span.textContent = item.u;
+            thumb.appendChild(span);
+        }
+        grid.appendChild(thumb);
+    });
+
+    card.appendChild(grid);
+    document.body.appendChild(card);
+
+    const cr = card.getBoundingClientRect();
+    const tr = trigger.getBoundingClientRect();
+    let top = tr.top - cr.height - 8;
+    let left = tr.left + (tr.width / 2) - (cr.width / 2);
+
+    if (top < 8) {
+        top = tr.bottom + 8;
+    }
+    if (left < 8) {
+        left = 8;
+    }
+    if (left + cr.width > window.innerWidth - 8) {
+        left = window.innerWidth - cr.width - 8;
+    }
+
+    card.style.top = `${top}px`;
+    card.style.left = `${left}px`;
+
+    setTimeout(() => {
+        document.addEventListener('click', function dismissOverflow() {
+            const c = document.getElementById('ph-overflow-card');
+            if (c) {
+                c.remove();
+            }
+            document.removeEventListener('click', dismissOverflow);
+        });
+        document.addEventListener('keydown', function escOverflow(ev) {
+            if (ev.key === 'Escape') {
+                const c = document.getElementById('ph-overflow-card');
+                if (c) {
+                    c.remove();
+                }
+                document.removeEventListener('keydown', escOverflow);
+            }
+        });
+    }, 0);
+};
+
+/**
  * Initialize.
  */
 export const init = () => {
@@ -632,6 +726,18 @@ export const init = () => {
         });
     });
     /* eslint-enable complexity */
+
+    // Overflow popover: clicking the +N stash badge shows hidden item thumbnails.
+    $('body').off('click.phstashmore').on('click.phstashmore', '.ph-stash-more[data-overflow]', function(e) {
+        e.stopPropagation();
+        openOverflowCard(this);
+    });
+    $('body').off('keydown.phstashmore').on('keydown.phstashmore', '.ph-stash-more[data-overflow]', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openOverflowCard(this);
+        }
+    });
 
     // ACTION: COLLECT ITEM.
     $('body').off('click.phaction').on('click.phaction', '.ph-action-collect', function(e) {
