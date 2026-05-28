@@ -1,72 +1,76 @@
-#ph-assistant-tab {
-    .ph-assistant-messages {
-        min-height: 300px;
-        max-height: 460px;
-        overflow-y: auto;
-        background-color: var(--card-bg, #fff);
-    }
+.block_playerhud,
+.path-blocks-playerhud {
 
-    .ph-assistant-textarea {
-        resize: none;
-    }
-
-    .ph-msg-bubble {
-        max-width: 75%;
-        word-break: break-word;
-    }
-
-    .ph-msg-user .ph-msg-bubble {
-        background-color: var(--primary, #0d6efd);
-        color: #fff;
-    }
-
-    .ph-msg-assistant .ph-msg-bubble {
-        background-color: var(--light, #f8f9fa);
-        border: 1px solid var(--border-color, #dee2e6);
-    }
-
-    .ph-provider-badge {
-        font-size: 0.7rem;
-        opacity: 0.75;
-    }
-
-    .ph-assistant-action-card {
-        border-inline-start: 4px solid var(--info, #0dcaf0);
-    }
-
-    .ph-action-label-text {
-        font-weight: 500;
-    }
-
-    // Animated three-dot thinking indicator.
-    .ph-thinking-bubble {
-        background-color: var(--light, #f8f9fa);
-        border: 1px solid var(--border-color, #dee2e6);
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 10px 14px;
-        min-width: 52px;
-    }
-
-    .ph-dot {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background-color: var(--secondary, #6c757d);
-        animation: ph-bounce 1.2s infinite ease-in-out;
-
-        &:nth-child(1) {
-            animation-delay: 0s;
+    #ph-assistant-tab {
+        .ph-assistant-messages {
+            min-height: 300px;
+            max-height: 460px;
+            overflow-y: auto;
+            background-color: var(--card-bg, #fff);
         }
 
-        &:nth-child(2) {
-            animation-delay: 0.2s;
+        .ph-assistant-textarea {
+            resize: none;
         }
 
-        &:nth-child(3) {
-            animation-delay: 0.4s;
+        .ph-msg-bubble {
+            max-width: 75%;
+            word-break: break-word;
+        }
+
+        .ph-msg-user .ph-msg-bubble {
+            background-color: var(--primary, #0d6efd);
+            color: #fff;
+        }
+
+        .ph-msg-assistant .ph-msg-bubble {
+            background-color: var(--light, #f8f9fa);
+            border: 1px solid var(--border-color, #dee2e6);
+        }
+
+        .ph-provider-badge {
+            font-size: 0.7rem;
+            opacity: 0.75;
+        }
+
+        .ph-assistant-action-card {
+            border-inline-start: 4px solid var(--info, #0dcaf0);
+        }
+
+        .ph-action-label-text {
+            font-weight: 500;
+        }
+
+        // Animated three-dot thinking indicator.
+        .ph-thinking-bubble {
+            background-color: var(--light, #f8f9fa);
+            border: 1px solid var(--border-color, #dee2e6);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 10px 14px;
+            min-width: 52px;
+        }
+
+        .ph-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--secondary, #6c757d);
+            animation: ph-bounce 1.2s infinite ease-in-out;
+
+            &:nth-child(1) {
+                animation-delay: 0s;
+            }
+
+            &:nth-child(2) {
+                animation-delay: 0.2s;
+            }
+
+            &:nth-child(3) {
+                animation-delay: 0.4s;
+            }
         }
     }
 }
