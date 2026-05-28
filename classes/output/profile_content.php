@@ -34,6 +34,9 @@ class profile_content implements \renderable, \templatable {
     /** @var int Maximum items shown in the profile section. */
     private const ITEM_LIMIT = 5;
 
+    /** @var int Maximum overflow items loaded for the +N popover. */
+    private const OVERFLOW_LIMIT = 20;
+
     /**
      * Constructor.
      *
@@ -77,9 +80,25 @@ class profile_content implements \renderable, \templatable {
         $levelprogress = (int)$stats['progress'];
         $xpdisplay = $totalgamexp > 0 ? $currentxp . ' / ' . $totalgamexp . ' XP' : $currentxp . ' XP';
 
-        $items = $this->get_recent_items();
+        $allitems = $this->get_recent_items(self::ITEM_LIMIT + self::OVERFLOW_LIMIT);
         $totalitems = $this->count_unique_items();
         $morecount = max(0, $totalitems - self::ITEM_LIMIT);
+
+        $displayitems = array_slice($allitems, 0, self::ITEM_LIMIT);
+        $overflowraw = array_slice($allitems, self::ITEM_LIMIT, self::OVERFLOW_LIMIT);
+
+        $overflowjson = '';
+        if (!empty($overflowraw)) {
+            $overflowjsonitems = [];
+            foreach ($overflowraw as $oi) {
+                $overflowjsonitems[] = [
+                    'n' => $oi['name'],
+                    'i' => $oi['isimageint'],
+                    'u' => $oi['isimageint'] ? $oi['imageurl'] : $oi['imagecontent'],
+                ];
+            }
+            $overflowjson = json_encode($overflowjsonitems);
+        }
 
         return (object) [
             'hasgamification' => true,
@@ -87,19 +106,21 @@ class profile_content implements \renderable, \templatable {
             'maxlevels' => (int)$stats['max_levels'],
             'xpdisplay' => $xpdisplay,
             'levelprogress' => $levelprogress,
-            'hasitems' => !empty($items),
-            'items' => array_values($items),
+            'hasitems' => !empty($displayitems),
+            'items' => array_values($displayitems),
             'hasmore' => $morecount > 0,
             'morebadge' => $morecount > 0 ? '+' . $morecount : '',
+            'overflowjson' => $overflowjson,
         ];
     }
 
     /**
-     * Returns the most recently collected unique items, limited to ITEM_LIMIT.
+     * Returns the most recently collected unique items up to $limit.
      *
+     * @param int $limit Maximum number of items to return.
      * @return array Array of item data arrays for the template.
      */
-    private function get_recent_items(): array {
+    private function get_recent_items(int $limit = self::ITEM_LIMIT): array {
         global $DB;
 
         $sql = "SELECT inv.itemid, MAX(inv.timecreated) AS lastcollected, MAX(inv.id) AS lastinvid
@@ -115,7 +136,7 @@ class profile_content implements \renderable, \templatable {
         $rows = $DB->get_records_sql($sql, [
             'userid' => $this->userid,
             'bid' => $this->blockinstanceid,
-        ], 0, self::ITEM_LIMIT);
+        ], 0, $limit);
 
         if (empty($rows)) {
             return [];

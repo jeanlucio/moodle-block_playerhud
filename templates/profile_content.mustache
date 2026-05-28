@@ -83,7 +83,11 @@
         </div>
         {{/items}}
         {{#hasmore}}
-        <div class="ph-profile-item ph-profile-more" aria-hidden="true">{{morebadge}}</div>
+        <div class="ph-profile-item ph-profile-more"
+             role="button"
+             tabindex="0"
+             aria-label="{{morebadge}}"
+             data-overflow="{{overflowjson}}">{{morebadge}}</div>
         {{/hasmore}}
     </div>
     {{/hasitems}}

@@ -141,6 +141,107 @@ define(['jquery', 'theme_boost/bootstrap/modal'], function($, BootstrapModal) {
                 }
             });
         });
+
+        const moreEl = document.querySelector('.ph-profile-wrap .ph-profile-more[data-overflow]');
+        if (moreEl) {
+            const openOverflow = (e) => {
+                e.stopPropagation();
+                let items;
+                try {
+                    items = JSON.parse(moreEl.dataset.overflow);
+                } catch (err) {
+                    return;
+                }
+                if (!items || !items.length) {
+                    return;
+                }
+
+                const existing = document.getElementById('ph-overflow-card');
+                if (existing) {
+                    existing.remove();
+                    if (existing._trigger === moreEl) {
+                        return;
+                    }
+                }
+
+                const card = document.createElement('div');
+                card.id = 'ph-overflow-card';
+                card.className = 'ph-overflow-card';
+                card._trigger = moreEl;
+
+                const grid = document.createElement('div');
+                grid.className = 'ph-overflow-grid';
+
+                items.forEach(item => {
+                    const thumb = document.createElement('div');
+                    thumb.className = 'ph-overflow-thumb';
+                    thumb.title = item.n;
+
+                    if (item.i === 1) {
+                        const img = document.createElement('img');
+                        img.src = item.u;
+                        img.alt = '';
+                        img.className = 'ph-overflow-img';
+                        thumb.appendChild(img);
+                    } else {
+                        const span = document.createElement('span');
+                        span.className = 'ph-overflow-emoji';
+                        span.setAttribute('aria-hidden', 'true');
+                        span.textContent = item.u;
+                        thumb.appendChild(span);
+                    }
+                    grid.appendChild(thumb);
+                });
+
+                card.appendChild(grid);
+                document.body.appendChild(card);
+
+                const cr = card.getBoundingClientRect();
+                const tr = moreEl.getBoundingClientRect();
+                let top = tr.top - cr.height - 8;
+                let left = tr.left + (tr.width / 2) - (cr.width / 2);
+
+                if (top < 8) {
+                    top = tr.bottom + 8;
+                }
+                if (left < 8) {
+                    left = 8;
+                }
+                if (left + cr.width > window.innerWidth - 8) {
+                    left = window.innerWidth - cr.width - 8;
+                }
+
+                card.style.top = `${top}px`;
+                card.style.left = `${left}px`;
+
+                setTimeout(() => {
+                    document.addEventListener('click', function dismissOverflow() {
+                        const c = document.getElementById('ph-overflow-card');
+                        if (c) {
+                            c.remove();
+                        }
+                        document.removeEventListener('click', dismissOverflow);
+                    });
+                    document.addEventListener('keydown', function escOverflow(ev) {
+                        if (ev.key === 'Escape') {
+                            const c = document.getElementById('ph-overflow-card');
+                            if (c) {
+                                c.remove();
+                            }
+                            document.removeEventListener('keydown', escOverflow);
+                        }
+                    });
+                }, 0);
+            };
+
+            moreEl.addEventListener('click', openOverflow);
+            moreEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openOverflow(e);
+                }
+            });
+        }
     };
 
     return {init};

@@ -2106,6 +2106,17 @@ div.modal-dialog .visually-hidden {
     color: var(--secondary, #6c757d);
     border-style: dashed;
 }
+.path-user .ph-profile-more[data-overflow] {
+    cursor: pointer;
+}
+.path-user .ph-profile-more[data-overflow]:hover {
+    border-color: var(--primary, #0f6cbf);
+    color: var(--primary, #0f6cbf);
+}
+.path-user .ph-profile-more[data-overflow]:focus-visible {
+    outline: 2px solid var(--primary, #0f6cbf);
+    outline-offset: 2px;
+}
 .path-user .ph-profile-item-clickable {
     cursor: pointer;
     transition: transform 0.1s ease, border-color 0.1s ease;

@@ -95,6 +95,20 @@
         border-style: dashed;
     }
 
+    .ph-profile-more[data-overflow] {
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--primary, #0f6cbf);
+            color: var(--primary, #0f6cbf);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--primary, #0f6cbf);
+            outline-offset: 2px;
+        }
+    }
+
     .ph-profile-item-clickable {
         cursor: pointer;
         transition: transform 0.1s ease, border-color 0.1s ease;
