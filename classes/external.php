@@ -1785,7 +1785,7 @@ class external extends external_api {
      */
     public static function use_item_returns(): external_single_structure {
         return new external_single_structure([
-            'action'       => new external_value(PARAM_ALPHA, 'Action type performed'),
+            'action'       => new external_value(PARAM_ALPHANUMEXT, 'Action type performed'),
             'equipped'     => new external_value(PARAM_BOOL, 'Whether avatar is now equipped'),
             'avatar_html'  => new external_value(PARAM_RAW, 'Avatar HTML for DOM replacement'),
             'success'      => new external_value(PARAM_BOOL, 'Whether the action succeeded'),
