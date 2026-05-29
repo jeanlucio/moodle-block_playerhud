@@ -364,9 +364,16 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                                         courseid: config.courseid,
                                         itemid: resp.itemid
                                     }
-                                }])[0].done(function() {
+                                }])[0].done(function(dropResp) {
+                                    if (!dropResp.success) {
+                                        Notification.addNotification({
+                                            message: dropResp.message,
+                                            type: 'error'
+                                        });
+                                    }
                                     window.location.reload();
-                                }).fail(function() {
+                                }).fail(function(ex) {
+                                    Notification.exception(ex);
                                     window.location.reload();
                                 });
                             });
