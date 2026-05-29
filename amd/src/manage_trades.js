@@ -29,6 +29,27 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
          * @param {Object} config The configuration object passed from PHP.
          */
         init: function(config) {
+            // Initialize popovers for compact trade item icons (> 3 items).
+            var shopPopoverEls = document.querySelectorAll('.ph-shop-popover');
+            if (shopPopoverEls.length) {
+                require(['theme_boost/bootstrap/popover'], function(BSPopover) {
+                    shopPopoverEls.forEach(function(el) {
+                        var opts = {
+                            trigger: 'hover click focus',
+                            title: el.dataset.phTitle || '',
+                            content: el.dataset.phContent || '',
+                            html: true,
+                            placement: 'top'
+                        };
+                        if (typeof BSPopover === 'function') {
+                            new BSPopover(el, opts);
+                        } else {
+                            $(el).popover(opts);
+                        }
+                    });
+                });
+            }
+
             // Toggle-all for trade suggestion checkboxes.
             $('body').on('click', '#ph-trade-sug-toggle-all', function() {
                 const $checks = $('input[type="checkbox"][name^="sug_"]');

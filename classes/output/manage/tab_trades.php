@@ -82,12 +82,15 @@ class tab_trades implements renderable, templatable {
                 foreach ($trade->requirements as $req) {
                     $media = $allmedia[$req->itemid];
 
+                    $reqname = format_string($req->name);
                     $reqsdata[] = [
                         'qty' => $req->qty,
-                        'name' => format_string($req->name),
+                        'name' => $reqname,
                         'is_image' => $media['is_image'],
                         'image_url' => $media['is_image'] ? $media['url'] : '',
                         'image_content' => $media['is_image'] ? '' : strip_tags($media['content']),
+                        'popover_title' => $req->qty . 'x ' . $reqname,
+                        'popover_label' => $req->qty . 'x ' . $reqname,
                     ];
                 }
 
@@ -96,12 +99,15 @@ class tab_trades implements renderable, templatable {
                 foreach ($trade->rewards as $rew) {
                     $media = $allmedia[$rew->itemid];
 
+                    $rewname = format_string($rew->name);
                     $rewsdata[] = [
                         'qty' => $rew->qty,
-                        'name' => format_string($rew->name),
+                        'name' => $rewname,
                         'is_image' => $media['is_image'],
                         'image_url' => $media['is_image'] ? $media['url'] : '',
                         'image_content' => $media['is_image'] ? '' : strip_tags($media['content']),
+                        'popover_title' => $rew->qty . 'x ' . $rewname,
+                        'popover_label' => $rew->qty . 'x ' . $rewname,
                     ];
                 }
 
@@ -136,6 +142,8 @@ class tab_trades implements renderable, templatable {
                     'confirm_msg' => s($msgraw),
                     'requirements' => $reqsdata,
                     'rewards' => $rewsdata,
+                    'compact_reqs' => count($reqsdata) > 3,
+                    'compact_rews' => count($rewsdata) > 3,
                 ];
             }
         }
