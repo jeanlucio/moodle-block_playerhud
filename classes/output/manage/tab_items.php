@@ -448,6 +448,9 @@ class tab_items implements renderable {
             // PlayerCoin button.
             'str_playercoin_create' => get_string('playercoin_create', 'block_playerhud'),
 
+            // Avatar pack button.
+            'str_avatar_pack_create' => get_string('avatar_pack_create', 'block_playerhud'),
+
             // Modals.
             'modal_ai_html' => $OUTPUT->render_from_template('block_playerhud/modal_ai', []),
             'modal_preview_html' => $OUTPUT->render_from_template('block_playerhud/modal_item', []),
@@ -478,6 +481,8 @@ class tab_items implements renderable {
                 'playercoin_drop_confirm' => get_string('playercoin_drop_confirm', 'block_playerhud'),
                 'playercoin_drop_yes' => get_string('playercoin_drop_yes', 'block_playerhud'),
                 'playercoin_drop_no' => get_string('playercoin_drop_no', 'block_playerhud'),
+                'avatar_pack_confirm' => get_string('avatar_pack_confirm', 'block_playerhud'),
+                'avatar_pack_created' => get_string('avatar_pack_created', 'block_playerhud'),
             ],
         ];
         $PAGE->requires->js_call_amd('block_playerhud/manage_items', 'init', [$jsvars]);

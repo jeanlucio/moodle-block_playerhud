@@ -135,6 +135,15 @@ $functions = [
         'loginrequired' => true,
     ],
 
+    'block_playerhud_create_avatar_pack' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'create_avatar_pack',
+        'description'   => 'Create the pre-defined avatar item pack for a block instance',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
     'block_playerhud_use_item' => [
         'classname'     => 'block_playerhud\external',
         'methodname'    => 'use_item',

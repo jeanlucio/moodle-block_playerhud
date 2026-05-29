@@ -406,6 +406,38 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                     Notification.exception(ex);
                 });
             });
+
+            // Avatar pack — one-click creation.
+            $('body').on('click', '#btn-create-avatar-pack', function() {
+                var $btn = $(this);
+
+                Notification.confirm(
+                    config.strings.confirm_title,
+                    config.strings.avatar_pack_confirm,
+                    config.strings.yes,
+                    config.strings.cancel,
+                    function() {
+                        $btn.prop('disabled', true);
+
+                        Ajax.call([{
+                            methodname: 'block_playerhud_create_avatar_pack',
+                            args: {
+                                instanceid: config.instanceid,
+                                courseid: config.courseid
+                            }
+                        }])[0].done(function(resp) {
+                            Notification.addNotification({
+                                message: config.strings.avatar_pack_created.replace('{$a}', resp.created),
+                                type: 'success'
+                            });
+                            window.location.reload();
+                        }).fail(function(ex) {
+                            $btn.prop('disabled', false);
+                            Notification.exception(ex);
+                        });
+                    }
+                );
+            });
         }
     };
 });

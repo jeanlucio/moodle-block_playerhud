@@ -1504,6 +1504,115 @@ class external extends external_api {
     }
 
     /**
+     * Parameters for create_avatar_pack.
+     *
+     * @return external_function_parameters
+     */
+    public static function create_avatar_pack_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+        ]);
+    }
+
+    /**
+     * Create the pre-defined avatar item pack for this block instance.
+     *
+     * Items are created with action_type = avatar_profile so they can be equipped
+     * as profile avatars. Items whose name already exists are skipped.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @return array
+     */
+    public static function create_avatar_pack(int $instanceid, int $courseid): array {
+        global $DB;
+
+        $params = self::validate_parameters(self::create_avatar_pack_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+        ]);
+        $instanceid = $params['instanceid'];
+
+        $context = \context_block::instance($instanceid);
+        self::validate_context($context);
+        require_capability('block/playerhud:manage', $context);
+
+        $avatars = [
+            // Tom claro.
+            ['emoji' => '🧛🏻‍♂️', 'name' => 'Vampiro',        'desc_key' => 'avatar_desc_vampire'],
+            ['emoji' => '🧙🏻‍♀️', 'name' => 'Maga',           'desc_key' => 'avatar_desc_mage'],
+            ['emoji' => '🕵🏻‍♀️', 'name' => 'Detetive',       'desc_key' => 'avatar_desc_detective'],
+            // Tom médio-claro.
+            ['emoji' => '🧝🏼‍♂️', 'name' => 'Elfo',           'desc_key' => 'avatar_desc_elf'],
+            ['emoji' => '🦸🏼‍♀️', 'name' => 'Super-Heroína',  'desc_key' => 'avatar_desc_superhero'],
+            ['emoji' => '🧚🏼‍♀️', 'name' => 'Fada',           'desc_key' => 'avatar_desc_fairy'],
+            // Tom médio.
+            ['emoji' => '🕵🏽‍♂️', 'name' => 'Detetive',       'desc_key' => 'avatar_desc_detective'],
+            ['emoji' => '🧛🏽‍♀️', 'name' => 'Vampira',        'desc_key' => 'avatar_desc_vampire'],
+            ['emoji' => '🦹🏽‍♀️', 'name' => 'Super-Vilã',     'desc_key' => 'avatar_desc_supervillain'],
+            // Tom médio-escuro.
+            ['emoji' => '🧙🏾‍♂️', 'name' => 'Mago',           'desc_key' => 'avatar_desc_mage'],
+            ['emoji' => '🧝🏾‍♀️', 'name' => 'Elfa',           'desc_key' => 'avatar_desc_elf'],
+            ['emoji' => '🦸🏾‍♂️', 'name' => 'Super-Herói',    'desc_key' => 'avatar_desc_superhero'],
+            // Tom escuro.
+            ['emoji' => '🤺',     'name' => 'Espadachim',     'desc_key' => 'avatar_desc_fencer'],
+            ['emoji' => '🧜🏿‍♀️', 'name' => 'Sereia',         'desc_key' => 'avatar_desc_mermaid'],
+            ['emoji' => '🦹🏿‍♂️', 'name' => 'Super-Vilão',    'desc_key' => 'avatar_desc_supervillain'],
+            // Neutros.
+            ['emoji' => '🤖',     'name' => 'Robô',           'desc_key' => 'avatar_desc_robot'],
+            ['emoji' => '👾',     'name' => 'Alienígena',     'desc_key' => 'avatar_desc_alien'],
+        ];
+
+        $existingnames = $DB->get_fieldset_select(
+            'block_playerhud_items',
+            'name',
+            'blockinstanceid = :id',
+            ['id' => $instanceid]
+        );
+        $existingnames = array_flip($existingnames);
+
+        $created = 0;
+        $now = time();
+
+        foreach ($avatars as $avatar) {
+            $uniquename = $avatar['name'] . ' ' . $avatar['emoji'];
+            if (isset($existingnames[$uniquename])) {
+                continue;
+            }
+            $DB->insert_record('block_playerhud_items', (object) [
+                'blockinstanceid' => $instanceid,
+                'name'            => $uniquename,
+                'image'           => $avatar['emoji'],
+                'description'     => get_string($avatar['desc_key'], 'block_playerhud'),
+                'xp'              => 0,
+                'enabled'         => 1,
+                'tradable'        => 0,
+                'secret'          => 0,
+                'required_class_id' => '0',
+                'action_type'     => 'avatar_profile',
+                'action_value'    => '',
+                'timecreated'     => $now,
+                'timemodified'    => $now,
+            ]);
+            $created++;
+        }
+
+        return ['created' => $created];
+    }
+
+    /**
+     * Return structure for create_avatar_pack.
+     *
+     * @return external_single_structure
+     */
+    public static function create_avatar_pack_returns(): external_single_structure {
+        return new external_single_structure([
+            'created' => new external_value(PARAM_INT, 'Number of avatar items created'),
+        ]);
+    }
+
+    /**
      * Parameters for setup_playercoin_drop.
      *
      * @return external_function_parameters
