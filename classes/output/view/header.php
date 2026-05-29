@@ -86,9 +86,25 @@ class header implements renderable, templatable {
             );
         }
 
-        // 4. Return Data.
+        // 4. Build user picture (check for equipped avatar).
+        $instanceid  = $this->player->blockinstanceid;
+        $avatarid    = (int) get_user_preferences('block_playerhud_avatar_' . $instanceid, 0);
+        if ($avatarid > 0) {
+            $avataritem = \block_playerhud\game::get_avatar_item($instanceid, $avatarid);
+            $userpicture = $avataritem
+                ? \block_playerhud\utils::get_avatar_html(
+                    $avataritem,
+                    \context_block::instance($instanceid),
+                    $output
+                )
+                : $output->user_picture($this->user, ['size' => 100, 'class' => 'rounded-circle shadow-sm']);
+        } else {
+            $userpicture = $output->user_picture($this->user, ['size' => 100, 'class' => 'rounded-circle shadow-sm']);
+        }
+
+        // 5. Return Data.
         $data = [
-            'userpicture' => $output->user_picture($this->user, ['size' => 100, 'class' => 'rounded-circle shadow-sm']),
+            'userpicture' => $userpicture,
             'fullname' => fullname($this->user),
             'level_display' => $stats['level'] . '/' . $stats['max_levels'],
             'xp_display' => $xpdisplay,

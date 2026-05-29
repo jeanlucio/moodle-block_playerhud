@@ -129,6 +129,57 @@
 
                 <div class="ph-card-date">{{{date_str}}}</div>
             </div>
+
+            {{#has_power}}
+            <div class="ph-card-actions border-top mt-2 pt-2 px-1 w-100">
+
+                {{#is_avatar}}
+                {{#is_equipped}}
+                <span class="badge bg-success mb-1 d-block">
+                    <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} item_equipped_badge, block_playerhud {{/str}}
+                </span>
+                {{/is_equipped}}
+                <button type="button"
+                        class="btn btn-sm w-100 ph-item-equip-btn {{#is_equipped}}btn-outline-danger{{/is_equipped}}{{^is_equipped}}btn-outline-success{{/is_equipped}}"
+                        data-itemid="{{itemid}}"
+                        aria-pressed="{{is_equipped}}">
+                    {{#is_equipped}}{{#str}} item_unequip, block_playerhud {{/str}}{{/is_equipped}}
+                    {{^is_equipped}}{{#str}} item_equip, block_playerhud {{/str}}{{/is_equipped}}
+                </button>
+                {{/is_avatar}}
+
+                {{#is_deadline}}
+                {{#lp_warning}}
+                <p class="small text-muted mb-1">
+                    <i class="fa fa-exclamation-circle me-1" aria-hidden="true"></i>{{#str}} item_lp_warning, block_playerhud {{/str}}
+                </p>
+                {{/lp_warning}}
+                {{^lp_warning}}
+                {{#lp_has_multiple}}
+                <select class="form-select form-select-sm mb-1 ph-lp-activity-select"
+                        aria-label="{{#str}} item_use_pick_activity, block_playerhud {{/str}}">
+                    <option value="">{{#str}} item_use_pick_activity, block_playerhud {{/str}}</option>
+                    {{#lp_activities}}
+                    <option value="{{cmid}}">{{name}}</option>
+                    {{/lp_activities}}
+                </select>
+                {{/lp_has_multiple}}
+                {{^lp_has_multiple}}
+                {{#lp_activities}}
+                <input type="hidden" class="ph-lp-activity-select" value="{{cmid}}">
+                {{/lp_activities}}
+                {{/lp_has_multiple}}
+                <button type="button"
+                        class="btn btn-sm btn-outline-warning w-100 ph-item-use-btn"
+                        data-itemid="{{itemid}}">
+                    {{#str}} item_use, block_playerhud {{/str}}
+                </button>
+                {{/lp_warning}}
+                {{/is_deadline}}
+
+            </div>
+            {{/has_power}}
+
         </div>
     </div>
     {{/items}}

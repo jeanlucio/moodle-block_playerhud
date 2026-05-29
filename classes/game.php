@@ -832,4 +832,21 @@ class game {
 
         return $trades;
     }
+
+    /**
+     * Fetch an enabled item that may serve as an avatar for the given instance.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $itemid Item ID.
+     * @return \stdClass|null Item record or null if not found / disabled.
+     */
+    public static function get_avatar_item(int $instanceid, int $itemid): ?\stdClass {
+        global $DB;
+        $record = $DB->get_record('block_playerhud_items', [
+            'id'              => $itemid,
+            'blockinstanceid' => $instanceid,
+            'enabled'         => 1,
+        ]);
+        return $record ?: null;
+    }
 }

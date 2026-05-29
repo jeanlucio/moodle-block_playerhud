@@ -285,4 +285,31 @@ class utils {
         } while ($exists);
         return $code;
     }
+
+    /**
+     * Build the HTML that replaces the user picture when an avatar item is equipped.
+     *
+     * @param \stdClass $item The equipped item record.
+     * @param \context $context Block context.
+     * @param \renderer_base $output Renderer.
+     * @return string HTML string.
+     */
+    public static function get_avatar_html(\stdClass $item, \context $context, $output): string {
+        $media = self::get_item_display_data($item, $context);
+
+        if ($media['is_image']) {
+            return \html_writer::img(
+                $media['url'],
+                '',
+                ['class' => 'rounded-circle shadow-sm', 'width' => '100', 'height' => '100', 'aria-hidden' => 'true']
+            );
+        }
+
+        $emoji = strip_tags($media['content']);
+        return \html_writer::tag(
+            'div',
+            \html_writer::tag('span', $emoji, ['aria-hidden' => 'true']),
+            ['class' => 'ph-avatar-emoji rounded-circle shadow-sm']
+        );
+    }
 }

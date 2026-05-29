@@ -135,6 +135,15 @@ $functions = [
         'loginrequired' => true,
     ],
 
+    'block_playerhud_use_item' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'use_item',
+        'description'   => 'Equip/unequip an avatar item or consume a deadline extension item',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
     'block_playerhud_setup_playercoin_drop' => [
         'classname'     => 'block_playerhud\external',
         'methodname'    => 'setup_playercoin_drop',
