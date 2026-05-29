@@ -55,7 +55,7 @@ class tab_trades implements renderable, templatable {
      * @return array Data for the template.
      */
     public function export_for_template($output) {
-        global $CFG, $PAGE;
+        global $CFG, $DB, $PAGE;
 
         $context = \context_block::instance($this->instanceid);
         $trades = \block_playerhud\game::get_full_trades($this->instanceid);
@@ -140,7 +140,32 @@ class tab_trades implements renderable, templatable {
             }
         }
 
-        // 5. Global UI Data & JS Injection.
+        // 5. Suggest Trades button — enabled only when PlayerCoin and Avatars exist.
+        $hascoin = $DB->record_exists('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'PlayerCoin',
+        ]);
+        $hasavatars = $DB->record_exists_select(
+            'block_playerhud_items',
+            "blockinstanceid = :id AND action_type = 'avatar_profile'",
+            ['id' => $this->instanceid]
+        );
+        $suggesturl = '';
+        $suggestdisabled = false;
+        $suggesttooltip = '';
+        if ($hascoin && $hasavatars) {
+            $suggesturl = (new moodle_url('/blocks/playerhud/manage.php', [
+                'id'         => $this->courseid,
+                'instanceid' => $this->instanceid,
+                'tab'        => 'trades',
+                'action'     => 'suggest_trades',
+            ]))->out(false);
+        } else {
+            $suggestdisabled = true;
+            $suggesttooltip  = get_string('suggest_trades_prereq', 'block_playerhud');
+        }
+
+        // 6. Global UI Data & JS Injection.
         $addurl = new moodle_url('/blocks/playerhud/edit_trade.php', [
             'courseid' => $this->courseid,
             'instanceid' => $this->instanceid,
@@ -176,6 +201,10 @@ class tab_trades implements renderable, templatable {
             'str_edit' => get_string('edit'),
             'str_delete' => get_string('delete'),
             'str_empty' => get_string('shop_empty', 'block_playerhud'),
+            'url_suggest_trades'      => $suggesturl,
+            'suggest_trades_disabled' => $suggestdisabled,
+            'suggest_trades_tooltip'  => $suggesttooltip,
+            'str_suggest_trades'      => get_string('suggest_trades', 'block_playerhud'),
         ];
     }
 
