@@ -153,6 +153,7 @@ class tab_shop implements renderable, templatable {
 
                     $itemname = format_string($req->name);
                     $youhave = get_string('trade_you_have', 'block_playerhud', $myqty);
+                    $colorclass = $hasenough ? 'text-success' : 'text-danger';
                     $reqsdata[] = [
                         'qty' => $req->qty,
                         'name' => $itemname,
@@ -160,10 +161,11 @@ class tab_shop implements renderable, templatable {
                         'image_url' => $media['is_image'] ? $media['url'] : '',
                         'image_content' => $media['is_image'] ? '' : strip_tags($media['content']),
                         'user_qty' => $myqty,
-                        'qty_class' => $hasenough ? 'text-success' : 'text-danger',
+                        'qty_class' => $colorclass,
                         'popover_title' => $req->qty . 'x ' . $itemname,
-                        'popover_content' => $youhave,
+                        'popover_content' => '<span class="' . $colorclass . '">' . s($youhave) . '</span>',
                         'popover_label' => $req->qty . 'x ' . $itemname . ' — ' . $youhave,
+                        'compact_qty_class' => $hasenough ? 'ph-shop-item-ok' : 'ph-shop-item-lack',
                     ];
                 }
 

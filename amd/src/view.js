@@ -114,7 +114,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                             trigger: 'hover click focus',
                             title: el.dataset.phTitle || '',
                             content: el.dataset.phContent || '',
-                            html: false,
+                            html: true,
                             placement: 'top'
                         };
                         if (typeof BSPopover === 'function') {

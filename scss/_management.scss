@@ -296,6 +296,14 @@
         .ph-mini-item {
             cursor: default;
         }
+
+        .ph-shop-item-ok {
+            border-color: var(--success, #198754);
+        }
+
+        .ph-shop-item-lack {
+            border-color: var(--danger, #dc3545);
+        }
     }
 
     // Bootstrap 5 accordion polyfill — classes absent in BS4 (Moodle 4.5).

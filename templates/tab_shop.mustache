@@ -43,8 +43,10 @@
                     {
                         "qty": 3, "name": "Wood", "is_image": false, "image_content": "🪵",
                         "user_qty": 5, "qty_class": "text-success",
-                        "popover_title": "3x Wood", "popover_content": "You have: 5",
-                        "popover_label": "3x Wood — You have: 5"
+                        "popover_title": "3x Wood",
+                        "popover_content": "<span class=\"text-success\">You have: 5</span>",
+                        "popover_label": "3x Wood — You have: 5",
+                        "compact_qty_class": "ph-shop-item-ok"
                     }
                 ],
                 "rewards": [
@@ -111,7 +113,7 @@
                                 <div class="ph-shop-compact-grid">
                                     {{#requirements}}
                                     <button type="button"
-                                            class="ph-mini-item ph-shop-popover"
+                                            class="ph-mini-item ph-shop-popover {{compact_qty_class}}"
                                             data-ph-title="{{popover_title}}"
                                             data-ph-content="{{popover_content}}"
                                             aria-label="{{popover_label}}">
