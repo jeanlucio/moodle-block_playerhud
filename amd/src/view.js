@@ -181,6 +181,14 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                 });
             });
 
+            // Client-side filter for collection items by action type.
+            $(document).on('change', '.ph-collection-filter-selector', function() {
+                const value = $(this).val();
+                $('.playerhud-inventory-grid .playerhud-item-card').each(function() {
+                    $(this).toggle(value === 'all' || $(this).data('filtertype') === value);
+                });
+            });
+
             // Event Delegation for clicking on items.
             // Use namespaced event to prevent duplicate handlers when init() is called more than once.
             $(document).off('click.phitemview').on('click.phitemview', '.ph-item-trigger', function(e) {

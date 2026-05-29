@@ -44,10 +44,23 @@
 }}
 {{#has_items}}
 
-{{! TOOLBAR / FILTER }}
+{{! TOOLBAR / FILTER + SORT }}
 {{#show_filter}}
-<div class="d-flex justify-content-end mb-3">
+<div class="d-flex justify-content-end align-items-center mb-3">
     <div class="d-flex align-items-center">
+        <label for="ph-collection-filter" class="me-2 small text-muted fw-bold">
+            <i class="fa fa-filter" aria-hidden="true"></i> {{#str}} story_filter_by, block_playerhud {{/str}}
+        </label>
+        <select id="ph-collection-filter"
+                class="form-select form-select-sm shadow-sm border-secondary w-auto ph-collection-filter-selector"
+                aria-label="{{#str}} story_filter_by, block_playerhud {{/str}}">
+            <option value="all">{{#str}} collection_filter_all, block_playerhud {{/str}}</option>
+            <option value="avatar">{{#str}} collection_filter_avatar, block_playerhud {{/str}}</option>
+            <option value="deadline">{{#str}} collection_filter_deadline, block_playerhud {{/str}}</option>
+            <option value="none">{{#str}} collection_filter_none, block_playerhud {{/str}}</option>
+        </select>
+    </div>
+    <div class="d-flex align-items-center ms-3">
         <label for="ph-collection-sort" class="me-2 small text-muted fw-bold">
             <i class="fa fa-sort" aria-hidden="true"></i> {{#str}} sort_by, block_playerhud {{/str}}
         </label>
@@ -75,7 +88,8 @@
          data-timestamp="{{timestamp}}"
          data-date="{{date_str}}"
          {{/count}}
-         aria-label="{{name}}">
+         aria-label="{{name}}"
+         data-filtertype="{{filter_type}}">
 
         {{! NEW BADGE }}
         {{#badge_new}}

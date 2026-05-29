@@ -306,6 +306,15 @@ class tab_collection implements renderable, templatable {
                 $itemobj['is_image_bool'] = $media['is_image'] ? 1 : 0;
                 $itemobj['tabindex'] = '0';
 
+                $actiontype = $item->action_type ?? '';
+                if ($actiontype === 'avatar_profile') {
+                    $itemobj['filter_type'] = 'avatar';
+                } else if ($actiontype === 'deadline_extension') {
+                    $itemobj['filter_type'] = 'deadline';
+                } else {
+                    $itemobj['filter_type'] = 'none';
+                }
+
                 $itemsdata[] = $itemobj;
             }
         }
