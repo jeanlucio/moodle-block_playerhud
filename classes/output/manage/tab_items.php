@@ -474,6 +474,10 @@ class tab_items implements renderable {
                 'created_count' => get_string('ai_created_count', 'block_playerhud'),
                 'playercoin_created' => get_string('playercoin_created', 'block_playerhud'),
                 'playercoin_exists' => get_string('playercoin_already_exists', 'block_playerhud'),
+                'playercoin_drop_title' => get_string('playercoin_drop_title', 'block_playerhud'),
+                'playercoin_drop_confirm' => get_string('playercoin_drop_confirm', 'block_playerhud'),
+                'playercoin_drop_yes' => get_string('playercoin_drop_yes', 'block_playerhud'),
+                'playercoin_drop_no' => get_string('playercoin_drop_no', 'block_playerhud'),
             ],
         ];
         $PAGE->requires->js_call_amd('block_playerhud/manage_items', 'init', [$jsvars]);

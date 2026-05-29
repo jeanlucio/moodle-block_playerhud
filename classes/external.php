@@ -1502,4 +1502,100 @@ class external extends external_api {
             'edit_url' => new external_value(PARAM_URL, 'URL to the item edit form'),
         ]);
     }
+
+    /**
+     * Parameters for setup_playercoin_drop.
+     *
+     * @return external_function_parameters
+     */
+    public static function setup_playercoin_drop_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'itemid'     => new external_value(PARAM_INT, 'PlayerCoin item ID'),
+        ]);
+    }
+
+    /**
+     * Create an infinite drop for the PlayerCoin in the course news forum.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int $itemid PlayerCoin item ID.
+     * @return array
+     */
+    public static function setup_playercoin_drop(int $instanceid, int $courseid, int $itemid): array {
+        global $DB;
+
+        $params = self::validate_parameters(self::setup_playercoin_drop_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'itemid'     => $itemid,
+        ]);
+        $instanceid = $params['instanceid'];
+        $courseid   = $params['courseid'];
+        $itemid     = $params['itemid'];
+
+        $context = \context_block::instance($instanceid);
+        self::validate_context($context);
+        require_capability('block/playerhud:manage', $context);
+
+        $DB->get_record('block_playerhud_items',
+            ['id' => $itemid, 'blockinstanceid' => $instanceid],
+            'id',
+            MUST_EXIST
+        );
+
+        // Find the news forum (Avisos) in this course.
+        $sql = "SELECT f.id, f.intro, cm.id AS cmid
+                  FROM {forum} f
+                  JOIN {course_modules} cm ON cm.instance = f.id
+                  JOIN {modules} m ON m.id = cm.module
+                 WHERE m.name = 'forum'
+                   AND f.course = :courseid
+                   AND f.type = 'news'";
+        $forums = $DB->get_records_sql($sql, ['courseid' => $courseid], 0, 1);
+        $forum = $forums ? reset($forums) : null;
+
+        if (!$forum) {
+            return [
+                'success' => false,
+                'message' => get_string('playercoin_drop_noforum', 'block_playerhud'),
+            ];
+        }
+
+        $code = substr(md5(uniqid('ph_drop_', true)), 0, 12);
+
+        $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $instanceid,
+            'itemid'          => $itemid,
+            'name'            => get_string('playercoin_drop_name', 'block_playerhud'),
+            'maxusage'        => 0,
+            'respawntime'     => 3600,
+            'code'            => $code,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        $shortcode = '[PLAYERHUD_DROP code=' . $code . ']';
+        $newintro  = $shortcode . ($forum->intro ? '<br>' . $forum->intro : '');
+        $DB->set_field('forum', 'intro', $newintro, ['id' => $forum->id]);
+
+        return [
+            'success' => true,
+            'message' => get_string('playercoin_drop_created', 'block_playerhud'),
+        ];
+    }
+
+    /**
+     * Return structure for setup_playercoin_drop.
+     *
+     * @return external_single_structure
+     */
+    public static function setup_playercoin_drop_returns(): external_single_structure {
+        return new external_single_structure([
+            'success' => new external_value(PARAM_BOOL, 'Whether the drop was created'),
+            'message' => new external_value(PARAM_RAW, 'Result or error message'),
+        ]);
+    }
 }

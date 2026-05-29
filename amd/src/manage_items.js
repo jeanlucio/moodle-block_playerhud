@@ -13,7 +13,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_clipboard'], function($, Notification, Ajax, Str) {
+define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_clipboard',
+        'core/modal_save_cancel', 'core/modal_events'],
+function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
 
     /**
      * Manage Items module for PlayerHUD.
@@ -342,7 +344,40 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                     }
                 }])[0].done(function(resp) {
                     if (resp.created) {
-                        window.location.reload();
+                        ModalSaveCancel.create({
+                            title: config.strings.playercoin_drop_title,
+                            body: config.strings.playercoin_drop_confirm,
+                            removeOnClose: true,
+                        }).then(function(modal) {
+                            modal.setSaveButtonText(config.strings.playercoin_drop_yes);
+                            modal.getRoot().find('[data-action="cancel"]').text(
+                                config.strings.playercoin_drop_no
+                            );
+
+                            modal.getRoot().on(ModalEvents.save, function(e) {
+                                e.preventDefault();
+                                modal.hide();
+                                Ajax.call([{
+                                    methodname: 'block_playerhud_setup_playercoin_drop',
+                                    args: {
+                                        instanceid: config.instanceid,
+                                        courseid: config.courseid,
+                                        itemid: resp.itemid
+                                    }
+                                }])[0].done(function() {
+                                    window.location.reload();
+                                }).fail(function() {
+                                    window.location.reload();
+                                });
+                            });
+
+                            modal.getRoot().on(ModalEvents.cancel, function() {
+                                window.location.reload();
+                            });
+
+                            modal.show();
+                            return modal;
+                        }).catch(Notification.exception);
                     } else {
                         $btn.prop('disabled', false);
                         Notification.confirm(

@@ -134,4 +134,13 @@ $functions = [
         'ajax'          => true,
         'loginrequired' => true,
     ],
+
+    'block_playerhud_setup_playercoin_drop' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'setup_playercoin_drop',
+        'description'   => 'Create an infinite drop for the PlayerCoin in the course news forum',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
 ];
