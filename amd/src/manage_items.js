@@ -411,32 +411,41 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
             $('body').on('click', '#btn-create-avatar-pack', function() {
                 var $btn = $(this);
 
-                Notification.confirm(
-                    config.strings.confirm_title,
-                    config.strings.avatar_pack_confirm,
-                    config.strings.yes,
-                    config.strings.cancel,
-                    function() {
-                        $btn.prop('disabled', true);
+                Str.get_strings([
+                    {key: 'avatar_pack_confirm', component: 'block_playerhud'},
+                    {key: 'avatar_pack_created', component: 'block_playerhud'},
+                ]).then(function(strings) {
+                    var confirmMsg = strings[0];
+                    var createdMsg = strings[1];
 
-                        Ajax.call([{
-                            methodname: 'block_playerhud_create_avatar_pack',
-                            args: {
-                                instanceid: config.instanceid,
-                                courseid: config.courseid
-                            }
-                        }])[0].done(function(resp) {
-                            Notification.addNotification({
-                                message: config.strings.avatar_pack_created.replace('{$a}', resp.created),
-                                type: 'success'
+                    Notification.confirm(
+                        config.strings.confirm_title,
+                        confirmMsg,
+                        config.strings.yes,
+                        config.strings.cancel,
+                        function() {
+                            $btn.prop('disabled', true);
+
+                            Ajax.call([{
+                                methodname: 'block_playerhud_create_avatar_pack',
+                                args: {
+                                    instanceid: config.instanceid,
+                                    courseid: config.courseid
+                                }
+                            }])[0].done(function(resp) {
+                                Notification.addNotification({
+                                    message: createdMsg.replace('{$a}', resp.created),
+                                    type: 'success'
+                                });
+                                window.location.reload();
+                            }).fail(function(ex) {
+                                $btn.prop('disabled', false);
+                                Notification.exception(ex);
                             });
-                            window.location.reload();
-                        }).fail(function(ex) {
-                            $btn.prop('disabled', false);
-                            Notification.exception(ex);
-                        });
-                    }
-                );
+                        }
+                    );
+                    return strings;
+                }).catch(Notification.exception);
             });
         }
     };
