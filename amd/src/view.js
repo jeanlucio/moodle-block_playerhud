@@ -105,6 +105,27 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                 }
             });
 
+            // Initialize popovers for compact shop item icons (> 3 items in trade).
+            var shopPopoverEls = document.querySelectorAll('.ph-shop-popover');
+            if (shopPopoverEls.length) {
+                require(['theme_boost/bootstrap/popover'], function(BSPopover) {
+                    shopPopoverEls.forEach(function(el) {
+                        var opts = {
+                            trigger: 'hover click focus',
+                            title: el.dataset.phTitle || '',
+                            content: el.dataset.phContent || '',
+                            html: false,
+                            placement: 'top'
+                        };
+                        if (typeof BSPopover === 'function') {
+                            new BSPopover(el, opts);
+                        } else {
+                            $(el).popover(opts);
+                        }
+                    });
+                });
+            }
+
             // Accessibility: Allow opening items with Enter or Space.
             $(document).on('keydown', '.ph-item-trigger', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {

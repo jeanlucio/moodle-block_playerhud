@@ -1489,6 +1489,40 @@
 .filter_playerhud .ph-ai-hidden {
     display: none;
 }
+.block_playerhud .ph-shop-compact-grid,
+.path-blocks-playerhud .ph-shop-compact-grid,
+.filter_playerhud .ph-shop-compact-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+}
+.block_playerhud .ph-shop-compact-grid .ph-mini-item,
+.path-blocks-playerhud .ph-shop-compact-grid .ph-mini-item,
+.filter_playerhud .ph-shop-compact-grid .ph-mini-item {
+    cursor: default;
+}
+.block_playerhud .ph-shop-compact-grid .ph-shop-qty-badge,
+.path-blocks-playerhud .ph-shop-compact-grid .ph-shop-qty-badge,
+.filter_playerhud .ph-shop-compact-grid .ph-shop-qty-badge {
+    position: absolute;
+    bottom: -3px;
+    right: -3px;
+    background-color: var(--primary, #0f6cbf);
+    color: #fff;
+    border-radius: 3px;
+    font-size: 0.55rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 1px 3px;
+    pointer-events: none;
+    z-index: 1;
+}
+.block_playerhud .ph-shop-compact-grid .ph-shop-qty-badge-rew,
+.path-blocks-playerhud .ph-shop-compact-grid .ph-shop-qty-badge-rew,
+.filter_playerhud .ph-shop-compact-grid .ph-shop-qty-badge-rew {
+    background-color: var(--success, #198754);
+}
 .block_playerhud .accordion .accordion-item,
 .path-blocks-playerhud .accordion .accordion-item,
 .filter_playerhud .accordion .accordion-item {
