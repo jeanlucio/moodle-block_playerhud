@@ -341,14 +341,20 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                         courseid: config.courseid
                     }
                 }])[0].done(function(resp) {
-                    var msg = resp.created
-                        ? config.strings.playercoin_created
-                        : config.strings.playercoin_exists;
-                    Notification.addNotification({
-                        message: msg,
-                        type: resp.created ? 'success' : 'info'
-                    });
-                    window.location.href = resp.edit_url;
+                    if (resp.created) {
+                        window.location.reload();
+                    } else {
+                        $btn.prop('disabled', false);
+                        Notification.confirm(
+                            config.strings.confirm_title,
+                            config.strings.playercoin_exists,
+                            config.strings.yes,
+                            config.strings.cancel,
+                            function() {
+                                window.location.href = resp.edit_url;
+                            }
+                        );
+                    }
                 }).fail(function(ex) {
                     $btn.prop('disabled', false);
                     Notification.exception(ex);
