@@ -689,9 +689,46 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
         'id ASC'
     );
 
-    // Build suggestion list: one per avatar + one bundle.
+    // Preload coverage to skip suggestions that already have trades.
+    // Individual: avatar is the sole reward of an existing trade.
+    // Bundle: a single trade already rewards all current avatars.
+    $individualcoveredids = [];
+    $bundleexists = false;
+    if (!empty($avatars)) {
+        $avatarids = array_keys($avatars);
+        [$avsql, $avparams] = $DB->get_in_or_equal($avatarids, SQL_PARAMS_NAMED, 'av');
+        $soletrades = $DB->get_records_sql(
+            "SELECT DISTINCT tr.itemid
+               FROM {block_playerhud_trade_rewards} tr
+               JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
+              WHERE t.blockinstanceid = :iid
+                AND tr.itemid $avsql
+                AND (SELECT COUNT(*) FROM {block_playerhud_trade_rewards} tr2
+                      WHERE tr2.tradeid = tr.tradeid) = 1",
+            array_merge(['iid' => $instanceid], $avparams)
+        );
+        foreach ($soletrades as $r) {
+            $individualcoveredids[$r->itemid] = true;
+        }
+        [$bsql, $bparams] = $DB->get_in_or_equal($avatarids, SQL_PARAMS_NAMED, 'bv');
+        $bundleexists = !empty($DB->get_records_sql(
+            "SELECT tr.tradeid
+               FROM {block_playerhud_trade_rewards} tr
+               JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
+              WHERE t.blockinstanceid = :iid
+                AND tr.itemid $bsql
+           GROUP BY tr.tradeid
+             HAVING COUNT(tr.itemid) >= :total",
+            array_merge(['iid' => $instanceid, 'total' => count($avatarids)], $bparams)
+        ));
+    }
+
+    // Build suggestion list: one per avatar without an individual trade + bundle if not yet created.
     $suggestions = [];
     foreach ($avatars as $avatar) {
+        if (isset($individualcoveredids[$avatar->id])) {
+            continue;
+        }
         $suggestions[] = [
             'uid'          => 'ind_' . $avatar->id,
             'cost_qty'     => 5,
@@ -704,8 +741,8 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
         ];
     }
 
-    // Bundle: 50 coins → all avatars.
-    if (!empty($avatars)) {
+    // Bundle: 50 coins → all avatars, only if no bundle trade exists yet.
+    if (!$bundleexists && !empty($avatars)) {
         $bundlerewards = array_map(fn($av) => ['id' => $av->id, 'qty' => 1], array_values($avatars));
         $suggestions[] = [
             'uid'          => 'bundle_all',
@@ -718,6 +755,14 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
             'rewards'      => $bundlerewards,
             'name'         => get_string('avatar_pack_create', 'block_playerhud'),
         ];
+    }
+
+    if ($action === 'suggest_trades' && empty($suggestions)) {
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'trades']),
+            get_string('trade_sug_none_available', 'block_playerhud'),
+            \core\output\notification::NOTIFY_INFO
+        );
     }
 
     $formurl = new moodle_url($baseurl, ['tab' => 'trades']);
@@ -746,7 +791,7 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
                 'name'            => $sug['name'],
                 'groupid'         => 0,
                 'centralized'     => 1,
-                'onetime'         => 0,
+                'onetime'         => 1,
                 'timecreated'     => $now,
             ]);
             $DB->insert_record('block_playerhud_trade_reqs', (object) [

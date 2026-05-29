@@ -468,12 +468,28 @@ class tab_quests implements renderable {
         ];
         $PAGE->requires->js_call_amd('block_playerhud/manage_quests', 'init', [$jsvars]);
 
+        $biconfig = $DB->get_field('block_instances', 'configdata', ['id' => $this->instanceid]);
+        $config = unserialize_object(base64_decode($biconfig));
+        if (!$config) {
+            $config = new \stdClass();
+        }
+        $questsuggestions = quest::get_heuristic_suggestions($this->instanceid, $this->courseid, $config);
+        $urlsuggest = empty($questsuggestions)
+            ? ''
+            : (new moodle_url($baseurl, ['action' => 'suggest_quests']))->out(false);
+        $suggestdisabled = empty($questsuggestions);
+        $suggesttooltip  = $suggestdisabled
+            ? get_string('quest_no_suggestions', 'block_playerhud')
+            : '';
+
         $templatedata = [
-            'base_url'       => $baseurl->out(false),
-            'sesskey'        => sesskey(),
-            'url_add'        => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
-            'url_suggest'    => (new moodle_url($baseurl, ['action' => 'suggest_quests']))->out(false),
-            'str_suggest'    => get_string('quest_sug_btn', 'block_playerhud'),
+            'base_url'         => $baseurl->out(false),
+            'sesskey'          => sesskey(),
+            'url_add'          => (new moodle_url($baseurl, ['action' => 'add']))->out(false),
+            'url_suggest'      => $urlsuggest,
+            'suggest_disabled' => $suggestdisabled,
+            'suggest_tooltip'  => $suggesttooltip,
+            'str_suggest'      => get_string('quest_sug_btn', 'block_playerhud'),
             'str_add_quest'  => get_string('quest_new', 'block_playerhud'),
             'str_col_icon'   => get_string('quest_icon_todo', 'block_playerhud'),
             'str_col_req'    => get_string('quest_target_value', 'block_playerhud'),
