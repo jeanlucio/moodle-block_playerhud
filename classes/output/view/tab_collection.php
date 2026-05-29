@@ -234,6 +234,18 @@ class tab_collection implements renderable, templatable {
                     $itemobj['date_str'] = userdate($lastts, get_string('strftimedatefullshort', 'langconfig'));
                 }
 
+                // Power hint for unowned non-secret items.
+                if ($totalcount == 0 && !$item->secret && !empty($item->action_type)) {
+                    if ($item->action_type === 'avatar_profile') {
+                        $itemobj['power_hint_avatar'] = true;
+                    } else if (
+                        $item->action_type === 'deadline_extension'
+                        && class_exists('\local_latepenalty\recalculator')
+                    ) {
+                        $itemobj['power_hint_deadline'] = true;
+                    }
+                }
+
                 // Common data for sorting.
                 $itemobj['id'] = $item->id;
                 $itemobj['sort_name'] = $sortname;

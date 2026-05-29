@@ -167,6 +167,18 @@
             {{/has_power}}
 
             <div class="mt-auto w-100 text-center">
+                {{#power_hint_avatar}}
+                <span class="ph-power-hint-badge ph-power-hint-avatar">
+                    <i class="fa fa-user-circle" aria-hidden="true"></i>
+                    {{#str}} item_power_badge_avatar, block_playerhud {{/str}}
+                </span>
+                {{/power_hint_avatar}}
+                {{#power_hint_deadline}}
+                <span class="ph-power-hint-badge ph-power-hint-deadline">
+                    <i class="fa fa-clock-o" aria-hidden="true"></i>
+                    {{#str}} item_power_badge_deadline, block_playerhud {{/str}}
+                </span>
+                {{/power_hint_deadline}}
                  {{#has_origins}}
                 <div class="ph-card-origins mb-1 mt-2">
                     {{#origin_map}}<span class="me-1" title="{{#str}} legend_origins, block_playerhud {{/str}}"><i class="fa fa-map-o text-primary" aria-hidden="true"></i> {{origin_map}}</span>{{/origin_map}}
