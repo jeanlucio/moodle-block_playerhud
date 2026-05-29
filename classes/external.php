@@ -1539,29 +1539,29 @@ class external extends external_api {
         require_capability('block/playerhud:manage', $context);
 
         $avatars = [
-            // Tom claro.
-            ['emoji' => '🧛🏻‍♂️', 'name' => 'Vampiro',        'desc_key' => 'avatar_desc_vampire'],
-            ['emoji' => '🧙🏻‍♀️', 'name' => 'Maga',           'desc_key' => 'avatar_desc_mage'],
-            ['emoji' => '🕵🏻‍♀️', 'name' => 'Detetive',       'desc_key' => 'avatar_desc_detective'],
-            // Tom médio-claro.
-            ['emoji' => '🧝🏼‍♂️', 'name' => 'Elfo',           'desc_key' => 'avatar_desc_elf'],
-            ['emoji' => '🦸🏼‍♀️', 'name' => 'Super-Heroína',  'desc_key' => 'avatar_desc_superhero'],
-            ['emoji' => '🧚🏼‍♀️', 'name' => 'Fada',           'desc_key' => 'avatar_desc_fairy'],
-            // Tom médio.
-            ['emoji' => '🕵🏽‍♂️', 'name' => 'Detetive',       'desc_key' => 'avatar_desc_detective'],
-            ['emoji' => '🧛🏽‍♀️', 'name' => 'Vampira',        'desc_key' => 'avatar_desc_vampire'],
-            ['emoji' => '🦹🏽‍♀️', 'name' => 'Super-Vilã',     'desc_key' => 'avatar_desc_supervillain'],
-            // Tom médio-escuro.
-            ['emoji' => '🧙🏾‍♂️', 'name' => 'Mago',           'desc_key' => 'avatar_desc_mage'],
-            ['emoji' => '🧝🏾‍♀️', 'name' => 'Elfa',           'desc_key' => 'avatar_desc_elf'],
-            ['emoji' => '🦸🏾‍♂️', 'name' => 'Super-Herói',    'desc_key' => 'avatar_desc_superhero'],
-            // Tom escuro.
-            ['emoji' => '🤺',     'name' => 'Espadachim',     'desc_key' => 'avatar_desc_fencer'],
-            ['emoji' => '🧜🏿‍♀️', 'name' => 'Sereia',         'desc_key' => 'avatar_desc_mermaid'],
-            ['emoji' => '🦹🏿‍♂️', 'name' => 'Super-Vilão',    'desc_key' => 'avatar_desc_supervillain'],
-            // Neutros.
-            ['emoji' => '🤖',     'name' => 'Robô',           'desc_key' => 'avatar_desc_robot'],
-            ['emoji' => '👾',     'name' => 'Alienígena',     'desc_key' => 'avatar_desc_alien'],
+            // Light skin tone.
+            ['emoji' => '🧛🏻‍♂️', 'name_key' => 'avatar_name_vampire_m', 'desc_key' => 'avatar_desc_vampire'],
+            ['emoji' => '🧙🏻‍♀️', 'name_key' => 'avatar_name_mage_f', 'desc_key' => 'avatar_desc_mage'],
+            ['emoji' => '🕵🏻‍♀️', 'name_key' => 'avatar_name_detective', 'desc_key' => 'avatar_desc_detective'],
+            // Medium-light skin tone.
+            ['emoji' => '🧝🏼‍♂️', 'name_key' => 'avatar_name_elf_m', 'desc_key' => 'avatar_desc_elf'],
+            ['emoji' => '🦸🏼‍♀️', 'name_key' => 'avatar_name_superhero_f', 'desc_key' => 'avatar_desc_superhero'],
+            ['emoji' => '🧚🏼‍♀️', 'name_key' => 'avatar_name_fairy', 'desc_key' => 'avatar_desc_fairy'],
+            // Medium skin tone.
+            ['emoji' => '🕵🏽‍♂️', 'name_key' => 'avatar_name_detective', 'desc_key' => 'avatar_desc_detective'],
+            ['emoji' => '🧛🏽‍♀️', 'name_key' => 'avatar_name_vampire_f', 'desc_key' => 'avatar_desc_vampire'],
+            ['emoji' => '🦹🏽‍♀️', 'name_key' => 'avatar_name_supervillain_f', 'desc_key' => 'avatar_desc_supervillain'],
+            // Medium-dark skin tone.
+            ['emoji' => '🧙🏾‍♂️', 'name_key' => 'avatar_name_mage_m', 'desc_key' => 'avatar_desc_mage'],
+            ['emoji' => '🧝🏾‍♀️', 'name_key' => 'avatar_name_elf_f', 'desc_key' => 'avatar_desc_elf'],
+            ['emoji' => '🦸🏾‍♂️', 'name_key' => 'avatar_name_superhero_m', 'desc_key' => 'avatar_desc_superhero'],
+            // Dark skin tone.
+            ['emoji' => '🤺', 'name_key' => 'avatar_name_fencer', 'desc_key' => 'avatar_desc_fencer'],
+            ['emoji' => '🧜🏿‍♀️', 'name_key' => 'avatar_name_mermaid', 'desc_key' => 'avatar_desc_mermaid'],
+            ['emoji' => '🦹🏿‍♂️', 'name_key' => 'avatar_name_supervillain_m', 'desc_key' => 'avatar_desc_supervillain'],
+            // Gender-neutral.
+            ['emoji' => '🤖', 'name_key' => 'avatar_name_robot', 'desc_key' => 'avatar_desc_robot'],
+            ['emoji' => '👾', 'name_key' => 'avatar_name_alien', 'desc_key' => 'avatar_desc_alien'],
         ];
 
         $existingimages = $DB->get_fieldset_select(
@@ -1581,7 +1581,7 @@ class external extends external_api {
             }
             $DB->insert_record('block_playerhud_items', (object) [
                 'blockinstanceid' => $instanceid,
-                'name'            => $avatar['name'],
+                'name'            => get_string($avatar['name_key'], 'block_playerhud'),
                 'image'           => $avatar['emoji'],
                 'description'     => get_string($avatar['desc_key'], 'block_playerhud'),
                 'xp'              => 0,
