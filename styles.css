@@ -297,7 +297,7 @@
     justify-content: center;
     width: 120px;
     height: 120px;
-    font-size: 5rem;
+    font-size: 4.5rem;
     background: var(--card-bg, #f8f9fa);
     border: 3px solid var(--light, #fff);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -306,7 +306,7 @@
 .path-blocks-playerhud .ph-header-avatar .ph-avatar-emoji {
     width: 100px;
     height: 100px;
-    font-size: 4rem;
+    font-size: 3.5rem;
 }
 .block_playerhud .ph-sidebar-avatar-container,
 .path-blocks-playerhud .ph-sidebar-avatar-container {
