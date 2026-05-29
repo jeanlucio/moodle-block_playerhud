@@ -259,7 +259,7 @@ class tab_collection implements renderable, templatable {
                             'block_playerhud_avatar_' . $this->instanceid,
                             0
                         );
-                        $itemobj['is_equipped'] = ($equippedid === $item->id);
+                        $itemobj['is_equipped'] = ($equippedid == (int)$item->id);
                     } else if (
                         $item->action_type === 'deadline_extension'
                         && class_exists('\local_latepenalty\recalculator')

@@ -303,11 +303,25 @@ class block_playerhud extends block_base {
                 );
             }
 
+            // Build user picture (check for equipped avatar).
+            $avatarid = (int) get_user_preferences('block_playerhud_avatar_' . $this->instance->id, 0);
+            if ($avatarid > 0) {
+                $avataritem = \block_playerhud\game::get_avatar_item((int)$this->instance->id, $avatarid);
+                $userpicture = $avataritem
+                    ? \block_playerhud\utils::get_avatar_html(
+                        $avataritem,
+                        \context_block::instance((int)$this->instance->id),
+                        $OUTPUT
+                    )
+                    : $OUTPUT->user_picture($USER, ['size' => 120]);
+            } else {
+                $userpicture = $OUTPUT->user_picture($USER, ['size' => 120]);
+            }
+
             // Final Data.
             $renderdata = [
                 'username'         => fullname($USER),
-                // Change the size of the Block's profile picture.
-                'userpicture'      => $OUTPUT->user_picture($USER, ['size' => 120]),
+                'userpicture'      => $userpicture,
                 'enable_rpg'       => !empty($config->enable_rpg),
                 'enable_items'     => !empty($config->enable_items),
                 'enable_quests'    => !empty($config->enable_quests),
