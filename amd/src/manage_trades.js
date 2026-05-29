@@ -29,6 +29,13 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
          * @param {Object} config The configuration object passed from PHP.
          */
         init: function(config) {
+            // Toggle-all for trade suggestion checkboxes.
+            $('body').on('click', '#ph-trade-sug-toggle-all', function() {
+                const $checks = $('input[type="checkbox"][name^="sug_"]');
+                const allChecked = $checks.length === $checks.filter(':checked').length;
+                $checks.prop('checked', !allChecked);
+            });
+
             // Clean interceptor to use Moodle's native Confirmation Box.
             $('body').on('click', '.js-delete-btn', function(e) {
                 e.preventDefault();

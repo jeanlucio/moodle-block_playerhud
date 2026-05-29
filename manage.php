@@ -675,7 +675,6 @@ if ($action === 'suggest_quests' || $action === 'save_suggestions') {
 
 // Action: Suggest Trades (Avatar pack + PlayerCoin heuristic).
 if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
-
     // Fetch PlayerCoin.
     $playercoin = $DB->get_record('block_playerhud_items', [
         'blockinstanceid' => $instanceid,
@@ -778,19 +777,6 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
             'cancel'        => get_string('cancel'),
         ],
     ]]);
-
-    // Toggle-all for checkboxes.
-    $PAGE->requires->js_init_code("
-        document.addEventListener('DOMContentLoaded', function() {
-            var btn = document.getElementById('ph-trade-sug-toggle-all');
-            if (!btn) { return; }
-            btn.addEventListener('click', function() {
-                var checks = document.querySelectorAll('input[type=\"checkbox\"][name^=\"sug_\"]');
-                var allChecked = Array.from(checks).every(function(c) { return c.checked; });
-                checks.forEach(function(c) { c.checked = !allChecked; });
-            });
-        });
-    ");
 
     echo $OUTPUT->header();
     $sugform->display();
