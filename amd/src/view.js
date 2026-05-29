@@ -381,6 +381,12 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                 });
             });
 
+            // Prevent select click from bubbling up to the card trigger.
+            $(document).off('click.phlpselect mousedown.phlpselect')
+                .on('click.phlpselect mousedown.phlpselect', '.ph-lp-activity-select', function(e) {
+                    e.stopPropagation();
+                });
+
             // Item powers — Usar deadline extension.
             $(document).off('click.phuse').on('click.phuse', '.ph-item-use-btn', function(e) {
                 e.stopPropagation();
