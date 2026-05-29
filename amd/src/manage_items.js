@@ -354,9 +354,7 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                                 config.strings.playercoin_drop_no
                             );
 
-                            modal.getRoot().on(ModalEvents.save, function(e) {
-                                e.preventDefault();
-                                modal.hide();
+                            var setupDrop = function() {
                                 Ajax.call([{
                                     methodname: 'block_playerhud_setup_playercoin_drop',
                                     args: {
@@ -376,6 +374,12 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                                     Notification.exception(ex);
                                     window.location.reload();
                                 });
+                            };
+
+                            modal.getRoot().on(ModalEvents.save, function(e) {
+                                e.preventDefault();
+                                modal.hide();
+                                setupDrop();
                             });
 
                             modal.getRoot().on(ModalEvents.cancel, function() {

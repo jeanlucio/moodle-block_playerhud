@@ -163,7 +163,12 @@ class edit_item_form extends \moodleform {
 
             $lpactivities = $this->_customdata['lp_activities'] ?? [];
             $cmidoptions = [0 => get_string('item_power_extension_cmid_any', 'block_playerhud')] + $lpactivities;
-            $mform->addElement('select', 'extension_cmid', get_string('item_power_extension_cmid', 'block_playerhud'), $cmidoptions);
+            $mform->addElement(
+                'select',
+                'extension_cmid',
+                get_string('item_power_extension_cmid', 'block_playerhud'),
+                $cmidoptions
+            );
             $mform->setDefault('extension_cmid', 0);
             $mform->hideIf('extension_cmid', 'action_type', 'neq', 'deadline_extension');
         }

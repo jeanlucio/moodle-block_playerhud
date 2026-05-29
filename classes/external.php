@@ -1540,7 +1540,8 @@ class external extends external_api {
         self::validate_context($context);
         require_capability('block/playerhud:manage', $context);
 
-        $DB->get_record('block_playerhud_items',
+        $DB->get_record(
+            'block_playerhud_items',
             ['id' => $itemid, 'blockinstanceid' => $instanceid],
             'id',
             MUST_EXIST
