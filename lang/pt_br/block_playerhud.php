@@ -410,7 +410,6 @@ $string['item_power'] = 'Poder do Item';
 $string['item_power_avatar'] = 'Avatar de Perfil';
 $string['item_power_avatar_note'] = 'A imagem deste item será exibida como avatar do estudante na interface do PlayerHUD ao equipar.';
 $string['item_power_badge_avatar'] = 'Avatar';
-$string['item_power_badge_deadline'] = 'Extensão de Prazo';
 $string['item_power_deadline'] = 'Extensão de Prazo';
 $string['item_power_extension_cmid'] = 'Atividade específica';
 $string['item_power_extension_cmid_any'] = 'Qualquer atividade elegível';

@@ -297,7 +297,7 @@ class tab_items implements renderable {
         $counter = ($page * $perpage) + 1;
         $powerbadgelabels = [
             'avatar_profile'     => get_string('item_power_badge_avatar', 'block_playerhud'),
-            'deadline_extension' => get_string('item_power_badge_deadline', 'block_playerhud'),
+            'deadline_extension' => get_string('item_power_deadline', 'block_playerhud'),
         ];
 
         if ($items) {
