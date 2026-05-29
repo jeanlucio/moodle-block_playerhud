@@ -297,7 +297,7 @@
     justify-content: center;
     width: 120px;
     height: 120px;
-    font-size: 3.5rem;
+    font-size: 5rem;
     background: var(--card-bg, #f8f9fa);
     border: 3px solid var(--light, #fff);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -306,7 +306,7 @@
 .path-blocks-playerhud .ph-header-avatar .ph-avatar-emoji {
     width: 100px;
     height: 100px;
-    font-size: 3rem;
+    font-size: 4rem;
 }
 .block_playerhud .ph-sidebar-avatar-container,
 .path-blocks-playerhud .ph-sidebar-avatar-container {
@@ -1129,6 +1129,25 @@
     inset-inline-end: 8px;
     z-index: 5;
     font-size: 0.85rem;
+}
+.block_playerhud .ph-power-hint-badge,
+.path-blocks-playerhud .ph-power-hint-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin-top: 4px;
+    background: transparent;
+}
+.block_playerhud .ph-power-hint-badge.ph-power-hint-avatar,
+.path-blocks-playerhud .ph-power-hint-badge.ph-power-hint-avatar {
+    border: 1px dashed var(--info, #0dcaf0);
+    color: var(--info, #0dcaf0);
+}
+.block_playerhud .ph-power-hint-badge.ph-power-hint-deadline,
+.path-blocks-playerhud .ph-power-hint-badge.ph-power-hint-deadline {
+    border: 1px dashed var(--warning, #ffc107);
+    color: var(--warning, #ffc107);
 }
 
 .block_playerhud .ph-col-select,
