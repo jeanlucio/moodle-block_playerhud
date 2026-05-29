@@ -53,7 +53,7 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         // These columns support item powers: avatar_profile and deadline_extension.
         $table = new \xmldb_table('block_playerhud_items');
 
-        $fieldtype = new \xmldb_field('action_type', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, '');
+        $fieldtype = new \xmldb_field('action_type', XMLDB_TYPE_CHAR, '50', null, null, null, null);
         if (!$dbman->field_exists($table, $fieldtype)) {
             $dbman->add_field($table, $fieldtype);
         }

@@ -37,7 +37,7 @@
         <FIELD NAME="required_class_id" TYPE="char" LENGTH="100" NOTNULL="false" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="secret" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="tradable" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
-        <FIELD NAME="action_type" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="Item power type: empty, avatar_profile, deadline_extension"/>
+        <FIELD NAME="action_type" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Item power type: null/empty, avatar_profile, deadline_extension"/>
         <FIELD NAME="action_value" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON config for the power, e.g. {days:2,cmid:0} for deadline_extension"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
