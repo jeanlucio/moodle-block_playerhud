@@ -1461,7 +1461,7 @@ class external extends external_api {
                 'blockinstanceid' => $instanceid,
                 'name'            => 'PlayerCoin',
                 'image'           => '🪙',
-                'description'     => '',
+                'description'     => get_string('playercoin_description', 'block_playerhud'),
                 'xp'              => 0,
                 'enabled'         => 1,
                 'tradable'        => 1,

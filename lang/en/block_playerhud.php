@@ -481,6 +481,7 @@ $string['out_of_5'] = 'out of 5';
 $string['playercoin_already_exists'] = 'A PlayerCoin item already exists in this instance. Do you want to open it for editing?';
 $string['playercoin_create'] = 'Create PlayerCoin';
 $string['playercoin_created'] = 'PlayerCoin created successfully!';
+$string['playercoin_description'] = 'PlayerCoin is the official game currency. Collect them and use them to purchase items in the Shop.';
 $string['playerhud:addinstance'] = 'Add a new PlayerHUD';
 $string['playerhud:manage'] = 'Manage Game Content';
 $string['playerhud:myaddinstance'] = 'Add a new PlayerHUD block to Dashboard';
