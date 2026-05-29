@@ -328,6 +328,32 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                     Notification.exception(ex);
                 });
             });
+
+            // PlayerCoin — one-click creation.
+            $('body').on('click', '#btn-create-playercoin', function() {
+                var $btn = $(this);
+                $btn.prop('disabled', true);
+
+                Ajax.call([{
+                    methodname: 'block_playerhud_create_playercoin',
+                    args: {
+                        instanceid: config.instanceid,
+                        courseid: config.courseid
+                    }
+                }])[0].done(function(resp) {
+                    var msg = resp.created
+                        ? config.strings.playercoin_created
+                        : config.strings.playercoin_exists;
+                    Notification.addNotification({
+                        message: msg,
+                        type: resp.created ? 'success' : 'info'
+                    });
+                    window.location.href = resp.edit_url;
+                }).fail(function(ex) {
+                    $btn.prop('disabled', false);
+                    Notification.exception(ex);
+                });
+            });
         }
     };
 });

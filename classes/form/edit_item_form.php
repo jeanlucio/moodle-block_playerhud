@@ -24,6 +24,8 @@
 
 namespace block_playerhud\form;
 
+use html_writer;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/formslib.php');
@@ -131,6 +133,40 @@ class edit_item_form extends \moodleform {
         );
         $mform->setDefault('secret', 0);
         $mform->addHelpButton('secret', 'secret', 'block_playerhud');
+
+        // Power Header.
+        $mform->addElement('header', 'itempower', get_string('item_power', 'block_playerhud'));
+
+        $poweroptions = ['' => get_string('item_power_none', 'block_playerhud')];
+        $poweroptions['avatar_profile'] = get_string('item_power_avatar', 'block_playerhud');
+        if (class_exists('\local_latepenalty\recalculator')) {
+            $poweroptions['deadline_extension'] = get_string('item_power_deadline', 'block_playerhud');
+        }
+        $mform->addElement('select', 'action_type', get_string('item_power_type', 'block_playerhud'), $poweroptions);
+        $mform->setDefault('action_type', '');
+
+        // Avatar note — shown only when action_type = avatar_profile.
+        $avatarnote = html_writer::tag(
+            'div',
+            get_string('item_power_avatar_note', 'block_playerhud'),
+            ['class' => 'alert alert-info mb-0 py-2']
+        );
+        $mform->addElement('static', 'avatar_note', '', $avatarnote);
+        $mform->hideIf('avatar_note', 'action_type', 'neq', 'avatar_profile');
+
+        // Deadline fields — only rendered when LP is installed.
+        if (class_exists('\local_latepenalty\recalculator')) {
+            $mform->addElement('text', 'extension_days', get_string('item_power_extension_days', 'block_playerhud'));
+            $mform->setType('extension_days', PARAM_INT);
+            $mform->setDefault('extension_days', 1);
+            $mform->hideIf('extension_days', 'action_type', 'neq', 'deadline_extension');
+
+            $lpactivities = $this->_customdata['lp_activities'] ?? [];
+            $cmidoptions = [0 => get_string('item_power_extension_cmid_any', 'block_playerhud')] + $lpactivities;
+            $mform->addElement('select', 'extension_cmid', get_string('item_power_extension_cmid', 'block_playerhud'), $cmidoptions);
+            $mform->setDefault('extension_cmid', 0);
+            $mform->hideIf('extension_cmid', 'action_type', 'neq', 'deadline_extension');
+        }
 
         $mform->addElement('hidden', 'itemid');
         $mform->setType('itemid', PARAM_INT);

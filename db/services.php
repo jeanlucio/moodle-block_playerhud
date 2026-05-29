@@ -125,4 +125,13 @@ $functions = [
         'ajax'          => true,
         'loginrequired' => true,
     ],
+
+    'block_playerhud_create_playercoin' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'create_playercoin',
+        'description'   => 'Create or return the existing PlayerCoin item for a block instance',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
 ];

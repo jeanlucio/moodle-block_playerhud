@@ -48,5 +48,23 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026052801, 'playerhud');
     }
 
+    if ($oldversion < 2026052802) {
+        // Add action_type and action_value columns to block_playerhud_items.
+        // These columns support item powers: avatar_profile and deadline_extension.
+        $table = new \xmldb_table('block_playerhud_items');
+
+        $fieldtype = new \xmldb_field('action_type', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, '');
+        if (!$dbman->field_exists($table, $fieldtype)) {
+            $dbman->add_field($table, $fieldtype);
+        }
+
+        $fieldvalue = new \xmldb_field('action_value', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        if (!$dbman->field_exists($table, $fieldvalue)) {
+            $dbman->add_field($table, $fieldvalue);
+        }
+
+        upgrade_block_savepoint(true, 2026052802, 'playerhud');
+    }
+
     return true;
 }

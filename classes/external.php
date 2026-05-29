@@ -1413,4 +1413,93 @@ class external extends external_api {
             'redirect_url' => new external_value(PARAM_URL, 'URL to redirect to', VALUE_DEFAULT, ''),
         ]);
     }
+
+    /**
+     * Parameters for create_playercoin.
+     *
+     * @return external_function_parameters
+     */
+    public static function create_playercoin_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+        ]);
+    }
+
+    /**
+     * Create or return the existing PlayerCoin item for this block instance.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @return array
+     */
+    public static function create_playercoin(int $instanceid, int $courseid): array {
+        global $DB;
+
+        $params = self::validate_parameters(self::create_playercoin_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+        ]);
+        $instanceid = $params['instanceid'];
+        $courseid   = $params['courseid'];
+
+        $context = \context_block::instance($instanceid);
+        self::validate_context($context);
+        require_capability('block/playerhud:manage', $context);
+
+        $existing = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'PlayerCoin',
+        ]);
+
+        if ($existing) {
+            $itemid = (int) $existing->id;
+            $created = false;
+        } else {
+            $now = time();
+            $itemid = (int) $DB->insert_record('block_playerhud_items', (object) [
+                'blockinstanceid' => $instanceid,
+                'name'            => 'PlayerCoin',
+                'image'           => '🪙',
+                'description'     => '',
+                'xp'              => 0,
+                'enabled'         => 1,
+                'tradable'        => 1,
+                'secret'          => 0,
+                'required_class_id' => '0',
+                'action_type'     => '',
+                'action_value'    => '',
+                'timecreated'     => $now,
+                'timemodified'    => $now,
+            ]);
+            $created = true;
+        }
+
+        $editurl = new \moodle_url('/blocks/playerhud/manage.php', [
+            'id'         => $courseid,
+            'instanceid' => $instanceid,
+            'tab'        => 'items',
+            'action'     => 'edit',
+            'itemid'     => $itemid,
+        ]);
+
+        return [
+            'itemid'   => $itemid,
+            'created'  => $created,
+            'edit_url' => $editurl->out(false),
+        ];
+    }
+
+    /**
+     * Return structure for create_playercoin.
+     *
+     * @return external_single_structure
+     */
+    public static function create_playercoin_returns(): external_single_structure {
+        return new external_single_structure([
+            'itemid'   => new external_value(PARAM_INT, 'ID of the PlayerCoin item'),
+            'created'  => new external_value(PARAM_BOOL, 'True if a new item was created'),
+            'edit_url' => new external_value(PARAM_URL, 'URL to the item edit form'),
+        ]);
+    }
 }
