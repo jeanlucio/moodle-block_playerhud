@@ -301,7 +301,7 @@ class utils {
             return \html_writer::img(
                 $media['url'],
                 '',
-                ['class' => 'rounded-circle shadow-sm', 'width' => '100', 'height' => '100', 'aria-hidden' => 'true']
+                ['class' => 'ph-avatar-img rounded-circle shadow-sm', 'aria-hidden' => 'true']
             );
         }
 
