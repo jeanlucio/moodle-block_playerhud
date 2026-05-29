@@ -1564,25 +1564,24 @@ class external extends external_api {
             ['emoji' => '👾',     'name' => 'Alienígena',     'desc_key' => 'avatar_desc_alien'],
         ];
 
-        $existingnames = $DB->get_fieldset_select(
+        $existingimages = $DB->get_fieldset_select(
             'block_playerhud_items',
-            'name',
+            'image',
             'blockinstanceid = :id',
             ['id' => $instanceid]
         );
-        $existingnames = array_flip($existingnames);
+        $existingimages = array_flip($existingimages);
 
         $created = 0;
         $now = time();
 
         foreach ($avatars as $avatar) {
-            $uniquename = $avatar['name'] . ' ' . $avatar['emoji'];
-            if (isset($existingnames[$uniquename])) {
+            if (isset($existingimages[$avatar['emoji']])) {
                 continue;
             }
             $DB->insert_record('block_playerhud_items', (object) [
                 'blockinstanceid' => $instanceid,
-                'name'            => $uniquename,
+                'name'            => $avatar['name'],
                 'image'           => $avatar['emoji'],
                 'description'     => get_string($avatar['desc_key'], 'block_playerhud'),
                 'xp'              => 0,
