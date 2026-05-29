@@ -273,6 +273,21 @@
     border: 3px solid var(--light, #fff);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
+.block_playerhud .ph-avatar-img,
+.path-blocks-playerhud .ph-avatar-img {
+    display: block;
+    -o-object-fit: cover;
+    object-fit: cover;
+    width: 120px;
+    height: 120px;
+    border: 3px solid var(--light, #fff);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.block_playerhud .ph-header-avatar .ph-avatar-img,
+.path-blocks-playerhud .ph-header-avatar .ph-avatar-img {
+    width: 100px;
+    height: 100px;
+}
 .block_playerhud .ph-avatar-emoji,
 .path-blocks-playerhud .ph-avatar-emoji {
     display: flex;
