@@ -44,16 +44,14 @@
                         "qty": 3, "name": "Wood", "is_image": false, "image_content": "🪵",
                         "user_qty": 5, "qty_class": "text-success",
                         "popover_title": "3x Wood", "popover_content": "You have: 5",
-                        "popover_label": "3x Wood — You have: 5",
-                        "show_qty_badge": true, "qty_badge": 3
+                        "popover_label": "3x Wood — You have: 5"
                     }
                 ],
                 "rewards": [
                     {
                         "qty": 1, "name": "Sword", "is_image": false, "image_content": "🗡️",
                         "popover_title": "1x Sword", "popover_content": "",
-                        "popover_label": "1x Sword",
-                        "show_qty_badge": false, "qty_badge": 0
+                        "popover_label": "1x Sword"
                     }
                 ]
             }
@@ -123,9 +121,6 @@
                                         {{^is_image}}
                                         <span class="ph-emoji" aria-hidden="true">{{image_content}}</span>
                                         {{/is_image}}
-                                        {{#show_qty_badge}}
-                                        <span class="ph-shop-qty-badge" aria-hidden="true">{{qty_badge}}</span>
-                                        {{/show_qty_badge}}
                                     </button>
                                     {{/requirements}}
                                 </div>
@@ -164,7 +159,7 @@
                                 <div class="ph-shop-compact-grid">
                                     {{#rewards}}
                                     <button type="button"
-                                            class="ph-mini-item ph-shop-popover ph-shop-popover-rew"
+                                            class="ph-mini-item ph-shop-popover"
                                             data-ph-title="{{popover_title}}"
                                             data-ph-content="{{popover_content}}"
                                             aria-label="{{popover_label}}">
@@ -174,9 +169,6 @@
                                         {{^is_image}}
                                         <span class="ph-emoji" aria-hidden="true">{{image_content}}</span>
                                         {{/is_image}}
-                                        {{#show_qty_badge}}
-                                        <span class="ph-shop-qty-badge ph-shop-qty-badge-rew" aria-hidden="true">{{qty_badge}}</span>
-                                        {{/show_qty_badge}}
                                     </button>
                                     {{/rewards}}
                                 </div>

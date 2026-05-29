@@ -164,8 +164,6 @@ class tab_shop implements renderable, templatable {
                         'popover_title' => $req->qty . 'x ' . $itemname,
                         'popover_content' => $youhave,
                         'popover_label' => $req->qty . 'x ' . $itemname . ' — ' . $youhave,
-                        'show_qty_badge' => $req->qty > 1,
-                        'qty_badge' => $req->qty > 1 ? $req->qty : 0,
                     ];
                 }
 
@@ -183,8 +181,6 @@ class tab_shop implements renderable, templatable {
                         'popover_title' => $rew->qty . 'x ' . $rewname,
                         'popover_content' => '',
                         'popover_label' => $rew->qty . 'x ' . $rewname,
-                        'show_qty_badge' => $rew->qty > 1,
-                        'qty_badge' => $rew->qty > 1 ? $rew->qty : 0,
                     ];
                 }
 
