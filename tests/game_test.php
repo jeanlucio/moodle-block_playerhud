@@ -309,4 +309,96 @@ final class game_test extends advanced_testcase {
             $this->assertEquals('waitmore', $e->errorcode);
         }
     }
+
+    /**
+     * get_avatar_item returns the record when the item is enabled and belongs to the instance.
+     *
+     * @covers ::get_avatar_item
+     */
+    public function test_get_avatar_item_returns_record_for_enabled_item(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $item = $this->create_dummy_item('Vampire', 0);
+
+        $result = game::get_avatar_item($this->instanceid, $item->id);
+
+        $this->assertNotNull($result);
+        $this->assertEquals($item->id, (int) $result->id);
+        $this->assertEquals('Vampire', $result->name);
+    }
+
+    /**
+     * get_avatar_item returns null when the item is disabled (enabled = 0).
+     *
+     * @covers ::get_avatar_item
+     */
+    public function test_get_avatar_item_returns_null_for_disabled_item(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $item = $this->create_dummy_item('Disabled Avatar', 0);
+        $DB->set_field('block_playerhud_items', 'enabled', 0, ['id' => $item->id]);
+
+        $result = game::get_avatar_item($this->instanceid, $item->id);
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * get_avatar_item returns null when the item belongs to a different block instance.
+     *
+     * @covers ::get_avatar_item
+     */
+    public function test_get_avatar_item_returns_null_for_foreign_instance(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $course = $this->getDataGenerator()->create_course();
+        $instanceb = $DB->insert_record('block_instances', (object) [
+            'blockname'         => 'playerhud',
+            'parentcontextid'   => \context_course::instance($course->id)->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern'   => 'course-view-*',
+            'defaultregion'     => 'side-pre',
+            'defaultweight'     => 0,
+            'configdata'        => base64_encode(serialize(new \stdClass())),
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ]);
+
+        $foreignitemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instanceb,
+            'name'            => 'Foreign Avatar',
+            'image'           => '🧛',
+            'description'     => '',
+            'xp'              => 0,
+            'enabled'         => 1,
+            'secret'          => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        $result = game::get_avatar_item($this->instanceid, $foreignitemid);
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * get_avatar_item returns null when no item with the given ID exists.
+     *
+     * @covers ::get_avatar_item
+     */
+    public function test_get_avatar_item_returns_null_for_nonexistent_id(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $result = game::get_avatar_item($this->instanceid, 999999);
+
+        $this->assertNull($result);
+    }
 }
