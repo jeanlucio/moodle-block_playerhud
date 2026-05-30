@@ -90,6 +90,9 @@ class generator {
         if (!empty($openaiurl) && !$this->is_safe_url($openaiurl)) {
             $openaiurl = '';
         }
+        if (!empty($openaiurl)) {
+            $openaiurl = $this->resolve_openai_url($openaiurl);
+        }
 
         if (empty($geminikey) && empty($groqkey) && empty($openaikey)) {
             // Error: correct language file key used.
@@ -475,8 +478,28 @@ class generator {
         if (!empty($openaiurl) && !$this->is_safe_url($openaiurl)) {
             $openaiurl = '';
         }
+        if (!empty($openaiurl)) {
+            $openaiurl = $this->resolve_openai_url($openaiurl);
+        }
 
         return [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel];
+    }
+
+    /**
+     * Ensures the URL ends with /chat/completions.
+     *
+     * Providers that follow the OpenAI-compatible standard always expose this path.
+     * Users who supply only a base URL (e.g. https://integrate.api.nvidia.com/v1)
+     * get the suffix appended automatically; users who already include it are unaffected.
+     *
+     * @param string $url The configured endpoint URL.
+     * @return string URL guaranteed to end with /chat/completions.
+     */
+    private function resolve_openai_url(string $url): string {
+        if (!str_ends_with($url, '/chat/completions')) {
+            $url = rtrim($url, '/') . '/chat/completions';
+        }
+        return $url;
     }
 
     /**
