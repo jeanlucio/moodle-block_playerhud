@@ -55,7 +55,7 @@ class tab_trades implements renderable, templatable {
      * @return array Data for the template.
      */
     public function export_for_template($output) {
-        global $CFG, $DB, $PAGE;
+        global $CFG, $PAGE;
 
         $context = \context_block::instance($this->instanceid);
         $trades = \block_playerhud\game::get_full_trades($this->instanceid);
@@ -149,66 +149,20 @@ class tab_trades implements renderable, templatable {
         }
 
         // 5. Suggest Trades button — enabled only when PlayerCoin and Avatars exist.
-        $hascoin = $DB->record_exists('block_playerhud_items', [
-            'blockinstanceid' => $this->instanceid,
-            'name'            => 'PlayerCoin',
-        ]);
-        $hasavatars = $DB->record_exists_select(
-            'block_playerhud_items',
-            "blockinstanceid = :id AND action_type = 'avatar_profile'",
-            ['id' => $this->instanceid]
-        );
+        $suggeststate = \block_playerhud\game::suggest_trades_state($this->instanceid);
         $suggesturl = '';
-        $suggestdisabled = false;
-        $suggesttooltip = '';
-        if ($hascoin && $hasavatars) {
-            $avatarids = array_keys($DB->get_records_select(
-                'block_playerhud_items',
-                "blockinstanceid = :id AND action_type = 'avatar_profile'",
-                ['id' => $this->instanceid],
-                'id ASC',
-                'id'
-            ));
-            $hassuggest = false;
-            if (!empty($avatarids)) {
-                [$avsql, $avparams] = $DB->get_in_or_equal($avatarids, SQL_PARAMS_NAMED, 'av');
-                $coveredcnt = (int) $DB->count_records_sql(
-                    "SELECT COUNT(DISTINCT tr.itemid)
-                       FROM {block_playerhud_trade_rewards} tr
-                       JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
-                      WHERE t.blockinstanceid = :iid
-                        AND tr.itemid $avsql
-                        AND (SELECT COUNT(*) FROM {block_playerhud_trade_rewards} tr2
-                              WHERE tr2.tradeid = tr.tradeid) = 1",
-                    array_merge(['iid' => $this->instanceid], $avparams)
-                );
-                if ($coveredcnt < count($avatarids)) {
-                    $hassuggest = true;
-                } else {
-                    [$bsql, $bparams] = $DB->get_in_or_equal($avatarids, SQL_PARAMS_NAMED, 'bv');
-                    $hassuggest = empty($DB->get_records_sql(
-                        "SELECT tr.tradeid
-                           FROM {block_playerhud_trade_rewards} tr
-                           JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
-                          WHERE t.blockinstanceid = :iid
-                            AND tr.itemid $bsql
-                       GROUP BY tr.tradeid
-                         HAVING COUNT(tr.itemid) >= :total",
-                        array_merge(['iid' => $this->instanceid, 'total' => count($avatarids)], $bparams)
-                    ));
-                }
-            }
-            if ($hassuggest) {
-                $suggesturl = (new moodle_url('/blocks/playerhud/manage.php', [
-                    'id'         => $this->courseid,
-                    'instanceid' => $this->instanceid,
-                    'tab'        => 'trades',
-                    'action'     => 'suggest_trades',
-                ]))->out(false);
-            } else {
-                $suggestdisabled = true;
-                $suggesttooltip  = get_string('trade_sug_none_available', 'block_playerhud');
-            }
+        if ($suggeststate['enabled']) {
+            $suggestdisabled = false;
+            $suggesttooltip  = '';
+            $suggesturl = (new moodle_url('/blocks/playerhud/manage.php', [
+                'id'         => $this->courseid,
+                'instanceid' => $this->instanceid,
+                'tab'        => 'trades',
+                'action'     => 'suggest_trades',
+            ]))->out(false);
+        } else if ($suggeststate['reason'] === 'all_covered') {
+            $suggestdisabled = true;
+            $suggesttooltip  = get_string('trade_sug_none_available', 'block_playerhud');
         } else {
             $suggestdisabled = true;
             $suggesttooltip  = get_string('suggest_trades_prereq', 'block_playerhud');

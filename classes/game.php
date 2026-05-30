@@ -849,4 +849,84 @@ class game {
         ]);
         return $record ?: null;
     }
+
+    /**
+     * Determine the state of the Suggest Trades button for a block instance.
+     *
+     * The button is enabled only when a PlayerCoin item exists AND at least one
+     * avatar item exists AND not all avatar items are already covered by trades.
+     *
+     * "Covered" means the avatar appears as the sole reward in a trade, AND a
+     * trade that bundles every avatar as a reward already exists.
+     *
+     * Returns an array with:
+     *   - 'enabled' (bool) — whether the button should be clickable.
+     *   - 'reason'  (string) — 'prereq' | 'all_covered' | '' (when enabled).
+     *
+     * @param int $instanceid Block instance ID.
+     * @return array
+     */
+    public static function suggest_trades_state(int $instanceid): array {
+        global $DB;
+
+        $hascoin = $DB->record_exists('block_playerhud_items', [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'PlayerCoin',
+        ]);
+        $hasavatars = $DB->record_exists_select(
+            'block_playerhud_items',
+            "blockinstanceid = :id AND action_type = 'avatar_profile'",
+            ['id' => $instanceid]
+        );
+
+        if (!$hascoin || !$hasavatars) {
+            return ['enabled' => false, 'reason' => 'prereq'];
+        }
+
+        $avatarids = array_keys($DB->get_records_select(
+            'block_playerhud_items',
+            "blockinstanceid = :id AND action_type = 'avatar_profile'",
+            ['id' => $instanceid],
+            'id ASC',
+            'id'
+        ));
+
+        if (empty($avatarids)) {
+            return ['enabled' => false, 'reason' => 'prereq'];
+        }
+
+        [$avsql, $avparams] = $DB->get_in_or_equal($avatarids, SQL_PARAMS_NAMED, 'av');
+        $coveredcnt = (int) $DB->count_records_sql(
+            "SELECT COUNT(DISTINCT tr.itemid)
+               FROM {block_playerhud_trade_rewards} tr
+               JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
+              WHERE t.blockinstanceid = :iid
+                AND tr.itemid $avsql
+                AND (SELECT COUNT(*) FROM {block_playerhud_trade_rewards} tr2
+                      WHERE tr2.tradeid = tr.tradeid) = 1",
+            array_merge(['iid' => $instanceid], $avparams)
+        );
+
+        if ($coveredcnt < count($avatarids)) {
+            return ['enabled' => true, 'reason' => ''];
+        }
+
+        [$bsql, $bparams] = $DB->get_in_or_equal($avatarids, SQL_PARAMS_NAMED, 'bv');
+        $hasbundle = !empty($DB->get_records_sql(
+            "SELECT tr.tradeid
+               FROM {block_playerhud_trade_rewards} tr
+               JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
+              WHERE t.blockinstanceid = :iid
+                AND tr.itemid $bsql
+           GROUP BY tr.tradeid
+             HAVING COUNT(tr.itemid) >= :total",
+            array_merge(['iid' => $instanceid, 'total' => count($avatarids)], $bparams)
+        ));
+
+        if ($hasbundle) {
+            return ['enabled' => false, 'reason' => 'all_covered'];
+        }
+
+        return ['enabled' => true, 'reason' => ''];
+    }
 }
