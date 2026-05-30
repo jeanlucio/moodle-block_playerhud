@@ -202,7 +202,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 |-----------|------:|----------------|
 | `backup_restore_test.php` | 3 | Backup/restore step definitions cover all RPG tables; round-trip preserves data |
 | `drop_guard_test.php` | 7 | Collection limits, trade-consumed items, cooldown enforcement |
-| `game_test.php` | 6 | XP and level aggregation, quest XP inclusion/exclusion, collection anti-farm and cooldown |
+| `game_test.php` | 10 | XP and level aggregation, quest XP inclusion/exclusion, collection anti-farm and cooldown; `get_avatar_item` (enabled, disabled, foreign instance, not found) |
 | `gamemaster_test.php` | 6 | Grant/revoke/delete item and quest while preserving leaderboard timestamps; XP floor at zero |
 | `karma_test.php` | 11 | Karma read/write, positive/negative deltas, clamping at ±999 boundaries, successive accumulation |
 | `privacy_provider_test.php` | 2 | GDPR: delete all data for user; delete user preferences |
@@ -210,7 +210,11 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `rpg_classes_test.php` | 7 | Class assignment, duplicate guard, karma initialisation, portrait tier boundaries |
 | `story_manager_test.php` | 15 | Scene loading, progress persistence, choice navigation, karma delta, chapter completion, error cases |
 | `trade_test.php` | 7 | Trade assembly, insufficient funds, atomic success, one-time limit, group restriction |
-| **Total** | **86** | |
+| `collection_tab_test.php` | 6 | Collection tab: `filter_type` mapping (avatar/deadline/none), `power_hint_avatar` shown for unowned non-secret item and hidden for secret item, `is_equipped` flag |
+| `external_playercoin_test.php` | 12 | `create_playercoin` (idempotency, capability guard); `create_avatar_pack` (17 items, emoji deduplication, idempotency); `setup_playercoin_drop` (success, no forum, cross-instance item isolation, intro prepend, capability guard) |
+| `suggest_trades_state_test.php` | 4 | Suggest Trades button: disabled without prereqs, disabled with coin only, disabled when all avatars covered, enabled on partial coverage |
+| `utils_test.php` | 2 | `get_avatar_html`: emoji produces `ph-avatar-emoji` div with aria-hidden span; HTTP URL produces `ph-avatar-img` img tag |
+| **Total** | **114** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -495,7 +499,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 |-----------------|------:|----------------|
 | `backup_restore_test.php` | 3 | Definições de backup/restore cobrem todas as tabelas RPG; round-trip preserva os dados |
 | `drop_guard_test.php` | 7 | Limites de coleta, itens consumidos por troca, aplicação de cooldown |
-| `game_test.php` | 6 | Agregação de XP e nível, XP de quests (inclusão/exclusão), anti-farm de coleta e cooldown |
+| `game_test.php` | 10 | Agregação de XP e nível, XP de quests (inclusão/exclusão), anti-farm de coleta e cooldown; `get_avatar_item` (habilitado, desabilitado, instância estrangeira, não encontrado) |
 | `gamemaster_test.php` | 6 | Conceder/revogar/excluir item e quest preservando timestamps do ranking; XP mínimo em zero |
 | `karma_test.php` | 11 | Leitura/escrita de karma, deltas positivos/negativos, clamping nos limites ±999, acumulação sucessiva |
 | `privacy_provider_test.php` | 2 | LGPD: exclusão de todos os dados do usuário; exclusão de preferências |
@@ -503,7 +507,11 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `rpg_classes_test.php` | 7 | Atribuição de classe, proteção contra duplicatas, inicialização de karma, limites de tier de retrato |
 | `story_manager_test.php` | 15 | Carregamento de cena, persistência de progresso, navegação de escolhas, delta de karma, conclusão de capítulo, casos de erro |
 | `trade_test.php` | 7 | Montagem de trocas, fundos insuficientes, sucesso atômico, limite único, restrição por grupo |
-| **Total** | **86** | |
+| `collection_tab_test.php` | 6 | Aba Coleção: mapeamento de `filter_type` (avatar/prazo/nenhum), `power_hint_avatar` exibido para item não-secreto não possuído e oculto para item secreto, flag `is_equipped` |
+| `external_playercoin_test.php` | 12 | `create_playercoin` (idempotência, guarda de capacidade); `create_avatar_pack` (17 itens, deduplicação por emoji, idempotência); `setup_playercoin_drop` (sucesso, sem fórum, isolamento cross-instance, prepend de intro, guarda de capacidade) |
+| `suggest_trades_state_test.php` | 4 | Botão Sugerir Trocas: desabilitado sem pré-requisitos, desabilitado só com moeda, desabilitado quando todos os avatares cobertos, habilitado com cobertura parcial |
+| `utils_test.php` | 2 | `get_avatar_html`: emoji gera div `ph-avatar-emoji` com span aria-hidden; URL HTTP gera tag img `ph-avatar-img` |
+| **Total** | **114** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
