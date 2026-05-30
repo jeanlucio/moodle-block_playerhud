@@ -109,6 +109,29 @@ class tab_assistant implements renderable, templatable {
      * @return bool
      */
     private function has_any_key(): bool {
+        // Priority 0: Moodle core_ai subsystem.
+        if (
+            class_exists(\core_ai\manager::class)
+            && class_exists(\core_ai\aiactions\generate_text::class)
+        ) {
+            try {
+                global $DB;
+                $actionclass = \core_ai\aiactions\generate_text::class;
+                $reflection = new \ReflectionMethod(\core_ai\manager::class, 'get_providers_for_actions');
+                if ($reflection->isStatic()) {
+                    $providers = \core_ai\manager::get_providers_for_actions([$actionclass], true);
+                } else {
+                    $providers = (new \core_ai\manager($DB))->get_providers_for_actions([$actionclass], true);
+                }
+                if (!empty($providers[$actionclass])) {
+                    return true;
+                }
+            } catch (\Throwable $e) {
+                debugging('core_ai check failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+        }
+
+        // PlayerHUD user preferences and site config.
         $prefs = [
             'block_playerhud_gemini_key',
             'block_playerhud_groq_key',
@@ -124,6 +147,20 @@ class tab_assistant implements renderable, templatable {
         foreach ($configs as $cfg) {
             if (get_config('block_playerhud', $cfg) !== false && get_config('block_playerhud', $cfg) !== '') {
                 return true;
+            }
+        }
+
+        // Local_playergames keys (personal + site config only — core_ai already checked above).
+        if (class_exists(\local_playergames\api_key_helper::class)) {
+            $pgproviders = [
+                \local_playergames\api_key_helper::PROVIDER_GEMINI,
+                \local_playergames\api_key_helper::PROVIDER_GROQ,
+                \local_playergames\api_key_helper::PROVIDER_OPENAI,
+            ];
+            foreach ($pgproviders as $provider) {
+                if (\local_playergames\api_key_helper::get_key($provider) !== '') {
+                    return true;
+                }
             }
         }
 

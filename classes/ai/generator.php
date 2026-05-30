@@ -61,44 +61,6 @@ class generator {
      */
     public function generate($mode, $theme, $xp, $createdrop, $extraoptions = [], $amount = 1) {
 
-        // 1. Get Keys.
-        // User preference keys take precedence over global config, allowing teachers to use their own keys if desired.
-        $geminikey = get_user_preferences('block_playerhud_gemini_key', '');
-        $groqkey = get_user_preferences('block_playerhud_groq_key', '');
-        $openaikey = get_user_preferences('block_playerhud_openai_key', '');
-        $openaiurl = get_user_preferences('block_playerhud_openai_url', '');
-        $openaimodel = get_user_preferences('block_playerhud_openai_model', '');
-
-        // Fallback to global config if user preferences are not set.
-        if (empty($geminikey)) {
-            $geminikey = get_config('block_playerhud', 'apikey_gemini');
-        }
-        if (empty($groqkey)) {
-            $groqkey = get_config('block_playerhud', 'apikey_groq');
-        }
-        if (empty($openaikey)) {
-            $openaikey = get_config('block_playerhud', 'apikey_openai');
-        }
-        if (empty($openaiurl)) {
-            $openaiurl = get_config('block_playerhud', 'openai_baseurl');
-        }
-        if (empty($openaimodel)) {
-            $openaimodel = get_config('block_playerhud', 'openai_model');
-        }
-
-        // Reject URLs pointing to private/loopback addresses (SSRF prevention).
-        if (!empty($openaiurl) && !$this->is_safe_url($openaiurl)) {
-            $openaiurl = '';
-        }
-        if (!empty($openaiurl)) {
-            $openaiurl = $this->resolve_openai_url($openaiurl);
-        }
-
-        if (empty($geminikey) && empty($groqkey) && empty($openaikey)) {
-            // Error: correct language file key used.
-            throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
-        }
-
         // 2. Infinite Rule.
         $isinfinitedrop = $createdrop &&
             isset($extraoptions['drop_max']) &&
@@ -128,29 +90,7 @@ class generator {
         $parts = $this->build_prompt($mode, $theme, $xp, $balance, $amount);
 
         // 5. Call API.
-        $result = ['success' => false, 'message' => ''];
-
-        if (!empty($geminikey)) {
-            $result = $this->call_gemini($parts, $geminikey);
-        }
-
-        // Try Groq only if Gemini failed or was not configured.
-        if ((!$result['success']) && !empty($groqkey)) {
-            $result = $this->call_groq($parts, $groqkey);
-        }
-
-        // Try custom OpenAI-compatible provider if both Gemini and Groq failed or were not configured.
-        if ((!$result['success']) && !empty($openaikey) && !empty($openaiurl)) {
-            $result = $this->call_openai_compatible($parts, $openaikey, $openaiurl, $openaimodel);
-        }
-
-        if (!$result['success']) {
-            // The message comes translated from curl_request or is generic if no key is configured.
-            $errormsg = !empty($result['message']) ?
-                $result['message'] :
-                get_string('ai_error_no_keys', 'block_playerhud');
-            throw new \moodle_exception('ai_error_offline', 'block_playerhud', '', $errormsg);
-        }
+        $result = $this->call_with_fallback($parts);
 
         // 6. Parse JSON.
         $jsonraw = $result['data'];
@@ -447,7 +387,14 @@ class generator {
     }
 
     /**
-     * Loads AI API keys from user preferences with fallback to global config.
+     * Loads AI API keys following a four-level resolution chain per provider:
+     *
+     * 1. PlayerHUD user preference  (block_playerhud_{provider}_key)
+     * 2. PlayerHUD site config      (block_playerhud / apikey_{provider})
+     * 3. PlayerGames user pref      (local_playergames_{provider}_key)  — via api_key_helper
+     * 4. PlayerGames site config    (local_playergames / {provider}_key) — via api_key_helper
+     *
+     * Levels 3–4 are only consulted when local_playergames is installed (class_exists guard).
      *
      * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel].
      */
@@ -472,6 +419,25 @@ class generator {
         }
         if (empty($openaimodel)) {
             $openaimodel = get_config('block_playerhud', 'openai_model');
+        }
+
+        // Levels 3–4: fall back to local_playergames keys when the hub is installed.
+        if (class_exists(\local_playergames\api_key_helper::class)) {
+            if (empty($geminikey)) {
+                $geminikey = \local_playergames\api_key_helper::get_gemini_key();
+            }
+            if (empty($groqkey)) {
+                $groqkey = \local_playergames\api_key_helper::get_groq_key();
+            }
+            if (empty($openaikey)) {
+                $openaikey = \local_playergames\api_key_helper::get_openai_key();
+            }
+            if (empty($openaiurl)) {
+                $openaiurl = \local_playergames\api_key_helper::get_openai_baseurl();
+            }
+            if (empty($openaimodel)) {
+                $openaimodel = \local_playergames\api_key_helper::get_openai_model();
+            }
         }
 
         // Reject URLs that could be used to probe internal network addresses (SSRF).
@@ -569,13 +535,100 @@ class generator {
     }
 
     /**
-     * Calls AI providers in sequence: Gemini → Groq → OpenAI-compatible.
+     * Returns true when Moodle core_ai has at least one provider configured for text generation.
+     *
+     * Compatible with Moodle 4.5 (static API) and 5.x (instance API with DB injection).
+     * Uses get_providers_for_actions as the reflection anchor — the same method used in
+     * call_core_ai — so staticness detection is consistent across both methods.
+     *
+     * @return bool
+     */
+    protected function has_core_ai_provider(): bool {
+        global $DB;
+        if (
+            !class_exists(\core_ai\manager::class)
+            || !class_exists(\core_ai\aiactions\generate_text::class)
+        ) {
+            return false;
+        }
+        try {
+            $actionclass = \core_ai\aiactions\generate_text::class;
+            $reflection = new \ReflectionMethod(\core_ai\manager::class, 'get_providers_for_actions');
+            if ($reflection->isStatic()) {
+                $providers = \core_ai\manager::get_providers_for_actions([$actionclass], true);
+            } else {
+                $providers = (new \core_ai\manager($DB))->get_providers_for_actions([$actionclass], true);
+            }
+            return !empty($providers[$actionclass]);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Generates text via the Moodle core_ai subsystem.
+     *
+     * Combines system and user prompt parts into a single string (core_ai accepts only
+     * one prompttext field). Compatible with Moodle 4.5 and 5.x via reflection.
+     *
+     * @param array $parts Prompt parts with 'system' and 'user' keys.
+     * @return array Result with keys: success (bool), data (string), message (string), provider (string).
+     */
+    protected function call_core_ai(array $parts): array {
+        global $DB, $USER;
+        try {
+            $fullprompt = trim($parts['system'] . "\n\n" . $parts['user']);
+            $actionclass = \core_ai\aiactions\generate_text::class;
+            $reflection = new \ReflectionMethod(\core_ai\manager::class, 'get_providers_for_actions');
+            if ($reflection->isStatic()) {
+                $manager = new \core_ai\manager();
+            } else {
+                $manager = new \core_ai\manager($DB);
+            }
+            $providers = $manager->get_providers_for_actions([$actionclass], true);
+            if (empty($providers[$actionclass])) {
+                return ['success' => false, 'message' => ''];
+            }
+            $action = new \core_ai\aiactions\generate_text(
+                contextid: \context_system::instance()->id,
+                userid: (int) $USER->id,
+                prompttext: $fullprompt,
+            );
+            $response = $manager->process_action($action);
+            if (!$response->get_success()) {
+                return ['success' => false, 'message' => 'core_ai: provider returned failure'];
+            }
+            $data = $response->get_response_data();
+            $content = (string) ($data['generatedcontent'] ?? '');
+            if ($content === '') {
+                return ['success' => false, 'message' => 'core_ai: empty response'];
+            }
+            return ['success' => true, 'data' => $content, 'provider' => 'Moodle AI'];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'message' => 'core_ai: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Calls AI providers in priority order:
+     * core_ai → Gemini → Groq → OpenAI-compatible.
+     *
+     * Keys for direct providers are resolved via load_api_keys(), which checks
+     * PlayerHUD preferences and config first, then local_playergames as fallback.
      *
      * @param array $parts Prompt parts with 'system' and 'user' keys.
      * @return array Result array with keys 'success', 'data', 'provider'.
      * @throws \moodle_exception If all providers fail or no keys are configured.
      */
     protected function call_with_fallback(array $parts): array {
+        // Priority 0: Moodle core_ai subsystem.
+        if ($this->has_core_ai_provider()) {
+            $result = $this->call_core_ai($parts);
+            if ($result['success']) {
+                return $result;
+            }
+        }
+
         [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $this->load_api_keys();
 
         if (empty($geminikey) && empty($groqkey) && empty($openaikey)) {

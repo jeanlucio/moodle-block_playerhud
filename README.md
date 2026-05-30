@@ -35,7 +35,7 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
 * 📖 **Story & Chapters:** Branching narrative system with choice nodes and per-class story paths.
 * ⚖️ **Karma System:** Moral alignment mechanic that evolves the student’s class portrait over time.
 * 📊 **Analytics:** Audit logs and game economy tracking for teacher oversight.
-* 🤖 **AI Tools (Optional):** Two AI-powered features powered by Gemini, Groq, or any OpenAI-compatible provider:
+* 🤖 **AI Tools (Optional):** Two AI-powered features with a four-level provider chain (see [AI Provider Chain](#-ai-provider-chain) below):
   * **Content Generator** — creates items, story chapters with branching nodes, and RPG class backstories on demand.
   * **Game Master Assistant** — a conversational chat tab for teachers. Ask questions about game design, get suggestions, and trigger actions (create item, create quest, generate chapter) with a confirmation step before anything is saved.
 * 📱 **Mobile-Ready:** Compatible with Moodle web services.
@@ -259,9 +259,35 @@ No. The plugin works fully without any external AI service.
 All content can be created manually inside Moodle.
 The AI features are productivity tools — the assistant also accepts confirmation before saving anything.
 
-### Supported Providers
+### 🔗 AI Provider Chain
 
-The AI feature supports the following third-party providers:
+PlayerHUD selects an AI provider using a fixed priority order. The first provider with a working configuration is used; if it fails, the next one is tried automatically.
+
+**Provider selection order:**
+
+| Priority | Provider | Notes |
+|----------|----------|-------|
+| 1 | **Moodle `core_ai`** | Uses whichever AI providers the site admin configured in *Site administration → AI → AI providers*. On Moodle 5.2+, `core_ai` itself has internal fallback between multiple configured providers. No API key needed in PlayerHUD. |
+| 2 | **Google Gemini** | Direct API call with JSON output mode enforced. |
+| 3 | **Groq** | Direct API call with JSON output mode enforced. |
+| 4 | **OpenAI-compatible** | Any provider following the OpenAI `/chat/completions` format. |
+
+**Key resolution per direct provider (Gemini / Groq / OpenAI):**
+
+When PlayerHUD needs to call a provider directly, it looks for the API key in this order:
+
+| Level | Source |
+|-------|--------|
+| 1 | Teacher’s personal key set in PlayerHUD (*Configurações* tab → API keys) |
+| 2 | Site-wide key set by the admin in PlayerHUD settings |
+| 3 | Teacher’s personal key set in **local_playergames** hub (if installed) |
+| 4 | Site-wide key set in **local_playergames** hub settings (if installed) |
+
+This means: if a teacher has configured their own key in the PlayerGames hub, PlayerHUD will use it automatically — no need to re-enter the key in PlayerHUD.
+
+> **Provider order beats key origin.** If a Gemini key exists only at level 4 (PlayerGames site config) and a Groq key exists at level 2 (PlayerHUD site config), Gemini is used because it is tested first.
+
+### Supported Direct Providers
 
 - **Google Gemini** — https://ai.google.dev/
 - **Groq** — https://console.groq.com/
@@ -283,12 +309,13 @@ The PlayerHUD plugin does not provide API keys.
 
 ### Where API keys are configured
 
-API keys may be configured:
+API keys may be configured through any of the following sources (in decreasing priority):
 
-- Globally by the Moodle site administrator, and/or
-- Individually by teachers within their courses.
-
-API keys are stored within Moodle configuration settings.
+1. **Moodle `core_ai`** — configured by the site admin in *Site administration → AI → AI providers* (no key stored in PlayerHUD).
+2. **PlayerHUD personal key** — set by each teacher individually in the *Configurações* tab of the management panel.
+3. **PlayerHUD site key** — set by the site admin in *Site administration → Plugins → Blocks → PlayerHUD*.
+4. **PlayerGames hub personal key** — set by each teacher in *local_playergames → My AI Keys* (if the hub is installed).
+5. **PlayerGames hub site key** — set by the site admin in *local_playergames* settings (if the hub is installed).
 
 ### Data Transmission
 
@@ -334,7 +361,7 @@ Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo q
 * 📖 **História e Capítulos:** Sistema narrativo ramificado com nós de escolha e caminhos por classe.
 * ⚖️ **Sistema de Karma:** Mecânica de alinhamento moral que evolui o retrato da classe do aluno ao longo do tempo.
 * 📊 **Analytics:** Logs de auditoria e rastreamento da economia do jogo para controle do professor.
-* 🤖 **Ferramentas de IA (Opcional):** Dois recursos com suporte a Gemini, Groq ou qualquer API compatível com OpenAI:
+* 🤖 **Ferramentas de IA (Opcional):** Dois recursos com cadeia de quatro níveis de provedores (veja [Cadeia de Provedores de IA](#-cadeia-de-provedores-de-ia) abaixo):
   * **Gerador de Conteúdo** — cria itens, capítulos de história com nós ramificados e backstories de classes RPG sob demanda.
   * **Assistente Game Master** — aba de chat conversacional para professores. Tire dúvidas sobre design de jogo, receba sugestões e acione ações (criar item, missão, capítulo) com uma etapa de confirmação antes de salvar.
 * 📱 **Compatível com Mobile.**
@@ -558,9 +585,35 @@ Não. O plugin funciona de forma completa sem qualquer serviço externo.
 Todo o conteúdo pode ser criado manualmente dentro do Moodle.
 Os recursos de IA são ferramentas de produtividade — o assistente exige confirmação antes de salvar qualquer coisa.
 
-### Provedores suportados
+### 🔗 Cadeia de Provedores de IA
 
-O recurso de IA oferece suporte aos seguintes provedores externos:
+O PlayerHUD seleciona um provedor de IA seguindo uma ordem de prioridade fixa. O primeiro provedor com configuração disponível é utilizado; se ele falhar, o próximo é tentado automaticamente.
+
+**Ordem de seleção de provedor:**
+
+| Prioridade | Provedor | Observações |
+|------------|----------|-------------|
+| 1 | **Moodle `core_ai`** | Usa os provedores configurados pelo admin em *Administração do site → IA → Provedores de IA*. No Moodle 5.2+, o `core_ai` já tem fallback interno entre múltiplos provedores configurados. Nenhuma chave precisa ser cadastrada no PlayerHUD. |
+| 2 | **Google Gemini** | Chamada direta com modo de saída JSON forçado. |
+| 3 | **Groq** | Chamada direta com modo de saída JSON forçado. |
+| 4 | **OpenAI-compatível** | Qualquer provedor que siga o formato `/chat/completions` da OpenAI. |
+
+**Resolução de chave por provedor direto (Gemini / Groq / OpenAI):**
+
+Quando o PlayerHUD precisa chamar um provedor diretamente, a chave de API é buscada nesta ordem:
+
+| Nível | Origem |
+|-------|--------|
+| 1 | Chave pessoal do professor cadastrada no PlayerHUD (aba *Configurações* → Chaves de API) |
+| 2 | Chave global cadastrada pelo admin nas configurações do PlayerHUD |
+| 3 | Chave pessoal do professor cadastrada no hub **local_playergames** (se instalado) |
+| 4 | Chave global cadastrada pelo admin nas configurações do **local_playergames** (se instalado) |
+
+Isso significa: se o professor já tem uma chave configurada no hub PlayerGames, o PlayerHUD a utiliza automaticamente — sem precisar recadastrar.
+
+> **A ordem do provedor prevalece sobre a origem da chave.** Se uma chave Gemini existe apenas no nível 4 (config global do PlayerGames) e uma chave Groq existe no nível 2 (config global do PlayerHUD), o Gemini é utilizado porque é testado primeiro.
+
+### Provedores diretos suportados
 
 - **Google Gemini** — https://ai.google.dev/
 - **Groq** — https://console.groq.com/
@@ -582,12 +635,13 @@ O PlayerHUD não fornece chaves de API.
 
 ### Onde a chave é configurada
 
-As chaves de API podem ser configuradas:
+As chaves de API podem ser configuradas por qualquer uma das seguintes origens (em ordem decrescente de prioridade):
 
-- Globalmente pelo administrador do Moodle, e/ou
-- Individualmente pelo professor dentro de seus cursos.
-
-As chaves são armazenadas nas configurações do Moodle.
+1. **Moodle `core_ai`** — configurado pelo admin em *Administração do site → IA → Provedores de IA* (nenhuma chave armazenada no PlayerHUD).
+2. **Chave pessoal no PlayerHUD** — configurada individualmente por cada professor na aba *Configurações* do painel de gerenciamento.
+3. **Chave global no PlayerHUD** — configurada pelo admin em *Administração do site → Plugins → Blocos → PlayerHUD*.
+4. **Chave pessoal no hub PlayerGames** — configurada pelo professor em *local_playergames → Minhas chaves de IA* (se o hub estiver instalado).
+5. **Chave global no hub PlayerGames** — configurada pelo admin nas configurações do *local_playergames* (se o hub estiver instalado).
 
 ### Transmissão de dados
 
