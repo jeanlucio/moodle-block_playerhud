@@ -568,29 +568,18 @@ final class quest_test extends advanced_testcase {
         $this->assertEquals(0, $status->progress);
 
         // Mark the activity as completed.
-        // Write directly to the completion table to avoid behavioural changes in
-        // completion_info::update_state across Moodle versions (5.1 vs 5.2+).
-        $existing = $DB->get_record('course_modules_completion', [
-            'coursemoduleid' => $cminfo->id,
-            'userid'         => $user->id,
-        ]);
-        if ($existing) {
-            $existing->completionstate = COMPLETION_COMPLETE;
-            $existing->timemodified    = time();
-            $DB->update_record('course_modules_completion', $existing);
-        } else {
-            $DB->insert_record('course_modules_completion', (object) [
-                'coursemoduleid' => $cminfo->id,
-                'userid'         => $user->id,
-                'completionstate' => COMPLETION_COMPLETE,
-                'timemodified'   => time(),
-                'viewed'         => 0,
-                'overrideby'     => null,
-            ]);
-        }
+        // Set the student as current user so completion_info::internal_set_data()
+        // takes the $USER == $userid branch, which refreshes modinfo via
+        // get_fast_modinfo($course, 0, true) and updates the MUC cache correctly.
+        // This is required on Moodle 5.2+ where the other branch only deletes
+        // the cache without rebuilding it, leaving check_status with stale data.
+        $this->setUser($user);
+        $completion = new \completion_info($course);
+        $completion->update_state($cminfo, COMPLETION_COMPLETE, $user->id);
+        $this->setAdminUser();
 
-        // Purge all completion-related caches and discard the modinfo singleton so
-        // check_status fetches fresh data regardless of Moodle version.
+        // Belt-and-suspenders: also purge completion cache and modinfo singleton
+        // so check_status always starts with fresh data regardless of version.
         \cache::make('core', 'completion')->purge();
         \course_modinfo::clear_instance_cache();
 
