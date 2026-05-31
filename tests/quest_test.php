@@ -568,10 +568,30 @@ final class quest_test extends advanced_testcase {
         $this->assertEquals(0, $status->progress);
 
         // Mark the activity as completed.
-        $completion = new \completion_info($course);
-        $completion->update_state($cminfo, COMPLETION_COMPLETE, $user->id);
+        // Write directly to the completion table to avoid behavioural changes in
+        // completion_info::update_state across Moodle versions (5.1 vs 5.2+).
+        $existing = $DB->get_record('course_modules_completion', [
+            'coursemoduleid' => $cminfo->id,
+            'userid'         => $user->id,
+        ]);
+        if ($existing) {
+            $existing->completionstate = COMPLETION_COMPLETE;
+            $existing->timemodified    = time();
+            $DB->update_record('course_modules_completion', $existing);
+        } else {
+            $DB->insert_record('course_modules_completion', (object) [
+                'coursemoduleid' => $cminfo->id,
+                'userid'         => $user->id,
+                'completionstate' => COMPLETION_COMPLETE,
+                'timemodified'   => time(),
+                'viewed'         => 0,
+                'overrideby'     => null,
+            ]);
+        }
 
-        // Discard the modinfo singleton so check_status rebuilds it with fresh completion data.
+        // Purge all completion-related caches and discard the modinfo singleton so
+        // check_status fetches fresh data regardless of Moodle version.
+        \cache::make('core', 'completion')->purge();
         \course_modinfo::clear_instance_cache();
 
         // After completion: quest must be complete with 100% progress.
