@@ -56,7 +56,7 @@ final class suggest_trades_state_test extends advanced_testcase {
      * PlayerCoin exists but no avatar items → disabled, reason='prereq'.
      */
     public function test_disabled_when_coin_exists_but_no_avatars(): void {
-        $this->create_item('PlayerCoin', '');
+        $this->create_item('PlayerCoin', 'playercoin');
 
         $state = game::suggest_trades_state($this->instanceid);
 
@@ -77,7 +77,7 @@ final class suggest_trades_state_test extends advanced_testcase {
     public function test_disabled_when_all_avatars_already_covered(): void {
         global $DB;
 
-        $this->create_item('PlayerCoin', '');
+        $this->create_item('PlayerCoin', 'playercoin');
         $avatar = $this->create_item('Mage', 'avatar_profile');
         $coin   = $this->create_item('TestCoin', '');
 
@@ -111,7 +111,7 @@ final class suggest_trades_state_test extends advanced_testcase {
     public function test_enabled_when_coverage_is_partial(): void {
         global $DB;
 
-        $this->create_item('PlayerCoin', '');
+        $this->create_item('PlayerCoin', 'playercoin');
         $avatar1 = $this->create_item('Elf', 'avatar_profile');
         $this->create_item('Vampire', 'avatar_profile');
         $coin    = $this->create_item('TestCoin', '');

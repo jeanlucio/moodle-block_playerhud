@@ -67,6 +67,7 @@ final class external_playercoin_test extends advanced_testcase {
         $this->assertEquals('PlayerCoin', $item->name);
         $this->assertEquals('🪙', $item->image);
         $this->assertEquals($this->instanceid, (int) $item->blockinstanceid);
+        $this->assertEquals('playercoin', $item->action_type, 'PlayerCoin must be tagged with action_type=playercoin.');
     }
 
     /**
@@ -83,7 +84,7 @@ final class external_playercoin_test extends advanced_testcase {
 
         $count = $DB->count_records('block_playerhud_items', [
             'blockinstanceid' => $this->instanceid,
-            'name'            => 'PlayerCoin',
+            'action_type'     => 'playercoin',
         ]);
         $this->assertEquals(1, $count, 'Only one PlayerCoin must exist after two calls.');
     }

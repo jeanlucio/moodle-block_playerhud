@@ -1449,7 +1449,7 @@ class external extends external_api {
 
         $existing = $DB->get_record('block_playerhud_items', [
             'blockinstanceid' => $instanceid,
-            'name'            => 'PlayerCoin',
+            'action_type'     => 'playercoin',
         ]);
 
         if ($existing) {
@@ -1467,7 +1467,7 @@ class external extends external_api {
                 'tradable'        => 1,
                 'secret'          => 0,
                 'required_class_id' => '0',
-                'action_type'     => '',
+                'action_type'     => 'playercoin',
                 'action_value'    => '',
                 'timecreated'     => $now,
                 'timemodified'    => $now,

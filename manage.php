@@ -678,7 +678,7 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
     // Fetch PlayerCoin.
     $playercoin = $DB->get_record('block_playerhud_items', [
         'blockinstanceid' => $instanceid,
-        'name'            => 'PlayerCoin',
+        'action_type'     => 'playercoin',
     ], '*', MUST_EXIST);
 
     // Fetch all avatar items.

@@ -66,5 +66,18 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026052802, 'playerhud');
     }
 
+    if ($oldversion < 2026052903) {
+        // Mark all existing PlayerCoin items with action_type = 'playercoin' so they can
+        // be identified by field value rather than by the mutable display name.
+        $DB->execute(
+            "UPDATE {block_playerhud_items}
+                SET action_type = 'playercoin'
+              WHERE name = 'PlayerCoin'
+                AND (action_type IS NULL OR action_type = '')"
+        );
+
+        upgrade_block_savepoint(true, 2026052903, 'playerhud');
+    }
+
     return true;
 }

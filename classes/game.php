@@ -871,7 +871,7 @@ class game {
 
         $hascoin = $DB->record_exists('block_playerhud_items', [
             'blockinstanceid' => $instanceid,
-            'name'            => 'PlayerCoin',
+            'action_type'     => 'playercoin',
         ]);
         $hasavatars = $DB->record_exists_select(
             'block_playerhud_items',
