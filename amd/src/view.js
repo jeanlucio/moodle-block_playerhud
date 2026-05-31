@@ -106,11 +106,11 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
             });
 
             // Initialize popovers for compact shop item icons (> 3 items in trade).
-            var shopPopoverEls = document.querySelectorAll('.ph-shop-popover');
+            const shopPopoverEls = document.querySelectorAll('.ph-shop-popover');
             if (shopPopoverEls.length) {
                 require(['theme_boost/bootstrap/popover'], function(BSPopover) {
                     shopPopoverEls.forEach(function(el) {
-                        var opts = {
+                        const opts = {
                             trigger: 'hover click focus',
                             title: el.dataset.phTitle || '',
                             content: el.dataset.phContent || '',
@@ -381,7 +381,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
             // Item powers — Equipar avatar.
             $(document).off('click.phequip').on('click.phequip', '.ph-item-equip-btn', function(e) {
                 e.stopPropagation();
-                var $btn = $(this);
+                const $btn = $(this);
                 $btn.prop('disabled', true);
 
                 Ajax.call([{
@@ -419,10 +419,10 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
             // Item powers — Usar deadline extension.
             $(document).off('click.phuse').on('click.phuse', '.ph-item-use-btn', function(e) {
                 e.stopPropagation();
-                var $btn = $(this);
-                var $card = $btn.closest('.playerhud-item-card');
-                var $select = $card.find('.ph-lp-activity-select');
-                var targetcmid = $select.length ? parseInt($select.val() || '0', 10) : 0;
+                const $btn = $(this);
+                const $card = $btn.closest('.playerhud-item-card');
+                const $select = $card.find('.ph-lp-activity-select');
+                const targetcmid = $select.length ? parseInt($select.val() || '0', 10) : 0;
 
                 if ($select.is('select') && !targetcmid) {
                     Notification.addNotification({

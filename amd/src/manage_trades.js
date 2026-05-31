@@ -30,11 +30,11 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
          */
         init: function(config) {
             // Initialize popovers for compact trade item icons (> 3 items).
-            var shopPopoverEls = document.querySelectorAll('.ph-shop-popover');
+            const shopPopoverEls = document.querySelectorAll('.ph-shop-popover');
             if (shopPopoverEls.length) {
                 require(['theme_boost/bootstrap/popover'], function(BSPopover) {
                     shopPopoverEls.forEach(function(el) {
-                        var opts = {
+                        const opts = {
                             trigger: 'hover click focus',
                             title: el.dataset.phTitle || '',
                             content: el.dataset.phContent || '',

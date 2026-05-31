@@ -49,6 +49,7 @@ class provider implements
         $collection->add_user_preference('block_playerhud_openai_key', 'privacy:metadata:preference:openai_key');
         $collection->add_user_preference('block_playerhud_openai_model', 'privacy:metadata:preference:openai_model');
         $collection->add_user_preference('block_playerhud_openai_url', 'privacy:metadata:preference:openai_url');
+        $collection->add_user_preference('block_playerhud_avatar', 'privacy:metadata:preference:avatar');
         // Main User Data.
         $collection->add_database_table('block_playerhud_user', [
             'currentxp' => 'privacy:metadata:playerhud_user:currentxp',
@@ -542,6 +543,19 @@ class provider implements
                 get_string('privacy:metadata:preference:openai_model', 'block_playerhud')
             );
         }
+
+        // Equipped avatar preferences (one dynamic key per block instance).
+        $allprefs = get_user_preferences(null, null, $userid);
+        foreach ($allprefs as $name => $value) {
+            if (str_starts_with($name, 'block_playerhud_avatar_')) {
+                writer::with_context(\context_system::instance())->export_user_preference(
+                    'block_playerhud',
+                    $name,
+                    $value,
+                    get_string('privacy:metadata:preference:avatar', 'block_playerhud')
+                );
+            }
+        }
     }
 
     /**
@@ -555,5 +569,13 @@ class provider implements
         unset_user_preference('block_playerhud_openai_key', $userid);
         unset_user_preference('block_playerhud_openai_model', $userid);
         unset_user_preference('block_playerhud_openai_url', $userid);
+
+        // Equipped avatar preferences (one dynamic key per block instance).
+        $allprefs = get_user_preferences(null, null, $userid);
+        foreach ($allprefs as $name => $value) {
+            if (str_starts_with($name, 'block_playerhud_avatar_')) {
+                unset_user_preference($name, $userid);
+            }
+        }
     }
 }

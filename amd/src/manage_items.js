@@ -333,7 +333,7 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
 
             // PlayerCoin — one-click creation.
             $('body').on('click', '#btn-create-playercoin', function() {
-                var $btn = $(this);
+                const $btn = $(this);
                 $btn.prop('disabled', true);
 
                 Ajax.call([{
@@ -354,7 +354,7 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                                 config.strings.playercoin_drop_no
                             );
 
-                            var setupDrop = function() {
+                            const setupDrop = function() {
                                 Ajax.call([{
                                     methodname: 'block_playerhud_setup_playercoin_drop',
                                     args: {
@@ -409,14 +409,14 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
 
             // Avatar pack — one-click creation.
             $('body').on('click', '#btn-create-avatar-pack', function() {
-                var $btn = $(this);
+                const $btn = $(this);
 
                 Str.get_strings([
                     {key: 'avatar_pack_confirm', component: 'block_playerhud'},
                     {key: 'avatar_pack_created', component: 'block_playerhud'},
                 ]).then(function(strings) {
-                    var confirmMsg = strings[0];
-                    var createdMsg = strings[1];
+                    const confirmMsg = strings[0];
+                    const createdMsg = strings[1];
 
                     Notification.confirm(
                         config.strings.confirm_title,

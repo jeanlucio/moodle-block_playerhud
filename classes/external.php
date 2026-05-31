@@ -1863,13 +1863,18 @@ class external extends external_api {
                 (float)$rule->max_penalty
             );
 
-            $DB->execute(
-                "UPDATE {block_playerhud_inventory}
-                    SET source = 'consumed'
-                  WHERE userid = :uid AND itemid = :iid AND source NOT IN ('revoked','consumed')
-                  LIMIT 1",
-                ['uid' => $USER->id, 'iid' => $itemid]
+            $consumable = $DB->get_records_select(
+                'block_playerhud_inventory',
+                "userid = :uid AND itemid = :iid AND source NOT IN ('revoked','consumed')",
+                ['uid' => $USER->id, 'iid' => $itemid],
+                'id ASC',
+                'id',
+                0,
+                1
             );
+            if ($consumable) {
+                $DB->set_field('block_playerhud_inventory', 'source', 'consumed', ['id' => reset($consumable)->id]);
+            }
 
             $formatted = userdate($newdeadline, get_string('strftimedatetime', 'langconfig'));
             return [

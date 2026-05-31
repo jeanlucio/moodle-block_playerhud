@@ -552,6 +552,7 @@ $string['privacy:metadata:inventory:itemid'] = 'O ID do item que foi coletado.';
 $string['privacy:metadata:playerhud_user'] = 'Armazena informações básicas do perfil do jogador e progresso no jogo.';
 $string['privacy:metadata:playerhud_user:currentxp'] = 'A quantidade atual de pontos de experiência (XP) do usuário.';
 $string['privacy:metadata:playerhud_user:ranking_visibility'] = 'Preferência do usuário sobre aparecer ou não no ranking público.';
+$string['privacy:metadata:preference:avatar'] = 'Armazena o item que o usuário equipou como avatar de perfil em cada instância do bloco.';
 $string['privacy:metadata:preference:gemini_key'] = 'Armazena a chave pessoal da API Google Gemini fornecida pelo usuário.';
 $string['privacy:metadata:preference:groq_key'] = 'Armazena a chave pessoal da API Groq fornecida pelo usuário.';
 $string['privacy:metadata:preference:openai_key'] = 'Armazena a chave pessoal da API do provedor compatível com OpenAI fornecida pelo usuário.';
