@@ -540,7 +540,10 @@ final class quest_test extends advanced_testcase {
             'course'     => $course->id,
             'completion' => COMPLETION_TRACKING_MANUAL,
         ]);
-        $cm = get_coursemodule_from_id('page', $page->cmid);
+
+        // Use cm_info (not stdClass) — required by completion_info::update_state in Moodle 5.2+.
+        $modinfo = get_fast_modinfo($course);
+        $cminfo  = $modinfo->get_cm($page->cmid);
 
         // Create a block instance bound to this course so the quest FK is valid.
         $coursecontext = \context_course::instance($course->id);
@@ -556,7 +559,7 @@ final class quest_test extends advanced_testcase {
         $bi->configdata       = base64_encode(serialize(new \stdClass()));
         $instanceid = $DB->insert_record('block_instances', $bi);
 
-        $quest = $this->create_quest(quest::TYPE_ACTIVITY, (string)$cm->id);
+        $quest = $this->create_quest(quest::TYPE_ACTIVITY, (string)$cminfo->id);
         $DB->set_field('block_playerhud_quests', 'blockinstanceid', $instanceid, ['id' => $quest->id]);
 
         // Before completion: quest must be incomplete.
@@ -566,7 +569,10 @@ final class quest_test extends advanced_testcase {
 
         // Mark the activity as completed.
         $completion = new \completion_info($course);
-        $completion->update_state($cm, COMPLETION_COMPLETE, $user->id);
+        $completion->update_state($cminfo, COMPLETION_COMPLETE, $user->id);
+
+        // Discard the modinfo singleton so check_status rebuilds it with fresh completion data.
+        \course_modinfo::clear_instance_cache();
 
         // After completion: quest must be complete with 100% progress.
         $status = quest::check_status($quest, $user->id, $course->id, 0, 1);
