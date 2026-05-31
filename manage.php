@@ -781,6 +781,7 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
     } else if ($data = $sugform->get_data()) {
         $now = time();
         $count = 0;
+        $transaction = $DB->start_delegated_transaction();
         foreach ($suggestions as $sug) {
             $field = 'sug_' . $sug['uid'];
             if (empty($data->$field)) {
@@ -808,6 +809,7 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
             }
             $count++;
         }
+        $transaction->allow_commit();
         redirect(
             new moodle_url($baseurl, ['tab' => 'trades']),
             get_string('trade_sug_created', 'block_playerhud', $count),
