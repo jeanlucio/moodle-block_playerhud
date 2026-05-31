@@ -522,16 +522,56 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
-     * TYPE_ACTIVITY: requires real Moodle completion infrastructure.
-     * Skipped in unit test — covered by integration/behat tests.
+     * TYPE_ACTIVITY: quest is incomplete before the activity is finished,
+     * and completed immediately after the user marks it as done.
      *
      * @covers ::check_status
      */
-    public function test_check_status_activity_skipped(): void {
-        $this->markTestSkipped(
-            'TYPE_ACTIVITY requires a real course module with completion enabled.'
-            . ' Covered by integration/behat tests.'
-        );
+    public function test_check_status_activity_completion(): void {
+        global $CFG, $DB;
+
+        $CFG->enablecompletion = 1;
+
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $user   = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id);
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course'     => $course->id,
+            'completion' => COMPLETION_TRACKING_MANUAL,
+        ]);
+        $cm = get_coursemodule_from_id('page', $page->cmid);
+
+        // Create a block instance bound to this course so the quest FK is valid.
+        $coursecontext = \context_course::instance($course->id);
+        $bi = new \stdClass();
+        $bi->blockname        = 'playerhud';
+        $bi->parentcontextid  = $coursecontext->id;
+        $bi->showinsubcontexts = 0;
+        $bi->pagetypepattern  = 'course-view-*';
+        $bi->defaultregion    = 'side-pre';
+        $bi->defaultweight    = 0;
+        $bi->timecreated      = time();
+        $bi->timemodified     = time();
+        $bi->configdata       = base64_encode(serialize(new \stdClass()));
+        $instanceid = $DB->insert_record('block_instances', $bi);
+
+        $quest = $this->create_quest(quest::TYPE_ACTIVITY, (string)$cm->id);
+        $DB->set_field('block_playerhud_quests', 'blockinstanceid', $instanceid, ['id' => $quest->id]);
+
+        // Before completion: quest must be incomplete.
+        $status = quest::check_status($quest, $user->id, $course->id, 0, 1);
+        $this->assertFalse($status->completed);
+        $this->assertEquals(0, $status->progress);
+
+        // Mark the activity as completed.
+        $completion = new \completion_info($course);
+        $completion->update_state($cm, COMPLETION_COMPLETE, $user->id);
+
+        // After completion: quest must be complete with 100% progress.
+        $status = quest::check_status($quest, $user->id, $course->id, 0, 1);
+        $this->assertTrue($status->completed);
+        $this->assertEquals(100, $status->progress);
     }
 
     /**
