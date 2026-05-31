@@ -65,6 +65,9 @@ jobs:
       - name: Add filter_playerhud plugin
         run: moodle-plugin-ci add-plugin jeanlucio/moodle-filter_playerhud
 
+      - name: Add local_latepenalty plugin
+        run: moodle-plugin-ci add-plugin jeanlucio/moodle-local_latepenalty
+
       - name: Install moodle-plugin-ci
         run: moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
         env:
