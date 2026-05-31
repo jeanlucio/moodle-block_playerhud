@@ -1835,7 +1835,9 @@ class external extends external_api {
             } else {
                 $modinfo = get_fast_modinfo($courseid);
                 $cm      = $modinfo->get_cm($cmid);
-                $base    = (int)(\local_latepenalty\penalty_helper::get_deadline($cm->get_course_module_record()) ?? time());
+                $cmrec   = $cm->get_course_module_record();
+                $cmrec->modname = $cm->modname;
+                $base    = (int)(\local_latepenalty\penalty_helper::get_deadline($cmrec) ?? time());
             }
 
             $newdeadline = $base + ($days * DAYSECS);
