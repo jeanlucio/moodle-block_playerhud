@@ -32,7 +32,8 @@ class chat extends generator {
      * Sends a multi-turn conversation to the configured AI provider.
      *
      * The last element of $messages must be the current user turn.
-     * Tries providers in order: Gemini → Groq → OpenAI-compatible.
+     * When personal keys are configured, uses those directly (Gemini → Groq → OpenAI-compatible).
+     * When only institution keys are available, tries core_ai first.
      *
      * @param string $systemprompt System instruction describing the AI role and context.
      * @param array $messages Conversation history as [{role, content}, ...].
@@ -41,10 +42,14 @@ class chat extends generator {
      * @throws \moodle_exception If no key is available or all providers fail.
      */
     public function send(string $systemprompt, array $messages): array {
+        // Load keys first to determine whether personal keys are configured.
+        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $haspersonalkeys] = $this->load_api_keys();
+
         $result = ['success' => false, 'message' => ''];
 
-        // Priority 0: Moodle core_ai — convert multi-turn history to a single structured prompt.
-        if ($this->has_core_ai_provider()) {
+        // Priority 0: Moodle core_ai — institution default, skipped when the teacher
+        // has configured personal keys so their explicit choice is always honoured.
+        if (!$haspersonalkeys && $this->has_core_ai_provider()) {
             $chatlines = [];
             foreach ($messages as $msg) {
                 $role = $msg['role'] === 'assistant' ? 'Assistant' : 'User';
@@ -60,8 +65,6 @@ class chat extends generator {
         }
 
         // Priority 1–3: direct provider calls with native multi-turn support.
-        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $this->load_api_keys();
-
         if (empty($geminikey) && empty($groqkey) && empty($openaikey)) {
             throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
         }
