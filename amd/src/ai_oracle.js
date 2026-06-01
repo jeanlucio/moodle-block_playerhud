@@ -106,14 +106,13 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
                     if (names.length === 0) {
                         // All calls failed — show the first error message as an alert.
                         var errMsg = errors.length > 0 ? errors[0] : strings.ai_error_generic;
-                        Str.get_strings([
+                        return Str.get_strings([
                             {key: 'error', component: 'core'},
                             {key: 'ok', component: 'core'}
                         ]).then(function(strs) {
                             Notification.alert(strs[0], errMsg, strs[1]);
                             return true;
                         }).catch(Notification.exception);
-                        return true;
                     }
 
                     // Build result using jQuery DOM methods so AI-returned names are never
