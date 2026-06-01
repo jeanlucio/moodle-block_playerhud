@@ -115,6 +115,13 @@ class quest {
             case self::TYPE_SPECIFIC_ITEM:
                 $target = (int)$quest->requirement;
                 $itemid = (int)$quest->req_itemid;
+
+                // FIX: validate that req_itemid is set and positive before querying.
+                if ($itemid <= 0) {
+                    $status->label = get_string('quest_status_pending', 'block_playerhud');
+                    break;
+                }
+
                 // Item ID is unique, but belongs to an instance, so counting is safe within context.
                 $current = $DB->count_records('block_playerhud_inventory', ['userid' => $userid, 'itemid' => $itemid]);
 
@@ -152,6 +159,12 @@ class quest {
             case self::TYPE_SPECIFIC_TRADE:
                 $target = (int)$quest->requirement;
                 $tradeid = (int)$quest->req_itemid;
+
+                // FIX: validate that req_itemid is set and positive before querying.
+                if ($tradeid <= 0) {
+                    $status->label = get_string('quest_status_pending', 'block_playerhud');
+                    break;
+                }
 
                 $current = $DB->count_records('block_playerhud_trade_log', ['userid' => $userid, 'tradeid' => $tradeid]);
 
@@ -254,10 +267,11 @@ class quest {
         // 3. Re-verify requirements (Anti-cheat mechanism).
         $player = \block_playerhud\game::get_player($blockinstanceid, $userid);
 
-        // Retrieve block configuration to calculate stats correctly.
-        $blockinstance = $DB->get_record('block_instances', ['id' => $blockinstanceid]);
-        $config = unserialize_object(base64_decode($blockinstance->configdata));
-        if (!$config) {
+        // FIX: safe base64_decode with strict mode before unserialize_object.
+        $blockinstance = $DB->get_record('block_instances', ['id' => $blockinstanceid], '*', MUST_EXIST);
+        $rawconfig = base64_decode($blockinstance->configdata ?? '', true);
+        $config = ($rawconfig !== false && $rawconfig !== '') ? unserialize_object($rawconfig) : null;
+        if (!$config || !is_object($config)) {
             $config = new \stdClass(); // Fallback to defaults.
         }
 
@@ -403,6 +417,10 @@ class quest {
 
                 case self::TYPE_SPECIFIC_ITEM:
                     $itemid = (int)$q->req_itemid;
+                    // FIX: skip if itemid is not configured.
+                    if ($itemid <= 0) {
+                        break;
+                    }
                     if (!isset($specificitemcnt[$itemid])) {
                         $specificitemcnt[$itemid] = (int)$DB->count_records(
                             'block_playerhud_inventory',
@@ -425,6 +443,10 @@ class quest {
 
                 case self::TYPE_SPECIFIC_TRADE:
                     $tradeid = (int)$q->req_itemid;
+                    // FIX: skip if tradeid is not configured.
+                    if ($tradeid <= 0) {
+                        break;
+                    }
                     if (!isset($specifictradecnt[$tradeid])) {
                         $specifictradecnt[$tradeid] = (int)$DB->count_records(
                             'block_playerhud_trade_log',
