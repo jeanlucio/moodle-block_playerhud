@@ -679,7 +679,11 @@ class generator {
             . " Create a unique character based on the theme: {$theme}."
             . ' Reply ONLY with valid JSON — no markdown, no extra text.'
             . ' Structure: {"name":"character name (max 4 words)",'
-            . '"description":"flavour text (max 150 characters)","hp":120}'
+            . '"description":"flavour text (max 150 characters)","hp":120,'
+            . '"emoji":"<single Unicode emoji that visually represents this character"}'
+            . ' Rules for emoji: choose a thematic emoji that matches the character concept'
+            . ' (e.g. 🧙 for a wizard, 🏹 for an archer, 🌿 for a nature-based character);'
+            . ' never use ⚔️ as default — pick something specific to the character.'
             . "\nGenerate all text content in the language: {$currentlang}.";
         return ['system' => '', 'user' => $prompt];
     }
@@ -765,6 +769,11 @@ class generator {
         $class->base_hp         = isset($aidata['hp']) ? max(1, (int)$aidata['hp']) : 100;
         $class->timecreated     = time();
         $class->timemodified    = time();
+
+        $emoji = trim($aidata['emoji'] ?? '');
+        if (!empty($emoji) && strpos($emoji, 'http') !== 0) {
+            $class->emoji_tier1 = $emoji;
+        }
 
         $DB->insert_record('block_playerhud_classes', $class);
 

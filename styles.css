@@ -1906,15 +1906,13 @@ div.modal-dialog .visually-hidden {
 }
 .block_playerhud .ph-class-no-portrait,
 .path-blocks-playerhud .ph-class-no-portrait {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
+    width: 100%;
+    height: 100%;
     background-color: var(--light, #f8f9fa);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.6rem;
-    border: 2px solid var(--border-color, #dee2e6);
 }
 .block_playerhud .ph-class-desc,
 .path-blocks-playerhud .ph-class-desc {
@@ -1952,8 +1950,6 @@ div.modal-dialog .visually-hidden {
 }
 .block_playerhud .ph-class-select-card .ph-class-no-portrait,
 .path-blocks-playerhud .ph-class-select-card .ph-class-no-portrait {
-    width: 80px;
-    height: 80px;
     font-size: 2.2rem;
 }
 .block_playerhud .ph-class-selected-badge,
