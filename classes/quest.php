@@ -116,7 +116,6 @@ class quest {
                 $target = (int)$quest->requirement;
                 $itemid = (int)$quest->req_itemid;
 
-                // FIX: validate that req_itemid is set and positive before querying.
                 if ($itemid <= 0) {
                     $status->label = get_string('quest_status_pending', 'block_playerhud');
                     break;
@@ -160,7 +159,6 @@ class quest {
                 $target = (int)$quest->requirement;
                 $tradeid = (int)$quest->req_itemid;
 
-                // FIX: validate that req_itemid is set and positive before querying.
                 if ($tradeid <= 0) {
                     $status->label = get_string('quest_status_pending', 'block_playerhud');
                     break;
@@ -267,7 +265,6 @@ class quest {
         // 3. Re-verify requirements (Anti-cheat mechanism).
         $player = \block_playerhud\game::get_player($blockinstanceid, $userid);
 
-        // FIX: safe base64_decode with strict mode before unserialize_object.
         $blockinstance = $DB->get_record('block_instances', ['id' => $blockinstanceid], '*', MUST_EXIST);
         $rawconfig = base64_decode($blockinstance->configdata ?? '', true);
         $config = ($rawconfig !== false && $rawconfig !== '') ? unserialize_object($rawconfig) : null;
@@ -417,7 +414,6 @@ class quest {
 
                 case self::TYPE_SPECIFIC_ITEM:
                     $itemid = (int)$q->req_itemid;
-                    // FIX: skip if itemid is not configured.
                     if ($itemid <= 0) {
                         break;
                     }
@@ -443,7 +439,6 @@ class quest {
 
                 case self::TYPE_SPECIFIC_TRADE:
                     $tradeid = (int)$q->req_itemid;
-                    // FIX: skip if tradeid is not configured.
                     if ($tradeid <= 0) {
                         break;
                     }
