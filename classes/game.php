@@ -148,6 +148,7 @@ class game {
             $newinv->itemid = $item->id;
             $newinv->dropid = $drop->id;
             $newinv->timecreated = time();
+            $newinv->collecteddate = time();
             $newinv->source = 'map';
             $DB->insert_record('block_playerhud_inventory', $newinv);
 
@@ -173,14 +174,21 @@ class game {
         $msgparams->xp = ($earnedxp > 0) ? " (+{$earnedxp} XP)" : "";
         $message = get_string('collected_msg', 'block_playerhud', $msgparams);
 
-        // Calculate Stats for HUD update.
-        $player = self::get_player($instanceid, $userid);
-        $bi = $DB->get_record('block_instances', ['id' => $instanceid]);
-        $config = unserialize_object(base64_decode($bi->configdata));
+        // FIX: Use the player object already updated inside the transaction.
+        // Avoids a redundant DB query and ensures XP reflects the committed state.
+        if (!isset($player)) {
+            // No XP was awarded (infinite drop or xp=0): fetch player for HUD stats.
+            $player = self::get_player($instanceid, $userid);
+        }
 
-        if (!$config) {
+        // FIX: base64_decode with strict mode to prevent crash on corrupt configdata.
+        $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
+        $rawconfig = base64_decode($bi->configdata ?? '', true);
+        $config = ($rawconfig !== false && $rawconfig !== '') ? unserialize_object($rawconfig) : new \stdClass();
+        if (!is_object($config)) {
             $config = new \stdClass();
         }
+
         $stats = self::get_game_stats($config, $instanceid, $player->currentxp);
 
         // Prepare Item Data for Stash update.
@@ -532,6 +540,19 @@ class game {
         $individualranking = [];
         $coursecontext = \context_course::instance($courseid);
 
+        // FIX: Pre-load all managers BEFORE the loop to avoid N+1 has_capability() calls.
+        $managers = get_users_by_capability(
+            $coursecontext,
+            'block/playerhud:manage',
+            'u.id',
+            '', '', '', '', '',
+            true, false, false
+        );
+        $managerids = array_fill_keys(array_keys($managers), true);
+        foreach (array_keys(get_admins()) as $adminid) {
+            $managerids[$adminid] = true;
+        }
+
         // Control variables for tie (Shared Rank).
         $rankcounter = 1;
         $lastxp = -1;
@@ -541,7 +562,8 @@ class game {
         foreach ($rawusers as $usr) {
             $isme = ($usr->userid == $currentuserid);
 
-            if (has_capability('block/playerhud:manage', $coursecontext, $usr->userid)) {
+            // FIX: Use pre-loaded manager map instead of per-user has_capability() call.
+            if (isset($managerids[$usr->userid])) {
                 continue;
             }
 
