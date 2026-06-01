@@ -80,6 +80,9 @@ class edit_class_form extends \moodleform {
 
         for ($tier = 1; $tier <= 5; $tier++) {
             $mform->addElement('filemanager', 'image_tier' . $tier, $tierlabels[$tier], null, $fileoptions);
+            $mform->addElement('text', 'emoji_tier' . $tier, get_string('class_emoji_tier', 'block_playerhud'));
+            $mform->setType('emoji_tier' . $tier, PARAM_TEXT);
+            $mform->addHelpButton('emoji_tier' . $tier, 'class_emoji_tier', 'block_playerhud');
         }
 
         // Hidden fields.

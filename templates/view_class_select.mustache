@@ -43,8 +43,9 @@
                 "id": 1,
                 "name": "Warrior",
                 "description": "A brave fighter.",
-                "has_portrait": true,
-                "portrait": "http://example.com/portrait.png",
+                "has_portrait": false,
+                "portrait": null,
+                "portrait_emoji": "⚔️",
                 "is_selected": false
             }
         ]
@@ -75,7 +76,10 @@
                     <img src="{{portrait}}" alt="" class="ph-class-portrait-img">
                 {{/has_portrait}}
                 {{^has_portrait}}
-                    <div class="ph-class-no-portrait" aria-hidden="true">⚔️</div>
+                    <div class="ph-class-no-portrait" aria-hidden="true">
+                        {{#portrait_emoji}}{{portrait_emoji}}{{/portrait_emoji}}
+                        {{^portrait_emoji}}⚔️{{/portrait_emoji}}
+                    </div>
                 {{/has_portrait}}
             </div>
 

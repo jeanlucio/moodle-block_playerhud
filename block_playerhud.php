@@ -229,6 +229,12 @@ class block_playerhud extends block_base {
                             $portraittier,
                             $context
                         );
+                        $portraitemoji = $portraiturl
+                            ? null
+                            : \block_playerhud\utils::get_class_portrait_emoji_by_tier(
+                                $class,
+                                $portraittier
+                            );
                         $tierstars = [];
                         for ($i = 1; $i <= 5; $i++) {
                             $tierstars[] = ['filled' => ($i <= $portraittier)];
@@ -238,6 +244,7 @@ class block_playerhud extends block_base {
                             'classname'       => format_string($class->name),
                             'fullname'        => format_string($class->name),
                             'portrait_url'    => $portraiturl,
+                            'portrait_emoji'  => $portraitemoji,
                             'tier'            => $portraittier,
                             'tier_name'       => get_string('class_tier_' . $portraittier, 'block_playerhud'),
                             'tier_stars'      => $tierstars,

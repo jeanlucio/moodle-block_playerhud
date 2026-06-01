@@ -34,8 +34,9 @@
                 "name": "Warrior",
                 "description": "A brave fighter.",
                 "base_hp": 150,
-                "has_portrait": true,
-                "portrait": "http://example.com/portrait.png",
+                "has_portrait": false,
+                "portrait": null,
+                "portrait_emoji": "⚔️",
                 "url_edit": "http://example.com/edit_class.php?classid=1",
                 "url_delete": "http://example.com/manage.php?action=delete_class&classid=1",
                 "confirm_msg": "Delete this class?"
@@ -111,7 +112,10 @@
                             <img src="{{portrait}}" alt="" class="ph-class-portrait-img">
                         {{/has_portrait}}
                         {{^has_portrait}}
-                            <div class="ph-class-no-portrait" aria-hidden="true">⚔️</div>
+                            <div class="ph-class-no-portrait" aria-hidden="true">
+                                {{#portrait_emoji}}{{portrait_emoji}}{{/portrait_emoji}}
+                                {{^portrait_emoji}}⚔️{{/portrait_emoji}}
+                            </div>
                         {{/has_portrait}}
                     </div>
 

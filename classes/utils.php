@@ -153,8 +153,9 @@ class utils {
      * Returns the class evolution image URL for a pre-calculated tier (1-5).
      *
      * Performs a cascade fallback: if no image is configured for the requested
-     * tier, tries the previous tier until tier 1. Returns null if no image
-     * is found at any tier.
+     * tier, tries the previous tier until tier 1. When no file is found at a tier,
+     * also checks the emoji_tier{N} field — if it contains an absolute URL (starts
+     * with "http") it is treated as an image URL. Returns null when nothing is found.
      *
      * @param \stdClass $class The class object (must have ->id).
      * @param int $tier Desired tier, 1-5.
@@ -191,6 +192,39 @@ class utils {
                         $f->get_filename()
                     )->out();
                 }
+            }
+
+            $emojifield = 'emoji_tier' . $chosentier;
+            $emojivalue = $class->$emojifield ?? '';
+            if (!empty($emojivalue) && strpos($emojivalue, 'http') === 0) {
+                return $emojivalue;
+            }
+
+            $chosentier--;
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the emoji character fallback for the given portrait tier (1-5).
+     *
+     * Cascades from the requested tier down to tier 1. Returns the first non-empty
+     * emoji_tier{N} value that is NOT an absolute URL (i.e. an emoji character).
+     * Returns null when no emoji is configured at any tier.
+     *
+     * @param \stdClass $class The class object (must have emoji_tier1..5 properties).
+     * @param int $tier Desired tier, 1-5.
+     * @return string|null The emoji character or null.
+     */
+    public static function get_class_portrait_emoji_by_tier(\stdClass $class, int $tier): ?string {
+        $chosentier = max(1, min(5, $tier));
+
+        while ($chosentier >= 1) {
+            $emojifield = 'emoji_tier' . $chosentier;
+            $emojivalue = $class->$emojifield ?? '';
+            if (!empty($emojivalue) && strpos($emojivalue, 'http') !== 0) {
+                return $emojivalue;
             }
             $chosentier--;
         }

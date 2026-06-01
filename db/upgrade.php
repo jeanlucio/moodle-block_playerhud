@@ -79,5 +79,28 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026052903, 'playerhud');
     }
 
+    if ($oldversion < 2026060101) {
+        // Add emoji/URL fallback fields (one per tier) to block_playerhud_classes.
+        // Mirrors the existing item->image field: accepts an emoji character or an absolute URL.
+        $table = new \xmldb_table('block_playerhud_classes');
+
+        for ($tier = 1; $tier <= 5; $tier++) {
+            $field = new \xmldb_field(
+                'emoji_tier' . $tier,
+                XMLDB_TYPE_CHAR,
+                '255',
+                null,
+                null,
+                null,
+                null
+            );
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        upgrade_block_savepoint(true, 2026060101, 'playerhud');
+    }
+
     return true;
 }

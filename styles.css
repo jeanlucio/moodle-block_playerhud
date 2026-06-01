@@ -406,6 +406,18 @@
     display: block;
     text-align: center;
 }
+.block_playerhud .ph-char-portrait-emoji,
+.path-blocks-playerhud .ph-char-portrait-emoji {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    font-size: 2rem;
+    border-radius: 50%;
+    border: 3px solid var(--gray-300, #dee2e6);
+    background-color: var(--light, #f8f9fa);
+}
 .block_playerhud .ph-char-info,
 .path-blocks-playerhud .ph-char-info {
     min-width: 0;
@@ -1636,6 +1648,19 @@
     line-height: 1;
     color: var(--gray-400, #ced4da);
     flex-shrink: 0;
+}
+.block_playerhud .ph-char-portrait-emoji--lg,
+.path-blocks-playerhud .ph-char-portrait-emoji--lg,
+.filter_playerhud .ph-char-portrait-emoji--lg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 120px;
+    height: 120px;
+    font-size: 4rem;
+    border-radius: 50%;
+    border: 3px solid var(--gray-300, #dee2e6);
+    background-color: var(--light, #f8f9fa);
 }
 .block_playerhud .ph-char-modal-desc,
 .path-blocks-playerhud .ph-char-modal-desc,
