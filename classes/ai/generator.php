@@ -26,6 +26,26 @@ namespace block_playerhud\ai;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class generator {
+    /** @var string System role instruction for item generation. */
+    private const PROMPT_ROLE_ITEM = 'Act as a Subject Matter Expert and Educator.';
+
+    /** @var string Item generation rules sent as system instruction. */
+    private const PROMPT_RULES_ITEM = 'IMPORTANT: Create a factual, realistic, and educational description of the item.'
+        . ' RULES: 1. The "name" must be short (maximum 4 words).'
+        . ' 2. The "description" must be extremely concise and direct (maximum 150 characters).'
+        . ' 3. Do NOT invent fantasy stories or "lore", and do NOT mention XP, levels, or game mechanics.'
+        . ' 4. The "emoji" field must be a single Unicode emoji that visually represents the item;'
+        . ' choose it thematically and never use 📦 unless the item is literally a box or package.';
+
+    /** @var string JSON format instruction appended to every item generation prompt. */
+    private const PROMPT_JSON_INSTRUCTION = 'Return ONLY valid JSON following this structure:';
+
+    /** @var string Context hint for common/introductory items. */
+    private const PROMPT_CTX_EASY = 'Context: The game needs common or introductory items.';
+
+    /** @var string Context hint for rare/high-value items. */
+    private const PROMPT_CTX_HARD = 'Context: The game needs high-value (rare/complex) items.';
+
     /** @var int The block instance ID. */
     protected $instanceid;
 
@@ -251,55 +271,38 @@ class generator {
      * @return array Associative array with 'system' and 'user' string keys.
      */
     protected function build_prompt($mode, $theme, $xp, $balance = null, $amount = 1): array {
-        $currentlang = get_string('thislanguage', 'langconfig');
-
         if ($mode === 'item') {
-            $contextstr = "";
+            $contextstr = '';
             if ($balance) {
-                if ($balance['gap'] > 0) {
-                    $contextstr = get_string('ai_prompt_ctx_hard', 'block_playerhud');
-                } else {
-                    $contextstr = get_string('ai_prompt_ctx_easy', 'block_playerhud');
-                }
+                $contextstr = $balance['gap'] > 0 ? self::PROMPT_CTX_HARD : self::PROMPT_CTX_EASY;
             }
-
-            // Strings for JSON example.
-            $exname = get_string('ai_ex_name', 'block_playerhud');
-            $exdesc = get_string('ai_ex_desc', 'block_playerhud');
-            $exloc  = get_string('ai_ex_loc', 'block_playerhud');
 
             if ($amount > 1) {
-                $a = new \stdClass();
-                $a->count = $amount;
-                $a->theme = $theme;
-                $taskstr = get_string('ai_task_multi', 'block_playerhud', $a);
-
-                // JSON structure example constructed with strings.
-                $jsonstruct = '{ "items": [ { "name": "' . $exname . '", "description": "' . $exdesc .
-                    '", "emoji": "<emoji>", "location_name": "' . $exloc . '" }, ... ] }';
+                $taskstr = "Create {$amount} distinct real items related to the theme: '{$theme}'.";
+                $jsonstruct = '{"items":[{"name":"Name","description":"Factual Description...",'
+                    . '"emoji":"<emoji>","location_name":"Location"},...]}';
             } else {
-                $taskstr = get_string('ai_task_single', 'block_playerhud', $theme);
-
-                // JSON structure example constructed with strings.
-                $jsonstruct = '{ "name": "' . $exname . '", "description": "' . $exdesc .
-                    '", "emoji": "<emoji>", "location_name": "' . $exloc . '" }';
+                $taskstr = "Create ONE real item related to the theme: '{$theme}'.";
+                $jsonstruct = '{"name":"Name","description":"Factual Description...",'
+                    . '"emoji":"<emoji>","location_name":"Location"}';
             }
 
-            $rolestr = get_string('ai_role_item', 'block_playerhud');
-            $rulesstr = get_string('ai_rules_item', 'block_playerhud');
-            $techxpstr = get_string('ai_prompt_tech_xp', 'block_playerhud', $xp);
-            $jsoninst = get_string('ai_json_instruction', 'block_playerhud');
-            $langinst = get_string('ai_reply_lang', 'block_playerhud', $currentlang);
+            $techxpstr = "Technical Requirement: The internal XP value is {$xp}"
+                . ' (Do NOT write this number in the description, it is only for your'
+                . ' assessment of item "value" or "rarity").';
+
+            $currentlang = get_string('thislanguage', 'langconfig');
+            $langinst = "Reply strictly in the language: {$currentlang}.";
 
             // Role + rules go to the system slot so the model treats them as
             // hard constraints, not part of the user conversation.
-            $system = implode("\n\n", [$rolestr, $rulesstr]);
+            $system = implode("\n\n", [self::PROMPT_ROLE_ITEM, self::PROMPT_RULES_ITEM]);
 
             $user = implode("\n\n", [
                 $taskstr,
                 $contextstr,
                 $techxpstr,
-                $jsoninst,
+                self::PROMPT_JSON_INSTRUCTION,
                 $jsonstruct,
                 $langinst,
             ]);
@@ -671,7 +674,14 @@ class generator {
      * @return array Prompt parts with 'system' and 'user' keys.
      */
     protected function build_prompt_class_oracle(string $theme): array {
-        return ['system' => '', 'user' => get_string('ai_prompt_class_oracle', 'block_playerhud', $theme)];
+        $currentlang = get_string('thislanguage', 'langconfig');
+        $prompt = "You are an RPG game designer for an educational game."
+            . " Create a unique character based on the theme: {$theme}."
+            . ' Reply ONLY with valid JSON — no markdown, no extra text.'
+            . ' Structure: {"name":"character name (max 4 words)",'
+            . '"description":"flavour text (max 150 characters)","hp":120}'
+            . "\nGenerate all text content in the language: {$currentlang}.";
+        return ['system' => '', 'user' => $prompt];
     }
 
     /**
@@ -682,25 +692,40 @@ class generator {
      * @return array Prompt parts with 'system' and 'user' keys.
      */
     protected function build_prompt_story(string $theme, array $options = []): array {
-        $prompt = get_string('ai_prompt_story', 'block_playerhud', $theme);
+        $prompt = "You are an interactive story designer for an educational text-adventure game."
+            . " Create a branching story chapter based on the theme: {$theme}."
+            . " Rules: minimum 6 nodes and at least 2 distinct ending nodes;"
+            . " the starting node must have is_start=1;"
+            . " branch nodes must have exactly 2 or 3 choices;"
+            . ' terminal (ending) nodes must have "choices":[] and contain 2-3 sentences of satisfying'
+            . " concluding text that wraps up that narrative path;"
+            . " every branch MUST eventually reach a terminal node — do NOT create cycles or dead ends;"
+            . " all target_index values must reference valid indexes in this JSON."
+            . " Reply ONLY with valid JSON — no markdown, no extra text."
+            . ' Structure: {"title":"chapter title","intro":"one-line summary","nodes":[{"index":0,'
+            . '"content":"scene text (2-3 sentences)","is_start":1,'
+            . '"choices":[{"text":"choice label (max 60 chars)","target_index":1}]}]}';
 
         $karmagain = max(0, (int)($options['karma_gain'] ?? 0));
         $karmaloss = max(0, (int)($options['karma_loss'] ?? 0));
         $itemqty   = max(0, (int)($options['item_qty'] ?? 0));
 
         if ($karmagain > 0 || $karmaloss > 0) {
-            $prompt .= "\n\nReputation constraints: add a \"karma_delta\" integer field to every choice object. " .
-                "Distribute positive karma_delta values on virtuous choices, totalling approximately +{$karmagain}. " .
-                "Distribute negative karma_delta values on questionable choices, totalling approximately -{$karmaloss}. " .
-                "Choices with no moral weight should have karma_delta set to 0. " .
-                "Terminal nodes have no choices and therefore no karma_delta.";
+            $prompt .= "\n\nReputation constraints: add a \"karma_delta\" integer field to every choice object. "
+                . "Distribute positive karma_delta values on virtuous choices, totalling approximately +{$karmagain}. "
+                . "Distribute negative karma_delta values on questionable choices, totalling approximately -{$karmaloss}. "
+                . "Choices with no moral weight should have karma_delta set to 0. "
+                . "Terminal nodes have no choices and therefore no karma_delta.";
         }
 
         if ($itemqty > 0) {
-            $prompt .= "\n\nItem cost constraints: add a \"cost_item_qty\" integer field (use 0 for free choices) " .
-                "to every choice object. Distribute item costs totalling approximately {$itemqty} " .
-                "across key choices where the player must pay a price to proceed.";
+            $prompt .= "\n\nItem cost constraints: add a \"cost_item_qty\" integer field (use 0 for free choices) "
+                . "to every choice object. Distribute item costs totalling approximately {$itemqty} "
+                . "across key choices where the player must pay a price to proceed.";
         }
+
+        $currentlang = get_string('thislanguage', 'langconfig');
+        $prompt .= "\nGenerate all text content in the language: {$currentlang}.";
 
         return ['system' => '', 'user' => $prompt];
     }

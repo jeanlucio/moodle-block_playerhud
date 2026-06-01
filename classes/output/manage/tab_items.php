@@ -456,32 +456,32 @@ class tab_items implements renderable {
             'modal_preview_html' => $OUTPUT->render_from_template('block_playerhud/modal_item', []),
         ];
 
-        // 7. JS Initialization.
+        // 7. JS Initialization — strings preloaded via strings_for_js to avoid the
+        // 1024-char js_call_amd argument limit (triggered with longer locales like Spanish).
+        $PAGE->requires->strings_for_js([
+            'ai_validation_theme',
+            'ai_success',
+            'gen_copy',
+            'great',
+            'ai_creating',
+            'no_description',
+            'delete_selected',
+            'delete_n_items',
+            'confirm_bulk_delete',
+            'ai_created_count',
+            'playercoin_created',
+            'playercoin_already_exists',
+            'playercoin_drop_title',
+            'playercoin_drop_confirm',
+            'playercoin_drop_yes',
+            'playercoin_drop_no',
+        ], 'block_playerhud');
+        $PAGE->requires->string_for_js('confirmation', 'admin');
+        $PAGE->requires->strings_for_js(['yes', 'cancel', 'success'], 'moodle');
+
         $jsvars = [
             'courseid' => $this->courseid,
             'instanceid' => $this->instanceid,
-            'strings' => [
-                'err_theme' => get_string('ai_validation_theme', 'block_playerhud'),
-                'success' => get_string('ai_success', 'block_playerhud'),
-                'copy' => get_string('gen_copy', 'block_playerhud'),
-                'great' => get_string('great', 'block_playerhud'),
-                'confirm_title' => get_string('confirmation', 'admin'),
-                'yes' => get_string('yes'),
-                'cancel' => get_string('cancel'),
-                'ai_creating' => get_string('ai_creating', 'block_playerhud'),
-                'success_title' => get_string('success', 'core'),
-                'no_desc' => get_string('no_description', 'block_playerhud'),
-                'delete_selected' => get_string('delete_selected', 'block_playerhud'),
-                'delete_n_items' => get_string('delete_n_items', 'block_playerhud'),
-                'confirm_bulk' => get_string('confirm_bulk_delete', 'block_playerhud'),
-                'created_count' => get_string('ai_created_count', 'block_playerhud'),
-                'playercoin_created' => get_string('playercoin_created', 'block_playerhud'),
-                'playercoin_exists' => get_string('playercoin_already_exists', 'block_playerhud'),
-                'playercoin_drop_title' => get_string('playercoin_drop_title', 'block_playerhud'),
-                'playercoin_drop_confirm' => get_string('playercoin_drop_confirm', 'block_playerhud'),
-                'playercoin_drop_yes' => get_string('playercoin_drop_yes', 'block_playerhud'),
-                'playercoin_drop_no' => get_string('playercoin_drop_no', 'block_playerhud'),
-            ],
         ];
         $PAGE->requires->js_call_amd('block_playerhud/manage_items', 'init', [$jsvars]);
 

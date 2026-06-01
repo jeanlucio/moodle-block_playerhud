@@ -32,6 +32,30 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
          */
         init: function(config) {
 
+            // Strings preloaded via strings_for_js in PHP (avoids 1024-char js_call_amd limit).
+            config.strings = {
+                err_theme:          M.util.get_string('ai_validation_theme', 'block_playerhud'),
+                success:            M.util.get_string('ai_success', 'block_playerhud'),
+                copy:               M.util.get_string('gen_copy', 'block_playerhud'),
+                great:              M.util.get_string('great', 'block_playerhud'),
+                confirm_title:      M.util.get_string('confirmation', 'admin'),
+                yes:                M.util.get_string('yes', 'moodle'),
+                cancel:             M.util.get_string('cancel', 'moodle'),
+                ai_creating:        M.util.get_string('ai_creating', 'block_playerhud'),
+                success_title:      M.util.get_string('success', 'moodle'),
+                no_desc:            M.util.get_string('no_description', 'block_playerhud'),
+                delete_selected:    M.util.get_string('delete_selected', 'block_playerhud'),
+                delete_n_items:     M.util.get_string('delete_n_items', 'block_playerhud'),
+                confirm_bulk:       M.util.get_string('confirm_bulk_delete', 'block_playerhud'),
+                created_count:      M.util.get_string('ai_created_count', 'block_playerhud'),
+                playercoin_created: M.util.get_string('playercoin_created', 'block_playerhud'),
+                playercoin_exists:  M.util.get_string('playercoin_already_exists', 'block_playerhud'),
+                playercoin_drop_title:   M.util.get_string('playercoin_drop_title', 'block_playerhud'),
+                playercoin_drop_confirm: M.util.get_string('playercoin_drop_confirm', 'block_playerhud'),
+                playercoin_drop_yes:     M.util.get_string('playercoin_drop_yes', 'block_playerhud'),
+                playercoin_drop_no:      M.util.get_string('playercoin_drop_no', 'block_playerhud'),
+            };
+
             // Move modals to body to avoid z-index issues.
             // IDs updated to kebab-case per Stylelint.
             $('#ph-ai-modal').appendTo('body');
