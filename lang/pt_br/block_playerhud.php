@@ -47,6 +47,7 @@ $string['ai_ok_reload'] = 'Pronto!';
 $string['ai_oracle_btn'] = 'Oráculo de Personagem';
 $string['ai_oracle_count_label'] = 'Quantidade';
 $string['ai_oracle_modal_title'] = 'Oráculo de Personagem';
+$string['ai_oracle_partial_error'] = 'Atenção: {$a} personagem(ns) não pôde(ram) ser gerado(s). A IA pode ter atingido o limite de uso.';
 $string['ai_oracle_success'] = 'Personagem \'{$a}\' criado e salvo com sucesso.';
 $string['ai_oracle_success_multi'] = '{$a} personagens criados com sucesso!';
 $string['ai_oracle_theme_placeholder'] = 'ex: um guerreiro corajoso que domina o fogo e as tempestades...';

@@ -47,6 +47,7 @@ $string['ai_ok_reload'] = 'Done!';
 $string['ai_oracle_btn'] = 'Character Oracle';
 $string['ai_oracle_count_label'] = 'Quantity';
 $string['ai_oracle_modal_title'] = 'Character Oracle';
+$string['ai_oracle_partial_error'] = 'Note: {$a} character(s) could not be generated. The AI may have reached its usage limit.';
 $string['ai_oracle_success'] = 'Character \'{$a}\' created and saved.';
 $string['ai_oracle_success_multi'] = '{$a} characters created!';
 $string['ai_oracle_theme_placeholder'] = 'e.g. a brave warrior who masters fire and storms...';

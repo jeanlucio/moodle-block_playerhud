@@ -56,6 +56,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
 
                 var originalText = $btn.html();
                 var names = [];
+                var errors = [];
                 var current = 0;
 
                 /**
@@ -87,6 +88,8 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
                     }])[0].then(function(resp) {
                         if (resp.success) {
                             names.push(resp.class_name);
+                        } else {
+                            errors.push(resp.message || strings.ai_error_generic);
                         }
                         if (current < count) {
                             return generateNext();
@@ -100,42 +103,59 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
                 generateNext().then(function() {
                     $btn.prop('disabled', false).html(originalText).removeAttr('aria-busy');
 
-                    if (names.length > 0) {
-                        // Build result using jQuery DOM methods so AI-returned names are never
-                        // treated as markup, regardless of what the model returns.
-                        var $result = $('<div>', {
-                            'class': 'text-center py-3 ph-animate-fadein',
-                            tabindex: '-1',
-                            id: 'ph-oracle-result'
-                        });
-                        $('<div>', {'class': 'mb-3 text-success', 'aria-hidden': 'true', css: {'font-size': '3rem'}})
-                            .html('<i class="fa fa-check-circle"></i>')
-                            .appendTo($result);
-
-                        if (names.length === 1) {
-                            var successMsg = strings.oracle_success.replace('{$a}', names[0]);
-                            $('<h5>', {'class': 'fw-bold mb-1'}).text(names[0]).appendTo($result);
-                            $('<p>', {'class': 'text-muted small'}).text(successMsg).appendTo($result);
-                        } else {
-                            var successMsgMulti = strings.oracle_success_multi.replace('{$a}', names.length);
-                            var $ul = $('<ul>', {'class': 'list-unstyled mb-2'});
-                            for (var i = 0; i < names.length; i++) {
-                                $('<li>', {'class': 'fw-bold'}).text(names[i]).appendTo($ul);
-                            }
-                            $ul.appendTo($result);
-                            $('<p>', {'class': 'text-muted small'}).text(successMsgMulti).appendTo($result);
-                        }
-
-                        $('#ph-ai-oracle-modal .modal-body').empty().append($result);
-                        $('#ph-ai-oracle-modal .modal-footer').html(
-                            '<button type="button" class="btn btn-success fw-bold px-4" ' +
-                            'data-action="oracle-reload">' + strings.ok_reload + '</button>'
-                        );
-
-                        setTimeout(function() {
-                            $('#ph-oracle-result').focus();
-                        }, 200);
+                    if (names.length === 0) {
+                        // All calls failed — show the first error message as an alert.
+                        var errMsg = errors.length > 0 ? errors[0] : strings.ai_error_generic;
+                        Str.get_strings([
+                            {key: 'error', component: 'core'},
+                            {key: 'ok', component: 'core'}
+                        ]).then(function(strs) {
+                            Notification.alert(strs[0], errMsg, strs[1]);
+                            return true;
+                        }).catch(Notification.exception);
+                        return true;
                     }
+
+                    // Build result using jQuery DOM methods so AI-returned names are never
+                    // treated as markup, regardless of what the model returns.
+                    var $result = $('<div>', {
+                        'class': 'text-center py-3 ph-animate-fadein',
+                        tabindex: '-1',
+                        id: 'ph-oracle-result'
+                    });
+                    $('<div>', {'class': 'mb-3 text-success', 'aria-hidden': 'true', css: {'font-size': '3rem'}})
+                        .html('<i class="fa fa-check-circle"></i>')
+                        .appendTo($result);
+
+                    if (names.length === 1) {
+                        var successMsg = strings.oracle_success.replace('{$a}', names[0]);
+                        $('<h5>', {'class': 'fw-bold mb-1'}).text(names[0]).appendTo($result);
+                        $('<p>', {'class': 'text-muted small'}).text(successMsg).appendTo($result);
+                    } else {
+                        var successMsgMulti = strings.oracle_success_multi.replace('{$a}', names.length);
+                        var $ul = $('<ul>', {'class': 'list-unstyled mb-2'});
+                        for (var i = 0; i < names.length; i++) {
+                            $('<li>', {'class': 'fw-bold'}).text(names[i]).appendTo($ul);
+                        }
+                        $ul.appendTo($result);
+                        $('<p>', {'class': 'text-muted small'}).text(successMsgMulti).appendTo($result);
+                    }
+
+                    if (errors.length > 0) {
+                        var warnMsg = strings.oracle_partial_error.replace('{$a}', errors.length);
+                        $('<p>', {'class': 'text-warning small mt-2 mb-0'}).text(warnMsg).appendTo($result);
+                    }
+
+                    $('#ph-ai-oracle-modal .modal-body').empty().append($result);
+                    $('#ph-ai-oracle-modal .modal-footer').html(
+                        '<button type="button" class="btn btn-success fw-bold px-4" ' +
+                        'data-action="oracle-reload">' + strings.ok_reload + '</button>'
+                    );
+
+                    setTimeout(function() {
+                        $('#ph-oracle-result').focus();
+                    }, 200);
+
                     return true;
                 }).fail(function(ex) {
                     $btn.prop('disabled', false).html(originalText).removeAttr('aria-busy');
