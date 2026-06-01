@@ -181,6 +181,7 @@ class tab_classes implements renderable {
             $this->courseid,
             [
                 'ai_creating'          => get_string('ai_creating', 'block_playerhud'),
+                'error_title'          => get_string('error', 'core'),
                 'validation_theme'     => get_string('ai_validation_theme', 'block_playerhud'),
                 'oracle_success'       => get_string('ai_oracle_success', 'block_playerhud'),
                 'oracle_success_multi' => get_string('ai_oracle_success_multi', 'block_playerhud'),

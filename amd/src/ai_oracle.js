@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Notification, Ajax, Str) {
+define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, Ajax) {
 
     /**
      * Class Oracle AI module for PlayerHUD.
@@ -44,13 +44,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
                 var count = parseInt($('#ph-oracle-count').val(), 10) || 1;
 
                 if (!theme) {
-                    Str.get_strings([
-                        {key: 'error', component: 'core'},
-                        {key: 'ok', component: 'core'}
-                    ]).then(function(strs) {
-                        Notification.alert(strs[0], strings.validation_theme, strs[1]);
-                        return true;
-                    }).catch(Notification.exception);
+                    Notification.alert(strings.error_title, strings.validation_theme);
                     return;
                 }
 
@@ -106,13 +100,8 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
                     if (names.length === 0) {
                         // All calls failed — show the first error message as an alert.
                         var errMsg = errors.length > 0 ? errors[0] : strings.ai_error_generic;
-                        return Str.get_strings([
-                            {key: 'error', component: 'core'},
-                            {key: 'ok', component: 'core'}
-                        ]).then(function(strs) {
-                            Notification.alert(strs[0], errMsg, strs[1]);
-                            return true;
-                        }).catch(Notification.exception);
+                        Notification.alert(strings.error_title, errMsg);
+                        return true;
                     }
 
                     // Build result using jQuery DOM methods so AI-returned names are never
