@@ -81,9 +81,10 @@ class block_playerhud extends block_base {
                 return $this->content;
             }
 
-            // Continue normal rendering.
-            $config = unserialize_object(base64_decode($this->instance->configdata));
-            if (!$config) {
+            // FIX: Validate base64 before unserializing to prevent crash on empty/corrupt configdata.
+            $rawconfig = base64_decode($this->instance->configdata ?? '', true);
+            $config = ($rawconfig !== false && $rawconfig !== '') ? unserialize_object($rawconfig) : new \stdClass();
+            if (!is_object($config)) {
                 $config = new \stdClass();
             }
 
@@ -94,6 +95,9 @@ class block_playerhud extends block_base {
             $config->enable_quests  = isset($config->enable_quests) ? (int) $config->enable_quests : 1;
 
             $stats = \block_playerhud\game::get_game_stats($config, $this->instance->id, $player->currentxp);
+
+            // FIX: Initialize $stashoverflowjson before the conditional block to avoid undefined variable.
+            $stashoverflowjson = '';
 
             // Recent Items Logic (Stash) — only when items feature is enabled.
             $recentitems = [];
@@ -146,7 +150,6 @@ class block_playerhud extends block_base {
                 }
 
                 // Build JSON for the overflow popover (+N badge).
-                $stashoverflowjson = '';
                 if (!empty($overflowdisplay)) {
                     $overflowjsonitems = [];
                     foreach ($overflowdisplay as $oid => $ovitem) {
@@ -331,7 +334,7 @@ class block_playerhud extends block_base {
                 'items'       => $recentitems,
                 'hasmore'     => $stashhasmore,
                 'morebadge'   => $stashmorebadge,
-                'overflowjson' => $stashoverflowjson ?? '',
+                'overflowjson' => $stashoverflowjson,
                 'ranking'     => $rankdata,
                 'hasgroup'     => $groupinfo !== null,
                 'groupbadge'   => $groupinfo ? $groupinfo->badge : '',
@@ -366,8 +369,15 @@ class block_playerhud extends block_base {
             $this->page->requires->js_call_amd('block_playerhud/view', 'init', [$jsvars]);
 
             $this->content->text .= $OUTPUT->render_from_template('block_playerhud/modal_item', []);
+        } catch (\moodle_exception $me) {
+            // Known Moodle exceptions: log and show nothing (expected flow).
+            debugging($me->getMessage(), DEBUG_NORMAL);
         } catch (\Throwable $e) {
-            debugging($e->getMessage(), DEBUG_NORMAL);
+            // Unexpected exceptions: always log, rethrow in developer mode.
+            debugging($e->getMessage(), DEBUG_DEVELOPER);
+            if (defined('PHPUNIT_TEST') && PHPUNIT_TEST) {
+                throw $e;
+            }
         }
 
         return $this->content;

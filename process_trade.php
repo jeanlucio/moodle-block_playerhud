@@ -25,6 +25,9 @@
 require_once('../../config.php');
 require_once($CFG->dirroot . '/blocks/playerhud/lib.php');
 
+// FIX: Declare $DB as global before first use.
+global $DB, $USER;
+
 $courseid = required_param('courseid', PARAM_INT);
 $instanceid = required_param('instanceid', PARAM_INT);
 $tradeid = required_param('tradeid', PARAM_INT);
