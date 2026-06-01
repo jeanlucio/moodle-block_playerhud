@@ -34,26 +34,26 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
 
             // Strings preloaded via strings_for_js in PHP (avoids 1024-char js_call_amd limit).
             config.strings = {
-                err_theme:          M.util.get_string('ai_validation_theme', 'block_playerhud'),
-                success:            M.util.get_string('ai_success', 'block_playerhud'),
-                copy:               M.util.get_string('gen_copy', 'block_playerhud'),
-                great:              M.util.get_string('great', 'block_playerhud'),
-                confirm_title:      M.util.get_string('confirmation', 'admin'),
-                yes:                M.util.get_string('yes', 'moodle'),
-                cancel:             M.util.get_string('cancel', 'moodle'),
-                ai_creating:        M.util.get_string('ai_creating', 'block_playerhud'),
-                success_title:      M.util.get_string('success', 'moodle'),
-                no_desc:            M.util.get_string('no_description', 'block_playerhud'),
-                delete_selected:    M.util.get_string('delete_selected', 'block_playerhud'),
-                delete_n_items:     M.util.get_string('delete_n_items', 'block_playerhud'),
-                confirm_bulk:       M.util.get_string('confirm_bulk_delete', 'block_playerhud'),
-                created_count:      M.util.get_string('ai_created_count', 'block_playerhud'),
-                playercoin_created: M.util.get_string('playercoin_created', 'block_playerhud'),
-                playercoin_exists:  M.util.get_string('playercoin_already_exists', 'block_playerhud'),
-                playercoin_drop_title:   M.util.get_string('playercoin_drop_title', 'block_playerhud'),
-                playercoin_drop_confirm: M.util.get_string('playercoin_drop_confirm', 'block_playerhud'),
-                playercoin_drop_yes:     M.util.get_string('playercoin_drop_yes', 'block_playerhud'),
-                playercoin_drop_no:      M.util.get_string('playercoin_drop_no', 'block_playerhud'),
+                errTheme:            M.util.get_string('ai_validation_theme', 'block_playerhud'),
+                success:             M.util.get_string('ai_success', 'block_playerhud'),
+                copy:                M.util.get_string('gen_copy', 'block_playerhud'),
+                great:               M.util.get_string('great', 'block_playerhud'),
+                confirmTitle:        M.util.get_string('confirmation', 'admin'),
+                yes:                 M.util.get_string('yes', 'moodle'),
+                cancel:              M.util.get_string('cancel', 'moodle'),
+                aiCreating:          M.util.get_string('ai_creating', 'block_playerhud'),
+                successTitle:        M.util.get_string('success', 'moodle'),
+                noDesc:              M.util.get_string('no_description', 'block_playerhud'),
+                deleteSelected:      M.util.get_string('delete_selected', 'block_playerhud'),
+                deleteNItems:        M.util.get_string('delete_n_items', 'block_playerhud'),
+                confirmBulk:         M.util.get_string('confirm_bulk_delete', 'block_playerhud'),
+                createdCount:        M.util.get_string('ai_created_count', 'block_playerhud'),
+                playercoinCreated:   M.util.get_string('playercoin_created', 'block_playerhud'),
+                playercoinExists:    M.util.get_string('playercoin_already_exists', 'block_playerhud'),
+                playercoinDropTitle:   M.util.get_string('playercoin_drop_title', 'block_playerhud'),
+                playercoinDropConfirm: M.util.get_string('playercoin_drop_confirm', 'block_playerhud'),
+                playercoinDropYes:     M.util.get_string('playercoin_drop_yes', 'block_playerhud'),
+                playercoinDropNo:      M.util.get_string('playercoin_drop_no', 'block_playerhud'),
             };
 
             // Move modals to body to avoid z-index issues.
@@ -88,11 +88,11 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
 
                 if (count > 0) {
                     $btn.removeClass('disabled').removeAttr('disabled');
-                    const btnText = config.strings.delete_n_items.replace('%d', count);
+                    const btnText = config.strings.deleteNItems.replace('%d', count);
                     $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + btnText);
                 } else {
                     $btn.addClass('disabled').attr('disabled', 'disabled');
-                    $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + config.strings.delete_selected);
+                    $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + config.strings.deleteSelected);
                 }
             });
 
@@ -104,8 +104,8 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                 }
 
                 Notification.confirm(
-                    config.strings.confirm_title,
-                    config.strings.confirm_bulk,
+                    config.strings.confirmTitle,
+                    config.strings.confirmBulk,
                     config.strings.yes,
                     config.strings.cancel,
                     function() {
@@ -144,7 +144,7 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                 if (descHtml && descHtml.trim() !== '') {
                     $descEl.html(descHtml);
                 } else {
-                    $descEl.html('<i class="text-muted">' + config.strings.no_desc + '</i>');
+                    $descEl.html('<i class="text-muted">' + config.strings.noDesc + '</i>');
                 }
 
                 // Image Handling.
@@ -194,7 +194,7 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                 const msg = $btn.attr('data-confirm-msg');
 
                 Notification.confirm(
-                    config.strings.confirm_title,
+                    config.strings.confirmTitle,
                     msg,
                     config.strings.yes,
                     config.strings.cancel,
@@ -225,14 +225,14 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                         {key: 'error', component: 'core'},
                         {key: 'ok', component: 'core'}
                     ]).then(function(strs) {
-                        Notification.alert(strs[0], config.strings.err_theme, strs[1]);
+                        Notification.alert(strs[0], config.strings.errTheme, strs[1]);
                         return true;
                     }).catch(Notification.exception);
                     return;
                 }
 
                 const originalText = $btn.text();
-                $btn.prop('disabled', true).text(config.strings.ai_creating).attr('aria-busy', 'true');
+                $btn.prop('disabled', true).text(config.strings.aiCreating).attr('aria-busy', 'true');
 
                 // Handle XP input: if empty, send -1 to indicate "no change". Otherwise, parse integer.
                 const xpInput = $('#ai-xp').val();
@@ -270,7 +270,7 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                         });
 
                         const $modalTitle = $('#phAiModalLabel');
-                        $modalTitle.text(config.strings.success_title);
+                        $modalTitle.text(config.strings.successTitle);
 
                         // Handle item list display.
                         const items = resp.created_items || [];
@@ -280,7 +280,7 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                         const count = items.length;
 
                         // Title.
-                        const titleText = config.strings.created_count.replace('{$a}', count);
+                        const titleText = config.strings.createdCount.replace('{$a}', count);
 
                         // Build the static structure; AI-sourced text is set via .text() below.
                         let successHtml = '<div id="ph-success-container" tabindex="-1" ';
@@ -369,13 +369,13 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                 }])[0].done(function(resp) {
                     if (resp.created) {
                         ModalSaveCancel.create({
-                            title: config.strings.playercoin_drop_title,
-                            body: config.strings.playercoin_drop_confirm,
+                            title: config.strings.playercoinDropTitle,
+                            body: config.strings.playercoinDropConfirm,
                             removeOnClose: true,
                         }).then(function(modal) {
-                            modal.setSaveButtonText(config.strings.playercoin_drop_yes);
+                            modal.setSaveButtonText(config.strings.playercoinDropYes);
                             modal.getRoot().find('[data-action="cancel"]').text(
-                                config.strings.playercoin_drop_no
+                                config.strings.playercoinDropNo
                             );
 
                             const setupDrop = function() {
@@ -416,8 +416,8 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                     } else {
                         $btn.prop('disabled', false);
                         Notification.confirm(
-                            config.strings.confirm_title,
-                            config.strings.playercoin_exists,
+                            config.strings.confirmTitle,
+                            config.strings.playercoinExists,
                             config.strings.yes,
                             config.strings.cancel,
                             function() {
@@ -443,7 +443,7 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                     const createdMsg = strings[1];
 
                     Notification.confirm(
-                        config.strings.confirm_title,
+                        config.strings.confirmTitle,
                         confirmMsg,
                         config.strings.yes,
                         config.strings.cancel,
