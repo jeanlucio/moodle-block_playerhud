@@ -26,6 +26,26 @@ namespace block_playerhud\ai;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class generator {
+    /** @var string System role instruction for item generation. */
+    private const PROMPT_ROLE_ITEM = 'Act as a Subject Matter Expert and Educator.';
+
+    /** @var string Item generation rules sent as system instruction. */
+    private const PROMPT_RULES_ITEM = 'IMPORTANT: Create a factual, realistic, and educational description of the item.'
+        . ' RULES: 1. The "name" must be short (maximum 4 words).'
+        . ' 2. The "description" must be extremely concise and direct (maximum 150 characters).'
+        . ' 3. Do NOT invent fantasy stories or "lore", and do NOT mention XP, levels, or game mechanics.'
+        . ' 4. The "emoji" field must be a single Unicode emoji that visually represents the item;'
+        . ' choose it thematically and never use 📦 unless the item is literally a box or package.';
+
+    /** @var string JSON format instruction appended to every item generation prompt. */
+    private const PROMPT_JSON_INSTRUCTION = 'Return ONLY valid JSON following this structure:';
+
+    /** @var string Context hint for common/introductory items. */
+    private const PROMPT_CTX_EASY = 'Context: The game needs common or introductory items.';
+
+    /** @var string Context hint for rare/high-value items. */
+    private const PROMPT_CTX_HARD = 'Context: The game needs high-value (rare/complex) items.';
+
     /** @var int The block instance ID. */
     protected $instanceid;
 
@@ -61,41 +81,6 @@ class generator {
      */
     public function generate($mode, $theme, $xp, $createdrop, $extraoptions = [], $amount = 1) {
 
-        // 1. Get Keys.
-        // User preference keys take precedence over global config, allowing teachers to use their own keys if desired.
-        $geminikey = get_user_preferences('block_playerhud_gemini_key', '');
-        $groqkey = get_user_preferences('block_playerhud_groq_key', '');
-        $openaikey = get_user_preferences('block_playerhud_openai_key', '');
-        $openaiurl = get_user_preferences('block_playerhud_openai_url', '');
-        $openaimodel = get_user_preferences('block_playerhud_openai_model', '');
-
-        // Fallback to global config if user preferences are not set.
-        if (empty($geminikey)) {
-            $geminikey = get_config('block_playerhud', 'apikey_gemini');
-        }
-        if (empty($groqkey)) {
-            $groqkey = get_config('block_playerhud', 'apikey_groq');
-        }
-        if (empty($openaikey)) {
-            $openaikey = get_config('block_playerhud', 'apikey_openai');
-        }
-        if (empty($openaiurl)) {
-            $openaiurl = get_config('block_playerhud', 'openai_baseurl');
-        }
-        if (empty($openaimodel)) {
-            $openaimodel = get_config('block_playerhud', 'openai_model');
-        }
-
-        // Reject URLs pointing to private/loopback addresses (SSRF prevention).
-        if (!empty($openaiurl) && !$this->is_safe_url($openaiurl)) {
-            $openaiurl = '';
-        }
-
-        if (empty($geminikey) && empty($groqkey) && empty($openaikey)) {
-            // Error: correct language file key used.
-            throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
-        }
-
         // 2. Infinite Rule.
         $isinfinitedrop = $createdrop &&
             isset($extraoptions['drop_max']) &&
@@ -125,29 +110,7 @@ class generator {
         $parts = $this->build_prompt($mode, $theme, $xp, $balance, $amount);
 
         // 5. Call API.
-        $result = ['success' => false, 'message' => ''];
-
-        if (!empty($geminikey)) {
-            $result = $this->call_gemini($parts, $geminikey);
-        }
-
-        // Try Groq only if Gemini failed or was not configured.
-        if ((!$result['success']) && !empty($groqkey)) {
-            $result = $this->call_groq($parts, $groqkey);
-        }
-
-        // Try custom OpenAI-compatible provider if both Gemini and Groq failed or were not configured.
-        if ((!$result['success']) && !empty($openaikey) && !empty($openaiurl)) {
-            $result = $this->call_openai_compatible($parts, $openaikey, $openaiurl, $openaimodel);
-        }
-
-        if (!$result['success']) {
-            // The message comes translated from curl_request or is generic if no key is configured.
-            $errormsg = !empty($result['message']) ?
-                $result['message'] :
-                get_string('ai_error_no_keys', 'block_playerhud');
-            throw new \moodle_exception('ai_error_offline', 'block_playerhud', '', $errormsg);
-        }
+        $result = $this->call_with_fallback($parts);
 
         // 6. Parse JSON.
         $jsonraw = $result['data'];
@@ -308,55 +271,38 @@ class generator {
      * @return array Associative array with 'system' and 'user' string keys.
      */
     protected function build_prompt($mode, $theme, $xp, $balance = null, $amount = 1): array {
-        $currentlang = get_string('thislanguage', 'langconfig');
-
         if ($mode === 'item') {
-            $contextstr = "";
+            $contextstr = '';
             if ($balance) {
-                if ($balance['gap'] > 0) {
-                    $contextstr = get_string('ai_prompt_ctx_hard', 'block_playerhud');
-                } else {
-                    $contextstr = get_string('ai_prompt_ctx_easy', 'block_playerhud');
-                }
+                $contextstr = $balance['gap'] > 0 ? self::PROMPT_CTX_HARD : self::PROMPT_CTX_EASY;
             }
-
-            // Strings for JSON example.
-            $exname = get_string('ai_ex_name', 'block_playerhud');
-            $exdesc = get_string('ai_ex_desc', 'block_playerhud');
-            $exloc  = get_string('ai_ex_loc', 'block_playerhud');
 
             if ($amount > 1) {
-                $a = new \stdClass();
-                $a->count = $amount;
-                $a->theme = $theme;
-                $taskstr = get_string('ai_task_multi', 'block_playerhud', $a);
-
-                // JSON structure example constructed with strings.
-                $jsonstruct = '{ "items": [ { "name": "' . $exname . '", "description": "' . $exdesc .
-                    '", "emoji": "<emoji>", "location_name": "' . $exloc . '" }, ... ] }';
+                $taskstr = "Create {$amount} distinct real items related to the theme: '{$theme}'.";
+                $jsonstruct = '{"items":[{"name":"Name","description":"Factual Description...",'
+                    . '"emoji":"<emoji>","location_name":"Location"},...]}';
             } else {
-                $taskstr = get_string('ai_task_single', 'block_playerhud', $theme);
-
-                // JSON structure example constructed with strings.
-                $jsonstruct = '{ "name": "' . $exname . '", "description": "' . $exdesc .
-                    '", "emoji": "<emoji>", "location_name": "' . $exloc . '" }';
+                $taskstr = "Create ONE real item related to the theme: '{$theme}'.";
+                $jsonstruct = '{"name":"Name","description":"Factual Description...",'
+                    . '"emoji":"<emoji>","location_name":"Location"}';
             }
 
-            $rolestr = get_string('ai_role_item', 'block_playerhud');
-            $rulesstr = get_string('ai_rules_item', 'block_playerhud');
-            $techxpstr = get_string('ai_prompt_tech_xp', 'block_playerhud', $xp);
-            $jsoninst = get_string('ai_json_instruction', 'block_playerhud');
-            $langinst = get_string('ai_reply_lang', 'block_playerhud', $currentlang);
+            $techxpstr = "Technical Requirement: The internal XP value is {$xp}"
+                . ' (Do NOT write this number in the description, it is only for your'
+                . ' assessment of item "value" or "rarity").';
+
+            $currentlang = get_string('thislanguage', 'langconfig');
+            $langinst = "Reply strictly in the language: {$currentlang}.";
 
             // Role + rules go to the system slot so the model treats them as
             // hard constraints, not part of the user conversation.
-            $system = implode("\n\n", [$rolestr, $rulesstr]);
+            $system = implode("\n\n", [self::PROMPT_ROLE_ITEM, self::PROMPT_RULES_ITEM]);
 
             $user = implode("\n\n", [
                 $taskstr,
                 $contextstr,
                 $techxpstr,
-                $jsoninst,
+                self::PROMPT_JSON_INSTRUCTION,
                 $jsonstruct,
                 $langinst,
             ]);
@@ -444,39 +390,87 @@ class generator {
     }
 
     /**
-     * Loads AI API keys from user preferences with fallback to global config.
+     * Loads AI API keys with a personal-first resolution strategy.
      *
-     * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel].
+     * Personal keys (level 1 — user preferences in this plugin) take absolute priority.
+     * When any personal key is configured, institution-wide defaults are ignored entirely
+     * so that a teacher who set a custom provider is never silently overridden by an
+     * institution Gemini key with higher provider priority.
+     *
+     * Resolution order when NO personal keys are set:
+     * 2. PlayerHUD site config      (block_playerhud / apikey_{provider})
+     * 3. PlayerGames user pref      (local_playergames_{provider}_key)  — via api_key_helper
+     * 4. PlayerGames site config    (local_playergames / {provider}_key) — via api_key_helper
+     *
+     * Levels 3–4 are only consulted when local_playergames is installed (class_exists guard).
+     *
+     * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel, haspersonalkeys].
      */
     protected function load_api_keys(): array {
-        $geminikey  = get_user_preferences('block_playerhud_gemini_key', '');
-        $groqkey    = get_user_preferences('block_playerhud_groq_key', '');
-        $openaikey  = get_user_preferences('block_playerhud_openai_key', '');
-        $openaiurl  = get_user_preferences('block_playerhud_openai_url', '');
+        // Level 1: personal user preferences for this plugin.
+        $geminikey   = get_user_preferences('block_playerhud_gemini_key', '');
+        $groqkey     = get_user_preferences('block_playerhud_groq_key', '');
+        $openaikey   = get_user_preferences('block_playerhud_openai_key', '');
+        $openaiurl   = get_user_preferences('block_playerhud_openai_url', '');
         $openaimodel = get_user_preferences('block_playerhud_openai_model', '');
 
-        if (empty($geminikey)) {
-            $geminikey = get_config('block_playerhud', 'apikey_gemini');
-        }
-        if (empty($groqkey)) {
-            $groqkey = get_config('block_playerhud', 'apikey_groq');
-        }
-        if (empty($openaikey)) {
-            $openaikey = get_config('block_playerhud', 'apikey_openai');
-        }
-        if (empty($openaiurl)) {
-            $openaiurl = get_config('block_playerhud', 'openai_baseurl');
-        }
-        if (empty($openaimodel)) {
+        // If the teacher explicitly configured personal keys, use only those.
+        // Institution defaults must not override the teacher's chosen provider.
+        $haspersonalkeys = !empty($geminikey) || !empty($groqkey) || !empty($openaikey);
+
+        if (!$haspersonalkeys) {
+            // Levels 2–4: institution and hub fallbacks — only when no personal keys set.
+            $geminikey   = get_config('block_playerhud', 'apikey_gemini');
+            $groqkey     = get_config('block_playerhud', 'apikey_groq');
+            $openaikey   = get_config('block_playerhud', 'apikey_openai');
+            $openaiurl   = get_config('block_playerhud', 'openai_baseurl');
             $openaimodel = get_config('block_playerhud', 'openai_model');
+
+            if (class_exists(\local_playergames\api_key_helper::class)) {
+                if (empty($geminikey)) {
+                    $geminikey = \local_playergames\api_key_helper::get_gemini_key();
+                }
+                if (empty($groqkey)) {
+                    $groqkey = \local_playergames\api_key_helper::get_groq_key();
+                }
+                if (empty($openaikey)) {
+                    $openaikey = \local_playergames\api_key_helper::get_openai_key();
+                }
+                if (empty($openaiurl)) {
+                    $openaiurl = \local_playergames\api_key_helper::get_openai_baseurl();
+                }
+                if (empty($openaimodel)) {
+                    $openaimodel = \local_playergames\api_key_helper::get_openai_model();
+                }
+            }
         }
 
         // Reject URLs that could be used to probe internal network addresses (SSRF).
         if (!empty($openaiurl) && !$this->is_safe_url($openaiurl)) {
             $openaiurl = '';
         }
+        if (!empty($openaiurl)) {
+            $openaiurl = $this->resolve_openai_url($openaiurl);
+        }
 
-        return [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel];
+        return [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $haspersonalkeys];
+    }
+
+    /**
+     * Ensures the URL ends with /chat/completions.
+     *
+     * Providers that follow the OpenAI-compatible standard always expose this path.
+     * Users who supply only a base URL (e.g. https://integrate.api.nvidia.com/v1)
+     * get the suffix appended automatically; users who already include it are unaffected.
+     *
+     * @param string $url The configured endpoint URL.
+     * @return string URL guaranteed to end with /chat/completions.
+     */
+    private function resolve_openai_url(string $url): string {
+        if (!str_ends_with($url, '/chat/completions')) {
+            $url = rtrim($url, '/') . '/chat/completions';
+        }
+        return $url;
     }
 
     /**
@@ -546,14 +540,104 @@ class generator {
     }
 
     /**
-     * Calls AI providers in sequence: Gemini → Groq → OpenAI-compatible.
+     * Returns true when Moodle core_ai has at least one provider configured for text generation.
+     *
+     * Compatible with Moodle 4.5 (static API) and 5.x (instance API with DB injection).
+     * Uses get_providers_for_actions as the reflection anchor — the same method used in
+     * call_core_ai — so staticness detection is consistent across both methods.
+     *
+     * @return bool
+     */
+    protected function has_core_ai_provider(): bool {
+        global $DB;
+        if (
+            !class_exists(\core_ai\manager::class)
+            || !class_exists(\core_ai\aiactions\generate_text::class)
+        ) {
+            return false;
+        }
+        try {
+            $actionclass = \core_ai\aiactions\generate_text::class;
+            $reflection = new \ReflectionMethod(\core_ai\manager::class, 'get_providers_for_actions');
+            if ($reflection->isStatic()) {
+                $providers = \core_ai\manager::get_providers_for_actions([$actionclass], true);
+            } else {
+                $providers = (new \core_ai\manager($DB))->get_providers_for_actions([$actionclass], true);
+            }
+            return !empty($providers[$actionclass]);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Generates text via the Moodle core_ai subsystem.
+     *
+     * Combines system and user prompt parts into a single string (core_ai accepts only
+     * one prompttext field). Compatible with Moodle 4.5 and 5.x via reflection.
+     *
+     * @param array $parts Prompt parts with 'system' and 'user' keys.
+     * @return array Result with keys: success (bool), data (string), message (string), provider (string).
+     */
+    protected function call_core_ai(array $parts): array {
+        global $DB, $USER;
+        try {
+            $fullprompt = trim($parts['system'] . "\n\n" . $parts['user']);
+            $actionclass = \core_ai\aiactions\generate_text::class;
+            $reflection = new \ReflectionMethod(\core_ai\manager::class, 'get_providers_for_actions');
+            if ($reflection->isStatic()) {
+                $manager = new \core_ai\manager();
+            } else {
+                $manager = new \core_ai\manager($DB);
+            }
+            $providers = $manager->get_providers_for_actions([$actionclass], true);
+            if (empty($providers[$actionclass])) {
+                return ['success' => false, 'message' => ''];
+            }
+            $action = new \core_ai\aiactions\generate_text(
+                contextid: \context_system::instance()->id,
+                userid: (int) $USER->id,
+                prompttext: $fullprompt,
+            );
+            $response = $manager->process_action($action);
+            if (!$response->get_success()) {
+                return ['success' => false, 'message' => 'core_ai: provider returned failure'];
+            }
+            $data = $response->get_response_data();
+            $content = (string) ($data['generatedcontent'] ?? '');
+            if ($content === '') {
+                return ['success' => false, 'message' => 'core_ai: empty response'];
+            }
+            return ['success' => true, 'data' => $content, 'provider' => 'Moodle AI'];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'message' => 'core_ai: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Calls AI providers in priority order.
+     *
+     * When the teacher has personal keys configured:
+     *   Gemini (personal) → Groq (personal) → OpenAI-compatible (personal)
+     *
+     * When only institution keys are available:
+     *   core_ai → Gemini (institution) → Groq (institution) → OpenAI-compatible (institution)
      *
      * @param array $parts Prompt parts with 'system' and 'user' keys.
      * @return array Result array with keys 'success', 'data', 'provider'.
      * @throws \moodle_exception If all providers fail or no keys are configured.
      */
     protected function call_with_fallback(array $parts): array {
-        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $this->load_api_keys();
+        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $haspersonalkeys] = $this->load_api_keys();
+
+        // Priority 0: Moodle core_ai — institution default, skipped when the teacher
+        // has configured personal keys so their explicit choice is always honoured.
+        if (!$haspersonalkeys && $this->has_core_ai_provider()) {
+            $result = $this->call_core_ai($parts);
+            if ($result['success']) {
+                return $result;
+            }
+        }
 
         if (empty($geminikey) && empty($groqkey) && empty($openaikey)) {
             throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
@@ -590,7 +674,18 @@ class generator {
      * @return array Prompt parts with 'system' and 'user' keys.
      */
     protected function build_prompt_class_oracle(string $theme): array {
-        return ['system' => '', 'user' => get_string('ai_prompt_class_oracle', 'block_playerhud', $theme)];
+        $currentlang = get_string('thislanguage', 'langconfig');
+        $prompt = "You are an RPG game designer for an educational game."
+            . " Create a unique character based on the theme: {$theme}."
+            . ' Reply ONLY with valid JSON — no markdown, no extra text.'
+            . ' Structure: {"name":"character name (max 4 words)",'
+            . '"description":"flavour text (max 150 characters)","hp":120,'
+            . '"emoji":"<single Unicode emoji that visually represents this character"}'
+            . ' Rules for emoji: choose a thematic emoji that matches the character concept'
+            . ' (e.g. 🧙 for a wizard, 🏹 for an archer, 🌿 for a nature-based character);'
+            . ' never use ⚔️ as default — pick something specific to the character.'
+            . "\nGenerate all text content in the language: {$currentlang}.";
+        return ['system' => '', 'user' => $prompt];
     }
 
     /**
@@ -601,25 +696,40 @@ class generator {
      * @return array Prompt parts with 'system' and 'user' keys.
      */
     protected function build_prompt_story(string $theme, array $options = []): array {
-        $prompt = get_string('ai_prompt_story', 'block_playerhud', $theme);
+        $prompt = "You are an interactive story designer for an educational text-adventure game."
+            . " Create a branching story chapter based on the theme: {$theme}."
+            . " Rules: minimum 6 nodes and at least 2 distinct ending nodes;"
+            . " the starting node must have is_start=1;"
+            . " branch nodes must have exactly 2 or 3 choices;"
+            . ' terminal (ending) nodes must have "choices":[] and contain 2-3 sentences of satisfying'
+            . " concluding text that wraps up that narrative path;"
+            . " every branch MUST eventually reach a terminal node — do NOT create cycles or dead ends;"
+            . " all target_index values must reference valid indexes in this JSON."
+            . " Reply ONLY with valid JSON — no markdown, no extra text."
+            . ' Structure: {"title":"chapter title","intro":"one-line summary","nodes":[{"index":0,'
+            . '"content":"scene text (2-3 sentences)","is_start":1,'
+            . '"choices":[{"text":"choice label (max 60 chars)","target_index":1}]}]}';
 
         $karmagain = max(0, (int)($options['karma_gain'] ?? 0));
         $karmaloss = max(0, (int)($options['karma_loss'] ?? 0));
         $itemqty   = max(0, (int)($options['item_qty'] ?? 0));
 
         if ($karmagain > 0 || $karmaloss > 0) {
-            $prompt .= "\n\nReputation constraints: add a \"karma_delta\" integer field to every choice object. " .
-                "Distribute positive karma_delta values on virtuous choices, totalling approximately +{$karmagain}. " .
-                "Distribute negative karma_delta values on questionable choices, totalling approximately -{$karmaloss}. " .
-                "Choices with no moral weight should have karma_delta set to 0. " .
-                "Terminal nodes have no choices and therefore no karma_delta.";
+            $prompt .= "\n\nReputation constraints: add a \"karma_delta\" integer field to every choice object. "
+                . "Distribute positive karma_delta values on virtuous choices, totalling approximately +{$karmagain}. "
+                . "Distribute negative karma_delta values on questionable choices, totalling approximately -{$karmaloss}. "
+                . "Choices with no moral weight should have karma_delta set to 0. "
+                . "Terminal nodes have no choices and therefore no karma_delta.";
         }
 
         if ($itemqty > 0) {
-            $prompt .= "\n\nItem cost constraints: add a \"cost_item_qty\" integer field (use 0 for free choices) " .
-                "to every choice object. Distribute item costs totalling approximately {$itemqty} " .
-                "across key choices where the player must pay a price to proceed.";
+            $prompt .= "\n\nItem cost constraints: add a \"cost_item_qty\" integer field (use 0 for free choices) "
+                . "to every choice object. Distribute item costs totalling approximately {$itemqty} "
+                . "across key choices where the player must pay a price to proceed.";
         }
+
+        $currentlang = get_string('thislanguage', 'langconfig');
+        $prompt .= "\nGenerate all text content in the language: {$currentlang}.";
 
         return ['system' => '', 'user' => $prompt];
     }
@@ -659,6 +769,11 @@ class generator {
         $class->base_hp         = isset($aidata['hp']) ? max(1, (int)$aidata['hp']) : 100;
         $class->timecreated     = time();
         $class->timemodified    = time();
+
+        $emoji = trim($aidata['emoji'] ?? '');
+        if (!empty($emoji) && strpos($emoji, 'http') !== 0) {
+            $class->emoji_tier1 = $emoji;
+        }
 
         $DB->insert_record('block_playerhud_classes', $class);
 

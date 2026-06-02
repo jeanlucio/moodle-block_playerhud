@@ -673,6 +673,164 @@ if ($action === 'suggest_quests' || $action === 'save_suggestions') {
     exit;
 }
 
+// Action: Suggest Trades (Avatar pack + PlayerCoin heuristic).
+if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
+    // Fetch PlayerCoin.
+    $playercoin = $DB->get_record('block_playerhud_items', [
+        'blockinstanceid' => $instanceid,
+        'action_type'     => 'playercoin',
+    ], '*', MUST_EXIST);
+
+    // Fetch all avatar items.
+    $avatars = $DB->get_records_select(
+        'block_playerhud_items',
+        "blockinstanceid = :id AND action_type = 'avatar_profile'",
+        ['id' => $instanceid],
+        'id ASC'
+    );
+
+    // Preload coverage to skip suggestions that already have trades.
+    // Individual: avatar is the sole reward of an existing trade.
+    // Bundle: a single trade already rewards all current avatars.
+    $individualcoveredids = [];
+    $bundleexists = false;
+    if (!empty($avatars)) {
+        $avatarids = array_keys($avatars);
+        [$avsql, $avparams] = $DB->get_in_or_equal($avatarids, SQL_PARAMS_NAMED, 'av');
+        $soletrades = $DB->get_records_sql(
+            "SELECT DISTINCT tr.itemid
+               FROM {block_playerhud_trade_rewards} tr
+               JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
+              WHERE t.blockinstanceid = :iid
+                AND tr.itemid $avsql
+                AND (SELECT COUNT(*) FROM {block_playerhud_trade_rewards} tr2
+                      WHERE tr2.tradeid = tr.tradeid) = 1",
+            array_merge(['iid' => $instanceid], $avparams)
+        );
+        foreach ($soletrades as $r) {
+            $individualcoveredids[$r->itemid] = true;
+        }
+        [$bsql, $bparams] = $DB->get_in_or_equal($avatarids, SQL_PARAMS_NAMED, 'bv');
+        $bundleexists = !empty($DB->get_records_sql(
+            "SELECT tr.tradeid
+               FROM {block_playerhud_trade_rewards} tr
+               JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
+              WHERE t.blockinstanceid = :iid
+                AND tr.itemid $bsql
+           GROUP BY tr.tradeid
+             HAVING COUNT(tr.itemid) >= :total",
+            array_merge(['iid' => $instanceid, 'total' => count($avatarids)], $bparams)
+        ));
+    }
+
+    // Build suggestion list: one per avatar without an individual trade + bundle if not yet created.
+    $suggestions = [];
+    foreach ($avatars as $avatar) {
+        if (isset($individualcoveredids[$avatar->id])) {
+            continue;
+        }
+        $suggestions[] = [
+            'uid'          => 'ind_' . $avatar->id,
+            'cost_qty'     => 5,
+            'cost_itemid'  => $playercoin->id,
+            'cost_emoji'   => '🪙',
+            'reward_emoji' => $avatar->image,
+            'reward_label' => format_string($avatar->name),
+            'rewards'      => [['id' => $avatar->id, 'qty' => 1]],
+            'name'         => format_string($avatar->name),
+        ];
+    }
+
+    // Bundle: 50 coins → all avatars, only if no bundle trade exists yet.
+    if (!$bundleexists && !empty($avatars)) {
+        $bundlerewards = array_map(fn($av) => ['id' => $av->id, 'qty' => 1], array_values($avatars));
+        $suggestions[] = [
+            'uid'          => 'bundle_all',
+            'cost_qty'     => 50,
+            'cost_itemid'  => $playercoin->id,
+            'cost_emoji'   => '🪙',
+            'reward_emoji' => '🎭',
+            'reward_label' => get_string('avatar_pack_create', 'block_playerhud') .
+                              ' (' . count($avatars) . ')',
+            'rewards'      => $bundlerewards,
+            'name'         => get_string('avatar_pack_create', 'block_playerhud'),
+        ];
+    }
+
+    if ($action === 'suggest_trades' && empty($suggestions)) {
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'trades']),
+            get_string('trade_sug_none_available', 'block_playerhud'),
+            \core\output\notification::NOTIFY_INFO
+        );
+    }
+
+    $formurl = new moodle_url($baseurl, ['tab' => 'trades']);
+    $sugform = new \block_playerhud\form\suggest_trades_form($formurl, ['suggestions' => $suggestions]);
+
+    if ($action === 'suggest_trades') {
+        $sugform->set_data([
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'action'     => 'save_suggest_trades',
+        ]);
+    }
+
+    if ($sugform->is_cancelled()) {
+        redirect(new moodle_url($baseurl, ['tab' => 'trades']));
+    } else if ($data = $sugform->get_data()) {
+        $now = time();
+        $count = 0;
+        $transaction = $DB->start_delegated_transaction();
+        foreach ($suggestions as $sug) {
+            $field = 'sug_' . $sug['uid'];
+            if (empty($data->$field)) {
+                continue;
+            }
+            $tradeid = $DB->insert_record('block_playerhud_trades', (object) [
+                'blockinstanceid' => $instanceid,
+                'name'            => $sug['name'],
+                'groupid'         => 0,
+                'centralized'     => 1,
+                'onetime'         => 1,
+                'timecreated'     => $now,
+            ]);
+            $DB->insert_record('block_playerhud_trade_reqs', (object) [
+                'tradeid' => $tradeid,
+                'itemid'  => $sug['cost_itemid'],
+                'qty'     => $sug['cost_qty'],
+            ]);
+            foreach ($sug['rewards'] as $reward) {
+                $DB->insert_record('block_playerhud_trade_rewards', (object) [
+                    'tradeid' => $tradeid,
+                    'itemid'  => $reward['id'],
+                    'qty'     => $reward['qty'],
+                ]);
+            }
+            $count++;
+        }
+        $transaction->allow_commit();
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'trades']),
+            get_string('trade_sug_created', 'block_playerhud', $count),
+            \core\output\notification::NOTIFY_SUCCESS
+        );
+    }
+
+    $PAGE->requires->js_call_amd('block_playerhud/manage_trades', 'init', [[
+        'strings' => [
+            'confirm_title' => get_string('confirmation', 'admin'),
+            'yes'           => get_string('yes'),
+            'cancel'        => get_string('cancel'),
+        ],
+    ]]);
+
+    echo $OUTPUT->header();
+    $sugform->display();
+    echo $OUTPUT->footer();
+    exit;
+}
+
 // PRE-RENDER LOGIC (Controller Strategy).
 $contenthtml = '';
 

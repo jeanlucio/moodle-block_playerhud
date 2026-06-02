@@ -35,7 +35,7 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
 * 📖 **Story & Chapters:** Branching narrative system with choice nodes and per-class story paths.
 * ⚖️ **Karma System:** Moral alignment mechanic that evolves the student’s class portrait over time.
 * 📊 **Analytics:** Audit logs and game economy tracking for teacher oversight.
-* 🤖 **AI Tools (Optional):** Two AI-powered features powered by Gemini, Groq, or any OpenAI-compatible provider:
+* 🤖 **AI Tools (Optional):** Two AI-powered features with a four-level provider chain (see [AI Provider Chain](#-ai-provider-chain) below):
   * **Content Generator** — creates items, story chapters with branching nodes, and RPG class backstories on demand.
   * **Game Master Assistant** — a conversational chat tab for teachers. Ask questions about game design, get suggestions, and trigger actions (create item, create quest, generate chapter) with a confirmation step before anything is saved.
 * 📱 **Mobile-Ready:** Compatible with Moodle web services.
@@ -201,16 +201,22 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | Test file | Cases | What is covered |
 |-----------|------:|----------------|
 | `backup_restore_test.php` | 3 | Backup/restore step definitions cover all RPG tables; round-trip preserves data |
+| `collection_tab_test.php` | 6 | Collection tab: `filter_type` mapping (avatar/deadline/none), `power_hint_avatar` shown for unowned non-secret item and hidden for secret item, `is_equipped` flag |
+| `content_crud_test.php` | 13 | Item, chapter and trade CRUD: create persists all fields, update changes fields, delete removes record, listing scoped to instance |
+| `cross_instance_security_test.php` | 12 | Cross-instance isolation: item, quest, chapter and trade guards accept own-instance IDs and reject foreign ones without modifying the target record |
 | `drop_guard_test.php` | 7 | Collection limits, trade-consumed items, cooldown enforcement |
-| `game_test.php` | 6 | XP and level aggregation, quest XP inclusion/exclusion, collection anti-farm and cooldown |
+| `external_playercoin_test.php` | 12 | `create_playercoin` (idempotency, capability guard); `create_avatar_pack` (17 items, emoji deduplication, idempotency); `setup_playercoin_drop` (success, no forum, cross-instance item isolation, intro prepend, capability guard) |
+| `game_test.php` | 10 | XP and level aggregation, quest XP inclusion/exclusion, collection anti-farm and cooldown; `get_avatar_item` (enabled, disabled, foreign instance, not found) |
 | `gamemaster_test.php` | 6 | Grant/revoke/delete item and quest while preserving leaderboard timestamps; XP floor at zero |
 | `karma_test.php` | 11 | Karma read/write, positive/negative deltas, clamping at ±999 boundaries, successive accumulation |
 | `privacy_provider_test.php` | 2 | GDPR: delete all data for user; delete user preferences |
 | `quest_test.php` | 22 | Completion checks (level, XP, items, trades); claim rewards; disabled quest; idempotency |
 | `rpg_classes_test.php` | 7 | Class assignment, duplicate guard, karma initialisation, portrait tier boundaries |
 | `story_manager_test.php` | 15 | Scene loading, progress persistence, choice navigation, karma delta, chapter completion, error cases |
+| `suggest_trades_state_test.php` | 4 | Suggest Trades button: disabled without prereqs, disabled with coin only, disabled when all avatars covered, enabled on partial coverage |
 | `trade_test.php` | 7 | Trade assembly, insufficient funds, atomic success, one-time limit, group restriction |
-| **Total** | **86** | |
+| `utils_test.php` | 2 | `get_avatar_html`: emoji produces `ph-avatar-emoji` div with aria-hidden span; HTTP URL produces `ph-avatar-img` img tag |
+| **Total** | **139** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -253,9 +259,35 @@ No. The plugin works fully without any external AI service.
 All content can be created manually inside Moodle.
 The AI features are productivity tools — the assistant also accepts confirmation before saving anything.
 
-### Supported Providers
+### 🔗 AI Provider Chain
 
-The AI feature supports the following third-party providers:
+PlayerHUD selects an AI provider using a fixed priority order. The first provider with a working configuration is used; if it fails, the next one is tried automatically.
+
+**Provider selection order:**
+
+| Priority | Provider | Notes |
+|----------|----------|-------|
+| 1 | **Moodle `core_ai`** | Uses whichever AI providers the site admin configured in *Site administration → AI → AI providers*. On Moodle 5.2+, `core_ai` itself has internal fallback between multiple configured providers. No API key needed in PlayerHUD. |
+| 2 | **Google Gemini** | Direct API call with JSON output mode enforced. |
+| 3 | **Groq** | Direct API call with JSON output mode enforced. |
+| 4 | **OpenAI-compatible** | Any provider following the OpenAI `/chat/completions` format. |
+
+**Key resolution per direct provider (Gemini / Groq / OpenAI):**
+
+When PlayerHUD needs to call a provider directly, it looks for the API key in this order:
+
+| Level | Source |
+|-------|--------|
+| 1 | Teacher’s personal key set in PlayerHUD (*Configurações* tab → API keys) |
+| 2 | Site-wide key set by the admin in PlayerHUD settings |
+| 3 | Teacher’s personal key set in **local_playergames** hub (if installed) |
+| 4 | Site-wide key set in **local_playergames** hub settings (if installed) |
+
+This means: if a teacher has configured their own key in the PlayerGames hub, PlayerHUD will use it automatically — no need to re-enter the key in PlayerHUD.
+
+> **Provider order beats key origin.** If a Gemini key exists only at level 4 (PlayerGames site config) and a Groq key exists at level 2 (PlayerHUD site config), Gemini is used because it is tested first.
+
+### Supported Direct Providers
 
 - **Google Gemini** — https://ai.google.dev/
 - **Groq** — https://console.groq.com/
@@ -277,12 +309,13 @@ The PlayerHUD plugin does not provide API keys.
 
 ### Where API keys are configured
 
-API keys may be configured:
+API keys may be configured through any of the following sources (in decreasing priority):
 
-- Globally by the Moodle site administrator, and/or
-- Individually by teachers within their courses.
-
-API keys are stored within Moodle configuration settings.
+1. **Moodle `core_ai`** — configured by the site admin in *Site administration → AI → AI providers* (no key stored in PlayerHUD).
+2. **PlayerHUD personal key** — set by each teacher individually in the *Configurações* tab of the management panel.
+3. **PlayerHUD site key** — set by the site admin in *Site administration → Plugins → Blocks → PlayerHUD*.
+4. **PlayerGames hub personal key** — set by each teacher in *local_playergames → My AI Keys* (if the hub is installed).
+5. **PlayerGames hub site key** — set by the site admin in *local_playergames* settings (if the hub is installed).
 
 ### Data Transmission
 
@@ -328,7 +361,7 @@ Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo q
 * 📖 **História e Capítulos:** Sistema narrativo ramificado com nós de escolha e caminhos por classe.
 * ⚖️ **Sistema de Karma:** Mecânica de alinhamento moral que evolui o retrato da classe do aluno ao longo do tempo.
 * 📊 **Analytics:** Logs de auditoria e rastreamento da economia do jogo para controle do professor.
-* 🤖 **Ferramentas de IA (Opcional):** Dois recursos com suporte a Gemini, Groq ou qualquer API compatível com OpenAI:
+* 🤖 **Ferramentas de IA (Opcional):** Dois recursos com cadeia de quatro níveis de provedores (veja [Cadeia de Provedores de IA](#-cadeia-de-provedores-de-ia) abaixo):
   * **Gerador de Conteúdo** — cria itens, capítulos de história com nós ramificados e backstories de classes RPG sob demanda.
   * **Assistente Game Master** — aba de chat conversacional para professores. Tire dúvidas sobre design de jogo, receba sugestões e acione ações (criar item, missão, capítulo) com uma etapa de confirmação antes de salvar.
 * 📱 **Compatível com Mobile.**
@@ -494,16 +527,22 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | Arquivo de teste | Casos | O que é coberto |
 |-----------------|------:|----------------|
 | `backup_restore_test.php` | 3 | Definições de backup/restore cobrem todas as tabelas RPG; round-trip preserva os dados |
+| `collection_tab_test.php` | 6 | Aba Coleção: mapeamento de `filter_type` (avatar/prazo/nenhum), `power_hint_avatar` exibido para item não-secreto não possuído e oculto para secreto, flag `is_equipped` |
+| `content_crud_test.php` | 13 | CRUD de itens, capítulos e trocas: criação persiste todos os campos, atualização altera campos, exclusão remove registro, listagem escoped por instância |
+| `cross_instance_security_test.php` | 12 | Isolamento cross-instance: guardas de item, quest, capítulo e troca aceitam IDs da própria instância e rejeitam IDs alheios sem modificar o registro alvo |
 | `drop_guard_test.php` | 7 | Limites de coleta, itens consumidos por troca, aplicação de cooldown |
-| `game_test.php` | 6 | Agregação de XP e nível, XP de quests (inclusão/exclusão), anti-farm de coleta e cooldown |
+| `external_playercoin_test.php` | 12 | `create_playercoin` (idempotência, guarda de capacidade); `create_avatar_pack` (17 itens, deduplicação por emoji, idempotência); `setup_playercoin_drop` (sucesso, sem fórum, isolamento cross-instance, prepend de intro, guarda de capacidade) |
+| `game_test.php` | 10 | Agregação de XP e nível, XP de quests (inclusão/exclusão), anti-farm de coleta e cooldown; `get_avatar_item` (habilitado, desabilitado, instância estrangeira, não encontrado) |
 | `gamemaster_test.php` | 6 | Conceder/revogar/excluir item e quest preservando timestamps do ranking; XP mínimo em zero |
 | `karma_test.php` | 11 | Leitura/escrita de karma, deltas positivos/negativos, clamping nos limites ±999, acumulação sucessiva |
 | `privacy_provider_test.php` | 2 | LGPD: exclusão de todos os dados do usuário; exclusão de preferências |
 | `quest_test.php` | 22 | Verificações de conclusão (nível, XP, itens, trocas); reivindicar recompensas; quest desabilitada; idempotência |
 | `rpg_classes_test.php` | 7 | Atribuição de classe, proteção contra duplicatas, inicialização de karma, limites de tier de retrato |
 | `story_manager_test.php` | 15 | Carregamento de cena, persistência de progresso, navegação de escolhas, delta de karma, conclusão de capítulo, casos de erro |
+| `suggest_trades_state_test.php` | 4 | Botão Sugerir Trocas: desabilitado sem pré-requisitos, desabilitado só com moeda, desabilitado quando todos os avatares cobertos, habilitado com cobertura parcial |
 | `trade_test.php` | 7 | Montagem de trocas, fundos insuficientes, sucesso atômico, limite único, restrição por grupo |
-| **Total** | **86** | |
+| `utils_test.php` | 2 | `get_avatar_html`: emoji gera div `ph-avatar-emoji` com span aria-hidden; URL HTTP gera tag img `ph-avatar-img` |
+| **Total** | **139** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -546,9 +585,35 @@ Não. O plugin funciona de forma completa sem qualquer serviço externo.
 Todo o conteúdo pode ser criado manualmente dentro do Moodle.
 Os recursos de IA são ferramentas de produtividade — o assistente exige confirmação antes de salvar qualquer coisa.
 
-### Provedores suportados
+### 🔗 Cadeia de Provedores de IA
 
-O recurso de IA oferece suporte aos seguintes provedores externos:
+O PlayerHUD seleciona um provedor de IA seguindo uma ordem de prioridade fixa. O primeiro provedor com configuração disponível é utilizado; se ele falhar, o próximo é tentado automaticamente.
+
+**Ordem de seleção de provedor:**
+
+| Prioridade | Provedor | Observações |
+|------------|----------|-------------|
+| 1 | **Moodle `core_ai`** | Usa os provedores configurados pelo admin em *Administração do site → IA → Provedores de IA*. No Moodle 5.2+, o `core_ai` já tem fallback interno entre múltiplos provedores configurados. Nenhuma chave precisa ser cadastrada no PlayerHUD. |
+| 2 | **Google Gemini** | Chamada direta com modo de saída JSON forçado. |
+| 3 | **Groq** | Chamada direta com modo de saída JSON forçado. |
+| 4 | **OpenAI-compatível** | Qualquer provedor que siga o formato `/chat/completions` da OpenAI. |
+
+**Resolução de chave por provedor direto (Gemini / Groq / OpenAI):**
+
+Quando o PlayerHUD precisa chamar um provedor diretamente, a chave de API é buscada nesta ordem:
+
+| Nível | Origem |
+|-------|--------|
+| 1 | Chave pessoal do professor cadastrada no PlayerHUD (aba *Configurações* → Chaves de API) |
+| 2 | Chave global cadastrada pelo admin nas configurações do PlayerHUD |
+| 3 | Chave pessoal do professor cadastrada no hub **local_playergames** (se instalado) |
+| 4 | Chave global cadastrada pelo admin nas configurações do **local_playergames** (se instalado) |
+
+Isso significa: se o professor já tem uma chave configurada no hub PlayerGames, o PlayerHUD a utiliza automaticamente — sem precisar recadastrar.
+
+> **A ordem do provedor prevalece sobre a origem da chave.** Se uma chave Gemini existe apenas no nível 4 (config global do PlayerGames) e uma chave Groq existe no nível 2 (config global do PlayerHUD), o Gemini é utilizado porque é testado primeiro.
+
+### Provedores diretos suportados
 
 - **Google Gemini** — https://ai.google.dev/
 - **Groq** — https://console.groq.com/
@@ -570,12 +635,13 @@ O PlayerHUD não fornece chaves de API.
 
 ### Onde a chave é configurada
 
-As chaves de API podem ser configuradas:
+As chaves de API podem ser configuradas por qualquer uma das seguintes origens (em ordem decrescente de prioridade):
 
-- Globalmente pelo administrador do Moodle, e/ou
-- Individualmente pelo professor dentro de seus cursos.
-
-As chaves são armazenadas nas configurações do Moodle.
+1. **Moodle `core_ai`** — configurado pelo admin em *Administração do site → IA → Provedores de IA* (nenhuma chave armazenada no PlayerHUD).
+2. **Chave pessoal no PlayerHUD** — configurada individualmente por cada professor na aba *Configurações* do painel de gerenciamento.
+3. **Chave global no PlayerHUD** — configurada pelo admin em *Administração do site → Plugins → Blocos → PlayerHUD*.
+4. **Chave pessoal no hub PlayerGames** — configurada pelo professor em *local_playergames → Minhas chaves de IA* (se o hub estiver instalado).
+5. **Chave global no hub PlayerGames** — configurada pelo admin nas configurações do *local_playergames* (se o hub estiver instalado).
 
 ### Transmissão de dados
 

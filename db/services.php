@@ -125,4 +125,40 @@ $functions = [
         'ajax'          => true,
         'loginrequired' => true,
     ],
+
+    'block_playerhud_create_playercoin' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'create_playercoin',
+        'description'   => 'Create or return the existing PlayerCoin item for a block instance',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_create_avatar_pack' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'create_avatar_pack',
+        'description'   => 'Create the pre-defined avatar item pack for a block instance',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_use_item' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'use_item',
+        'description'   => 'Equip/unequip an avatar item or consume a deadline extension item',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_setup_playercoin_drop' => [
+        'classname'     => 'block_playerhud\external',
+        'methodname'    => 'setup_playercoin_drop',
+        'description'   => 'Create an infinite drop for the PlayerCoin in the course news forum',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
 ];

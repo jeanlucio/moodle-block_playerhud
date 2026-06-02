@@ -340,14 +340,21 @@ if ($isoptin) {
 
     // E. Initialize JS.
     $jsvars = [
+        'instanceid' => $instanceid,
+        'courseid'   => $courseid,
         'strings' => [
-            'confirm_title' => get_string('confirmation', 'admin'),
-            'yes' => get_string('yes'),
-            'cancel' => get_string('cancel'),
-            'no_desc' => get_string('no_description', 'block_playerhud'),
-            'last_collected' => get_string('last_collected', 'block_playerhud'),
-            'collected' => get_string('collected', 'block_playerhud'),
-            'respawntime' => get_string('respawntime', 'block_playerhud'),
+            'confirm_title'        => get_string('confirmation', 'admin'),
+            'yes'                  => get_string('yes'),
+            'cancel'               => get_string('cancel'),
+            'no_desc'              => get_string('no_description', 'block_playerhud'),
+            'last_collected'       => get_string('last_collected', 'block_playerhud'),
+            'collected'            => get_string('collected', 'block_playerhud'),
+            'respawntime'          => get_string('respawntime', 'block_playerhud'),
+            'item_equip'           => get_string('item_equip', 'block_playerhud'),
+            'item_unequip'         => get_string('item_unequip', 'block_playerhud'),
+            'item_use_confirm'     => get_string('item_use_confirm', 'block_playerhud'),
+            'item_use_pick'        => get_string('item_use_pick_activity', 'block_playerhud'),
+            'item_equipped_badge'  => get_string('item_equipped_badge', 'block_playerhud'),
         ],
     ];
     $PAGE->requires->js_call_amd('block_playerhud/view', 'init', [$jsvars]);

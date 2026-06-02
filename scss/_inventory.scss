@@ -209,4 +209,23 @@
         z-index: 5;
         font-size: 0.85rem;
     }
+
+    .ph-power-hint-badge {
+        display: inline-block;
+        font-size: 0.65rem;
+        padding: 2px 7px;
+        border-radius: 10px;
+        margin-top: 4px;
+        background: transparent;
+
+        &.ph-power-hint-avatar {
+            border: 1px dashed var(--info, #0dcaf0);
+            color: var(--info, #0dcaf0);
+        }
+
+        &.ph-power-hint-deadline {
+            border: 1px dashed var(--warning, #ffc107);
+            color: var(--warning, #ffc107);
+        }
+    }
 }

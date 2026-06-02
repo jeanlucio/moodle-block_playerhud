@@ -234,6 +234,18 @@ class tab_collection implements renderable, templatable {
                     $itemobj['date_str'] = userdate($lastts, get_string('strftimedatefullshort', 'langconfig'));
                 }
 
+                // Power hint for unowned non-secret items.
+                if ($totalcount == 0 && !$item->secret && !empty($item->action_type)) {
+                    if ($item->action_type === 'avatar_profile') {
+                        $itemobj['power_hint_avatar'] = true;
+                    } else if (
+                        $item->action_type === 'deadline_extension'
+                        && class_exists('\local_latepenalty\recalculator')
+                    ) {
+                        $itemobj['power_hint_deadline'] = true;
+                    }
+                }
+
                 // Common data for sorting.
                 $itemobj['id'] = $item->id;
                 $itemobj['sort_name'] = $sortname;
@@ -246,6 +258,45 @@ class tab_collection implements renderable, templatable {
                 $itemobj['count'] = $totalcount;
                 $itemobj['timestamp'] = $lastts;
 
+                // Power action data (only for owned items with a configured power).
+                if ($totalcount > 0 && !empty($item->action_type)) {
+                    $itemobj['has_power']   = true;
+                    $itemobj['action_type'] = $item->action_type;
+                    $itemobj['itemid']      = $item->id;
+
+                    if ($item->action_type === 'avatar_profile') {
+                        $itemobj['is_avatar']   = true;
+                        $itemobj['is_deadline'] = false;
+                        $equippedid = (int) get_user_preferences(
+                            'block_playerhud_avatar_' . $this->instanceid,
+                            0
+                        );
+                        $itemobj['is_equipped'] = ($equippedid == (int)$item->id);
+                    } else if (
+                        $item->action_type === 'deadline_extension'
+                        && class_exists('\local_latepenalty\recalculator')
+                    ) {
+                        $itemobj['is_avatar']   = false;
+                        $itemobj['is_deadline'] = true;
+                        $av   = !empty($item->action_value) ? json_decode($item->action_value, true) : [];
+                        $cmid = (int)($av['cmid'] ?? 0);
+                        if ($cmid > 0) {
+                            $itemobj['lp_has_multiple'] = false;
+                            $itemobj['lp_activities']   = [];
+                            $itemobj['lp_warning']      = false;
+                        } else {
+                            $lpacts = $this->get_lp_activities();
+                            $itemobj['lp_has_multiple'] = count($lpacts) > 1;
+                            $itemobj['lp_activities']   = array_map(
+                                fn($c, $n) => ['cmid' => $c, 'name' => $n],
+                                array_keys($lpacts),
+                                array_values($lpacts)
+                            );
+                            $itemobj['lp_warning'] = empty($lpacts);
+                        }
+                    }
+                }
+
                 $itemobj['count_infinite'] = $countinfinite;
                 $itemobj['count_finite'] = $countfinite;
                 $itemobj['has_infinite_copies'] = ($countinfinite > 0);
@@ -254,6 +305,15 @@ class tab_collection implements renderable, templatable {
 
                 $itemobj['is_image_bool'] = $media['is_image'] ? 1 : 0;
                 $itemobj['tabindex'] = '0';
+
+                $actiontype = $item->action_type ?? '';
+                if ($actiontype === 'avatar_profile') {
+                    $itemobj['filter_type'] = 'avatar';
+                } else if ($actiontype === 'deadline_extension') {
+                    $itemobj['filter_type'] = 'deadline';
+                } else {
+                    $itemobj['filter_type'] = 'none';
+                }
 
                 $itemsdata[] = $itemobj;
             }
@@ -328,10 +388,36 @@ class tab_collection implements renderable, templatable {
         }
 
         return [
-            'items' => $itemsdata,
-            'has_items' => !empty($itemsdata),
+            'items'        => $itemsdata,
+            'has_items'    => !empty($itemsdata),
             'sort_options' => $sortoptions,
-            'show_filter' => !empty($itemsdata),
+            'show_filter'  => !empty($itemsdata),
+            'instanceid'   => $this->instanceid,
         ];
+    }
+
+    /**
+     * Return LP-eligible activities (local_latepenalty_rules.enabled = 1) for this block's course.
+     *
+     * @return array cmid => activity name map.
+     */
+    protected function get_lp_activities(): array {
+        global $DB;
+
+        $coursecontext = \context_block::instance($this->instanceid)->get_course_context();
+        $courseid      = $coursecontext->instanceid;
+        $modinfo       = get_fast_modinfo($courseid);
+        $rules         = $DB->get_records('local_latepenalty_rules', ['enabled' => 1]);
+
+        $activities = [];
+        foreach ($rules as $rule) {
+            try {
+                $cm = $modinfo->get_cm($rule->cmid);
+                $activities[$rule->cmid] = format_string($cm->name);
+            } catch (\moodle_exception $e) {
+                continue;
+            }
+        }
+        return $activities;
     }
 }

@@ -85,7 +85,14 @@ class tab_items implements renderable {
                 'itemid' => $editid,
             ]);
 
-            $this->mform = new edit_item_form($actionurl->out(false), ['instanceid' => $this->instanceid]);
+            $lpactivities = [];
+            if (class_exists('\local_latepenalty\recalculator')) {
+                $lpactivities = $this->get_lp_activities();
+            }
+            $this->mform = new edit_item_form($actionurl->out(false), [
+                'instanceid' => $this->instanceid,
+                'lp_activities' => $lpactivities,
+            ]);
 
             if ($this->mform->is_cancelled()) {
                 redirect($baseurl);
@@ -120,6 +127,15 @@ class tab_items implements renderable {
                     $record->required_class_id = '0';
                 }
 
+                $record->action_type = $data->action_type ?? '';
+                if ($record->action_type === 'deadline_extension') {
+                    $days = max(1, (int)($data->extension_days ?? 1));
+                    $cmid = max(0, (int)($data->extension_cmid ?? 0));
+                    $record->action_value = json_encode(['days' => $days, 'cmid' => $cmid]);
+                } else {
+                    $record->action_value = '';
+                }
+
                 if ($itemid > 0) {
                     $DB->update_record('block_playerhud_items', $record);
                     $newitemid = $itemid;
@@ -152,6 +168,13 @@ class tab_items implements renderable {
                         $data['required_class_id'] = 0;
                     }
                     $data['description'] = ['text' => $item->description, 'format' => FORMAT_HTML];
+
+                    $data['action_type'] = $item->action_type ?? '';
+                    if ($item->action_type === 'deadline_extension' && !empty($item->action_value)) {
+                        $av = json_decode($item->action_value, true);
+                        $data['extension_days'] = $av['days'] ?? 1;
+                        $data['extension_cmid'] = $av['cmid'] ?? 0;
+                    }
 
                     $draftitemid = file_get_submitted_draft_itemid('image_file');
                     $context = \context_block::instance($this->instanceid);
@@ -272,6 +295,10 @@ class tab_items implements renderable {
         $itemsdata = [];
         $context = \context_block::instance($this->instanceid);
         $counter = ($page * $perpage) + 1;
+        $powerbadgelabels = [
+            'avatar_profile'     => get_string('item_power_badge_avatar', 'block_playerhud'),
+            'deadline_extension' => get_string('item_power_deadline', 'block_playerhud'),
+        ];
 
         if ($items) {
             $dropscounts = [];
@@ -360,6 +387,10 @@ class tab_items implements renderable {
                         'id' => $this->courseid,
                     ]))->out(false),
 
+                    // Power badge.
+                    'has_power'   => !empty($item->action_type),
+                    'power_badge' => $powerbadgelabels[$item->action_type] ?? '',
+
                     // Item specific strings.
                     'str_manage_drops' => get_string('manage_drops_title', 'block_playerhud', format_string($item->name)),
                     'str_secret' => $str['secret'],
@@ -414,31 +445,43 @@ class tab_items implements renderable {
             'str_empty' => $str['empty'],
             'str_delete_selected' => $str['delete_selected'],
 
+            // PlayerCoin button.
+            'str_playercoin_create' => get_string('playercoin_create', 'block_playerhud'),
+
+            // Avatar pack button.
+            'str_avatar_pack_create' => get_string('avatar_pack_create', 'block_playerhud'),
+
             // Modals.
             'modal_ai_html' => $OUTPUT->render_from_template('block_playerhud/modal_ai', []),
             'modal_preview_html' => $OUTPUT->render_from_template('block_playerhud/modal_item', []),
         ];
 
-        // 7. JS Initialization.
+        // 7. JS Initialization — strings preloaded via strings_for_js to avoid the
+        // 1024-char js_call_amd argument limit (triggered with longer locales like Spanish).
+        $PAGE->requires->strings_for_js([
+            'ai_validation_theme',
+            'ai_success',
+            'gen_copy',
+            'great',
+            'ai_creating',
+            'no_description',
+            'delete_selected',
+            'delete_n_items',
+            'confirm_bulk_delete',
+            'ai_created_count',
+            'playercoin_created',
+            'playercoin_already_exists',
+            'playercoin_drop_title',
+            'playercoin_drop_confirm',
+            'playercoin_drop_yes',
+            'playercoin_drop_no',
+        ], 'block_playerhud');
+        $PAGE->requires->string_for_js('confirmation', 'admin');
+        $PAGE->requires->strings_for_js(['yes', 'cancel', 'success'], 'moodle');
+
         $jsvars = [
             'courseid' => $this->courseid,
             'instanceid' => $this->instanceid,
-            'strings' => [
-                'err_theme' => get_string('ai_validation_theme', 'block_playerhud'),
-                'success' => get_string('ai_success', 'block_playerhud'),
-                'copy' => get_string('gen_copy', 'block_playerhud'),
-                'great' => get_string('great', 'block_playerhud'),
-                'confirm_title' => get_string('confirmation', 'admin'),
-                'yes' => get_string('yes'),
-                'cancel' => get_string('cancel'),
-                'ai_creating' => get_string('ai_creating', 'block_playerhud'),
-                'success_title' => get_string('success', 'core'),
-                'no_desc' => get_string('no_description', 'block_playerhud'),
-                'delete_selected' => get_string('delete_selected', 'block_playerhud'),
-                'delete_n_items' => get_string('delete_n_items', 'block_playerhud'),
-                'confirm_bulk' => get_string('confirm_bulk_delete', 'block_playerhud'),
-                'created_count' => get_string('ai_created_count', 'block_playerhud'),
-            ],
         ];
         $PAGE->requires->js_call_amd('block_playerhud/manage_items', 'init', [$jsvars]);
 
@@ -835,5 +878,31 @@ class tab_items implements renderable {
             'icon_class' => $icon,
             'active' => $active,
         ];
+    }
+
+    /**
+     * Return LP-eligible activities (those with local_latepenalty_rules.enabled = 1) for this course.
+     *
+     * @return array cmid => activity name map.
+     */
+    protected function get_lp_activities(): array {
+        global $DB;
+
+        $modinfo = get_fast_modinfo($this->courseid);
+        $sql = "SELECT r.cmid, r.enabled
+                  FROM {local_latepenalty_rules} r
+                 WHERE r.enabled = 1";
+        $rules = $DB->get_records_sql($sql);
+
+        $activities = [];
+        foreach ($rules as $rule) {
+            try {
+                $cm = $modinfo->get_cm($rule->cmid);
+                $activities[$rule->cmid] = format_string($cm->name);
+            } catch (\moodle_exception $e) {
+                continue;
+            }
+        }
+        return $activities;
     }
 }

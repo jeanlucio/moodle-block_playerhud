@@ -96,6 +96,7 @@ class tab_classes implements renderable {
         $classesdata = [];
         foreach ($classes as $class) {
             $portrait = null;
+            $portraitemoji = null;
             if (isset($portraitbyclass[$class->id])) {
                 $f = $portraitbyclass[$class->id];
                 $portrait = \moodle_url::make_pluginfile_url(
@@ -106,6 +107,17 @@ class tab_classes implements renderable {
                     $f->get_filepath(),
                     $f->get_filename()
                 )->out();
+            }
+
+            if (empty($portrait)) {
+                $emoji1 = $class->emoji_tier1 ?? '';
+                if (!empty($emoji1)) {
+                    if (strpos($emoji1, 'http') === 0) {
+                        $portrait = $emoji1;
+                    } else {
+                        $portraitemoji = $emoji1;
+                    }
+                }
             }
 
             $deleteurl = new moodle_url($basemanageurl, [
@@ -121,17 +133,18 @@ class tab_classes implements renderable {
             ]);
 
             $classesdata[] = [
-                'id'          => $class->id,
-                'name'        => format_string($class->name),
-                'description' => !empty($class->description)
+                'id'             => $class->id,
+                'name'           => format_string($class->name),
+                'description'    => !empty($class->description)
                     ? format_text($class->description, FORMAT_HTML, ['noclean' => false])
                     : '',
-                'base_hp'     => (int)$class->base_hp,
-                'portrait'    => $portrait,
-                'has_portrait' => !empty($portrait),
-                'url_edit'    => $editurl->out(false),
-                'url_delete'  => $deleteurl->out(false),
-                'confirm_msg' => s(get_string('class_delete_confirm', 'block_playerhud')),
+                'base_hp'        => (int)$class->base_hp,
+                'portrait'       => $portrait,
+                'has_portrait'   => !empty($portrait),
+                'portrait_emoji' => $portraitemoji,
+                'url_edit'       => $editurl->out(false),
+                'url_delete'     => $deleteurl->out(false),
+                'confirm_msg'    => s(get_string('class_delete_confirm', 'block_playerhud')),
             ];
         }
 
@@ -167,11 +180,14 @@ class tab_classes implements renderable {
             $this->instanceid,
             $this->courseid,
             [
-                'ai_creating'         => get_string('ai_creating', 'block_playerhud'),
-                'validation_theme'    => get_string('ai_validation_theme', 'block_playerhud'),
-                'oracle_success'      => get_string('ai_oracle_success', 'block_playerhud'),
+                'ai_creating'          => get_string('ai_creating', 'block_playerhud'),
+                'error_title'          => get_string('error', 'core'),
+                'validation_theme'     => get_string('ai_validation_theme', 'block_playerhud'),
+                'oracle_success'       => get_string('ai_oracle_success', 'block_playerhud'),
                 'oracle_success_multi' => get_string('ai_oracle_success_multi', 'block_playerhud'),
-                'ok_reload'           => get_string('ai_ok_reload', 'block_playerhud'),
+                'oracle_partial_error' => get_string('ai_oracle_partial_error', 'block_playerhud'),
+                'ai_error_generic'     => get_string('ai_error_offline', 'block_playerhud', ''),
+                'ok_reload'            => get_string('ai_ok_reload', 'block_playerhud'),
             ],
         ]);
 

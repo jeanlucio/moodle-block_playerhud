@@ -37,11 +37,24 @@
                 "name": "Trade 1",
                 "is_completed": false,
                 "action_url": "#",
+                "compact_reqs": false,
+                "compact_rews": false,
                 "requirements": [
-                    { "qty": 3, "name": "Wood", "is_image": false, "image_content": "🪵" }
+                    {
+                        "qty": 3, "name": "Wood", "is_image": false, "image_content": "🪵",
+                        "user_qty": 5, "qty_class": "text-success",
+                        "popover_title": "3x Wood",
+                        "popover_content": "<span class=\"text-success\">You have: 5</span>",
+                        "popover_label": "3x Wood — You have: 5",
+                        "compact_qty_class": "ph-shop-item-ok"
+                    }
                 ],
                 "rewards": [
-                    { "qty": 1, "name": "Sword", "is_image": false, "image_content": "🗡️" }
+                    {
+                        "qty": 1, "name": "Sword", "is_image": false, "image_content": "🗡️",
+                        "popover_title": "1x Sword", "popover_content": "",
+                        "popover_label": "1x Sword"
+                    }
                 ]
             }
         ]
@@ -71,6 +84,7 @@
                                 <div class="text-danger small fw-bold text-uppercase mb-2 ph-trade-label">
                                     <i class="fa fa-minus-circle me-1" aria-hidden="true"></i>{{str_pay}}
                                 </div>
+                                {{^compact_reqs}}
                                 <div class="d-flex flex-column gap-2 align-items-center">
                                     {{#requirements}}
                                     <div class="badge bg-white text-dark border text-wrap d-flex align-items-center p-1 pe-2 shadow-sm w-100 text-start" title="{{name}}">
@@ -94,6 +108,25 @@
                                     </div>
                                     {{/requirements}}
                                 </div>
+                                {{/compact_reqs}}
+                                {{#compact_reqs}}
+                                <div class="ph-shop-compact-grid">
+                                    {{#requirements}}
+                                    <button type="button"
+                                            class="ph-mini-item ph-shop-popover {{compact_qty_class}}"
+                                            data-ph-title="{{popover_title}}"
+                                            data-ph-content="{{popover_content}}"
+                                            aria-label="{{popover_label}}">
+                                        {{#is_image}}
+                                        <img src="{{image_url}}" alt="" class="ph-mini-item-img">
+                                        {{/is_image}}
+                                        {{^is_image}}
+                                        <span class="ph-emoji" aria-hidden="true">{{image_content}}</span>
+                                        {{/is_image}}
+                                    </button>
+                                    {{/requirements}}
+                                </div>
+                                {{/compact_reqs}}
                             </div>
 
                             <div class="col-2 text-center text-muted px-0">
@@ -104,6 +137,7 @@
                                 <div class="text-success small fw-bold text-uppercase mb-2 ph-trade-label">
                                     <i class="fa fa-plus-circle me-1" aria-hidden="true"></i>{{str_receive}}
                                 </div>
+                                {{^compact_rews}}
                                 <div class="d-flex flex-column gap-2 align-items-center">
                                     {{#rewards}}
                                     <div class="badge bg-white text-dark border border-success text-wrap d-flex align-items-center p-1 pe-2 shadow-sm w-100 text-start" title="{{name}}">
@@ -122,6 +156,25 @@
                                     </div>
                                     {{/rewards}}
                                 </div>
+                                {{/compact_rews}}
+                                {{#compact_rews}}
+                                <div class="ph-shop-compact-grid">
+                                    {{#rewards}}
+                                    <button type="button"
+                                            class="ph-mini-item ph-shop-popover"
+                                            data-ph-title="{{popover_title}}"
+                                            data-ph-content="{{popover_content}}"
+                                            aria-label="{{popover_label}}">
+                                        {{#is_image}}
+                                        <img src="{{image_url}}" alt="" class="ph-mini-item-img">
+                                        {{/is_image}}
+                                        {{^is_image}}
+                                        <span class="ph-emoji" aria-hidden="true">{{image_content}}</span>
+                                        {{/is_image}}
+                                    </button>
+                                    {{/rewards}}
+                                </div>
+                                {{/compact_rews}}
                             </div>
                         </div>
 

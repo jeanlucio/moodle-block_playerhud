@@ -151,14 +151,21 @@ class tab_shop implements renderable, templatable {
                         $canafford = false;
                     }
 
+                    $itemname = format_string($req->name);
+                    $youhave = get_string('trade_you_have', 'block_playerhud', $myqty);
+                    $colorclass = $hasenough ? 'text-success' : 'text-danger';
                     $reqsdata[] = [
                         'qty' => $req->qty,
-                        'name' => format_string($req->name),
+                        'name' => $itemname,
                         'is_image' => $media['is_image'],
                         'image_url' => $media['is_image'] ? $media['url'] : '',
                         'image_content' => $media['is_image'] ? '' : strip_tags($media['content']),
                         'user_qty' => $myqty,
-                        'qty_class' => $hasenough ? 'text-success' : 'text-danger',
+                        'qty_class' => $colorclass,
+                        'popover_title' => $req->qty . 'x ' . $itemname,
+                        'popover_content' => '<span class="' . $colorclass . '">' . s($youhave) . '</span>',
+                        'popover_label' => $req->qty . 'x ' . $itemname . ' — ' . $youhave,
+                        'compact_qty_class' => $hasenough ? 'ph-shop-item-ok' : 'ph-shop-item-lack',
                     ];
                 }
 
@@ -166,12 +173,16 @@ class tab_shop implements renderable, templatable {
                 $rewsdata = [];
                 foreach ($trade->rewards as $rew) {
                     $media = $allmedia[$rew->itemid];
+                    $rewname = format_string($rew->name);
                     $rewsdata[] = [
                         'qty' => $rew->qty,
-                        'name' => format_string($rew->name),
+                        'name' => $rewname,
                         'is_image' => $media['is_image'],
                         'image_url' => $media['is_image'] ? $media['url'] : '',
                         'image_content' => $media['is_image'] ? '' : strip_tags($media['content']),
+                        'popover_title' => $rew->qty . 'x ' . $rewname,
+                        'popover_content' => '',
+                        'popover_label' => $rew->qty . 'x ' . $rewname,
                     ];
                 }
 
@@ -189,6 +200,8 @@ class tab_shop implements renderable, templatable {
                     'name' => format_string($trade->name),
                     'requirements' => $reqsdata,
                     'rewards' => $rewsdata,
+                    'compact_reqs' => count($reqsdata) > 3,
+                    'compact_rews' => count($rewsdata) > 3,
                     'is_completed' => $iscompleted,
                     'can_afford' => $canafford,
                     'action_url' => $processurl->out(false),

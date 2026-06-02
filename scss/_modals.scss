@@ -42,6 +42,18 @@
         flex-shrink: 0;
     }
 
+    .ph-char-portrait-emoji--lg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 120px;
+        height: 120px;
+        font-size: 4rem;
+        border-radius: 50%;
+        border: 3px solid var(--gray-300, #dee2e6);
+        background-color: var(--light, #f8f9fa);
+    }
+
     .ph-char-modal-desc {
         line-height: 1.6;
     }

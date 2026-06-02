@@ -21,7 +21,7 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['jquery', 'core/notification'], function($, Notification) {
+define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, Ajax) {
 
     return {
         /**
@@ -105,6 +105,27 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 }
             });
 
+            // Initialize popovers for compact shop item icons (> 3 items in trade).
+            const shopPopoverEls = document.querySelectorAll('.ph-shop-popover');
+            if (shopPopoverEls.length) {
+                require(['theme_boost/bootstrap/popover'], function(BSPopover) {
+                    shopPopoverEls.forEach(function(el) {
+                        const opts = {
+                            trigger: 'hover click focus',
+                            title: el.dataset.phTitle || '',
+                            content: el.dataset.phContent || '',
+                            html: true,
+                            placement: 'top'
+                        };
+                        if (typeof BSPopover === 'function') {
+                            new BSPopover(el, opts);
+                        } else {
+                            $(el).popover(opts);
+                        }
+                    });
+                });
+            }
+
             // Accessibility: Allow opening items with Enter or Space.
             $(document).on('keydown', '.ph-item-trigger', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -157,6 +178,14 @@ define(['jquery', 'core/notification'], function($, Notification) {
                         (value === 'read' && status === 'completed') ||
                         (value === 'unread' && status !== 'completed');
                     $(this).toggle(show);
+                });
+            });
+
+            // Client-side filter for collection items by action type.
+            $(document).on('change', '.ph-collection-filter-selector', function() {
+                const value = $(this).val();
+                $('.playerhud-inventory-grid .playerhud-item-card').each(function() {
+                    $(this).toggle(value === 'all' || $(this).data('filtertype') === value);
                 });
             });
 
@@ -347,6 +376,91 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     e.preventDefault();
                     $(this).trigger('click');
                 }
+            });
+
+            // Item powers — Equipar avatar.
+            $(document).off('click.phequip').on('click.phequip', '.ph-item-equip-btn', function(e) {
+                e.stopPropagation();
+                const $btn = $(this);
+                $btn.prop('disabled', true);
+
+                Ajax.call([{
+                    methodname: 'block_playerhud_use_item',
+                    args: {
+                        instanceid: config.instanceid,
+                        courseid: config.courseid,
+                        itemid: parseInt($btn.data('itemid'), 10),
+                        targetcmid: 0
+                    }
+                }])[0].done(function(resp) {
+                    if (resp.success) {
+                        // Update all userpicture containers in the page.
+                        if (resp.avatar_html) {
+                            $('.ph-userpicture-wrap').html(resp.avatar_html);
+                        }
+                        // Reload to sync button state from server.
+                        window.location.reload();
+                    } else {
+                        $btn.prop('disabled', false);
+                        Notification.addNotification({message: resp.message, type: 'error'});
+                    }
+                }).fail(function(ex) {
+                    $btn.prop('disabled', false);
+                    Notification.exception(ex);
+                });
+            });
+
+            // Prevent select click from bubbling up to the card trigger.
+            $(document).off('click.phlpselect mousedown.phlpselect')
+                .on('click.phlpselect mousedown.phlpselect', '.ph-lp-activity-select', function(e) {
+                    e.stopPropagation();
+                });
+
+            // Item powers — Usar deadline extension.
+            $(document).off('click.phuse').on('click.phuse', '.ph-item-use-btn', function(e) {
+                e.stopPropagation();
+                const $btn = $(this);
+                const $card = $btn.closest('.playerhud-item-card');
+                const $select = $card.find('.ph-lp-activity-select');
+                const targetcmid = $select.length ? parseInt($select.val() || '0', 10) : 0;
+
+                if ($select.is('select') && !targetcmid) {
+                    Notification.addNotification({
+                        message: config.strings.item_use_pick,
+                        type: 'warning'
+                    });
+                    return;
+                }
+
+                Notification.confirm(
+                    config.strings.confirm_title,
+                    config.strings.item_use_confirm,
+                    config.strings.yes,
+                    config.strings.cancel,
+                    function() {
+                        $btn.prop('disabled', true);
+                        Ajax.call([{
+                            methodname: 'block_playerhud_use_item',
+                            args: {
+                                instanceid: config.instanceid,
+                                courseid: config.courseid,
+                                itemid: parseInt($btn.data('itemid'), 10),
+                                targetcmid: targetcmid
+                            }
+                        }])[0].done(function(resp) {
+                            if (resp.success) {
+                                Notification.addNotification({message: resp.message, type: 'success'});
+                                window.location.reload();
+                            } else {
+                                $btn.prop('disabled', false);
+                                Notification.addNotification({message: resp.message, type: 'error'});
+                            }
+                        }).fail(function(ex) {
+                            $btn.prop('disabled', false);
+                            Notification.exception(ex);
+                        });
+                    }
+                );
             });
         }
     };

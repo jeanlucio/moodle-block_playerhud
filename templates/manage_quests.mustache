@@ -90,6 +90,15 @@
                     <i class="fa fa-magic me-1" aria-hidden="true"></i> {{str_suggest}}
                 </a>
                 {{/url_suggest}}
+                {{#suggest_disabled}}
+                <span class="d-inline-block me-2" tabindex="0"
+                      data-bs-toggle="tooltip" data-toggle="tooltip"
+                      title="{{suggest_tooltip}}">
+                    <button class="btn btn-info text-white shadow-sm" disabled>
+                        <i class="fa fa-magic me-1" aria-hidden="true"></i> {{str_suggest}}
+                    </button>
+                </span>
+                {{/suggest_disabled}}
                 <a href="{{url_add}}" class="btn btn-primary shadow-sm">
                     <i class="fa fa-plus-circle me-1" aria-hidden="true"></i> {{str_add_quest}}
                 </a>

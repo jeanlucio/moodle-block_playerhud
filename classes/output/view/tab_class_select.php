@@ -102,6 +102,7 @@ class tab_class_select implements renderable {
         $classesdata = [];
         foreach ($classes as $class) {
             $portrait = null;
+            $portraitemoji = null;
             if (isset($portraitbyclass[$class->id])) {
                 $f = $portraitbyclass[$class->id];
                 $portrait = \moodle_url::make_pluginfile_url(
@@ -114,16 +115,28 @@ class tab_class_select implements renderable {
                 )->out();
             }
 
+            if (empty($portrait)) {
+                $emoji1 = $class->emoji_tier1 ?? '';
+                if (!empty($emoji1)) {
+                    if (strpos($emoji1, 'http') === 0) {
+                        $portrait = $emoji1;
+                    } else {
+                        $portraitemoji = $emoji1;
+                    }
+                }
+            }
+
             $classesdata[] = [
-                'id'           => $class->id,
-                'name'         => format_string($class->name),
-                'description'  => !empty($class->description)
+                'id'             => $class->id,
+                'name'           => format_string($class->name),
+                'description'    => !empty($class->description)
                     ? format_text($class->description, FORMAT_HTML, ['noclean' => false])
                     : '',
-                'base_hp'      => (int)$class->base_hp,
-                'portrait'     => $portrait,
-                'has_portrait' => !empty($portrait),
-                'is_selected'  => ((int)$class->id === $currentclassid),
+                'base_hp'        => (int)$class->base_hp,
+                'portrait'       => $portrait,
+                'has_portrait'   => !empty($portrait),
+                'portrait_emoji' => $portraitemoji,
+                'is_selected'    => ((int)$class->id === $currentclassid),
             ];
         }
 

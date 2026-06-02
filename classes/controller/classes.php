@@ -145,6 +145,10 @@ class classes {
             $record->name         = $data->name;
             $record->description  = $data->description;
             $record->timemodified = $now;
+            for ($tier = 1; $tier <= 5; $tier++) {
+                $field = 'emoji_tier' . $tier;
+                $record->$field = trim($data->$field ?? '');
+            }
             $DB->update_record('block_playerhud_classes', $record);
             $classid = (int) $record->id;
         } else {
@@ -153,6 +157,10 @@ class classes {
             $newrecord->name            = $data->name;
             $newrecord->description     = $data->description;
             $newrecord->base_hp         = 100;
+            for ($tier = 1; $tier <= 5; $tier++) {
+                $field = 'emoji_tier' . $tier;
+                $newrecord->$field = trim($data->$field ?? '');
+            }
             $newrecord->timecreated     = $now;
             $newrecord->timemodified    = $now;
             $classid = $DB->insert_record('block_playerhud_classes', $newrecord);

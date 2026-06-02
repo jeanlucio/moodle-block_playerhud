@@ -13,7 +13,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_clipboard'], function($, Notification, Ajax, Str) {
+define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_clipboard',
+        'core/modal_save_cancel', 'core/modal_events'],
+function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
 
     /**
      * Manage Items module for PlayerHUD.
@@ -29,6 +31,30 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
          * @param {Object} config The configuration object passed from PHP.
          */
         init: function(config) {
+
+            // Strings preloaded via strings_for_js in PHP (avoids 1024-char js_call_amd limit).
+            config.strings = {
+                errTheme:            M.util.get_string('ai_validation_theme', 'block_playerhud'),
+                success:             M.util.get_string('ai_success', 'block_playerhud'),
+                copy:                M.util.get_string('gen_copy', 'block_playerhud'),
+                great:               M.util.get_string('great', 'block_playerhud'),
+                confirmTitle:        M.util.get_string('confirmation', 'admin'),
+                yes:                 M.util.get_string('yes', 'moodle'),
+                cancel:              M.util.get_string('cancel', 'moodle'),
+                aiCreating:          M.util.get_string('ai_creating', 'block_playerhud'),
+                successTitle:        M.util.get_string('success', 'moodle'),
+                noDesc:              M.util.get_string('no_description', 'block_playerhud'),
+                deleteSelected:      M.util.get_string('delete_selected', 'block_playerhud'),
+                deleteNItems:        M.util.get_string('delete_n_items', 'block_playerhud'),
+                confirmBulk:         M.util.get_string('confirm_bulk_delete', 'block_playerhud'),
+                createdCount:        M.util.get_string('ai_created_count', 'block_playerhud'),
+                playercoinCreated:   M.util.get_string('playercoin_created', 'block_playerhud'),
+                playercoinExists:    M.util.get_string('playercoin_already_exists', 'block_playerhud'),
+                playercoinDropTitle:   M.util.get_string('playercoin_drop_title', 'block_playerhud'),
+                playercoinDropConfirm: M.util.get_string('playercoin_drop_confirm', 'block_playerhud'),
+                playercoinDropYes:     M.util.get_string('playercoin_drop_yes', 'block_playerhud'),
+                playercoinDropNo:      M.util.get_string('playercoin_drop_no', 'block_playerhud'),
+            };
 
             // Move modals to body to avoid z-index issues.
             // IDs updated to kebab-case per Stylelint.
@@ -62,11 +88,11 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
 
                 if (count > 0) {
                     $btn.removeClass('disabled').removeAttr('disabled');
-                    const btnText = config.strings.delete_n_items.replace('%d', count);
+                    const btnText = config.strings.deleteNItems.replace('%d', count);
                     $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + btnText);
                 } else {
                     $btn.addClass('disabled').attr('disabled', 'disabled');
-                    $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + config.strings.delete_selected);
+                    $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + config.strings.deleteSelected);
                 }
             });
 
@@ -78,8 +104,8 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                 }
 
                 Notification.confirm(
-                    config.strings.confirm_title,
-                    config.strings.confirm_bulk,
+                    config.strings.confirmTitle,
+                    config.strings.confirmBulk,
                     config.strings.yes,
                     config.strings.cancel,
                     function() {
@@ -118,7 +144,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                 if (descHtml && descHtml.trim() !== '') {
                     $descEl.html(descHtml);
                 } else {
-                    $descEl.html('<i class="text-muted">' + config.strings.no_desc + '</i>');
+                    $descEl.html('<i class="text-muted">' + config.strings.noDesc + '</i>');
                 }
 
                 // Image Handling.
@@ -168,7 +194,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                 const msg = $btn.attr('data-confirm-msg');
 
                 Notification.confirm(
-                    config.strings.confirm_title,
+                    config.strings.confirmTitle,
                     msg,
                     config.strings.yes,
                     config.strings.cancel,
@@ -199,14 +225,14 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                         {key: 'error', component: 'core'},
                         {key: 'ok', component: 'core'}
                     ]).then(function(strs) {
-                        Notification.alert(strs[0], config.strings.err_theme, strs[1]);
+                        Notification.alert(strs[0], config.strings.errTheme, strs[1]);
                         return true;
                     }).catch(Notification.exception);
                     return;
                 }
 
                 const originalText = $btn.text();
-                $btn.prop('disabled', true).text(config.strings.ai_creating).attr('aria-busy', 'true');
+                $btn.prop('disabled', true).text(config.strings.aiCreating).attr('aria-busy', 'true');
 
                 // Handle XP input: if empty, send -1 to indicate "no change". Otherwise, parse integer.
                 const xpInput = $('#ai-xp').val();
@@ -244,7 +270,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                         });
 
                         const $modalTitle = $('#phAiModalLabel');
-                        $modalTitle.text(config.strings.success_title);
+                        $modalTitle.text(config.strings.successTitle);
 
                         // Handle item list display.
                         const items = resp.created_items || [];
@@ -254,7 +280,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                         const count = items.length;
 
                         // Title.
-                        const titleText = config.strings.created_count.replace('{$a}', count);
+                        const titleText = config.strings.createdCount.replace('{$a}', count);
 
                         // Build the static structure; AI-sourced text is set via .text() below.
                         let successHtml = '<div id="ph-success-container" tabindex="-1" ';
@@ -327,6 +353,123 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                     $btn.prop('disabled', false).text(originalText).removeAttr('aria-busy');
                     Notification.exception(ex);
                 });
+            });
+
+            // PlayerCoin — one-click creation.
+            $('body').on('click', '#btn-create-playercoin', function() {
+                const $btn = $(this);
+                $btn.prop('disabled', true);
+
+                Ajax.call([{
+                    methodname: 'block_playerhud_create_playercoin',
+                    args: {
+                        instanceid: config.instanceid,
+                        courseid: config.courseid
+                    }
+                }])[0].done(function(resp) {
+                    if (resp.created) {
+                        ModalSaveCancel.create({
+                            title: config.strings.playercoinDropTitle,
+                            body: config.strings.playercoinDropConfirm,
+                            removeOnClose: true,
+                        }).then(function(modal) {
+                            modal.setSaveButtonText(config.strings.playercoinDropYes);
+                            modal.getRoot().find('[data-action="cancel"]').text(
+                                config.strings.playercoinDropNo
+                            );
+
+                            const setupDrop = function() {
+                                Ajax.call([{
+                                    methodname: 'block_playerhud_setup_playercoin_drop',
+                                    args: {
+                                        instanceid: config.instanceid,
+                                        courseid: config.courseid,
+                                        itemid: resp.itemid
+                                    }
+                                }])[0].done(function(dropResp) {
+                                    if (!dropResp.success) {
+                                        Notification.addNotification({
+                                            message: dropResp.message,
+                                            type: 'error'
+                                        });
+                                    }
+                                    window.location.reload();
+                                }).fail(function(ex) {
+                                    Notification.exception(ex);
+                                    window.location.reload();
+                                });
+                            };
+
+                            modal.getRoot().on(ModalEvents.save, function(e) {
+                                e.preventDefault();
+                                modal.hide();
+                                setupDrop();
+                            });
+
+                            modal.getRoot().on(ModalEvents.cancel, function() {
+                                window.location.reload();
+                            });
+
+                            modal.show();
+                            return modal;
+                        }).catch(Notification.exception);
+                    } else {
+                        $btn.prop('disabled', false);
+                        Notification.confirm(
+                            config.strings.confirmTitle,
+                            config.strings.playercoinExists,
+                            config.strings.yes,
+                            config.strings.cancel,
+                            function() {
+                                window.location.href = resp.edit_url;
+                            }
+                        );
+                    }
+                }).fail(function(ex) {
+                    $btn.prop('disabled', false);
+                    Notification.exception(ex);
+                });
+            });
+
+            // Avatar pack — one-click creation.
+            $('body').on('click', '#btn-create-avatar-pack', function() {
+                const $btn = $(this);
+
+                Str.get_strings([
+                    {key: 'avatar_pack_confirm', component: 'block_playerhud'},
+                    {key: 'avatar_pack_created', component: 'block_playerhud'},
+                ]).then(function(strings) {
+                    const confirmMsg = strings[0];
+                    const createdMsg = strings[1];
+
+                    Notification.confirm(
+                        config.strings.confirmTitle,
+                        confirmMsg,
+                        config.strings.yes,
+                        config.strings.cancel,
+                        function() {
+                            $btn.prop('disabled', true);
+
+                            Ajax.call([{
+                                methodname: 'block_playerhud_create_avatar_pack',
+                                args: {
+                                    instanceid: config.instanceid,
+                                    courseid: config.courseid
+                                }
+                            }])[0].done(function(resp) {
+                                Notification.addNotification({
+                                    message: createdMsg.replace('{$a}', resp.created),
+                                    type: 'success'
+                                });
+                                window.location.reload();
+                            }).fail(function(ex) {
+                                $btn.prop('disabled', false);
+                                Notification.exception(ex);
+                            });
+                        }
+                    );
+                    return strings;
+                }).catch(Notification.exception);
             });
         }
     };

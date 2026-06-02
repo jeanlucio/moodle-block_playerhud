@@ -1413,4 +1413,499 @@ class external extends external_api {
             'redirect_url' => new external_value(PARAM_URL, 'URL to redirect to', VALUE_DEFAULT, ''),
         ]);
     }
+
+    /**
+     * Parameters for create_playercoin.
+     *
+     * @return external_function_parameters
+     */
+    public static function create_playercoin_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+        ]);
+    }
+
+    /**
+     * Create or return the existing PlayerCoin item for this block instance.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @return array
+     */
+    public static function create_playercoin(int $instanceid, int $courseid): array {
+        global $DB;
+
+        $params = self::validate_parameters(self::create_playercoin_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+        ]);
+        $instanceid = $params['instanceid'];
+        $courseid   = $params['courseid'];
+
+        $context = \context_block::instance($instanceid);
+        self::validate_context($context);
+        require_capability('block/playerhud:manage', $context);
+
+        $existing = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $instanceid,
+            'action_type'     => 'playercoin',
+        ]);
+
+        if ($existing) {
+            $itemid = (int) $existing->id;
+            $created = false;
+        } else {
+            $now = time();
+            $itemid = (int) $DB->insert_record('block_playerhud_items', (object) [
+                'blockinstanceid' => $instanceid,
+                'name'            => 'PlayerCoin',
+                'image'           => '🪙',
+                'description'     => get_string('playercoin_description', 'block_playerhud'),
+                'xp'              => 0,
+                'enabled'         => 1,
+                'tradable'        => 1,
+                'secret'          => 0,
+                'required_class_id' => '0',
+                'action_type'     => 'playercoin',
+                'action_value'    => '',
+                'timecreated'     => $now,
+                'timemodified'    => $now,
+            ]);
+            $created = true;
+        }
+
+        $editurl = new \moodle_url('/blocks/playerhud/manage.php', [
+            'id'         => $courseid,
+            'instanceid' => $instanceid,
+            'tab'        => 'items',
+            'action'     => 'edit',
+            'itemid'     => $itemid,
+        ]);
+
+        return [
+            'itemid'   => $itemid,
+            'created'  => $created,
+            'edit_url' => $editurl->out(false),
+        ];
+    }
+
+    /**
+     * Return structure for create_playercoin.
+     *
+     * @return external_single_structure
+     */
+    public static function create_playercoin_returns(): external_single_structure {
+        return new external_single_structure([
+            'itemid'   => new external_value(PARAM_INT, 'ID of the PlayerCoin item'),
+            'created'  => new external_value(PARAM_BOOL, 'True if a new item was created'),
+            'edit_url' => new external_value(PARAM_URL, 'URL to the item edit form'),
+        ]);
+    }
+
+    /**
+     * Parameters for create_avatar_pack.
+     *
+     * @return external_function_parameters
+     */
+    public static function create_avatar_pack_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+        ]);
+    }
+
+    /**
+     * Create the pre-defined avatar item pack for this block instance.
+     *
+     * Items are created with action_type = avatar_profile so they can be equipped
+     * as profile avatars. Items whose name already exists are skipped.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @return array
+     */
+    public static function create_avatar_pack(int $instanceid, int $courseid): array {
+        global $DB;
+
+        $params = self::validate_parameters(self::create_avatar_pack_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+        ]);
+        $instanceid = $params['instanceid'];
+
+        $context = \context_block::instance($instanceid);
+        self::validate_context($context);
+        require_capability('block/playerhud:manage', $context);
+
+        $avatars = [
+            // Light skin tone.
+            ['emoji' => '🧛🏻‍♂️', 'name_key' => 'avatar_name_vampire_m', 'desc_key' => 'avatar_desc_vampire'],
+            ['emoji' => '🧙🏻‍♀️', 'name_key' => 'avatar_name_mage_f', 'desc_key' => 'avatar_desc_mage'],
+            ['emoji' => '🕵🏻‍♀️', 'name_key' => 'avatar_name_detective', 'desc_key' => 'avatar_desc_detective'],
+            // Medium-light skin tone.
+            ['emoji' => '🧝🏼‍♂️', 'name_key' => 'avatar_name_elf_m', 'desc_key' => 'avatar_desc_elf'],
+            ['emoji' => '🦸🏼‍♀️', 'name_key' => 'avatar_name_superhero_f', 'desc_key' => 'avatar_desc_superhero'],
+            ['emoji' => '🧚🏼‍♀️', 'name_key' => 'avatar_name_fairy', 'desc_key' => 'avatar_desc_fairy'],
+            // Medium skin tone.
+            ['emoji' => '🕵🏽‍♂️', 'name_key' => 'avatar_name_detective', 'desc_key' => 'avatar_desc_detective'],
+            ['emoji' => '🧛🏽‍♀️', 'name_key' => 'avatar_name_vampire_f', 'desc_key' => 'avatar_desc_vampire'],
+            ['emoji' => '🦹🏽‍♀️', 'name_key' => 'avatar_name_supervillain_f', 'desc_key' => 'avatar_desc_supervillain'],
+            // Medium-dark skin tone.
+            ['emoji' => '🧙🏾‍♂️', 'name_key' => 'avatar_name_mage_m', 'desc_key' => 'avatar_desc_mage'],
+            ['emoji' => '🧝🏾‍♀️', 'name_key' => 'avatar_name_elf_f', 'desc_key' => 'avatar_desc_elf'],
+            ['emoji' => '🦸🏾‍♂️', 'name_key' => 'avatar_name_superhero_m', 'desc_key' => 'avatar_desc_superhero'],
+            // Dark skin tone.
+            ['emoji' => '🤺', 'name_key' => 'avatar_name_fencer', 'desc_key' => 'avatar_desc_fencer'],
+            ['emoji' => '🧜🏿‍♀️', 'name_key' => 'avatar_name_mermaid', 'desc_key' => 'avatar_desc_mermaid'],
+            ['emoji' => '🦹🏿‍♂️', 'name_key' => 'avatar_name_supervillain_m', 'desc_key' => 'avatar_desc_supervillain'],
+            // Gender-neutral.
+            ['emoji' => '🤖', 'name_key' => 'avatar_name_robot', 'desc_key' => 'avatar_desc_robot'],
+            ['emoji' => '👾', 'name_key' => 'avatar_name_alien', 'desc_key' => 'avatar_desc_alien'],
+        ];
+
+        $existingimages = $DB->get_fieldset_select(
+            'block_playerhud_items',
+            'image',
+            'blockinstanceid = :id',
+            ['id' => $instanceid]
+        );
+        $existingimages = array_flip($existingimages);
+
+        $created = 0;
+        $now = time();
+
+        foreach ($avatars as $avatar) {
+            if (isset($existingimages[$avatar['emoji']])) {
+                continue;
+            }
+            $DB->insert_record('block_playerhud_items', (object) [
+                'blockinstanceid' => $instanceid,
+                'name'            => get_string($avatar['name_key'], 'block_playerhud'),
+                'image'           => $avatar['emoji'],
+                'description'     => get_string($avatar['desc_key'], 'block_playerhud'),
+                'xp'              => 0,
+                'enabled'         => 1,
+                'tradable'        => 0,
+                'secret'          => 0,
+                'required_class_id' => '0',
+                'action_type'     => 'avatar_profile',
+                'action_value'    => '',
+                'timecreated'     => $now,
+                'timemodified'    => $now,
+            ]);
+            $created++;
+        }
+
+        return ['created' => $created];
+    }
+
+    /**
+     * Return structure for create_avatar_pack.
+     *
+     * @return external_single_structure
+     */
+    public static function create_avatar_pack_returns(): external_single_structure {
+        return new external_single_structure([
+            'created' => new external_value(PARAM_INT, 'Number of avatar items created'),
+        ]);
+    }
+
+    /**
+     * Parameters for setup_playercoin_drop.
+     *
+     * @return external_function_parameters
+     */
+    public static function setup_playercoin_drop_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'itemid'     => new external_value(PARAM_INT, 'PlayerCoin item ID'),
+        ]);
+    }
+
+    /**
+     * Create an infinite drop for the PlayerCoin in the course news forum.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int $itemid PlayerCoin item ID.
+     * @return array
+     */
+    public static function setup_playercoin_drop(int $instanceid, int $courseid, int $itemid): array {
+        global $DB;
+
+        $params = self::validate_parameters(self::setup_playercoin_drop_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'itemid'     => $itemid,
+        ]);
+        $instanceid = $params['instanceid'];
+        $courseid   = $params['courseid'];
+        $itemid     = $params['itemid'];
+
+        $context = \context_block::instance($instanceid);
+        self::validate_context($context);
+        require_capability('block/playerhud:manage', $context);
+
+        $DB->get_record(
+            'block_playerhud_items',
+            ['id' => $itemid, 'blockinstanceid' => $instanceid],
+            'id',
+            MUST_EXIST
+        );
+
+        // Find the news forum (Avisos) in this course.
+        $sql = "SELECT f.id, f.intro, cm.id AS cmid
+                  FROM {forum} f
+                  JOIN {course_modules} cm ON cm.instance = f.id
+                  JOIN {modules} m ON m.id = cm.module
+                 WHERE m.name = 'forum'
+                   AND f.course = :courseid
+                   AND f.type = 'news'";
+        $forums = $DB->get_records_sql($sql, ['courseid' => $courseid], 0, 1);
+        $forum = $forums ? reset($forums) : null;
+
+        if (!$forum) {
+            return [
+                'success' => false,
+                'message' => get_string('playercoin_drop_noforum', 'block_playerhud'),
+            ];
+        }
+
+        $code = substr(md5(uniqid('ph_drop_', true)), 0, 12);
+
+        $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $instanceid,
+            'itemid'          => $itemid,
+            'name'            => get_string('playercoin_drop_name', 'block_playerhud'),
+            'maxusage'        => 0,
+            'respawntime'     => 3600,
+            'code'            => $code,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        $shortcode = '[PLAYERHUD_DROP code=' . $code . ']';
+        $newintro  = $shortcode . ($forum->intro ? '<br>' . $forum->intro : '');
+        $DB->set_field('forum', 'intro', $newintro, ['id' => $forum->id]);
+
+        return [
+            'success' => true,
+            'message' => get_string('playercoin_drop_created', 'block_playerhud'),
+        ];
+    }
+
+    /**
+     * Return structure for setup_playercoin_drop.
+     *
+     * @return external_single_structure
+     */
+    public static function setup_playercoin_drop_returns(): external_single_structure {
+        return new external_single_structure([
+            'success' => new external_value(PARAM_BOOL, 'Whether the drop was created'),
+            'message' => new external_value(PARAM_RAW, 'Result or error message'),
+        ]);
+    }
+
+    /**
+     * Parameters for use_item.
+     *
+     * @return external_function_parameters
+     */
+    public static function use_item_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid'   => new external_value(PARAM_INT, 'Course ID'),
+            'itemid'     => new external_value(PARAM_INT, 'Item ID'),
+            'targetcmid' => new external_value(PARAM_INT, 'Target course module ID (deadline_extension only)', VALUE_DEFAULT, 0),
+        ]);
+    }
+
+    /**
+     * Equip/unequip an avatar item or consume a deadline extension item.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int $itemid Item ID.
+     * @param int $targetcmid Target CM (for deadline_extension when cmid=0 on the item).
+     * @return array
+     */
+    public static function use_item(int $instanceid, int $courseid, int $itemid, int $targetcmid = 0): array {
+        global $DB, $USER, $OUTPUT;
+
+        $params = self::validate_parameters(self::use_item_parameters(), [
+            'instanceid' => $instanceid,
+            'courseid'   => $courseid,
+            'itemid'     => $itemid,
+            'targetcmid' => $targetcmid,
+        ]);
+        $instanceid = $params['instanceid'];
+        $courseid   = $params['courseid'];
+        $itemid     = $params['itemid'];
+        $targetcmid = $params['targetcmid'];
+
+        $context = \context_block::instance($instanceid);
+        self::validate_context($context);
+        require_login();
+
+        $item = $DB->get_record(
+            'block_playerhud_items',
+            ['id' => $itemid, 'blockinstanceid' => $instanceid, 'enabled' => 1],
+            '*',
+            MUST_EXIST
+        );
+
+        $hasinv = $DB->record_exists_select(
+            'block_playerhud_inventory',
+            "userid = :uid AND itemid = :iid AND source NOT IN ('revoked','consumed')",
+            ['uid' => $USER->id, 'iid' => $itemid]
+        );
+        if (!$hasinv) {
+            throw new \moodle_exception('itemnotfound', 'block_playerhud');
+        }
+
+        if ($item->action_type === 'avatar_profile') {
+            $prefkey  = 'block_playerhud_avatar_' . $instanceid;
+            $current  = (int) get_user_preferences($prefkey, 0);
+            $equipped = ($current !== $itemid);
+
+            if ($equipped) {
+                set_user_preference($prefkey, $itemid);
+                $avatarhtml = \block_playerhud\utils::get_avatar_html($item, $context, $OUTPUT);
+            } else {
+                unset_user_preference($prefkey);
+                $avatarhtml = $OUTPUT->user_picture($USER, ['size' => 100, 'class' => 'rounded-circle shadow-sm']);
+            }
+
+            return [
+                'action'      => 'avatar_profile',
+                'equipped'    => $equipped,
+                'avatar_html' => $avatarhtml,
+                'success'     => true,
+                'message'     => $equipped
+                    ? get_string('item_use_success_avatar', 'block_playerhud')
+                    : get_string('item_unequip_success', 'block_playerhud'),
+                'new_deadline' => '',
+            ];
+        }
+
+        if ($item->action_type === 'deadline_extension') {
+            if (!class_exists('\local_latepenalty\recalculator')) {
+                return [
+                    'action'       => 'deadline_extension',
+                    'equipped'     => false,
+                    'avatar_html'  => '',
+                    'success'      => false,
+                    'message'      => get_string('item_lp_not_installed', 'block_playerhud'),
+                    'new_deadline' => '',
+                ];
+            }
+
+            $av   = !empty($item->action_value) ? json_decode($item->action_value, true) : [];
+            $days = max(1, (int)($av['days'] ?? 1));
+            $cmid = !empty($av['cmid']) ? (int)$av['cmid'] : $targetcmid;
+
+            if ($cmid <= 0) {
+                return [
+                    'action'       => 'deadline_extension',
+                    'equipped'     => false,
+                    'avatar_html'  => '',
+                    'success'      => false,
+                    'message'      => get_string('item_use_pick_activity', 'block_playerhud'),
+                    'new_deadline' => '',
+                ];
+            }
+
+            $rule = $DB->get_record('local_latepenalty_rules', ['cmid' => $cmid, 'enabled' => 1]);
+            if (!$rule) {
+                return [
+                    'action'       => 'deadline_extension',
+                    'equipped'     => false,
+                    'avatar_html'  => '',
+                    'success'      => false,
+                    'message'      => get_string('item_lp_warning', 'block_playerhud'),
+                    'new_deadline' => '',
+                ];
+            }
+
+            $override = $DB->get_record('local_latepenalty_overrides', ['cmid' => $cmid, 'userid' => $USER->id]);
+            if ($override && $override->deadline !== null) {
+                $base = (int)$override->deadline;
+            } else {
+                $modinfo = get_fast_modinfo($courseid);
+                $cm      = $modinfo->get_cm($cmid);
+                $cmrec   = $cm->get_course_module_record();
+                $cmrec->modname = $cm->modname;
+                $base    = (int)(\local_latepenalty\penalty_helper::get_deadline($cmrec) ?? time());
+            }
+
+            $newdeadline = $base + ($days * DAYSECS);
+
+            if ($override) {
+                $override->deadline      = $newdeadline;
+                $override->timemodified  = time();
+                $DB->update_record('local_latepenalty_overrides', $override);
+            } else {
+                $DB->insert_record('local_latepenalty_overrides', (object)[
+                    'cmid'          => $cmid,
+                    'userid'        => $USER->id,
+                    'deadline'      => $newdeadline,
+                    'daily_penalty' => null,
+                    'max_penalty'   => null,
+                    'timecreated'   => time(),
+                    'timemodified'  => time(),
+                ]);
+            }
+
+            \local_latepenalty\recalculator::recalculate_for_student(
+                $cmid,
+                $USER->id,
+                (float)$rule->daily_penalty,
+                (float)$rule->max_penalty
+            );
+
+            $consumable = $DB->get_records_select(
+                'block_playerhud_inventory',
+                "userid = :uid AND itemid = :iid AND source NOT IN ('revoked','consumed')",
+                ['uid' => $USER->id, 'iid' => $itemid],
+                'id ASC',
+                'id',
+                0,
+                1
+            );
+            if ($consumable) {
+                $DB->set_field('block_playerhud_inventory', 'source', 'consumed', ['id' => reset($consumable)->id]);
+            }
+
+            $formatted = userdate($newdeadline, get_string('strftimedatetime', 'langconfig'));
+            return [
+                'action'       => 'deadline_extension',
+                'equipped'     => false,
+                'avatar_html'  => '',
+                'success'      => true,
+                'message'      => get_string('item_use_success_deadline', 'block_playerhud', $days),
+                'new_deadline' => $formatted,
+            ];
+        }
+
+        throw new \moodle_exception('errorgeneral', 'error');
+    }
+
+
+    /**
+     * Return structure for use_item.
+     *
+     * @return external_single_structure
+     */
+    public static function use_item_returns(): external_single_structure {
+        return new external_single_structure([
+            'action'       => new external_value(PARAM_ALPHANUMEXT, 'Action type performed'),
+            'equipped'     => new external_value(PARAM_BOOL, 'Whether avatar is now equipped'),
+            'avatar_html'  => new external_value(PARAM_RAW, 'Avatar HTML for DOM replacement'),
+            'success'      => new external_value(PARAM_BOOL, 'Whether the action succeeded'),
+            'message'      => new external_value(PARAM_RAW, 'Feedback message'),
+            'new_deadline' => new external_value(PARAM_TEXT, 'Formatted new deadline (deadline_extension only)'),
+        ]);
+    }
 }

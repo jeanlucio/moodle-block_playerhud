@@ -205,7 +205,7 @@ class trades {
         $reqstoinsert = [];
         for ($i = 0; $i < $data->repeats_req; $i++) {
             $itemid = (int)($data->{"req_itemid_$i"} ?? 0);
-            if ($itemid <= 0 || !in_array($itemid, $validitemids, true)) {
+            if ($itemid <= 0 || !in_array($itemid, $validitemids)) {
                 continue;
             }
             $req          = new \stdClass();
@@ -221,7 +221,7 @@ class trades {
         $rewardstoinsert = [];
         for ($i = 0; $i < $data->repeats_give; $i++) {
             $itemid = (int)($data->{"give_itemid_$i"} ?? 0);
-            if ($itemid <= 0 || !in_array($itemid, $validitemids, true)) {
+            if ($itemid <= 0 || !in_array($itemid, $validitemids)) {
                 continue;
             }
             $rew          = new \stdClass();

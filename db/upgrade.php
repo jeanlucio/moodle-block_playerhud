@@ -35,5 +35,72 @@ function xmldb_block_playerhud_upgrade($oldversion) {
 
     // Past upgrade steps were merged into install.xml for the current baseline version.
 
+    if ($oldversion < 2026052801) {
+        // Remove guest default permission from block/playerhud:view.
+        // The capability was never effective (guests are blocked earlier in get_content
+        // and require_login), but the archetype declaration was misleading and prevented
+        // the Permissions UI from working as expected when an admin restricted the role.
+        $guestrole = $DB->get_record('role', ['shortname' => 'guest']);
+        if ($guestrole) {
+            unassign_capability('block/playerhud:view', $guestrole->id);
+        }
+
+        upgrade_block_savepoint(true, 2026052801, 'playerhud');
+    }
+
+    if ($oldversion < 2026052802) {
+        // Add action_type and action_value columns to block_playerhud_items.
+        // These columns support item powers: avatar_profile and deadline_extension.
+        $table = new \xmldb_table('block_playerhud_items');
+
+        $fieldtype = new \xmldb_field('action_type', XMLDB_TYPE_CHAR, '50', null, null, null, null);
+        if (!$dbman->field_exists($table, $fieldtype)) {
+            $dbman->add_field($table, $fieldtype);
+        }
+
+        $fieldvalue = new \xmldb_field('action_value', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        if (!$dbman->field_exists($table, $fieldvalue)) {
+            $dbman->add_field($table, $fieldvalue);
+        }
+
+        upgrade_block_savepoint(true, 2026052802, 'playerhud');
+    }
+
+    if ($oldversion < 2026052903) {
+        // Mark all existing PlayerCoin items with action_type = 'playercoin' so they can
+        // be identified by field value rather than by the mutable display name.
+        $DB->execute(
+            "UPDATE {block_playerhud_items}
+                SET action_type = 'playercoin'
+              WHERE name = 'PlayerCoin'
+                AND (action_type IS NULL OR action_type = '')"
+        );
+
+        upgrade_block_savepoint(true, 2026052903, 'playerhud');
+    }
+
+    if ($oldversion < 2026060101) {
+        // Add emoji/URL fallback fields (one per tier) to block_playerhud_classes.
+        // Mirrors the existing item->image field: accepts an emoji character or an absolute URL.
+        $table = new \xmldb_table('block_playerhud_classes');
+
+        for ($tier = 1; $tier <= 5; $tier++) {
+            $field = new \xmldb_field(
+                'emoji_tier' . $tier,
+                XMLDB_TYPE_CHAR,
+                '255',
+                null,
+                null,
+                null,
+                null
+            );
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        upgrade_block_savepoint(true, 2026060101, 'playerhud');
+    }
+
     return true;
 }

@@ -82,12 +82,15 @@ class tab_trades implements renderable, templatable {
                 foreach ($trade->requirements as $req) {
                     $media = $allmedia[$req->itemid];
 
+                    $reqname = format_string($req->name);
                     $reqsdata[] = [
                         'qty' => $req->qty,
-                        'name' => format_string($req->name),
+                        'name' => $reqname,
                         'is_image' => $media['is_image'],
                         'image_url' => $media['is_image'] ? $media['url'] : '',
                         'image_content' => $media['is_image'] ? '' : strip_tags($media['content']),
+                        'popover_title' => $req->qty . 'x ' . $reqname,
+                        'popover_label' => $req->qty . 'x ' . $reqname,
                     ];
                 }
 
@@ -96,12 +99,15 @@ class tab_trades implements renderable, templatable {
                 foreach ($trade->rewards as $rew) {
                     $media = $allmedia[$rew->itemid];
 
+                    $rewname = format_string($rew->name);
                     $rewsdata[] = [
                         'qty' => $rew->qty,
-                        'name' => format_string($rew->name),
+                        'name' => $rewname,
                         'is_image' => $media['is_image'],
                         'image_url' => $media['is_image'] ? $media['url'] : '',
                         'image_content' => $media['is_image'] ? '' : strip_tags($media['content']),
+                        'popover_title' => $rew->qty . 'x ' . $rewname,
+                        'popover_label' => $rew->qty . 'x ' . $rewname,
                     ];
                 }
 
@@ -136,11 +142,33 @@ class tab_trades implements renderable, templatable {
                     'confirm_msg' => s($msgraw),
                     'requirements' => $reqsdata,
                     'rewards' => $rewsdata,
+                    'compact_reqs' => count($reqsdata) > 3,
+                    'compact_rews' => count($rewsdata) > 3,
                 ];
             }
         }
 
-        // 5. Global UI Data & JS Injection.
+        // 5. Suggest Trades button — enabled only when PlayerCoin and Avatars exist.
+        $suggeststate = \block_playerhud\game::suggest_trades_state($this->instanceid);
+        $suggesturl = '';
+        if ($suggeststate['enabled']) {
+            $suggestdisabled = false;
+            $suggesttooltip  = '';
+            $suggesturl = (new moodle_url('/blocks/playerhud/manage.php', [
+                'id'         => $this->courseid,
+                'instanceid' => $this->instanceid,
+                'tab'        => 'trades',
+                'action'     => 'suggest_trades',
+            ]))->out(false);
+        } else if ($suggeststate['reason'] === 'all_covered') {
+            $suggestdisabled = true;
+            $suggesttooltip  = get_string('trade_sug_none_available', 'block_playerhud');
+        } else {
+            $suggestdisabled = true;
+            $suggesttooltip  = get_string('suggest_trades_prereq', 'block_playerhud');
+        }
+
+        // 6. Global UI Data & JS Injection.
         $addurl = new moodle_url('/blocks/playerhud/edit_trade.php', [
             'courseid' => $this->courseid,
             'instanceid' => $this->instanceid,
@@ -176,6 +204,10 @@ class tab_trades implements renderable, templatable {
             'str_edit' => get_string('edit'),
             'str_delete' => get_string('delete'),
             'str_empty' => get_string('shop_empty', 'block_playerhud'),
+            'url_suggest_trades'      => $suggesturl,
+            'suggest_trades_disabled' => $suggestdisabled,
+            'suggest_trades_tooltip'  => $suggesttooltip,
+            'str_suggest_trades'      => get_string('suggest_trades', 'block_playerhud'),
         ];
     }
 

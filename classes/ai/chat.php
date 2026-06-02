@@ -32,7 +32,8 @@ class chat extends generator {
      * Sends a multi-turn conversation to the configured AI provider.
      *
      * The last element of $messages must be the current user turn.
-     * Tries providers in order: Gemini → Groq → OpenAI-compatible.
+     * When personal keys are configured, uses those directly (Gemini → Groq → OpenAI-compatible).
+     * When only institution keys are available, tries core_ai first.
      *
      * @param string $systemprompt System instruction describing the AI role and context.
      * @param array $messages Conversation history as [{role, content}, ...].
@@ -41,13 +42,32 @@ class chat extends generator {
      * @throws \moodle_exception If no key is available or all providers fail.
      */
     public function send(string $systemprompt, array $messages): array {
-        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $this->load_api_keys();
+        // Load keys first to determine whether personal keys are configured.
+        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $haspersonalkeys] = $this->load_api_keys();
 
+        $result = ['success' => false, 'message' => ''];
+
+        // Priority 0: Moodle core_ai — institution default, skipped when the teacher
+        // has configured personal keys so their explicit choice is always honoured.
+        if (!$haspersonalkeys && $this->has_core_ai_provider()) {
+            $chatlines = [];
+            foreach ($messages as $msg) {
+                $role = $msg['role'] === 'assistant' ? 'Assistant' : 'User';
+                $chatlines[] = $role . ': ' . $msg['content'];
+            }
+            $parts = ['system' => $systemprompt, 'user' => implode("\n", $chatlines)];
+            $result = $this->call_core_ai($parts);
+            if ($result['success']) {
+                $parsed = $this->parse_chat_response($result['data'], $result['provider']);
+                $this->log_chat($result['provider'], $messages);
+                return $parsed;
+            }
+        }
+
+        // Priority 1–3: direct provider calls with native multi-turn support.
         if (empty($geminikey) && empty($groqkey) && empty($openaikey)) {
             throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
         }
-
-        $result = ['success' => false, 'message' => ''];
 
         if (!empty($geminikey)) {
             $result = $this->call_gemini_chat($systemprompt, $messages, $geminikey);
@@ -209,12 +229,83 @@ class chat extends generator {
             ];
         }
 
+        // Second attempt: string-based extraction for when the model produces invalid JSON
+        // (e.g. unescaped double quotes inside the reply value — common with core_ai providers
+        // that do not support JSON output mode). Extracts reply and action independently.
+        $extracted = $this->extract_reply_and_action($cleaned);
+        if ($extracted !== null) {
+            return $extracted + ['provider' => $provider];
+        }
+
         // Fallback: plain text reply (AI did not honour the JSON instruction).
         return [
             'reply'    => $raw,
             'action'   => null,
             'provider' => $provider,
         ];
+    }
+
+    /**
+     * Extracts reply text and action object from a malformed JSON string.
+     *
+     * Handles the common case where the model places unescaped double quotes
+     * inside the reply string value, making the outer object invalid JSON while
+     * the action sub-object (which contains no free text) remains valid.
+     *
+     * @param string $cleaned JSON string with markdown fences already stripped.
+     * @return array|null Array with 'reply' and 'action' keys, or null if extraction fails.
+     */
+    private function extract_reply_and_action(string $cleaned): ?array {
+        $replykey  = '"reply":"';
+        $actionkey = '","action":';
+
+        $replypos  = strpos($cleaned, $replykey);
+        $actionpos = strpos($cleaned, $actionkey);
+
+        // Response has both reply and action fields.
+        if ($replypos !== false && $actionpos !== false) {
+            $replytext  = substr($cleaned, $replypos + strlen($replykey), $actionpos - $replypos - strlen($replykey));
+            $actionjson = trim(substr($cleaned, $actionpos + strlen($actionkey)));
+            $action     = $this->extract_json_object($actionjson);
+            return ['reply' => $replytext, 'action' => $action];
+        }
+
+        // Response has only a reply field (no action).
+        if ($replypos !== false) {
+            $after     = substr($cleaned, $replypos + strlen($replykey));
+            $endpos    = strrpos($after, '"');
+            $replytext = $endpos !== false ? substr($after, 0, $endpos) : $after;
+            return ['reply' => $replytext, 'action' => null];
+        }
+
+        return null;
+    }
+
+    /**
+     * Extracts the first complete JSON object from a string using brace counting.
+     *
+     * @param string $str String starting at or before the opening brace.
+     * @return array|null Decoded array or null if extraction fails.
+     */
+    private function extract_json_object(string $str): ?array {
+        $start = strpos($str, '{');
+        if ($start === false) {
+            return null;
+        }
+        $depth = 0;
+        $len   = strlen($str);
+        for ($i = $start; $i < $len; $i++) {
+            if ($str[$i] === '{') {
+                $depth++;
+            } else if ($str[$i] === '}') {
+                $depth--;
+                if ($depth === 0) {
+                    $decoded = json_decode(substr($str, $start, $i - $start + 1), true);
+                    return is_array($decoded) ? $decoded : null;
+                }
+            }
+        }
+        return null;
     }
 
     /**

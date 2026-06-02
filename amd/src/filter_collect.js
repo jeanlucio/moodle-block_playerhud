@@ -554,13 +554,21 @@ export const init = () => {
     });
 
     // Item Details Modal.
+    // Also handles .ph-mini-item.ph-item-trigger (widget stash items) when view.js is not
+    // loaded — i.e., when the block sidebar is absent on activity pages.
     /* eslint-disable complexity */
     $('body').off('click.phdetails keydown.phdetails')
-        .on('click.phdetails keydown.phdetails', '.ph-item-details-trigger', function(e) {
+        .on('click.phdetails keydown.phdetails',
+            '.ph-item-details-trigger, .ph-mini-item.ph-item-trigger', function(e) {
         if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') {
             return;
         }
         e.preventDefault();
+
+        // When the block sidebar is present, view.js is loaded and handles .ph-item-trigger.
+        if ($(this).hasClass('ph-item-trigger') && document.querySelector('.block_playerhud_sidebar')) {
+            return;
+        }
 
         const trigger = $(this);
         let container = trigger.closest('.playerhud-item-card, .ph-drop-image-container, .ph-mini-item');

@@ -46,6 +46,20 @@
             <span class="fw-bold text-dark">{{summary_text}}</span>
         </div>
         <div class="d-flex flex-shrink-0">
+            {{#url_suggest_trades}}
+            <a href="{{url_suggest_trades}}" class="btn btn-info text-white shadow-sm me-2">
+                <i class="fa fa-magic me-1" aria-hidden="true"></i> {{str_suggest_trades}}
+            </a>
+            {{/url_suggest_trades}}
+            {{#suggest_trades_disabled}}
+            <span class="d-inline-block me-2" tabindex="0"
+                  data-bs-toggle="tooltip" data-toggle="tooltip"
+                  title="{{suggest_trades_tooltip}}">
+                <button class="btn btn-info text-white shadow-sm" disabled>
+                    <i class="fa fa-magic me-1" aria-hidden="true"></i> {{str_suggest_trades}}
+                </button>
+            </span>
+            {{/suggest_trades_disabled}}
             <a href="{{url_add}}" class="btn btn-primary shadow-sm">
                 <i class="fa fa-plus-circle me-1" aria-hidden="true"></i> {{str_add}}
             </a>
@@ -100,6 +114,7 @@
                             <div class="text-danger small fw-bold text-uppercase mb-2 ph-trade-label">
                                 <i class="fa fa-minus-circle me-1" aria-hidden="true"></i>{{str_pay}}
                             </div>
+                            {{^compact_reqs}}
                             <div class="d-flex flex-column gap-2 align-items-center">
                                 {{#requirements}}
                                 <div class="badge bg-white text-dark border text-wrap d-flex align-items-center p-1 pe-2 shadow-sm w-100 text-start" title="{{name}}">
@@ -118,6 +133,25 @@
                                 </div>
                                 {{/requirements}}
                             </div>
+                            {{/compact_reqs}}
+                            {{#compact_reqs}}
+                            <div class="ph-shop-compact-grid">
+                                {{#requirements}}
+                                <button type="button"
+                                        class="ph-mini-item ph-shop-popover"
+                                        data-ph-title="{{popover_title}}"
+                                        data-ph-content=""
+                                        aria-label="{{popover_label}}">
+                                    {{#is_image}}
+                                    <img src="{{image_url}}" alt="" class="ph-mini-item-img">
+                                    {{/is_image}}
+                                    {{^is_image}}
+                                    <span class="ph-emoji" aria-hidden="true">{{image_content}}</span>
+                                    {{/is_image}}
+                                </button>
+                                {{/requirements}}
+                            </div>
+                            {{/compact_reqs}}
                         </div>
 
                         <div class="col-2 text-center text-muted px-0">
@@ -128,6 +162,7 @@
                             <div class="text-success small fw-bold text-uppercase mb-2 ph-trade-label">
                                 <i class="fa fa-plus-circle me-1" aria-hidden="true"></i>{{str_receive}}
                             </div>
+                            {{^compact_rews}}
                             <div class="d-flex flex-column gap-2 align-items-center">
                                 {{#rewards}}
                                 <div class="badge bg-white text-dark border border-success text-wrap d-flex align-items-center p-1 pe-2 shadow-sm w-100 text-start" title="{{name}}">
@@ -146,6 +181,25 @@
                                 </div>
                                 {{/rewards}}
                             </div>
+                            {{/compact_rews}}
+                            {{#compact_rews}}
+                            <div class="ph-shop-compact-grid">
+                                {{#rewards}}
+                                <button type="button"
+                                        class="ph-mini-item ph-shop-popover"
+                                        data-ph-title="{{popover_title}}"
+                                        data-ph-content=""
+                                        aria-label="{{popover_label}}">
+                                    {{#is_image}}
+                                    <img src="{{image_url}}" alt="" class="ph-mini-item-img">
+                                    {{/is_image}}
+                                    {{^is_image}}
+                                    <span class="ph-emoji" aria-hidden="true">{{image_content}}</span>
+                                    {{/is_image}}
+                                </button>
+                                {{/rewards}}
+                            </div>
+                            {{/compact_rews}}
                         </div>
                     </div>
                 </div>

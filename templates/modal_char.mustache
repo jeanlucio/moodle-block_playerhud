@@ -24,7 +24,8 @@
     {
         "fullname": "Guerreiro Jean",
         "classname": "Guerreiro da Sabedoria",
-        "portrait_url": "https://example.com/portrait.png",
+        "portrait_url": null,
+        "portrait_emoji": "⚔️",
         "tier": 2,
         "tier_name": "Iniciado",
         "tier_stars": [
@@ -65,7 +66,13 @@
                          width="120" height="120">
                     {{/portrait_url}}
                     {{^portrait_url}}
+                    {{#portrait_emoji}}
+                    <span class="ph-char-portrait-emoji ph-char-portrait-emoji--lg flex-shrink-0"
+                          aria-hidden="true">{{portrait_emoji}}</span>
+                    {{/portrait_emoji}}
+                    {{^portrait_emoji}}
                     <i class="fa fa-user-circle fa-4x text-secondary flex-shrink-0" aria-hidden="true"></i>
+                    {{/portrait_emoji}}
                     {{/portrait_url}}
                     <div>
                         <div class="ph-tier-stars mb-1" role="img"
