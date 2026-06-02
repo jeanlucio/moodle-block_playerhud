@@ -401,4 +401,80 @@ final class game_test extends advanced_testcase {
 
         $this->assertNull($result);
     }
+
+    /**
+     * Test that collecting a finite drop with XP > 0 awards the correct XP to the player.
+     *
+     * @covers ::process_collection
+     */
+    public function test_process_collection_awards_xp_on_finite_drop(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Golden Shield', 150);
+        $drop = $this->create_dummy_drop($item->id, 2);
+
+        $result = game::process_collection($this->instanceid, $drop->id, $user->id);
+
+        $this->assertTrue($result['success']);
+        $this->assertTrue(game::has_item($user->id, $item->id));
+
+        $player = game::get_player($this->instanceid, $user->id);
+        $this->assertEquals(150, $player->currentxp, 'Collecting a finite drop must award the full item XP.');
+    }
+
+    /**
+     * Test that get_leaderboard excludes users with the block/playerhud:manage capability.
+     *
+     * @covers ::get_leaderboard
+     */
+    public function test_get_leaderboard_excludes_managers(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+
+        $bi = new \stdClass();
+        $bi->blockname = 'playerhud';
+        $bi->parentcontextid = $coursecontext->id;
+        $bi->showinsubcontexts = 0;
+        $bi->pagetypepattern = 'course-view-*';
+        $bi->subpagepattern = null;
+        $bi->defaultregion = 'side-pre';
+        $bi->defaultweight = 0;
+        $bi->configdata = base64_encode(serialize(new \stdClass()));
+        $bi->timecreated = time();
+        $bi->timemodified = time();
+        $instanceid = $DB->insert_record('block_instances', $bi);
+
+        $student1 = $this->getDataGenerator()->create_user();
+        $student2 = $this->getDataGenerator()->create_user();
+        $teacher  = $this->getDataGenerator()->create_user();
+
+        $this->getDataGenerator()->enrol_user($student1->id, $course->id, 'student');
+        $this->getDataGenerator()->enrol_user($student2->id, $course->id, 'student');
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        $now = time();
+        foreach ([$student1->id, $student2->id, $teacher->id] as $uid) {
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid'    => $instanceid,
+                'userid'             => $uid,
+                'currentxp'          => 100,
+                'ranking_visibility' => 1,
+                'enable_gamification' => 1,
+                'timecreated'        => $now,
+                'timemodified'       => $now,
+            ]);
+        }
+
+        $result = game::get_leaderboard($instanceid, $course->id, $student1->id, false);
+        $rankeduserids = array_map('intval', array_column($result['individual'], 'userid'));
+
+        $this->assertContains((int) $student1->id, $rankeduserids, 'Student 1 must appear in the ranking.');
+        $this->assertContains((int) $student2->id, $rankeduserids, 'Student 2 must appear in the ranking.');
+        $this->assertNotContains((int) $teacher->id, $rankeduserids, 'Teacher with manage capability must be excluded.');
+    }
 }
