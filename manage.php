@@ -62,9 +62,9 @@ $PAGE->set_pagelayout('incourse');
 $PAGE->set_title(get_string('pluginname', 'block_playerhud'));
 $PAGE->set_heading(format_string($course->fullname));
 
-// Load block config for feature flags.
-$blockconfig = unserialize_object(base64_decode($bi->configdata));
-if (!$blockconfig) {
+$rawblockconfig = base64_decode($bi->configdata ?? '', true);
+$blockconfig = ($rawblockconfig !== false && $rawblockconfig !== '') ? unserialize_object($rawblockconfig) : new stdClass();
+if (!is_object($blockconfig)) {
     $blockconfig = new stdClass();
 }
 $rpgmodeenabled  = !empty($blockconfig->enable_rpg) || !isset($blockconfig->enable_rpg);
@@ -304,6 +304,8 @@ if ($action === 'bulk_delete_quests' && confirm_sesskey()) {
         $params = array_merge($inparams, [$instanceid]);
         $quests = $DB->get_records_select('block_playerhud_quests', "id $insql AND blockinstanceid = ?", $params);
 
+        $deletedcount = 0;
+
         if ($quests) {
             $questids = array_keys($quests);
             [$qinsql, $qinparams] = $DB->get_in_or_equal($questids);
@@ -349,7 +351,7 @@ if ($action === 'bulk_delete_quests' && confirm_sesskey()) {
 
         redirect(
             new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]),
-            get_string('deleted_bulk', 'block_playerhud', $deletedcount ?? 0),
+            get_string('deleted_bulk', 'block_playerhud', $deletedcount),
             \core\output\notification::NOTIFY_SUCCESS
         );
     } else {
@@ -407,15 +409,21 @@ if ($action == 'delete_class') {
 if ($action == 'delete_chapter') {
     $chapterid = optional_param('chapterid', 0, PARAM_INT);
     if ($chapterid && confirm_sesskey()) {
-        $scenes = $DB->get_records('block_playerhud_story_nodes', ['chapterid' => $chapterid]);
+        $chapter = $DB->get_record(
+            'block_playerhud_chapters',
+            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
+            '*',
+            MUST_EXIST
+        );
+        $scenes = $DB->get_records('block_playerhud_story_nodes', ['chapterid' => $chapter->id]);
         if ($scenes) {
             $sceneids = array_keys($scenes);
             [$nsql, $nparams] = $DB->get_in_or_equal($sceneids);
             // Bulk delete choices avoiding N+1.
             $DB->delete_records_select('block_playerhud_choices', "nodeid $nsql", $nparams);
         }
-        $DB->delete_records('block_playerhud_story_nodes', ['chapterid' => $chapterid]);
-        $DB->delete_records('block_playerhud_chapters', ['id' => $chapterid, 'blockinstanceid' => $instanceid]);
+        $DB->delete_records('block_playerhud_story_nodes', ['chapterid' => $chapter->id]);
+        $DB->delete_records('block_playerhud_chapters', ['id' => $chapter->id, 'blockinstanceid' => $instanceid]);
 
         redirect(
             new moodle_url($baseurl, ['tab' => 'chapters']),
@@ -445,13 +453,18 @@ if ($action === 'move_chapter_up' && confirm_sesskey()) {
         );
 
         if ($prevchapter) {
-            // Swap sortorder values.
-            $temporder = $chapter->sortorder;
-            $chapter->sortorder = $prevchapter->sortorder;
-            $prevchapter->sortorder = $temporder;
+            $transaction = $DB->start_delegated_transaction();
+            try {
+                $temporder = $chapter->sortorder;
+                $chapter->sortorder = $prevchapter->sortorder;
+                $prevchapter->sortorder = $temporder;
 
-            $DB->update_record('block_playerhud_chapters', $chapter);
-            $DB->update_record('block_playerhud_chapters', $prevchapter);
+                $DB->update_record('block_playerhud_chapters', $chapter);
+                $DB->update_record('block_playerhud_chapters', $prevchapter);
+                $transaction->allow_commit();
+            } catch (\Throwable $e) {
+                $transaction->rollback($e);
+            }
         }
 
         redirect(
@@ -482,13 +495,18 @@ if ($action === 'move_chapter_down' && confirm_sesskey()) {
         );
 
         if ($nextchapter) {
-            // Swap sortorder values.
-            $temporder = $chapter->sortorder;
-            $chapter->sortorder = $nextchapter->sortorder;
-            $nextchapter->sortorder = $temporder;
+            $transaction = $DB->start_delegated_transaction();
+            try {
+                $temporder = $chapter->sortorder;
+                $chapter->sortorder = $nextchapter->sortorder;
+                $nextchapter->sortorder = $temporder;
 
-            $DB->update_record('block_playerhud_chapters', $chapter);
-            $DB->update_record('block_playerhud_chapters', $nextchapter);
+                $DB->update_record('block_playerhud_chapters', $chapter);
+                $DB->update_record('block_playerhud_chapters', $nextchapter);
+                $transaction->allow_commit();
+            } catch (\Throwable $e) {
+                $transaction->rollback($e);
+            }
         }
 
         redirect(
@@ -515,7 +533,8 @@ if ($action === 'save_keys' && confirm_sesskey()) {
     set_user_preference('block_playerhud_openai_model', trim($omodel));
 
     // Remove keys from block config if they exist to prevent confusion and ensure they are only stored in user preferences.
-    $config = (array) unserialize_object(base64_decode($bi->configdata));
+    $rawconfig = base64_decode($bi->configdata ?? '', true);
+    $config = ($rawconfig !== false && $rawconfig !== '') ? (array) unserialize_object($rawconfig) : [];
     if (isset($config['apikey_gemini']) || isset($config['apikey_groq'])) {
         unset($config['apikey_gemini'], $config['apikey_groq']);
         $bi->configdata = base64_encode(serialize((object)$config));
@@ -582,7 +601,7 @@ if ($action === 'grant_item' && confirm_sesskey()) {
     $newinv->userid = $ruserid;
     $newinv->itemid = $item->id;
     $newinv->dropid = 0;
-    $newinv->source = 'teacher'; // Mark as teacher granted for potential future features (e.g. filtering, special handling).
+    $newinv->source = 'teacher';
     $newinv->timecreated = time();
     $DB->insert_record('block_playerhud_inventory', $newinv);
 
@@ -598,8 +617,9 @@ if ($action === 'grant_item' && confirm_sesskey()) {
 
 // Action: Auto Suggest Quests (Heuristic).
 if ($action === 'suggest_quests' || $action === 'save_suggestions') {
-    $config = unserialize_object(base64_decode($bi->configdata));
-    if (!$config) {
+    $rawconfig = base64_decode($bi->configdata ?? '', true);
+    $config = ($rawconfig !== false && $rawconfig !== '') ? unserialize_object($rawconfig) : new \stdClass();
+    if (!is_object($config)) {
         $config = new \stdClass();
     }
 

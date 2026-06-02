@@ -173,12 +173,15 @@ class game {
         $msgparams->xp = ($earnedxp > 0) ? " (+{$earnedxp} XP)" : "";
         $message = get_string('collected_msg', 'block_playerhud', $msgparams);
 
-        // Calculate Stats for HUD update.
-        $player = self::get_player($instanceid, $userid);
-        $bi = $DB->get_record('block_instances', ['id' => $instanceid]);
-        $config = unserialize_object(base64_decode($bi->configdata));
+        // Player is only set inside the transaction when XP was awarded; fetch it for the xp=0/infinite case.
+        if (!isset($player)) {
+            $player = self::get_player($instanceid, $userid);
+        }
 
-        if (!$config) {
+        $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
+        $rawconfig = base64_decode($bi->configdata ?? '', true);
+        $config = ($rawconfig !== false && $rawconfig !== '') ? unserialize_object($rawconfig) : new \stdClass();
+        if (!is_object($config)) {
             $config = new \stdClass();
         }
         $stats = self::get_game_stats($config, $instanceid, $player->currentxp);
@@ -532,6 +535,12 @@ class game {
         $individualranking = [];
         $coursecontext = \context_course::instance($courseid);
 
+        $managers = get_users_by_capability($coursecontext, 'block/playerhud:manage', 'u.id');
+        $managerids = array_fill_keys(array_keys($managers), true);
+        foreach (array_keys(get_admins()) as $adminid) {
+            $managerids[$adminid] = true;
+        }
+
         // Control variables for tie (Shared Rank).
         $rankcounter = 1;
         $lastxp = -1;
@@ -541,7 +550,7 @@ class game {
         foreach ($rawusers as $usr) {
             $isme = ($usr->userid == $currentuserid);
 
-            if (has_capability('block/playerhud:manage', $coursecontext, $usr->userid)) {
+            if (isset($managerids[$usr->userid])) {
                 continue;
             }
 

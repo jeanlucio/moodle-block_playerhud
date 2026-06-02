@@ -165,13 +165,6 @@ class trade_manager {
             }
         }
 
-        if ($trade->onetime == 1) {
-            $alreadytraded = $DB->record_exists('block_playerhud_trade_log', ['tradeid' => $trade->id, 'userid' => $userid]);
-            if ($alreadytraded) {
-                throw new \moodle_exception('error_trade_onetime', 'block_playerhud');
-            }
-        }
-
         $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
         $lockkey = 'trade_usr_' . $userid . '_inst_' . $instanceid;
         $lock = $lockfactory->get_lock($lockkey, 10);
@@ -181,6 +174,18 @@ class trade_manager {
         }
 
         try {
+            // Check inside the lock to prevent a race condition where two simultaneous requests
+            // both pass the check before either one writes to the trade log.
+            if ($trade->onetime == 1) {
+                $alreadytraded = $DB->record_exists(
+                    'block_playerhud_trade_log',
+                    ['tradeid' => $trade->id, 'userid' => $userid]
+                );
+                if ($alreadytraded) {
+                    throw new \moodle_exception('error_trade_onetime', 'block_playerhud');
+                }
+            }
+
             $itemstoremove = [];
             $userinventorymap = [];
 
