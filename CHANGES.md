@@ -5,6 +5,81 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.5.0] — 2026-06-02
+
+### Added
+- **Item powers** (`action_type` / `action_value`): items now carry `avatar_profile` or
+  `deadline_extension` powers. A student who uses an avatar item equips it as their
+  profile picture; a deadline item extends the submission window for a specific activity.
+- **PlayerCoin quick-create**: one-click button in the Items tab creates the PlayerCoin
+  item. Shows a confirmation dialog if one already exists; reloads on successful creation.
+- **PlayerCoin drop setup**: confirm modal lets teachers insert the PlayerCoin drop
+  shortcode into the course News Forum intro, eliminating a manual navigation step.
+- **Create Avatars button**: seeds 17 pre-defined avatar items in one click; disabled once
+  all avatar slots are already covered or the PlayerCoin does not exist.
+- **Suggest Trades button**: generates suggested trade offers for the active course.
+- **Item type filter in collection tab**: students can filter their inventory by power
+  type (avatar, deadline extension, or plain).
+- **Compact icon grid in trades**: trades requiring more than 3 items show a compact icon
+  grid in the teacher management view and in the student shop, with colored borders and
+  on-hover popovers.
+- **AI provider chain extended**: Moodle `core_ai` and the PlayerGames hub are now probed
+  before Gemini, Groq, and OpenAI-compatible; no API key is needed in PlayerHUD when
+  `core_ai` is configured at site level.
+- **AI class oracle indicator**: an AI emoji badge appears on the oracle button; error
+  messages shown when the call fails due to rate limit or quota exhaustion.
+- **AI prompts as PHP constants**: system prompts and role strings moved to PHP constants,
+  preventing `js_call_amd` argument-size overflow on Moodle 4.5.
+- **Character tier portrait fallback**: if a class has no image URL, an emoji avatar is
+  used before the generic placeholder.
+- **Power hint badge in collection**: unowned, non-secret items with `avatar_profile`
+  power show a hint badge in the student collection tab.
+
+### Fixed
+- **Avatar rendering**: corrected oval distortion (`object-fit: cover`, `aspect-ratio`);
+  fixed sizing in block sidebar and header; resolved a strict-comparison bug that
+  prevented avatar display in the sidebar.
+- **Trade edit losing items**: editing and saving an existing trade no longer discards all
+  item rows.
+- **Stash item modal on activity pages**: modal opens correctly when the block is
+  displayed on an activity page without the standard sidebar.
+- **AI provider key precedence**: personal API keys configured by a teacher now always
+  override institution-level defaults regardless of provider order.
+- **OpenAI-compatible endpoint normalization**: trailing slashes and path fragments are
+  cleaned automatically before the request is sent.
+- **PlayerCoin identified by `action_type`**: the PlayerCoin item is now located by the
+  stable `action_type = 'playercoin'` flag instead of its mutable display name.
+- **Badge contrast in economy breakdown**: item count badges use dark text; item type
+  badges use white text on coloured backgrounds.
+
+### Security
+- `base64_decode` strict mode added before every `unserialize_object` call
+  (`block_playerhud.php`, `manage.php`, `classes/game.php`) to prevent a crash on
+  empty or corrupt `configdata`.
+- One-time trade uniqueness check moved inside the advisory lock, eliminating a race
+  condition where two simultaneous requests could both pass the check before either
+  write landed.
+- Chapter delete now validates that the chapter belongs to the current block instance
+  before removing its scenes, closing a cross-instance scene deletion path.
+- Chapter sort-order swaps wrapped in delegated transactions to prevent inconsistent
+  state if one of the two UPDATE queries fails.
+- Manager list pre-loaded with `get_users_by_capability()` before the leaderboard loop,
+  replacing a per-user `has_capability()` call that caused N+1 DB queries.
+
+### Tests
+- **`use_item_test.php`** (5 new cases): item not owned throws; deadline item with no
+  activity selected returns "pick activity" prompt; deadline item with no matching rule
+  returns warning; deadline item creates a new calendar override and consumes the item;
+  deadline item updates an existing override.
+- **`game_test.php`** +2 cases: XP correctly awarded when collecting a finite-use drop;
+  managers correctly excluded from the leaderboard.
+- **`privacy_provider_test.php`** +2 cases: avatar preference included in user data
+  export; metadata declaration covers all stored fields.
+- **`quest_test.php`**: `TYPE_ACTIVITY` completion trigger replaced with a full
+  integration test using real activity completion state.
+
+---
+
 ## [v1.4.2] — 2026-05-27
 
 ### Fixed

@@ -749,9 +749,10 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
         if (isset($individualcoveredids[$avatar->id])) {
             continue;
         }
+        $costqty = in_array($avatar->image, ['🤖', '👾'], true) ? 1 : 5;
         $suggestions[] = [
             'uid'          => 'ind_' . $avatar->id,
-            'cost_qty'     => 5,
+            'cost_qty'     => $costqty,
             'cost_itemid'  => $playercoin->id,
             'cost_emoji'   => '🪙',
             'reward_emoji' => $avatar->image,

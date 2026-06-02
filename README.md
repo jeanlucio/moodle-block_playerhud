@@ -206,17 +206,18 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `cross_instance_security_test.php` | 12 | Cross-instance isolation: item, quest, chapter and trade guards accept own-instance IDs and reject foreign ones without modifying the target record |
 | `drop_guard_test.php` | 7 | Collection limits, trade-consumed items, cooldown enforcement |
 | `external_playercoin_test.php` | 12 | `create_playercoin` (idempotency, capability guard); `create_avatar_pack` (17 items, emoji deduplication, idempotency); `setup_playercoin_drop` (success, no forum, cross-instance item isolation, intro prepend, capability guard) |
-| `game_test.php` | 10 | XP and level aggregation, quest XP inclusion/exclusion, collection anti-farm and cooldown; `get_avatar_item` (enabled, disabled, foreign instance, not found) |
+| `game_test.php` | 12 | XP and level aggregation, quest XP inclusion/exclusion, collection anti-farm and cooldown; `get_avatar_item` (enabled, disabled, foreign instance, not found); XP award on finite drop; leaderboard manager exclusion |
 | `gamemaster_test.php` | 6 | Grant/revoke/delete item and quest while preserving leaderboard timestamps; XP floor at zero |
 | `karma_test.php` | 11 | Karma read/write, positive/negative deltas, clamping at ±999 boundaries, successive accumulation |
-| `privacy_provider_test.php` | 2 | GDPR: delete all data for user; delete user preferences |
-| `quest_test.php` | 22 | Completion checks (level, XP, items, trades); claim rewards; disabled quest; idempotency |
+| `privacy_provider_test.php` | 4 | GDPR: delete all data for user; delete user preferences; avatar preference included in export; metadata declaration coverage |
+| `quest_test.php` | 22 | Completion checks (level, XP, items, trades, activity completion); claim rewards; disabled quest; idempotency |
 | `rpg_classes_test.php` | 7 | Class assignment, duplicate guard, karma initialisation, portrait tier boundaries |
 | `story_manager_test.php` | 15 | Scene loading, progress persistence, choice navigation, karma delta, chapter completion, error cases |
 | `suggest_trades_state_test.php` | 4 | Suggest Trades button: disabled without prereqs, disabled with coin only, disabled when all avatars covered, enabled on partial coverage |
 | `trade_test.php` | 7 | Trade assembly, insufficient funds, atomic success, one-time limit, group restriction |
+| `use_item_test.php` | 5 | Item use validation (not owned throws); deadline power: no activity selected, no rule found, creates override and consumes item, updates existing override |
 | `utils_test.php` | 2 | `get_avatar_html`: emoji produces `ph-avatar-emoji` div with aria-hidden span; HTTP URL produces `ph-avatar-img` img tag |
-| **Total** | **139** | |
+| **Total** | **148** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -532,17 +533,18 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `cross_instance_security_test.php` | 12 | Isolamento cross-instance: guardas de item, quest, capítulo e troca aceitam IDs da própria instância e rejeitam IDs alheios sem modificar o registro alvo |
 | `drop_guard_test.php` | 7 | Limites de coleta, itens consumidos por troca, aplicação de cooldown |
 | `external_playercoin_test.php` | 12 | `create_playercoin` (idempotência, guarda de capacidade); `create_avatar_pack` (17 itens, deduplicação por emoji, idempotência); `setup_playercoin_drop` (sucesso, sem fórum, isolamento cross-instance, prepend de intro, guarda de capacidade) |
-| `game_test.php` | 10 | Agregação de XP e nível, XP de quests (inclusão/exclusão), anti-farm de coleta e cooldown; `get_avatar_item` (habilitado, desabilitado, instância estrangeira, não encontrado) |
+| `game_test.php` | 12 | Agregação de XP e nível, XP de quests (inclusão/exclusão), anti-farm de coleta e cooldown; `get_avatar_item` (habilitado, desabilitado, instância estrangeira, não encontrado); XP concedido ao coletar drop com uso finito; exclusão de gerentes do ranking |
 | `gamemaster_test.php` | 6 | Conceder/revogar/excluir item e quest preservando timestamps do ranking; XP mínimo em zero |
 | `karma_test.php` | 11 | Leitura/escrita de karma, deltas positivos/negativos, clamping nos limites ±999, acumulação sucessiva |
-| `privacy_provider_test.php` | 2 | LGPD: exclusão de todos os dados do usuário; exclusão de preferências |
-| `quest_test.php` | 22 | Verificações de conclusão (nível, XP, itens, trocas); reivindicar recompensas; quest desabilitada; idempotência |
+| `privacy_provider_test.php` | 4 | LGPD: exclusão de todos os dados do usuário; exclusão de preferências; preferência de avatar incluída na exportação; cobertura da declaração de metadados |
+| `quest_test.php` | 22 | Verificações de conclusão (nível, XP, itens, trocas, conclusão de atividade); reivindicar recompensas; quest desabilitada; idempotência |
 | `rpg_classes_test.php` | 7 | Atribuição de classe, proteção contra duplicatas, inicialização de karma, limites de tier de retrato |
 | `story_manager_test.php` | 15 | Carregamento de cena, persistência de progresso, navegação de escolhas, delta de karma, conclusão de capítulo, casos de erro |
 | `suggest_trades_state_test.php` | 4 | Botão Sugerir Trocas: desabilitado sem pré-requisitos, desabilitado só com moeda, desabilitado quando todos os avatares cobertos, habilitado com cobertura parcial |
 | `trade_test.php` | 7 | Montagem de trocas, fundos insuficientes, sucesso atômico, limite único, restrição por grupo |
+| `use_item_test.php` | 5 | Validação de uso de item (não possuído lança exceção); poder de prazo: sem atividade selecionada, sem regra encontrada, cria override e consome item, atualiza override existente |
 | `utils_test.php` | 2 | `get_avatar_html`: emoji gera div `ph-avatar-emoji` com span aria-hidden; URL HTTP gera tag img `ph-avatar-img` |
-| **Total** | **139** | |
+| **Total** | **148** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
