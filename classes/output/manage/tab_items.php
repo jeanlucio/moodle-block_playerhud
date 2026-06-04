@@ -300,6 +300,23 @@ class tab_items implements renderable {
             'deadline_extension' => get_string('item_power_deadline', 'block_playerhud'),
         ];
 
+        // Check LP activities once before the loop to avoid N+1 queries.
+        $lpisinstalled = class_exists('\local_latepenalty\recalculator');
+        $haslpactivities = false;
+        if ($lpisinstalled) {
+            $modinfo = get_fast_modinfo($this->courseid);
+            $lprules = $DB->get_records('local_latepenalty_rules', ['enabled' => 1]);
+            foreach ($lprules as $rule) {
+                try {
+                    $modinfo->get_cm($rule->cmid);
+                    $haslpactivities = true;
+                    break;
+                } catch (\moodle_exception $e) {
+                    continue;
+                }
+            }
+        }
+
         if ($items) {
             $dropscounts = [];
             $dropstotals = [];
@@ -390,6 +407,9 @@ class tab_items implements renderable {
                     // Power badge.
                     'has_power'   => !empty($item->action_type),
                     'power_badge' => $powerbadgelabels[$item->action_type] ?? '',
+                    'lp_warning'  => ($item->action_type === 'deadline_extension')
+                        && $lpisinstalled
+                        && !$haslpactivities,
 
                     // Item specific strings.
                     'str_manage_drops' => get_string('manage_drops_title', 'block_playerhud', format_string($item->name)),

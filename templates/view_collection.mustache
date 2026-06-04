@@ -134,6 +134,9 @@
             <div class="ph-card-actions border-top mt-2 pt-2 px-1 w-100">
 
                 {{#is_avatar}}
+                <p class="small text-muted mb-1 text-center">
+                    <i class="fa fa-user-circle me-1" aria-hidden="true"></i>{{#str}} item_power_badge_avatar, block_playerhud {{/str}}
+                </p>
                 {{#is_equipped}}
                 <span class="badge bg-success mb-1 d-block">
                     <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} item_equipped_badge, block_playerhud {{/str}}
@@ -149,16 +152,14 @@
                 {{/is_avatar}}
 
                 {{#is_deadline}}
-                {{#lp_warning}}
-                <p class="small text-muted mb-1">
-                    <i class="fa fa-exclamation-circle me-1" aria-hidden="true"></i>{{#str}} item_lp_warning, block_playerhud {{/str}}
-                </p>
-                {{/lp_warning}}
                 {{^lp_warning}}
                 {{#lp_has_multiple}}
+                <p class="small text-muted mb-1">
+                    <i class="fa fa-clock-o me-1" aria-hidden="true"></i>{{#str}} item_use_activity_label, block_playerhud {{/str}} — {{lp_days_str}}
+                </p>
                 <select class="form-select form-select-sm mb-1 ph-lp-activity-select"
                         aria-label="{{#str}} item_use_pick_activity, block_playerhud {{/str}}">
-                    <option value="">{{#str}} item_use_pick_activity, block_playerhud {{/str}}</option>
+                    <option value="">{{#str}} item_use_pick_short, block_playerhud {{/str}}</option>
                     {{#lp_activities}}
                     <option value="{{cmid}}">{{name}}</option>
                     {{/lp_activities}}
@@ -166,12 +167,17 @@
                 {{/lp_has_multiple}}
                 {{^lp_has_multiple}}
                 {{#lp_activities}}
-                <input type="hidden" class="ph-lp-activity-select" value="{{cmid}}">
+                <input type="hidden" class="ph-lp-activity-select" value="{{cmid}}" data-actname="{{name}}">
+                <p class="small text-muted mb-1"
+                   title="{{#str}} item_use_confirm_activity, block_playerhud {{/str}} {{name}}">
+                    <i class="fa fa-clock-o me-1" aria-hidden="true"></i>{{#str}} item_use_activity_label, block_playerhud {{/str}} — {{days_str}}
+                </p>
                 {{/lp_activities}}
                 {{/lp_has_multiple}}
                 <button type="button"
                         class="btn btn-sm btn-outline-warning w-100 ph-item-use-btn"
-                        data-itemid="{{itemid}}">
+                        data-itemid="{{itemid}}"
+                        data-daysstr="{{lp_days_str}}">
                     {{#str}} item_use, block_playerhud {{/str}}
                 </button>
                 {{/lp_warning}}

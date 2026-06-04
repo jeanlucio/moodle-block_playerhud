@@ -439,9 +439,27 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                     return;
                 }
 
+                let confirmMsg = config.strings.item_use_confirm;
+                const escHtml = s => s.replace(/[<>&"]/g, c =>
+                    ({'<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;'}[c]));
+                let actname = '';
+                if ($select.is('[type=hidden]')) {
+                    actname = $select.attr('data-actname') || '';
+                } else if ($select.is('select') && targetcmid) {
+                    actname = $select.find('option:selected').text() || '';
+                }
+                const daysstr = $btn.attr('data-daysstr') || '';
+                if (actname) {
+                    confirmMsg += '<br><small class="text-muted">'
+                        + config.strings.item_use_confirm_activity
+                        + ' <strong>' + escHtml(actname) + '</strong>'
+                        + (daysstr ? ' — ' + escHtml(daysstr) : '')
+                        + '</small>';
+                }
+
                 Notification.confirm(
                     config.strings.confirm_title,
-                    config.strings.item_use_confirm,
+                    confirmMsg,
                     config.strings.yes,
                     config.strings.cancel,
                     function() {

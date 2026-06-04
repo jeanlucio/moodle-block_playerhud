@@ -352,8 +352,9 @@ if ($isoptin) {
             'respawntime'          => get_string('respawntime', 'block_playerhud'),
             'item_equip'           => get_string('item_equip', 'block_playerhud'),
             'item_unequip'         => get_string('item_unequip', 'block_playerhud'),
-            'item_use_confirm'     => get_string('item_use_confirm', 'block_playerhud'),
-            'item_use_pick'        => get_string('item_use_pick_activity', 'block_playerhud'),
+            'item_use_confirm'          => get_string('item_use_confirm', 'block_playerhud'),
+            'item_use_confirm_activity' => get_string('item_use_confirm_activity', 'block_playerhud'),
+            'item_use_pick'             => get_string('item_use_pick_activity', 'block_playerhud'),
             'item_equipped_badge'  => get_string('item_equipped_badge', 'block_playerhud'),
         ],
     ];

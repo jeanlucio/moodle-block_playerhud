@@ -256,6 +256,11 @@
                                 {{#has_power}}
                                     <span class="badge bg-light text-dark border ms-1 fw-normal">{{power_badge}}</span>
                                 {{/has_power}}
+                                {{#lp_warning}}
+                                    <span class="badge bg-warning text-dark border ms-1 fw-normal">
+                                        <i class="fa fa-exclamation-triangle me-1" aria-hidden="true"></i>{{#str}} item_lp_warning, block_playerhud {{/str}}
+                                    </span>
+                                {{/lp_warning}}
                                 <div id="desc_hidden_{{id}}" class="d-none">{{{description_html}}}</div>
                             </td>
                             <td class="align-middle text-nowrap">

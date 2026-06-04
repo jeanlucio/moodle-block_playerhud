@@ -280,15 +280,31 @@ class tab_collection implements renderable, templatable {
                         $itemobj['is_deadline'] = true;
                         $av   = !empty($item->action_value) ? json_decode($item->action_value, true) : [];
                         $cmid = (int)($av['cmid'] ?? 0);
+                        $days = (int)($av['days'] ?? 1);
+                        $daysstr = $days === 1
+                            ? get_string('item_lp_day', 'block_playerhud')
+                            : get_string('item_lp_days', 'block_playerhud', $days);
+                        $itemobj['lp_days_str'] = $daysstr;
                         if ($cmid > 0) {
                             $itemobj['lp_has_multiple'] = false;
-                            $itemobj['lp_activities']   = [];
                             $itemobj['lp_warning']      = false;
+                            $actname = '';
+                            try {
+                                $coursecontext = \context_block::instance($this->instanceid)
+                                    ->get_course_context();
+                                $cm = get_fast_modinfo($coursecontext->instanceid)->get_cm($cmid);
+                                $actname = format_string($cm->name);
+                            } catch (\moodle_exception $e) {
+                                // Activity removed or inaccessible — leave name empty.
+                            }
+                            $itemobj['lp_activities'] = $actname
+                                ? [['cmid' => $cmid, 'name' => $actname, 'days_str' => $daysstr]]
+                                : [];
                         } else {
                             $lpacts = $this->get_lp_activities();
                             $itemobj['lp_has_multiple'] = count($lpacts) > 1;
                             $itemobj['lp_activities']   = array_map(
-                                fn($c, $n) => ['cmid' => $c, 'name' => $n],
+                                fn($c, $n) => ['cmid' => $c, 'name' => $n, 'days_str' => $daysstr],
                                 array_keys($lpacts),
                                 array_values($lpacts)
                             );
