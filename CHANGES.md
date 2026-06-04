@@ -36,6 +36,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   power show a hint badge in the student collection tab.
 
 ### Fixed
+- **Quest form — required item not saved (TYPE_SPECIFIC_ITEM / TYPE_SPECIFIC_TRADE)**:
+  `req_itemid` was always written as 0 on PostgreSQL because `get_fieldset_select()`
+  returns integer columns as PHP strings; `in_array()` with strict comparison then
+  silently rejected every valid ID. Fixed by wrapping the validation arrays with
+  `array_map('intval', …)`. The same bug affected `reward_itemid` whenever a non-zero
+  reward item was selected.
+- **Quest cards cut off depending on installation**: fixed height (`260px`) and
+  `overflow: hidden` silently clipped buttons and reward badges when font size,
+  theme padding or title length caused content to exceed that value. Replaced with
+  `min-height: 260px`; CSS Grid row alignment keeps cards uniform without clipping.
+- **Quest description tooltip not working (all Moodle versions)**: the info button
+  relied on `window.bootstrap` (not a global in Moodle) and `data-bs-title` /
+  `data-bs-toggle` (Bootstrap 5 only), so the tooltip was never initialised.
+  Replaced with `require(['theme_boost/bootstrap/tooltip'])` (same pattern as
+  popovers) and a plain `title` attribute, which works on Bootstrap 4
+  (Moodle 4.5) and Bootstrap 5 (Moodle 5.x).
 - **Avatar rendering**: corrected oval distortion (`object-fit: cover`, `aspect-ratio`);
   fixed sizing in block sidebar and header; resolved a strict-comparison bug that
   prevented avatar display in the sidebar.
