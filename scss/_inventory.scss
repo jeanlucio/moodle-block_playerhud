@@ -222,8 +222,8 @@
         }
 
         &.ph-power-hint-deadline {
-            border: 1px dashed var(--warning, #ffc107);
-            color: var(--warning, #ffc107);
+            border: 1px dashed var(--ph-deadline-hint, #c2660a);
+            color: var(--ph-deadline-hint, #c2660a);
         }
     }
 }
