@@ -300,11 +300,13 @@ class tab_items implements renderable {
             'deadline_extension' => get_string('item_power_deadline', 'block_playerhud'),
         ];
 
+        // Pre-load modinfo once — used for LP activity checks and badge details.
+        $modinfo = get_fast_modinfo($this->courseid);
+
         // Check LP activities once before the loop to avoid N+1 queries.
         $lpisinstalled = class_exists('\local_latepenalty\recalculator');
         $haslpactivities = false;
         if ($lpisinstalled) {
-            $modinfo = get_fast_modinfo($this->courseid);
             $lprules = $DB->get_records('local_latepenalty_rules', ['enabled' => 1]);
             foreach ($lprules as $rule) {
                 try {
@@ -405,8 +407,28 @@ class tab_items implements renderable {
                     ]))->out(false),
 
                     // Power badge.
-                    'has_power'   => !empty($item->action_type),
-                    'power_badge' => $powerbadgelabels[$item->action_type] ?? '',
+                    'has_power'          => !empty($item->action_type),
+                    'power_badge'        => $powerbadgelabels[$item->action_type] ?? '',
+                    'power_badge_detail' => (static function () use ($item, $modinfo): string {
+                        if ($item->action_type !== 'deadline_extension') {
+                            return '';
+                        }
+                        $av   = !empty($item->action_value) ? json_decode($item->action_value, true) : [];
+                        $days = (int)($av['days'] ?? 1);
+                        $cmid = (int)($av['cmid'] ?? 0);
+                        $daysstr = $days === 1
+                            ? get_string('item_lp_day', 'block_playerhud')
+                            : get_string('item_lp_days', 'block_playerhud', $days);
+                        $actlabel = get_string('item_lp_any_activity', 'block_playerhud');
+                        if ($cmid > 0) {
+                            try {
+                                $actlabel = format_string($modinfo->get_cm($cmid)->name);
+                            } catch (\moodle_exception $e) {
+                                debugging($e->getMessage(), DEBUG_DEVELOPER);
+                            }
+                        }
+                        return $daysstr . ' · ' . $actlabel;
+                    })(),
                     'lp_warning'  => ($item->action_type === 'deadline_extension')
                         && $lpisinstalled
                         && !$haslpactivities,

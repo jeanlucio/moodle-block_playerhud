@@ -428,6 +428,7 @@ $string['item_equip'] = 'Equipar';
 $string['item_equipped_badge'] = 'Equipado';
 $string['item_granted'] = 'Item concedido manualmente ao estudante!';
 $string['item_image'] = 'Ícone / Emoji';
+$string['item_lp_any_activity'] = 'qualquer atividade';
 $string['item_lp_day'] = '1 dia';
 $string['item_lp_days'] = '{$a} dias';
 $string['item_lp_not_installed'] = 'O plugin de penalidade de atraso não está instalado.';

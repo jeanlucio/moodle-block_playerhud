@@ -295,7 +295,7 @@ class tab_collection implements renderable, templatable {
                                 $cm = get_fast_modinfo($coursecontext->instanceid)->get_cm($cmid);
                                 $actname = format_string($cm->name);
                             } catch (\moodle_exception $e) {
-                                // Activity removed or inaccessible — leave name empty.
+                                debugging($e->getMessage(), DEBUG_DEVELOPER);
                             }
                             $itemobj['lp_activities'] = $actname
                                 ? [['cmid' => $cmid, 'name' => $actname, 'days_str' => $daysstr]]

@@ -428,6 +428,7 @@ $string['item_equip'] = 'Equip';
 $string['item_equipped_badge'] = 'Equipped';
 $string['item_granted'] = 'Item granted manually to the student!';
 $string['item_image'] = 'Icon / Emoji';
+$string['item_lp_any_activity'] = 'any activity';
 $string['item_lp_day'] = '1 day';
 $string['item_lp_days'] = '{$a} days';
 $string['item_lp_not_installed'] = 'The late penalty plugin is not installed.';
