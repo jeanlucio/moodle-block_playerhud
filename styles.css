@@ -1077,9 +1077,7 @@
 .path-blocks-playerhud .playerhud-item-card.ph-quest-card-pending,
 .path-blocks-playerhud .playerhud-item-card.ph-quest-card-ready,
 .path-blocks-playerhud .playerhud-item-card.ph-quest-card-claimed {
-    height: 260px;
-    max-height: 260px;
-    overflow: hidden;
+    min-height: 260px;
 }
 .block_playerhud .playerhud-item-card.ph-item-archived,
 .path-blocks-playerhud .playerhud-item-card.ph-item-archived {

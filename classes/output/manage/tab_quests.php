@@ -103,18 +103,18 @@ class tab_quests implements renderable {
         if ($data = $this->mform->get_data()) {
             $type = (int)$data->type;
 
-            $validitemids = $DB->get_fieldset_select(
+            $validitemids = array_map('intval', $DB->get_fieldset_select(
                 'block_playerhud_items',
                 'id',
                 'blockinstanceid = ?',
                 [$this->instanceid]
-            );
-            $validtradeids = $DB->get_fieldset_select(
+            ));
+            $validtradeids = array_map('intval', $DB->get_fieldset_select(
                 'block_playerhud_trades',
                 'id',
                 'blockinstanceid = ?',
                 [$this->instanceid]
-            );
+            ));
 
             $rewarditemid = (int)$data->reward_itemid;
 

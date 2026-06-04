@@ -99,11 +99,19 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
             });
 
             // Initialize tooltips for quest description info buttons.
-            document.querySelectorAll('.js-ph-quest-info[data-bs-toggle="tooltip"]').forEach(function(el) {
-                if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-                    new bootstrap.Tooltip(el, {trigger: 'hover focus'});
-                }
-            });
+            const questInfoEls = document.querySelectorAll('.js-ph-quest-info');
+            if (questInfoEls.length) {
+                require(['theme_boost/bootstrap/tooltip'], function(BSTooltip) {
+                    questInfoEls.forEach(function(el) {
+                        const opts = {trigger: 'hover focus', placement: 'bottom'};
+                        if (typeof BSTooltip === 'function') {
+                            new BSTooltip(el, opts);
+                        } else {
+                            $(el).tooltip(opts);
+                        }
+                    });
+                });
+            }
 
             // Initialize popovers for compact shop item icons (> 3 items in trade).
             const shopPopoverEls = document.querySelectorAll('.ph-shop-popover');

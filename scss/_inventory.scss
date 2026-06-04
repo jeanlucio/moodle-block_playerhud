@@ -142,9 +142,7 @@
     .playerhud-item-card.ph-quest-card-pending,
     .playerhud-item-card.ph-quest-card-ready,
     .playerhud-item-card.ph-quest-card-claimed {
-        height: 260px;
-        max-height: 260px;
-        overflow: hidden;
+        min-height: 260px;
     }
 
     .playerhud-item-card.ph-item-archived {
