@@ -121,49 +121,52 @@ if ($action == 'toggle_quest' && $questid && confirm_sesskey()) {
     }
 }
 
-// Action: Delete Item (Single).
+// Action: Delete Item (Single) — show confirmation if trades would become empty.
 if ($action === 'delete' && $itemid && confirm_sesskey()) {
     $item = $DB->get_record('block_playerhud_items', ['id' => $itemid, 'blockinstanceid' => $instanceid]);
     if ($item) {
-        // Bulk load users holding this item to remove XP (Prevent N+1 Queries).
-        $sql = "SELECT userid, COUNT(id) as qtd FROM {block_playerhud_inventory} WHERE itemid = ? GROUP BY userid";
-        $holders = $DB->get_records_sql($sql, [$itemid]);
+        $affectedtrades = \block_playerhud\controller\items::find_orphaned_trades($instanceid, [$itemid]);
 
-        if ($holders) {
-            $userids = array_keys($holders);
-            [$usql, $uparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'usr');
-            $uparams['instanceid'] = $instanceid;
+        if (!empty($affectedtrades)) {
+            $itemsurl = new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]);
+            $PAGE->set_url($itemsurl);
 
-            $players = $DB->get_records_select(
-                'block_playerhud_user',
-                "blockinstanceid = :instanceid AND userid $usql",
-                $uparams,
-                '',
-                'userid, id, currentxp, timemodified, enable_gamification'
-            );
-
-            $now = time();
-            foreach ($holders as $holder) {
-                if (isset($players[$holder->userid])) {
-                    $player = $players[$holder->userid];
-                    $xptoremove = $item->xp * $holder->qtd;
-                    $player->currentxp = max(0, $player->currentxp - $xptoremove);
-                    $DB->update_record('block_playerhud_user', $player);
-                }
+            $tradelist = html_writer::start_tag('ul', ['class' => 'mb-3']);
+            foreach ($affectedtrades as $t) {
+                $tradelist .= html_writer::tag('li', s($t->name));
             }
+            $tradelist .= html_writer::end_tag('ul');
+
+            $confirmform  = html_writer::start_tag('form', ['method' => 'post', 'action' => $baseurl->out(false)]);
+            $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+            $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'delete_force']);
+            $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'itemid', 'value' => $itemid]);
+            $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'tab', 'value' => 'items']);
+            $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sort', 'value' => s($sort)]);
+            $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'dir', 'value' => s($dir)]);
+            $confirmform .= html_writer::tag(
+                'button',
+                get_string('cancel'),
+                ['type' => 'button', 'class' => 'btn btn-secondary me-2',
+                 'onclick' => 'window.location=' . json_encode($itemsurl->out(false))]
+            );
+            $confirmform .= html_writer::tag(
+                'button',
+                get_string('item_delete_confirm_trades', 'block_playerhud', count($affectedtrades)),
+                ['type' => 'submit', 'class' => 'btn btn-danger']
+            );
+            $confirmform .= html_writer::end_tag('form');
+
+            echo $OUTPUT->header();
+            echo $OUTPUT->heading(format_string($item->name), 3);
+            echo $OUTPUT->notification(get_string('item_delete_trade_impact', 'block_playerhud'), 'warning', false);
+            echo $tradelist;
+            echo $confirmform;
+            echo $OUTPUT->footer();
+            exit;
         }
 
-        // Delete dependencies.
-        $DB->delete_records('block_playerhud_inventory', ['itemid' => $itemid]);
-        $DB->delete_records('block_playerhud_drops', ['itemid' => $itemid]);
-        $DB->delete_records('block_playerhud_trade_reqs', ['itemid' => $itemid]);
-        $DB->delete_records('block_playerhud_trade_rewards', ['itemid' => $itemid]);
-
-        // Delete the item files and record.
-        $fs = get_file_storage();
-        $fs->delete_area_files($context->id, 'block_playerhud', 'item_image', $itemid);
-        $DB->delete_records('block_playerhud_items', ['id' => $itemid]);
-
+        \block_playerhud\controller\items::delete_item($item, $instanceid, $context);
         redirect(
             new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
             get_string('deleted', 'block_playerhud'),
@@ -172,80 +175,121 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
     }
 }
 
-// Action: Bulk Delete Items (Multiple).
+// Action: Delete Item (confirmed — cascades orphaned trades).
+if ($action === 'delete_force' && $itemid && confirm_sesskey()) {
+    $item = $DB->get_record('block_playerhud_items', ['id' => $itemid, 'blockinstanceid' => $instanceid]);
+    if ($item) {
+        $affectedtrades = \block_playerhud\controller\items::find_orphaned_trades($instanceid, [$itemid]);
+        \block_playerhud\controller\items::delete_item($item, $instanceid, $context, array_keys($affectedtrades));
+        $msg = count($affectedtrades) > 0
+            ? get_string('deleted_with_trades', 'block_playerhud', count($affectedtrades))
+            : get_string('deleted', 'block_playerhud');
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
+            $msg,
+            \core\output\notification::NOTIFY_SUCCESS
+        );
+    }
+}
+
+// Action: Bulk Delete Items — show confirmation if any trade would become empty.
 if ($action === 'bulk_delete' && confirm_sesskey()) {
     $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
     if (!empty($bulkids)) {
-        $fs = get_file_storage();
-        $deletedcount = 0;
-
-        // Get all selected items belonging to this instance.
         [$insql, $inparams] = $DB->get_in_or_equal($bulkids);
         $params = array_merge($inparams, [$instanceid]);
         $items = $DB->get_records_select('block_playerhud_items', "id $insql AND blockinstanceid = ?", $params);
 
         if ($items) {
             $itemids = array_keys($items);
-            [$iteminsql, $iteminparams] = $DB->get_in_or_equal($itemids);
+            $affectedtrades = \block_playerhud\controller\items::find_orphaned_trades($instanceid, $itemids);
 
-            // Calculate XP to remove per user in a single query.
-            $sql = "SELECT inv.userid, SUM(it.xp) as totalxptoremove
-                      FROM {block_playerhud_inventory} inv
-                      JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                     WHERE inv.itemid $iteminsql
-                  GROUP BY inv.userid";
-            $holders = $DB->get_records_sql($sql, $iteminparams);
+            if (!empty($affectedtrades)) {
+                $itemsurl = new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]);
+                $PAGE->set_url($itemsurl);
 
-            // Bulk load users to avoid N+1.
-            if ($holders) {
-                $userids = array_keys($holders);
-                [$usql, $uparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'usr');
-                $uparams['instanceid'] = $instanceid;
-
-                $players = $DB->get_records_select(
-                    'block_playerhud_user',
-                    "blockinstanceid = :instanceid AND userid $usql",
-                    $uparams,
-                    '',
-                    'userid, id, currentxp, timemodified, enable_gamification'
-                );
-
-                $now = time();
-                foreach ($holders as $holder) {
-                    if (isset($players[$holder->userid])) {
-                        $player = $players[$holder->userid];
-                        $player->currentxp = max(0, $player->currentxp - $holder->totalxptoremove);
-                        $DB->update_record('block_playerhud_user', $player);
-                    }
+                $tradelist = html_writer::start_tag('ul', ['class' => 'mb-3']);
+                foreach ($affectedtrades as $t) {
+                    $tradelist .= html_writer::tag('li', s($t->name));
                 }
+                $tradelist .= html_writer::end_tag('ul');
+
+                $confirmform  = html_writer::start_tag('form', ['method' => 'post', 'action' => $baseurl->out(false)]);
+                $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+                $confirmform .= html_writer::empty_tag('input', [
+                    'type' => 'hidden', 'name' => 'action', 'value' => 'bulk_delete_force',
+                ]);
+                $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'tab', 'value' => 'items']);
+                $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sort', 'value' => s($sort)]);
+                $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'dir', 'value' => s($dir)]);
+                foreach ($itemids as $bid) {
+                    $confirmform .= html_writer::empty_tag('input', [
+                        'type' => 'hidden', 'name' => 'bulk_ids[]', 'value' => $bid,
+                    ]);
+                }
+                $confirmform .= html_writer::tag(
+                    'button',
+                    get_string('cancel'),
+                    ['type' => 'button', 'class' => 'btn btn-secondary me-2',
+                     'onclick' => 'window.location=' . json_encode($itemsurl->out(false))]
+                );
+                $confirmform .= html_writer::tag(
+                    'button',
+                    get_string('item_delete_confirm_trades', 'block_playerhud', count($affectedtrades)),
+                    ['type' => 'submit', 'class' => 'btn btn-danger']
+                );
+                $confirmform .= html_writer::end_tag('form');
+
+                echo $OUTPUT->header();
+                echo $OUTPUT->heading(get_string('delete_selected', 'block_playerhud'), 3);
+                echo $OUTPUT->notification(get_string('item_delete_trade_impact', 'block_playerhud'), 'warning', false);
+                echo $tradelist;
+                echo $confirmform;
+                echo $OUTPUT->footer();
+                exit;
             }
 
-            // Delete dependencies in bulk without loops.
-            $DB->delete_records_select('block_playerhud_inventory', "itemid $iteminsql", $iteminparams);
-            $DB->delete_records_select('block_playerhud_drops', "itemid $iteminsql", $iteminparams);
-            $DB->delete_records_select('block_playerhud_trade_reqs', "itemid $iteminsql", $iteminparams);
-            $DB->delete_records_select('block_playerhud_trade_rewards', "itemid $iteminsql", $iteminparams);
-
-            // Delete files and the items themselves.
-            foreach ($itemids as $delid) {
-                $fs->delete_area_files($context->id, 'block_playerhud', 'item_image', $delid);
-            }
-            $DB->delete_records_select('block_playerhud_items', "id $iteminsql", $iteminparams);
-
-            $deletedcount = count($itemids);
+            \block_playerhud\controller\items::bulk_delete_items($items, $instanceid, $context);
+            redirect(
+                new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
+                get_string('deleted_bulk', 'block_playerhud', count($itemids)),
+                \core\output\notification::NOTIFY_SUCCESS
+            );
         }
-
-        redirect(
-            new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
-            get_string('deleted_bulk', 'block_playerhud', $deletedcount),
-            \core\output\notification::NOTIFY_SUCCESS
-        );
     } else {
         redirect(
             new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
             get_string('no_items_selected', 'block_playerhud'),
             \core\output\notification::NOTIFY_WARNING
         );
+    }
+}
+
+// Action: Bulk Delete Items (confirmed — cascades orphaned trades).
+if ($action === 'bulk_delete_force' && confirm_sesskey()) {
+    $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
+    if (!empty($bulkids)) {
+        [$insql, $inparams] = $DB->get_in_or_equal($bulkids);
+        $params = array_merge($inparams, [$instanceid]);
+        $items = $DB->get_records_select('block_playerhud_items', "id $insql AND blockinstanceid = ?", $params);
+
+        if ($items) {
+            $itemids = array_keys($items);
+            $affectedtrades = \block_playerhud\controller\items::find_orphaned_trades($instanceid, $itemids);
+            \block_playerhud\controller\items::bulk_delete_items($items, $instanceid, $context, array_keys($affectedtrades));
+            $tradecount = count($affectedtrades);
+            $msg = $tradecount > 0
+                ? get_string('deleted_bulk_with_trades', 'block_playerhud', (object) [
+                    'items'  => count($itemids),
+                    'trades' => $tradecount,
+                  ])
+                : get_string('deleted_bulk', 'block_playerhud', count($itemids));
+            redirect(
+                new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
+                $msg,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
+        }
     }
 }
 

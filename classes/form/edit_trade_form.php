@@ -223,4 +223,43 @@ class edit_trade_form extends \moodleform {
 
         $this->add_action_buttons(true, get_string('save_trade', 'block_playerhud'));
     }
+
+    /**
+     * Server-side validation: at least one requirement and one reward must be selected.
+     *
+     * @param array $data Form data.
+     * @param array $files Uploaded files.
+     * @return array Validation errors keyed by element name.
+     */
+    public function validation($data, $files): array {
+        $errors = parent::validation($data, $files);
+
+        $repeatsreq  = (int) ($data['repeats_req'] ?? 0);
+        $repeatsgive = (int) ($data['repeats_give'] ?? 0);
+
+        $hasreq = false;
+        for ($i = 0; $i < $repeatsreq; $i++) {
+            if (!empty($data["req_itemid_$i"])) {
+                $hasreq = true;
+                break;
+            }
+        }
+
+        $hasgive = false;
+        for ($i = 0; $i < $repeatsgive; $i++) {
+            if (!empty($data["give_itemid_$i"])) {
+                $hasgive = true;
+                break;
+            }
+        }
+
+        if (!$hasreq) {
+            $errors['req_group_0'] = get_string('trade_req_missing', 'block_playerhud');
+        }
+        if (!$hasgive) {
+            $errors['give_group_0'] = get_string('trade_give_missing', 'block_playerhud');
+        }
+
+        return $errors;
+    }
 }
