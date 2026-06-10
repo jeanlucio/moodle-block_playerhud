@@ -426,6 +426,7 @@ $string['item'] = 'Item';
 $string['item_archived'] = 'Arquivado';
 $string['item_delete_confirm_trade'] = 'Excluir item e 1 troca';
 $string['item_delete_confirm_trades'] = 'Excluir item e {$a} trocas';
+$string['item_delete_edit_trades'] = 'Editar trocas primeiro';
 $string['item_delete_trade_impact'] = 'Este item é usado nas seguintes trocas. Excluí-lo removerá permanentemente essas trocas também. Para mantê-las, cancele e edite cada troca para remover este item primeiro.';
 $string['item_delete_trade_impact_single'] = 'Este item é usado na seguinte troca. Excluí-lo removerá permanentemente essa troca também. Para mantê-la, cancele e edite a troca para remover este item primeiro.';
 $string['item_desc'] = 'Descrição';

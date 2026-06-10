@@ -159,6 +159,14 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
                 ['type' => 'submit', 'class' => 'btn btn-danger']
             );
             $confirmform .= html_writer::end_tag('form');
+            $tradesurl = new moodle_url($baseurl, ['tab' => 'trades']);
+            $confirmform .= html_writer::div(
+                html_writer::link(
+                    $tradesurl,
+                    get_string('item_delete_edit_trades', 'block_playerhud'),
+                    ['class' => 'btn btn-outline-secondary mt-3']
+                )
+            );
 
             $impactkey = $tradecount === 1 ? 'item_delete_trade_impact_single' : 'item_delete_trade_impact';
             echo $OUTPUT->header();
@@ -246,6 +254,14 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
                     ['type' => 'submit', 'class' => 'btn btn-danger']
                 );
                 $confirmform .= html_writer::end_tag('form');
+                $tradesurl = new moodle_url($baseurl, ['tab' => 'trades']);
+                $confirmform .= html_writer::div(
+                    html_writer::link(
+                        $tradesurl,
+                        get_string('item_delete_edit_trades', 'block_playerhud'),
+                        ['class' => 'btn btn-outline-secondary mt-3']
+                    )
+                );
 
                 $impactkey = $tradecount === 1 ? 'item_delete_trade_impact_single' : 'item_delete_trade_impact';
                 echo $OUTPUT->header();

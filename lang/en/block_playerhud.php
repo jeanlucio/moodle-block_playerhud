@@ -426,6 +426,7 @@ $string['item'] = 'Item';
 $string['item_archived'] = 'Archived';
 $string['item_delete_confirm_trade'] = 'Delete item and 1 trade';
 $string['item_delete_confirm_trades'] = 'Delete item and {$a} trades';
+$string['item_delete_edit_trades'] = 'Edit trades instead';
 $string['item_delete_trade_impact'] = 'This item is used in the following trades. Deleting it will permanently remove them as well. To keep these trades, cancel and edit each trade to remove this item first.';
 $string['item_delete_trade_impact_single'] = 'This item is used in the following trade. Deleting it will permanently remove it as well. To keep this trade, cancel and edit it to remove this item first.';
 $string['item_desc'] = 'Description';
