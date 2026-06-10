@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.5.2] — 2026-06-10
+
+### Refactored
+- The monolithic `classes/external.php` (15 web service functions in a single class)
+  was split into one class per function under `classes/external/`, following the
+  modern Moodle 4.x convention (`execute_parameters`/`execute`/`execute_returns`).
+  Web service names are unchanged, so client behaviour is identical.
+
+### Tests
+- External web service tests were reorganised under `tests/external/` to mirror the
+  new class structure, and coverage was extended to the story, drop-shortcode,
+  item-collection and AI error paths.
+
+---
+
 ## [v1.5.1] — 2026-06-10
 
 ### Fixed

@@ -26,8 +26,8 @@ defined('MOODLE_INTERNAL') || die();
 
 $functions = [
     'block_playerhud_generate_ai_content' => [
-        'classname'   => 'block_playerhud\external',
-        'methodname'  => 'generate_ai_content',
+        'classname'   => 'block_playerhud\external\generate_ai_content',
+        'methodname'  => 'execute',
         'description' => 'Generates game items using AI',
         'type'        => 'write',
         'ajax'        => true,
@@ -36,8 +36,8 @@ $functions = [
     ],
 
     'block_playerhud_collect_item' => [
-        'classname'   => 'block_playerhud\external',
-        'methodname'  => 'collect_item',
+        'classname'   => 'block_playerhud\external\collect_item',
+        'methodname'  => 'execute',
         'description' => 'Collect an item via Drop',
         'type'        => 'write',
         'ajax'        => true,
@@ -46,8 +46,8 @@ $functions = [
     ],
 
     'block_playerhud_insert_drop_shortcode' => [
-        'classname'   => 'block_playerhud\external',
-        'methodname'  => 'insert_drop_shortcode',
+        'classname'   => 'block_playerhud\external\insert_drop_shortcode',
+        'methodname'  => 'execute',
         'description' => 'Insert a drop shortcode into a course module field',
         'type'        => 'write',
         'ajax'        => true,
@@ -55,8 +55,8 @@ $functions = [
     ],
 
     'block_playerhud_remove_drop_shortcode' => [
-        'classname'   => 'block_playerhud\external',
-        'methodname'  => 'remove_drop_shortcode',
+        'classname'   => 'block_playerhud\external\remove_drop_shortcode',
+        'methodname'  => 'execute',
         'description' => 'Remove a drop shortcode from a course module field',
         'type'        => 'write',
         'ajax'        => true,
@@ -64,8 +64,8 @@ $functions = [
     ],
 
     'block_playerhud_load_scene' => [
-        'classname'     => 'block_playerhud\external',
-        'methodname'    => 'load_scene',
+        'classname'     => 'block_playerhud\external\load_scene',
+        'methodname'    => 'execute',
         'description'   => 'Load the current or starting scene for a story chapter',
         'type'          => 'write',
         'ajax'          => true,
@@ -73,8 +73,8 @@ $functions = [
     ],
 
     'block_playerhud_make_choice' => [
-        'classname'     => 'block_playerhud\external',
-        'methodname'    => 'make_choice',
+        'classname'     => 'block_playerhud\external\make_choice',
+        'methodname'    => 'execute',
         'description'   => 'Process a story choice and return the next scene',
         'type'          => 'write',
         'ajax'          => true,
@@ -82,8 +82,8 @@ $functions = [
     ],
 
     'block_playerhud_load_recap' => [
-        'classname'     => 'block_playerhud\external',
-        'methodname'    => 'load_recap',
+        'classname'     => 'block_playerhud\external\load_recap',
+        'methodname'    => 'execute',
         'description'   => 'Return the full story recap HTML for a completed chapter',
         'type'          => 'read',
         'ajax'          => true,
@@ -91,8 +91,8 @@ $functions = [
     ],
 
     'block_playerhud_generate_class_oracle' => [
-        'classname'   => 'block_playerhud\external',
-        'methodname'  => 'generate_class_oracle',
+        'classname'   => 'block_playerhud\external\generate_class_oracle',
+        'methodname'  => 'execute',
         'description' => 'Generate an RPG class via AI (Class Oracle) and save it',
         'type'        => 'write',
         'ajax'        => true,
@@ -100,8 +100,8 @@ $functions = [
     ],
 
     'block_playerhud_generate_story' => [
-        'classname'   => 'block_playerhud\external',
-        'methodname'  => 'generate_story',
+        'classname'   => 'block_playerhud\external\generate_story',
+        'methodname'  => 'execute',
         'description' => 'Generate a branching story chapter via AI and save it',
         'type'        => 'write',
         'ajax'        => true,
@@ -109,8 +109,8 @@ $functions = [
     ],
 
     'block_playerhud_chat_message' => [
-        'classname'     => 'block_playerhud\external',
-        'methodname'    => 'chat_message',
+        'classname'     => 'block_playerhud\external\chat_message',
+        'methodname'    => 'execute',
         'description'   => 'Send a message to the Game Master AI assistant and get a reply',
         'type'          => 'write',
         'ajax'          => true,
@@ -118,8 +118,8 @@ $functions = [
     ],
 
     'block_playerhud_execute_chat_action' => [
-        'classname'     => 'block_playerhud\external',
-        'methodname'    => 'execute_chat_action',
+        'classname'     => 'block_playerhud\external\execute_chat_action',
+        'methodname'    => 'execute',
         'description'   => 'Execute a game action proposed by the AI after teacher confirmation',
         'type'          => 'write',
         'ajax'          => true,
@@ -127,8 +127,8 @@ $functions = [
     ],
 
     'block_playerhud_create_playercoin' => [
-        'classname'     => 'block_playerhud\external',
-        'methodname'    => 'create_playercoin',
+        'classname'     => 'block_playerhud\external\create_playercoin',
+        'methodname'    => 'execute',
         'description'   => 'Create or return the existing PlayerCoin item for a block instance',
         'type'          => 'write',
         'ajax'          => true,
@@ -136,8 +136,8 @@ $functions = [
     ],
 
     'block_playerhud_create_avatar_pack' => [
-        'classname'     => 'block_playerhud\external',
-        'methodname'    => 'create_avatar_pack',
+        'classname'     => 'block_playerhud\external\create_avatar_pack',
+        'methodname'    => 'execute',
         'description'   => 'Create the pre-defined avatar item pack for a block instance',
         'type'          => 'write',
         'ajax'          => true,
@@ -145,8 +145,8 @@ $functions = [
     ],
 
     'block_playerhud_use_item' => [
-        'classname'     => 'block_playerhud\external',
-        'methodname'    => 'use_item',
+        'classname'     => 'block_playerhud\external\use_item',
+        'methodname'    => 'execute',
         'description'   => 'Equip/unequip an avatar item or consume a deadline extension item',
         'type'          => 'write',
         'ajax'          => true,
@@ -154,8 +154,8 @@ $functions = [
     ],
 
     'block_playerhud_setup_playercoin_drop' => [
-        'classname'     => 'block_playerhud\external',
-        'methodname'    => 'setup_playercoin_drop',
+        'classname'     => 'block_playerhud\external\setup_playercoin_drop',
+        'methodname'    => 'execute',
         'description'   => 'Create an infinite drop for the PlayerCoin in the course news forum',
         'type'          => 'write',
         'ajax'          => true,

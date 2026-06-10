@@ -24,19 +24,17 @@
  *
  * Happy-path tests run as admin (the default after setAdminUser() in setUp).
  * The ownership-rejection test switches to a student user to verify the
- * inventory guard, matching the pattern used in external_playercoin_test.php.
+ * inventory guard.
  *
  * @package    block_playerhud
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \block_playerhud\external::use_item
  */
 
-namespace block_playerhud;
+namespace block_playerhud\external;
 
-use advanced_testcase;
-use block_playerhud\external;
+use block_playerhud\tests\external\external_base_testcase;
 
 /**
  * Tests for use_item web service.
@@ -44,24 +42,14 @@ use block_playerhud\external;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \block_playerhud\external
+ * @covers     \block_playerhud\external\use_item
  */
-final class use_item_test extends advanced_testcase {
-    /** @var \stdClass Shared course. */
-    protected $course;
-
-    /** @var int Block instance ID. */
-    protected int $instanceid;
-
+final class use_item_test extends external_base_testcase {
     #[\Override]
     protected function setUp(): void {
         global $DB;
 
         parent::setUp();
-        $this->resetAfterTest(true);
-        $this->setAdminUser();
-        $this->course    = $this->getDataGenerator()->create_course();
-        $this->instanceid = $this->create_block_instance();
 
         if (class_exists('\local_latepenalty\recalculator')) {
             $DB->delete_records('local_latepenalty_overrides', []);
@@ -79,7 +67,7 @@ final class use_item_test extends advanced_testcase {
         $this->setUser($student);
 
         $this->expectException(\moodle_exception::class);
-        external::use_item($this->instanceid, $this->course->id, $item->id, 0);
+        use_item::execute($this->instanceid, $this->course->id, $item->id, 0);
     }
 
     /**
@@ -96,7 +84,7 @@ final class use_item_test extends advanced_testcase {
         $item = $this->create_deadline_item(1, 0);
         $this->give_item_to_user((int) $USER->id, $item->id);
 
-        $result = external::use_item($this->instanceid, $this->course->id, $item->id, 0);
+        $result = use_item::execute($this->instanceid, $this->course->id, $item->id, 0);
 
         $this->assertFalse($result['success']);
         $this->assertEquals('deadline_extension', $result['action']);
@@ -121,7 +109,7 @@ final class use_item_test extends advanced_testcase {
         $item   = $this->create_deadline_item(1, 0);
         $this->give_item_to_user((int) $USER->id, $item->id);
 
-        $result = external::use_item($this->instanceid, $this->course->id, $item->id, $assign->cmid);
+        $result = use_item::execute($this->instanceid, $this->course->id, $item->id, $assign->cmid);
 
         $this->assertFalse($result['success']);
         $this->assertEquals(
@@ -150,7 +138,7 @@ final class use_item_test extends advanced_testcase {
         $item  = $this->create_deadline_item(2, 0);
         $invid = $this->give_item_to_user((int) $USER->id, $item->id);
 
-        $result = external::use_item($this->instanceid, $this->course->id, $item->id, $assign->cmid);
+        $result = use_item::execute($this->instanceid, $this->course->id, $item->id, $assign->cmid);
 
         $this->assertTrue($result['success'], 'use_item failed: ' . $result['message']);
         $this->assertEquals('deadline_extension', $result['action']);
@@ -191,7 +179,7 @@ final class use_item_test extends advanced_testcase {
         $item = $this->create_deadline_item(1, 0);
         $this->give_item_to_user((int) $USER->id, $item->id);
 
-        $result = external::use_item($this->instanceid, $this->course->id, $item->id, $assign->cmid);
+        $result = use_item::execute($this->instanceid, $this->course->id, $item->id, $assign->cmid);
 
         $this->assertTrue($result['success'], 'use_item failed: ' . $result['message']);
 
@@ -206,27 +194,6 @@ final class use_item_test extends advanced_testcase {
     // Helpers.
 
     /**
-     * Insert a minimal block_instances row and return its ID.
-     *
-     * @return int
-     */
-    private function create_block_instance(): int {
-        global $DB;
-        $coursecontext = \context_course::instance($this->course->id);
-        return $DB->insert_record('block_instances', (object) [
-            'blockname'         => 'playerhud',
-            'parentcontextid'   => $coursecontext->id,
-            'showinsubcontexts' => 0,
-            'pagetypepattern'   => 'course-view-*',
-            'defaultregion'     => 'side-pre',
-            'defaultweight'     => 0,
-            'configdata'        => base64_encode(serialize(new \stdClass())),
-            'timecreated'       => time(),
-            'timemodified'      => time(),
-        ]);
-    }
-
-    /**
      * Create a deadline_extension item and return it.
      *
      * @param int $days Extension days encoded in action_value.
@@ -234,41 +201,11 @@ final class use_item_test extends advanced_testcase {
      * @return \stdClass
      */
     private function create_deadline_item(int $days = 1, int $cmid = 0): \stdClass {
-        global $DB;
-        $item = (object) [
-            'blockinstanceid'   => $this->instanceid,
-            'name'              => 'Extension Pass',
-            'image'             => '⏰',
-            'description'       => '',
-            'xp'                => 0,
-            'enabled'           => 1,
-            'tradable'          => 0,
-            'secret'            => 0,
-            'required_class_id' => '0',
-            'action_type'       => 'deadline_extension',
-            'action_value'      => json_encode(['days' => $days, 'cmid' => $cmid]),
-            'timecreated'       => time(),
-            'timemodified'      => time(),
-        ];
-        $item->id = $DB->insert_record('block_playerhud_items', $item);
-        return $item;
-    }
-
-    /**
-     * Add one unit of an item to a user's inventory and return the record ID.
-     *
-     * @param int $userid
-     * @param int $itemid
-     * @return int Inventory record ID.
-     */
-    private function give_item_to_user(int $userid, int $itemid): int {
-        global $DB;
-        return $DB->insert_record('block_playerhud_inventory', (object) [
-            'userid'      => $userid,
-            'itemid'      => $itemid,
-            'dropid'      => 0,
-            'source'      => 'drop',
-            'timecreated' => time(),
+        return $this->create_item($this->instanceid, 'Extension Pass', [
+            'image'        => '⏰',
+            'tradable'     => 0,
+            'action_type'  => 'deadline_extension',
+            'action_value' => json_encode(['days' => $days, 'cmid' => $cmid]),
         ]);
     }
 
@@ -278,7 +215,7 @@ final class use_item_test extends advanced_testcase {
      *
      * We never INSERT here to avoid duplicate-key conflicts on the unique cmid index.
      *
-     * @param int $cmid
+     * @param int $cmid Target course module ID.
      * @return \stdClass
      */
     private function create_lp_rule(int $cmid): \stdClass {
@@ -294,8 +231,8 @@ final class use_item_test extends advanced_testcase {
     /**
      * Insert a latepenalty override with a specific deadline.
      *
-     * @param int $cmid
-     * @param int $userid
+     * @param int $cmid Target course module ID.
+     * @param int $userid Target user ID.
      * @param int $deadline Unix timestamp.
      * @return \stdClass
      */
