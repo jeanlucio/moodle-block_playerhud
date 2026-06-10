@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.5.1] — 2026-06-10
+
+### Fixed
+- Deleting an item that was the sole requirement or sole reward of a trade no longer
+  leaves blank/unexecutable trades in the shop. A confirmation page now lists all
+  affected trades before deletion; confirmed deletion removes the item and the
+  now-empty trades atomically.
+- Trade form now validates server-side that at least one item is set in both the
+  requirements section and the rewards section, preventing blank trades from being
+  saved.
+
+### Refactored
+- Item deletion logic extracted from `manage.php` into `classes/controller/items.php`
+  for testability and MVC compliance.
+
+---
+
 ## [v1.5.0] — 2026-06-02
 
 ### Added
