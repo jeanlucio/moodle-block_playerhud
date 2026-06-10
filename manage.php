@@ -150,16 +150,20 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
                 ['type' => 'button', 'class' => 'btn btn-secondary me-2',
                  'onclick' => 'window.location=' . json_encode($itemsurl->out(false))]
             );
+            $tradecount = count($affectedtrades);
             $confirmform .= html_writer::tag(
                 'button',
-                get_string('item_delete_confirm_trades', 'block_playerhud', count($affectedtrades)),
+                $tradecount === 1
+                    ? get_string('item_delete_confirm_trade', 'block_playerhud')
+                    : get_string('item_delete_confirm_trades', 'block_playerhud', $tradecount),
                 ['type' => 'submit', 'class' => 'btn btn-danger']
             );
             $confirmform .= html_writer::end_tag('form');
 
+            $impactkey = $tradecount === 1 ? 'item_delete_trade_impact_single' : 'item_delete_trade_impact';
             echo $OUTPUT->header();
             echo $OUTPUT->heading(format_string($item->name), 3);
-            echo $OUTPUT->notification(get_string('item_delete_trade_impact', 'block_playerhud'), 'warning', false);
+            echo $OUTPUT->notification(get_string($impactkey, 'block_playerhud'), 'warning', false);
             echo $tradelist;
             echo $confirmform;
             echo $OUTPUT->footer();
@@ -233,16 +237,20 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
                     ['type' => 'button', 'class' => 'btn btn-secondary me-2',
                      'onclick' => 'window.location=' . json_encode($itemsurl->out(false))]
                 );
+                $tradecount = count($affectedtrades);
                 $confirmform .= html_writer::tag(
                     'button',
-                    get_string('item_delete_confirm_trades', 'block_playerhud', count($affectedtrades)),
+                    $tradecount === 1
+                        ? get_string('item_delete_confirm_trade', 'block_playerhud')
+                        : get_string('item_delete_confirm_trades', 'block_playerhud', $tradecount),
                     ['type' => 'submit', 'class' => 'btn btn-danger']
                 );
                 $confirmform .= html_writer::end_tag('form');
 
+                $impactkey = $tradecount === 1 ? 'item_delete_trade_impact_single' : 'item_delete_trade_impact';
                 echo $OUTPUT->header();
                 echo $OUTPUT->heading(get_string('delete_selected', 'block_playerhud'), 3);
-                echo $OUTPUT->notification(get_string('item_delete_trade_impact', 'block_playerhud'), 'warning', false);
+                echo $OUTPUT->notification(get_string($impactkey, 'block_playerhud'), 'warning', false);
                 echo $tradelist;
                 echo $confirmform;
                 echo $OUTPUT->footer();
