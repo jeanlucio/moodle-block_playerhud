@@ -205,9 +205,9 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `content_crud_test.php` | 13 | Item, chapter and trade CRUD: create persists all fields, update changes fields, delete removes record, listing scoped to instance |
 | `cross_instance_security_test.php` | 12 | Cross-instance isolation: item, quest, chapter and trade guards accept own-instance IDs and reject foreign ones without modifying the target record |
 | `drop_guard_test.php` | 7 | Collection limits, trade-consumed items, cooldown enforcement |
-| `external_playercoin_test.php` | 12 | `create_playercoin` (idempotency, capability guard); `create_avatar_pack` (17 items, emoji deduplication, idempotency); `setup_playercoin_drop` (success, no forum, cross-instance item isolation, intro prepend, capability guard) |
 | `game_test.php` | 12 | XP and level aggregation, quest XP inclusion/exclusion, collection anti-farm and cooldown; `get_avatar_item` (enabled, disabled, foreign instance, not found); XP award on finite drop; leaderboard manager exclusion |
 | `gamemaster_test.php` | 6 | Grant/revoke/delete item and quest while preserving leaderboard timestamps; XP floor at zero |
+| `item_delete_cascade_test.php` | 15 | Trade orphan detection when item deleted (sole req, one-of-two, sole reward, combined req+reward); bulk orphan checks; cross-instance isolation; delete removes item record and cascades orphaned trades without touching non-orphaned ones |
 | `karma_test.php` | 11 | Karma read/write, positive/negative deltas, clamping at ±999 boundaries, successive accumulation |
 | `privacy_provider_test.php` | 4 | GDPR: delete all data for user; delete user preferences; avatar preference included in export; metadata declaration coverage |
 | `quest_test.php` | 22 | Completion checks (level, XP, items, trades, activity completion); claim rewards; disabled quest; idempotency |
@@ -215,9 +215,33 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `story_manager_test.php` | 15 | Scene loading, progress persistence, choice navigation, karma delta, chapter completion, error cases |
 | `suggest_trades_state_test.php` | 4 | Suggest Trades button: disabled without prereqs, disabled with coin only, disabled when all avatars covered, enabled on partial coverage |
 | `trade_test.php` | 7 | Trade assembly, insufficient funds, atomic success, one-time limit, group restriction |
-| `use_item_test.php` | 5 | Item use validation (not owned throws); deadline power: no activity selected, no rule found, creates override and consumes item, updates existing override |
 | `utils_test.php` | 2 | `get_avatar_html`: emoji produces `ph-avatar-emoji` div with aria-hidden span; HTTP URL produces `ph-avatar-img` img tag |
-| **Total** | **148** | |
+| **Subtotal** | **146** | |
+
+#### Web Services Tests (`tests/external/`)
+
+One test class per web service function, each validating the external API contract, parameter/return structure conformance (`external_api::clean_returnvalue`), and capability gates. AI functions are tested without network — with no API key configured, the `try/catch` path returns `success=false`, which is asserted directly.
+
+| Test file | Cases | What is covered |
+|-----------|------:|----------------|
+| `chat_message_test.php` | 2 | No API key → `moodle_exception`; capability guard (`manage`) |
+| `collect_item_test.php` | 4 | Item collected + inventory record created; invalid drop → `success=false`; limit reached → `success=false`; capability guard (`view`) |
+| `create_avatar_pack_test.php` | 5 | 17 items created; all have `action_type=avatar`; emoji deduplication; second call creates 0 (idempotency); capability guard |
+| `create_playercoin_test.php` | 3 | New item created; second call returns existing item (idempotency); capability guard |
+| `execute_chat_action_test.php` | 4 | `action_open_tab` returns redirect URL (deterministic, no AI); unknown action type → `success=false`; invalid params → `success=false`; capability guard |
+| `generate_ai_content_test.php` | 2 | No API key → `success=false`; capability guard (`manage`) |
+| `generate_class_oracle_test.php` | 2 | No API key → `success=false`; capability guard (`manage`) |
+| `generate_story_test.php` | 2 | No API key → `success=false`; capability guard (`manage`) |
+| `insert_drop_shortcode_test.php` | 4 | Shortcode prepended to module content field; duplicate insert rejected; drop from another instance rejected; capability guard |
+| `load_recap_test.php` | 3 | Recap HTML returned after scene visit; no history → exception; capability guard (`view`) |
+| `load_scene_test.php` | 3 | Start node and choices returned; invalid chapter → exception; capability guard (`view`) |
+| `make_choice_test.php` | 3 | Advances story to destination node; invalid choice → exception; capability guard (`view`) |
+| `remove_drop_shortcode_test.php` | 3 | Existing shortcode stripped; absent shortcode is a no-op success; capability guard |
+| `setup_playercoin_drop_test.php` | 5 | Success path; no forum → `success=false`; item from another instance rejected; shortcode prepended to existing intro; capability guard |
+| `use_item_test.php` | 5 | Not-owned item → exception; deadline power: no activity selected, no rule found, creates override and consumes item, updates existing override |
+| **Subtotal** | **50** | |
+
+| **Grand Total** | **196** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -532,9 +556,9 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `content_crud_test.php` | 13 | CRUD de itens, capítulos e trocas: criação persiste todos os campos, atualização altera campos, exclusão remove registro, listagem escoped por instância |
 | `cross_instance_security_test.php` | 12 | Isolamento cross-instance: guardas de item, quest, capítulo e troca aceitam IDs da própria instância e rejeitam IDs alheios sem modificar o registro alvo |
 | `drop_guard_test.php` | 7 | Limites de coleta, itens consumidos por troca, aplicação de cooldown |
-| `external_playercoin_test.php` | 12 | `create_playercoin` (idempotência, guarda de capacidade); `create_avatar_pack` (17 itens, deduplicação por emoji, idempotência); `setup_playercoin_drop` (sucesso, sem fórum, isolamento cross-instance, prepend de intro, guarda de capacidade) |
 | `game_test.php` | 12 | Agregação de XP e nível, XP de quests (inclusão/exclusão), anti-farm de coleta e cooldown; `get_avatar_item` (habilitado, desabilitado, instância estrangeira, não encontrado); XP concedido ao coletar drop com uso finito; exclusão de gerentes do ranking |
 | `gamemaster_test.php` | 6 | Conceder/revogar/excluir item e quest preservando timestamps do ranking; XP mínimo em zero |
+| `item_delete_cascade_test.php` | 15 | Detecção de trocas órfãs ao excluir item (único req, um de dois, único reward, combinado req+reward); verificações em lote; isolamento cross-instance; exclusão remove o item e cascateia trocas órfãs sem afetar as não-órfãs |
 | `karma_test.php` | 11 | Leitura/escrita de karma, deltas positivos/negativos, clamping nos limites ±999, acumulação sucessiva |
 | `privacy_provider_test.php` | 4 | LGPD: exclusão de todos os dados do usuário; exclusão de preferências; preferência de avatar incluída na exportação; cobertura da declaração de metadados |
 | `quest_test.php` | 22 | Verificações de conclusão (nível, XP, itens, trocas, conclusão de atividade); reivindicar recompensas; quest desabilitada; idempotência |
@@ -542,9 +566,33 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `story_manager_test.php` | 15 | Carregamento de cena, persistência de progresso, navegação de escolhas, delta de karma, conclusão de capítulo, casos de erro |
 | `suggest_trades_state_test.php` | 4 | Botão Sugerir Trocas: desabilitado sem pré-requisitos, desabilitado só com moeda, desabilitado quando todos os avatares cobertos, habilitado com cobertura parcial |
 | `trade_test.php` | 7 | Montagem de trocas, fundos insuficientes, sucesso atômico, limite único, restrição por grupo |
-| `use_item_test.php` | 5 | Validação de uso de item (não possuído lança exceção); poder de prazo: sem atividade selecionada, sem regra encontrada, cria override e consome item, atualiza override existente |
 | `utils_test.php` | 2 | `get_avatar_html`: emoji gera div `ph-avatar-emoji` com span aria-hidden; URL HTTP gera tag img `ph-avatar-img` |
-| **Total** | **148** | |
+| **Subtotal** | **146** | |
+
+#### Testes de Web Services (`tests/external/`)
+
+Uma classe de teste por função de web service, validando o contrato da API externa, conformidade de parâmetros e estrutura de retorno (`external_api::clean_returnvalue`), e guardas de capability. As funções de IA são testadas sem rede — sem chave de API configurada, o bloco `try/catch` retorna `success=false`, que é assegurado diretamente.
+
+| Arquivo de teste | Casos | O que é coberto |
+|-----------------|------:|----------------|
+| `chat_message_test.php` | 2 | Sem chave de API → `moodle_exception`; guarda de capability (`manage`) |
+| `collect_item_test.php` | 4 | Item coletado + registro de inventário criado; drop inválido → `success=false`; limite atingido → `success=false`; guarda de capability (`view`) |
+| `create_avatar_pack_test.php` | 5 | 17 itens criados; todos com `action_type=avatar`; deduplicação por emoji; segunda chamada cria 0 (idempotência); guarda de capability |
+| `create_playercoin_test.php` | 3 | Novo item criado; segunda chamada retorna existente (idempotência); guarda de capability |
+| `execute_chat_action_test.php` | 4 | `action_open_tab` retorna URL de redirect (determinístico, sem IA); tipo de ação desconhecido → `success=false`; parâmetros inválidos → `success=false`; guarda de capability |
+| `generate_ai_content_test.php` | 2 | Sem chave de API → `success=false`; guarda de capability (`manage`) |
+| `generate_class_oracle_test.php` | 2 | Sem chave de API → `success=false`; guarda de capability (`manage`) |
+| `generate_story_test.php` | 2 | Sem chave de API → `success=false`; guarda de capability (`manage`) |
+| `insert_drop_shortcode_test.php` | 4 | Shortcode inserido no campo de conteúdo do módulo; inserção duplicada rejeitada; drop de outra instância rejeitado; guarda de capability |
+| `load_recap_test.php` | 3 | HTML de recap gerado após visita à cena; sem histórico → exceção; guarda de capability (`view`) |
+| `load_scene_test.php` | 3 | Nó inicial e escolhas retornados; capítulo inválido → exceção; guarda de capability (`view`) |
+| `make_choice_test.php` | 3 | Avança a história até o nó de destino; escolha inválida → exceção; guarda de capability (`view`) |
+| `remove_drop_shortcode_test.php` | 3 | Shortcode existente removido; ausência de shortcode é noop sem erro; guarda de capability |
+| `setup_playercoin_drop_test.php` | 5 | Sucesso; sem fórum → `success=false`; item de outra instância rejeitado; shortcode anteposto ao intro existente; guarda de capability |
+| `use_item_test.php` | 5 | Item não possuído → exceção; poder de prazo: sem atividade, sem regra, cria override e consome item, atualiza override existente |
+| **Subtotal** | **50** | |
+
+| **Total geral** | **196** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
