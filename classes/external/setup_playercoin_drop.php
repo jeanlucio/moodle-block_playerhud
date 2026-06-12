@@ -99,7 +99,7 @@ class setup_playercoin_drop extends external_api {
             ];
         }
 
-        $code = substr(md5(uniqid('ph_drop_', true)), 0, 12);
+        $code = \block_playerhud\utils::generate_drop_code($instanceid);
 
         $DB->insert_record('block_playerhud_drops', (object) [
             'blockinstanceid' => $instanceid,
