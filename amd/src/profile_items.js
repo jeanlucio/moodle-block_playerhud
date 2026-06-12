@@ -23,23 +23,30 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['jquery', 'theme_boost/bootstrap/modal'], function($, BootstrapModal) {
+define(['jquery'], function($) {
 
     let modalEl = null;
     let strings = {};
 
     /**
      * Show the Bootstrap modal.
+     *
+     * The Bootstrap module is required lazily (not as a top-level define
+     * dependency) because eagerly loading it breaks module definition on
+     * Moodle 4.5 (Bootstrap 4), which prevented the click handlers from
+     * ever binding. This matches the proven pattern used in view.js.
      */
     const openModal = () => {
         if (!modalEl) {
             return;
         }
         document.body.appendChild(modalEl);
-        var inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(modalEl))
-            || $(modalEl).data('bs.modal')
-            || new BootstrapModal(modalEl);
-        inst.show();
+        require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+            var inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(modalEl))
+                || $(modalEl).data('bs.modal')
+                || new BootstrapModal(modalEl);
+            inst.show();
+        });
     };
 
     /**
@@ -112,8 +119,11 @@ define(['jquery', 'theme_boost/bootstrap/modal'], function($, BootstrapModal) {
     /**
      * Initialize click and keyboard handlers on all profile items.
      *
-     * Looks for the modal inside .ph-profile-wrap to avoid conflicts when the
-     * block is also rendered in the page sidebar (two #ph-item-modal-view in DOM).
+     * The profile modal uses a dedicated id (ph-item-modal-profile) so it never
+     * collides with the block's own #ph-item-modal-view when the block is also
+     * rendered in the page sidebar. Looking it up by id (instead of scoping to
+     * .ph-profile-wrap) is resilient to themes such as Moove that hoist .modal
+     * elements out of their original container on page load.
      *
      * @param {Object} config Optional config object with strings.
      */
@@ -121,10 +131,7 @@ define(['jquery', 'theme_boost/bootstrap/modal'], function($, BootstrapModal) {
         if (config && config.strings) {
             strings = config.strings;
         }
-        const profileWrap = document.querySelector('.ph-profile-wrap');
-        modalEl = profileWrap
-            ? profileWrap.querySelector('#ph-item-modal-view')
-            : document.getElementById('ph-item-modal-view');
+        modalEl = document.getElementById('ph-item-modal-profile');
         if (!modalEl) {
             return;
         }

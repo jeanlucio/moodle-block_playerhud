@@ -211,7 +211,7 @@
 // so ancestor-scoped selectors do not apply. Target by specific modal ID instead.
 // Bootstrap 5 renders .btn-close via SVG background; removing it leaves
 // <span>&times;</span> as the visible X in both Bootstrap 4 and 5.
-#ph-item-modal-view,
+.ph-item-modal,
 #ph-char-modal,
 #ph-ai-modal,
 #ph-ai-oracle-modal,
