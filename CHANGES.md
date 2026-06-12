@@ -5,18 +5,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [v1.5.2] — 2026-06-10
+## [v1.5.2] — 2026-06-12
 
 ### Refactored
 - The monolithic `classes/external.php` (15 web service functions in a single class)
   was split into one class per function under `classes/external/`, following the
   modern Moodle 4.x convention (`execute_parameters`/`execute`/`execute_returns`).
   Web service names are unchanged, so client behaviour is identical.
+- `setup_playercoin_drop` now uses the canonical `utils::generate_drop_code()` instead
+  of an ad-hoc `md5(uniqid())` generator, making all drop codes consistently 6-character
+  base-36 uppercase with uniqueness retry.
+
+### Fixed
+- Profile item modal now opens correctly on themes that hoist modals to `<body>`
+  (e.g. Moove), which broke ancestor-scoped selectors.
 
 ### Tests
 - External web service tests were reorganised under `tests/external/` to mirror the
   new class structure, and coverage was extended to the story, drop-shortcode,
   item-collection and AI error paths.
+
+### Documentation
+- README documents the web service test suite and its structure.
 
 ---
 
