@@ -234,7 +234,7 @@
     cursor: pointer;
 }
 
-#ph-item-modal-view .btn-close,
+.ph-item-modal .btn-close,
 #ph-char-modal .btn-close,
 #ph-ai-modal .btn-close,
 #ph-ai-oracle-modal .btn-close,

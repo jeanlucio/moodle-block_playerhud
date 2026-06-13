@@ -111,6 +111,7 @@ class profile_content implements \renderable, \templatable {
             'hasmore' => $morecount > 0,
             'morebadge' => $morecount > 0 ? '+' . $morecount : '',
             'overflowjson' => $overflowjson,
+            'viewmodalid' => 'ph-item-modal-profile',
         ];
     }
 
