@@ -19,6 +19,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Profile item modal now opens correctly on themes that hoist modals to `<body>`
   (e.g. Moove), which broke ancestor-scoped selectors.
+- Trade edit page no longer crashes on courses with many image items. The items
+  map was previously passed as a `js_call_amd` argument, which Moodle caps at
+  ~1024 characters; it is now embedded as an inert
+  `<script type="application/json">` element and read from the DOM.
 
 ### Tests
 - External web service tests were reorganised under `tests/external/` to mirror the
