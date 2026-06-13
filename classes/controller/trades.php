@@ -151,10 +151,15 @@ class trades {
             );
         }
 
-        $PAGE->requires->js_call_amd('block_playerhud/edit_trade', 'init', [$jsitemsmap]);
+        $PAGE->requires->js_call_amd('block_playerhud/edit_trade', 'init');
 
         $output  = $OUTPUT->header();
         $output .= $OUTPUT->heading(get_string('trade_config_hdr', 'block_playerhud'));
+        $output .= \html_writer::tag(
+            'script',
+            json_encode($jsitemsmap, JSON_HEX_TAG | JSON_HEX_AMP),
+            ['type' => 'application/json', 'id' => 'block-playerhud-items-data']
+        );
         $output .= $mform->render();
         $output .= $OUTPUT->footer();
         return $output;

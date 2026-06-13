@@ -23,7 +23,9 @@
 
 define(['jquery'], function($) {
     return {
-        init: function(itemsMap) {
+        init: function() {
+            const dataEl = document.getElementById('block-playerhud-items-data');
+            const itemsMap = dataEl ? JSON.parse(dataEl.textContent) : {};
             const updatePreview = (selectEl) => {
                 const $select = $(selectEl);
                 let targetId = $select.attr('data-target');
