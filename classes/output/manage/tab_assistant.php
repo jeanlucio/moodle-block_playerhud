@@ -115,14 +115,9 @@ class tab_assistant implements renderable, templatable {
             && class_exists(\core_ai\aiactions\generate_text::class)
         ) {
             try {
-                global $DB;
                 $actionclass = \core_ai\aiactions\generate_text::class;
-                $reflection = new \ReflectionMethod(\core_ai\manager::class, 'get_providers_for_actions');
-                if ($reflection->isStatic()) {
-                    $providers = \core_ai\manager::get_providers_for_actions([$actionclass], true);
-                } else {
-                    $providers = (new \core_ai\manager($DB))->get_providers_for_actions([$actionclass], true);
-                }
+                $manager = \core\di::get(\core_ai\manager::class);
+                $providers = $manager->get_providers_for_actions([$actionclass], true);
                 if (!empty($providers[$actionclass])) {
                     return true;
                 }

@@ -556,14 +556,12 @@ class generator {
     /**
      * Returns true when Moodle core_ai has at least one provider configured for text generation.
      *
-     * Compatible with Moodle 4.5 (static API) and 5.x (instance API with DB injection).
-     * Uses get_providers_for_actions as the reflection anchor — the same method used in
-     * call_core_ai — so staticness detection is consistent across both methods.
+     * Compatible with Moodle 4.5+ — the manager is retrieved via the dependency
+     * container, which injects the dependencies for the running version.
      *
      * @return bool
      */
     protected function has_core_ai_provider(): bool {
-        global $DB;
         if (
             !class_exists(\core_ai\manager::class)
             || !class_exists(\core_ai\aiactions\generate_text::class)
@@ -572,12 +570,8 @@ class generator {
         }
         try {
             $actionclass = \core_ai\aiactions\generate_text::class;
-            $reflection = new \ReflectionMethod(\core_ai\manager::class, 'get_providers_for_actions');
-            if ($reflection->isStatic()) {
-                $providers = \core_ai\manager::get_providers_for_actions([$actionclass], true);
-            } else {
-                $providers = (new \core_ai\manager($DB))->get_providers_for_actions([$actionclass], true);
-            }
+            $manager = \core\di::get(\core_ai\manager::class);
+            $providers = $manager->get_providers_for_actions([$actionclass], true);
             return !empty($providers[$actionclass]);
         } catch (\Throwable $e) {
             return false;
@@ -588,22 +582,17 @@ class generator {
      * Generates text via the Moodle core_ai subsystem.
      *
      * Combines system and user prompt parts into a single string (core_ai accepts only
-     * one prompttext field). Compatible with Moodle 4.5 and 5.x via reflection.
+     * one prompttext field). Compatible with Moodle 4.5+.
      *
      * @param array $parts Prompt parts with 'system' and 'user' keys.
      * @return array Result with keys: success (bool), data (string), message (string), provider (string).
      */
     protected function call_core_ai(array $parts): array {
-        global $DB, $USER;
+        global $USER;
         try {
             $fullprompt = trim($parts['system'] . "\n\n" . $parts['user']);
             $actionclass = \core_ai\aiactions\generate_text::class;
-            $reflection = new \ReflectionMethod(\core_ai\manager::class, 'get_providers_for_actions');
-            if ($reflection->isStatic()) {
-                $manager = new \core_ai\manager();
-            } else {
-                $manager = new \core_ai\manager($DB);
-            }
+            $manager = \core\di::get(\core_ai\manager::class);
             $providers = $manager->get_providers_for_actions([$actionclass], true);
             if (empty($providers[$actionclass])) {
                 return ['success' => false, 'message' => ''];
