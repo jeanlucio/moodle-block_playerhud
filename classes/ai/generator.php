@@ -390,66 +390,72 @@ class generator {
     }
 
     /**
-     * Loads AI API keys following the canonical ecosystem ladder, level-first:
+     * Loads AI API keys following the canonical ecosystem ladder, tier by tier:
      *
-     *   own personal (PlayerHUD prefs) → hub personal (local_playergames)
-     *   → own site (PlayerHUD config)  → hub site (local_playergames)
+     *   1. own personal (PlayerHUD prefs)
+     *   2. hub personal (local_playergames)
+     *   3. own site     (PlayerHUD config)
+     *   4. hub site     (local_playergames)
      *
-     * Levels are exclusive by presence: if any personal key exists (own or hub),
-     * only personal keys are used; otherwise the site level is used. core_ai is the
-     * institutional default and is consulted by the caller only when no key is set
-     * at any level. The hub levels are skipped when local_playergames is absent.
+     * Each tier is resolved as a whole: the first tier that holds any provider key
+     * is used exclusively (so an own personal key always wins over a hub key, even
+     * for a different provider). core_ai is the institutional default and is
+     * consulted by the caller only when no tier holds a key. The hub tiers are
+     * skipped when local_playergames is absent.
      *
      * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel].
      */
     protected function load_api_keys(): array {
         $hubinstalled = class_exists(\local_playergames\api_key_helper::class);
 
-        // Personal level: own PlayerHUD preferences, then the hub's personal keys.
-        $geminikey   = (string) get_user_preferences('block_playerhud_gemini_key', '');
-        $groqkey     = (string) get_user_preferences('block_playerhud_groq_key', '');
-        $openaikey   = (string) get_user_preferences('block_playerhud_openai_key', '');
-        $openaiurl   = (string) get_user_preferences('block_playerhud_openai_url', '');
-        $openaimodel = (string) get_user_preferences('block_playerhud_openai_model', '');
+        $tiers = [];
 
+        // Tier 1: own personal (PlayerHUD user preferences).
+        $tiers[] = [
+            (string) get_user_preferences('block_playerhud_gemini_key', ''),
+            (string) get_user_preferences('block_playerhud_groq_key', ''),
+            (string) get_user_preferences('block_playerhud_openai_key', ''),
+            (string) get_user_preferences('block_playerhud_openai_url', ''),
+            (string) get_user_preferences('block_playerhud_openai_model', ''),
+        ];
+
+        // Tier 2: hub personal.
         if ($hubinstalled) {
-            if ($geminikey === '') {
-                $geminikey = \local_playergames\api_key_helper::get_personal_key('gemini');
-            }
-            if ($groqkey === '') {
-                $groqkey = \local_playergames\api_key_helper::get_personal_key('groq');
-            }
-            if ($openaikey === '') {
-                $openaikey = \local_playergames\api_key_helper::get_personal_key('openai');
-                if ($openaikey !== '') {
-                    $openaiurl   = \local_playergames\api_key_helper::get_openai_baseurl();
-                    $openaimodel = \local_playergames\api_key_helper::get_openai_model();
-                }
-            }
+            $tiers[] = [
+                \local_playergames\api_key_helper::get_personal_key('gemini'),
+                \local_playergames\api_key_helper::get_personal_key('groq'),
+                \local_playergames\api_key_helper::get_personal_key('openai'),
+                \local_playergames\api_key_helper::get_openai_baseurl(),
+                \local_playergames\api_key_helper::get_openai_model(),
+            ];
         }
 
-        // Site level: only when no personal key was found at all.
-        if ($geminikey === '' && $groqkey === '' && $openaikey === '') {
-            $geminikey   = (string) get_config('block_playerhud', 'apikey_gemini');
-            $groqkey     = (string) get_config('block_playerhud', 'apikey_groq');
-            $openaikey   = (string) get_config('block_playerhud', 'apikey_openai');
-            $openaiurl   = (string) get_config('block_playerhud', 'openai_baseurl');
-            $openaimodel = (string) get_config('block_playerhud', 'openai_model');
+        // Tier 3: own site (PlayerHUD config).
+        $tiers[] = [
+            (string) get_config('block_playerhud', 'apikey_gemini'),
+            (string) get_config('block_playerhud', 'apikey_groq'),
+            (string) get_config('block_playerhud', 'apikey_openai'),
+            (string) get_config('block_playerhud', 'openai_baseurl'),
+            (string) get_config('block_playerhud', 'openai_model'),
+        ];
 
-            if ($hubinstalled) {
-                if ($geminikey === '') {
-                    $geminikey = \local_playergames\api_key_helper::get_site_key('gemini');
-                }
-                if ($groqkey === '') {
-                    $groqkey = \local_playergames\api_key_helper::get_site_key('groq');
-                }
-                if ($openaikey === '') {
-                    $openaikey = \local_playergames\api_key_helper::get_site_key('openai');
-                    if ($openaikey !== '') {
-                        $openaiurl   = \local_playergames\api_key_helper::get_openai_baseurl();
-                        $openaimodel = \local_playergames\api_key_helper::get_openai_model();
-                    }
-                }
+        // Tier 4: hub site.
+        if ($hubinstalled) {
+            $tiers[] = [
+                \local_playergames\api_key_helper::get_site_key('gemini'),
+                \local_playergames\api_key_helper::get_site_key('groq'),
+                \local_playergames\api_key_helper::get_site_key('openai'),
+                \local_playergames\api_key_helper::get_openai_baseurl(),
+                \local_playergames\api_key_helper::get_openai_model(),
+            ];
+        }
+
+        // Use the first tier that holds any provider key.
+        $geminikey = $groqkey = $openaikey = $openaiurl = $openaimodel = '';
+        foreach ($tiers as $tier) {
+            if ($tier[0] !== '' || $tier[1] !== '' || $tier[2] !== '') {
+                [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $tier;
+                break;
             }
         }
 
