@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.5.3] — 2026-06-15
+
+### Refactored
+- Trade suggestion heuristic extracted from `manage.php` into reusable
+  `game::build_trade_suggestions()` and `game::create_trade_from_suggestion()`.
+- Quest suggestion persistence extracted from `manage.php` into reusable
+  `quest::build_record_from_suggestion()`, which also accepts an optional XP
+  reward override. UI behaviour is unchanged; these APIs let other plugins
+  (e.g. `local_studiolms`) seed trades and quests programmatically.
+
+---
+
 ## [v1.5.2] — 2026-06-12
 
 ### Refactored

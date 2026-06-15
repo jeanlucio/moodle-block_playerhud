@@ -938,4 +938,138 @@ class game {
 
         return ['enabled' => true, 'reason' => ''];
     }
+
+    /**
+     * Build the heuristic trade suggestions for a block instance.
+     *
+     * One suggestion per avatar item that is not already the sole reward of an
+     * existing trade, plus a single bundle (all avatars) when no bundle trade
+     * exists yet. Requires a PlayerCoin item to exist.
+     *
+     * @param int $instanceid Block instance ID.
+     * @return array List of suggestion descriptors (uid, cost_qty, cost_itemid, rewards, name, ...).
+     */
+    public static function build_trade_suggestions(int $instanceid): array {
+        global $DB;
+
+        $playercoin = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $instanceid,
+            'action_type'     => 'playercoin',
+        ]);
+        if (!$playercoin) {
+            return [];
+        }
+
+        $avatars = $DB->get_records_select(
+            'block_playerhud_items',
+            "blockinstanceid = :id AND action_type = 'avatar_profile'",
+            ['id' => $instanceid],
+            'id ASC'
+        );
+        if (empty($avatars)) {
+            return [];
+        }
+
+        $individualcoveredids = [];
+        $avatarids = array_keys($avatars);
+        [$avsql, $avparams] = $DB->get_in_or_equal($avatarids, SQL_PARAMS_NAMED, 'av');
+        $soletrades = $DB->get_records_sql(
+            "SELECT DISTINCT tr.itemid
+               FROM {block_playerhud_trade_rewards} tr
+               JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
+              WHERE t.blockinstanceid = :iid
+                AND tr.itemid $avsql
+                AND (SELECT COUNT(*) FROM {block_playerhud_trade_rewards} tr2
+                      WHERE tr2.tradeid = tr.tradeid) = 1",
+            array_merge(['iid' => $instanceid], $avparams)
+        );
+        foreach ($soletrades as $r) {
+            $individualcoveredids[$r->itemid] = true;
+        }
+        [$bsql, $bparams] = $DB->get_in_or_equal($avatarids, SQL_PARAMS_NAMED, 'bv');
+        $bundleexists = !empty($DB->get_records_sql(
+            "SELECT tr.tradeid
+               FROM {block_playerhud_trade_rewards} tr
+               JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
+              WHERE t.blockinstanceid = :iid
+                AND tr.itemid $bsql
+           GROUP BY tr.tradeid
+             HAVING COUNT(tr.itemid) >= :total",
+            array_merge(['iid' => $instanceid, 'total' => count($avatarids)], $bparams)
+        ));
+
+        $suggestions = [];
+        foreach ($avatars as $avatar) {
+            if (isset($individualcoveredids[$avatar->id])) {
+                continue;
+            }
+            $costqty = in_array($avatar->image, ['🤖', '👾'], true) ? 1 : 5;
+            $suggestions[] = [
+                'uid'          => 'ind_' . $avatar->id,
+                'cost_qty'     => $costqty,
+                'cost_itemid'  => $playercoin->id,
+                'cost_emoji'   => '🪙',
+                'reward_emoji' => $avatar->image,
+                'reward_label' => format_string($avatar->name),
+                'rewards'      => [['id' => $avatar->id, 'qty' => 1]],
+                'name'         => format_string($avatar->name),
+            ];
+        }
+
+        if (!$bundleexists) {
+            $bundlerewards = array_map(fn($av) => ['id' => $av->id, 'qty' => 1], array_values($avatars));
+            $suggestions[] = [
+                'uid'          => 'bundle_all',
+                'cost_qty'     => 50,
+                'cost_itemid'  => $playercoin->id,
+                'cost_emoji'   => '🪙',
+                'reward_emoji' => '🎭',
+                'reward_label' => get_string('avatar_pack_create', 'block_playerhud') .
+                                  ' (' . count($avatars) . ')',
+                'rewards'      => $bundlerewards,
+                'name'         => get_string('avatar_pack_create', 'block_playerhud'),
+            ];
+        }
+
+        return $suggestions;
+    }
+
+    /**
+     * Persist a single trade from a suggestion descriptor.
+     *
+     * Creates a centralized one-time trade with one cost requirement and the
+     * listed reward items. The caller is responsible for any surrounding
+     * transaction.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param array $sug Suggestion descriptor from build_trade_suggestions().
+     * @return int The new trade ID.
+     */
+    public static function create_trade_from_suggestion(int $instanceid, array $sug): int {
+        global $DB;
+
+        $now = time();
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => $sug['name'],
+            'groupid'         => 0,
+            'centralized'     => 1,
+            'onetime'         => 1,
+            'timecreated'     => $now,
+        ]);
+        $DB->insert_record('block_playerhud_trade_reqs', (object) [
+            'tradeid' => $tradeid,
+            'itemid'  => $sug['cost_itemid'],
+            'qty'     => $sug['cost_qty'],
+        ]);
+        foreach ($sug['rewards'] as $reward) {
+            $DB->insert_record('block_playerhud_trade_rewards', (object) [
+                'tradeid' => $tradeid,
+                'itemid'  => $reward['id'],
+                'qty'     => $reward['qty'],
+            ]);
+        }
+
+        return $tradeid;
+    }
 }

@@ -60,6 +60,41 @@ class quest {
     const TYPE_CHAPTER = 9;
 
     /**
+     * Build a quest DB record from a heuristic suggestion descriptor.
+     *
+     * Maps a suggestion produced by get_heuristic_suggestions() to a quest
+     * record ready for insertion. Does not touch the database, so callers can
+     * collect several records and persist them in a single batch insert.
+     * Allows an optional XP reward override so callers can scale rewards
+     * (e.g. per gamification profile).
+     *
+     * @param int $instanceid Block instance ID.
+     * @param array $sug Suggestion descriptor (type, requirement, name, reward_xp, image_todo, image_done).
+     * @param int|null $rewardxpoverride Optional XP reward to use instead of the suggestion's value.
+     * @return \stdClass Quest record ready for insert_record/insert_records.
+     */
+    public static function build_record_from_suggestion(int $instanceid, array $sug, ?int $rewardxpoverride = null): \stdClass {
+        $now = time();
+        $record = new \stdClass();
+        $record->blockinstanceid   = $instanceid;
+        $record->name              = $sug['name'];
+        $record->description       = '';
+        $record->type              = $sug['type'];
+        $record->requirement       = (string)$sug['requirement'];
+        $record->req_itemid        = 0;
+        $record->reward_xp         = $rewardxpoverride !== null ? max(0, $rewardxpoverride) : (int)$sug['reward_xp'];
+        $record->reward_itemid     = 0;
+        $record->required_class_id = '0';
+        $record->image_todo        = $sug['image_todo'];
+        $record->image_done        = $sug['image_done'];
+        $record->enabled           = 1;
+        $record->timecreated       = $now;
+        $record->timemodified      = $now;
+
+        return $record;
+    }
+
+    /**
      * Checks the status of a quest for a specific user.
      *
      * @param object $quest The quest object.

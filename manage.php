@@ -708,27 +708,11 @@ if ($action === 'suggest_quests' || $action === 'save_suggestions') {
     if ($sugform->is_cancelled()) {
         redirect(new moodle_url($baseurl, ['tab' => 'quests']));
     } else if ($data = $sugform->get_data()) {
-        $now = time();
         $records = [];
         foreach ($suggestions as $sug) {
             $field = 'sug_' . $sug['uid'];
             if (!empty($data->$field)) {
-                $record = new \stdClass();
-                $record->blockinstanceid  = $instanceid;
-                $record->name             = $sug['name'];
-                $record->description      = '';
-                $record->type             = $sug['type'];
-                $record->requirement      = (string)$sug['requirement'];
-                $record->req_itemid       = 0;
-                $record->reward_xp        = $sug['reward_xp'];
-                $record->reward_itemid    = 0;
-                $record->required_class_id = '0';
-                $record->image_todo       = $sug['image_todo'];
-                $record->image_done       = $sug['image_done'];
-                $record->enabled          = 1;
-                $record->timecreated      = $now;
-                $record->timemodified     = $now;
-                $records[] = $record;
+                $records[] = \block_playerhud\quest::build_record_from_suggestion($instanceid, $sug);
             }
         }
         $count = count($records);
@@ -763,88 +747,8 @@ if ($action === 'suggest_quests' || $action === 'save_suggestions') {
 
 // Action: Suggest Trades (Avatar pack + PlayerCoin heuristic).
 if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
-    // Fetch PlayerCoin.
-    $playercoin = $DB->get_record('block_playerhud_items', [
-        'blockinstanceid' => $instanceid,
-        'action_type'     => 'playercoin',
-    ], '*', MUST_EXIST);
-
-    // Fetch all avatar items.
-    $avatars = $DB->get_records_select(
-        'block_playerhud_items',
-        "blockinstanceid = :id AND action_type = 'avatar_profile'",
-        ['id' => $instanceid],
-        'id ASC'
-    );
-
-    // Preload coverage to skip suggestions that already have trades.
-    // Individual: avatar is the sole reward of an existing trade.
-    // Bundle: a single trade already rewards all current avatars.
-    $individualcoveredids = [];
-    $bundleexists = false;
-    if (!empty($avatars)) {
-        $avatarids = array_keys($avatars);
-        [$avsql, $avparams] = $DB->get_in_or_equal($avatarids, SQL_PARAMS_NAMED, 'av');
-        $soletrades = $DB->get_records_sql(
-            "SELECT DISTINCT tr.itemid
-               FROM {block_playerhud_trade_rewards} tr
-               JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
-              WHERE t.blockinstanceid = :iid
-                AND tr.itemid $avsql
-                AND (SELECT COUNT(*) FROM {block_playerhud_trade_rewards} tr2
-                      WHERE tr2.tradeid = tr.tradeid) = 1",
-            array_merge(['iid' => $instanceid], $avparams)
-        );
-        foreach ($soletrades as $r) {
-            $individualcoveredids[$r->itemid] = true;
-        }
-        [$bsql, $bparams] = $DB->get_in_or_equal($avatarids, SQL_PARAMS_NAMED, 'bv');
-        $bundleexists = !empty($DB->get_records_sql(
-            "SELECT tr.tradeid
-               FROM {block_playerhud_trade_rewards} tr
-               JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
-              WHERE t.blockinstanceid = :iid
-                AND tr.itemid $bsql
-           GROUP BY tr.tradeid
-             HAVING COUNT(tr.itemid) >= :total",
-            array_merge(['iid' => $instanceid, 'total' => count($avatarids)], $bparams)
-        ));
-    }
-
-    // Build suggestion list: one per avatar without an individual trade + bundle if not yet created.
-    $suggestions = [];
-    foreach ($avatars as $avatar) {
-        if (isset($individualcoveredids[$avatar->id])) {
-            continue;
-        }
-        $costqty = in_array($avatar->image, ['🤖', '👾'], true) ? 1 : 5;
-        $suggestions[] = [
-            'uid'          => 'ind_' . $avatar->id,
-            'cost_qty'     => $costqty,
-            'cost_itemid'  => $playercoin->id,
-            'cost_emoji'   => '🪙',
-            'reward_emoji' => $avatar->image,
-            'reward_label' => format_string($avatar->name),
-            'rewards'      => [['id' => $avatar->id, 'qty' => 1]],
-            'name'         => format_string($avatar->name),
-        ];
-    }
-
-    // Bundle: 50 coins → all avatars, only if no bundle trade exists yet.
-    if (!$bundleexists && !empty($avatars)) {
-        $bundlerewards = array_map(fn($av) => ['id' => $av->id, 'qty' => 1], array_values($avatars));
-        $suggestions[] = [
-            'uid'          => 'bundle_all',
-            'cost_qty'     => 50,
-            'cost_itemid'  => $playercoin->id,
-            'cost_emoji'   => '🪙',
-            'reward_emoji' => '🎭',
-            'reward_label' => get_string('avatar_pack_create', 'block_playerhud') .
-                              ' (' . count($avatars) . ')',
-            'rewards'      => $bundlerewards,
-            'name'         => get_string('avatar_pack_create', 'block_playerhud'),
-        ];
-    }
+    // Build the heuristic suggestion list (PlayerCoin + avatars).
+    $suggestions = \block_playerhud\game::build_trade_suggestions($instanceid);
 
     if ($action === 'suggest_trades' && empty($suggestions)) {
         redirect(
@@ -868,7 +772,6 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
     if ($sugform->is_cancelled()) {
         redirect(new moodle_url($baseurl, ['tab' => 'trades']));
     } else if ($data = $sugform->get_data()) {
-        $now = time();
         $count = 0;
         $transaction = $DB->start_delegated_transaction();
         foreach ($suggestions as $sug) {
@@ -876,26 +779,7 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
             if (empty($data->$field)) {
                 continue;
             }
-            $tradeid = $DB->insert_record('block_playerhud_trades', (object) [
-                'blockinstanceid' => $instanceid,
-                'name'            => $sug['name'],
-                'groupid'         => 0,
-                'centralized'     => 1,
-                'onetime'         => 1,
-                'timecreated'     => $now,
-            ]);
-            $DB->insert_record('block_playerhud_trade_reqs', (object) [
-                'tradeid' => $tradeid,
-                'itemid'  => $sug['cost_itemid'],
-                'qty'     => $sug['cost_qty'],
-            ]);
-            foreach ($sug['rewards'] as $reward) {
-                $DB->insert_record('block_playerhud_trade_rewards', (object) [
-                    'tradeid' => $tradeid,
-                    'itemid'  => $reward['id'],
-                    'qty'     => $reward['qty'],
-                ]);
-            }
+            \block_playerhud\game::create_trade_from_suggestion($instanceid, $sug);
             $count++;
         }
         $transaction->allow_commit();
