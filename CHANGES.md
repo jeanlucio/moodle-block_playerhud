@@ -22,6 +22,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   hub-level reads (the integration stays optional via `class_exists`).
 
 ### Fixed
+- Economy health panel now shows the green "balanced" status only when available
+  XP covers exactly 100% of the configured cap. Previously any coverage between
+  80% and 100% was also shown as balanced, masking under-configured economies.
 - Key resolution now evaluates each ladder tier as a whole: the first tier that
   holds any provider key (own personal → hub personal → own site → hub site) is
   used exclusively. Previously the own and hub stores were merged per provider, so

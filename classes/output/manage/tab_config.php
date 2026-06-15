@@ -168,7 +168,7 @@ class tab_config implements renderable, templatable {
             $strmessage = get_string('bal_msg_empty', 'block_playerhud');
             $alertclass = 'alert-secondary';
             $borderclass = 'border-secondary';
-        } else if ($ratio < 80) {
+        } else if ($ratio < 100) {
             $strmessage = get_string('bal_msg_hard', 'block_playerhud', $a);
             $alertclass = 'alert-warning';
             $borderclass = 'border-warning';

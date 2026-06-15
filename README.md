@@ -69,6 +69,20 @@ The two features are independent:
 
 ---
 
+### ⚖️ Economy Health Panel
+
+The **Config** tab in the management panel includes an **Economy Health** widget that compares the total XP a student can earn (all items × their drop limits + quest rewards) against the configured XP cap (XP per level × number of levels).
+
+| Coverage | Status |
+|---|---|
+| Exactly 100% | ✅ Green — "Balanced configuration" |
+| Below 100% | ⚠️ Yellow — students cannot reach the maximum level; add more items or quests, or lower the cap |
+| Above 100% | 🔴 Red — students can exceed the cap; reduce item/quest XP or increase the cap |
+
+The widget also shows a collapsible breakdown table listing every item and quest with its individual XP contribution, making it easy to identify which content is over- or under-contributing to the economy.
+
+---
+
 ### 🎓 Educational Purpose
 
 PlayerHUD is designed to:
@@ -421,6 +435,20 @@ As duas funcionalidades são independentes:
 
 ---
 
+### ⚖️ Painel de Saúde da Economia
+
+A aba **Configurações** do painel de gerenciamento inclui um widget de **Saúde da Economia** que compara o total de XP que um estudante pode ganhar (todos os itens × seus limites de drop + recompensas de missões) com o teto de XP configurado (XP por nível × número de níveis).
+
+| Cobertura | Status |
+|---|---|
+| Exatamente 100% | ✅ Verde — "Configuração equilibrada" |
+| Abaixo de 100% | ⚠️ Amarelo — os estudantes não conseguem atingir o nível máximo; adicione mais itens ou missões, ou reduza o teto |
+| Acima de 100% | 🔴 Vermelho — os estudantes podem ultrapassar o teto; reduza o XP de itens/missões ou aumente o teto |
+
+O widget também exibe uma tabela expansível com o detalhamento de cada item e missão e sua contribuição individual de XP, facilitando a identificação do conteúdo que está contribuindo mais ou menos para a economia.
+
+---
+
 ### 🎓 Finalidade Educacional
 
 O PlayerHUD foi projetado para:
@@ -638,31 +666,23 @@ Os recursos de IA são ferramentas de produtividade — o assistente exige confi
 
 ### 🔗 Cadeia de Provedores de IA
 
-O PlayerHUD seleciona um provedor de IA seguindo uma ordem de prioridade fixa. O primeiro provedor com configuração disponível é utilizado; se ele falhar, o próximo é tentado automaticamente.
+O PlayerHUD seleciona o provedor de IA **nível por nível**, seguindo a escada compartilhada do ecossistema PlayerGames. Uma chave explicitamente configurada sempre prevalece sobre o padrão institucional; o `core_ai` fica na base.
 
-**Ordem de seleção de provedor:**
-
-| Prioridade | Provedor | Observações |
-|------------|----------|-------------|
-| 1 | **Moodle `core_ai`** | Usa os provedores configurados pelo admin em *Administração do site → IA → Provedores de IA*. No Moodle 5.2+, o `core_ai` já tem fallback interno entre múltiplos provedores configurados. Nenhuma chave precisa ser cadastrada no PlayerHUD. |
-| 2 | **Google Gemini** | Chamada direta com modo de saída JSON forçado. |
-| 3 | **Groq** | Chamada direta com modo de saída JSON forçado. |
-| 4 | **OpenAI-compatível** | Qualquer provedor que siga o formato `/chat/completions` da OpenAI. |
-
-**Resolução de chave por provedor direto (Gemini / Groq / OpenAI):**
-
-Quando o PlayerHUD precisa chamar um provedor diretamente, a chave de API é buscada nesta ordem:
+**Escada de resolução (maior prioridade primeiro):**
 
 | Nível | Origem |
 |-------|--------|
-| 1 | Chave pessoal do professor cadastrada no PlayerHUD (aba *Configurações* → Chaves de API) |
-| 2 | Chave global cadastrada pelo admin nas configurações do PlayerHUD |
-| 3 | Chave pessoal do professor cadastrada no hub **local_playergames** (se instalado) |
-| 4 | Chave global cadastrada pelo admin nas configurações do **local_playergames** (se instalado) |
+| 1 | **Chave pessoal própria** — chave do professor cadastrada no PlayerHUD (aba *Configurações* → Chaves de API) |
+| 2 | **Chave pessoal do hub** — chave do professor cadastrada no **local_playergames** (se instalado) |
+| 3 | **Chave de site própria** — chave cadastrada pelo admin nas configurações do PlayerHUD |
+| 4 | **Chave de site do hub** — chave cadastrada pelo admin nas configurações do **local_playergames** (se instalado) |
+| 5 | **Moodle `core_ai`** — provedores configurados em *Administração do site → IA → Provedores de IA*. Nenhuma chave armazenada no PlayerHUD. |
 
-Isso significa: se o professor já tem uma chave configurada no hub PlayerGames, o PlayerHUD a utiliza automaticamente — sem precisar recadastrar.
+**Nível primeiro, não provedor primeiro.** Cada nível acima é avaliado como um todo: o primeiro nível que contiver *qualquer* chave é usado exclusivamente. Assim, a chave pessoal do professor (nível 1) sempre prevalece sobre uma chave do hub (nível 2) — mesmo que a chave do hub seja de um provedor de maior prioridade. Por exemplo, a chave de endpoint personalizado do professor não é substituída por uma chave Gemini que esteja no hub. O `core_ai` é consultado apenas quando nenhum nível possui uma chave.
 
-> **A ordem do provedor prevalece sobre a origem da chave.** Se uma chave Gemini existe apenas no nível 4 (config global do PlayerGames) e uma chave Groq existe no nível 2 (config global do PlayerHUD), o Gemini é utilizado porque é testado primeiro.
+**Dentro do nível escolhido**, os provedores diretos são testados na ordem Gemini → Groq → OpenAI-compatível (a primeira chave encontrada é usada; se a chamada falhar, o próximo é tentado).
+
+Isso também significa: se o professor configurou sua própria chave no hub PlayerGames, o PlayerHUD a utiliza automaticamente — sem necessidade de recadastrar no PlayerHUD.
 
 ### Provedores diretos suportados
 
@@ -688,11 +708,11 @@ O PlayerHUD não fornece chaves de API.
 
 As chaves de API podem ser configuradas por qualquer uma das seguintes origens (em ordem decrescente de prioridade):
 
-1. **Moodle `core_ai`** — configurado pelo admin em *Administração do site → IA → Provedores de IA* (nenhuma chave armazenada no PlayerHUD).
-2. **Chave pessoal no PlayerHUD** — configurada individualmente por cada professor na aba *Configurações* do painel de gerenciamento.
-3. **Chave global no PlayerHUD** — configurada pelo admin em *Administração do site → Plugins → Blocos → PlayerHUD*.
-4. **Chave pessoal no hub PlayerGames** — configurada pelo professor em *local_playergames → Minhas chaves de IA* (se o hub estiver instalado).
-5. **Chave global no hub PlayerGames** — configurada pelo admin nas configurações do *local_playergames* (se o hub estiver instalado).
+1. **Chave pessoal no PlayerHUD** — configurada individualmente por cada professor na aba *Configurações* do painel de gerenciamento.
+2. **Chave pessoal no hub PlayerGames** — configurada pelo professor em *local_playergames → Minhas chaves de IA* (se o hub estiver instalado).
+3. **Chave de site no PlayerHUD** — configurada pelo admin em *Administração do site → Plugins → Blocos → PlayerHUD*.
+4. **Chave de site no hub PlayerGames** — configurada pelo admin nas configurações do *local_playergames* (se o hub estiver instalado).
+5. **Moodle `core_ai`** — configurado pelo admin em *Administração do site → IA → Provedores de IA* (nenhuma chave armazenada no PlayerHUD; consultado apenas quando nenhuma das origens acima tiver chave configurada).
 
 ### Transmissão de dados
 
