@@ -5,7 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [v1.5.3] — 2026-06-15
+## [v1.5.4] — 2026-06-15
+
+### Changed
+- AI provider resolution now follows the shared ecosystem ladder, level-first:
+  own personal key → PlayerGames hub personal key → own site key → hub site key
+  → Moodle `core_ai`. `core_ai` moved to the bottom, so an explicitly configured
+  personal or site key always wins over the institutional default (previously a
+  site/`core_ai` default could win over a personal key stored in the hub).
+- The hub's personal key is now read at the personal level (not as a bottom
+  fallback), so a teacher's personal key set in `local_playergames` is honoured.
+- The Game Master Assistant chat uses the same ladder, keeping resolution
+  consistent across the plugin. Behaviour with personal keys is unchanged; the
+  only difference is that a configured site key (or hub key) now wins over
+  `core_ai` instead of the reverse. Requires `local_playergames` 0.1.1+ for the
+  hub-level reads (the integration stays optional via `class_exists`).
 
 ### Refactored
 - Trade suggestion heuristic extracted from `manage.php` into reusable

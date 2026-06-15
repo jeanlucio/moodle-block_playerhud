@@ -390,70 +390,78 @@ class generator {
     }
 
     /**
-     * Loads AI API keys with a personal-first resolution strategy.
+     * Loads AI API keys following the canonical ecosystem ladder, level-first:
      *
-     * Personal keys (level 1 — user preferences in this plugin) take absolute priority.
-     * When any personal key is configured, institution-wide defaults are ignored entirely
-     * so that a teacher who set a custom provider is never silently overridden by an
-     * institution Gemini key with higher provider priority.
+     *   own personal (PlayerHUD prefs) → hub personal (local_playergames)
+     *   → own site (PlayerHUD config)  → hub site (local_playergames)
      *
-     * Resolution order when NO personal keys are set:
-     * 2. PlayerHUD site config      (block_playerhud / apikey_{provider})
-     * 3. PlayerGames user pref      (local_playergames_{provider}_key)  — via api_key_helper
-     * 4. PlayerGames site config    (local_playergames / {provider}_key) — via api_key_helper
+     * Levels are exclusive by presence: if any personal key exists (own or hub),
+     * only personal keys are used; otherwise the site level is used. core_ai is the
+     * institutional default and is consulted by the caller only when no key is set
+     * at any level. The hub levels are skipped when local_playergames is absent.
      *
-     * Levels 3–4 are only consulted when local_playergames is installed (class_exists guard).
-     *
-     * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel, haspersonalkeys].
+     * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel].
      */
     protected function load_api_keys(): array {
-        // Level 1: personal user preferences for this plugin.
-        $geminikey   = get_user_preferences('block_playerhud_gemini_key', '');
-        $groqkey     = get_user_preferences('block_playerhud_groq_key', '');
-        $openaikey   = get_user_preferences('block_playerhud_openai_key', '');
-        $openaiurl   = get_user_preferences('block_playerhud_openai_url', '');
-        $openaimodel = get_user_preferences('block_playerhud_openai_model', '');
+        $hubinstalled = class_exists(\local_playergames\api_key_helper::class);
 
-        // If the teacher explicitly configured personal keys, use only those.
-        // Institution defaults must not override the teacher's chosen provider.
-        $haspersonalkeys = !empty($geminikey) || !empty($groqkey) || !empty($openaikey);
+        // Personal level: own PlayerHUD preferences, then the hub's personal keys.
+        $geminikey   = (string) get_user_preferences('block_playerhud_gemini_key', '');
+        $groqkey     = (string) get_user_preferences('block_playerhud_groq_key', '');
+        $openaikey   = (string) get_user_preferences('block_playerhud_openai_key', '');
+        $openaiurl   = (string) get_user_preferences('block_playerhud_openai_url', '');
+        $openaimodel = (string) get_user_preferences('block_playerhud_openai_model', '');
 
-        if (!$haspersonalkeys) {
-            // Levels 2–4: institution and hub fallbacks — only when no personal keys set.
-            $geminikey   = get_config('block_playerhud', 'apikey_gemini');
-            $groqkey     = get_config('block_playerhud', 'apikey_groq');
-            $openaikey   = get_config('block_playerhud', 'apikey_openai');
-            $openaiurl   = get_config('block_playerhud', 'openai_baseurl');
-            $openaimodel = get_config('block_playerhud', 'openai_model');
-
-            if (class_exists(\local_playergames\api_key_helper::class)) {
-                if (empty($geminikey)) {
-                    $geminikey = \local_playergames\api_key_helper::get_gemini_key();
-                }
-                if (empty($groqkey)) {
-                    $groqkey = \local_playergames\api_key_helper::get_groq_key();
-                }
-                if (empty($openaikey)) {
-                    $openaikey = \local_playergames\api_key_helper::get_openai_key();
-                }
-                if (empty($openaiurl)) {
-                    $openaiurl = \local_playergames\api_key_helper::get_openai_baseurl();
-                }
-                if (empty($openaimodel)) {
+        if ($hubinstalled) {
+            if ($geminikey === '') {
+                $geminikey = \local_playergames\api_key_helper::get_personal_key('gemini');
+            }
+            if ($groqkey === '') {
+                $groqkey = \local_playergames\api_key_helper::get_personal_key('groq');
+            }
+            if ($openaikey === '') {
+                $openaikey = \local_playergames\api_key_helper::get_personal_key('openai');
+                if ($openaikey !== '') {
+                    $openaiurl   = \local_playergames\api_key_helper::get_openai_baseurl();
                     $openaimodel = \local_playergames\api_key_helper::get_openai_model();
                 }
             }
         }
 
+        // Site level: only when no personal key was found at all.
+        if ($geminikey === '' && $groqkey === '' && $openaikey === '') {
+            $geminikey   = (string) get_config('block_playerhud', 'apikey_gemini');
+            $groqkey     = (string) get_config('block_playerhud', 'apikey_groq');
+            $openaikey   = (string) get_config('block_playerhud', 'apikey_openai');
+            $openaiurl   = (string) get_config('block_playerhud', 'openai_baseurl');
+            $openaimodel = (string) get_config('block_playerhud', 'openai_model');
+
+            if ($hubinstalled) {
+                if ($geminikey === '') {
+                    $geminikey = \local_playergames\api_key_helper::get_site_key('gemini');
+                }
+                if ($groqkey === '') {
+                    $groqkey = \local_playergames\api_key_helper::get_site_key('groq');
+                }
+                if ($openaikey === '') {
+                    $openaikey = \local_playergames\api_key_helper::get_site_key('openai');
+                    if ($openaikey !== '') {
+                        $openaiurl   = \local_playergames\api_key_helper::get_openai_baseurl();
+                        $openaimodel = \local_playergames\api_key_helper::get_openai_model();
+                    }
+                }
+            }
+        }
+
         // Reject URLs that could be used to probe internal network addresses (SSRF).
-        if (!empty($openaiurl) && !$this->is_safe_url($openaiurl)) {
+        if ($openaiurl !== '' && !$this->is_safe_url($openaiurl)) {
             $openaiurl = '';
         }
-        if (!empty($openaiurl)) {
+        if ($openaiurl !== '') {
             $openaiurl = $this->resolve_openai_url($openaiurl);
         }
 
-        return [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $haspersonalkeys];
+        return [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel];
     }
 
     /**
@@ -615,34 +623,21 @@ class generator {
     }
 
     /**
-     * Calls AI providers in priority order.
+     * Calls AI providers following the canonical ladder.
      *
-     * When the teacher has personal keys configured:
-     *   Gemini (personal) → Groq (personal) → OpenAI-compatible (personal)
-     *
-     * When only institution keys are available:
-     *   core_ai → Gemini (institution) → Groq (institution) → OpenAI-compatible (institution)
+     * The configured key level (personal or site, resolved by load_api_keys) is
+     * tried first: Gemini → Groq → OpenAI-compatible. Moodle core_ai is the
+     * institutional default and is consulted only when no key is configured at any
+     * level, so an explicitly set personal or site key always wins.
      *
      * @param array $parts Prompt parts with 'system' and 'user' keys.
      * @return array Result array with keys 'success', 'data', 'provider'.
      * @throws \moodle_exception If all providers fail or no keys are configured.
      */
     protected function call_with_fallback(array $parts): array {
-        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $haspersonalkeys] = $this->load_api_keys();
+        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $this->load_api_keys();
 
-        // Priority 0: Moodle core_ai — institution default, skipped when the teacher
-        // has configured personal keys so their explicit choice is always honoured.
-        if (!$haspersonalkeys && $this->has_core_ai_provider()) {
-            $result = $this->call_core_ai($parts);
-            if ($result['success']) {
-                return $result;
-            }
-        }
-
-        if (empty($geminikey) && empty($groqkey) && empty($openaikey)) {
-            throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
-        }
-
+        $nokeys = empty($geminikey) && empty($groqkey) && empty($openaikey);
         $result = ['success' => false, 'message' => ''];
 
         if (!empty($geminikey)) {
@@ -657,7 +652,15 @@ class generator {
             $result = $this->call_openai_compatible($parts, $openaikey, $openaiurl, $openaimodel);
         }
 
+        // Bottom of the ladder: Moodle core_ai, only when no key is configured.
+        if (!$result['success'] && $nokeys && $this->has_core_ai_provider()) {
+            $result = $this->call_core_ai($parts);
+        }
+
         if (!$result['success']) {
+            if ($nokeys && empty($result['message'])) {
+                throw new \moodle_exception('ai_error_no_keys', 'block_playerhud');
+            }
             $errormsg = !empty($result['message']) ?
                 $result['message'] :
                 get_string('ai_error_no_keys', 'block_playerhud');
