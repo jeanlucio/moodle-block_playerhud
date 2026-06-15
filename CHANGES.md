@@ -5,18 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [v1.5.4] — 2026-06-15
+## [v1.5.3] — 2026-06-15
 
 ### Changed
 - The Moodle `core_ai` manager is now retrieved through the dependency container
   (`\core\di::get(\core_ai\manager::class)`), the documented retrieval pattern,
   instead of a reflection-based constructor shim. Behaviour is unchanged.
-
----
-
-## [v1.5.3] — 2026-06-15
-
-### Changed
 - AI provider resolution now follows the shared ecosystem ladder, level-first:
   own personal key → PlayerGames hub personal key → own site key → hub site key
   → Moodle `core_ai`. `core_ai` moved to the bottom, so an explicitly configured
