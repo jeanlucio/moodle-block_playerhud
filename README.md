@@ -35,7 +35,7 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
 * 📖 **Story & Chapters:** Branching narrative system with choice nodes and per-class story paths.
 * ⚖️ **Karma System:** Moral alignment mechanic that evolves the student’s class portrait over time.
 * 📊 **Analytics:** Audit logs and game economy tracking for teacher oversight.
-* 🤖 **AI Tools (Optional):** Two AI-powered features with a level-first provider ladder (see [AI Provider Chain](#-ai-provider-chain) below):
+* 🤖 **AI Tools (Optional):** Two AI-powered features with a tiered provider ladder (see [AI Provider Chain](#-ai-provider-chain) below):
   * **Content Generator** — creates items, story chapters with branching nodes, and RPG class backstories on demand.
   * **Game Master Assistant** — a conversational chat tab for teachers. Ask questions about game design, get suggestions, and trigger actions (create item, create quest, generate chapter) with a confirmation step before anything is saved.
 * 📱 **Mobile-Ready:** Compatible with Moodle web services.
@@ -286,28 +286,29 @@ The AI features are productivity tools — the assistant also accepts confirmati
 
 ### 🔗 AI Provider Chain
 
-PlayerHUD resolves the AI provider **level-first**, following the shared PlayerGames
+PlayerHUD resolves the AI provider **tier by tier**, following the shared PlayerGames
 ecosystem ladder. An explicitly configured key always wins over the institutional
 default; `core_ai` sits at the bottom.
 
 **Resolution ladder (highest priority first):**
 
-| Level | Source |
-|-------|--------|
-| 1 | **Personal key** — teacher’s own key set in PlayerHUD (*Configurações* tab → API keys) |
+| Tier | Source |
+|------|--------|
+| 1 | **Own personal key** — teacher’s own key set in PlayerHUD (*Configurações* tab → API keys) |
 | 2 | **Hub personal key** — teacher’s own key set in **local_playergames** (if installed) |
-| 3 | **Site key** — admin key set in PlayerHUD settings |
+| 3 | **Own site key** — admin key set in PlayerHUD settings |
 | 4 | **Hub site key** — admin key set in **local_playergames** settings (if installed) |
 | 5 | **Moodle `core_ai`** — providers configured in *Site administration → AI → AI providers*. No API key stored in PlayerHUD. |
 
-**Level-first, not provider-first.** If *any* personal key is set (in PlayerHUD or
-in the hub), only personal keys are used; otherwise the site level is used; `core_ai`
-is consulted only when no key is configured at any level. This means a teacher’s
-personal Groq key is never overridden by an institution Gemini key just because
-Gemini has higher provider priority — the level wins first.
+**Tier-first, not provider-first.** Each tier above is evaluated as a whole: the
+first tier that holds *any* key is used exclusively. So a teacher’s own personal key
+(tier 1) always wins over a hub key (tier 2) — even a hub key for a higher-priority
+provider. For example, a teacher’s own custom-endpoint key is not overridden by a
+Gemini key that happens to live in the hub. `core_ai` is consulted only when no tier
+holds a key.
 
-**Within a level**, the direct providers are tried in the order Gemini → Groq →
-OpenAI-compatible (first key found is used; if its call fails, the next is tried).
+**Within the chosen tier**, the direct providers are tried in the order Gemini →
+Groq → OpenAI-compatible (first key found is used; if its call fails, the next is tried).
 
 This also means: if a teacher configured their own key in the PlayerGames hub,
 PlayerHUD uses it automatically — no need to re-enter the key in PlayerHUD.
