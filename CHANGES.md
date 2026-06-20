@@ -5,16 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [v1.5.4] — 2026-06-20
+## [v1.5.3] — 2026-06-20
 
-### Fixed
-- The plugin now removes its per-user preferences (personal AI keys and the
-  chosen avatar) on uninstall. Moodle core drops the plugin's own tables and
-  settings automatically, but never touches the core `user_preferences` table,
-  so these rows were previously left behind. A `db/uninstall.php` hook now
-  deletes every `block_playerhud_*` user preference.
-
-## [v1.5.3] — 2026-06-15
+### Added
+- GitHub Release workflow to automatically create a release from `CHANGES.md`
+  when a version tag is pushed.
 
 ### Changed
 - The Moodle `core_ai` manager is now retrieved through the dependency container
@@ -34,6 +29,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   hub-level reads (the integration stays optional via `class_exists`).
 
 ### Fixed
+- The plugin now removes its per-user preferences (personal AI keys and the
+  chosen avatar) on uninstall. Moodle core drops the plugin's own tables and
+  settings automatically, but never touches the core `user_preferences` table,
+  so these rows were previously left behind. A `db/uninstall.php` hook now
+  deletes every `block_playerhud_*` user preference.
 - Economy health panel now shows the green "balanced" status only when available
   XP covers exactly 100% of the configured cap. Previously any coverage between
   80% and 100% was also shown as balanced, masking under-configured economies.
@@ -50,6 +50,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `quest::build_record_from_suggestion()`, which also accepts an optional XP
   reward override. UI behaviour is unchanged; these APIs let other plugins
   (e.g. `local_studiolms`) seed trades and quests programmatically.
+
+### Documentation
+- README documents the Economy Health Panel status levels and clarifies the
+  tier-first AI key resolution ladder.
 
 ---
 

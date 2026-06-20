@@ -29,4 +29,4 @@ $plugin->version   = 2026062000;        // The current plugin version (Date: YYY
 $plugin->requires  = 2024100700;        // Requires: Moodle 4.5+.
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v1.5.4';         // User-friendly version number.
+$plugin->release   = 'v1.5.3';         // User-friendly version number.
