@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.5.4] — 2026-06-20
+
+### Fixed
+- The plugin now removes its per-user preferences (personal AI keys and the
+  chosen avatar) on uninstall. Moodle core drops the plugin's own tables and
+  settings automatically, but never touches the core `user_preferences` table,
+  so these rows were previously left behind. A `db/uninstall.php` hook now
+  deletes every `block_playerhud_*` user preference.
+
 ## [v1.5.3] — 2026-06-15
 
 ### Changed
