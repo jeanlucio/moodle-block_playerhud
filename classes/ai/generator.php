@@ -419,14 +419,21 @@ class generator {
             (string) get_user_preferences('block_playerhud_openai_model', ''),
         ];
 
-        // Tier 2: hub personal.
+        // Tier 2: hub personal. URL and model prefer the hub's personal values,
+        // falling back to the hub's site defaults when the user has not set them.
         if ($hubinstalled) {
+            $hubpersonalurl = method_exists(\local_playergames\api_key_helper::class, 'get_personal_openai_url')
+                ? \local_playergames\api_key_helper::get_personal_openai_url()
+                : '';
+            $hubpersonalmodel = method_exists(\local_playergames\api_key_helper::class, 'get_personal_openai_model')
+                ? \local_playergames\api_key_helper::get_personal_openai_model()
+                : '';
             $tiers[] = [
                 \local_playergames\api_key_helper::get_personal_key('gemini'),
                 \local_playergames\api_key_helper::get_personal_key('groq'),
                 \local_playergames\api_key_helper::get_personal_key('openai'),
-                \local_playergames\api_key_helper::get_openai_baseurl(),
-                \local_playergames\api_key_helper::get_openai_model(),
+                $hubpersonalurl !== '' ? $hubpersonalurl : \local_playergames\api_key_helper::get_openai_baseurl(),
+                $hubpersonalmodel !== '' ? $hubpersonalmodel : \local_playergames\api_key_helper::get_openai_model(),
             ];
         }
 
