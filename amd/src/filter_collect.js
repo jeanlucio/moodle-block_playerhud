@@ -296,6 +296,33 @@ const updateCardUi = (trigger, hasTimer, isLimit, resp, originalHtml) => {
 };
 
 /**
+ * Fires at most one celebration overlay for a collection, by priority:
+ * beating the game (100%) > level-up > first PlayerCoin. The coin milestone is
+ * independent of XP (coins grant none), so it never coincides with the others.
+ *
+ * @param {Object} resp The ajax response.
+ */
+const triggerCelebration = (resp) => {
+    const filterCfg = window.block_playerhud_filter || {};
+    const gameData = resp.game_data || {};
+    let celebration = null;
+
+    if (gameData.won && filterCfg.winImg) {
+        celebration = {type: 'win', image: filterCfg.winImg};
+    } else if (gameData.leveled_up && filterCfg.levelupImg) {
+        celebration = {type: 'levelup', level: gameData.level, image: filterCfg.levelupImg};
+    } else if (resp.milestone === 'coin' && filterCfg.coinImg) {
+        celebration = {type: 'coin', image: filterCfg.coinImg};
+    }
+
+    if (celebration) {
+        require(['block_playerhud/levelup'], (Levelup) => {
+            Levelup.celebrate(celebration);
+        });
+    }
+};
+
+/**
  * Process the collection result UI updates (Orchestrator).
  *
  * @param {Object} trigger The jQuery element.
@@ -345,26 +372,7 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
         updateHud(resp.game_data, resp.item_data);
     }
 
-    // Fire at most one celebration overlay for this collection, by priority:
-    // beating the game (100%) > level-up > first PlayerCoin. The coin milestone is
-    // independent of XP (coins grant none), so it never coincides with the others.
-    const filterCfg = window.block_playerhud_filter || {};
-    const gameData = resp.game_data || {};
-    let celebration = null;
-
-    if (gameData.won && filterCfg.winImg) {
-        celebration = {type: 'win', image: filterCfg.winImg};
-    } else if (gameData.leveled_up && filterCfg.levelupImg) {
-        celebration = {type: 'levelup', level: gameData.level, image: filterCfg.levelupImg};
-    } else if (resp.milestone === 'coin' && filterCfg.coinImg) {
-        celebration = {type: 'coin', image: filterCfg.coinImg};
-    }
-
-    if (celebration) {
-        require(['block_playerhud/levelup'], (Levelup) => {
-            Levelup.celebrate(celebration);
-        });
-    }
+    triggerCelebration(resp);
 };
 
 /**
