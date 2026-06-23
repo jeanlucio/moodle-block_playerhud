@@ -24,6 +24,12 @@ namespace block_playerhud;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class game {
+    /** @var int Milestone bitmask: first PlayerCoin collected. */
+    const MILESTONE_COIN = 1;
+
+    /** @var int Milestone bitmask: first quest reward claimed. */
+    const MILESTONE_FIRSTQUEST = 2;
+
     /**
      * Get or create a player record.
      *
@@ -45,6 +51,7 @@ class game {
             $player->currentxp = 0;
             $player->enable_gamification = 1;
             $player->ranking_visibility = 1;
+            $player->milestones = 0;
             $player->timecreated = time();
             $player->timemodified = time();
             $player->id = $DB->insert_record('block_playerhud_user', $player);
@@ -195,6 +202,17 @@ class game {
         );
         $leveledup = ($earnedxp > 0 && (int)$stats['level'] > $oldlevel);
 
+        // One-time milestone: the very first PlayerCoin this user collects in this
+        // instance. Stored as a bit in the player's milestones bitmask so it shows once.
+        $milestone = '';
+        $iscoin = (isset($item->action_type) && $item->action_type === 'playercoin');
+        if ($iscoin && !((int)$player->milestones & self::MILESTONE_COIN)) {
+            $player->milestones = (int)$player->milestones | self::MILESTONE_COIN;
+            $player->timemodified = time();
+            $DB->update_record('block_playerhud_user', $player);
+            $milestone = 'coin';
+        }
+
         // Prepare Item Data for Stash update.
         $context = \context_block::instance($instanceid);
         $media = \block_playerhud\utils::get_item_display_data($item, $context);
@@ -240,6 +258,7 @@ class game {
             'item_data' => $itemdata,
             'cooldown_deadline' => (int)$cooldowndeadline,
             'limit_reached' => (bool)$limitreached,
+            'milestone' => $milestone,
         ];
     }
 

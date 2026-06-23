@@ -103,6 +103,7 @@ class collect_item extends external_api {
             'message' => new external_value(PARAM_RAW, 'Message'),
             'cooldown_deadline' => new external_value(PARAM_INT, 'Timestamp for cooldown', VALUE_OPTIONAL),
             'limit_reached' => new external_value(PARAM_BOOL, 'If drop limit reached', VALUE_OPTIONAL),
+            'milestone' => new external_value(PARAM_ALPHA, 'One-time milestone reached, e.g. coin', VALUE_OPTIONAL),
             'game_data' => new external_single_structure([
                 'currentxp' => new external_value(PARAM_INT, 'Current XP', VALUE_OPTIONAL),
                 'level' => new external_value(PARAM_INT, 'Level', VALUE_OPTIONAL),

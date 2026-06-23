@@ -343,15 +343,24 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
 
     if (resp.game_data) {
         updateHud(resp.game_data, resp.item_data);
+    }
 
-        if (resp.game_data.leveled_up) {
-            const filterCfg = window.block_playerhud_filter || {};
-            if (filterCfg.levelupImg) {
-                require(['block_playerhud/levelup'], (Levelup) => {
-                    Levelup.celebrate(resp.game_data.level, filterCfg.levelupImg);
-                });
-            }
-        }
+    // Fire at most one celebration overlay for this collection. The first-coin
+    // milestone is independent of XP (coins grant none), so it never coincides
+    // with a level-up.
+    const filterCfg = window.block_playerhud_filter || {};
+    let celebration = null;
+
+    if (resp.milestone === 'coin' && filterCfg.coinImg) {
+        celebration = {type: 'coin', image: filterCfg.coinImg};
+    } else if (resp.game_data && resp.game_data.leveled_up && filterCfg.levelupImg) {
+        celebration = {type: 'levelup', level: resp.game_data.level, image: filterCfg.levelupImg};
+    }
+
+    if (celebration) {
+        require(['block_playerhud/levelup'], (Levelup) => {
+            Levelup.celebrate(celebration);
+        });
     }
 };
 

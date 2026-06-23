@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Level-up celebration overlay.
+ * Celebration overlay with the Huddy mascot (level-up and one-time milestones).
  *
  * @module     block_playerhud/levelup
  * @copyright  2026 Jean Lúcio
@@ -24,6 +24,17 @@
 import {get_string as getString} from 'core/str';
 
 const OVERLAY_ID = 'ph-levelup-overlay';
+
+/**
+ * Per-type preset: which lang strings to use and whether the level number is
+ * drawn over the shield in the artwork.
+ *
+ * @type {Object<string, {titleKey: string, descKey: string, showNumber: boolean}>}
+ */
+const PRESETS = {
+    levelup: {titleKey: 'levelup_title', descKey: 'levelup_subtitle', showNumber: true},
+    coin: {titleKey: 'coin_intro_title', descKey: 'coin_intro_desc', showNumber: false},
+};
 
 /**
  * Removes the current overlay, if any, and detaches its listeners.
@@ -50,18 +61,27 @@ const dismiss = (overlay) => {
 };
 
 /**
- * Shows the level-up celebration with the mascot and the reached level.
+ * Shows a celebration overlay with the mascot.
  *
  * Safe to call from both an AJAX response (item collection) and a page-load
  * trigger (quest claim flash). Re-entrant: any existing overlay is replaced.
  *
- * @param {Number} level The level the player has just reached.
- * @param {String} imageUrl Absolute URL of the mascot level-up image.
+ * @param {Object} options Celebration descriptor.
+ * @param {String} options.type Preset key (e.g. 'levelup', 'coin').
+ * @param {String} options.image Absolute URL of the mascot image.
+ * @param {Number} [options.level] Reached level (required by the 'levelup' preset).
  * @return {Promise<void>}
  */
-export const celebrate = async(level, imageUrl) => {
-    const reachedLevel = parseInt(level, 10);
-    if (isNaN(reachedLevel) || reachedLevel <= 0 || !imageUrl) {
+export const celebrate = async(options) => {
+    const opts = options || {};
+    const preset = PRESETS[opts.type];
+    if (!preset || !opts.image) {
+        return;
+    }
+
+    const reachedLevel = parseInt(opts.level, 10);
+    const showNumber = preset.showNumber && !isNaN(reachedLevel) && reachedLevel > 0;
+    if (preset.showNumber && !showNumber) {
         return;
     }
 
@@ -74,9 +94,10 @@ export const celebrate = async(level, imageUrl) => {
         dismiss(existing);
     }
 
+    const descArg = preset.showNumber ? reachedLevel : undefined;
     const [title, subtitle, closeLabel] = await Promise.all([
-        getString('levelup_title', 'block_playerhud'),
-        getString('levelup_subtitle', 'block_playerhud', reachedLevel),
+        getString(preset.titleKey, 'block_playerhud'),
+        getString(preset.descKey, 'block_playerhud', descArg),
         getString('closebuttontitle', 'moodle'),
     ]);
 
@@ -111,17 +132,19 @@ export const celebrate = async(level, imageUrl) => {
 
     const img = document.createElement('img');
     img.className = 'ph-levelup-img';
-    img.src = imageUrl;
+    img.src = opts.image;
     img.alt = '';
 
-    // The level number sits over the (text-free) shield in the artwork.
-    const number = document.createElement('span');
-    number.className = 'ph-levelup-number';
-    number.setAttribute('aria-hidden', 'true');
-    number.textContent = `${reachedLevel}`;
-
     figure.appendChild(img);
-    figure.appendChild(number);
+
+    // The level number sits over the (text-free) shield in the artwork.
+    if (showNumber) {
+        const number = document.createElement('span');
+        number.className = 'ph-levelup-number';
+        number.setAttribute('aria-hidden', 'true');
+        number.textContent = `${reachedLevel}`;
+        figure.appendChild(number);
+    }
 
     const subtitleEl = document.createElement('div');
     subtitleEl.id = subtitleId;

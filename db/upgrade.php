@@ -102,5 +102,27 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026060101, 'playerhud');
     }
 
+    if ($oldversion < 2026062303) {
+        // Add the milestones bitmask to block_playerhud_user. Tracks one-time
+        // celebration popups already shown (e.g. first PlayerCoin, first quest).
+        $table = new \xmldb_table('block_playerhud_user');
+        $field = new \xmldb_field(
+            'milestones',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'last_shop_view'
+        );
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_block_savepoint(true, 2026062303, 'playerhud');
+    }
+
     return true;
 }

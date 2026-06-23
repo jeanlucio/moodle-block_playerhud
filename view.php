@@ -366,7 +366,11 @@ if ($isoptin) {
     if ($levelupflash > 0) {
         unset_user_preference('block_playerhud_levelup');
         $levelupimg = (new moodle_url('/blocks/playerhud/pix/huddy/levelup.png'))->out(false);
-        $PAGE->requires->js_call_amd('block_playerhud/levelup', 'celebrate', [$levelupflash, $levelupimg]);
+        $PAGE->requires->js_call_amd('block_playerhud/levelup', 'celebrate', [[
+            'type'  => 'levelup',
+            'level' => $levelupflash,
+            'image' => $levelupimg,
+        ]]);
     }
 }
 
