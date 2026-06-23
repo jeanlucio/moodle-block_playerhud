@@ -37,7 +37,10 @@
         "str_tab_individual": "Individual",
         "str_tab_groups": "Groups",
         "individual": [
-            { "rank": 1, "medal_emoji": "🥇", "fullname": "Alice", "currentxp": 1000, "is_me": true }
+            {
+                "rank": 1, "medal_emoji": "🥇", "fullname": "Alice", "currentxp": 1000, "is_me": true,
+                "has_groups": true, "groups": [{ "name": "Team A", "badge": "🛡️", "has_badge": true }]
+            }
         ],
         "groups": [
             { "rank": 1, "name": "Team A", "badge": "🛡️", "has_badge": true, "average_xp": 500 }
@@ -174,7 +177,10 @@
                                         </div>
                                     </td>
                                     <td class="text-center text-muted small">
-                                        {{group_name}}
+                                        {{#has_groups}}
+                                            {{#groups}}<span class="ph-rank-group me-2">{{#has_badge}}<span class="ph-group-badge me-1" aria-hidden="true">{{badge}}</span>{{/has_badge}}{{name}}</span>{{/groups}}
+                                        {{/has_groups}}
+                                        {{^has_groups}}-{{/has_groups}}
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-primary text-white rounded-pill px-3 py-2">{{currentxp}} XP</span>

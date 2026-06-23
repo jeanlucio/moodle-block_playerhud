@@ -1725,6 +1725,17 @@
     font-size: 1.2rem;
     line-height: 1;
 }
+.block_playerhud .ph-rank-group,
+.path-blocks-playerhud .ph-rank-group,
+.filter_playerhud .ph-rank-group {
+    display: inline-block;
+    white-space: nowrap;
+}
+.block_playerhud .ph-rank-group .ph-group-badge,
+.path-blocks-playerhud .ph-rank-group .ph-group-badge,
+.filter_playerhud .ph-rank-group .ph-group-badge {
+    font-size: 1rem;
+}
 .block_playerhud .ph-badge-tiny,
 .path-blocks-playerhud .ph-badge-tiny,
 .filter_playerhud .ph-badge-tiny {

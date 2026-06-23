@@ -94,6 +94,15 @@
         line-height: 1;
     }
 
+    .ph-rank-group {
+        display: inline-block;
+        white-space: nowrap;
+
+        .ph-group-badge {
+            font-size: 1rem;
+        }
+    }
+
     .ph-badge-tiny {
         font-size: 0.65rem;
     }

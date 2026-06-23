@@ -480,16 +480,26 @@ class game {
 
         // 1. Groups Map.
         $usergroupsmap = [];
-        $sqlgroups = "SELECT gm.userid, g.name
+        $allgroupids = [];
+        $sqlgroups = "SELECT gm.userid, g.id AS groupid, g.name
                         FROM {groups} g
                         JOIN {groups_members} gm ON g.id = gm.groupid
                        WHERE g.courseid = :courseid";
 
         $memberships = $DB->get_recordset_sql($sqlgroups, ['courseid' => $courseid]);
         foreach ($memberships as $rec) {
-            $usergroupsmap[$rec->userid][] = format_string($rec->name);
+            $groupid = (int) $rec->groupid;
+            $usergroupsmap[$rec->userid][] = ['id' => $groupid, 'name' => format_string($rec->name)];
+            $allgroupids[$groupid] = true;
         }
         $memberships->close();
+
+        // PlayerGroup badges (soft dependency), single bulk query reused by both rankings.
+        $groupbadges = [];
+        $hasbadgeapi = method_exists('\mod_playergroup\api\group_info', 'get_badges_for_groups');
+        if ($hasbadgeapi && !empty($allgroupids)) {
+            $groupbadges = \mod_playergroup\api\group_info::get_badges_for_groups(array_keys($allgroupids));
+        }
 
         // SEPARATEGROUPS: build the set of allowed user IDs for individual ranking.
         $alloweduserids = null; // Null = no restriction.
@@ -606,8 +616,18 @@ class game {
             }
 
             // Data Formatting.
-            $mygroups = isset($usergroupsmap[$usr->userid]) ? $usergroupsmap[$usr->userid] : [];
-            $usr->group_name = empty($mygroups) ? '-' : implode(', ', $mygroups);
+            $mygroups = $usergroupsmap[$usr->userid] ?? [];
+            $usr->groups = [];
+            foreach ($mygroups as $grp) {
+                $badge = $groupbadges[$grp['id']] ?? '';
+                $usr->groups[] = [
+                    'name'      => $grp['name'],
+                    'badge'     => $badge,
+                    'has_badge' => ($badge !== ''),
+                ];
+            }
+            $usr->has_groups = !empty($usr->groups);
+            $usr->group_name = empty($mygroups) ? '-' : implode(', ', array_column($mygroups, 'name'));
             $usr->last_score_date = ($usr->currentxp > 0)
                 ? userdate($usr->timemodified, get_string('strftimedatetimeshort', 'langconfig'))
                 : '-';
@@ -654,6 +674,10 @@ class game {
                     $gobj->member_count = $stat->qtd;
                     $gobj->is_my_group = groups_is_member($grp->id, $currentuserid);
 
+                    $badge = $groupbadges[(int) $grp->id] ?? '';
+                    $gobj->badge = $badge;
+                    $gobj->has_badge = ($badge !== '');
+
                     $groupranking[] = $gobj;
                 }
             }
@@ -681,17 +705,6 @@ class game {
                 $grank++;
             }
             unset($g);
-
-            // Enrich with PlayerGroup badges (soft dependency, single bulk query).
-            $hasbadgeapi = method_exists('\mod_playergroup\api\group_info', 'get_badges_for_groups');
-            if (!empty($groupranking) && $hasbadgeapi) {
-                $rankgroupids = array_map(fn($g) => $g->id, $groupranking);
-                $badges = \mod_playergroup\api\group_info::get_badges_for_groups($rankgroupids);
-                foreach ($groupranking as $g) {
-                    $g->badge = $badges[$g->id] ?? '';
-                    $g->has_badge = ($g->badge !== '');
-                }
-            }
         }
 
         return ['individual' => $individualranking, 'groups' => $groupranking];
