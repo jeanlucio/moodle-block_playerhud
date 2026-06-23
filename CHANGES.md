@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.5.4] — 2026-06-23
+
+### Added
+- Student avatars now appear in the individual ranking: each student's equipped
+  avatar (image or emoji) is shown, falling back to their Moodle profile picture
+  when none is equipped.
+- Group badges are shown in the ranking when the optional PlayerGroup integration
+  is present — next to each student's group in the individual ranking and before
+  the group name in the group ranking — using a default shield badge for groups
+  with none configured. Requires `mod_playergroup` 1.2.4+ for the badge reads
+  (the integration stays optional via a soft dependency check).
+
+### Fixed
+- The hub-personal AI tier now honours the teacher's personal OpenAI-compatible
+  endpoint URL and model configured in the PlayerGames hub. Previously the
+  personal key was paired with the hub's site-level endpoint, so a custom
+  personal endpoint and model were ignored.
+
 ## [v1.5.3] — 2026-06-20
 
 ### Added
