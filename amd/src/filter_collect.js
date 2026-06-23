@@ -343,6 +343,15 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
 
     if (resp.game_data) {
         updateHud(resp.game_data, resp.item_data);
+
+        if (resp.game_data.leveled_up) {
+            const filterCfg = window.block_playerhud_filter || {};
+            if (filterCfg.levelupImg) {
+                require(['block_playerhud/levelup'], (Levelup) => {
+                    Levelup.celebrate(resp.game_data.level, filterCfg.levelupImg);
+                });
+            }
+        }
     }
 };
 

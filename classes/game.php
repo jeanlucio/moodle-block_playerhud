@@ -186,6 +186,15 @@ class game {
         }
         $stats = self::get_game_stats($config, $instanceid, $player->currentxp);
 
+        // Detect a level boundary crossed by this collection. Compare the level before the
+        // award (XP minus what was just earned) against the post-award level.
+        $oldlevel = self::xp_to_level(
+            (int)$player->currentxp - $earnedxp,
+            (int)$stats['xp_per_level'],
+            (int)$stats['max_levels']
+        );
+        $leveledup = ($earnedxp > 0 && (int)$stats['level'] > $oldlevel);
+
         // Prepare Item Data for Stash update.
         $context = \context_block::instance($instanceid);
         $media = \block_playerhud\utils::get_item_display_data($item, $context);
@@ -226,11 +235,34 @@ class game {
                 'total_game_xp' => (int)$stats['total_game_xp'],
                 'level_class' => $stats['level_class'],
                 'is_win' => ($player->currentxp >= $stats['total_game_xp'] && $stats['total_game_xp'] > 0),
+                'leveled_up' => $leveledup,
             ],
             'item_data' => $itemdata,
             'cooldown_deadline' => (int)$cooldowndeadline,
             'limit_reached' => (bool)$limitreached,
         ];
+    }
+
+    /**
+     * Convert an XP amount into a level number using the configured progression.
+     *
+     * Mirrors the level formula used in get_game_stats so callers can compare a
+     * pre-award level against a post-award level without rebuilding the full stats.
+     *
+     * @param int $xp The XP amount to convert.
+     * @param int $xpperlevel XP required per level.
+     * @param int $maxlevels The level cap.
+     * @return int The resulting level (clamped between 1 and $maxlevels).
+     */
+    public static function xp_to_level(int $xp, int $xpperlevel, int $maxlevels): int {
+        if ($xpperlevel <= 0) {
+            return 1;
+        }
+        $rawlevel = 1 + (int) floor($xp / $xpperlevel);
+        if ($rawlevel > $maxlevels) {
+            return $maxlevels;
+        }
+        return max(1, $rawlevel);
     }
 
     /**
@@ -294,8 +326,7 @@ class game {
         );
         $totalgamexp += (int)$questxp;
 
-        $rawlevel = 1 + floor($currentxp / $xpperlevel);
-        $level = ($rawlevel > $maxlevels) ? $maxlevels : $rawlevel;
+        $level = self::xp_to_level((int)$currentxp, $xpperlevel, $maxlevels);
 
         $xpfornextlevel = 0;
         $ismaxlevel = ($level >= $maxlevels);

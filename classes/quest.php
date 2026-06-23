@@ -321,6 +321,10 @@ class quest {
             throw new \moodle_exception('error_quest_requirements', 'block_playerhud');
         }
 
+        // Level before the reward is delivered (used to detect a level-up below).
+        $oldlevel = (int)$stats['level'];
+        $leveledupto = 0;
+
         // 4. Deliver Rewards (Transaction start).
         $transaction = $DB->start_delegated_transaction();
         try {
@@ -341,6 +345,15 @@ class quest {
                 $DB->update_record('block_playerhud_user', $player);
 
                 $rewardstxt[] = "+{$quest->reward_xp} XP";
+
+                $newlevel = \block_playerhud\game::xp_to_level(
+                    (int)$player->currentxp,
+                    (int)$stats['xp_per_level'],
+                    (int)$stats['max_levels']
+                );
+                if ($newlevel > $oldlevel) {
+                    $leveledupto = $newlevel;
+                }
             }
 
             // Item Reward.
@@ -359,6 +372,13 @@ class quest {
             }
 
             $transaction->allow_commit();
+
+            // Flash a transient flag so the page reloaded after the claim redirect can
+            // fire the level-up celebration once. Set after commit (core table, no rollback).
+            if ($leveledupto > 0) {
+                set_user_preference('block_playerhud_levelup', $leveledupto, $userid);
+            }
+
             $separator = get_string('connector_and', 'block_playerhud');
             return implode($separator, $rewardstxt);
         } catch (\Exception $e) {

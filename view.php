@@ -359,6 +359,15 @@ if ($isoptin) {
         ],
     ];
     $PAGE->requires->js_call_amd('block_playerhud/view', 'init', [$jsvars]);
+
+    // Fire the level-up celebration once if a reward (e.g. a quest claim) crossed a level
+    // boundary on the previous request. The flag is set server-side and cleared on read.
+    $levelupflash = (int)get_user_preferences('block_playerhud_levelup', 0);
+    if ($levelupflash > 0) {
+        unset_user_preference('block_playerhud_levelup');
+        $levelupimg = (new moodle_url('/blocks/playerhud/pix/huddy/levelup.png'))->out(false);
+        $PAGE->requires->js_call_amd('block_playerhud/levelup', 'celebrate', [$levelupflash, $levelupimg]);
+    }
 }
 
 echo $OUTPUT->footer();

@@ -1,0 +1,128 @@
+// Level-up celebration overlay.
+//
+// The overlay is appended directly to <body> by amd/src/levelup.js, so it is
+// scoped by its own plugin-prefixed class (not an ancestor) — the same approach
+// used for the hoisted Bootstrap modals.
+
+.ph-levelup-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    cursor: pointer;
+
+    &.ph-levelup-in {
+        opacity: 1;
+    }
+
+    &.ph-levelup-out {
+        opacity: 0;
+    }
+
+    .ph-levelup-card {
+        position: relative;
+        max-width: 360px;
+        width: 100%;
+        padding: 1.5rem 1.25rem 1.25rem;
+        text-align: center;
+        background: var(--card-bg, #fff);
+        border-radius: 1rem;
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.4);
+        transform: scale(0.8);
+        transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        cursor: default;
+    }
+
+    .ph-levelup-close {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--body-color, #1d2125);
+        cursor: pointer;
+
+        &:hover,
+        &:focus {
+            background: rgba(0, 0, 0, 0.08);
+        }
+    }
+
+    &.ph-levelup-in .ph-levelup-card {
+        transform: scale(1);
+    }
+
+    .ph-levelup-title {
+        font-size: 1.6rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--primary, #0f6cbf);
+        margin-bottom: 0.5rem;
+    }
+
+    .ph-levelup-figure {
+        // Tunable anchor and tilt of the level number over the shield in the artwork.
+        --ph-lu-x: 78%;
+        --ph-lu-y: 61%;
+        --ph-lu-rot: 9deg;
+        position: relative;
+        display: block;
+        margin: 0 auto;
+        max-width: 260px;
+    }
+
+    .ph-levelup-img {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    .ph-levelup-number {
+        position: absolute;
+        left: var(--ph-lu-x);
+        top: var(--ph-lu-y);
+        transform: translate(-50%, -50%) rotate(var(--ph-lu-rot));
+        font-size: 2.4rem;
+        font-weight: 800;
+        line-height: 1;
+        color: #fff;
+        text-shadow:
+            0 0 4px rgba(0, 0, 0, 0.6),
+            0 2px 3px rgba(0, 0, 0, 0.5);
+    }
+
+    .ph-levelup-subtitle {
+        margin-top: 0.75rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--body-color, #1d2125);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .ph-levelup-overlay,
+    .ph-levelup-overlay .ph-levelup-card {
+        transition: none;
+    }
+
+    .ph-levelup-overlay .ph-levelup-card {
+        transform: none;
+    }
+}
