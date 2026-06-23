@@ -40,7 +40,7 @@
             { "rank": 1, "medal_emoji": "🥇", "fullname": "Alice", "currentxp": 1000, "is_me": true }
         ],
         "groups": [
-            { "rank": 1, "name": "Team A", "average_xp": 500 }
+            { "rank": 1, "name": "Team A", "badge": "🛡️", "has_badge": true, "average_xp": 500 }
         ]
     }
 }}
@@ -149,7 +149,7 @@
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            {{{userpicture}}}
+                                            <span class="ph-rank-avatar">{{{userpicture}}}</span>
                                             <div class="ms-3">
                                                 <div class="fw-bold {{#is_me}}text-primary{{/is_me}}">
                                                     {{fullname}}
@@ -231,7 +231,9 @@
                                         {{/medal_emoji}}
                                         {{^medal_emoji}}{{rank}}{{/medal_emoji}}
                                     </td>
-                                    <td class="fw-bold text-dark">{{name}}</td>
+                                    <td class="fw-bold text-dark">
+                                        {{#has_badge}}<span class="ph-group-badge me-1" aria-hidden="true">{{badge}}</span>{{/has_badge}}{{name}}
+                                    </td>
                                     <td class="text-center">
                                         <span class="badge bg-light text-dark border">{{member_count}}</span>
                                     </td>

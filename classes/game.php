@@ -680,6 +680,18 @@ class game {
                 $lastgtime = $g->last_xp_change;
                 $grank++;
             }
+            unset($g);
+
+            // Enrich with PlayerGroup badges (soft dependency, single bulk query).
+            $hasbadgeapi = method_exists('\mod_playergroup\api\group_info', 'get_badges_for_groups');
+            if (!empty($groupranking) && $hasbadgeapi) {
+                $rankgroupids = array_map(fn($g) => $g->id, $groupranking);
+                $badges = \mod_playergroup\api\group_info::get_badges_for_groups($rankgroupids);
+                foreach ($groupranking as $g) {
+                    $g->badge = $badges[$g->id] ?? '';
+                    $g->has_badge = ($g->badge !== '');
+                }
+            }
         }
 
         return ['individual' => $individualranking, 'groups' => $groupranking];

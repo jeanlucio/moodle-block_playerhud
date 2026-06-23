@@ -185,6 +185,9 @@ class tab_ranking implements renderable, templatable {
                 $individual = array_values($individual);
             }
 
+            // Enrich each entry with the equipped avatar (fallback to profile picture).
+            $individual = $this->enrich_userpictures($individual, $output);
+
             // Enrich each entry with teacher-only toggle URL.
             if ($this->isteacher) {
                 $strhide = get_string('ranking_hide_user', 'block_playerhud');
@@ -254,5 +257,73 @@ class tab_ranking implements renderable, templatable {
             'str_col_avg' => get_string('average', 'block_playerhud'),
             'str_col_date' => get_string('str_col_date', 'block_playerhud'),
         ];
+    }
+
+    /**
+     * Enrich each leaderboard entry with the equipped avatar HTML.
+     *
+     * Honours the per-instance avatar preference (block_playerhud_avatar_<instanceid>)
+     * and falls back to the standard Moodle profile picture. Preferences and avatar
+     * item records are bulk-loaded to avoid N+1 queries; rendered avatar HTML is
+     * memoised per item so each distinct avatar is built only once.
+     *
+     * @param array $individual Leaderboard entries (each exposes ->userid and userpic fields).
+     * @param renderer_base $output The renderer.
+     * @return array The same entries, each with a ->userpicture property set.
+     */
+    private function enrich_userpictures(array $individual, renderer_base $output): array {
+        global $DB;
+
+        if (empty($individual)) {
+            return $individual;
+        }
+
+        // 1. Bulk-load the equipped avatar preference for every user (single query).
+        $prefname = 'block_playerhud_avatar_' . $this->instanceid;
+        $prefs = $DB->get_records('user_preferences', ['name' => $prefname], '', 'userid, value');
+
+        $useravatarids = [];
+        foreach ($prefs as $pref) {
+            $itemid = (int) $pref->value;
+            if ($itemid > 0) {
+                $useravatarids[(int) $pref->userid] = $itemid;
+            }
+        }
+
+        // 2. Bulk-load the enabled avatar item records (single query).
+        $items = [];
+        if (!empty($useravatarids)) {
+            $distinctids = array_values(array_unique($useravatarids));
+            [$insql, $inparams] = $DB->get_in_or_equal($distinctids, SQL_PARAMS_NAMED, 'it');
+            $inparams['iid'] = $this->instanceid;
+            $items = $DB->get_records_select(
+                'block_playerhud_items',
+                "id $insql AND blockinstanceid = :iid AND enabled = 1",
+                $inparams
+            );
+        }
+
+        // 3. Render per entry, memoising avatar HTML per item.
+        $context = \context_block::instance($this->instanceid);
+        $rendered = [];
+        foreach ($individual as $entry) {
+            $userid = (int) $entry->userid;
+            $itemid = $useravatarids[$userid] ?? 0;
+
+            if ($itemid > 0 && isset($items[$itemid])) {
+                if (!isset($rendered[$itemid])) {
+                    $rendered[$itemid] = \block_playerhud\utils::get_avatar_html(
+                        $items[$itemid],
+                        $context,
+                        $output
+                    );
+                }
+                $entry->userpicture = $rendered[$itemid];
+            } else {
+                $entry->userpicture = $output->user_picture($entry, ['size' => 45, 'class' => 'rounded-circle']);
+            }
+        }
+
+        return $individual;
     }
 }

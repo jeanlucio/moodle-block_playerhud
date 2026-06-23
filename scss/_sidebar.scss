@@ -42,6 +42,21 @@
         font-size: 3.5rem;
     }
 
+    .ph-rank-avatar {
+        flex-shrink: 0;
+
+        .ph-avatar-img,
+        .ph-avatar-emoji {
+            width: 45px;
+            height: 45px;
+            border-width: 2px;
+        }
+
+        .ph-avatar-emoji {
+            font-size: 1.6rem;
+        }
+    }
+
     .ph-sidebar-avatar-container {
         display: flex;
         justify-content: center;
