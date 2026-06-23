@@ -113,6 +113,7 @@ class collect_item extends external_api {
                 'level_class' => new external_value(PARAM_TEXT, 'CSS Class', VALUE_OPTIONAL),
                 'is_win' => new external_value(PARAM_BOOL, 'Is Win', VALUE_OPTIONAL),
                 'leveled_up' => new external_value(PARAM_BOOL, 'If this collection raised the level', VALUE_OPTIONAL),
+                'won' => new external_value(PARAM_BOOL, 'If this collection reached 100% of the game', VALUE_OPTIONAL),
             ], 'Game Stats', VALUE_OPTIONAL),
             'item_data' => new external_single_structure([
                 'name' => new external_value(PARAM_TEXT, 'Item Name', VALUE_OPTIONAL),

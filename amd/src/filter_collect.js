@@ -345,16 +345,19 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
         updateHud(resp.game_data, resp.item_data);
     }
 
-    // Fire at most one celebration overlay for this collection. The first-coin
-    // milestone is independent of XP (coins grant none), so it never coincides
-    // with a level-up.
+    // Fire at most one celebration overlay for this collection, by priority:
+    // beating the game (100%) > level-up > first PlayerCoin. The coin milestone is
+    // independent of XP (coins grant none), so it never coincides with the others.
     const filterCfg = window.block_playerhud_filter || {};
+    const gameData = resp.game_data || {};
     let celebration = null;
 
-    if (resp.milestone === 'coin' && filterCfg.coinImg) {
+    if (gameData.won && filterCfg.winImg) {
+        celebration = {type: 'win', image: filterCfg.winImg};
+    } else if (gameData.leveled_up && filterCfg.levelupImg) {
+        celebration = {type: 'levelup', level: gameData.level, image: filterCfg.levelupImg};
+    } else if (resp.milestone === 'coin' && filterCfg.coinImg) {
         celebration = {type: 'coin', image: filterCfg.coinImg};
-    } else if (resp.game_data && resp.game_data.leveled_up && filterCfg.levelupImg) {
-        celebration = {type: 'levelup', level: resp.game_data.level, image: filterCfg.levelupImg};
     }
 
     if (celebration) {

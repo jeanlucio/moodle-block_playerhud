@@ -21,6 +21,4 @@ playerhud.code-workspace
 .claude
 .docs
 
-# Mascote Huddy — poses ainda sem uso (reservadas para features futuras)
-pix/huddy/achievement.png
-pix/huddy/quest.png
+# Mascote Huddy — todas as poses agora em uso pelos pop-ups de comemoração.

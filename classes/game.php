@@ -202,6 +202,13 @@ class game {
         );
         $leveledup = ($earnedxp > 0 && (int)$stats['level'] > $oldlevel);
 
+        // Detect crossing 100% of the game's total XP ("beating the game") with this
+        // collection. Compared as a transition so it fires once per crossing.
+        $gametotal = (int)$stats['total_game_xp'];
+        $won = ($gametotal > 0
+            && (int)$player->currentxp >= $gametotal
+            && ((int)$player->currentxp - $earnedxp) < $gametotal);
+
         // One-time milestone: the very first PlayerCoin this user collects in this
         // instance. Stored as a bit in the player's milestones bitmask so it shows once.
         $milestone = '';
@@ -254,6 +261,7 @@ class game {
                 'level_class' => $stats['level_class'],
                 'is_win' => ($player->currentxp >= $stats['total_game_xp'] && $stats['total_game_xp'] > 0),
                 'leveled_up' => $leveledup,
+                'won' => $won,
             ],
             'item_data' => $itemdata,
             'cooldown_deadline' => (int)$cooldowndeadline,

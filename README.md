@@ -31,7 +31,7 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
 * 🏆 **Ranking System:** Leaderboard with tie-breaker logic and visibility controls.
 * 🔐 **Optional Participation:** Students may choose to opt in or opt out of the gamification system.
 * ⚡ **Real-Time Updates:** AJAX-based collection using Moodle’s `core/ajax`.
-* 🎉 **Mascot Celebration Popups:** Animated popups featuring the Huddy mascot celebrate key moments — **leveling up** (showing the level reached) and **finding your first PlayerCoin**. Fully accessible (keyboard focus trap, focus restore, screen-reader labels); the first-PlayerCoin popup is shown only once.
+* 🎉 **Mascot Celebration Popups:** Animated popups featuring the Huddy mascot celebrate key moments — **leveling up** (showing the level reached), **beating the game** (reaching 100% of the course score), **completing your first quest** (a one-time nudge to go claim its reward), and **finding your first PlayerCoin**. Fully accessible (keyboard focus trap, focus restore, screen-reader labels). The first-quest and first-PlayerCoin popups are shown only once each.
   * *Customizing the PlayerCoin:* you may freely change the PlayerCoin item's image or emoji — the popup is unaffected and always shows the mascot. The popup text, however, is fixed to the name **“PlayerCoin”**, so if you rename the item, keep that name or the popup wording will no longer match.
 * 🧙 **RPG Classes:** Define character classes with portraits, karma alignment, and multi-tier evolution images.
 * 📖 **Story & Chapters:** Branching narrative system with choice nodes and per-class story paths.
@@ -399,7 +399,7 @@ Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo q
 * 🏆 **Ranking:** Classificação com critério de desempate e controle de visibilidade.
 * 🔐 **Participação Opcional:** O aluno pode escolher participar ou não da gamificação.
 * ⚡ **Atualização em Tempo Real:** Coleta via `core/ajax`.
-* 🎉 **Pop-ups Comemorativos com o Mascote:** Pop-ups animados com o mascote Huddy comemoram momentos-chave — **subir de nível** (mostrando o nível alcançado) e **encontrar a primeira PlayerCoin**. Totalmente acessível (foco preso no teclado, devolução de foco, rótulos para leitor de tela); o pop-up da primeira PlayerCoin aparece uma única vez.
+* 🎉 **Pop-ups Comemorativos com o Mascote:** Pop-ups animados com o mascote Huddy comemoram momentos-chave — **subir de nível** (mostrando o nível alcançado), **zerar o jogo** (alcançar 100% da pontuação do curso), **concluir a primeira missão** (um aviso único para ir resgatar a recompensa) e **encontrar a primeira PlayerCoin**. Totalmente acessível (foco preso no teclado, devolução de foco, rótulos para leitor de tela). Os pop-ups da primeira missão e da primeira PlayerCoin aparecem uma única vez cada.
   * *Personalizando a PlayerCoin:* você pode trocar a imagem ou o emoji do item PlayerCoin à vontade — o pop-up não é afetado e sempre mostra o mascote. Já o texto do pop-up é fixo no nome **“PlayerCoin”**; portanto, se renomear o item, mantenha esse nome ou o texto do pop-up deixará de corresponder.
 * 🧙 **Classes RPG:** Defina classes de personagem com retratos, alinhamento de karma e imagens de evolução por tier.
 * 📖 **História e Capítulos:** Sistema narrativo ramificado com nós de escolha e caminhos por classe.

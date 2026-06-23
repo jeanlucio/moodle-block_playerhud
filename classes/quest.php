@@ -321,9 +321,10 @@ class quest {
             throw new \moodle_exception('error_quest_requirements', 'block_playerhud');
         }
 
-        // Level before the reward is delivered (used to detect a level-up below).
+        // Snapshot before the reward is delivered, to detect celebrations afterwards.
         $oldlevel = (int)$stats['level'];
-        $leveledupto = 0;
+        $oldxp = (int)$player->currentxp;
+        $gametotal = (int)$stats['total_game_xp'];
 
         // 4. Deliver Rewards (Transaction start).
         $transaction = $DB->start_delegated_transaction();
@@ -345,15 +346,6 @@ class quest {
                 $DB->update_record('block_playerhud_user', $player);
 
                 $rewardstxt[] = "+{$quest->reward_xp} XP";
-
-                $newlevel = \block_playerhud\game::xp_to_level(
-                    (int)$player->currentxp,
-                    (int)$stats['xp_per_level'],
-                    (int)$stats['max_levels']
-                );
-                if ($newlevel > $oldlevel) {
-                    $leveledupto = $newlevel;
-                }
             }
 
             // Item Reward.
@@ -373,10 +365,27 @@ class quest {
 
             $transaction->allow_commit();
 
-            // Flash a transient flag so the page reloaded after the claim redirect can
-            // fire the level-up celebration once. Set after commit (core table, no rollback).
-            if ($leveledupto > 0) {
-                set_user_preference('block_playerhud_levelup', $leveledupto, $userid);
+            // Pick a single celebration to flash on the page reloaded after the claim
+            // redirect, by priority: beating the game (100%) > level-up > first quest
+            // claimed. The first-quest milestone bit is only burned when it is the one
+            // actually shown, so a claim that is overshadowed still shows it next time.
+            $newxp = (int)$player->currentxp;
+            $won = ($gametotal > 0 && $newxp >= $gametotal && $oldxp < $gametotal);
+            $newlevel = \block_playerhud\game::xp_to_level(
+                $newxp,
+                (int)$stats['xp_per_level'],
+                (int)$stats['max_levels']
+            );
+
+            $celebration = '';
+            if ($won) {
+                $celebration = 'win';
+            } else if ($newlevel > $oldlevel) {
+                $celebration = 'levelup:' . $newlevel;
+            }
+
+            if ($celebration !== '') {
+                set_user_preference('block_playerhud_celebration', $celebration, $userid);
             }
 
             $separator = get_string('connector_and', 'block_playerhud');

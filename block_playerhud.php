@@ -386,6 +386,21 @@ class block_playerhud extends block_base {
             ];
             $this->page->requires->js_call_amd('block_playerhud/view', 'init', [$jsvars]);
 
+            // First-quest milestone: nudge the student once, the first time a quest reward
+            // becomes claimable, pointing them to the Quests tab to collect it.
+            $firstquestpending = !$isteacher && $hasclaimable
+                && !((int)$player->milestones & \block_playerhud\game::MILESTONE_FIRSTQUEST);
+            if ($firstquestpending) {
+                $player->milestones = (int)$player->milestones | \block_playerhud\game::MILESTONE_FIRSTQUEST;
+                $player->timemodified = time();
+                $DB->update_record('block_playerhud_user', $player);
+
+                $this->page->requires->js_call_amd('block_playerhud/levelup', 'celebrate', [[
+                    'type'  => 'firstquest',
+                    'image' => (new \moodle_url('/blocks/playerhud/pix/huddy/quest.png'))->out(false),
+                ]]);
+            }
+
             $this->content->text .= $OUTPUT->render_from_template('block_playerhud/modal_item', []);
         } catch (\moodle_exception $me) {
             debugging($me->getMessage(), DEBUG_NORMAL);

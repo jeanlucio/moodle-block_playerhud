@@ -360,17 +360,29 @@ if ($isoptin) {
     ];
     $PAGE->requires->js_call_amd('block_playerhud/view', 'init', [$jsvars]);
 
-    // Fire the level-up celebration once if a reward (e.g. a quest claim) crossed a level
-    // boundary on the previous request. The flag is set server-side and cleared on read.
-    $levelupflash = (int)get_user_preferences('block_playerhud_levelup', 0);
-    if ($levelupflash > 0) {
-        unset_user_preference('block_playerhud_levelup');
-        $levelupimg = (new moodle_url('/blocks/playerhud/pix/huddy/levelup.png'))->out(false);
-        $PAGE->requires->js_call_amd('block_playerhud/levelup', 'celebrate', [[
-            'type'  => 'levelup',
-            'level' => $levelupflash,
-            'image' => $levelupimg,
-        ]]);
+    // Fire a single celebration once if a reward (e.g. a quest claim) earned one on the
+    // previous request. The flag is set server-side, by priority, and cleared on read.
+    $celebration = (string)get_user_preferences('block_playerhud_celebration', '');
+    if ($celebration !== '') {
+        unset_user_preference('block_playerhud_celebration');
+
+        [$celebtype, $celebparam] = array_pad(explode(':', $celebration, 2), 2, '');
+        $celebimages = [
+            'win'        => 'achievement.png',
+            'levelup'    => 'levelup.png',
+            'firstquest' => 'quest.png',
+        ];
+
+        if (isset($celebimages[$celebtype])) {
+            $celebopts = [
+                'type'  => $celebtype,
+                'image' => (new moodle_url('/blocks/playerhud/pix/huddy/' . $celebimages[$celebtype]))->out(false),
+            ];
+            if ($celebtype === 'levelup') {
+                $celebopts['level'] = (int)$celebparam;
+            }
+            $PAGE->requires->js_call_amd('block_playerhud/levelup', 'celebrate', [$celebopts]);
+        }
     }
 }
 
