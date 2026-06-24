@@ -307,79 +307,23 @@ class scenes {
                 $currentnodeid = $DB->insert_record('block_playerhud_story_nodes', $record);
             }
 
-            $previousdestid = 0;
-            $repeatscount   = optional_param('repeats', 0, PARAM_INT);
+            $repeatscount = optional_param('repeats', 0, PARAM_INT);
 
-            // DML returns these IDs as strings; cast to int so the strict
-            // in_array() checks below match the PARAM_INT submitted values.
-            $validnodeids  = array_map('intval', $DB->get_fieldset_select(
-                'block_playerhud_story_nodes',
-                'id',
-                'chapterid = ?',
-                [$chapterid]
-            ));
-            $validclassids = array_map('intval', $DB->get_fieldset_select(
-                'block_playerhud_classes',
-                'id',
-                'blockinstanceid = ?',
-                [$instanceid]
-            ));
-            $validitemids  = array_map('intval', $DB->get_fieldset_select(
-                'block_playerhud_items',
-                'id',
-                'blockinstanceid = ?',
-                [$instanceid]
-            ));
-
+            $submittedchoices = [];
             for ($i = 0; $i < $repeatscount; $i++) {
-                $textval = optional_param("choice_text_$i", '', PARAM_TEXT);
-
-                if (!empty($textval)) {
-                    $ch         = new \stdClass();
-                    $ch->nodeid = $currentnodeid;
-                    $ch->text   = $textval;
-
-                    $rawnextid = optional_param("choice_next_$i", 0, PARAM_INT);
-
-                    if ($rawnextid === -1) {
-                        $newnode            = new \stdClass();
-                        $newnode->chapterid = $chapterid;
-                        $newnode->content   = get_string('scene_auto_from', 'block_playerhud', s($textval));
-                        $newnode->is_start  = 0;
-                        $createdid          = $DB->insert_record('block_playerhud_story_nodes', $newnode);
-                        $ch->next_nodeid    = $createdid;
-                        $previousdestid     = $createdid;
-                    } else if ($rawnextid === -2) {
-                        if ($previousdestid > 0) {
-                            $ch->next_nodeid = $previousdestid;
-                        } else {
-                            $newnode            = new \stdClass();
-                            $newnode->chapterid = $chapterid;
-                            $newnode->content   = get_string('scene_auto_fallback', 'block_playerhud');
-                            $newnode->is_start  = 0;
-                            $createdid          = $DB->insert_record('block_playerhud_story_nodes', $newnode);
-                            $ch->next_nodeid    = $createdid;
-                            $previousdestid     = $createdid;
-                        }
-                    } else {
-                        $ch->next_nodeid = in_array($rawnextid, $validnodeids, true) ? $rawnextid : 0;
-                        $previousdestid  = $ch->next_nodeid;
-                    }
-
-                    $reqclassid        = optional_param("choice_req_class_$i", 0, PARAM_INT);
-                    $setclassid        = optional_param("choice_set_class_$i", 0, PARAM_INT);
-                    $costitemid        = optional_param("choice_cost_$i", 0, PARAM_INT);
-                    $ch->req_class_id  = in_array($reqclassid, $validclassids, true) ? $reqclassid : 0;
-                    $ch->req_karma_min = optional_param("choice_req_karma_$i", 0, PARAM_INT);
-                    $ch->karma_delta   = optional_param("choice_karma_$i", 0, PARAM_INT);
-                    $ch->set_class_id  = in_array($setclassid, $validclassids, true) ? $setclassid : 0;
-                    $ch->cost_itemid   = in_array($costitemid, $validitemids, true) ? $costitemid : 0;
-                    $qty               = optional_param("choice_cost_qty_$i", 1, PARAM_INT);
-                    $ch->cost_item_qty = max(1, $qty);
-
-                    $DB->insert_record('block_playerhud_choices', $ch);
-                }
+                $submittedchoices[] = [
+                    'text'          => optional_param("choice_text_$i", '', PARAM_TEXT),
+                    'next_nodeid'   => optional_param("choice_next_$i", 0, PARAM_INT),
+                    'req_class_id'  => optional_param("choice_req_class_$i", 0, PARAM_INT),
+                    'req_karma_min' => optional_param("choice_req_karma_$i", 0, PARAM_INT),
+                    'karma_delta'   => optional_param("choice_karma_$i", 0, PARAM_INT),
+                    'set_class_id'  => optional_param("choice_set_class_$i", 0, PARAM_INT),
+                    'cost_itemid'   => optional_param("choice_cost_$i", 0, PARAM_INT),
+                    'cost_item_qty' => optional_param("choice_cost_qty_$i", 1, PARAM_INT),
+                ];
             }
+
+            $this->save_choices($currentnodeid, $chapterid, $instanceid, $submittedchoices);
 
             if (isset($data->add_choice_btn)) {
                 redirect(new moodle_url('/blocks/playerhud/edit_scene.php', [
@@ -402,5 +346,103 @@ class scenes {
         $output .= $mform->render();
         $output .= $OUTPUT->footer();
         return $output;
+    }
+
+    /**
+     * Persists the submitted choices for a story node.
+     *
+     * Each target id (next node, required/granted class, cost item) is validated
+     * against the ids belonging to the chapter/instance, so an unknown id falls
+     * back to zero. A next-node value of -1 creates a fresh follow-up node and -2
+     * reuses the previously created one (or a fallback).
+     *
+     * @param int $nodeid The node the choices belong to.
+     * @param int $chapterid The owning chapter, used to scope and create nodes.
+     * @param int $instanceid The block instance, used to scope classes and items.
+     * @param array $submittedchoices List of choice rows keyed by field name.
+     * @return void
+     */
+    public function save_choices(int $nodeid, int $chapterid, int $instanceid, array $submittedchoices): void {
+        global $DB;
+
+        $validnodeids = array_map('intval', $DB->get_fieldset_select(
+            'block_playerhud_story_nodes',
+            'id',
+            'chapterid = ?',
+            [$chapterid]
+        ));
+        $validclassids = array_map('intval', $DB->get_fieldset_select(
+            'block_playerhud_classes',
+            'id',
+            'blockinstanceid = ?',
+            [$instanceid]
+        ));
+        $validitemids = array_map('intval', $DB->get_fieldset_select(
+            'block_playerhud_items',
+            'id',
+            'blockinstanceid = ?',
+            [$instanceid]
+        ));
+
+        $previousdestid = 0;
+
+        foreach ($submittedchoices as $submitted) {
+            $textval = $submitted['text'] ?? '';
+            if (empty($textval)) {
+                continue;
+            }
+
+            $ch         = new \stdClass();
+            $ch->nodeid = $nodeid;
+            $ch->text   = $textval;
+
+            $rawnextid = (int) ($submitted['next_nodeid'] ?? 0);
+            if ($rawnextid === -1) {
+                $content         = get_string('scene_auto_from', 'block_playerhud', s($textval));
+                $ch->next_nodeid = $this->create_followup_node($chapterid, $content);
+                $previousdestid  = $ch->next_nodeid;
+            } else if ($rawnextid === -2) {
+                if ($previousdestid > 0) {
+                    $ch->next_nodeid = $previousdestid;
+                } else {
+                    $content         = get_string('scene_auto_fallback', 'block_playerhud');
+                    $ch->next_nodeid = $this->create_followup_node($chapterid, $content);
+                    $previousdestid  = $ch->next_nodeid;
+                }
+            } else {
+                $ch->next_nodeid = in_array($rawnextid, $validnodeids, true) ? $rawnextid : 0;
+                $previousdestid  = $ch->next_nodeid;
+            }
+
+            $reqclassid        = (int) ($submitted['req_class_id'] ?? 0);
+            $setclassid        = (int) ($submitted['set_class_id'] ?? 0);
+            $costitemid        = (int) ($submitted['cost_itemid'] ?? 0);
+            $ch->req_class_id  = in_array($reqclassid, $validclassids, true) ? $reqclassid : 0;
+            $ch->req_karma_min = (int) ($submitted['req_karma_min'] ?? 0);
+            $ch->karma_delta   = (int) ($submitted['karma_delta'] ?? 0);
+            $ch->set_class_id  = in_array($setclassid, $validclassids, true) ? $setclassid : 0;
+            $ch->cost_itemid   = in_array($costitemid, $validitemids, true) ? $costitemid : 0;
+            $ch->cost_item_qty = max(1, (int) ($submitted['cost_item_qty'] ?? 1));
+
+            $DB->insert_record('block_playerhud_choices', $ch);
+        }
+    }
+
+    /**
+     * Creates an empty follow-up story node in the chapter.
+     *
+     * @param int $chapterid The owning chapter.
+     * @param string $content The node content.
+     * @return int The new node ID.
+     */
+    private function create_followup_node(int $chapterid, string $content): int {
+        global $DB;
+
+        $node            = new \stdClass();
+        $node->chapterid = $chapterid;
+        $node->content   = $content;
+        $node->is_start  = 0;
+
+        return (int) $DB->insert_record('block_playerhud_story_nodes', $node);
     }
 }
