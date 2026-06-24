@@ -505,4 +505,79 @@ class behat_block_playerhud extends behat_base {
             return (bool) $this->getSession()->evaluateScript($js);
         }, false, 15);
     }
+
+    /**
+     * Navigates to the student PlayerHUD dashboard (view.php) for a course.
+     *
+     * The mascot introduction popup is fired on this page, so this step is
+     * needed to reach it.
+     *
+     * @param string $shortname Course shortname.
+     * @When I open the PlayerHUD dashboard for course :shortname
+     */
+    public function i_open_the_playerhud_dashboard(string $shortname): void {
+        global $DB, $CFG;
+
+        $course   = $DB->get_record('course', ['shortname' => $shortname], '*', MUST_EXIST);
+        $context  = context_course::instance($course->id);
+        $instance = $DB->get_record(
+            'block_instances',
+            ['blockname' => 'playerhud', 'parentcontextid' => $context->id],
+            '*',
+            MUST_EXIST
+        );
+
+        $url = $CFG->wwwroot . '/blocks/playerhud/view.php?id=' . $course->id
+            . '&instanceid=' . $instance->id;
+        $this->getSession()->visit($url);
+    }
+
+    /**
+     * Creates an always-completable, unclaimed quest and enables quests on the block,
+     * so a reward is waiting to be claimed (which triggers the first-quest popup).
+     *
+     * @param string $shortname Course shortname.
+     * @Given a claimable PlayerHUD quest exists in course :shortname
+     */
+    public function claimable_playerhud_quest_exists(string $shortname): void {
+        global $DB;
+
+        $course   = $DB->get_record('course', ['shortname' => $shortname], '*', MUST_EXIST);
+        $context  = context_course::instance($course->id);
+        $instance = $DB->get_record(
+            'block_instances',
+            ['blockname' => 'playerhud', 'parentcontextid' => $context->id],
+            '*',
+            MUST_EXIST
+        );
+
+        // The block is added fresh in the background, so a minimal config enabling
+        // quests is enough for the sidebar to compute the claimable state.
+        $config = new \stdClass();
+        $config->enable_quests = 1;
+        $DB->set_field(
+            'block_instances',
+            'configdata',
+            base64_encode(serialize($config)),
+            ['id' => $instance->id]
+        );
+
+        // TYPE_LEVEL (1) with requirement "1" is met by every player (everyone is level 1+).
+        $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid'   => $instance->id,
+            'name'              => 'Welcome Quest',
+            'description'       => '',
+            'type'              => 1,
+            'requirement'       => '1',
+            'req_itemid'        => 0,
+            'reward_xp'         => 10,
+            'reward_itemid'     => 0,
+            'required_class_id' => '0',
+            'image_todo'        => '📋',
+            'image_done'        => '🏅',
+            'enabled'           => 1,
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ]);
+    }
 }
