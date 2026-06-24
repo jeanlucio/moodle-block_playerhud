@@ -591,7 +591,7 @@ class story_manager {
 
         $choices = [];
         foreach ($choicesraw as $ch) {
-            $btnclass    = 'btn-primary';
+            $btnclass    = 'btn-outline-primary';
             $disabled    = false;
             $reqclassname = '';
             $reqclassmet  = true;
