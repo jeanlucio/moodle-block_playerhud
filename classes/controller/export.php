@@ -93,11 +93,13 @@ class export {
                            AND inv.source NOT IN ('revoked', 'consumed')) AS total_items
                   FROM {user} u
                   JOIN {block_playerhud_user} pu ON pu.userid = u.id
+                  JOIN {user_enrolments} ue ON ue.userid = u.id AND ue.status = 0
+                  JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = :enrolcourseid AND e.status = 0
                  WHERE pu.blockinstanceid = :p2
                    $excludeclause
-              ORDER BY pu.currentxp DESC, u.lastname ASC, u.firstname ASC";
+              ORDER BY pu.currentxp DESC, pu.timemodified ASC, u.lastname ASC";
 
-        $params = ['p1' => $instanceid, 'p2' => $instanceid];
+        $params = ['p1' => $instanceid, 'p2' => $instanceid, 'enrolcourseid' => $courseid];
         if (!empty($excludeparams)) {
             $params = array_merge($params, $excludeparams);
         }

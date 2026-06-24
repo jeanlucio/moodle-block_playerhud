@@ -137,7 +137,7 @@ final class export_test extends advanced_testcase {
         $this->resetAfterTest();
         $this->make_instance(100, 20);
 
-        $student = $this->getDataGenerator()->create_user([
+        $student = $this->getDataGenerator()->create_and_enrol($this->course, 'student', [
             'firstname' => 'Ana',
             'lastname'  => 'Silva',
             'email'     => 'ana@example.com',
@@ -170,8 +170,8 @@ final class export_test extends advanced_testcase {
         $this->resetAfterTest();
         $this->make_instance();
 
-        $low = $this->getDataGenerator()->create_user(['email' => 'low@example.com']);
-        $high = $this->getDataGenerator()->create_user(['email' => 'high@example.com']);
+        $low = $this->getDataGenerator()->create_and_enrol($this->course, 'student', ['email' => 'low@example.com']);
+        $high = $this->getDataGenerator()->create_and_enrol($this->course, 'student', ['email' => 'high@example.com']);
         $this->seed_player($low->id, 100);
         $this->seed_player($high->id, 500);
 
@@ -191,7 +191,7 @@ final class export_test extends advanced_testcase {
         $this->resetAfterTest();
         $this->make_instance(100, 5);
 
-        $student = $this->getDataGenerator()->create_user();
+        $student = $this->getDataGenerator()->create_and_enrol($this->course, 'student');
         $this->seed_player($student->id, 999999);
 
         [, $rows] = (new export())->build_export($this->course->id, $this->instanceid);
@@ -208,7 +208,7 @@ final class export_test extends advanced_testcase {
         $this->resetAfterTest();
         $this->make_instance();
 
-        $student = $this->getDataGenerator()->create_user(['email' => 'student@example.com']);
+        $student = $this->getDataGenerator()->create_and_enrol($this->course, 'student', ['email' => 'student@example.com']);
         $this->seed_player($student->id, 100);
 
         $teacher = $this->getDataGenerator()->create_and_enrol($this->course, 'editingteacher');
@@ -235,5 +235,46 @@ final class export_test extends advanced_testcase {
         $this->assertCount(7, $columns);
         $this->assertSame(get_string('firstname'), $columns[0]);
         $this->assertSame(get_string('report_last_action', 'block_playerhud'), $columns[6]);
+    }
+
+    /**
+     * Players who are no longer enrolled in the course are excluded.
+     *
+     * @covers ::build_export
+     */
+    public function test_build_export_excludes_unenrolled_players(): void {
+        $this->resetAfterTest();
+        $this->make_instance();
+
+        $enrolled = $this->getDataGenerator()->create_and_enrol($this->course, 'student', ['email' => 'in@example.com']);
+        $this->seed_player($enrolled->id, 100);
+
+        $gone = $this->getDataGenerator()->create_user();
+        $this->seed_player($gone->id, 500);
+
+        [, $rows] = (new export())->build_export($this->course->id, $this->instanceid);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('in@example.com', $rows[0][2]);
+    }
+
+    /**
+     * Players tied on XP are ordered by their last-action time, oldest first.
+     *
+     * @covers ::build_export
+     */
+    public function test_build_export_breaks_xp_ties_by_timemodified(): void {
+        $this->resetAfterTest();
+        $this->make_instance();
+
+        $recent = $this->getDataGenerator()->create_and_enrol($this->course, 'student', ['email' => 'recent@example.com']);
+        $older = $this->getDataGenerator()->create_and_enrol($this->course, 'student', ['email' => 'older@example.com']);
+        $this->seed_player($recent->id, 100, 2000);
+        $this->seed_player($older->id, 100, 1000);
+
+        [, $rows] = (new export())->build_export($this->course->id, $this->instanceid);
+
+        $this->assertSame('older@example.com', $rows[0][2]);
+        $this->assertSame('recent@example.com', $rows[1][2]);
     }
 }
