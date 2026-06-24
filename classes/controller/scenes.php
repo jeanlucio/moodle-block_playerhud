@@ -310,24 +310,26 @@ class scenes {
             $previousdestid = 0;
             $repeatscount   = optional_param('repeats', 0, PARAM_INT);
 
-            $validnodeids  = $DB->get_fieldset_select(
+            // DML returns these IDs as strings; cast to int so the strict
+            // in_array() checks below match the PARAM_INT submitted values.
+            $validnodeids  = array_map('intval', $DB->get_fieldset_select(
                 'block_playerhud_story_nodes',
                 'id',
                 'chapterid = ?',
                 [$chapterid]
-            );
-            $validclassids = $DB->get_fieldset_select(
+            ));
+            $validclassids = array_map('intval', $DB->get_fieldset_select(
                 'block_playerhud_classes',
                 'id',
                 'blockinstanceid = ?',
                 [$instanceid]
-            );
-            $validitemids  = $DB->get_fieldset_select(
+            ));
+            $validitemids  = array_map('intval', $DB->get_fieldset_select(
                 'block_playerhud_items',
                 'id',
                 'blockinstanceid = ?',
                 [$instanceid]
-            );
+            ));
 
             for ($i = 0; $i < $repeatscount; $i++) {
                 $textval = optional_param("choice_text_$i", '', PARAM_TEXT);
