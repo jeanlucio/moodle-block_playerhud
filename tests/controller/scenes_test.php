@@ -241,4 +241,24 @@ final class scenes_test extends advanced_testcase {
         $this->assertGreaterThan(0, (int) $choice->next_nodeid);
         $this->assertTrue($DB->record_exists('block_playerhud_story_nodes', ['id' => $choice->next_nodeid]));
     }
+
+    /**
+     * The auto-created node stores the choice text raw, not HTML-escaped.
+     *
+     * @covers ::save_choices
+     */
+    public function test_save_choices_auto_created_node_keeps_raw_choice_text(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$instanceid, $chapterid, $nodeid] = $this->make_scene();
+
+        (new scenes())->save_choices($nodeid, $chapterid, $instanceid, [
+            ['text' => 'Say "Nami"', 'next_nodeid' => -1],
+        ]);
+
+        $choice = $DB->get_record('block_playerhud_choices', ['nodeid' => $nodeid], '*', MUST_EXIST);
+        $newnode = $DB->get_record('block_playerhud_story_nodes', ['id' => $choice->next_nodeid], '*', MUST_EXIST);
+        $this->assertStringContainsString('Say "Nami"', $newnode->content);
+        $this->assertStringNotContainsString('&quot;', $newnode->content);
+    }
 }

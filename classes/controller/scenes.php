@@ -398,7 +398,7 @@ class scenes {
 
             $rawnextid = (int) ($submitted['next_nodeid'] ?? 0);
             if ($rawnextid === -1) {
-                $content         = get_string('scene_auto_from', 'block_playerhud', s($textval));
+                $content         = get_string('scene_auto_from', 'block_playerhud', $textval);
                 $ch->next_nodeid = $this->create_followup_node($chapterid, $content);
                 $previousdestid  = $ch->next_nodeid;
             } else if ($rawnextid === -2) {
