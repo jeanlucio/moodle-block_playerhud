@@ -636,7 +636,7 @@ class story_manager {
                     if ($invcount < $costitemqty) {
                         $costitemmet = false;
                         $disabled    = true;
-                        $btnclass    = 'btn-secondary';
+                        $btnclass    = 'btn-outline-secondary';
                     }
                 }
             }
