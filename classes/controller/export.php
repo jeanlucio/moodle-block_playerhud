@@ -34,6 +34,28 @@ class export {
      * @return void
      */
     public function execute(int $courseid, int $instanceid, string $format, string $courseshortname): void {
+        [$columns, $exportdata] = $this->build_export($courseid, $instanceid);
+
+        $filename = 'playerhud_grades_' . format_string($courseshortname) . '_' . date('Ymd');
+
+        // Trigger download using Moodle Native API.
+        // This handles all HTTP headers, buffering, and encoding automatically.
+        \core\dataformat::download_data($filename, $format, $columns, $exportdata);
+        die();
+    }
+
+    /**
+     * Builds the localized columns and the per-student rows for the export.
+     *
+     * Holders of block/playerhud:manage (teachers/managers) are excluded so the
+     * export reflects students only. The level is derived from the stored XP and
+     * capped at the configured maximum.
+     *
+     * @param int $courseid The course ID.
+     * @param int $instanceid The block instance ID.
+     * @return array A two-element list with the columns and the student rows.
+     */
+    public function build_export(int $courseid, int $instanceid): array {
         global $DB;
 
         // 1. Load block configuration.
@@ -110,11 +132,6 @@ class export {
             get_string('items', 'block_playerhud'),
         ];
 
-        $filename = 'playerhud_grades_' . format_string($courseshortname) . '_' . date('Ymd');
-
-        // 6. Trigger download using Moodle Native API.
-        // This handles all HTTP headers, buffering, and encoding automatically.
-        \core\dataformat::download_data($filename, $format, $columns, $exportdata);
-        die();
+        return [$columns, $exportdata];
     }
 }
