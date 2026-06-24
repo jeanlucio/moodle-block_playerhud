@@ -27,7 +27,7 @@ use block_playerhud\utils;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \block_playerhud\game
+ * @coversDefaultClass \block_playerhud\game
  * @covers     \block_playerhud\utils
  */
 final class rpg_classes_test extends advanced_testcase {

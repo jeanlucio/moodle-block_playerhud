@@ -27,7 +27,7 @@ use block_playerhud\story_manager;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \block_playerhud\story_manager
+ * @coversDefaultClass \block_playerhud\story_manager
  */
 final class story_manager_test extends advanced_testcase {
     /** @var int Block instance ID shared across test methods. */
