@@ -77,9 +77,10 @@ final class export_test extends advanced_testcase {
      *
      * @param int $userid User ID.
      * @param int $xp Current XP.
+     * @param int|null $timemodified Last-action timestamp (defaults to now).
      * @return void
      */
-    protected function seed_player(int $userid, int $xp): void {
+    protected function seed_player(int $userid, int $xp, ?int $timemodified = null): void {
         global $DB;
 
         $DB->insert_record('block_playerhud_user', (object) [
@@ -87,7 +88,7 @@ final class export_test extends advanced_testcase {
             'userid'          => $userid,
             'currentxp'       => $xp,
             'timecreated'     => time(),
-            'timemodified'    => time(),
+            'timemodified'    => $timemodified ?? time(),
         ]);
     }
 
@@ -127,7 +128,8 @@ final class export_test extends advanced_testcase {
     }
 
     /**
-     * A student row carries the name, email, derived level, XP and live item count.
+     * A student row carries the name, email, derived level, XP, live item count
+     * and the formatted last-action date.
      *
      * @covers ::build_export
      */
@@ -140,7 +142,8 @@ final class export_test extends advanced_testcase {
             'lastname'  => 'Silva',
             'email'     => 'ana@example.com',
         ]);
-        $this->seed_player($student->id, 250);
+        $when = 1747000000;
+        $this->seed_player($student->id, 250, $when);
 
         $itemid = $this->make_item();
         $this->give_item($student->id, $itemid);
@@ -151,7 +154,11 @@ final class export_test extends advanced_testcase {
 
         $this->assertCount(1, $rows);
         // Level = floor(250 / 100) + 1 = 3; revoked item is not counted.
-        $this->assertSame(['Ana', 'Silva', 'ana@example.com', 3, 250, 2], $rows[0]);
+        $expecteddate = userdate($when, get_string('strftimedatetime', 'langconfig'));
+        $this->assertSame(
+            ['Ana', 'Silva', 'ana@example.com', 3, 250, 2, $expecteddate],
+            $rows[0]
+        );
     }
 
     /**
@@ -225,7 +232,8 @@ final class export_test extends advanced_testcase {
         [$columns, $rows] = (new export())->build_export($this->course->id, $this->instanceid);
 
         $this->assertSame([], $rows);
-        $this->assertCount(6, $columns);
+        $this->assertCount(7, $columns);
         $this->assertSame(get_string('firstname'), $columns[0]);
+        $this->assertSame(get_string('report_last_action', 'block_playerhud'), $columns[6]);
     }
 }

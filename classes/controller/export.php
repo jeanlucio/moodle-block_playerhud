@@ -84,7 +84,7 @@ class export {
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
 
         // 3. Bulk Query (Zero N+1 Queries) to fetch all relevant student data.
-        $sql = "SELECT u.id, $userfields, u.email, pu.currentxp,
+        $sql = "SELECT u.id, $userfields, u.email, pu.currentxp, pu.timemodified,
                        (SELECT COUNT(inv.id)
                           FROM {block_playerhud_inventory} inv
                           JOIN {block_playerhud_items} it ON inv.itemid = it.id
@@ -118,6 +118,7 @@ class export {
                     $level,
                     (int)$user->currentxp,
                     (int)$user->total_items,
+                    userdate($user->timemodified, get_string('strftimedatetime', 'langconfig')),
                 ];
             }
         }
@@ -130,6 +131,7 @@ class export {
             get_string('level', 'block_playerhud'),
             get_string('xp', 'block_playerhud'),
             get_string('items', 'block_playerhud'),
+            get_string('report_last_action', 'block_playerhud'),
         ];
 
         return [$columns, $exportdata];
