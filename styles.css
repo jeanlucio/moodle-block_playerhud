@@ -2160,6 +2160,18 @@ div.modal-dialog .visually-hidden {
     min-height: 120px;
 }
 
+#ph-story-choices .badge {
+    white-space: normal;
+    font-weight: 600;
+}
+#ph-story-choices .badge.bg-info,
+#ph-story-choices .badge.bg-warning {
+    color: var(--bs-dark, #212529);
+}
+#ph-story-choices .badge.bg-danger {
+    color: var(--bs-white, #fff);
+}
+
 .block_playerhud .ph-header-info,
 .path-blocks-playerhud .ph-header-info {
     min-width: 0;

@@ -182,3 +182,22 @@
 .ph-story-content {
     min-height: 120px;
 }
+
+// Choice sub-labels are badges so they stay legible on any button colour.
+// The explicit text colours guarantee contrast across Bootstrap 4 and 5,
+// where badge defaults differ; the id scope keeps specificity above .badge.
+#ph-story-choices {
+    .badge {
+        white-space: normal;
+        font-weight: 600;
+    }
+
+    .badge.bg-info,
+    .badge.bg-warning {
+        color: var(--bs-dark, #212529);
+    }
+
+    .badge.bg-danger {
+        color: var(--bs-white, #fff);
+    }
+}

@@ -135,44 +135,43 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                 textSpan.textContent = ch.text;
                 btn.appendChild(textSpan);
 
-                // Requirement: class.
+                // Requirement: class. Rendered as a badge so it keeps contrast on any button colour.
                 if (ch.req_class_name) {
-                    var classTag = document.createElement('small');
-                    classTag.className = ch.req_class_met ? 'd-block text-info' : 'd-block text-danger';
+                    const classLine = document.createElement('small');
+                    classLine.className = 'd-block mt-1';
+                    const classBadge = document.createElement('span');
+                    classBadge.className = ch.req_class_met ? 'badge bg-info' : 'badge bg-danger';
                     if (!ch.req_class_met) {
-                        var lockIcon = document.createElement('i');
+                        const lockIcon = document.createElement('i');
                         lockIcon.className = 'fa fa-lock me-1';
                         lockIcon.setAttribute('aria-hidden', 'true');
-                        classTag.appendChild(lockIcon);
+                        classBadge.appendChild(lockIcon);
                     }
-                    classTag.appendChild(document.createTextNode(ch.str_req_class));
-                    btn.appendChild(classTag);
+                    classBadge.appendChild(document.createTextNode(ch.str_req_class));
+                    classLine.appendChild(classBadge);
+                    btn.appendChild(classLine);
                 }
 
                 // Requirement: karma.
                 if (ch.req_karma_min !== 0) {
-                    var karmaTag = document.createElement('small');
-                    if (ch.req_karma_met) {
-                        karmaTag.className = 'd-block text-info';
-                        karmaTag.textContent = ch.str_req_karma;
-                    } else {
-                        karmaTag.className = 'd-block text-danger';
-                        karmaTag.textContent = ch.str_low_karma;
-                    }
-                    btn.appendChild(karmaTag);
+                    const karmaLine = document.createElement('small');
+                    karmaLine.className = 'd-block mt-1';
+                    const karmaBadge = document.createElement('span');
+                    karmaBadge.className = ch.req_karma_met ? 'badge bg-info' : 'badge bg-danger';
+                    karmaBadge.textContent = ch.req_karma_met ? ch.str_req_karma : ch.str_low_karma;
+                    karmaLine.appendChild(karmaBadge);
+                    btn.appendChild(karmaLine);
                 }
 
                 // Cost: item.
                 if (ch.cost_item_name) {
-                    var costTag = document.createElement('small');
-                    if (ch.cost_item_met) {
-                        costTag.className = 'd-block text-warning';
-                        costTag.textContent = ch.str_cost_item;
-                    } else {
-                        costTag.className = 'd-block text-danger';
-                        costTag.textContent = ch.str_missing_item;
-                    }
-                    btn.appendChild(costTag);
+                    const costLine = document.createElement('small');
+                    costLine.className = 'd-block mt-1';
+                    const costBadge = document.createElement('span');
+                    costBadge.className = ch.cost_item_met ? 'badge bg-warning' : 'badge bg-danger';
+                    costBadge.textContent = ch.cost_item_met ? ch.str_cost_item : ch.str_missing_item;
+                    costLine.appendChild(costBadge);
+                    btn.appendChild(costLine);
                 }
 
                 btn.addEventListener('click', function() {
