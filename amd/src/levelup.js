@@ -36,6 +36,7 @@ const PRESETS = {
     coin: {titleKey: 'coin_intro_title', descKey: 'coin_intro_desc', showNumber: false},
     win: {titleKey: 'win_title', descKey: 'win_desc', showNumber: false},
     firstquest: {titleKey: 'firstquest_title', descKey: 'firstquest_desc', showNumber: false},
+    intro: {titleKey: 'intro_title', descKey: 'intro_desc', showNumber: false},
 };
 
 /**

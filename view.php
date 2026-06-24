@@ -368,9 +368,9 @@ if ($isoptin) {
 
         [$celebtype, $celebparam] = array_pad(explode(':', $celebration, 2), 2, '');
         $celebimages = [
-            'win'        => 'achievement.png',
-            'levelup'    => 'levelup.png',
-            'firstquest' => 'quest.png',
+            'win'        => 'achievement.webp',
+            'levelup'    => 'levelup.webp',
+            'firstquest' => 'quest.webp',
         ];
 
         if (isset($celebimages[$celebtype])) {
@@ -383,6 +383,17 @@ if ($isoptin) {
             }
             $PAGE->requires->js_call_amd('block_playerhud/levelup', 'celebrate', [$celebopts]);
         }
+    } else if (!$isteacher && !((int)$player->milestones & \block_playerhud\game::MILESTONE_INTRO)) {
+        // First visit to the student area: Huddy introduces himself, once.
+        $player->milestones = (int)$player->milestones | \block_playerhud\game::MILESTONE_INTRO;
+        $player->timemodified = time();
+        $DB->update_record('block_playerhud_user', $player);
+
+        $introimg = (new moodle_url('/blocks/playerhud/pix/huddy/hello.webp'))->out(false);
+        $PAGE->requires->js_call_amd('block_playerhud/levelup', 'celebrate', [[
+            'type'  => 'intro',
+            'image' => $introimg,
+        ]]);
     }
 }
 

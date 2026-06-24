@@ -30,6 +30,9 @@ class game {
     /** @var int Milestone bitmask: first quest reward claimed. */
     const MILESTONE_FIRSTQUEST = 2;
 
+    /** @var int Milestone bitmask: mascot introduction shown. */
+    const MILESTONE_INTRO = 4;
+
     /**
      * Get or create a player record.
      *

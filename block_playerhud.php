@@ -397,7 +397,7 @@ class block_playerhud extends block_base {
 
                 $this->page->requires->js_call_amd('block_playerhud/levelup', 'celebrate', [[
                     'type'  => 'firstquest',
-                    'image' => (new \moodle_url('/blocks/playerhud/pix/huddy/quest.png'))->out(false),
+                    'image' => (new \moodle_url('/blocks/playerhud/pix/huddy/quest.webp'))->out(false),
                 ]]);
             }
 
