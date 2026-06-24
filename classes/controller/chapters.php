@@ -87,26 +87,7 @@ class chapters {
         if ($mform->is_cancelled()) {
             redirect($returnurl);
         } else if ($data = $mform->get_data()) {
-            $record                  = new \stdClass();
-            $record->blockinstanceid = $instanceid;
-            $record->title           = $data->title;
-            $record->intro_text      = $data->intro_text ?? '';
-            $record->unlock_date     = $data->unlock_date ?? 0;
-            $record->required_level  = $data->required_level ?? 0;
-            $record->sortorder       = $data->sortorder ?? 1;
-
-            if ($data->chapterid) {
-                $DB->get_record(
-                    'block_playerhud_chapters',
-                    ['id' => $data->chapterid, 'blockinstanceid' => $instanceid],
-                    'id',
-                    MUST_EXIST
-                );
-                $record->id = $data->chapterid;
-                $DB->update_record('block_playerhud_chapters', $record);
-            } else {
-                $DB->insert_record('block_playerhud_chapters', $record);
-            }
+            $this->save_chapter($data, $instanceid);
 
             redirect(
                 $returnurl,
@@ -120,5 +101,42 @@ class chapters {
         $output .= $mform->render();
         $output .= $OUTPUT->footer();
         return $output;
+    }
+
+    /**
+     * Persists a chapter from submitted form data.
+     *
+     * On update the chapter must belong to the given block instance, preventing
+     * edits to another instance's chapter.
+     *
+     * @param \stdClass $data Submitted data (title, intro_text, unlock_date,
+     *                        required_level, sortorder and optional chapterid).
+     * @param int $instanceid The owning block instance ID.
+     * @return int The created or updated chapter ID.
+     */
+    public function save_chapter(\stdClass $data, int $instanceid): int {
+        global $DB;
+
+        $record = new \stdClass();
+        $record->blockinstanceid = $instanceid;
+        $record->title           = $data->title;
+        $record->intro_text      = $data->intro_text ?? '';
+        $record->unlock_date     = $data->unlock_date ?? 0;
+        $record->required_level  = $data->required_level ?? 0;
+        $record->sortorder       = $data->sortorder ?? 1;
+
+        if (!empty($data->chapterid)) {
+            $DB->get_record(
+                'block_playerhud_chapters',
+                ['id' => $data->chapterid, 'blockinstanceid' => $instanceid],
+                'id',
+                MUST_EXIST
+            );
+            $record->id = $data->chapterid;
+            $DB->update_record('block_playerhud_chapters', $record);
+            return (int) $data->chapterid;
+        }
+
+        return (int) $DB->insert_record('block_playerhud_chapters', $record);
     }
 }
