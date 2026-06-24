@@ -374,9 +374,10 @@ class drops {
     /**
      * Saves or updates a Drop record.
      *
-     * @param stdClass $data The data from the form.
+     * @param \stdClass $data The data from the form.
+     * @return int The created or updated drop ID.
      */
-    private function save_drop($data) {
+    public function save_drop(\stdClass $data): int {
         global $DB, $USER;
 
         $record = new \stdClass();
@@ -406,6 +407,7 @@ class drops {
             $record->itemid          = $existing->itemid;
             $record->id              = $existing->id;
             $DB->update_record('block_playerhud_drops', $record);
+            return (int) $existing->id;
         } else {
             // Verify the item belongs to this block instance before creating the drop.
             $DB->get_record(
@@ -416,7 +418,7 @@ class drops {
             );
             $record->timecreated = time();
             $record->code = \block_playerhud\utils::generate_drop_code($data->instanceid);
-            $DB->insert_record('block_playerhud_drops', $record);
+            return (int) $DB->insert_record('block_playerhud_drops', $record);
         }
     }
 }
