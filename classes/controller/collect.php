@@ -176,7 +176,7 @@ class collect {
      * @return int The amount of XP earned.
      * @throws \Exception If transaction fails.
      */
-    private function process_transaction($drop, $item, $instanceid, $userid) {
+    public function process_transaction(\stdClass $drop, \stdClass $item, int $instanceid, int $userid): int {
         global $DB;
         $transaction = $DB->start_delegated_transaction();
 
