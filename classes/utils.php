@@ -260,21 +260,9 @@ class utils {
             return 1;
         }
 
-        $count = count($completed);
-
-        if ($count === 0) {
-            return 1;
-        }
-        if ($count === 1) {
-            return 2;
-        }
-        if ($count <= 3) {
-            return 3;
-        }
-        if ($count <= 5) {
-            return 4;
-        }
-        return 5;
+        // One star per completed chapter, capped at five, so a freshly-assigned
+        // character starts at a single star and reaches five stars at five chapters.
+        return max(1, min(5, count($completed)));
     }
 
     /**

@@ -201,7 +201,7 @@ final class rpg_classes_test extends advanced_testcase {
     /**
      * get_class_portrait_tier returns the correct tier at every boundary.
      *
-     * Thresholds: 0→1, 1→2, 2–3→3, 4–5→4, 6+→5.
+     * One star per completed chapter, capped at five: 0–1→1, 2→2, 3→3, 4→4, 5+→5.
      *
      * @covers \block_playerhud\utils::get_class_portrait_tier
      */
@@ -227,11 +227,11 @@ final class rpg_classes_test extends advanced_testcase {
         // Each entry: [completed_chapters_array, expected_tier, description].
         $cases = [
             [[], 1, '0 chapters → tier 1'],
-            [[1], 2, '1 chapter → tier 2'],
-            [[1, 2], 3, '2 chapters → tier 3'],
+            [[1], 1, '1 chapter → tier 1'],
+            [[1, 2], 2, '2 chapters → tier 2'],
             [[1, 2, 3], 3, '3 chapters → tier 3'],
             [[1, 2, 3, 4], 4, '4 chapters → tier 4'],
-            [[1, 2, 3, 4, 5], 4, '5 chapters → tier 4'],
+            [[1, 2, 3, 4, 5], 5, '5 chapters → tier 5'],
             [[1, 2, 3, 4, 5, 6], 5, '6 chapters → tier 5'],
         ];
 
