@@ -477,4 +477,90 @@ final class game_test extends advanced_testcase {
         $this->assertContains((int) $student2->id, $rankeduserids, 'Student 2 must appear in the ranking.');
         $this->assertNotContains((int) $teacher->id, $rankeduserids, 'Teacher with manage capability must be excluded.');
     }
+
+    /**
+     * xp_to_level maps XP to the configured level, clamped to the cap.
+     *
+     * @covers ::xp_to_level
+     */
+    public function test_xp_to_level(): void {
+        $this->assertEquals(1, game::xp_to_level(0, 100, 10));
+        $this->assertEquals(1, game::xp_to_level(99, 100, 10));
+        $this->assertEquals(2, game::xp_to_level(100, 100, 10));
+        $this->assertEquals(3, game::xp_to_level(250, 100, 10));
+        $this->assertEquals(10, game::xp_to_level(99999, 100, 10), 'Level must be capped at max_levels.');
+        $this->assertEquals(1, game::xp_to_level(500, 0, 10), 'A zero xp-per-level must not divide by zero.');
+    }
+
+    /**
+     * process_collection flags leveled_up only on the collection that crosses a level.
+     *
+     * @covers ::process_collection
+     */
+    public function test_process_collection_leveled_up(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        // Default config: 100 XP per level. A 50 XP item needs two collections to level up.
+        $item = $this->create_dummy_item('Herb', 50);
+        $drop = $this->create_dummy_drop($item->id, 5);
+
+        $first = game::process_collection($this->instanceid, $drop->id, $user->id);
+        $this->assertFalse($first['game_data']['leveled_up'], 'First 50 XP collection stays on level 1.');
+
+        $second = game::process_collection($this->instanceid, $drop->id, $user->id);
+        $this->assertTrue($second['game_data']['leveled_up'], 'Reaching 100 XP must flag a level-up.');
+    }
+
+    /**
+     * process_collection flags won only on the collection that reaches 100% of the game XP.
+     *
+     * @covers ::process_collection
+     */
+    public function test_process_collection_won_transition(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        // Total game XP = 100 * 2 = 200. The second collection reaches 100%.
+        $item = $this->create_dummy_item('Relic', 100);
+        $drop = $this->create_dummy_drop($item->id, 2);
+
+        $first = game::process_collection($this->instanceid, $drop->id, $user->id);
+        $this->assertFalse($first['game_data']['won'], 'Halfway through the game is not a win.');
+
+        $second = game::process_collection($this->instanceid, $drop->id, $user->id);
+        $this->assertTrue($second['game_data']['won'], 'Reaching 100% of the game XP must flag a win.');
+    }
+
+    /**
+     * The first PlayerCoin collection signals the coin milestone exactly once.
+     *
+     * @covers ::process_collection
+     */
+    public function test_process_collection_first_coin_milestone(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('PlayerCoin', 0);
+        $DB->set_field('block_playerhud_items', 'action_type', 'playercoin', ['id' => $item->id]);
+        $drop = $this->create_dummy_drop($item->id, 3);
+
+        $first = game::process_collection($this->instanceid, $drop->id, $user->id);
+        $this->assertEquals('coin', $first['milestone'], 'First PlayerCoin must signal the coin milestone.');
+
+        $player = game::get_player($this->instanceid, $user->id);
+        $this->assertEquals(
+            game::MILESTONE_COIN,
+            (int) $player->milestones & game::MILESTONE_COIN,
+            'The coin milestone bit must be persisted.'
+        );
+
+        $second = game::process_collection($this->instanceid, $drop->id, $user->id);
+        $this->assertEquals('', $second['milestone'], 'A subsequent PlayerCoin must not signal again.');
+    }
 }

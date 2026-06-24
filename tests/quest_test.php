@@ -717,4 +717,68 @@ final class quest_test extends advanced_testcase {
         $player = \block_playerhud\game::get_player($this->instanceid, $user->id);
         $this->assertEquals(50, $player->currentxp);
     }
+
+    /**
+     * A claim that crosses a level flashes the level-up celebration.
+     *
+     * @covers ::claim_reward
+     */
+    public function test_claim_reward_flashes_levelup(): void {
+        $user = $this->getDataGenerator()->create_user();
+
+        // A second enabled quest keeps the game total XP high so the claim does not also win.
+        $this->create_quest(quest::TYPE_LEVEL, '99', 5000);
+        $quest = $this->create_quest(quest::TYPE_XP_TOTAL, '50', 50);
+        $this->set_player_xp($user->id, 90); // Level 1; the XP-total requirement (>= 50) is met.
+
+        quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+
+        $flag = get_user_preferences('block_playerhud_celebration', '', $user->id);
+        $this->assertEquals('levelup:2', $flag, 'Crossing into level 2 must flash a level-up.');
+    }
+
+    /**
+     * Reaching 100% on a claim flashes the win, which outranks the level-up.
+     *
+     * @covers ::claim_reward
+     */
+    public function test_claim_reward_win_outranks_levelup(): void {
+        $user = $this->getDataGenerator()->create_user();
+
+        // The reward is the only XP source, so claiming it reaches 100% of the game
+        // (and also crosses into level 2). Winning must take priority.
+        $quest = $this->create_quest(quest::TYPE_XP_TOTAL, '0', 100);
+        $this->set_player_xp($user->id, 0);
+
+        quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+
+        $flag = get_user_preferences('block_playerhud_celebration', '', $user->id);
+        $this->assertEquals('win', $flag, 'Beating the game must outrank the level-up.');
+    }
+
+    /**
+     * A claim that neither levels up nor wins flashes nothing, and never sets the
+     * first-quest milestone (that is driven by the sidebar render, not by claiming).
+     *
+     * @covers ::claim_reward
+     */
+    public function test_claim_reward_no_celebration(): void {
+        $user = $this->getDataGenerator()->create_user();
+
+        $this->create_quest(quest::TYPE_LEVEL, '99', 5000); // Keeps the game total high.
+        $quest = $this->create_quest(quest::TYPE_XP_TOTAL, '0', 10);
+        $this->set_player_xp($user->id, 20);
+
+        quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+
+        $flag = get_user_preferences('block_playerhud_celebration', '', $user->id);
+        $this->assertEquals('', $flag, 'A minor reward must not flash a celebration.');
+
+        $player = \block_playerhud\game::get_player($this->instanceid, $user->id);
+        $this->assertEquals(
+            0,
+            (int) $player->milestones & \block_playerhud\game::MILESTONE_FIRSTQUEST,
+            'Claiming must not set the first-quest milestone.'
+        );
+    }
 }
