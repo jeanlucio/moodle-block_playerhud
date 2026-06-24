@@ -5,6 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.6.0] — 2026-06-24
+
+### Added
+- Celebration popups featuring the Huddy mascot for key milestones: levelling
+  up, collecting the first PlayerCoin, completing the first quest, and beating
+  the game.
+- Huddy introduction popup that welcomes students on their first visit, with the
+  mascot artwork served as WebP.
+
+### Changed
+- The grade export (CSV/Excel) now includes each student's last-action date and
+  matches the on-screen ranking: only currently enrolled students are listed,
+  using the same ordering.
+
+### Fixed
+- Critical: story choices no longer lose their configuration when a scene is
+  saved. The granted class, required class, required item, item cost and
+  next-scene link were silently reset to "none", which — among other effects —
+  prevented characters from being assigned at the end of a story. Existing
+  scenes need to be opened and saved once to restore their settings.
+- The notification shown when a story grants a character now displays its text
+  instead of a raw `[[new_class]]` placeholder.
+
 ## [v1.5.4] — 2026-06-23
 
 ### Added

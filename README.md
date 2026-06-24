@@ -221,18 +221,18 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `content_crud_test.php` | 13 | Item, chapter and trade CRUD: create persists all fields, update changes fields, delete removes record, listing scoped to instance |
 | `cross_instance_security_test.php` | 12 | Cross-instance isolation: item, quest, chapter and trade guards accept own-instance IDs and reject foreign ones without modifying the target record |
 | `drop_guard_test.php` | 7 | Collection limits, trade-consumed items, cooldown enforcement |
-| `game_test.php` | 12 | XP and level aggregation, quest XP inclusion/exclusion, collection anti-farm and cooldown; `get_avatar_item` (enabled, disabled, foreign instance, not found); XP award on finite drop; leaderboard manager exclusion |
+| `game_test.php` | 16 | XP and level aggregation, quest XP inclusion/exclusion, collection anti-farm and cooldown; `get_avatar_item` (enabled, disabled, foreign instance, not found); XP award on finite drop; leaderboard manager exclusion; level-up, beat-the-game and first-PlayerCoin milestone flags on collection; `xp_to_level` |
 | `gamemaster_test.php` | 6 | Grant/revoke/delete item and quest while preserving leaderboard timestamps; XP floor at zero |
 | `item_delete_cascade_test.php` | 15 | Trade orphan detection when item deleted (sole req, one-of-two, sole reward, combined req+reward); bulk orphan checks; cross-instance isolation; delete removes item record and cascades orphaned trades without touching non-orphaned ones |
 | `karma_test.php` | 11 | Karma read/write, positive/negative deltas, clamping at ±999 boundaries, successive accumulation |
 | `privacy_provider_test.php` | 4 | GDPR: delete all data for user; delete user preferences; avatar preference included in export; metadata declaration coverage |
-| `quest_test.php` | 22 | Completion checks (level, XP, items, trades, activity completion); claim rewards; disabled quest; idempotency |
+| `quest_test.php` | 25 | Completion checks (level, XP, items, trades, activity completion); claim rewards; disabled quest; idempotency; level-up and beat-the-game celebration flags on reward claim |
 | `rpg_classes_test.php` | 7 | Class assignment, duplicate guard, karma initialisation, portrait tier boundaries |
 | `story_manager_test.php` | 15 | Scene loading, progress persistence, choice navigation, karma delta, chapter completion, error cases |
 | `suggest_trades_state_test.php` | 4 | Suggest Trades button: disabled without prereqs, disabled with coin only, disabled when all avatars covered, enabled on partial coverage |
 | `trade_test.php` | 7 | Trade assembly, insufficient funds, atomic success, one-time limit, group restriction |
 | `utils_test.php` | 2 | `get_avatar_html`: emoji produces `ph-avatar-emoji` div with aria-hidden span; HTTP URL produces `ph-avatar-img` img tag |
-| **Subtotal** | **146** | |
+| **Subtotal** | **153** | |
 
 #### Web Services Tests (`tests/external/`)
 
@@ -257,7 +257,16 @@ One test class per web service function, each validating the external API contra
 | `use_item_test.php` | 5 | Not-owned item → exception; deadline power: no activity selected, no rule found, creates override and consumes item, updates existing override |
 | **Subtotal** | **50** | |
 
-| **Grand Total** | **196** | |
+#### Controller Tests (`tests/controller/`)
+
+| Test file | Cases | What is covered |
+|-----------|------:|----------------|
+| `chapters_test.php` | 4 | Chapter persistence: insert, in-place update, default fields, foreign-instance rejection |
+| `classes_test.php` | 4 | RPG class persistence: insert (base HP, instance binding, emoji tiers), update preserves base HP, emoji trimming, foreign-instance rejection |
+| `export_test.php` | 7 | Grade export builder: row fields and derived level, XP ordering, level cap, teacher/manager exclusion, localized columns with no players, unenrolled exclusion, XP tie-break by last action |
+| **Subtotal** | **15** | |
+
+| **Grand Total** | **218** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -271,7 +280,8 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `block_playerhud_student.feature` | 4 | HUD active on first visit, disable/re-enable gamification, dismiss confirmation |
 | `block_playerhud_teacher.feature` | 6 | Game Master Panel button, management panel access, tab navigation, return to course |
 | `block_playerhud_modals.feature` | 5 | Item detail modal open/close, duplicate-open guard, AJAX collect without redirect, no raw placeholders |
-| **Total** | **18** | |
+| `block_playerhud_celebrations.feature` | 2 | Huddy introduction shown once on the dashboard; first-quest nudge shown once when a reward is claimable |
+| **Total** | **20** | |
 
 ```bash
 php admin/tool/behat/cli/init.php
@@ -589,18 +599,18 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `content_crud_test.php` | 13 | CRUD de itens, capítulos e trocas: criação persiste todos os campos, atualização altera campos, exclusão remove registro, listagem escoped por instância |
 | `cross_instance_security_test.php` | 12 | Isolamento cross-instance: guardas de item, quest, capítulo e troca aceitam IDs da própria instância e rejeitam IDs alheios sem modificar o registro alvo |
 | `drop_guard_test.php` | 7 | Limites de coleta, itens consumidos por troca, aplicação de cooldown |
-| `game_test.php` | 12 | Agregação de XP e nível, XP de quests (inclusão/exclusão), anti-farm de coleta e cooldown; `get_avatar_item` (habilitado, desabilitado, instância estrangeira, não encontrado); XP concedido ao coletar drop com uso finito; exclusão de gerentes do ranking |
+| `game_test.php` | 16 | Agregação de XP e nível, XP de quests (inclusão/exclusão), anti-farm de coleta e cooldown; `get_avatar_item` (habilitado, desabilitado, instância estrangeira, não encontrado); XP concedido ao coletar drop com uso finito; exclusão de gerentes do ranking; flags de milestone de level-up, vitória no jogo e primeira PlayerCoin na coleta; `xp_to_level` |
 | `gamemaster_test.php` | 6 | Conceder/revogar/excluir item e quest preservando timestamps do ranking; XP mínimo em zero |
 | `item_delete_cascade_test.php` | 15 | Detecção de trocas órfãs ao excluir item (único req, um de dois, único reward, combinado req+reward); verificações em lote; isolamento cross-instance; exclusão remove o item e cascateia trocas órfãs sem afetar as não-órfãs |
 | `karma_test.php` | 11 | Leitura/escrita de karma, deltas positivos/negativos, clamping nos limites ±999, acumulação sucessiva |
 | `privacy_provider_test.php` | 4 | LGPD: exclusão de todos os dados do usuário; exclusão de preferências; preferência de avatar incluída na exportação; cobertura da declaração de metadados |
-| `quest_test.php` | 22 | Verificações de conclusão (nível, XP, itens, trocas, conclusão de atividade); reivindicar recompensas; quest desabilitada; idempotência |
+| `quest_test.php` | 25 | Verificações de conclusão (nível, XP, itens, trocas, conclusão de atividade); reivindicar recompensas; quest desabilitada; idempotência; flags de comemoração de level-up e vitória no jogo ao reivindicar recompensa |
 | `rpg_classes_test.php` | 7 | Atribuição de classe, proteção contra duplicatas, inicialização de karma, limites de tier de retrato |
 | `story_manager_test.php` | 15 | Carregamento de cena, persistência de progresso, navegação de escolhas, delta de karma, conclusão de capítulo, casos de erro |
 | `suggest_trades_state_test.php` | 4 | Botão Sugerir Trocas: desabilitado sem pré-requisitos, desabilitado só com moeda, desabilitado quando todos os avatares cobertos, habilitado com cobertura parcial |
 | `trade_test.php` | 7 | Montagem de trocas, fundos insuficientes, sucesso atômico, limite único, restrição por grupo |
 | `utils_test.php` | 2 | `get_avatar_html`: emoji gera div `ph-avatar-emoji` com span aria-hidden; URL HTTP gera tag img `ph-avatar-img` |
-| **Subtotal** | **146** | |
+| **Subtotal** | **153** | |
 
 #### Testes de Web Services (`tests/external/`)
 
@@ -625,7 +635,16 @@ Uma classe de teste por função de web service, validando o contrato da API ext
 | `use_item_test.php` | 5 | Item não possuído → exceção; poder de prazo: sem atividade, sem regra, cria override e consome item, atualiza override existente |
 | **Subtotal** | **50** | |
 
-| **Total geral** | **196** | |
+#### Testes de Controlador (`tests/controller/`)
+
+| Arquivo de teste | Casos | O que é coberto |
+|------------------|------:|----------------|
+| `chapters_test.php` | 4 | Persistência de capítulo: inserção, atualização in-place, campos padrão, rejeição de instância estrangeira |
+| `classes_test.php` | 4 | Persistência de classe RPG: inserção (HP base, vínculo de instância, emojis por tier), atualização preserva HP base, trim de emoji, rejeição de instância estrangeira |
+| `export_test.php` | 7 | Construtor da exportação de notas: campos da linha e nível derivado, ordenação por XP, teto de nível, exclusão de professores/gerentes, colunas localizadas sem jogadores, exclusão de não matriculados, desempate por última ação |
+| **Subtotal** | **15** | |
+
+| **Total geral** | **218** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -639,7 +658,8 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `block_playerhud_student.feature` | 4 | HUD ativo na primeira visita, desativar/reativar gamificação, dispensar confirmação |
 | `block_playerhud_teacher.feature` | 6 | Botão do Painel do Mestre, acesso ao painel de gerenciamento, navegação entre abas, retorno ao curso |
 | `block_playerhud_modals.feature` | 5 | Abrir/fechar modal de detalhes do item, proteção contra abertura duplicada, coleta AJAX sem redirecionamento, sem placeholders brutos |
-| **Total** | **18** | |
+| `block_playerhud_celebrations.feature` | 2 | Introdução do Huddy exibida uma única vez no painel; aviso de primeira quest exibido uma única vez quando há recompensa a reivindicar |
+| **Total** | **20** | |
 
 ```bash
 php admin/tool/behat/cli/init.php
