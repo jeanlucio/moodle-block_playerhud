@@ -512,6 +512,7 @@ $string['modulename'] = 'PlayerHUD';
 $string['modulename_help'] = 'Gamificação e Inventário para seus estudantes.';
 $string['modulenameplural'] = 'PlayerHUDs';
 $string['my_visibility'] = 'Minha Visibilidade:';
+$string['new_class'] = 'Nova classe: {$a}!';
 $string['new_item_badge'] = 'NOVO!';
 $string['next_collection_in'] = 'Próxima coleta em:';
 $string['no'] = 'Não';
