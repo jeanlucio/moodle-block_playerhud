@@ -136,7 +136,7 @@ class classes {
      * @param \stdClass|null $record Existing record when editing, null when creating.
      * @return int The class ID (new or existing).
      */
-    private function save_class(\stdClass $data, context_block $context, ?\stdClass $record): int {
+    public function save_class(\stdClass $data, context_block $context, ?\stdClass $record): int {
         global $DB;
 
         $now = time();
