@@ -2166,10 +2166,10 @@ div.modal-dialog .visually-hidden {
     white-space: normal;
     font-weight: 600;
 }
-#ph-story-choices .badge.bg-info,
 #ph-story-choices .badge.bg-warning {
     color: var(--bs-dark, #212529);
 }
+#ph-story-choices .badge.bg-success,
 #ph-story-choices .badge.bg-danger {
     color: var(--bs-white, #fff);
 }

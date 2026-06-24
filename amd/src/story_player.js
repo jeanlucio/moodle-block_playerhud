@@ -140,7 +140,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                     const classLine = document.createElement('small');
                     classLine.className = 'd-block mt-1';
                     const classBadge = document.createElement('span');
-                    classBadge.className = ch.req_class_met ? 'badge bg-info' : 'badge bg-danger';
+                    classBadge.className = ch.req_class_met ? 'badge bg-success' : 'badge bg-danger';
                     if (!ch.req_class_met) {
                         const lockIcon = document.createElement('i');
                         lockIcon.className = 'fa fa-lock me-1';
@@ -157,7 +157,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                     const karmaLine = document.createElement('small');
                     karmaLine.className = 'd-block mt-1';
                     const karmaBadge = document.createElement('span');
-                    karmaBadge.className = ch.req_karma_met ? 'badge bg-info' : 'badge bg-danger';
+                    karmaBadge.className = ch.req_karma_met ? 'badge bg-success' : 'badge bg-danger';
                     karmaBadge.textContent = ch.req_karma_met ? ch.str_req_karma : ch.str_low_karma;
                     karmaLine.appendChild(karmaBadge);
                     btn.appendChild(karmaLine);
