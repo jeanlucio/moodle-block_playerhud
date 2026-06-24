@@ -170,8 +170,9 @@ class trades {
      *
      * @param \stdClass $data Form data from edit_trade_form.
      * @param int $instanceid The URL-validated block instance ID (from capability check).
+     * @return int The created or updated trade ID.
      */
-    private function save_trade(\stdClass $data, int $instanceid): void {
+    public function save_trade(\stdClass $data, int $instanceid): int {
         global $DB;
 
         $transaction = $DB->start_delegated_transaction();
@@ -240,5 +241,7 @@ class trades {
         }
 
         $transaction->allow_commit();
+
+        return (int) $currenttradeid;
     }
 }
