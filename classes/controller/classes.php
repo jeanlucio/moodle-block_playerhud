@@ -142,6 +142,14 @@ class classes {
         $now = time();
 
         if ($data->classid && $record) {
+            // Re-check the class belongs to the submitted instance (defence in depth).
+            $DB->get_record(
+                'block_playerhud_classes',
+                ['id' => $data->classid, 'blockinstanceid' => $data->instanceid],
+                'id',
+                MUST_EXIST
+            );
+
             $record->name         = $data->name;
             $record->description  = $data->description;
             $record->timemodified = $now;

@@ -46,15 +46,26 @@ final class classes_test extends advanced_testcase {
 
     #[\Override]
     protected function setUp(): void {
-        global $DB;
         parent::setUp();
         $this->resetAfterTest();
         $this->setAdminUser();
 
+        $this->instanceid = $this->make_block_instance();
+        $this->context = context_block::instance($this->instanceid);
+    }
+
+    /**
+     * Creates a course with a PlayerHUD block instance and returns its ID.
+     *
+     * @return int The new block instance ID.
+     */
+    protected function make_block_instance(): int {
+        global $DB;
+
         $course = $this->getDataGenerator()->create_course();
         $coursecontext = \context_course::instance($course->id);
 
-        $this->instanceid = (int) $DB->insert_record('block_instances', (object) [
+        return (int) $DB->insert_record('block_instances', (object) [
             'blockname'         => 'playerhud',
             'parentcontextid'   => $coursecontext->id,
             'showinsubcontexts' => 0,
@@ -66,7 +77,6 @@ final class classes_test extends advanced_testcase {
             'timecreated'       => time(),
             'timemodified'      => time(),
         ]);
-        $this->context = context_block::instance($this->instanceid);
     }
 
     /**
@@ -173,5 +183,21 @@ final class classes_test extends advanced_testcase {
 
         $record = $DB->get_record('block_playerhud_classes', ['id' => $id], '*', MUST_EXIST);
         $this->assertSame('X', $record->emoji_tier1);
+    }
+
+    /**
+     * A class cannot be updated under a different block instance.
+     *
+     * @covers ::save_class
+     */
+    public function test_save_class_rejects_foreign_instance(): void {
+        $record = $this->seed_class('Owned by A', 100);
+        $instanceb = $this->make_block_instance();
+
+        $data = $this->make_data((int) $record->id, 'Hijack', 'x', ['', '', '', '', '']);
+        $data->instanceid = $instanceb;
+
+        $this->expectException(\dml_missing_record_exception::class);
+        (new classes())->save_class($data, $this->context, $record);
     }
 }
