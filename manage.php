@@ -106,10 +106,7 @@ if ($action == 'toggle' && $itemid && confirm_sesskey()) {
 
 // Action: Toggle Quest Status.
 if ($action == 'toggle_quest' && $questid && confirm_sesskey()) {
-    $q = $DB->get_record('block_playerhud_quests', ['id' => $questid, 'blockinstanceid' => $instanceid]);
-    if ($q) {
-        $newstatus = $q->enabled ? 0 : 1;
-        $DB->set_field('block_playerhud_quests', 'enabled', $newstatus, ['id' => $questid]);
+    if (\block_playerhud\controller\quests::toggle_quest($questid, $instanceid)) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]),
             get_string('changessaved', 'block_playerhud'),
@@ -316,42 +313,7 @@ if ($action === 'bulk_delete_force' && confirm_sesskey()) {
 
 // Action: Delete Quest.
 if ($action == 'delete_quest' && $questid && confirm_sesskey()) {
-    $quest = $DB->get_record('block_playerhud_quests', ['id' => $questid, 'blockinstanceid' => $instanceid]);
-    if ($quest) {
-        // Revert XP for students who completed avoiding N+1.
-        if ($quest->reward_xp > 0) {
-            $sql = "SELECT userid, COUNT(id) as completions FROM {block_playerhud_quest_log} WHERE questid = :qid GROUP BY userid";
-            $userscompleted = $DB->get_records_sql($sql, ['qid' => $questid]);
-
-            if ($userscompleted) {
-                $userids = array_keys($userscompleted);
-                [$usql, $uparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'usr');
-                $uparams['instanceid'] = $instanceid;
-
-                $players = $DB->get_records_select(
-                    'block_playerhud_user',
-                    "blockinstanceid = :instanceid AND userid $usql",
-                    $uparams,
-                    '',
-                    'userid, id, currentxp, timemodified, enable_gamification'
-                );
-
-                $now = time();
-                foreach ($userscompleted as $uc) {
-                    if (isset($players[$uc->userid])) {
-                        $player = $players[$uc->userid];
-                        $xptoremove = $quest->reward_xp * $uc->completions;
-                        $player->currentxp = max(0, $player->currentxp - $xptoremove);
-                        $DB->update_record('block_playerhud_user', $player);
-                    }
-                }
-            }
-        }
-
-        // Delete records.
-        $DB->delete_records('block_playerhud_quest_log', ['questid' => $questid]);
-        $DB->delete_records('block_playerhud_quests', ['id' => $questid]);
-
+    if (\block_playerhud\controller\quests::delete_quest($questid, $instanceid)) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'quests']),
             get_string('quest_deleted', 'block_playerhud'),
@@ -364,55 +326,7 @@ if ($action == 'delete_quest' && $questid && confirm_sesskey()) {
 if ($action === 'bulk_delete_quests' && confirm_sesskey()) {
     $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
     if (!empty($bulkids)) {
-        // Get all selected quests belonging to this instance.
-        [$insql, $inparams] = $DB->get_in_or_equal($bulkids);
-        $params = array_merge($inparams, [$instanceid]);
-        $quests = $DB->get_records_select('block_playerhud_quests', "id $insql AND blockinstanceid = ?", $params);
-
-        $deletedcount = 0;
-
-        if ($quests) {
-            $questids = array_keys($quests);
-            [$qinsql, $qinparams] = $DB->get_in_or_equal($questids);
-
-            // Calculate total XP to remove per user for all quests in a single query.
-            $sql = "SELECT ql.userid, SUM(q.reward_xp) as totalxptoremove
-                      FROM {block_playerhud_quest_log} ql
-                      JOIN {block_playerhud_quests} q ON ql.questid = q.id
-                     WHERE ql.questid $qinsql
-                  GROUP BY ql.userid";
-            $holders = $DB->get_records_sql($sql, $qinparams);
-
-            // Bulk load users to avoid N+1.
-            if ($holders) {
-                $userids = array_keys($holders);
-                [$usql, $uparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'usr');
-                $uparams['instanceid'] = $instanceid;
-
-                $players = $DB->get_records_select(
-                    'block_playerhud_user',
-                    "blockinstanceid = :instanceid AND userid $usql",
-                    $uparams,
-                    '',
-                    'userid, id, currentxp, timemodified, enable_gamification'
-                );
-
-                // Revert XP for all affected users.
-                foreach ($holders as $holder) {
-                    if (isset($players[$holder->userid])) {
-                        $player = $players[$holder->userid];
-                        $player->currentxp = max(0, $player->currentxp - $holder->totalxptoremove);
-                        $DB->update_record('block_playerhud_user', $player);
-                    }
-                }
-            }
-
-            // Delete records in bulk without loops.
-            $DB->delete_records_select('block_playerhud_quest_log', "questid $qinsql", $qinparams);
-            $DB->delete_records_select('block_playerhud_quests', "id $qinsql", $qinparams);
-
-            $deletedcount = count($questids);
-        }
+        $deletedcount = \block_playerhud\controller\quests::bulk_delete_quests($bulkids, $instanceid);
 
         redirect(
             new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]),
