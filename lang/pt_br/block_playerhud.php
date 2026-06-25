@@ -153,6 +153,7 @@ $string['chapter_delete_confirm'] = 'Tem certeza que deseja excluir o capítulo 
 $string['chapter_deleted'] = 'Capítulo excluído.';
 $string['chapter_edit'] = 'Editar Capítulo';
 $string['chapter_intro'] = 'Introdução';
+$string['chapter_level_warning'] = 'Este capítulo exige nível {$a->required}, acima do máximo do bloco ({$a->max}), então não será visível para os estudantes.';
 $string['chapter_manage_scenes'] = 'Gerenciar Cenas';
 $string['chapter_move_down'] = 'Mover para Baixo';
 $string['chapter_move_up'] = 'Mover para Cima';

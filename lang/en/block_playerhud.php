@@ -153,6 +153,7 @@ $string['chapter_delete_confirm'] = 'Are you sure you want to delete the chapter
 $string['chapter_deleted'] = 'Chapter deleted.';
 $string['chapter_edit'] = 'Edit Chapter';
 $string['chapter_intro'] = 'Introduction';
+$string['chapter_level_warning'] = 'This chapter requires level {$a->required}, above the block maximum of {$a->max}, so it will not be visible to students.';
 $string['chapter_manage_scenes'] = 'Manage Scenes';
 $string['chapter_move_down'] = 'Move Down';
 $string['chapter_move_up'] = 'Move Up';

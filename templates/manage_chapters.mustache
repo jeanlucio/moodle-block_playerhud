@@ -133,6 +133,13 @@
             </div>
             {{/no_start_warning}}
 
+            {{#level_warning}}
+            <div class="alert alert-warning py-1 px-2 mb-3 small d-flex align-items-center" role="alert">
+                <i class="fa fa-exclamation-triangle me-2" aria-hidden="true"></i>
+                {{level_warning_text}}
+            </div>
+            {{/level_warning}}
+
             <div class="d-flex justify-content-between align-items-center border-top pt-3">
                 <div>
                     <a href="{{url_scenes}}" class="btn btn-dark btn-sm shadow-sm me-1">

@@ -89,6 +89,15 @@ class tab_chapters implements renderable {
             }
         }
 
+        $maxlevels = 20;
+        $bi = $DB->get_record('block_instances', ['id' => $this->instanceid]);
+        if ($bi && !empty($bi->configdata)) {
+            $config = unserialize_object(base64_decode($bi->configdata));
+            if ($config && isset($config->max_levels) && (int) $config->max_levels > 0) {
+                $maxlevels = (int) $config->max_levels;
+            }
+        }
+
         $baseurl    = new moodle_url('/blocks/playerhud/manage.php', [
             'id'         => $this->courseid,
             'instanceid' => $this->instanceid,
@@ -105,6 +114,7 @@ class tab_chapters implements renderable {
             $scenecount = $scenecounts[$chap->id] ?? 0;
             $isfirst = ($index === 0);
             $islast = ($index === $chaptercount - 1);
+            $levelwarning = ((int) $chap->required_level > $maxlevels);
 
             $data = [
                 'id'           => (int) $chap->id,
@@ -116,6 +126,13 @@ class tab_chapters implements renderable {
                 'scene_count'     => $scenecount,
                 'has_scenes'      => ($scenecount > 0),
                 'no_start_warning' => empty($hasstartids[(int) $chap->id]),
+                'level_warning'      => $levelwarning,
+                'level_warning_text' => $levelwarning
+                    ? get_string('chapter_level_warning', 'block_playerhud', (object) [
+                        'required' => (int) $chap->required_level,
+                        'max'      => $maxlevels,
+                    ])
+                    : '',
                 'url_scenes'   => (new moodle_url('/blocks/playerhud/manage_scenes.php', [
                     'courseid'   => $this->courseid,
                     'instanceid' => $this->instanceid,
