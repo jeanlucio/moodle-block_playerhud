@@ -102,16 +102,7 @@ class drops {
 
         // 3. Actions (Delete).
         if ($action === 'delete' && $dropid && confirm_sesskey()) {
-            $drop = $DB->get_record_sql(
-                "SELECT d.id
-                   FROM {block_playerhud_drops} d
-                   JOIN {block_playerhud_items} i ON i.id = d.itemid
-                  WHERE d.id = :dropid AND i.blockinstanceid = :instanceid",
-                ['dropid' => $dropid, 'instanceid' => $instanceid]
-            );
-            if ($drop) {
-                $DB->delete_records('block_playerhud_drops', ['id' => $drop->id]);
-            }
+            $this->delete_drop($dropid, $instanceid);
             redirect(
                 $baseurl,
                 get_string('deleted', 'block_playerhud'),
@@ -121,24 +112,7 @@ class drops {
         if ($action === 'bulk_delete' && confirm_sesskey()) {
             $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
             if (!empty($bulkids)) {
-                [$insql, $inparams] = $DB->get_in_or_equal($bulkids, SQL_PARAMS_NAMED, 'did');
-
-                // Pre-filter: only keep IDs that truly belong to this block instance.
-                $validids = $DB->get_fieldset_sql(
-                    "SELECT d.id
-                       FROM {block_playerhud_drops} d
-                       JOIN {block_playerhud_items} i ON i.id = d.itemid
-                      WHERE d.id $insql AND i.blockinstanceid = :instanceid",
-                    array_merge($inparams, ['instanceid' => $instanceid])
-                );
-
-                $count = 0;
-                if (!empty($validids)) {
-                    [$delsql, $delparams] = $DB->get_in_or_equal($validids);
-                    $DB->delete_records_select('block_playerhud_drops', "id $delsql", $delparams);
-                    $count = count($validids);
-                }
-
+                $count = $this->bulk_delete_drops($bulkids, $instanceid);
                 redirect(
                     $baseurl,
                     get_string('deleted_bulk', 'block_playerhud', $count),
@@ -420,5 +394,66 @@ class drops {
             $record->code = \block_playerhud\utils::generate_drop_code($data->instanceid);
             return (int) $DB->insert_record('block_playerhud_drops', $record);
         }
+    }
+
+    /**
+     * Deletes a single drop that belongs to the given block instance.
+     *
+     * The drop is matched through its item's blockinstanceid, so a foreign
+     * drop id is a no-op.
+     *
+     * @param int $dropid The drop to delete.
+     * @param int $instanceid The owning block instance ID.
+     * @return void
+     */
+    public function delete_drop(int $dropid, int $instanceid): void {
+        global $DB;
+
+        $drop = $DB->get_record_sql(
+            "SELECT d.id
+               FROM {block_playerhud_drops} d
+               JOIN {block_playerhud_items} i ON i.id = d.itemid
+              WHERE d.id = :dropid AND i.blockinstanceid = :instanceid",
+            ['dropid' => $dropid, 'instanceid' => $instanceid]
+        );
+        if ($drop) {
+            $DB->delete_records('block_playerhud_drops', ['id' => $drop->id]);
+        }
+    }
+
+    /**
+     * Bulk-deletes drops that belong to the given block instance.
+     *
+     * Each candidate id is filtered through its item's blockinstanceid, so
+     * foreign ids are silently skipped. Returns the number actually deleted.
+     *
+     * @param int[] $dropids Candidate drop IDs.
+     * @param int $instanceid The owning block instance ID.
+     * @return int The number of drops deleted.
+     */
+    public function bulk_delete_drops(array $dropids, int $instanceid): int {
+        global $DB;
+
+        if (empty($dropids)) {
+            return 0;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($dropids, SQL_PARAMS_NAMED, 'did');
+        $validids = $DB->get_fieldset_sql(
+            "SELECT d.id
+               FROM {block_playerhud_drops} d
+               JOIN {block_playerhud_items} i ON i.id = d.itemid
+              WHERE d.id $insql AND i.blockinstanceid = :instanceid",
+            array_merge($inparams, ['instanceid' => $instanceid])
+        );
+
+        if (empty($validids)) {
+            return 0;
+        }
+
+        [$delsql, $delparams] = $DB->get_in_or_equal($validids);
+        $DB->delete_records_select('block_playerhud_drops', "id $delsql", $delparams);
+
+        return count($validids);
     }
 }

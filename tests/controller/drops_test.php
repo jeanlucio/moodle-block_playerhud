@@ -225,4 +225,81 @@ final class drops_test extends advanced_testcase {
         $this->expectException(\dml_missing_record_exception::class);
         (new drops())->save_drop($data);
     }
+
+    /**
+     * Deleting a drop removes it from its block instance.
+     *
+     * @covers ::delete_drop
+     */
+    public function test_delete_drop_removes_drop(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid);
+        $dropid = $this->seed_drop($instanceid, $itemid);
+
+        (new drops())->delete_drop($dropid, $instanceid);
+
+        $this->assertFalse($DB->record_exists('block_playerhud_drops', ['id' => $dropid]));
+    }
+
+    /**
+     * A drop owned by another instance is not deleted.
+     *
+     * @covers ::delete_drop
+     */
+    public function test_delete_drop_foreign_instance_is_noop(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $instanceb = $this->make_instance();
+        $itemid = $this->make_item($instancea);
+        $dropid = $this->seed_drop($instancea, $itemid);
+
+        (new drops())->delete_drop($dropid, $instanceb);
+
+        $this->assertTrue($DB->record_exists('block_playerhud_drops', ['id' => $dropid]));
+    }
+
+    /**
+     * Bulk delete removes only the drops owned by the instance and counts them.
+     *
+     * @covers ::bulk_delete_drops
+     */
+    public function test_bulk_delete_drops_removes_only_owned(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $instanceb = $this->make_instance();
+        $itema = $this->make_item($instancea);
+        $itemb = $this->make_item($instanceb);
+        $dropa1 = $this->seed_drop($instancea, $itema);
+        $dropa2 = $this->seed_drop($instancea, $itema);
+        $dropb = $this->seed_drop($instanceb, $itemb);
+
+        $count = (new drops())->bulk_delete_drops([$dropa1, $dropa2, $dropb], $instancea);
+
+        $this->assertSame(2, $count);
+        $this->assertFalse($DB->record_exists('block_playerhud_drops', ['id' => $dropa1]));
+        $this->assertFalse($DB->record_exists('block_playerhud_drops', ['id' => $dropa2]));
+        $this->assertTrue($DB->record_exists('block_playerhud_drops', ['id' => $dropb]));
+    }
+
+    /**
+     * Bulk delete with no ids deletes nothing and returns zero.
+     *
+     * @covers ::bulk_delete_drops
+     */
+    public function test_bulk_delete_drops_empty_returns_zero(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid);
+        $dropid = $this->seed_drop($instanceid, $itemid);
+
+        $count = (new drops())->bulk_delete_drops([], $instanceid);
+
+        $this->assertSame(0, $count);
+        $this->assertTrue($DB->record_exists('block_playerhud_drops', ['id' => $dropid]));
+    }
 }
