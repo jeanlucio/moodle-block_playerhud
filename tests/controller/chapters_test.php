@@ -315,4 +315,51 @@ final class chapters_test extends advanced_testcase {
         $this->assertSame(2, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $first]));
         $this->assertSame(1, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $second]));
     }
+
+    /**
+     * A new chapter can be inserted at a requested position, shifting the rest.
+     *
+     * @covers ::save_chapter
+     */
+    public function test_save_chapter_inserts_at_requested_position(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $a = $this->seed_chapter($instanceid, 'A', 1);
+        $b = $this->seed_chapter($instanceid, 'B', 2);
+        $c = $this->seed_chapter($instanceid, 'C', 3);
+
+        $new = (new chapters())->save_chapter(
+            (object) ['title' => 'New', 'chapterid' => 0, 'sortorder' => 2],
+            $instanceid
+        );
+
+        $this->assertSame(1, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $a]));
+        $this->assertSame(2, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $new]));
+        $this->assertSame(3, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $b]));
+        $this->assertSame(4, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $c]));
+    }
+
+    /**
+     * Editing a chapter with a new position moves it and renumbers the list.
+     *
+     * @covers ::save_chapter
+     */
+    public function test_save_chapter_update_repositions(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $a = $this->seed_chapter($instanceid, 'A', 1);
+        $b = $this->seed_chapter($instanceid, 'B', 2);
+        $c = $this->seed_chapter($instanceid, 'C', 3);
+
+        (new chapters())->save_chapter(
+            (object) ['title' => 'C', 'chapterid' => $c, 'sortorder' => 1],
+            $instanceid
+        );
+
+        $this->assertSame(1, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $c]));
+        $this->assertSame(2, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $a]));
+        $this->assertSame(3, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $b]));
+    }
 }

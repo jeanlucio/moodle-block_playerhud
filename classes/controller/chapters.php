@@ -66,7 +66,11 @@ class chapters {
         $PAGE->set_context($context);
         $PAGE->set_pagelayout('incourse');
 
-        $mform = new \block_playerhud\form\edit_chapter_form(null, ['chapterid' => $chapterid]);
+        $nextposition = $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $instanceid]) + 1;
+        $mform = new \block_playerhud\form\edit_chapter_form(null, [
+            'chapterid'    => $chapterid,
+            'nextposition' => $nextposition,
+        ]);
 
         if ($chapterid && !$mform->is_submitted()) {
             $chap = $DB->get_record(
@@ -132,19 +136,58 @@ class chapters {
                 MUST_EXIST
             );
             $record->id = $data->chapterid;
-            // Sort order is managed by reordering, not the edit form.
             $DB->update_record('block_playerhud_chapters', $record);
-            return (int) $data->chapterid;
+            $chapterid = (int) $data->chapterid;
+        } else {
+            $record->sortorder = 0;
+            $chapterid = (int) $DB->insert_record('block_playerhud_chapters', $record);
         }
 
-        // New chapters are appended to the end of the instance's list.
-        $maxorder = (int) $DB->get_field_sql(
-            "SELECT MAX(sortorder) FROM {block_playerhud_chapters} WHERE blockinstanceid = ?",
-            [$instanceid]
-        );
-        $record->sortorder = $maxorder + 1;
+        // Place the chapter at the requested position; a non-positive value
+        // (no field submitted) appends it to the end of the list.
+        $position = (int) ($data->sortorder ?? 0);
+        $this->set_chapter_position($chapterid, $instanceid, $position > 0 ? $position : PHP_INT_MAX);
 
-        return (int) $DB->insert_record('block_playerhud_chapters', $record);
+        return $chapterid;
+    }
+
+    /**
+     * Places a chapter at the given 1-based position and renumbers the list.
+     *
+     * A position beyond the list length moves the chapter to the end. Only
+     * chapters of the given instance are touched, so a foreign id is a no-op.
+     *
+     * @param int $chapterid The chapter to position.
+     * @param int $instanceid The owning block instance ID.
+     * @param int $position The 1-based target position.
+     * @return void
+     */
+    private function set_chapter_position(int $chapterid, int $instanceid, int $position): void {
+        global $DB;
+
+        $ids = array_map('intval', $DB->get_fieldset_sql(
+            "SELECT id FROM {block_playerhud_chapters}
+              WHERE blockinstanceid = ?
+           ORDER BY sortorder ASC, id ASC",
+            [$instanceid]
+        ));
+        if (!in_array($chapterid, $ids, true)) {
+            return;
+        }
+
+        $ids = array_values(array_filter($ids, static fn($id) => $id !== $chapterid));
+        $position = max(1, min($position, count($ids) + 1));
+        array_splice($ids, $position - 1, 0, [$chapterid]);
+
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            foreach ($ids as $i => $id) {
+                $DB->set_field('block_playerhud_chapters', 'sortorder', $i + 1, ['id' => $id]);
+            }
+            $transaction->allow_commit();
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
     }
 
     /**
@@ -196,45 +239,20 @@ class chapters {
     public function move_chapter(int $chapterid, int $instanceid, string $direction): void {
         global $DB;
 
-        $DB->get_record(
-            'block_playerhud_chapters',
-            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
-            'id',
-            MUST_EXIST
-        );
-
-        $chapters = array_values($DB->get_records(
-            'block_playerhud_chapters',
-            ['blockinstanceid' => $instanceid],
-            'sortorder ASC, id ASC',
-            'id, sortorder'
+        $ids = array_map('intval', $DB->get_fieldset_sql(
+            "SELECT id FROM {block_playerhud_chapters}
+              WHERE blockinstanceid = ?
+           ORDER BY sortorder ASC, id ASC",
+            [$instanceid]
         ));
 
-        $index = null;
-        foreach ($chapters as $i => $chapter) {
-            if ((int) $chapter->id === $chapterid) {
-                $index = $i;
-                break;
-            }
-        }
-
-        $target = ($direction === 'up') ? $index - 1 : $index + 1;
-        if ($index === null || $target < 0 || $target >= count($chapters)) {
+        $index = array_search($chapterid, $ids, true);
+        if ($index === false) {
             return;
         }
 
-        [$chapters[$index], $chapters[$target]] = [$chapters[$target], $chapters[$index]];
-
-        // Renumbering the small ordered list in a loop is the intended write
-        // pattern for a reorder; the row count is bounded by the chapter count.
-        $transaction = $DB->start_delegated_transaction();
-        try {
-            foreach ($chapters as $position => $chapter) {
-                $DB->set_field('block_playerhud_chapters', 'sortorder', $position + 1, ['id' => $chapter->id]);
-            }
-            $transaction->allow_commit();
-        } catch (\Throwable $e) {
-            $transaction->rollback($e);
-        }
+        // Position is 1-based (index + 1); up moves one slot earlier, down one later.
+        $position = ($direction === 'up') ? $index : $index + 2;
+        $this->set_chapter_position($chapterid, $instanceid, $position);
     }
 }

@@ -69,6 +69,14 @@ class edit_chapter_form extends \moodleform {
         $mform->setType('required_level', PARAM_INT);
         $mform->setDefault('required_level', 0);
 
+        // Position in the chapter list (new chapters default to the end).
+        $mform->addElement('text', 'sortorder', get_string('chapter_sortorder', 'block_playerhud'), [
+            'type' => 'number',
+            'min'  => '1',
+        ]);
+        $mform->setType('sortorder', PARAM_INT);
+        $mform->setDefault('sortorder', $this->_customdata['nextposition'] ?? 1);
+
         // Hidden fields.
         $mform->addElement('hidden', 'courseid');
         $mform->setType('courseid', PARAM_INT);
