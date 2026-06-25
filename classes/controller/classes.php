@@ -188,4 +188,31 @@ class classes {
 
         return $classid;
     }
+
+    /**
+     * Deletes an RPG class together with all of its tier portrait images.
+     *
+     * The class must belong to the given block instance.
+     *
+     * @param int $classid The class to delete.
+     * @param int $instanceid The owning block instance ID.
+     * @param context_block $context The block context holding the image files.
+     * @return void
+     */
+    public function delete_class(int $classid, int $instanceid, context_block $context): void {
+        global $DB;
+
+        $DB->get_record(
+            'block_playerhud_classes',
+            ['id' => $classid, 'blockinstanceid' => $instanceid],
+            'id',
+            MUST_EXIST
+        );
+
+        $fs = get_file_storage();
+        for ($tier = 1; $tier <= 5; $tier++) {
+            $fs->delete_area_files($context->id, 'block_playerhud', 'class_image_' . $tier, $classid);
+        }
+        $DB->delete_records('block_playerhud_classes', ['id' => $classid, 'blockinstanceid' => $instanceid]);
+    }
 }

@@ -433,21 +433,14 @@ if ($action === 'bulk_delete_quests' && confirm_sesskey()) {
 
 // Action: Delete Trade.
 if ($action == 'delete_trade' && $tradeid && confirm_sesskey()) {
-    $transaction = $DB->start_delegated_transaction();
     try {
-        $DB->delete_records('block_playerhud_trade_reqs', ['tradeid' => $tradeid]);
-        $DB->delete_records('block_playerhud_trade_rewards', ['tradeid' => $tradeid]);
-        $DB->delete_records('block_playerhud_trade_log', ['tradeid' => $tradeid]);
-        $DB->delete_records('block_playerhud_trades', ['id' => $tradeid, 'blockinstanceid' => $instanceid]);
-        $transaction->allow_commit();
-
+        (new \block_playerhud\controller\trades())->delete_trade($tradeid, $instanceid);
         redirect(
             new moodle_url($baseurl, ['tab' => 'trades']),
             get_string('changessaved', 'block_playerhud'),
             \core\output\notification::NOTIFY_SUCCESS
         );
     } catch (Exception $e) {
-        $transaction->rollback($e);
         redirect(
             new moodle_url($baseurl, ['tab' => 'trades']),
             get_string('error_msg', 'block_playerhud', $e->getMessage()),
@@ -460,11 +453,7 @@ if ($action == 'delete_trade' && $tradeid && confirm_sesskey()) {
 if ($action == 'delete_class') {
     $classid = optional_param('classid', 0, PARAM_INT);
     if ($classid && confirm_sesskey()) {
-        $fs = get_file_storage();
-        for ($i = 1; $i <= 5; $i++) {
-            $fs->delete_area_files($context->id, 'block_playerhud', 'class_image_' . $i, $classid);
-        }
-        $DB->delete_records('block_playerhud_classes', ['id' => $classid, 'blockinstanceid' => $instanceid]);
+        (new \block_playerhud\controller\classes())->delete_class($classid, $instanceid, $context);
         redirect(
             new moodle_url($baseurl, ['tab' => 'classes']),
             get_string('class_deleted', 'block_playerhud'),

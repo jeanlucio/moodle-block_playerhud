@@ -200,4 +200,81 @@ final class classes_test extends advanced_testcase {
         $this->expectException(\dml_missing_record_exception::class);
         (new classes())->save_class($data, $this->context, $record);
     }
+
+    /**
+     * Deleting a class removes its record and every tier portrait file.
+     *
+     * @covers ::delete_class
+     */
+    public function test_delete_class_removes_record_and_portraits(): void {
+        global $DB;
+
+        $record = $this->seed_class('Doomed', 100);
+        $fs = get_file_storage();
+        $filerecord = [
+            'contextid' => $this->context->id,
+            'component' => 'block_playerhud',
+            'filearea'  => 'class_image_1',
+            'itemid'    => $record->id,
+            'filepath'  => '/',
+            'filename'  => 'portrait.png',
+        ];
+        $fs->create_file_from_string($filerecord, 'image-bytes');
+        $this->assertTrue($fs->file_exists(
+            $this->context->id,
+            'block_playerhud',
+            'class_image_1',
+            $record->id,
+            '/',
+            'portrait.png'
+        ));
+
+        (new classes())->delete_class((int) $record->id, $this->instanceid, $this->context);
+
+        $this->assertFalse($DB->record_exists('block_playerhud_classes', ['id' => $record->id]));
+        $this->assertFalse($fs->file_exists(
+            $this->context->id,
+            'block_playerhud',
+            'class_image_1',
+            $record->id,
+            '/',
+            'portrait.png'
+        ));
+    }
+
+    /**
+     * A class owned by another instance cannot be deleted.
+     *
+     * @covers ::delete_class
+     */
+    public function test_delete_class_rejects_foreign_instance(): void {
+        global $DB;
+
+        $record = $this->seed_class('Owned by A', 100);
+        $instanceb = $this->make_block_instance();
+
+        try {
+            (new classes())->delete_class((int) $record->id, $instanceb, $this->context);
+            $this->fail('Expected a dml_missing_record_exception.');
+        } catch (\dml_missing_record_exception $e) {
+            $this->assertTrue($DB->record_exists('block_playerhud_classes', ['id' => $record->id]));
+        }
+    }
+
+    /**
+     * Deleting a class leaves sibling classes of the same instance untouched.
+     *
+     * @covers ::delete_class
+     */
+    public function test_delete_class_keeps_sibling_classes(): void {
+        global $DB;
+
+        $target = $this->seed_class('Target', 100);
+        $sibling = $this->seed_class('Sibling', 100);
+
+        (new classes())->delete_class((int) $target->id, $this->instanceid, $this->context);
+
+        $this->assertFalse($DB->record_exists('block_playerhud_classes', ['id' => $target->id]));
+        $this->assertTrue($DB->record_exists('block_playerhud_classes', ['id' => $sibling->id]));
+    }
 }

@@ -244,4 +244,35 @@ class trades {
 
         return (int) $currenttradeid;
     }
+
+    /**
+     * Deletes a trade together with its requirements, rewards and log entries.
+     *
+     * The trade must belong to the given block instance.
+     *
+     * @param int $tradeid The trade to delete.
+     * @param int $instanceid The owning block instance ID.
+     * @return void
+     */
+    public function delete_trade(int $tradeid, int $instanceid): void {
+        global $DB;
+
+        $DB->get_record(
+            'block_playerhud_trades',
+            ['id' => $tradeid, 'blockinstanceid' => $instanceid],
+            'id',
+            MUST_EXIST
+        );
+
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            $DB->delete_records('block_playerhud_trade_reqs', ['tradeid' => $tradeid]);
+            $DB->delete_records('block_playerhud_trade_rewards', ['tradeid' => $tradeid]);
+            $DB->delete_records('block_playerhud_trade_log', ['tradeid' => $tradeid]);
+            $DB->delete_records('block_playerhud_trades', ['id' => $tradeid, 'blockinstanceid' => $instanceid]);
+            $transaction->allow_commit();
+        } catch (\Exception $e) {
+            $transaction->rollback($e);
+        }
+    }
 }

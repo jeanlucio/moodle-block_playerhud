@@ -230,4 +230,71 @@ final class trades_test extends advanced_testcase {
         $req = reset($reqs);
         $this->assertSame($owneditem, (int) $req->itemid);
     }
+
+    /**
+     * Deleting a trade removes it together with its requirements, rewards and log.
+     *
+     * @covers ::delete_trade
+     */
+    public function test_delete_trade_removes_trade_and_children(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $item = $this->make_item($instanceid);
+        $tradeid = $this->seed_trade($instanceid, 'Disposable');
+        $DB->insert_record('block_playerhud_trade_reqs', (object) [
+            'tradeid' => $tradeid, 'itemid' => $item, 'qty' => 1,
+        ]);
+        $DB->insert_record('block_playerhud_trade_rewards', (object) [
+            'tradeid' => $tradeid, 'itemid' => $item, 'qty' => 1,
+        ]);
+        $DB->insert_record('block_playerhud_trade_log', (object) [
+            'tradeid' => $tradeid, 'userid' => 1, 'timecreated' => time(),
+        ]);
+
+        (new trades())->delete_trade($tradeid, $instanceid);
+
+        $this->assertFalse($DB->record_exists('block_playerhud_trades', ['id' => $tradeid]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_trade_reqs', ['tradeid' => $tradeid]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_trade_rewards', ['tradeid' => $tradeid]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_trade_log', ['tradeid' => $tradeid]));
+    }
+
+    /**
+     * A trade owned by another instance cannot be deleted.
+     *
+     * @covers ::delete_trade
+     */
+    public function test_delete_trade_rejects_foreign_instance(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $instanceb = $this->make_instance();
+        $tradeid = $this->seed_trade($instancea, 'Owned by A');
+
+        try {
+            (new trades())->delete_trade($tradeid, $instanceb);
+            $this->fail('Expected a dml_missing_record_exception.');
+        } catch (\dml_missing_record_exception $e) {
+            $this->assertTrue($DB->record_exists('block_playerhud_trades', ['id' => $tradeid]));
+        }
+    }
+
+    /**
+     * Deleting a trade leaves sibling trades of the same instance untouched.
+     *
+     * @covers ::delete_trade
+     */
+    public function test_delete_trade_keeps_sibling_trades(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $target = $this->seed_trade($instanceid, 'Target');
+        $sibling = $this->seed_trade($instanceid, 'Sibling');
+
+        (new trades())->delete_trade($target, $instanceid);
+
+        $this->assertFalse($DB->record_exists('block_playerhud_trades', ['id' => $target]));
+        $this->assertTrue($DB->record_exists('block_playerhud_trades', ['id' => $sibling]));
+    }
 }
