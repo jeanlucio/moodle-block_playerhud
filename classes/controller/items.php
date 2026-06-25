@@ -19,13 +19,124 @@ namespace block_playerhud\controller;
 use context_block;
 
 /**
- * Controller for item deletion, including cascade to orphaned trades.
+ * Controller for item lifecycle: enable toggle, manual grant/revoke and
+ * deletion (with cascade to orphaned trades).
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class items {
+    /**
+     * Flips the enabled flag of an item belonging to the given instance.
+     *
+     * A foreign item id is a no-op (returns false) so callers do not redirect
+     * with a success message for something they did not change.
+     *
+     * @param int $itemid The item to toggle.
+     * @param int $instanceid The owning block instance ID.
+     * @return bool True when the item was found and toggled, false otherwise.
+     */
+    public static function toggle_item(int $itemid, int $instanceid): bool {
+        global $DB;
+
+        $item = $DB->get_record('block_playerhud_items', ['id' => $itemid, 'blockinstanceid' => $instanceid]);
+        if (!$item) {
+            return false;
+        }
+
+        $DB->set_field('block_playerhud_items', 'enabled', $item->enabled ? 0 : 1, ['id' => $itemid]);
+
+        return true;
+    }
+
+    /**
+     * Manually grants an item to a player and awards its XP.
+     *
+     * The item must belong to the instance. The inventory row is tagged with
+     * source 'teacher' and no originating drop.
+     *
+     * @param int $itemid The item to grant.
+     * @param int $userid The recipient user ID.
+     * @param int $instanceid The owning block instance ID.
+     * @return void
+     */
+    public static function grant_item(int $itemid, int $userid, int $instanceid): void {
+        global $DB;
+
+        $item = $DB->get_record(
+            'block_playerhud_items',
+            ['id' => $itemid, 'blockinstanceid' => $instanceid],
+            '*',
+            MUST_EXIST
+        );
+        $player = \block_playerhud\game::get_player($instanceid, $userid);
+
+        $newinv              = new \stdClass();
+        $newinv->userid      = $userid;
+        $newinv->itemid      = $item->id;
+        $newinv->dropid      = 0;
+        $newinv->source      = 'teacher';
+        $newinv->timecreated = time();
+        $DB->insert_record('block_playerhud_inventory', $newinv);
+
+        if ($item->xp > 0) {
+            $player->currentxp   += $item->xp;
+            $player->timemodified = time();
+            $DB->update_record('block_playerhud_user', $player);
+        }
+    }
+
+    /**
+     * Soft-revokes a granted item, marking the inventory row as 'revoked' and
+     * deducting its XP when appropriate.
+     *
+     * XP is only deducted when the originating drop was finite: infinite drops
+     * (maxusage = 0) deliberately grant 0 XP on collection, so reverting them
+     * must not deduct. A foreign inventory row is a no-op.
+     *
+     * @param int $invid The inventory row to revoke.
+     * @param int $instanceid The owning block instance ID.
+     * @return void
+     */
+    public static function revoke_item(int $invid, int $instanceid): void {
+        global $DB;
+
+        $inv = $DB->get_record_sql(
+            "SELECT inv.*
+               FROM {block_playerhud_inventory} inv
+               JOIN {block_playerhud_items} i ON i.id = inv.itemid
+              WHERE inv.id = :invid AND i.blockinstanceid = :instanceid",
+            ['invid' => $invid, 'instanceid' => $instanceid]
+        );
+        if (!$inv) {
+            return;
+        }
+
+        $item = $DB->get_record('block_playerhud_items', ['id' => $inv->itemid, 'blockinstanceid' => $instanceid]);
+        if (!$item) {
+            return;
+        }
+
+        $player = $DB->get_record('block_playerhud_user', ['blockinstanceid' => $instanceid, 'userid' => $inv->userid]);
+        if ($player) {
+            $isinfinite = false;
+            if ($inv->dropid > 0) {
+                $drop = $DB->get_record('block_playerhud_drops', ['id' => $inv->dropid]);
+                $isinfinite = $drop && (int) $drop->maxusage === 0;
+            }
+            if (!$isinfinite && $item->xp > 0) {
+                $player->currentxp = max(0, $player->currentxp - $item->xp);
+                $DB->update_record('block_playerhud_user', $player);
+            }
+        }
+
+        // Soft revoke: mark the inventory record as revoked instead of deleting.
+        $inv->source      = 'revoked';
+        $inv->timecreated = time();
+        $DB->update_record('block_playerhud_inventory', $inv);
+    }
+
     /**
      * Returns trades that would have 0 requirements OR 0 rewards after
      * all given item IDs are removed from the instance.

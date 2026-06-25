@@ -1,0 +1,324 @@
+<?php
+// This file is part of Moodle - https://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
+/**
+ * Tests for the items controller.
+ *
+ * @package    block_playerhud
+ * @category   test
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace block_playerhud\controller;
+
+use advanced_testcase;
+use stdClass;
+
+/**
+ * Tests for the items controller toggle/grant/revoke logic.
+ *
+ * @package    block_playerhud
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @coversDefaultClass \block_playerhud\controller\items
+ */
+final class items_test extends advanced_testcase {
+    /**
+     * Creates a course with a PlayerHUD block instance and returns its ID.
+     *
+     * @return int The new block instance ID.
+     */
+    protected function make_instance(): int {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+
+        return (int) $DB->insert_record('block_instances', (object) [
+            'blockname'         => 'playerhud',
+            'parentcontextid'   => $coursecontext->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern'   => 'course-view-*',
+            'subpagepattern'    => null,
+            'defaultregion'     => 'side-pre',
+            'defaultweight'     => 0,
+            'configdata'        => base64_encode(serialize(new stdClass())),
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ]);
+    }
+
+    /**
+     * Creates an item carrying the given XP and enabled flag.
+     *
+     * @param int $instanceid Owning block instance ID.
+     * @param int $xp XP awarded by the item.
+     * @param int $enabled Enabled flag (1 or 0).
+     * @return int The new item ID.
+     */
+    protected function make_item(int $instanceid, int $xp = 0, int $enabled = 1): int {
+        global $DB;
+
+        return (int) $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'Gem',
+            'xp'              => $xp,
+            'enabled'         => $enabled,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+    }
+
+    /**
+     * Creates a drop with the given usage limit and returns its ID.
+     *
+     * @param int $instanceid Owning block instance ID.
+     * @param int $itemid Item the drop belongs to.
+     * @param int $maxusage Usage limit (0 = infinite).
+     * @return int The new drop ID.
+     */
+    protected function make_drop(int $instanceid, int $itemid, int $maxusage): int {
+        global $DB;
+
+        return (int) $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $instanceid,
+            'itemid'          => $itemid,
+            'name'            => 'Spot',
+            'maxusage'        => $maxusage,
+            'respawntime'     => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+    }
+
+    /**
+     * Seeds a player progress row with the given XP for the block instance.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $userid User ID.
+     * @param int $xp Current XP.
+     * @return void
+     */
+    protected function seed_player(int $instanceid, int $userid, int $xp): void {
+        global $DB;
+
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $userid,
+            'currentxp'       => $xp,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+    }
+
+    /**
+     * Seeds an inventory row and returns its ID.
+     *
+     * @param int $userid Holder user ID.
+     * @param int $itemid Item held.
+     * @param int $dropid Originating drop (0 = none).
+     * @param string $source Inventory source tag.
+     * @return int The new inventory row ID.
+     */
+    protected function seed_inventory(int $userid, int $itemid, int $dropid, string $source): int {
+        global $DB;
+
+        return (int) $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid'      => $userid,
+            'itemid'      => $itemid,
+            'dropid'      => $dropid,
+            'source'      => $source,
+            'timecreated' => time(),
+        ]);
+    }
+
+    /**
+     * Toggling an item flips its enabled flag and reports success.
+     *
+     * @covers ::toggle_item
+     */
+    public function test_toggle_item_flips_enabled(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 0, 1);
+
+        $result = items::toggle_item($itemid, $instanceid);
+
+        $this->assertTrue($result);
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_items', 'enabled', ['id' => $itemid]));
+    }
+
+    /**
+     * Toggling an item of another instance changes nothing and reports failure.
+     *
+     * @covers ::toggle_item
+     */
+    public function test_toggle_item_foreign_instance_is_noop(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $instanceb = $this->make_instance();
+        $itemid = $this->make_item($instancea, 0, 1);
+
+        $result = items::toggle_item($itemid, $instanceb);
+
+        $this->assertFalse($result);
+        $this->assertSame(1, (int) $DB->get_field('block_playerhud_items', 'enabled', ['id' => $itemid]));
+    }
+
+    /**
+     * Granting an item stores a teacher-sourced inventory row and awards its XP.
+     *
+     * @covers ::grant_item
+     */
+    public function test_grant_item_adds_inventory_and_xp(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 30);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 50);
+
+        items::grant_item($itemid, (int) $user->id, $instanceid);
+
+        $inv = $DB->get_record('block_playerhud_inventory', ['userid' => $user->id], '*', MUST_EXIST);
+        $this->assertSame($itemid, (int) $inv->itemid);
+        $this->assertSame(0, (int) $inv->dropid);
+        $this->assertSame('teacher', $inv->source);
+        $this->assertSame(80, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
+     * Granting a zero-XP item stores the row without changing player XP.
+     *
+     * @covers ::grant_item
+     */
+    public function test_grant_item_zero_xp_keeps_xp(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 0);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 50);
+
+        items::grant_item($itemid, (int) $user->id, $instanceid);
+
+        $this->assertSame(1, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+        $this->assertSame(50, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
+     * Granting an item of another instance is rejected before any side effect.
+     *
+     * @covers ::grant_item
+     */
+    public function test_grant_item_rejects_foreign_instance(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $instanceb = $this->make_instance();
+        $itemid = $this->make_item($instancea, 30);
+        $user = $this->getDataGenerator()->create_user();
+
+        try {
+            items::grant_item($itemid, (int) $user->id, $instanceb);
+            $this->fail('Expected a dml_missing_record_exception.');
+        } catch (\dml_missing_record_exception $e) {
+            $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+        }
+    }
+
+    /**
+     * Revoking a finite-drop item marks it revoked and deducts its XP.
+     *
+     * @covers ::revoke_item
+     */
+    public function test_revoke_item_marks_revoked_and_deducts_xp(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 30);
+        $dropid = $this->make_drop($instanceid, $itemid, 5);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 100);
+        $invid = $this->seed_inventory((int) $user->id, $itemid, $dropid, 'map');
+
+        items::revoke_item($invid, $instanceid);
+
+        $this->assertSame('revoked', $DB->get_field('block_playerhud_inventory', 'source', ['id' => $invid]));
+        $this->assertSame(70, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
+     * Revoking an infinite-drop item marks it revoked but keeps the XP intact.
+     *
+     * @covers ::revoke_item
+     */
+    public function test_revoke_item_infinite_drop_keeps_xp(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 30);
+        $dropid = $this->make_drop($instanceid, $itemid, 0);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 100);
+        $invid = $this->seed_inventory((int) $user->id, $itemid, $dropid, 'map');
+
+        items::revoke_item($invid, $instanceid);
+
+        $this->assertSame('revoked', $DB->get_field('block_playerhud_inventory', 'source', ['id' => $invid]));
+        $this->assertSame(100, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
+     * Revoking an inventory row of another instance changes nothing.
+     *
+     * @covers ::revoke_item
+     */
+    public function test_revoke_item_foreign_instance_is_noop(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $instanceb = $this->make_instance();
+        $itemid = $this->make_item($instancea, 30);
+        $dropid = $this->make_drop($instancea, $itemid, 5);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instancea, (int) $user->id, 100);
+        $invid = $this->seed_inventory((int) $user->id, $itemid, $dropid, 'map');
+
+        items::revoke_item($invid, $instanceb);
+
+        $this->assertSame('map', $DB->get_field('block_playerhud_inventory', 'source', ['id' => $invid]));
+        $this->assertSame(100, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instancea,
+            'userid'          => $user->id,
+        ]));
+    }
+}

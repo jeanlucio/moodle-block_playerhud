@@ -95,10 +95,7 @@ if ($activetab === 'quests' && !$questsenabled) {
 
 // Action: Toggle Item Status.
 if ($action == 'toggle' && $itemid && confirm_sesskey()) {
-    $it = $DB->get_record('block_playerhud_items', ['id' => $itemid, 'blockinstanceid' => $instanceid]);
-    if ($it) {
-        $newstatus = $it->enabled ? 0 : 1;
-        $DB->set_field('block_playerhud_items', 'enabled', $newstatus, ['id' => $itemid]);
+    if (\block_playerhud\controller\items::toggle_item($itemid, $instanceid)) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
             get_string('changessaved', 'block_playerhud'),
@@ -537,37 +534,7 @@ if ($action === 'revoke_item' && confirm_sesskey()) {
     $invid = required_param('invid', PARAM_INT);
     $ruserid = required_param('r_userid', PARAM_INT);
 
-    $inv = $DB->get_record_sql(
-        "SELECT inv.*
-           FROM {block_playerhud_inventory} inv
-           JOIN {block_playerhud_items} i ON i.id = inv.itemid
-          WHERE inv.id = :invid AND i.blockinstanceid = :instanceid",
-        ['invid' => $invid, 'instanceid' => $instanceid]
-    );
-    if ($inv) {
-        $item = $DB->get_record('block_playerhud_items', ['id' => $inv->itemid, 'blockinstanceid' => $instanceid]);
-        if ($item) {
-            $player = $DB->get_record('block_playerhud_user', ['blockinstanceid' => $instanceid, 'userid' => $inv->userid]);
-            if ($player) {
-                // Only deduct XP if the originating drop was finite — infinite drops (maxusage=0)
-                // deliberately grant 0 XP in process_collection, so reverting them must not deduct.
-                $isinfinite = false;
-                if ($inv->dropid > 0) {
-                    $drop = $DB->get_record('block_playerhud_drops', ['id' => $inv->dropid]);
-                    $isinfinite = $drop && (int)$drop->maxusage === 0;
-                }
-                if (!$isinfinite && $item->xp > 0) {
-                    $player->currentxp = max(0, $player->currentxp - $item->xp);
-                    $DB->update_record('block_playerhud_user', $player);
-                }
-            }
-
-            // Soft Revoke: Mark the inventory record as revoked instead of deleting.
-            $inv->source = 'revoked';
-            $inv->timecreated = time();
-            $DB->update_record('block_playerhud_inventory', $inv);
-        }
-    }
+    \block_playerhud\controller\items::revoke_item($invid, $instanceid);
 
     $url = new moodle_url($baseurl, ['tab' => 'reports', 'r_userid' => $ruserid]);
     redirect($url, get_string('item_revoked', 'block_playerhud'), \core\output\notification::NOTIFY_SUCCESS);
@@ -578,22 +545,7 @@ if ($action === 'grant_item' && confirm_sesskey()) {
     $ruserid = required_param('r_userid', PARAM_INT);
     $itemid = required_param('itemid', PARAM_INT);
 
-    $item = $DB->get_record('block_playerhud_items', ['id' => $itemid, 'blockinstanceid' => $instanceid], '*', MUST_EXIST);
-    $player = \block_playerhud\game::get_player($instanceid, $ruserid);
-
-    $newinv = new \stdClass();
-    $newinv->userid = $ruserid;
-    $newinv->itemid = $item->id;
-    $newinv->dropid = 0;
-    $newinv->source = 'teacher';
-    $newinv->timecreated = time();
-    $DB->insert_record('block_playerhud_inventory', $newinv);
-
-    if ($item->xp > 0) {
-        $player->currentxp += $item->xp;
-        $player->timemodified = time();
-        $DB->update_record('block_playerhud_user', $player);
-    }
+    \block_playerhud\controller\items::grant_item($itemid, $ruserid, $instanceid);
 
     $url = new moodle_url($baseurl, ['tab' => 'reports', 'r_userid' => $ruserid]);
     redirect($url, get_string('item_granted', 'block_playerhud'), \core\output\notification::NOTIFY_SUCCESS);
