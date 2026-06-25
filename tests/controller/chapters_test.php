@@ -279,4 +279,23 @@ final class chapters_test extends advanced_testcase {
         $this->assertSame(1, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $first]));
         $this->assertSame(2, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $second]));
     }
+
+    /**
+     * The move works even when chapters share a sort order (legacy data),
+     * renumbering them into a distinct sequence.
+     *
+     * @covers ::move_chapter
+     */
+    public function test_move_chapter_reorders_equal_sortorders(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $first = $this->seed_chapter($instanceid, 'First', 1);
+        $second = $this->seed_chapter($instanceid, 'Second', 1);
+
+        (new chapters())->move_chapter($first, $instanceid, 'down');
+
+        $this->assertSame(2, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $first]));
+        $this->assertSame(1, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $second]));
+    }
 }

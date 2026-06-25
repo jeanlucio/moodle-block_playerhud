@@ -174,10 +174,12 @@ class chapters {
     }
 
     /**
-     * Swaps a chapter's sort order with its neighbour in the given direction.
+     * Moves a chapter one position up or down within its block instance.
      *
-     * The chapter must belong to the given block instance. Moving past the first
-     * or last chapter is a no-op.
+     * Reorders against the full ordered list and renumbers every chapter
+     * sequentially, so it works even when chapters share a sort order (legacy
+     * data). The chapter must belong to the instance; moving past either end is
+     * a no-op.
      *
      * @param int $chapterid The chapter to move.
      * @param int $instanceid The owning block instance ID.
@@ -187,36 +189,42 @@ class chapters {
     public function move_chapter(int $chapterid, int $instanceid, string $direction): void {
         global $DB;
 
-        $chapter = $DB->get_record(
+        $DB->get_record(
             'block_playerhud_chapters',
             ['id' => $chapterid, 'blockinstanceid' => $instanceid],
-            '*',
+            'id',
             MUST_EXIST
         );
 
-        if ($direction === 'up') {
-            $sql = "SELECT * FROM {block_playerhud_chapters}
-                     WHERE blockinstanceid = ? AND sortorder < ?
-                  ORDER BY sortorder DESC";
-        } else {
-            $sql = "SELECT * FROM {block_playerhud_chapters}
-                     WHERE blockinstanceid = ? AND sortorder > ?
-                  ORDER BY sortorder ASC";
+        $chapters = array_values($DB->get_records(
+            'block_playerhud_chapters',
+            ['blockinstanceid' => $instanceid],
+            'sortorder ASC, id ASC',
+            'id, sortorder'
+        ));
+
+        $index = null;
+        foreach ($chapters as $i => $chapter) {
+            if ((int) $chapter->id === $chapterid) {
+                $index = $i;
+                break;
+            }
         }
 
-        $siblings = $DB->get_records_sql($sql, [$instanceid, $chapter->sortorder], 0, 1);
-        $sibling = reset($siblings);
-        if (!$sibling) {
+        $target = ($direction === 'up') ? $index - 1 : $index + 1;
+        if ($index === null || $target < 0 || $target >= count($chapters)) {
             return;
         }
 
+        [$chapters[$index], $chapters[$target]] = [$chapters[$target], $chapters[$index]];
+
+        // Renumbering the small ordered list in a loop is the intended write
+        // pattern for a reorder; the row count is bounded by the chapter count.
         $transaction = $DB->start_delegated_transaction();
         try {
-            $temporder          = $chapter->sortorder;
-            $chapter->sortorder = $sibling->sortorder;
-            $sibling->sortorder = $temporder;
-            $DB->update_record('block_playerhud_chapters', $chapter);
-            $DB->update_record('block_playerhud_chapters', $sibling);
+            foreach ($chapters as $position => $chapter) {
+                $DB->set_field('block_playerhud_chapters', 'sortorder', $position + 1, ['id' => $chapter->id]);
+            }
             $transaction->allow_commit();
         } catch (\Throwable $e) {
             $transaction->rollback($e);
