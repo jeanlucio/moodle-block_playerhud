@@ -10,6 +10,55 @@
 
 [English](#english) | [Português](#português)
 
+<details>
+<summary><b>📑 Table of Contents / Índice</b></summary>
+
+**English**
+
+- [✨ Features](#-features)
+- [🏆 Group Ranking Behavior](#-group-ranking-behavior)
+- [⚖️ Economy Health Panel](#-economy-health-panel)
+- [🎓 Educational Purpose](#-educational-purpose)
+- [🕹️ PlayerGames Ecosystem](#-playergames-ecosystem)
+- [📦 Requirements](#-requirements)
+- [🛠️ Installation](#-installation)
+- [📖 Usage](#-usage)
+- [🌱 Demo Environment (Quick Start)](#-demo-environment-quick-start)
+- [🧪 Automated Tests](#-automated-tests)
+- [🔐 Security & Compliance](#-security--compliance)
+- [🔎 Third-party Service Disclosure](#-third-party-service-disclosure)
+  - [Is the AI feature required?](#is-the-ai-feature-required)
+  - [🔗 AI Provider Chain](#-ai-provider-chain)
+  - [Supported Direct Providers](#supported-direct-providers)
+  - [How to obtain an API key](#how-to-obtain-an-api-key)
+  - [Where API keys are configured](#where-api-keys-are-configured)
+  - [Data Transmission](#data-transmission)
+- [📄 License / Licença](#-license--licença)
+
+**Português**
+
+- [✨ Funcionalidades](#-funcionalidades)
+- [🏆 Comportamento do Ranking de Grupos](#-comportamento-do-ranking-de-grupos)
+- [⚖️ Painel de Saúde da Economia](#-painel-de-saúde-da-economia)
+- [🎓 Finalidade Educacional](#-finalidade-educacional)
+- [🕹️ Ecossistema PlayerGames](#-ecossistema-playergames)
+- [📦 Requisitos](#-requisitos)
+- [🛠️ Instalação](#-instalação)
+- [📖 Como Usar](#-como-usar)
+- [🌱 Ambiente de Demonstração (Quick Start)](#-ambiente-de-demonstração-quick-start)
+- [🧪 Testes Automatizados](#-testes-automatizados)
+- [🔐 Segurança e Conformidade](#-segurança-e-conformidade)
+- [🔎 Divulgação de Serviço de Terceiros](#-divulgação-de-serviço-de-terceiros)
+  - [O recurso de IA é obrigatório?](#o-recurso-de-ia-é-obrigatório)
+  - [🔗 Cadeia de Provedores de IA](#-cadeia-de-provedores-de-ia)
+  - [Provedores diretos suportados](#provedores-diretos-suportados)
+  - [Como obter a chave de API](#como-obter-a-chave-de-api)
+  - [Onde a chave é configurada](#onde-a-chave-é-configurada)
+  - [Transmissão de dados](#transmissão-de-dados)
+- [📄 Licença](#-licença)
+
+</details>
+
 ---
 
 ## English
@@ -259,14 +308,32 @@ One test class per web service function, each validating the external API contra
 
 #### Controller Tests (`tests/controller/`)
 
+These cover the business logic extracted from `manage.php` into the controllers (MVC refactor), each exercised with explicit inputs and instance isolation.
+
 | Test file | Cases | What is covered |
 |-----------|------:|----------------|
-| `chapters_test.php` | 4 | Chapter persistence: insert, in-place update, default fields, foreign-instance rejection |
-| `classes_test.php` | 4 | RPG class persistence: insert (base HP, instance binding, emoji tiers), update preserves base HP, emoji trimming, foreign-instance rejection |
+| `aikeys_test.php` | 4 | AI key storage: keys trimmed and saved as user preferences, empty default for a missing field, legacy keys stripped from block config, clean config left untouched |
+| `chapters_test.php` | 13 | Chapter persistence and ordering: save (insert, update, defaults, isolation), delete cascading scenes/choices, reorder/move with full-list renumbering, edge no-op |
+| `classes_test.php` | 7 | RPG class persistence: insert (base HP, instance binding, emoji tiers), update preserves base HP, emoji trimming, isolation; delete removes record and tier portraits, isolation, siblings kept |
+| `collect_test.php` | 3 | Item collection transaction: finite drop awards XP, infinite drop awards 0 XP (golden rule), zero-XP item stored without XP change |
+| `drops_test.php` | 9 | Drop persistence: save (insert + code, unlimited, update preserves ownership, isolation, foreign item); delete single and foreign no-op; bulk deletes only owned with count, empty input |
 | `export_test.php` | 7 | Grade export builder: row fields and derived level, XP ordering, level cap, teacher/manager exclusion, localized columns with no players, unenrolled exclusion, XP tie-break by last action |
-| **Subtotal** | **15** | |
+| `items_test.php` | 11 | Item lifecycle: enable toggle and foreign no-op; grant adds inventory + XP, zero-XP, foreign rejection; revoke deducts XP, infinite-drop preservation, foreign no-op; surviving-trade detection (trimmed trade, orphaned excluded, unrelated ignored) |
+| `quests_test.php` | 7 | Quest lifecycle: toggle and foreign no-op; delete reverts XP per completion, zero-reward, foreign no-op; bulk deletes only owned with aggregated XP revert and count, empty input |
+| `scenes_test.php` | 6 | Story scene/choice persistence: save choices, class assignment with string/int ID normalisation (`set_class_id` regression), required class, next node, item cost, follow-up node creation |
+| `suggestions_test.php` | 4 | Suggestion persistence: only ticked quest suggestions inserted (and none selected), only ticked trade suggestions created with reqs/rewards (and none selected) |
+| `trades_test.php` | 7 | Trade persistence: save (insert with reqs + rewards, update replaces, isolation, foreign item filtered); delete cascading reqs/rewards/log, isolation, siblings kept |
+| **Subtotal** | **78** | |
 
-| **Grand Total** | **218** | |
+#### Output / Renderer Tests (`tests/output/`)
+
+| Test file | Cases | What is covered |
+|-----------|------:|----------------|
+| `manage/item_delete_confirm_test.php` | 6 | Item-deletion confirmation context: single vs bulk action and id payload, singular/plural/simple confirm labels, surviving-only and orphaned+surviving sections |
+| `manage/tab_chapters_test.php` | 4 | Chapter-card visibility warnings: missing start-scene flag, required-level-above-maximum warning text and bounds |
+| **Subtotal** | **10** | |
+
+| **Grand Total** | **291** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -637,14 +704,32 @@ Uma classe de teste por função de web service, validando o contrato da API ext
 
 #### Testes de Controlador (`tests/controller/`)
 
+Cobrem a lógica de negócio extraída do `manage.php` para os controladores (refatoração MVC), cada um exercitado com entradas explícitas e isolamento de instância.
+
 | Arquivo de teste | Casos | O que é coberto |
 |------------------|------:|----------------|
-| `chapters_test.php` | 4 | Persistência de capítulo: inserção, atualização in-place, campos padrão, rejeição de instância estrangeira |
-| `classes_test.php` | 4 | Persistência de classe RPG: inserção (HP base, vínculo de instância, emojis por tier), atualização preserva HP base, trim de emoji, rejeição de instância estrangeira |
+| `aikeys_test.php` | 4 | Armazenamento de chaves de IA: chaves aparadas e salvas como preferências do usuário, padrão vazio para campo ausente, chaves legadas removidas do config do bloco, config limpo intocado |
+| `chapters_test.php` | 13 | Persistência e ordenação de capítulos: salvar (inserir, atualizar, padrões, isolamento), excluir em cascata cenas/escolhas, mover/reordenar com renumeração da lista completa, no-op na borda |
+| `classes_test.php` | 7 | Persistência de classe RPG: inserção (HP base, vínculo de instância, emojis por tier), atualização preserva HP base, trim de emoji, isolamento; exclusão remove registro e retratos por tier, isolamento, irmãos preservados |
+| `collect_test.php` | 3 | Transação de coleta de item: drop finito concede XP, drop infinito concede 0 XP (regra de ouro), item de 0 XP armazenado sem alterar XP |
+| `drops_test.php` | 9 | Persistência de drop: salvar (inserir + código, ilimitado, atualizar preserva propriedade, isolamento, item estrangeiro); excluir único e no-op estrangeiro; exclusão em massa só dos próprios com contagem, entrada vazia |
 | `export_test.php` | 7 | Construtor da exportação de notas: campos da linha e nível derivado, ordenação por XP, teto de nível, exclusão de professores/gerentes, colunas localizadas sem jogadores, exclusão de não matriculados, desempate por última ação |
-| **Subtotal** | **15** | |
+| `items_test.php` | 11 | Ciclo de vida do item: toggle de ativação e no-op estrangeiro; conceder adiciona inventário + XP, 0 XP, rejeição estrangeira; revogar desconta XP, preserva drop infinito, no-op estrangeiro; detecção de trocas sobreviventes (troca aparada, órfã excluída, não relacionada ignorada) |
+| `quests_test.php` | 7 | Ciclo de vida da missão: toggle e no-op estrangeiro; excluir reverte XP por conclusão, sem recompensa, no-op estrangeiro; massa só dos próprios com reversão agregada de XP e contagem, entrada vazia |
+| `scenes_test.php` | 6 | Persistência de cena/escolha da história: salvar escolhas, atribuição de classe com normalização de ID string/int (regressão `set_class_id`), classe requerida, próximo nó, custo de item, criação de nó de continuação |
+| `suggestions_test.php` | 4 | Persistência de sugestões: só as missões marcadas são inseridas (e nenhuma selecionada), só as trocas marcadas são criadas com reqs/recompensas (e nenhuma selecionada) |
+| `trades_test.php` | 7 | Persistência de troca: salvar (inserir com reqs + recompensas, atualizar substitui, isolamento, item estrangeiro filtrado); excluir em cascata reqs/recompensas/log, isolamento, irmãos preservados |
+| **Subtotal** | **78** | |
 
-| **Total geral** | **218** | |
+#### Testes de Saída / Renderer (`tests/output/`)
+
+| Arquivo de teste | Casos | O que é coberto |
+|------------------|------:|----------------|
+| `manage/item_delete_confirm_test.php` | 6 | Contexto da confirmação de exclusão de item: ação única vs massa e payload de IDs, rótulos de confirmação singular/plural/simples, seções só-sobreviventes e órfãs+sobreviventes |
+| `manage/tab_chapters_test.php` | 4 | Avisos de visibilidade do card de capítulo: sinalização de cena inicial ausente, texto e limites do aviso de nível acima do máximo |
+| **Subtotal** | **10** | |
+
+| **Total geral** | **291** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
