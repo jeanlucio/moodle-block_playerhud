@@ -5,6 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.6.1] — 2026-06-25
+
+### Added
+- Story chapters now warn on their card when the required level is set above the
+  block's maximum level, where the chapter could never become visible.
+- The chapter order field now positions a chapter directly: typing a number drops
+  it at that slot and renumbers the list, while new chapters are added to the end.
+
+### Changed
+- Story choice buttons were restyled for clarity and contrast: available choices
+  use an outline style, and each requirement (class, karma, cost) is shown as a
+  solid badge that stays legible on any button colour, with met requirements in
+  green.
+- Character portraits now gain one star per completed chapter (up to five),
+  instead of jumping straight to two stars after the first chapter.
+
+### Fixed
+- Reordering chapters that shared the same order no longer silently does nothing;
+  the move buttons always work and renumber the list, healing legacy data on first
+  use.
+- Quotes in the text of an auto-created follow-up scene are no longer shown as raw
+  HTML entities.
+
 ## [v1.6.0] — 2026-06-24
 
 ### Added
