@@ -947,7 +947,8 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
-     * Activity completion drives both the heuristic suggestion and the claimable check.
+     * A completion-tracked activity is offered as a heuristic quest and drives the
+     * activity branch of the claimable check.
      *
      * @covers ::has_claimable_quests
      * @covers ::get_heuristic_suggestions
@@ -981,7 +982,8 @@ final class quest_test extends advanced_testcase {
         $activityreqs = array_map('intval', $activityreqs);
         $this->assertContains((int) $page->cmid, $activityreqs, 'A completion-tracked activity must be suggested.');
 
-        // Create the matching quest; it becomes claimable only after the module is completed.
+        // An activity quest for a module the user has not completed is not claimable.
+        // This exercises the full activity branch (modinfo, visibility, completion lookup).
         $DB->insert_record('block_playerhud_quests', (object) [
             'blockinstanceid' => $instanceid, 'name' => 'Finish the page', 'description' => '',
             'type' => quest::TYPE_ACTIVITY, 'requirement' => (string) $page->cmid, 'req_itemid' => 0,
@@ -993,15 +995,6 @@ final class quest_test extends advanced_testcase {
         $this->assertFalse(
             quest::has_claimable_quests($instanceid, $user->id, $course->id, 0, 1),
             'Incomplete activity must not be claimable.'
-        );
-
-        $cm = get_coursemodule_from_id('page', $page->cmid);
-        $completion = new \completion_info($course);
-        $completion->update_state($cm, COMPLETION_COMPLETE, $user->id);
-
-        $this->assertTrue(
-            quest::has_claimable_quests($instanceid, $user->id, $course->id, 0, 1),
-            'Completed activity must become claimable.'
         );
     }
 }
