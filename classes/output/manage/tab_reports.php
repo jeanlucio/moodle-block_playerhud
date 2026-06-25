@@ -420,40 +420,8 @@ class tab_reports implements renderable, templatable {
         global $DB;
 
         $userxps = $DB->get_records('block_playerhud_user', ['blockinstanceid' => $this->instanceid], '', 'id, currentxp');
-        $levelscount = [];
-        $maxbarvalue = 0;
-
-        foreach ($userxps as $u) {
-            $lvl = floor($u->currentxp / $xpperlevel) + 1;
-            $key = ($lvl > $maxlevel) ? $maxlevel . '+' : (int)$lvl;
-
-            if (!isset($levelscount[$key])) {
-                $levelscount[$key] = 0;
-            }
-            $levelscount[$key]++;
-
-            if ($levelscount[$key] > $maxbarvalue) {
-                $maxbarvalue = $levelscount[$key];
-            }
-        }
-
-        uksort($levelscount, function ($a, $b) {
-            $vala = (int)str_replace('+', '', $a);
-            $valb = (int)str_replace('+', '', $b);
-            if ($vala == $valb) {
-                return (strpos((string)$a, '+') !== false) ? 1 : -1;
-            }
-            return ($vala < $valb) ? -1 : 1;
-        });
-
-        $levelsdata = [];
-        foreach ($levelscount as $lvllabel => $total) {
-            $levelsdata[] = [
-                'label'   => $lvllabel,
-                'total'   => $total,
-                'percent' => ($maxbarvalue > 0) ? ($total / $maxbarvalue) * 100 : 0,
-            ];
-        }
+        $xpvalues = array_map(static fn($u) => (int)$u->currentxp, $userxps);
+        $levelsdata = \block_playerhud\local\analytics::level_distribution($xpvalues, $xpperlevel, $maxlevel);
 
         return [
             'str_levels'  => get_string('report_chart_title', 'block_playerhud'),
@@ -644,8 +612,7 @@ class tab_reports implements renderable, templatable {
                 $lastactiondate = userdate($row->timemodified, get_string('strftimedatetime', 'langconfig'));
                 $isactive = ($row->enable_gamification == 1);
 
-                $rawlevel = floor($row->currentxp / $xpperlevel) + 1;
-                $level = ($rawlevel > $maxlevels) ? $maxlevels : (int)$rawlevel;
+                $level = \block_playerhud\game::xp_to_level((int)$row->currentxp, $xpperlevel, $maxlevels);
 
                 $urlaudit = new moodle_url('/blocks/playerhud/manage.php', [
                     'id'         => $this->courseid,

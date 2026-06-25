@@ -250,6 +250,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `gamemaster_test.php` | 6 | Grant/revoke/delete item and quest while preserving leaderboard timestamps; XP floor at zero |
 | `item_delete_cascade_test.php` | 15 | Trade orphan detection when item deleted (sole req, one-of-two, sole reward, combined req+reward); bulk orphan checks; cross-instance isolation; delete removes item record and cascades orphaned trades without touching non-orphaned ones |
 | `karma_test.php` | 11 | Karma read/write, positive/negative deltas, clamping at ±999 boundaries, successive accumulation |
+| `local/analytics_test.php` | 9 | Economy Health: total earnable XP vs ceiling ratio (empty/hard/perfect/easy), quest rewards and infinite/dropless items in the breakdown, zero-ceiling guard; level-distribution histogram bucketing, cap overflow (`N+`) ordering, percent of tallest bar, zero-XP-per-level guard |
 | `privacy_provider_test.php` | 10 | GDPR full coverage: context/user discovery (`get_contexts_for_userid`, `get_users_in_context`); `export_user_data` across all six subtrees (profile, RPG, inventory, quests, trades, AI logs); per-user, multi-user and whole-context deletion with isolation guarantees; export/delete of every API-key and avatar preference; metadata declaration; non-block context guards are no-ops |
 | `quest_test.php` | 32 | Completion checks (level, XP, items, trades, activity completion); claim rewards; disabled quest; idempotency; level-up and beat-the-game celebration flags on reward claim; `has_claimable_quests` across every requirement type incl. activity completion, with claimed/unclaimed short-circuit; `build_record_from_suggestion` mapping and XP override floor; `get_heuristic_suggestions` level/collection/economy/activity milestones with duplicate skipping |
 | `rpg_classes_test.php` | 7 | Class assignment, duplicate guard, karma initialisation, portrait tier boundaries |
@@ -257,7 +258,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `suggest_trades_state_test.php` | 4 | Suggest Trades button: disabled without prereqs, disabled with coin only, disabled when all avatars covered, enabled on partial coverage |
 | `trade_test.php` | 7 | Trade assembly, insufficient funds, atomic success, one-time limit, group restriction |
 | `utils_test.php` | 2 | `get_avatar_html`: emoji produces `ph-avatar-emoji` div with aria-hidden span; HTTP URL produces `ph-avatar-img` img tag |
-| **Subtotal** | **179** | |
+| **Subtotal** | **188** | |
 
 #### Web Services Tests (`tests/external/`)
 
@@ -309,7 +310,7 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `manage/tab_chapters_test.php` | 4 | Chapter-card visibility warnings: missing start-scene flag, required-level-above-maximum warning text and bounds |
 | **Subtotal** | **10** | |
 
-| **Grand Total** | **317** | |
+| **Grand Total** | **326** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -671,6 +672,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `gamemaster_test.php` | 6 | Conceder/revogar/excluir item e quest preservando timestamps do ranking; XP mínimo em zero |
 | `item_delete_cascade_test.php` | 15 | Detecção de trocas órfãs ao excluir item (único req, um de dois, único reward, combinado req+reward); verificações em lote; isolamento cross-instance; exclusão remove o item e cascateia trocas órfãs sem afetar as não-órfãs |
 | `karma_test.php` | 11 | Leitura/escrita de karma, deltas positivos/negativos, clamping nos limites ±999, acumulação sucessiva |
+| `local/analytics_test.php` | 9 | Economy Health: razão entre XP total ganhável e o teto (vazio/difícil/perfeito/fácil), recompensas de quest e itens infinitos/sem drop no detalhamento, guarda de teto zero; histograma de distribuição de níveis, ordenação do overflow do cap (`N+`), percentual da barra mais alta, guarda de XP-por-nível zero |
 | `privacy_provider_test.php` | 10 | LGPD com cobertura completa: descoberta de contexto/usuário (`get_contexts_for_userid`, `get_users_in_context`); `export_user_data` nas seis subárvores (perfil, RPG, inventário, missões, trocas, logs de IA); exclusão por usuário, multiusuário e de contexto inteiro com garantia de isolamento; exportação/exclusão de toda chave de API e preferência de avatar; declaração de metadados; guardas de contexto não-bloco como no-ops |
 | `quest_test.php` | 32 | Verificações de conclusão (nível, XP, itens, trocas, conclusão de atividade); reivindicar recompensas; quest desabilitada; idempotência; flags de comemoração de level-up e vitória no jogo ao reivindicar recompensa; `has_claimable_quests` em todos os tipos de requisito incl. conclusão de atividade, com curto-circuito de reivindicadas/não reivindicadas; mapeamento de `build_record_from_suggestion` e piso do override de XP; `get_heuristic_suggestions` milestones de nível/coleção/economia/atividade com pulo de duplicatas |
 | `rpg_classes_test.php` | 7 | Atribuição de classe, proteção contra duplicatas, inicialização de karma, limites de tier de retrato |
@@ -678,7 +680,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `suggest_trades_state_test.php` | 4 | Botão Sugerir Trocas: desabilitado sem pré-requisitos, desabilitado só com moeda, desabilitado quando todos os avatares cobertos, habilitado com cobertura parcial |
 | `trade_test.php` | 7 | Montagem de trocas, fundos insuficientes, sucesso atômico, limite único, restrição por grupo |
 | `utils_test.php` | 2 | `get_avatar_html`: emoji gera div `ph-avatar-emoji` com span aria-hidden; URL HTTP gera tag img `ph-avatar-img` |
-| **Subtotal** | **179** | |
+| **Subtotal** | **188** | |
 
 #### Testes de Web Services (`tests/external/`)
 
@@ -730,7 +732,7 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `manage/tab_chapters_test.php` | 4 | Avisos de visibilidade do card de capítulo: sinalização de cena inicial ausente, texto e limites do aviso de nível acima do máximo |
 | **Subtotal** | **10** | |
 
-| **Total geral** | **317** | |
+| **Total geral** | **326** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud

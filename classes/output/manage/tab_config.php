@@ -69,120 +69,52 @@ class tab_config implements renderable, templatable {
             $config = new \stdClass();
         }
 
-        // 2. Balance Logic (Health Check).
+        // 2. Balance Logic (Health Check) — business rules live in the analytics helper.
         $xpperlevel = isset($config->xp_per_level) ? (int)$config->xp_per_level : 100;
         $maxlevels   = isset($config->max_levels) ? (int)$config->max_levels : 20;
-        $xpceiling   = $xpperlevel * $maxlevels;
 
-        // Calculate Total Game XP.
-        $totalitemsxp = 0;
+        $health = \block_playerhud\local\analytics::economy_health($this->instanceid, $xpperlevel, $maxlevels);
+        $totalitemsxp = $health->total_items_xp;
+        $xpceiling = $health->xp_ceiling;
+
+        // Escape names for display; the helper returns raw values.
         $breakdownrows = [];
-        $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid, 'enabled' => 1]);
-
-        if ($items) {
-            // Preload all drops for this instance to avoid N+1 query problem.
-            $sql = "SELECT d.id, d.itemid, d.maxusage
-                      FROM {block_playerhud_drops} d
-                      JOIN {block_playerhud_items} i ON d.itemid = i.id
-                     WHERE i.blockinstanceid = :instanceid AND i.enabled = 1";
-            $alldrops = $DB->get_records_sql($sql, ['instanceid' => $this->instanceid]);
-
-            // Group drops by itemid in memory.
-            $dropsbyitem = [];
-            foreach ($alldrops as $drop) {
-                $dropsbyitem[$drop->itemid][] = $drop;
-            }
-
-            foreach ($items as $item) {
-                $itemxp = 0;
-                $dropcount = 0;
-                $totaldropuses = 0;
-                $hasinfinite = false;
-
-                if (!empty($dropsbyitem[$item->id])) {
-                    $dropcount = count($dropsbyitem[$item->id]);
-                    foreach ($dropsbyitem[$item->id] as $drop) {
-                        if ($drop->maxusage > 0) {
-                            $itemxp += ($item->xp * $drop->maxusage);
-                            $totaldropuses += $drop->maxusage;
-                        } else {
-                            $hasinfinite = true;
-                        }
-                    }
-                } else {
-                    // Item without a drop still contributes 1× its XP (available in library).
-                    $itemxp = $item->xp;
-                    $dropcount = 0;
-                    $totaldropuses = 1;
-                }
-
-                $totalitemsxp += $itemxp;
-                $breakdownrows[] = [
-                    'name' => s($item->name),
-                    'xp_each' => $item->xp,
-                    'drop_count' => $dropcount,
-                    'total_uses' => $hasinfinite ? '∞' : $totaldropuses,
-                    'xp_total' => $itemxp,
-                    'is_quest' => false,
-                    'infinite' => $hasinfinite,
-                ];
-            }
+        foreach ($health->breakdown as $row) {
+            $row['name'] = s($row['name']);
+            $breakdownrows[] = $row;
         }
 
-        // Add XP from enabled quest rewards.
-        $quests = $DB->get_records_select(
-            'block_playerhud_quests',
-            'blockinstanceid = :instanceid AND enabled = 1 AND reward_xp > 0',
-            ['instanceid' => $this->instanceid],
-            '',
-            'id, name, reward_xp'
-        );
-        foreach ($quests as $quest) {
-            $totalitemsxp += (int)$quest->reward_xp;
-            $breakdownrows[] = [
-                'name' => s($quest->name),
-                'xp_each' => $quest->reward_xp,
-                'drop_count' => 0,
-                'total_uses' => 1,
-                'xp_total' => $quest->reward_xp,
-                'is_quest' => true,
-                'infinite' => false,
-            ];
-        }
-
-        // Coverage Ratio.
-        $ratio = ($xpceiling > 0) ? ($totalitemsxp / $xpceiling) * 100 : 0;
-
-        // Visual Definition.
-        $alertclass = 'alert-info';
-        $borderclass = 'border-info';
-        $icon = 'fa-info-circle';
-        $strmessage = '';
-
+        // Visual Definition — map the status onto Bootstrap classes and a message.
         $a = new \stdClass();
         $a->total = $totalitemsxp;
         $a->req = $xpceiling;
-        $a->ratio = number_format($ratio, 1);
+        $a->ratio = number_format($health->ratio, 1);
 
-        if ($totalitemsxp == 0) {
-            $strmessage = get_string('bal_msg_empty', 'block_playerhud');
-            $alertclass = 'alert-secondary';
-            $borderclass = 'border-secondary';
-        } else if ($ratio < 100) {
-            $strmessage = get_string('bal_msg_hard', 'block_playerhud', $a);
-            $alertclass = 'alert-warning';
-            $borderclass = 'border-warning';
-            $icon = 'fa-exclamation-triangle';
-        } else if ($ratio > 100) {
-            $strmessage = get_string('bal_msg_easy', 'block_playerhud', $a);
-            $alertclass = 'alert-danger';
-            $borderclass = 'border-danger';
-            $icon = 'fa-exclamation-triangle';
-        } else {
-            $strmessage = get_string('bal_msg_perfect', 'block_playerhud', $a);
-            $alertclass = 'alert-success';
-            $borderclass = 'border-success';
-            $icon = 'fa-check-circle';
+        switch ($health->status) {
+            case 'empty':
+                $strmessage = get_string('bal_msg_empty', 'block_playerhud');
+                $alertclass = 'alert-secondary';
+                $borderclass = 'border-secondary';
+                $icon = 'fa-info-circle';
+                break;
+            case 'hard':
+                $strmessage = get_string('bal_msg_hard', 'block_playerhud', $a);
+                $alertclass = 'alert-warning';
+                $borderclass = 'border-warning';
+                $icon = 'fa-exclamation-triangle';
+                break;
+            case 'easy':
+                $strmessage = get_string('bal_msg_easy', 'block_playerhud', $a);
+                $alertclass = 'alert-danger';
+                $borderclass = 'border-danger';
+                $icon = 'fa-exclamation-triangle';
+                break;
+            default:
+                $strmessage = get_string('bal_msg_perfect', 'block_playerhud', $a);
+                $alertclass = 'alert-success';
+                $borderclass = 'border-success';
+                $icon = 'fa-check-circle';
+                break;
         }
 
         $actionurl = new moodle_url('/blocks/playerhud/manage.php', [
