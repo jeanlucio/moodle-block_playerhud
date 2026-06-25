@@ -476,17 +476,7 @@ if ($action === 'suggest_quests' || $action === 'save_suggestions') {
     if ($sugform->is_cancelled()) {
         redirect(new moodle_url($baseurl, ['tab' => 'quests']));
     } else if ($data = $sugform->get_data()) {
-        $records = [];
-        foreach ($suggestions as $sug) {
-            $field = 'sug_' . $sug['uid'];
-            if (!empty($data->$field)) {
-                $records[] = \block_playerhud\quest::build_record_from_suggestion($instanceid, $sug);
-            }
-        }
-        $count = count($records);
-        if ($count > 0) {
-            $DB->insert_records('block_playerhud_quests', $records);
-        }
+        $count = \block_playerhud\controller\suggestions::save_quest_suggestions($instanceid, $suggestions, $data);
 
         // Redirect back to the quests tab with a success message indicating how many quests were created.
         redirect(
@@ -540,17 +530,7 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
     if ($sugform->is_cancelled()) {
         redirect(new moodle_url($baseurl, ['tab' => 'trades']));
     } else if ($data = $sugform->get_data()) {
-        $count = 0;
-        $transaction = $DB->start_delegated_transaction();
-        foreach ($suggestions as $sug) {
-            $field = 'sug_' . $sug['uid'];
-            if (empty($data->$field)) {
-                continue;
-            }
-            \block_playerhud\game::create_trade_from_suggestion($instanceid, $sug);
-            $count++;
-        }
-        $transaction->allow_commit();
+        $count = \block_playerhud\controller\suggestions::save_trade_suggestions($instanceid, $suggestions, $data);
         redirect(
             new moodle_url($baseurl, ['tab' => 'trades']),
             get_string('trade_sug_created', 'block_playerhud', $count),
