@@ -500,27 +500,13 @@ if ($action === 'move_chapter_down' && confirm_sesskey()) {
 
 // Action: Save API Keys.
 if ($action === 'save_keys' && confirm_sesskey()) {
-    $gkey = optional_param('gemini_key', '', PARAM_TEXT);
-    $qkey = optional_param('groq_key', '', PARAM_TEXT);
-    $okey = optional_param('openai_key', '', PARAM_TEXT);
-    $ourl = optional_param('openai_url', '', PARAM_URL);
-    $omodel = optional_param('openai_model', '', PARAM_TEXT);
-
-    // Store keys as user preferences to prevent sensitive data from being stored in block config and potentially leaked in backups.
-    set_user_preference('block_playerhud_gemini_key', trim($gkey));
-    set_user_preference('block_playerhud_groq_key', trim($qkey));
-    set_user_preference('block_playerhud_openai_key', trim($okey));
-    set_user_preference('block_playerhud_openai_url', trim($ourl));
-    set_user_preference('block_playerhud_openai_model', trim($omodel));
-
-    // Remove keys from block config if they exist to prevent confusion and ensure they are only stored in user preferences.
-    $rawconfig = base64_decode($bi->configdata ?? '', true);
-    $config = ($rawconfig !== false && $rawconfig !== '') ? (array) unserialize_object($rawconfig) : [];
-    if (isset($config['apikey_gemini']) || isset($config['apikey_groq'])) {
-        unset($config['apikey_gemini'], $config['apikey_groq']);
-        $bi->configdata = base64_encode(serialize((object)$config));
-        $DB->update_record('block_instances', $bi);
-    }
+    \block_playerhud\controller\aikeys::save([
+        'gemini_key'   => optional_param('gemini_key', '', PARAM_TEXT),
+        'groq_key'     => optional_param('groq_key', '', PARAM_TEXT),
+        'openai_key'   => optional_param('openai_key', '', PARAM_TEXT),
+        'openai_url'   => optional_param('openai_url', '', PARAM_URL),
+        'openai_model' => optional_param('openai_model', '', PARAM_TEXT),
+    ], $bi, $USER->id);
 
     redirect(
         new moodle_url($baseurl, ['tab' => 'config']),
