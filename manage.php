@@ -477,22 +477,7 @@ if ($action == 'delete_class') {
 if ($action == 'delete_chapter') {
     $chapterid = optional_param('chapterid', 0, PARAM_INT);
     if ($chapterid && confirm_sesskey()) {
-        $chapter = $DB->get_record(
-            'block_playerhud_chapters',
-            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
-            '*',
-            MUST_EXIST
-        );
-        $scenes = $DB->get_records('block_playerhud_story_nodes', ['chapterid' => $chapter->id]);
-        if ($scenes) {
-            $sceneids = array_keys($scenes);
-            [$nsql, $nparams] = $DB->get_in_or_equal($sceneids);
-            // Bulk delete choices avoiding N+1.
-            $DB->delete_records_select('block_playerhud_choices', "nodeid $nsql", $nparams);
-        }
-        $DB->delete_records('block_playerhud_story_nodes', ['chapterid' => $chapter->id]);
-        $DB->delete_records('block_playerhud_chapters', ['id' => $chapter->id, 'blockinstanceid' => $instanceid]);
-
+        (new \block_playerhud\controller\chapters())->delete_chapter($chapterid, $instanceid);
         redirect(
             new moodle_url($baseurl, ['tab' => 'chapters']),
             get_string('chapter_deleted', 'block_playerhud'),
@@ -505,36 +490,7 @@ if ($action == 'delete_chapter') {
 if ($action === 'move_chapter_up' && confirm_sesskey()) {
     $chapterid = optional_param('chapterid', 0, PARAM_INT);
     if ($chapterid) {
-        $chapter = $DB->get_record(
-            'block_playerhud_chapters',
-            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
-            '*',
-            MUST_EXIST
-        );
-
-        // Get the previous chapter (lower sortorder).
-        $prevchapter = $DB->get_record_sql(
-            "SELECT * FROM {block_playerhud_chapters}
-             WHERE blockinstanceid = ? AND sortorder < ?
-             ORDER BY sortorder DESC",
-            [$instanceid, $chapter->sortorder]
-        );
-
-        if ($prevchapter) {
-            $transaction = $DB->start_delegated_transaction();
-            try {
-                $temporder = $chapter->sortorder;
-                $chapter->sortorder = $prevchapter->sortorder;
-                $prevchapter->sortorder = $temporder;
-
-                $DB->update_record('block_playerhud_chapters', $chapter);
-                $DB->update_record('block_playerhud_chapters', $prevchapter);
-                $transaction->allow_commit();
-            } catch (\Throwable $e) {
-                $transaction->rollback($e);
-            }
-        }
-
+        (new \block_playerhud\controller\chapters())->move_chapter($chapterid, $instanceid, 'up');
         redirect(
             new moodle_url($baseurl, ['tab' => 'chapters']),
             null,
@@ -547,36 +503,7 @@ if ($action === 'move_chapter_up' && confirm_sesskey()) {
 if ($action === 'move_chapter_down' && confirm_sesskey()) {
     $chapterid = optional_param('chapterid', 0, PARAM_INT);
     if ($chapterid) {
-        $chapter = $DB->get_record(
-            'block_playerhud_chapters',
-            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
-            '*',
-            MUST_EXIST
-        );
-
-        // Get the next chapter (higher sortorder).
-        $nextchapter = $DB->get_record_sql(
-            "SELECT * FROM {block_playerhud_chapters}
-             WHERE blockinstanceid = ? AND sortorder > ?
-             ORDER BY sortorder ASC",
-            [$instanceid, $chapter->sortorder]
-        );
-
-        if ($nextchapter) {
-            $transaction = $DB->start_delegated_transaction();
-            try {
-                $temporder = $chapter->sortorder;
-                $chapter->sortorder = $nextchapter->sortorder;
-                $nextchapter->sortorder = $temporder;
-
-                $DB->update_record('block_playerhud_chapters', $chapter);
-                $DB->update_record('block_playerhud_chapters', $nextchapter);
-                $transaction->allow_commit();
-            } catch (\Throwable $e) {
-                $transaction->rollback($e);
-            }
-        }
-
+        (new \block_playerhud\controller\chapters())->move_chapter($chapterid, $instanceid, 'down');
         redirect(
             new moodle_url($baseurl, ['tab' => 'chapters']),
             null,

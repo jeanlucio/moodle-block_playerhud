@@ -67,16 +67,38 @@ final class chapters_test extends advanced_testcase {
      *
      * @param int $instanceid Owning block instance ID.
      * @param string $title Chapter title.
+     * @param int $sortorder Sort order position.
      * @return int The new chapter ID.
      */
-    protected function seed_chapter(int $instanceid, string $title): int {
+    protected function seed_chapter(int $instanceid, string $title, int $sortorder = 1): int {
         global $DB;
 
         return (int) $DB->insert_record('block_playerhud_chapters', (object) [
             'blockinstanceid' => $instanceid,
             'title'           => $title,
-            'sortorder'       => 1,
+            'sortorder'       => $sortorder,
         ]);
+    }
+
+    /**
+     * Inserts a story node with one choice for the chapter and returns both IDs.
+     *
+     * @param int $chapterid Owning chapter ID.
+     * @return array [int $nodeid, int $choiceid]
+     */
+    protected function seed_node_with_choice(int $chapterid): array {
+        global $DB;
+
+        $nodeid = (int) $DB->insert_record('block_playerhud_story_nodes', (object) [
+            'chapterid' => $chapterid,
+            'content'   => 'Node',
+            'is_start'  => 1,
+        ]);
+        $choiceid = (int) $DB->insert_record('block_playerhud_choices', (object) [
+            'nodeid' => $nodeid,
+            'text'   => 'Go',
+        ]);
+        return [$nodeid, $choiceid];
     }
 
     /**
@@ -169,5 +191,92 @@ final class chapters_test extends advanced_testcase {
 
         $this->expectException(\dml_missing_record_exception::class);
         (new chapters())->save_chapter($data, $instanceb);
+    }
+
+    /**
+     * Deleting a chapter removes it along with its scenes and choices.
+     *
+     * @covers ::delete_chapter
+     */
+    public function test_delete_chapter_removes_chapter_scenes_and_choices(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $chapterid = $this->seed_chapter($instanceid, 'Doomed');
+        [$nodeid, $choiceid] = $this->seed_node_with_choice($chapterid);
+
+        (new chapters())->delete_chapter($chapterid, $instanceid);
+
+        $this->assertFalse($DB->record_exists('block_playerhud_chapters', ['id' => $chapterid]));
+        $this->assertFalse($DB->record_exists('block_playerhud_story_nodes', ['id' => $nodeid]));
+        $this->assertFalse($DB->record_exists('block_playerhud_choices', ['id' => $choiceid]));
+    }
+
+    /**
+     * A chapter from another instance cannot be deleted.
+     *
+     * @covers ::delete_chapter
+     */
+    public function test_delete_chapter_rejects_foreign_instance(): void {
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $chapterid = $this->seed_chapter($instancea, 'Owned by A');
+
+        $this->expectException(\dml_missing_record_exception::class);
+        (new chapters())->delete_chapter($chapterid, $this->make_instance());
+    }
+
+    /**
+     * Moving a chapter up swaps its sort order with the previous one.
+     *
+     * @covers ::move_chapter
+     */
+    public function test_move_chapter_up_swaps_with_previous(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $first = $this->seed_chapter($instanceid, 'First', 1);
+        $second = $this->seed_chapter($instanceid, 'Second', 2);
+
+        (new chapters())->move_chapter($second, $instanceid, 'up');
+
+        $this->assertSame(2, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $first]));
+        $this->assertSame(1, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $second]));
+    }
+
+    /**
+     * Moving a chapter down swaps its sort order with the next one.
+     *
+     * @covers ::move_chapter
+     */
+    public function test_move_chapter_down_swaps_with_next(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $first = $this->seed_chapter($instanceid, 'First', 1);
+        $second = $this->seed_chapter($instanceid, 'Second', 2);
+
+        (new chapters())->move_chapter($first, $instanceid, 'down');
+
+        $this->assertSame(2, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $first]));
+        $this->assertSame(1, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $second]));
+    }
+
+    /**
+     * Moving the first chapter up is a no-op (it has no previous neighbour).
+     *
+     * @covers ::move_chapter
+     */
+    public function test_move_chapter_at_edge_is_noop(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $first = $this->seed_chapter($instanceid, 'First', 1);
+        $second = $this->seed_chapter($instanceid, 'Second', 2);
+
+        (new chapters())->move_chapter($first, $instanceid, 'up');
+
+        $this->assertSame(1, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $first]));
+        $this->assertSame(2, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $second]));
     }
 }

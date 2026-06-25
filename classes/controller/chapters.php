@@ -139,4 +139,87 @@ class chapters {
 
         return (int) $DB->insert_record('block_playerhud_chapters', $record);
     }
+
+    /**
+     * Deletes a chapter together with its scenes and their choices.
+     *
+     * The chapter must belong to the given block instance.
+     *
+     * @param int $chapterid The chapter to delete.
+     * @param int $instanceid The owning block instance ID.
+     * @return void
+     */
+    public function delete_chapter(int $chapterid, int $instanceid): void {
+        global $DB;
+
+        $chapter = $DB->get_record(
+            'block_playerhud_chapters',
+            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
+            '*',
+            MUST_EXIST
+        );
+
+        $sceneids = $DB->get_fieldset_select(
+            'block_playerhud_story_nodes',
+            'id',
+            'chapterid = ?',
+            [$chapter->id]
+        );
+        if ($sceneids) {
+            [$insql, $inparams] = $DB->get_in_or_equal($sceneids);
+            $DB->delete_records_select('block_playerhud_choices', "nodeid $insql", $inparams);
+        }
+        $DB->delete_records('block_playerhud_story_nodes', ['chapterid' => $chapter->id]);
+        $DB->delete_records('block_playerhud_chapters', ['id' => $chapter->id, 'blockinstanceid' => $instanceid]);
+    }
+
+    /**
+     * Swaps a chapter's sort order with its neighbour in the given direction.
+     *
+     * The chapter must belong to the given block instance. Moving past the first
+     * or last chapter is a no-op.
+     *
+     * @param int $chapterid The chapter to move.
+     * @param int $instanceid The owning block instance ID.
+     * @param string $direction Either 'up' or 'down'.
+     * @return void
+     */
+    public function move_chapter(int $chapterid, int $instanceid, string $direction): void {
+        global $DB;
+
+        $chapter = $DB->get_record(
+            'block_playerhud_chapters',
+            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
+            '*',
+            MUST_EXIST
+        );
+
+        if ($direction === 'up') {
+            $sql = "SELECT * FROM {block_playerhud_chapters}
+                     WHERE blockinstanceid = ? AND sortorder < ?
+                  ORDER BY sortorder DESC";
+        } else {
+            $sql = "SELECT * FROM {block_playerhud_chapters}
+                     WHERE blockinstanceid = ? AND sortorder > ?
+                  ORDER BY sortorder ASC";
+        }
+
+        $siblings = $DB->get_records_sql($sql, [$instanceid, $chapter->sortorder], 0, 1);
+        $sibling = reset($siblings);
+        if (!$sibling) {
+            return;
+        }
+
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            $temporder          = $chapter->sortorder;
+            $chapter->sortorder = $sibling->sortorder;
+            $sibling->sortorder = $temporder;
+            $DB->update_record('block_playerhud_chapters', $chapter);
+            $DB->update_record('block_playerhud_chapters', $sibling);
+            $transaction->allow_commit();
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
+    }
 }
