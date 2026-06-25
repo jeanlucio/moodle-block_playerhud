@@ -114,7 +114,11 @@ class tab_chapters implements renderable {
             $scenecount = $scenecounts[$chap->id] ?? 0;
             $isfirst = ($index === 0);
             $islast = ($index === $chaptercount - 1);
-            $levelwarning = ((int) $chap->required_level > $maxlevels);
+            $warnings = self::chapter_warnings(
+                (int) $chap->required_level,
+                !empty($hasstartids[(int) $chap->id]),
+                $maxlevels
+            );
 
             $data = [
                 'id'           => (int) $chap->id,
@@ -125,14 +129,9 @@ class tab_chapters implements renderable {
                     : get_string('drops_immediate', 'block_playerhud'),
                 'scene_count'     => $scenecount,
                 'has_scenes'      => ($scenecount > 0),
-                'no_start_warning' => empty($hasstartids[(int) $chap->id]),
-                'level_warning'      => $levelwarning,
-                'level_warning_text' => $levelwarning
-                    ? get_string('chapter_level_warning', 'block_playerhud', (object) [
-                        'required' => (int) $chap->required_level,
-                        'max'      => $maxlevels,
-                    ])
-                    : '',
+                'no_start_warning'   => $warnings['no_start_warning'],
+                'level_warning'      => $warnings['level_warning'],
+                'level_warning_text' => $warnings['level_warning_text'],
                 'url_scenes'   => (new moodle_url('/blocks/playerhud/manage_scenes.php', [
                     'courseid'   => $this->courseid,
                     'instanceid' => $this->instanceid,
@@ -229,5 +228,32 @@ class tab_chapters implements renderable {
         ]);
 
         return $OUTPUT->render_from_template('block_playerhud/manage_chapters', $data);
+    }
+
+    /**
+     * Computes the visibility warnings shown on a chapter card.
+     *
+     * A chapter is hidden from students when it has no start scene, or when its
+     * required level is above the block's configured maximum (the player level
+     * is capped there, so the requirement can never be met).
+     *
+     * @param int $requiredlevel The chapter's required level.
+     * @param bool $hasstart Whether the chapter has a start scene.
+     * @param int $maxlevels The block's configured maximum level.
+     * @return array The no_start_warning and level_warning flags plus the level text.
+     */
+    public static function chapter_warnings(int $requiredlevel, bool $hasstart, int $maxlevels): array {
+        $levelwarning = ($requiredlevel > $maxlevels);
+
+        return [
+            'no_start_warning'   => !$hasstart,
+            'level_warning'      => $levelwarning,
+            'level_warning_text' => $levelwarning
+                ? get_string('chapter_level_warning', 'block_playerhud', (object) [
+                    'required' => $requiredlevel,
+                    'max'      => $maxlevels,
+                ])
+                : '',
+        ];
     }
 }
