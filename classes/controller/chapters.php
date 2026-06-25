@@ -123,7 +123,6 @@ class chapters {
         $record->intro_text      = $data->intro_text ?? '';
         $record->unlock_date     = $data->unlock_date ?? 0;
         $record->required_level  = $data->required_level ?? 0;
-        $record->sortorder       = $data->sortorder ?? 1;
 
         if (!empty($data->chapterid)) {
             $DB->get_record(
@@ -133,9 +132,17 @@ class chapters {
                 MUST_EXIST
             );
             $record->id = $data->chapterid;
+            // Sort order is managed by reordering, not the edit form.
             $DB->update_record('block_playerhud_chapters', $record);
             return (int) $data->chapterid;
         }
+
+        // New chapters are appended to the end of the instance's list.
+        $maxorder = (int) $DB->get_field_sql(
+            "SELECT MAX(sortorder) FROM {block_playerhud_chapters} WHERE blockinstanceid = ?",
+            [$instanceid]
+        );
+        $record->sortorder = $maxorder + 1;
 
         return (int) $DB->insert_record('block_playerhud_chapters', $record);
     }

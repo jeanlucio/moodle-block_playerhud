@@ -116,7 +116,6 @@ final class chapters_test extends advanced_testcase {
             'intro_text'     => 'Welcome',
             'unlock_date'    => 0,
             'required_level' => 2,
-            'sortorder'      => 3,
             'chapterid'      => 0,
         ];
 
@@ -128,7 +127,25 @@ final class chapters_test extends advanced_testcase {
         $this->assertSame('Intro', $record->title);
         $this->assertSame('Welcome', $record->intro_text);
         $this->assertSame(2, (int) $record->required_level);
-        $this->assertSame(3, (int) $record->sortorder);
+        // The first chapter is appended at position one.
+        $this->assertSame(1, (int) $record->sortorder);
+    }
+
+    /**
+     * New chapters are appended to the end of the instance's order.
+     *
+     * @covers ::save_chapter
+     */
+    public function test_save_chapter_appends_to_end(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+
+        $first = (new chapters())->save_chapter((object) ['title' => 'First', 'chapterid' => 0], $instanceid);
+        $second = (new chapters())->save_chapter((object) ['title' => 'Second', 'chapterid' => 0], $instanceid);
+
+        $this->assertSame(1, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $first]));
+        $this->assertSame(2, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $second]));
     }
 
     /**
