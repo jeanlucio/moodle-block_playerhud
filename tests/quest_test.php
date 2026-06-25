@@ -781,4 +781,227 @@ final class quest_test extends advanced_testcase {
             'Claiming must not set the first-quest milestone.'
         );
     }
+
+    /**
+     * has_claimable_quests is true once a completed quest remains unclaimed.
+     *
+     * @covers ::has_claimable_quests
+     */
+    public function test_has_claimable_quests_detects_completed_unclaimed(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $quest = $this->create_quest(quest::TYPE_LEVEL, '2', 100);
+
+        // Level 1 (XP below the requirement): nothing claimable yet.
+        $this->assertFalse(
+            quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 50, 1)
+        );
+
+        // Reaching level 2 makes the reward claimable.
+        $this->assertTrue(
+            quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 250, 2)
+        );
+
+        // After claiming it, nothing remains.
+        global $DB;
+        $DB->insert_record('block_playerhud_quest_log', (object) [
+            'questid' => $quest->id, 'userid' => $user->id, 'timecreated' => time(),
+        ]);
+        $this->assertFalse(
+            quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 250, 2)
+        );
+    }
+
+    /**
+     * has_claimable_quests is false when the instance has no enabled quests.
+     *
+     * @covers ::has_claimable_quests
+     */
+    public function test_has_claimable_quests_no_quests(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $this->assertFalse(
+            quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 9999, 99)
+        );
+    }
+
+    /**
+     * has_claimable_quests resolves item, trade and chapter requirements.
+     *
+     * @covers ::has_claimable_quests
+     */
+    public function test_has_claimable_quests_item_trade_chapter(): void {
+        global $DB;
+        $user = $this->getDataGenerator()->create_user();
+
+        // Unique-items quest needing two distinct items.
+        $this->create_quest(quest::TYPE_UNIQUE_ITEMS, '2', 50);
+        $item1 = $this->create_dummy_item('Item 1');
+        $item2 = $this->create_dummy_item('Item 2');
+        $this->give_item($user->id, $item1->id);
+
+        // Only one unique item so far: not claimable.
+        $this->assertFalse(
+            quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 0, 1)
+        );
+
+        // A second distinct item satisfies the quest.
+        $this->give_item($user->id, $item2->id);
+        $this->assertTrue(
+            quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 0, 1)
+        );
+    }
+
+    /**
+     * build_record_from_suggestion maps a descriptor onto a quest record.
+     *
+     * @covers ::build_record_from_suggestion
+     */
+    public function test_build_record_from_suggestion(): void {
+        $sug = [
+            'type' => quest::TYPE_LEVEL,
+            'requirement' => 5,
+            'name' => 'Reach level 5',
+            'reward_xp' => 120,
+            'image_todo' => '📈',
+            'image_done' => '👑',
+        ];
+
+        $record = quest::build_record_from_suggestion($this->instanceid, $sug);
+        $this->assertEquals($this->instanceid, $record->blockinstanceid);
+        $this->assertEquals('Reach level 5', $record->name);
+        $this->assertEquals(quest::TYPE_LEVEL, $record->type);
+        $this->assertSame('5', $record->requirement);
+        $this->assertEquals(120, $record->reward_xp);
+        $this->assertEquals(1, $record->enabled);
+
+        // An XP override replaces the suggestion's reward and is floored at zero.
+        $overridden = quest::build_record_from_suggestion($this->instanceid, $sug, -10);
+        $this->assertEquals(0, $overridden->reward_xp);
+    }
+
+    /**
+     * get_heuristic_suggestions proposes level, collection and economy milestones
+     * and skips milestones that already exist as quests.
+     *
+     * @covers ::get_heuristic_suggestions
+     */
+    public function test_get_heuristic_suggestions(): void {
+        $config = (object) ['max_levels' => 20, 'xp_per_level' => 100];
+
+        // Two enabled items unlock the collection milestones; an unlimited trade unlocks economy.
+        $this->create_dummy_item('Alpha');
+        $this->create_dummy_item('Beta');
+        global $DB;
+        $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Open Trade',
+            'groupid' => 0, 'centralized' => 1, 'onetime' => 0, 'timecreated' => time(),
+        ]);
+
+        $suggestions = quest::get_heuristic_suggestions($this->instanceid, $this->course->id, $config);
+        $types = array_column($suggestions, 'type');
+
+        $this->assertContains(quest::TYPE_LEVEL, $types, 'Level milestones must be suggested.');
+        $this->assertContains(quest::TYPE_UNIQUE_ITEMS, $types, 'Collection milestones must be suggested.');
+        $this->assertContains(quest::TYPE_TRADES, $types, 'Economy milestones must be suggested.');
+
+        // A level milestone that already exists as a quest must not be suggested again.
+        $existinglevel = null;
+        foreach ($suggestions as $sug) {
+            if ($sug['type'] == quest::TYPE_LEVEL) {
+                $existinglevel = $sug['requirement'];
+                break;
+            }
+        }
+        $this->create_quest(quest::TYPE_LEVEL, (string) $existinglevel, 0);
+
+        $after = quest::get_heuristic_suggestions($this->instanceid, $this->course->id, $config);
+        $levelreqs = array_column(array_filter($after, fn($s) => $s['type'] == quest::TYPE_LEVEL), 'requirement');
+        $this->assertNotContains($existinglevel, $levelreqs, 'An already-created level milestone must be skipped.');
+    }
+
+    /**
+     * has_claimable_quests evaluates every count-based requirement type without error.
+     *
+     * @covers ::has_claimable_quests
+     */
+    public function test_has_claimable_quests_all_requirement_types(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Relic');
+
+        // One unmet quest of each count-based type; the switch must visit every branch.
+        $this->create_quest(quest::TYPE_XP_TOTAL, '9999');
+        $this->create_quest(quest::TYPE_TOTAL_ITEMS, '99');
+        $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '5', 0, 0, $item->id);
+        $this->create_quest(quest::TYPE_TRADES, '99');
+        $this->create_quest(quest::TYPE_SPECIFIC_TRADE, '5', 0, 0, 4242);
+        $this->create_quest(quest::TYPE_CHAPTER, '3');
+
+        // None are satisfied, so nothing is claimable, but every branch executed.
+        $this->assertFalse(
+            quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 0, 1)
+        );
+
+        // Satisfy the XP-total quest and confirm it now reports claimable.
+        $this->assertTrue(
+            quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 10000, 1)
+        );
+    }
+
+    /**
+     * Activity completion drives both the heuristic suggestion and the claimable check.
+     *
+     * @covers ::has_claimable_quests
+     * @covers ::get_heuristic_suggestions
+     */
+    public function test_activity_completion_quests(): void {
+        global $DB, $CFG;
+        require_once($CFG->libdir . '/completionlib.php');
+
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $coursecontext = \context_course::instance($course->id);
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => $coursecontext->id, 'showinsubcontexts' => 0,
+            'pagetypepattern' => 'course-view-*', 'subpagepattern' => null, 'defaultregion' => 'side-pre',
+            'defaultweight' => 0, 'configdata' => base64_encode(serialize(new \stdClass())),
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        $page = $this->getDataGenerator()->create_module(
+            'page',
+            ['course' => $course->id, 'completion' => COMPLETION_TRACKING_MANUAL]
+        );
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'student');
+
+        // The completion-tracked module is offered as an activity quest.
+        $suggestions = quest::get_heuristic_suggestions($instanceid, $course->id, (object) ['max_levels' => 10]);
+        $activityreqs = array_column(
+            array_filter($suggestions, fn($s) => $s['type'] == quest::TYPE_ACTIVITY),
+            'requirement'
+        );
+        $activityreqs = array_map('intval', $activityreqs);
+        $this->assertContains((int) $page->cmid, $activityreqs, 'A completion-tracked activity must be suggested.');
+
+        // Create the matching quest; it becomes claimable only after the module is completed.
+        $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $instanceid, 'name' => 'Finish the page', 'description' => '',
+            'type' => quest::TYPE_ACTIVITY, 'requirement' => (string) $page->cmid, 'req_itemid' => 0,
+            'reward_xp' => 50, 'reward_itemid' => 0, 'required_class_id' => '0',
+            'image_todo' => '📋', 'image_done' => '🏅', 'enabled' => 1,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        $this->assertFalse(
+            quest::has_claimable_quests($instanceid, $user->id, $course->id, 0, 1),
+            'Incomplete activity must not be claimable.'
+        );
+
+        $cm = get_coursemodule_from_id('page', $page->cmid);
+        $completion = new \completion_info($course);
+        $completion->update_state($cm, COMPLETION_COMPLETE, $user->id);
+
+        $this->assertTrue(
+            quest::has_claimable_quests($instanceid, $user->id, $course->id, 0, 1),
+            'Completed activity must become claimable.'
+        );
+    }
 }

@@ -563,4 +563,360 @@ final class game_test extends advanced_testcase {
         $second = game::process_collection($this->instanceid, $drop->id, $user->id);
         $this->assertEquals('', $second['milestone'], 'A subsequent PlayerCoin must not signal again.');
     }
+
+    /**
+     * Create an item carrying a power type and emoji image.
+     *
+     * @param string $name Item name.
+     * @param string $actiontype The action_type value (e.g. playercoin, avatar_profile).
+     * @param string $image Emoji image.
+     * @return \stdClass The created item.
+     */
+    protected function create_power_item(string $name, string $actiontype, string $image = ''): \stdClass {
+        global $DB;
+        $item = $this->create_dummy_item($name, 0);
+        $DB->set_field('block_playerhud_items', 'action_type', $actiontype, ['id' => $item->id]);
+        $DB->set_field('block_playerhud_items', 'image', $image, ['id' => $item->id]);
+        $item->action_type = $actiontype;
+        $item->image = $image;
+        return $item;
+    }
+
+    /**
+     * get_player auto-creates a default profile when none exists and reuses it afterwards.
+     *
+     * @covers ::get_player
+     */
+    public function test_get_player_creates_default_record(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+
+        $this->assertEquals(0, $DB->count_records('block_playerhud_user', ['userid' => $user->id]));
+
+        $player = game::get_player($this->instanceid, $user->id);
+        $this->assertEquals(0, (int) $player->currentxp);
+        $this->assertEquals(1, (int) $player->enable_gamification);
+        $this->assertEquals(1, (int) $player->ranking_visibility);
+        $this->assertNotEmpty($player->id);
+        $this->assertEquals(1, $DB->count_records('block_playerhud_user', ['userid' => $user->id]));
+
+        // A second call reuses the same record instead of inserting another.
+        $again = game::get_player($this->instanceid, $user->id);
+        $this->assertEquals($player->id, $again->id);
+        $this->assertEquals(1, $DB->count_records('block_playerhud_user', ['userid' => $user->id]));
+    }
+
+    /**
+     * toggle_gamification flips the enable_gamification flag both ways.
+     *
+     * @covers ::toggle_gamification
+     */
+    public function test_toggle_gamification(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+
+        game::toggle_gamification($this->instanceid, $user->id, false);
+        $this->assertEquals(0, (int) game::get_player($this->instanceid, $user->id)->enable_gamification);
+
+        game::toggle_gamification($this->instanceid, $user->id, true);
+        $this->assertEquals(1, (int) game::get_player($this->instanceid, $user->id)->enable_gamification);
+    }
+
+    /**
+     * toggle_ranking_visibility flips the ranking_visibility flag both ways.
+     *
+     * @covers ::toggle_ranking_visibility
+     */
+    public function test_toggle_ranking_visibility(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+
+        game::toggle_ranking_visibility($this->instanceid, $user->id, false);
+        $this->assertEquals(0, (int) game::get_player($this->instanceid, $user->id)->ranking_visibility);
+
+        game::toggle_ranking_visibility($this->instanceid, $user->id, true);
+        $this->assertEquals(1, (int) game::get_player($this->instanceid, $user->id)->ranking_visibility);
+    }
+
+    /**
+     * get_inventory returns owned items and hides revoked or consumed entries.
+     *
+     * @covers ::get_inventory
+     */
+    public function test_get_inventory_excludes_revoked_and_consumed(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+
+        $kept = $this->create_dummy_item('Kept', 10);
+        $revoked = $this->create_dummy_item('Revoked', 10);
+        $consumed = $this->create_dummy_item('Consumed', 10);
+
+        $now = time();
+        $DB->insert_records('block_playerhud_inventory', [
+            (object) ['userid' => $user->id, 'itemid' => $kept->id, 'dropid' => 0, 'source' => 'map', 'timecreated' => $now],
+            (object) ['userid' => $user->id, 'itemid' => $revoked->id,
+                'dropid' => 0, 'source' => 'revoked', 'timecreated' => $now],
+            (object) ['userid' => $user->id, 'itemid' => $consumed->id,
+                'dropid' => 0, 'source' => 'consumed', 'timecreated' => $now],
+        ]);
+
+        $inventory = game::get_inventory($user->id, $this->instanceid);
+        $itemids = array_map(static fn($row) => (int) $row->id, $inventory);
+
+        $this->assertContains((int) $kept->id, $itemids);
+        $this->assertNotContains((int) $revoked->id, $itemids);
+        $this->assertNotContains((int) $consumed->id, $itemids);
+    }
+
+    /**
+     * has_item reflects whether the user owns a given item.
+     *
+     * @covers ::has_item
+     */
+    public function test_has_item(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Owned', 10);
+
+        $this->assertFalse(game::has_item($user->id, $item->id));
+
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid' => $user->id, 'itemid' => $item->id, 'dropid' => 0, 'source' => 'map', 'timecreated' => time(),
+        ]);
+
+        $this->assertTrue(game::has_item($user->id, $item->id));
+    }
+
+    /**
+     * get_user_rank orders by XP, breaks ties by earlier arrival and excludes managers.
+     *
+     * @covers ::get_user_rank
+     */
+    public function test_get_user_rank_tiebreak_and_manager_exclusion(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+        $bi = (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => $coursecontext->id, 'showinsubcontexts' => 0,
+            'pagetypepattern' => 'course-view-*', 'subpagepattern' => null, 'defaultregion' => 'side-pre',
+            'defaultweight' => 0, 'configdata' => base64_encode(serialize(new \stdClass())),
+            'timecreated' => time(), 'timemodified' => time(),
+        ];
+        $instanceid = $DB->insert_record('block_instances', $bi);
+
+        $leader = $this->getDataGenerator()->create_user();
+        $earlytie = $this->getDataGenerator()->create_user();
+        $latetie = $this->getDataGenerator()->create_user();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        $now = time();
+        // Leader leads on XP; the two tied players share XP but arrived at different times.
+        $rows = [
+            [$leader->id, 300, $now],
+            [$earlytie->id, 200, $now - 100],
+            [$latetie->id, 200, $now],
+            [$teacher->id, 999, $now - 500],
+        ];
+        foreach ($rows as [$uid, $xp, $tm]) {
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid' => $instanceid, 'userid' => $uid, 'currentxp' => $xp,
+                'enable_gamification' => 1, 'ranking_visibility' => 1, 'timecreated' => $tm, 'timemodified' => $tm,
+            ]);
+        }
+
+        // Manager is excluded despite the highest XP, so the leader is rank 1.
+        $this->assertEquals(1, game::get_user_rank($instanceid, $leader->id, 300));
+        // Earlier arrival wins the tie.
+        $this->assertEquals(2, game::get_user_rank($instanceid, $earlytie->id, 200));
+        $this->assertEquals(3, game::get_user_rank($instanceid, $latetie->id, 200));
+    }
+
+    /**
+     * get_user_rank only counts users still enrolled in the course.
+     *
+     * @covers ::get_user_rank
+     */
+    public function test_get_user_rank_respects_enrolment(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+        $bi = (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => $coursecontext->id, 'showinsubcontexts' => 0,
+            'pagetypepattern' => 'course-view-*', 'subpagepattern' => null, 'defaultregion' => 'side-pre',
+            'defaultweight' => 0, 'configdata' => base64_encode(serialize(new \stdClass())),
+            'timecreated' => time(), 'timemodified' => time(),
+        ];
+        $instanceid = $DB->insert_record('block_instances', $bi);
+
+        $enrolled = $this->getDataGenerator()->create_user();
+        $ghost = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($enrolled->id, $course->id, 'student');
+
+        $now = time();
+        foreach ([[$enrolled->id, 100], [$ghost->id, 500]] as [$uid, $xp]) {
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid' => $instanceid, 'userid' => $uid, 'currentxp' => $xp,
+                'enable_gamification' => 1, 'ranking_visibility' => 1, 'timecreated' => $now, 'timemodified' => $now,
+            ]);
+        }
+
+        // The higher-XP ghost is not enrolled, so the enrolled student still ranks 1.
+        $this->assertEquals(1, game::get_user_rank($instanceid, $enrolled->id, 100, $course->id));
+    }
+
+    /**
+     * get_full_trades populates each trade with its requirement and reward items.
+     *
+     * @covers ::get_full_trades
+     */
+    public function test_get_full_trades_populates_requirements_and_rewards(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $cost = $this->create_dummy_item('Coin', 0);
+        $prize = $this->create_dummy_item('Trophy', 0);
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Trophy Trade',
+            'groupid' => 0, 'centralized' => 1, 'onetime' => 0, 'timecreated' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_trade_reqs', (object) ['tradeid' => $tradeid, 'itemid' => $cost->id, 'qty' => 3]);
+        $DB->insert_record('block_playerhud_trade_rewards', (object) ['tradeid' => $tradeid, 'itemid' => $prize->id, 'qty' => 1]);
+
+        $trades = game::get_full_trades($this->instanceid);
+        $this->assertArrayHasKey($tradeid, $trades);
+        $trade = $trades[$tradeid];
+        $this->assertCount(1, $trade->requirements);
+        $this->assertCount(1, $trade->rewards);
+        $this->assertEquals($cost->id, reset($trade->requirements)->itemid);
+        $this->assertEquals(3, (int) reset($trade->requirements)->qty);
+        $this->assertEquals($prize->id, reset($trade->rewards)->itemid);
+    }
+
+    /**
+     * get_full_trades returns an empty array when the instance has no trades.
+     *
+     * @covers ::get_full_trades
+     */
+    public function test_get_full_trades_empty(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $this->assertSame([], game::get_full_trades($this->instanceid));
+    }
+
+    /**
+     * build_trade_suggestions yields one suggestion per uncovered avatar plus a bundle,
+     * with discounted cost for robot/alien avatars.
+     *
+     * @covers ::build_trade_suggestions
+     */
+    public function test_build_trade_suggestions(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $coin = $this->create_power_item('PlayerCoin', 'playercoin', '🪙');
+        $robot = $this->create_power_item('Robot', 'avatar_profile', '🤖');
+        $fox = $this->create_power_item('Fox', 'avatar_profile', '🦊');
+
+        $suggestions = game::build_trade_suggestions($this->instanceid);
+
+        $byuid = [];
+        foreach ($suggestions as $sug) {
+            $byuid[$sug['uid']] = $sug;
+        }
+
+        $this->assertArrayHasKey('ind_' . $robot->id, $byuid);
+        $this->assertArrayHasKey('ind_' . $fox->id, $byuid);
+        $this->assertArrayHasKey('bundle_all', $byuid);
+
+        // Robot/alien avatars are discounted to 1 coin; ordinary avatars cost 5.
+        $this->assertEquals(1, $byuid['ind_' . $robot->id]['cost_qty']);
+        $this->assertEquals(5, $byuid['ind_' . $fox->id]['cost_qty']);
+        $this->assertEquals(50, $byuid['bundle_all']['cost_qty']);
+        $this->assertEquals($coin->id, $byuid['ind_' . $robot->id]['cost_itemid']);
+        $this->assertCount(2, $byuid['bundle_all']['rewards']);
+    }
+
+    /**
+     * build_trade_suggestions skips an avatar that is already the sole reward of a trade.
+     *
+     * @covers ::build_trade_suggestions
+     */
+    public function test_build_trade_suggestions_skips_covered_avatar(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $this->create_power_item('PlayerCoin', 'playercoin', '🪙');
+        $covered = $this->create_power_item('Fox', 'avatar_profile', '🦊');
+
+        // An existing trade already grants the Fox as its sole reward.
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Fox Trade',
+            'groupid' => 0, 'centralized' => 1, 'onetime' => 1, 'timecreated' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_trade_rewards', (object) ['tradeid' => $tradeid, 'itemid' => $covered->id, 'qty' => 1]);
+
+        $uids = array_column(game::build_trade_suggestions($this->instanceid), 'uid');
+        $this->assertNotContains('ind_' . $covered->id, $uids, 'Already-covered avatar must not be suggested individually.');
+    }
+
+    /**
+     * build_trade_suggestions returns nothing without a PlayerCoin or avatars.
+     *
+     * @covers ::build_trade_suggestions
+     */
+    public function test_build_trade_suggestions_requires_prerequisites(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        // No PlayerCoin yet.
+        $this->create_power_item('Fox', 'avatar_profile', '🦊');
+        $this->assertSame([], game::build_trade_suggestions($this->instanceid));
+    }
+
+    /**
+     * create_trade_from_suggestion persists a one-time trade with its cost and rewards.
+     *
+     * @covers ::create_trade_from_suggestion
+     */
+    public function test_create_trade_from_suggestion(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $coin = $this->create_power_item('PlayerCoin', 'playercoin', '🪙');
+        $avatar = $this->create_power_item('Fox', 'avatar_profile', '🦊');
+
+        $sug = [
+            'name' => 'Fox Avatar', 'cost_itemid' => $coin->id, 'cost_qty' => 5,
+            'rewards' => [['id' => $avatar->id, 'qty' => 1]],
+        ];
+        $tradeid = game::create_trade_from_suggestion($this->instanceid, $sug);
+
+        $trade = $DB->get_record('block_playerhud_trades', ['id' => $tradeid], '*', MUST_EXIST);
+        $this->assertEquals('Fox Avatar', $trade->name);
+        $this->assertEquals(1, (int) $trade->onetime);
+        $this->assertEquals(1, (int) $trade->centralized);
+
+        $req = $DB->get_record('block_playerhud_trade_reqs', ['tradeid' => $tradeid], '*', MUST_EXIST);
+        $this->assertEquals($coin->id, (int) $req->itemid);
+        $this->assertEquals(5, (int) $req->qty);
+
+        $reward = $DB->get_record('block_playerhud_trade_rewards', ['tradeid' => $tradeid], '*', MUST_EXIST);
+        $this->assertEquals($avatar->id, (int) $reward->itemid);
+    }
 }
