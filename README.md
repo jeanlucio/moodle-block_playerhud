@@ -11,9 +11,7 @@
 [English](#english) | [Português](#português)
 
 <details>
-<summary><b>📑 Table of Contents / Índice</b></summary>
-
-**English**
+<summary><b>📑 Table of Contents</b></summary>
 
 - [✨ Features](#-features)
 - [🏆 Group Ranking Behavior](#-group-ranking-behavior)
@@ -34,28 +32,6 @@
   - [Where API keys are configured](#where-api-keys-are-configured)
   - [Data Transmission](#data-transmission)
 - [📄 License / Licença](#-license--licença)
-
-**Português**
-
-- [✨ Funcionalidades](#-funcionalidades)
-- [🏆 Comportamento do Ranking de Grupos](#-comportamento-do-ranking-de-grupos)
-- [⚖️ Painel de Saúde da Economia](#-painel-de-saúde-da-economia)
-- [🎓 Finalidade Educacional](#-finalidade-educacional)
-- [🕹️ Ecossistema PlayerGames](#-ecossistema-playergames)
-- [📦 Requisitos](#-requisitos)
-- [🛠️ Instalação](#-instalação)
-- [📖 Como Usar](#-como-usar)
-- [🌱 Ambiente de Demonstração (Quick Start)](#-ambiente-de-demonstração-quick-start)
-- [🧪 Testes Automatizados](#-testes-automatizados)
-- [🔐 Segurança e Conformidade](#-segurança-e-conformidade)
-- [🔎 Divulgação de Serviço de Terceiros](#-divulgação-de-serviço-de-terceiros)
-  - [O recurso de IA é obrigatório?](#o-recurso-de-ia-é-obrigatório)
-  - [🔗 Cadeia de Provedores de IA](#-cadeia-de-provedores-de-ia)
-  - [Provedores diretos suportados](#provedores-diretos-suportados)
-  - [Como obter a chave de API](#como-obter-a-chave-de-api)
-  - [Onde a chave é configurada](#onde-a-chave-é-configurada)
-  - [Transmissão de dados](#transmissão-de-dados)
-- [📄 Licença](#-licença)
 
 </details>
 
@@ -462,6 +438,31 @@ This project is licensed under the **GNU General Public License v3 (GPLv3)**.
 O **Bloco PlayerHUD** é um sistema modular de gamificação para Moodle que introduz mecânicas estruturadas de progressão baseadas em **XP, Níveis, Inventário e Ranking**.
 
 Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo que os alunos acompanhem seu progresso em tempo real, enquanto o professor configura as mecânicas de engajamento de acordo com seus objetivos pedagógicos.
+
+<details>
+<summary><b>📑 Índice</b></summary>
+
+- [✨ Funcionalidades](#-funcionalidades)
+- [🏆 Comportamento do Ranking de Grupos](#-comportamento-do-ranking-de-grupos)
+- [⚖️ Painel de Saúde da Economia](#-painel-de-saúde-da-economia)
+- [🎓 Finalidade Educacional](#-finalidade-educacional)
+- [🕹️ Ecossistema PlayerGames](#-ecossistema-playergames)
+- [📦 Requisitos](#-requisitos)
+- [🛠️ Instalação](#-instalação)
+- [📖 Como Usar](#-como-usar)
+- [🌱 Ambiente de Demonstração (Quick Start)](#-ambiente-de-demonstração-quick-start)
+- [🧪 Testes Automatizados](#-testes-automatizados)
+- [🔐 Segurança e Conformidade](#-segurança-e-conformidade)
+- [🔎 Divulgação de Serviço de Terceiros](#-divulgação-de-serviço-de-terceiros)
+  - [O recurso de IA é obrigatório?](#o-recurso-de-ia-é-obrigatório)
+  - [🔗 Cadeia de Provedores de IA](#-cadeia-de-provedores-de-ia)
+  - [Provedores diretos suportados](#provedores-diretos-suportados)
+  - [Como obter a chave de API](#como-obter-a-chave-de-api)
+  - [Onde a chave é configurada](#onde-a-chave-é-configurada)
+  - [Transmissão de dados](#transmissão-de-dados)
+- [📄 Licença](#-licença)
+
+</details>
 
 ---
 
