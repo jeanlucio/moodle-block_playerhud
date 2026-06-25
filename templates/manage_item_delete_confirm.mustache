@@ -1,0 +1,104 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/manage_item_delete_confirm
+
+    Confirmation screen shown before deleting items that would orphan a trade.
+
+    Context variables required for this template:
+    * heading - Pre-formatted, safe heading text.
+    * has_orphaned - Whether any trade will be deleted.
+    * orphaned_warning - Impact warning message for deleted trades.
+    * orphaned_trades - Array of trades that will be deleted, each with a name.
+    * has_surviving - Whether any trade keeps existing without the item.
+    * surviving_notice - Informational message for surviving trades.
+    * surviving_trades - Array of trades that remain, each with a name.
+    * form_action - URL the confirmation form posts to.
+    * sesskey - Session key.
+    * action - Form action value (delete_force or bulk_delete_force).
+    * is_bulk - Whether this confirms a bulk deletion.
+    * item_id - The single item ID (when not bulk).
+    * bulk_ids - Array of item IDs (when bulk), each with an id.
+    * sort - Current sort column carried through the form.
+    * dir - Current sort direction carried through the form.
+    * cancel_url - URL of the cancel button.
+    * str_cancel - Cancel button label.
+    * confirm_label - Submit button label.
+    * edit_url - URL of the edit-trades link.
+    * str_edit_trades - Edit-trades link label.
+
+    Example context (json):
+    {
+        "heading": "Bronze Key",
+        "has_orphaned": true,
+        "orphaned_warning": "Deleting this item will also remove the trades below.",
+        "orphaned_trades": [{"name": "Keys for Scroll"}],
+        "has_surviving": true,
+        "surviving_notice": "This item will also be removed from the trades below, which will remain.",
+        "surviving_trades": [{"name": "Avatar pack"}],
+        "form_action": "https://example.com/manage.php",
+        "sesskey": "abc123",
+        "action": "delete_force",
+        "is_bulk": false,
+        "item_id": 5,
+        "bulk_ids": [],
+        "sort": "id",
+        "dir": "DESC",
+        "cancel_url": "https://example.com/manage.php?tab=items",
+        "str_cancel": "Cancel",
+        "confirm_label": "Delete item and 1 trade",
+        "edit_url": "https://example.com/manage.php?tab=trades",
+        "str_edit_trades": "Edit trades instead"
+    }
+}}
+<div class="block-playerhud-delete-confirm">
+    <h3 class="h3">{{{heading}}}</h3>
+    {{#has_orphaned}}
+        <div class="alert alert-warning" role="alert">{{orphaned_warning}}</div>
+        <ul class="mb-3">
+            {{#orphaned_trades}}
+                <li>{{name}}</li>
+            {{/orphaned_trades}}
+        </ul>
+    {{/has_orphaned}}
+    {{#has_surviving}}
+        <div class="alert alert-info" role="alert">{{surviving_notice}}</div>
+        <ul class="mb-3">
+            {{#surviving_trades}}
+                <li>{{name}}</li>
+            {{/surviving_trades}}
+        </ul>
+    {{/has_surviving}}
+    <form method="post" action="{{form_action}}">
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <input type="hidden" name="action" value="{{action}}">
+        <input type="hidden" name="tab" value="items">
+        <input type="hidden" name="sort" value="{{sort}}">
+        <input type="hidden" name="dir" value="{{dir}}">
+        {{^is_bulk}}
+            <input type="hidden" name="itemid" value="{{item_id}}">
+        {{/is_bulk}}
+        {{#bulk_ids}}
+            <input type="hidden" name="bulk_ids[]" value="{{id}}">
+        {{/bulk_ids}}
+        <a href="{{cancel_url}}" class="btn btn-secondary me-2">{{str_cancel}}</a>
+        <button type="submit" class="btn btn-danger">{{confirm_label}}</button>
+    </form>
+    <div>
+        <a href="{{edit_url}}" class="btn btn-outline-secondary mt-3">{{str_edit_trades}}</a>
+    </div>
+</div>

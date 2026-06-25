@@ -196,6 +196,54 @@ class items {
     }
 
     /**
+     * Returns trades that reference the given items but would survive their
+     * removal — i.e. the item is stripped from the trade, yet it keeps at least
+     * one requirement and one reward, so it is NOT deleted.
+     *
+     * These are the trades shown as an informational notice (the item is
+     * silently removed from them) as opposed to the orphaned ones that are
+     * deleted outright. Orphaned trades are excluded from the result.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int[] $itemids Item IDs being deleted.
+     * @return \stdClass[] Surviving affected trade records (id, name) keyed by trade ID.
+     */
+    public static function find_affected_surviving_trades(int $instanceid, array $itemids): array {
+        global $DB;
+
+        if (empty($itemids)) {
+            return [];
+        }
+
+        [$rsql, $rparams] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED, 'sr');
+        [$wsql, $wparams] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED, 'sw');
+
+        $affected = $DB->get_records_sql(
+            "SELECT t.id, t.name
+               FROM {block_playerhud_trades} t
+              WHERE t.blockinstanceid = :iid
+                AND (
+                    EXISTS (
+                        SELECT 1 FROM {block_playerhud_trade_reqs} r
+                         WHERE r.tradeid = t.id AND r.itemid $rsql
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM {block_playerhud_trade_rewards} w
+                         WHERE w.tradeid = t.id AND w.itemid $wsql
+                    )
+                )",
+            array_merge(['iid' => $instanceid], $rparams, $wparams)
+        );
+
+        // The orphaned trades are reported separately (they get deleted), so drop them here.
+        foreach (self::find_orphaned_trades($instanceid, $itemids) as $id => $orphan) {
+            unset($affected[$id]);
+        }
+
+        return $affected;
+    }
+
+    /**
      * Deletes an item record, its inventory/drop dependencies, and any orphaned
      * trades in a single delegated transaction.
      *

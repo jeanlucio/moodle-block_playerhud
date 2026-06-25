@@ -119,55 +119,30 @@ if ($action == 'toggle_quest' && $questid && confirm_sesskey()) {
 if ($action === 'delete' && $itemid && confirm_sesskey()) {
     $item = $DB->get_record('block_playerhud_items', ['id' => $itemid, 'blockinstanceid' => $instanceid]);
     if ($item) {
-        $affectedtrades = \block_playerhud\controller\items::find_orphaned_trades($instanceid, [$itemid]);
+        $orphanedtrades  = \block_playerhud\controller\items::find_orphaned_trades($instanceid, [$itemid]);
+        $survivingtrades = \block_playerhud\controller\items::find_affected_surviving_trades($instanceid, [$itemid]);
 
-        if (!empty($affectedtrades)) {
+        if (!empty($orphanedtrades) || !empty($survivingtrades)) {
             $itemsurl = new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]);
             $PAGE->set_url($itemsurl);
 
-            $tradelist = html_writer::start_tag('ul', ['class' => 'mb-3']);
-            foreach ($affectedtrades as $t) {
-                $tradelist .= html_writer::tag('li', s($t->name));
-            }
-            $tradelist .= html_writer::end_tag('ul');
-
-            $confirmform  = html_writer::start_tag('form', ['method' => 'post', 'action' => $baseurl->out(false)]);
-            $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-            $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'delete_force']);
-            $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'itemid', 'value' => $itemid]);
-            $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'tab', 'value' => 'items']);
-            $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sort', 'value' => s($sort)]);
-            $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'dir', 'value' => s($dir)]);
-            $confirmform .= html_writer::tag(
-                'button',
-                get_string('cancel'),
-                ['type' => 'button', 'class' => 'btn btn-secondary me-2',
-                 'onclick' => 'window.location=' . json_encode($itemsurl->out(false))]
-            );
-            $tradecount = count($affectedtrades);
-            $confirmform .= html_writer::tag(
-                'button',
-                $tradecount === 1
-                    ? get_string('item_delete_confirm_trade', 'block_playerhud')
-                    : get_string('item_delete_confirm_trades', 'block_playerhud', $tradecount),
-                ['type' => 'submit', 'class' => 'btn btn-danger']
-            );
-            $confirmform .= html_writer::end_tag('form');
-            $tradesurl = new moodle_url($baseurl, ['tab' => 'trades']);
-            $confirmform .= html_writer::div(
-                html_writer::link(
-                    $tradesurl,
-                    get_string('item_delete_edit_trades', 'block_playerhud'),
-                    ['class' => 'btn btn-outline-secondary mt-3']
-                )
+            $confirmctx = \block_playerhud\output\manage\item_delete_confirm::build_context(
+                format_string($item->name),
+                $orphanedtrades,
+                $survivingtrades,
+                false,
+                [$itemid],
+                [
+                    'form'   => $baseurl->out(false),
+                    'cancel' => $itemsurl->out(false),
+                    'edit'   => (new moodle_url($baseurl, ['tab' => 'trades']))->out(false),
+                ],
+                $sort,
+                $dir
             );
 
-            $impactkey = $tradecount === 1 ? 'item_delete_trade_impact_single' : 'item_delete_trade_impact';
             echo $OUTPUT->header();
-            echo $OUTPUT->heading(format_string($item->name), 3);
-            echo $OUTPUT->notification(get_string($impactkey, 'block_playerhud'), 'warning', false);
-            echo $tradelist;
-            echo $confirmform;
+            echo $OUTPUT->render_from_template('block_playerhud/manage_item_delete_confirm', $confirmctx);
             echo $OUTPUT->footer();
             exit;
         }
@@ -208,61 +183,30 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
 
         if ($items) {
             $itemids = array_keys($items);
-            $affectedtrades = \block_playerhud\controller\items::find_orphaned_trades($instanceid, $itemids);
+            $orphanedtrades  = \block_playerhud\controller\items::find_orphaned_trades($instanceid, $itemids);
+            $survivingtrades = \block_playerhud\controller\items::find_affected_surviving_trades($instanceid, $itemids);
 
-            if (!empty($affectedtrades)) {
+            if (!empty($orphanedtrades) || !empty($survivingtrades)) {
                 $itemsurl = new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]);
                 $PAGE->set_url($itemsurl);
 
-                $tradelist = html_writer::start_tag('ul', ['class' => 'mb-3']);
-                foreach ($affectedtrades as $t) {
-                    $tradelist .= html_writer::tag('li', s($t->name));
-                }
-                $tradelist .= html_writer::end_tag('ul');
-
-                $confirmform  = html_writer::start_tag('form', ['method' => 'post', 'action' => $baseurl->out(false)]);
-                $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-                $confirmform .= html_writer::empty_tag('input', [
-                    'type' => 'hidden', 'name' => 'action', 'value' => 'bulk_delete_force',
-                ]);
-                $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'tab', 'value' => 'items']);
-                $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sort', 'value' => s($sort)]);
-                $confirmform .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'dir', 'value' => s($dir)]);
-                foreach ($itemids as $bid) {
-                    $confirmform .= html_writer::empty_tag('input', [
-                        'type' => 'hidden', 'name' => 'bulk_ids[]', 'value' => $bid,
-                    ]);
-                }
-                $confirmform .= html_writer::tag(
-                    'button',
-                    get_string('cancel'),
-                    ['type' => 'button', 'class' => 'btn btn-secondary me-2',
-                     'onclick' => 'window.location=' . json_encode($itemsurl->out(false))]
-                );
-                $tradecount = count($affectedtrades);
-                $confirmform .= html_writer::tag(
-                    'button',
-                    $tradecount === 1
-                        ? get_string('item_delete_confirm_trade', 'block_playerhud')
-                        : get_string('item_delete_confirm_trades', 'block_playerhud', $tradecount),
-                    ['type' => 'submit', 'class' => 'btn btn-danger']
-                );
-                $confirmform .= html_writer::end_tag('form');
-                $tradesurl = new moodle_url($baseurl, ['tab' => 'trades']);
-                $confirmform .= html_writer::div(
-                    html_writer::link(
-                        $tradesurl,
-                        get_string('item_delete_edit_trades', 'block_playerhud'),
-                        ['class' => 'btn btn-outline-secondary mt-3']
-                    )
+                $confirmctx = \block_playerhud\output\manage\item_delete_confirm::build_context(
+                    get_string('delete_selected', 'block_playerhud'),
+                    $orphanedtrades,
+                    $survivingtrades,
+                    true,
+                    $itemids,
+                    [
+                        'form'   => $baseurl->out(false),
+                        'cancel' => $itemsurl->out(false),
+                        'edit'   => (new moodle_url($baseurl, ['tab' => 'trades']))->out(false),
+                    ],
+                    $sort,
+                    $dir
                 );
 
-                $impactkey = $tradecount === 1 ? 'item_delete_trade_impact_single' : 'item_delete_trade_impact';
                 echo $OUTPUT->header();
-                echo $OUTPUT->heading(get_string('delete_selected', 'block_playerhud'), 3);
-                echo $OUTPUT->notification(get_string($impactkey, 'block_playerhud'), 'warning', false);
-                echo $tradelist;
-                echo $confirmform;
+                echo $OUTPUT->render_from_template('block_playerhud/manage_item_delete_confirm', $confirmctx);
                 echo $OUTPUT->footer();
                 exit;
             }

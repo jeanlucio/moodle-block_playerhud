@@ -147,6 +147,32 @@ final class items_test extends advanced_testcase {
     }
 
     /**
+     * Seeds a trade with the given requirement and reward items.
+     *
+     * @param int $instanceid Owning block instance ID.
+     * @param int[] $reqitemids Requirement item IDs.
+     * @param int[] $rewarditemids Reward item IDs.
+     * @return int The new trade ID.
+     */
+    protected function seed_trade_with(int $instanceid, array $reqitemids, array $rewarditemids): int {
+        global $DB;
+
+        $tradeid = (int) $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'Trade',
+            'timecreated'     => time(),
+        ]);
+        foreach ($reqitemids as $iid) {
+            $DB->insert_record('block_playerhud_trade_reqs', (object) ['tradeid' => $tradeid, 'itemid' => $iid, 'qty' => 1]);
+        }
+        foreach ($rewarditemids as $iid) {
+            $DB->insert_record('block_playerhud_trade_rewards', (object) ['tradeid' => $tradeid, 'itemid' => $iid, 'qty' => 1]);
+        }
+
+        return $tradeid;
+    }
+
+    /**
      * Toggling an item flips its enabled flag and reports success.
      *
      * @covers ::toggle_item
@@ -320,5 +346,60 @@ final class items_test extends advanced_testcase {
             'blockinstanceid' => $instancea,
             'userid'          => $user->id,
         ]));
+    }
+
+    /**
+     * A trade keeping other items after the removal is reported as surviving.
+     *
+     * @covers ::find_affected_surviving_trades
+     */
+    public function test_find_affected_surviving_trades_returns_trimmed_trade(): void {
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $deleted = $this->make_item($instanceid);
+        $other = $this->make_item($instanceid);
+        // Reward side has both items; removing $deleted still leaves $other.
+        $tradeid = $this->seed_trade_with($instanceid, [$other], [$deleted, $other]);
+
+        $surviving = items::find_affected_surviving_trades($instanceid, [$deleted]);
+
+        $this->assertArrayHasKey($tradeid, $surviving);
+    }
+
+    /**
+     * A trade that would be orphaned is excluded from the surviving list.
+     *
+     * @covers ::find_affected_surviving_trades
+     */
+    public function test_find_affected_surviving_trades_excludes_orphaned(): void {
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $deleted = $this->make_item($instanceid);
+        $other = $this->make_item($instanceid);
+        // Reward side has only the deleted item, so removing it empties that side.
+        $tradeid = $this->seed_trade_with($instanceid, [$other], [$deleted]);
+
+        $surviving = items::find_affected_surviving_trades($instanceid, [$deleted]);
+
+        $this->assertArrayNotHasKey($tradeid, $surviving);
+        // It is reported by the orphaned detector instead.
+        $this->assertArrayHasKey($tradeid, items::find_orphaned_trades($instanceid, [$deleted]));
+    }
+
+    /**
+     * A trade not referencing the deleted item is not reported as affected.
+     *
+     * @covers ::find_affected_surviving_trades
+     */
+    public function test_find_affected_surviving_trades_ignores_unrelated(): void {
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $deleted = $this->make_item($instanceid);
+        $other = $this->make_item($instanceid);
+        $this->seed_trade_with($instanceid, [$other], [$other]);
+
+        $surviving = items::find_affected_surviving_trades($instanceid, [$deleted]);
+
+        $this->assertEmpty($surviving);
     }
 }
