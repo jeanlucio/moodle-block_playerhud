@@ -26,8 +26,7 @@ use advanced_testcase;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \backup_playerhud_stepslib
- * @covers     \restore_playerhud_stepslib
+ * @coversNothing
  */
 final class backup_restore_test extends advanced_testcase {
     /**
@@ -36,8 +35,6 @@ final class backup_restore_test extends advanced_testcase {
      * This is a static code check — it does not require a database or file
      * system. It guards against accidental removal of RPG elements from the
      * backup step definition.
-     *
-     * @coversNothing
      */
     public function test_backup_stepslib_covers_rpg_tables(): void {
         global $CFG;
@@ -66,8 +63,6 @@ final class backup_restore_test extends advanced_testcase {
 
     /**
      * Verify that the restore stepslib includes every RPG table as a restore step.
-     *
-     * @coversNothing
      */
     public function test_restore_stepslib_covers_rpg_tables(): void {
         global $CFG;
