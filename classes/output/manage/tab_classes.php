@@ -42,14 +42,12 @@ class tab_classes implements renderable {
     protected $courseid;
 
     /**
-     * Constructor. Signature must match manage.php controller: ($instanceid, $courseid, $sort, $dir).
+     * Constructor.
      *
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
-     * @param string $sort Unused — kept for interface compatibility.
-     * @param string $dir Unused — kept for interface compatibility.
      */
-    public function __construct($instanceid, $courseid, $sort = '', $dir = '') {
+    public function __construct($instanceid, $courseid) {
         $this->instanceid = $instanceid;
         $this->courseid   = $courseid;
     }

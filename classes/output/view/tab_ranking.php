@@ -75,7 +75,7 @@ class tab_ranking implements renderable, templatable {
     /**
      * Export this data so it can be used as the context for a mustache template.
      *
-     * @param renderer_base $output The renderer.
+     * @param \core\output\core_renderer $output The renderer.
      * @return array Data for the template.
      */
     public function export_for_template(renderer_base $output) {
@@ -268,10 +268,10 @@ class tab_ranking implements renderable, templatable {
      * memoised per item so each distinct avatar is built only once.
      *
      * @param array $individual Leaderboard entries (each exposes ->userid and userpic fields).
-     * @param renderer_base $output The renderer.
+     * @param \core\output\core_renderer $output The renderer.
      * @return array The same entries, each with a ->userpicture property set.
      */
-    private function enrich_userpictures(array $individual, renderer_base $output): array {
+    private function enrich_userpictures(array $individual, \core\output\core_renderer $output): array {
         global $DB;
 
         if (empty($individual)) {

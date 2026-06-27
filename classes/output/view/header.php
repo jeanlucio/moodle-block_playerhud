@@ -58,7 +58,7 @@ class header implements renderable, templatable {
     /**
      * Export this data so it can be used as the context for a mustache template.
      *
-     * @param renderer_base $output The renderer.
+     * @param \core\output\core_renderer $output The renderer.
      * @return array Data for the template.
      */
     public function export_for_template(renderer_base $output) {

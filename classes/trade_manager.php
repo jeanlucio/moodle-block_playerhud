@@ -173,6 +173,8 @@ class trade_manager {
             throw new \moodle_exception('error_trade_lock', 'block_playerhud');
         }
 
+        $transaction = null;
+
         try {
             // Check inside the lock to prevent a race condition where two simultaneous requests
             // both pass the check before either one writes to the trade log.
@@ -272,7 +274,7 @@ class trade_manager {
 
             return implode(', ', $rewardsnames);
         } catch (\Exception $e) {
-            if (isset($transaction)) {
+            if ($transaction !== null) {
                 $transaction->rollback($e);
             }
             throw $e;

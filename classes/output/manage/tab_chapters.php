@@ -43,10 +43,8 @@ class tab_chapters implements renderable {
      *
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
-     * @param string $sort Sort column (unused, kept for uniform constructor signature).
-     * @param string $dir Sort direction (unused).
      */
-    public function __construct(int $instanceid, int $courseid, string $sort = '', string $dir = '') {
+    public function __construct(int $instanceid, int $courseid) {
         $this->instanceid = $instanceid;
         $this->courseid   = $courseid;
     }

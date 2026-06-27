@@ -40,10 +40,8 @@ class tab_trades implements renderable, templatable {
      *
      * @param int $instanceid
      * @param int $courseid
-     * @param string $sort
-     * @param string $dir
      */
-    public function __construct($instanceid, $courseid, $sort = '', $dir = '') {
+    public function __construct($instanceid, $courseid) {
         $this->instanceid = $instanceid;
         $this->courseid = $courseid;
     }

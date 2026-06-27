@@ -47,10 +47,8 @@ class tab_assistant implements renderable, templatable {
      *
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
-     * @param string $sort Unused — kept for signature compatibility with tab loader.
-     * @param string $dir Unused — kept for signature compatibility with tab loader.
      */
-    public function __construct(int $instanceid, int $courseid, string $sort = '', string $dir = '') {
+    public function __construct(int $instanceid, int $courseid) {
         $this->instanceid = $instanceid;
         $this->courseid   = $courseid;
     }

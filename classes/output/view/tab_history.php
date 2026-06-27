@@ -91,7 +91,7 @@ class tab_history implements renderable, templatable {
     /**
      * Export this data so it can be used as the context for a mustache template.
      *
-     * @param \renderer_base $output The renderer.
+     * @param \core\output\core_renderer $output The renderer.
      * @return array Data for the template.
      */
     public function export_for_template($output) {
@@ -227,7 +227,7 @@ class tab_history implements renderable, templatable {
      * @param string $filtertext Text filter.
      * @param int $showall Show all records flag.
      * @param moodle_url $baseurl Base URL for pagination.
-     * @param \renderer_base $output Renderer base.
+     * @param \core\output\core_renderer $output The renderer.
      * @return array Array containing logs and paging bar HTML.
      */
     private function get_audit_logs(
@@ -239,7 +239,7 @@ class tab_history implements renderable, templatable {
         string $filtertext,
         int $showall,
         moodle_url $baseurl,
-        $output
+        \core\output\core_renderer $output
     ): array {
         global $DB;
 

@@ -68,7 +68,7 @@ class tab_reports implements renderable, templatable {
     /**
      * Export data for template.
      *
-     * @param \renderer_base $output
+     * @param \core\output\core_renderer $output
      * @return array
      */
     public function export_for_template($output) {
@@ -651,7 +651,7 @@ class tab_reports implements renderable, templatable {
      * @param string $filtertext
      * @param int $showall
      * @param moodle_url $baseurl
-     * @param \renderer_base $output
+     * @param \core\output\core_renderer $output
      * @return array
      */
     private function get_audit_logs(
@@ -663,7 +663,7 @@ class tab_reports implements renderable, templatable {
         string $filtertext,
         int $showall,
         moodle_url $baseurl,
-        $output
+        \core\output\core_renderer $output
     ): array {
         global $DB;
 
