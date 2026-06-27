@@ -18,7 +18,6 @@ namespace block_playerhud\output\view;
 
 use renderable;
 use templatable;
-use renderer_base;
 
 /**
  * Header view for PlayerHUD.
@@ -61,7 +60,7 @@ class header implements renderable, templatable {
      * @param \core\output\core_renderer $output The renderer.
      * @return array Data for the template.
      */
-    public function export_for_template(renderer_base $output) {
+    public function export_for_template($output) {
         // 1. Calculate Stats.
         $stats = \block_playerhud\game::get_game_stats(
             $this->config,
