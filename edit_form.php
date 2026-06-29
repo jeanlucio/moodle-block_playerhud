@@ -96,7 +96,14 @@ class block_playerhud_edit_form extends block_edit_form {
         $mform->addHelpButton('config_enable_group_ranking', 'enable_group_ranking', 'block_playerhud');
         $mform->hideIf('config_enable_group_ranking', 'config_enable_ranking', 'eq', 0);
 
-        // Section 6: Help Page Settings.
+        // Section 6: Mascot.
+        $mform->addElement('header', 'config_mascot_hdr', get_string('mascot_hdr', 'block_playerhud'));
+
+        $mform->addElement('selectyesno', 'config_enable_huddy', get_string('enable_huddy', 'block_playerhud'));
+        $mform->setDefault('config_enable_huddy', 1);
+        $mform->addHelpButton('config_enable_huddy', 'enable_huddy', 'block_playerhud');
+
+        // Section 7: Help Page Settings.
         $mform->addElement('header', 'config_help_hdr', get_string('help_title', 'block_playerhud'));
 
         $mform->addElement('selectyesno', 'config_use_default_help', get_string('help_use_default', 'block_playerhud'));

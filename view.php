@@ -48,6 +48,7 @@ $config->enable_rpg        = isset($config->enable_rpg) ? $config->enable_rpg : 
 $config->enable_ranking    = isset($config->enable_ranking) ? $config->enable_ranking : 1;
 $config->enable_items      = isset($config->enable_items) ? $config->enable_items : 1;
 $config->enable_quests     = isset($config->enable_quests) ? $config->enable_quests : 1;
+$config->enable_huddy      = isset($config->enable_huddy) ? (int)$config->enable_huddy : 1;
 $config->use_default_help  = isset($config->use_default_help) ? (int)$config->use_default_help : 1;
 
 // 2. Page Setup.
@@ -364,26 +365,32 @@ if ($isoptin) {
     // previous request. The flag is set server-side, by priority, and cleared on read.
     $celebration = (string)get_user_preferences('block_playerhud_celebration', '');
     if ($celebration !== '') {
+        // Always clear the preference even when Huddy is disabled, to avoid accumulation.
         unset_user_preference('block_playerhud_celebration');
 
-        [$celebtype, $celebparam] = array_pad(explode(':', $celebration, 2), 2, '');
-        $celebimages = [
-            'win'        => 'achievement.webp',
-            'levelup'    => 'levelup.webp',
-            'firstquest' => 'quest.webp',
-        ];
-
-        if (isset($celebimages[$celebtype])) {
-            $celebopts = [
-                'type'  => $celebtype,
-                'image' => (new moodle_url('/blocks/playerhud/pix/huddy/' . $celebimages[$celebtype]))->out(false),
+        if ($config->enable_huddy) {
+            [$celebtype, $celebparam] = array_pad(explode(':', $celebration, 2), 2, '');
+            $celebimages = [
+                'win'        => 'achievement.webp',
+                'levelup'    => 'levelup.webp',
+                'firstquest' => 'quest.webp',
             ];
-            if ($celebtype === 'levelup') {
-                $celebopts['level'] = (int)$celebparam;
+
+            if (isset($celebimages[$celebtype])) {
+                $celebopts = [
+                    'type'  => $celebtype,
+                    'image' => (new moodle_url('/blocks/playerhud/pix/huddy/' . $celebimages[$celebtype]))->out(false),
+                ];
+                if ($celebtype === 'levelup') {
+                    $celebopts['level'] = (int)$celebparam;
+                }
+                $PAGE->requires->js_call_amd('block_playerhud/levelup', 'celebrate', [$celebopts]);
             }
-            $PAGE->requires->js_call_amd('block_playerhud/levelup', 'celebrate', [$celebopts]);
         }
-    } else if (!$isteacher && !((int)$player->milestones & \block_playerhud\game::MILESTONE_INTRO)) {
+    } else if (
+        $config->enable_huddy && !$isteacher
+        && !((int)$player->milestones & \block_playerhud\game::MILESTONE_INTRO)
+    ) {
         // First visit to the student area: Huddy introduces himself, once.
         $player->milestones = (int)$player->milestones | \block_playerhud\game::MILESTONE_INTRO;
         $player->timemodified = time();

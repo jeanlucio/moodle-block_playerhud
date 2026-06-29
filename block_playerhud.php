@@ -92,6 +92,7 @@ class block_playerhud extends block_base {
             $config->enable_rpg     = isset($config->enable_rpg) ? (int) $config->enable_rpg : 1;
             $config->enable_items   = isset($config->enable_items) ? (int) $config->enable_items : 1;
             $config->enable_quests  = isset($config->enable_quests) ? (int) $config->enable_quests : 1;
+            $config->enable_huddy   = isset($config->enable_huddy) ? (int) $config->enable_huddy : 1;
 
             $stats = \block_playerhud\game::get_game_stats($config, $this->instance->id, $player->currentxp);
 
@@ -388,7 +389,7 @@ class block_playerhud extends block_base {
 
             // First-quest milestone: nudge the student once, the first time a quest reward
             // becomes claimable, pointing them to the Quests tab to collect it.
-            $firstquestpending = !$isteacher && $hasclaimable
+            $firstquestpending = $config->enable_huddy && !$isteacher && $hasclaimable
                 && !((int)$player->milestones & \block_playerhud\game::MILESTONE_FIRSTQUEST);
             if ($firstquestpending) {
                 $player->milestones = (int)$player->milestones | \block_playerhud\game::MILESTONE_FIRSTQUEST;
@@ -399,6 +400,10 @@ class block_playerhud extends block_base {
                     'type'  => 'firstquest',
                     'image' => (new \moodle_url('/blocks/playerhud/pix/huddy/quest.webp'))->out(false),
                 ]]);
+            }
+
+            if (!$config->enable_huddy) {
+                $this->page->requires->data_for_js('block_playerhud_huddy_enabled', false);
             }
 
             $this->content->text .= $OUTPUT->render_from_template('block_playerhud/modal_item', []);

@@ -315,7 +315,7 @@ const triggerCelebration = (resp) => {
         celebration = {type: 'coin', image: filterCfg.coinImg};
     }
 
-    if (celebration) {
+    if (celebration && window.block_playerhud_huddy_enabled !== false) {
         require(['block_playerhud/levelup'], (Levelup) => {
             Levelup.celebrate(celebration);
         });
