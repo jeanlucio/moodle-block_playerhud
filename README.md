@@ -365,9 +365,9 @@ default; `core_ai` sits at the bottom.
 | Tier | Source |
 |------|--------|
 | 1 | **Own personal key** — teacher’s own key set in PlayerHUD (*Configurações* tab → API keys) |
-| 2 | **Hub personal key** — teacher’s own key set in **local_playergames** (if installed) |
+| 2 | **Hub personal key** — teacher’s own key set in **local_aihub** (if installed) |
 | 3 | **Own site key** — admin key set in PlayerHUD settings |
-| 4 | **Hub site key** — admin key set in **local_playergames** settings (if installed) |
+| 4 | **Hub site key** — admin key set in **local_aihub** settings (if installed) |
 | 5 | **Moodle `core_ai`** — providers configured in *Site administration → AI → AI providers*. No API key stored in PlayerHUD. |
 
 **Tier-first, not provider-first.** Each tier above is evaluated as a whole: the
@@ -380,7 +380,7 @@ holds a key.
 **Within the chosen tier**, the direct providers are tried in the order Gemini →
 Groq → OpenAI-compatible (first key found is used; if its call fails, the next is tried).
 
-This also means: if a teacher configured their own key in the PlayerGames hub,
+This also means: if a teacher configured their own key in the AI Hub,
 PlayerHUD uses it automatically — no need to re-enter the key in PlayerHUD.
 
 ### Supported Direct Providers
@@ -408,9 +408,9 @@ The PlayerHUD plugin does not provide API keys.
 API keys may be configured through any of the following sources (in decreasing priority):
 
 1. **PlayerHUD personal key** — set by each teacher individually in the *Configurações* tab of the management panel.
-2. **PlayerGames hub personal key** — set by each teacher in *local_playergames → My AI Keys* (if the hub is installed).
+2. **AI Hub personal key** — set by each teacher in *local_aihub → My AI keys* (if the hub is installed).
 3. **PlayerHUD site key** — set by the site admin in *Site administration → Plugins → Blocks → PlayerHUD*.
-4. **PlayerGames hub site key** — set by the site admin in *local_playergames* settings (if the hub is installed).
+4. **AI Hub site key** — set by the site admin in *local_aihub* settings (if the hub is installed).
 5. **Moodle `core_ai`** — configured by the site admin in *Site administration → AI → AI providers* (no key stored in PlayerHUD; used only when no key above is set).
 
 ### Data Transmission
@@ -785,9 +785,9 @@ O PlayerHUD seleciona o provedor de IA **nível por nível**, seguindo a escada 
 | Nível | Origem |
 |-------|--------|
 | 1 | **Chave pessoal própria** — chave do professor cadastrada no PlayerHUD (aba *Configurações* → Chaves de API) |
-| 2 | **Chave pessoal do hub** — chave do professor cadastrada no **local_playergames** (se instalado) |
+| 2 | **Chave pessoal do hub** — chave do professor cadastrada no **local_aihub** (se instalado) |
 | 3 | **Chave de site própria** — chave cadastrada pelo admin nas configurações do PlayerHUD |
-| 4 | **Chave de site do hub** — chave cadastrada pelo admin nas configurações do **local_playergames** (se instalado) |
+| 4 | **Chave de site do hub** — chave cadastrada pelo admin nas configurações do **local_aihub** (se instalado) |
 | 5 | **Moodle `core_ai`** — provedores configurados em *Administração do site → IA → Provedores de IA*. Nenhuma chave armazenada no PlayerHUD. |
 
 **Nível primeiro, não provedor primeiro.** Cada nível acima é avaliado como um todo: o primeiro nível que contiver *qualquer* chave é usado exclusivamente. Assim, a chave pessoal do professor (nível 1) sempre prevalece sobre uma chave do hub (nível 2) — mesmo que a chave do hub seja de um provedor de maior prioridade. Por exemplo, a chave de endpoint personalizado do professor não é substituída por uma chave Gemini que esteja no hub. O `core_ai` é consultado apenas quando nenhum nível possui uma chave.
@@ -821,9 +821,9 @@ O PlayerHUD não fornece chaves de API.
 As chaves de API podem ser configuradas por qualquer uma das seguintes origens (em ordem decrescente de prioridade):
 
 1. **Chave pessoal no PlayerHUD** — configurada individualmente por cada professor na aba *Configurações* do painel de gerenciamento.
-2. **Chave pessoal no hub PlayerGames** — configurada pelo professor em *local_playergames → Minhas chaves de IA* (se o hub estiver instalado).
+2. **Chave pessoal na Central de IA** — configurada pelo professor em *local_aihub → Minhas chaves de IA* (se o hub estiver instalado).
 3. **Chave de site no PlayerHUD** — configurada pelo admin em *Administração do site → Plugins → Blocos → PlayerHUD*.
-4. **Chave de site no hub PlayerGames** — configurada pelo admin nas configurações do *local_playergames* (se o hub estiver instalado).
+4. **Chave de site na Central de IA** — configurada pelo admin nas configurações do *local_aihub* (se o hub estiver instalado).
 5. **Moodle `core_ai`** — configurado pelo admin em *Administração do site → IA → Provedores de IA* (nenhuma chave armazenada no PlayerHUD; consultado apenas quando nenhuma das origens acima tiver chave configurada).
 
 ### Transmissão de dados

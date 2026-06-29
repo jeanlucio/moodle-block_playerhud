@@ -393,20 +393,20 @@ class generator {
      * Loads AI API keys following the canonical ecosystem ladder, tier by tier:
      *
      *   1. own personal (PlayerHUD prefs)
-     *   2. hub personal (local_playergames)
+     *   2. hub personal (local_aihub)
      *   3. own site     (PlayerHUD config)
-     *   4. hub site     (local_playergames)
+     *   4. hub site     (local_aihub)
      *
      * Each tier is resolved as a whole: the first tier that holds any provider key
      * is used exclusively (so an own personal key always wins over a hub key, even
      * for a different provider). core_ai is the institutional default and is
      * consulted by the caller only when no tier holds a key. The hub tiers are
-     * skipped when local_playergames is absent.
+     * skipped when local_aihub is absent.
      *
      * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel].
      */
     protected function load_api_keys(): array {
-        $hubinstalled = class_exists(\local_playergames\api_key_helper::class);
+        $hubinstalled = class_exists(\local_aihub\local\keys::class);
 
         $tiers = [];
 
@@ -422,18 +422,14 @@ class generator {
         // Tier 2: hub personal. URL and model prefer the hub's personal values,
         // falling back to the hub's site defaults when the user has not set them.
         if ($hubinstalled) {
-            $hubpersonalurl = method_exists(\local_playergames\api_key_helper::class, 'get_personal_openai_url')
-                ? \local_playergames\api_key_helper::get_personal_openai_url()
-                : '';
-            $hubpersonalmodel = method_exists(\local_playergames\api_key_helper::class, 'get_personal_openai_model')
-                ? \local_playergames\api_key_helper::get_personal_openai_model()
-                : '';
+            $hubpersonalurl = \local_aihub\local\keys::get_personal_openai_url();
+            $hubpersonalmodel = \local_aihub\local\keys::get_personal_openai_model();
             $tiers[] = [
-                \local_playergames\api_key_helper::get_personal_key('gemini'),
-                \local_playergames\api_key_helper::get_personal_key('groq'),
-                \local_playergames\api_key_helper::get_personal_key('openai'),
-                $hubpersonalurl !== '' ? $hubpersonalurl : \local_playergames\api_key_helper::get_openai_baseurl(),
-                $hubpersonalmodel !== '' ? $hubpersonalmodel : \local_playergames\api_key_helper::get_openai_model(),
+                \local_aihub\local\keys::get_personal_key('gemini'),
+                \local_aihub\local\keys::get_personal_key('groq'),
+                \local_aihub\local\keys::get_personal_key('openai'),
+                $hubpersonalurl !== '' ? $hubpersonalurl : \local_aihub\local\keys::get_openai_baseurl(),
+                $hubpersonalmodel !== '' ? $hubpersonalmodel : \local_aihub\local\keys::get_openai_model(),
             ];
         }
 
@@ -449,11 +445,11 @@ class generator {
         // Tier 4: hub site.
         if ($hubinstalled) {
             $tiers[] = [
-                \local_playergames\api_key_helper::get_site_key('gemini'),
-                \local_playergames\api_key_helper::get_site_key('groq'),
-                \local_playergames\api_key_helper::get_site_key('openai'),
-                \local_playergames\api_key_helper::get_openai_baseurl(),
-                \local_playergames\api_key_helper::get_openai_model(),
+                \local_aihub\local\keys::get_site_key('gemini'),
+                \local_aihub\local\keys::get_site_key('groq'),
+                \local_aihub\local\keys::get_site_key('openai'),
+                \local_aihub\local\keys::get_openai_baseurl(),
+                \local_aihub\local\keys::get_openai_model(),
             ];
         }
 

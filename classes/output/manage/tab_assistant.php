@@ -143,15 +143,15 @@ class tab_assistant implements renderable, templatable {
             }
         }
 
-        // Local_playergames keys (personal + site config only — core_ai already checked above).
-        if (class_exists(\local_playergames\api_key_helper::class)) {
-            $pgproviders = [
-                \local_playergames\api_key_helper::PROVIDER_GEMINI,
-                \local_playergames\api_key_helper::PROVIDER_GROQ,
-                \local_playergames\api_key_helper::PROVIDER_OPENAI,
+        // AI Hub keys (personal + site config only — core_ai already checked above).
+        if (class_exists(\local_aihub\local\keys::class)) {
+            $hubproviders = [
+                \local_aihub\local\keys::PROVIDER_GEMINI,
+                \local_aihub\local\keys::PROVIDER_GROQ,
+                \local_aihub\local\keys::PROVIDER_OPENAI,
             ];
-            foreach ($pgproviders as $provider) {
-                if (\local_playergames\api_key_helper::get_key($provider) !== '') {
+            foreach ($hubproviders as $provider) {
+                if (\local_aihub\local\keys::get_key($provider) !== '') {
                     return true;
                 }
             }
