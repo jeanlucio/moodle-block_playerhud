@@ -344,6 +344,7 @@ $string['error_trade_invalid'] = 'Invalid or inactive trade.';
 $string['error_trade_lock'] = 'Transaction in progress. Please wait a moment and try again.';
 $string['error_trade_onetime'] = 'You have already performed this trade. It can only be done once.';
 $string['error_unknown_mode'] = 'Unknown generation mode.';
+$string['event_xp_changed'] = 'PlayerHUD XP changed';
 $string['export_csv'] = 'Export CSV';
 $string['export_excel'] = 'Export Excel';
 $string['firstquest_desc'] = 'You completed your first quest! Go to the Quests tab to claim your reward.';

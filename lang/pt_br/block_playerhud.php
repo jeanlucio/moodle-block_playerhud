@@ -344,6 +344,7 @@ $string['error_trade_invalid'] = 'Troca inválida ou inativa.';
 $string['error_trade_lock'] = 'Transação em andamento. Aguarde um momento e tente novamente.';
 $string['error_trade_onetime'] = 'Você já realizou esta troca. Ela só pode ser feita uma vez.';
 $string['error_unknown_mode'] = 'Modo de geração desconhecido.';
+$string['event_xp_changed'] = 'XP do PlayerHUD alterado';
 $string['export_csv'] = 'Exportar CSV';
 $string['export_excel'] = 'Exportar Excel';
 $string['firstquest_desc'] = 'Você concluiu sua primeira missão! Vá na aba Missões e resgate sua recompensa.';

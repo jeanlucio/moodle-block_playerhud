@@ -27,6 +27,7 @@ use block_playerhud\game;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @coversDefaultClass \block_playerhud\game
+ * @covers \block_playerhud\event\xp_changed
  */
 final class game_test extends advanced_testcase {
     /** @var int Dummy block instance ID for testing. */
@@ -422,6 +423,77 @@ final class game_test extends advanced_testcase {
 
         $player = game::get_player($this->instanceid, $user->id);
         $this->assertEquals(150, $player->currentxp, 'Collecting a finite drop must award the full item XP.');
+    }
+
+    /**
+     * change_xp awards a positive delta and fires xp_changed with that delta.
+     *
+     * @covers ::change_xp
+     */
+    public function test_change_xp_awards_and_fires_event(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $player = game::get_player($this->instanceid, $user->id);
+
+        $sink = $this->redirectEvents();
+        $applied = game::change_xp($player, 120, $this->instanceid);
+
+        $this->assertSame(120, $applied);
+        $this->assertSame(120, (int) game::get_player($this->instanceid, $user->id)->currentxp);
+
+        $events = $sink->get_events();
+        $this->assertCount(1, $events);
+        $this->assertInstanceOf(\block_playerhud\event\xp_changed::class, $events[0]);
+        $this->assertSame(120, $events[0]->other['delta']);
+        $this->assertSame((int) $user->id, $events[0]->relateduserid);
+    }
+
+    /**
+     * change_xp deducts a negative delta and floors the total at zero; the event
+     * carries the delta actually applied (clamped), not the requested one.
+     *
+     * @covers ::change_xp
+     */
+    public function test_change_xp_deducts_and_floors_at_zero(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $player = game::get_player($this->instanceid, $user->id);
+        game::change_xp($player, 50, $this->instanceid);
+
+        $sink = $this->redirectEvents();
+        // Deduct more than the current total: floored to 0, applied delta is -50.
+        $applied = game::change_xp($player, -200, $this->instanceid);
+
+        $this->assertSame(-50, $applied);
+        $this->assertSame(0, (int) game::get_player($this->instanceid, $user->id)->currentxp);
+
+        $events = $sink->get_events();
+        $this->assertCount(1, $events);
+        $this->assertSame(-50, $events[0]->other['delta']);
+    }
+
+    /**
+     * change_xp is a no-op (no write, no event) when the applied delta is zero.
+     *
+     * @covers ::change_xp
+     */
+    public function test_change_xp_noop_fires_nothing(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $player = game::get_player($this->instanceid, $user->id);
+
+        $sink = $this->redirectEvents();
+        // Already at 0; a deduction cannot go below 0, so nothing changes.
+        $applied = game::change_xp($player, -10, $this->instanceid);
+
+        $this->assertSame(0, $applied);
+        $this->assertCount(0, $sink->get_events());
     }
 
     /**

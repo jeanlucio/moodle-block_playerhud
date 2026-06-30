@@ -175,8 +175,7 @@ class quests {
         foreach ($deductions as $userid => $xptoremove) {
             if (isset($players[$userid])) {
                 $player = $players[$userid];
-                $player->currentxp = max(0, $player->currentxp - $xptoremove);
-                $DB->update_record('block_playerhud_user', $player);
+                \block_playerhud\game::change_xp($player, -(int)$xptoremove, $instanceid);
             }
         }
     }

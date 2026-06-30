@@ -109,6 +109,46 @@ class game {
     }
 
     /**
+     * Applies a signed XP change to a player, persists it and fires xp_changed.
+     *
+     * Central point for every XP gain and loss so the event always fires. The
+     * new total is floored at 0; the event carries the delta actually applied
+     * (new - old), which differs from $delta only when the floor clamps a loss.
+     *
+     * @param \stdClass $player Player record (block_playerhud_user) with id, userid, currentxp.
+     * @param int $delta Signed XP change (positive to award, negative to deduct).
+     * @param int $instanceid Block instance ID (source of the event context and course).
+     * @return int The XP actually applied (new - old); 0 when nothing changed.
+     */
+    public static function change_xp(\stdClass $player, int $delta, int $instanceid): int {
+        global $DB;
+
+        $old = (int)$player->currentxp;
+        $new = max(0, $old + $delta);
+        $applied = $new - $old;
+        if ($applied === 0) {
+            return 0;
+        }
+
+        $player->currentxp = $new;
+        $player->timemodified = time();
+        $DB->update_record('block_playerhud_user', $player);
+
+        $context = \context_block::instance($instanceid);
+        $coursectx = $context->get_course_context(false);
+        $courseid = $coursectx ? (int)$coursectx->instanceid : 0;
+
+        event\xp_changed::create([
+            'context'       => $context,
+            'objectid'      => (int)$player->id,
+            'relateduserid' => (int)$player->userid,
+            'other'         => ['delta' => $applied, 'courseid' => $courseid, 'newxp' => $new],
+        ])->trigger();
+
+        return $applied;
+    }
+
+    /**
      * Process item collection logic (Shared between Controller and External API).
      *
      * @param int $instanceid Block instance ID.
@@ -167,9 +207,7 @@ class game {
             if ($item->xp > 0 && !$isinfinitedrop) {
                 $earnedxp = (int)$item->xp;
                 $player = self::get_player($instanceid, $userid);
-                $player->currentxp += $earnedxp;
-                $player->timemodified = time();
-                $DB->update_record('block_playerhud_user', $player);
+                self::change_xp($player, $earnedxp, $instanceid);
             }
             $transaction->allow_commit();
         } catch (\Exception $e) {

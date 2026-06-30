@@ -340,11 +340,7 @@ class quest {
 
             // XP Reward.
             if ($quest->reward_xp > 0) {
-                $player->currentxp += $quest->reward_xp;
-                // Correction: Update timestamp for tie-breaking.
-                $player->timemodified = time();
-                $DB->update_record('block_playerhud_user', $player);
-
+                \block_playerhud\game::change_xp($player, (int)$quest->reward_xp, $blockinstanceid);
                 $rewardstxt[] = "+{$quest->reward_xp} XP";
             }
 

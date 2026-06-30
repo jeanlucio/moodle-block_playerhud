@@ -200,12 +200,7 @@ class collect {
             if ($item->xp > 0 && !$isinfinitedrop) {
                 $xpgain = $item->xp;
                 $player = \block_playerhud\game::get_player($instanceid, $userid);
-
-                // Update full object to register tie-breaker time.
-                $player->currentxp += $xpgain;
-                $player->timemodified = time(); // Essential for time-based ranking!
-
-                $DB->update_record('block_playerhud_user', $player);
+                \block_playerhud\game::change_xp($player, (int)$xpgain, $instanceid);
             }
 
             $transaction->allow_commit();

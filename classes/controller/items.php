@@ -81,9 +81,7 @@ class items {
         $DB->insert_record('block_playerhud_inventory', $newinv);
 
         if ($item->xp > 0) {
-            $player->currentxp   += $item->xp;
-            $player->timemodified = time();
-            $DB->update_record('block_playerhud_user', $player);
+            \block_playerhud\game::change_xp($player, (int)$item->xp, $instanceid);
         }
     }
 
@@ -126,8 +124,7 @@ class items {
                 $isinfinite = $drop && (int) $drop->maxusage === 0;
             }
             if (!$isinfinite && $item->xp > 0) {
-                $player->currentxp = max(0, $player->currentxp - $item->xp);
-                $DB->update_record('block_playerhud_user', $player);
+                \block_playerhud\game::change_xp($player, -(int)$item->xp, $instanceid);
             }
         }
 
@@ -377,13 +374,10 @@ class items {
             'userid, id, currentxp, timemodified, enable_gamification'
         );
 
-        $now = time();
         foreach ($holders as $holder) {
             if (isset($players[$holder->userid])) {
                 $player = $players[$holder->userid];
-                $player->currentxp = max(0, $player->currentxp - ($xpperitem * $holder->qtd));
-                $player->timemodified = $now;
-                $DB->update_record('block_playerhud_user', $player);
+                \block_playerhud\game::change_xp($player, -($xpperitem * (int)$holder->qtd), $instanceid);
             }
         }
     }
@@ -409,13 +403,10 @@ class items {
             'userid, id, currentxp, timemodified, enable_gamification'
         );
 
-        $now = time();
         foreach ($holders as $holder) {
             if (isset($players[$holder->userid])) {
                 $player = $players[$holder->userid];
-                $player->currentxp = max(0, $player->currentxp - $holder->totalxptoremove);
-                $player->timemodified = $now;
-                $DB->update_record('block_playerhud_user', $player);
+                \block_playerhud\game::change_xp($player, -(int)$holder->totalxptoremove, $instanceid);
             }
         }
     }
