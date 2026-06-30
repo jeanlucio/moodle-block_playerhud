@@ -316,6 +316,49 @@ These cover the business logic extracted from `manage.php` into the controllers 
 vendor/bin/phpunit --testsuite block_playerhud
 ```
 
+**Line coverage by class (PHPUnit + Xdebug):**
+
+| Class | Line coverage |
+|-------|:-------------:|
+| `controller\aikeys` | 100% |
+| `controller\chapters` | 40% |
+| `controller\classes` | 41% |
+| `controller\collect` | 14% |
+| `controller\drops` | 18% |
+| `controller\export` | 90% |
+| `controller\items` | 76% |
+| `controller\quests` | 70% |
+| `controller\scenes` | 15% |
+| `controller\suggestions` | 100% |
+| `controller\trades` | 39% |
+| `drop_guard` | 100% |
+| `external\chat_message` | 67% |
+| `external\collect_item` | 100% |
+| `external\create_avatar_pack` | 95% |
+| `external\create_playercoin` | 91% |
+| `external\execute_chat_action` | 27% |
+| `external\generate_ai_content` | 70% |
+| `external\generate_class_oracle` | 67% |
+| `external\generate_story` | 75% |
+| `external\insert_drop_shortcode` | 81% |
+| `external\load_recap` | 100% |
+| `external\load_scene` | 79% |
+| `external\make_choice` | 79% |
+| `external\remove_drop_shortcode` | 82% |
+| `external\setup_playercoin_drop` | 93% |
+| `external\use_item` | 75% |
+| `game` | 84% |
+| `local\analytics` | 100% |
+| `output\manage\item_delete_confirm` | 100% |
+| `output\manage\tab_chapters` | 7% |
+| `output\view\tab_collection` | 68% |
+| `privacy\provider` | 96% |
+| `quest` | 90% |
+| `story_manager` | 37% |
+| `trade_manager` | 90% |
+| `utils` | 18% |
+| **Overall** | **32%** |
+
 #### Behat — Acceptance Tests
 
 | Feature file | Scenarios | What is covered |
@@ -737,6 +780,49 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
 ```
+
+**Cobertura de linhas por classe (PHPUnit + Xdebug):**
+
+| Classe | Cobertura de linhas |
+|--------|:-------------------:|
+| `controller\aikeys` | 100% |
+| `controller\chapters` | 40% |
+| `controller\classes` | 41% |
+| `controller\collect` | 14% |
+| `controller\drops` | 18% |
+| `controller\export` | 90% |
+| `controller\items` | 76% |
+| `controller\quests` | 70% |
+| `controller\scenes` | 15% |
+| `controller\suggestions` | 100% |
+| `controller\trades` | 39% |
+| `drop_guard` | 100% |
+| `external\chat_message` | 67% |
+| `external\collect_item` | 100% |
+| `external\create_avatar_pack` | 95% |
+| `external\create_playercoin` | 91% |
+| `external\execute_chat_action` | 27% |
+| `external\generate_ai_content` | 70% |
+| `external\generate_class_oracle` | 67% |
+| `external\generate_story` | 75% |
+| `external\insert_drop_shortcode` | 81% |
+| `external\load_recap` | 100% |
+| `external\load_scene` | 79% |
+| `external\make_choice` | 79% |
+| `external\remove_drop_shortcode` | 82% |
+| `external\setup_playercoin_drop` | 93% |
+| `external\use_item` | 75% |
+| `game` | 84% |
+| `local\analytics` | 100% |
+| `output\manage\item_delete_confirm` | 100% |
+| `output\manage\tab_chapters` | 7% |
+| `output\view\tab_collection` | 68% |
+| `privacy\provider` | 96% |
+| `quest` | 90% |
+| `story_manager` | 37% |
+| `trade_manager` | 90% |
+| `utils` | 18% |
+| **Total** | **32%** |
 
 #### Behat — Testes de Aceitação
 

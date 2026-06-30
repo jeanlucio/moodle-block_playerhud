@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.6.2] — 2026-06-30
+
+### Added
+- Teachers can now disable all Huddy mascot animations via the block's configuration
+  form (new "Mascot" section, between Ranking and Help). When off, every celebration
+  overlay is suppressed: level-up, game completion, first quest, first PlayerCoin and
+  the first-visit introduction.
+- AI provider chain now resolves keys from the `local_aihub` hub plugin (if
+  installed): a teacher's personal hub key is tried before the site PlayerHUD key,
+  and a site hub key is tried before Moodle `core_ai`. No PlayerHUD reconfiguration
+  is needed if keys are already set in the hub.
+
+---
+
 ## [v1.6.1] — 2026-06-25
 
 ### Added
