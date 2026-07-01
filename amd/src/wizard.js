@@ -16,8 +16,8 @@
 /**
  * Gamification wizard AMD module for PlayerHUD.
  *
- * Opens the wizard modal, runs the Items & Trade generation module, and
- * offers an immediate undo of the generated content.
+ * Opens the wizard modal, runs the selected generation modules (Items & Trade,
+ * Missions), and offers an immediate undo of the generated content.
  *
  * @module     block_playerhud/wizard
  * @copyright  2026 Jean Lúcio
@@ -45,6 +45,7 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
         const toneEl = document.getElementById('ph-wizard-tone');
         const sizeEl = document.getElementById('ph-wizard-size');
         const itemsModuleEl = document.getElementById('ph-wizard-module-items');
+        const missionsModuleEl = document.getElementById('ph-wizard-module-missions');
         const generateBtn = document.getElementById('ph-wizard-generate-btn');
         const generateLabelEl = generateBtn.querySelector('.ph-wizard-btn-label');
         const undoBtn = document.getElementById('ph-wizard-undo-btn');
@@ -101,7 +102,7 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
         };
 
         generateBtn.addEventListener('click', async() => {
-            if (!itemsModuleEl.checked) {
+            if (!itemsModuleEl.checked && !missionsModuleEl.checked) {
                 return;
             }
 
@@ -117,6 +118,8 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
                         theme: themeEl.value.trim(),
                         tone: toneEl.options[toneEl.selectedIndex].text,
                         size: sizeEl.value,
+                        'include_items': itemsModuleEl.checked,
+                        'include_missions': missionsModuleEl.checked,
                     },
                 }])[0];
 
@@ -125,8 +128,8 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
                     return;
                 }
 
+                const names = [...response.created_items, ...response.created_quests].join(', ');
                 lastRunId = response.runid;
-                const names = response.created_items.join(', ');
                 showAlert(resultEl, names);
                 undoBtn.classList.remove('ph-display-none');
             } catch (e) {
