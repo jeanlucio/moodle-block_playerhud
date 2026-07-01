@@ -71,6 +71,12 @@ $rpgmodeenabled  = !empty($blockconfig->enable_rpg) || !isset($blockconfig->enab
 $itemsenabled    = !empty($blockconfig->enable_items) || !isset($blockconfig->enable_items);
 $questsenabled   = !empty($blockconfig->enable_quests) || !isset($blockconfig->enable_quests);
 
+// Wizard empty state: show the welcome banner only while this instance has
+// no items and no quests at all yet.
+$wizarditemcount = $DB->count_records('block_playerhud_items', ['blockinstanceid' => $instanceid]);
+$wizardquestcount = $DB->count_records('block_playerhud_quests', ['blockinstanceid' => $instanceid]);
+$wizardshowemptybanner = ($wizarditemcount === 0 && $wizardquestcount === 0);
+
 // Determine a sensible fallback tab when a feature group is disabled.
 $fallbacktab = $itemsenabled ? 'items' : ($questsenabled ? 'quests' : 'reports');
 
@@ -556,6 +562,29 @@ foreach ($tabsdef as $key => $data) {
     ];
 }
 
+// Wizard modal: rendered once here so the header button works from any tab.
+$wizardtoneoptions = [
+    ['value' => 'scifi', 'label' => get_string('wizard_tone_scifi', 'block_playerhud')],
+    ['value' => 'fantasy', 'label' => get_string('wizard_tone_fantasy', 'block_playerhud')],
+    ['value' => 'mystery', 'label' => get_string('wizard_tone_mystery', 'block_playerhud')],
+    ['value' => 'academic', 'label' => get_string('wizard_tone_academic', 'block_playerhud')],
+];
+$wizardsizeoptions = [
+    ['value' => 'short', 'label' => get_string('wizard_size_short', 'block_playerhud')],
+    ['value' => 'long', 'label' => get_string('wizard_size_long', 'block_playerhud')],
+];
+$modalwizardhtml = $OUTPUT->render_from_template('block_playerhud/modal_wizard', [
+    'instanceid' => $instanceid,
+    'courseid' => $courseid,
+    'tone_options' => $wizardtoneoptions,
+    'size_options' => $wizardsizeoptions,
+]);
+
+$PAGE->requires->js_call_amd('block_playerhud/wizard', 'init', [[
+    'instanceid' => $instanceid,
+    'courseid'   => $courseid,
+]]);
+
 // Data for Layout.
 $layoutdata = [
     'str_title' => get_string('master_panel', 'block_playerhud'),
@@ -571,6 +600,12 @@ $layoutdata = [
     'str_help' => get_string('help_btn', 'block_playerhud'),
     'url_course' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
     'str_back_course' => get_string('back_to_course', 'block_playerhud'),
+    'str_wizard_open' => get_string('wizard_open_btn', 'block_playerhud'),
+    'wizard_show_empty_banner' => $wizardshowemptybanner,
+    'str_wizard_empty_title' => get_string('wizard_empty_title', 'block_playerhud'),
+    'str_wizard_empty_desc' => get_string('wizard_empty_desc', 'block_playerhud'),
+    'str_wizard_empty_btn' => get_string('wizard_empty_btn', 'block_playerhud'),
+    'modal_wizard_html' => $modalwizardhtml,
     'tabs' => $tabsdata,
     'content_html' => $contenthtml,
 ];

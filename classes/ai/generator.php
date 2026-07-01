@@ -74,7 +74,7 @@ class generator {
      * @param string $theme The theme for generation.
      * @param int $xp Target XP value.
      * @param bool $createdrop Whether to create a drop location.
-     * @param array $extraoptions Additional options for drops and balancing.
+     * @param array $extraoptions Additional options for drops, balancing and 'tone'.
      * @param int $amount Number of items to generate.
      * @return array Result array with success status and data.
      * @throws \moodle_exception If API keys are missing or parsing fails.
@@ -107,7 +107,8 @@ class generator {
         }
 
         // 4. Build Prompt.
-        $parts = $this->build_prompt($mode, $theme, $xp, $balance, $amount);
+        $tone = (string)($extraoptions['tone'] ?? '');
+        $parts = $this->build_prompt($mode, $theme, $xp, $balance, $amount, $tone);
 
         // 5. Call API.
         $result = $this->call_with_fallback($parts);
@@ -137,6 +138,8 @@ class generator {
         // 7. Save Loop.
         if ($mode === 'item') {
             $creatednames = [];
+            $createditemids = [];
+            $createddropids = [];
             $lastdropcode = '';
 
             foreach ($itemstosave as $singleitemdata) {
@@ -152,12 +155,18 @@ class generator {
                     $extraoptions
                 );
                 $creatednames[] = $saved['item_name'];
+                $createditemids[] = $saved['item_id'];
+                if ($saved['drop_id'] !== null) {
+                    $createddropids[] = $saved['drop_id'];
+                }
                 $lastdropcode = $saved['drop_code'];
             }
 
             $response = [
                 'success' => true,
                 'created_items' => $creatednames,
+                'created_item_ids' => $createditemids,
+                'created_drop_ids' => $createddropids,
                 'item_name' => $creatednames[0],
                 'drop_code' => (count($creatednames) == 1) ? $lastdropcode : null,
                 'provider' => $result['provider'],
@@ -205,7 +214,7 @@ class generator {
      * @param bool $createdrop Whether to create a drop.
      * @param string $provider AI Provider name.
      * @param array $options Additional options.
-     * @return array Result with item name and drop code.
+     * @return array Result with item name, item id, drop code and drop id.
      */
     protected function save_item($data, $targetxp, $createdrop, $provider, $options = []) {
         global $DB;
@@ -229,6 +238,7 @@ class generator {
         $itemid = $DB->insert_record('block_playerhud_items', $item);
 
         $dropcode = null;
+        $dropid = null;
         if ($createdrop) {
             $dropcode = \block_playerhud\utils::generate_drop_code($this->instanceid);
             $drop = new \stdClass();
@@ -245,13 +255,15 @@ class generator {
             $drop->respawntime = $minutes * 60;
             $drop->timecreated = time();
             $drop->timemodified = time();
-            $DB->insert_record('block_playerhud_drops', $drop);
+            $dropid = (int) $DB->insert_record('block_playerhud_drops', $drop);
         }
 
         return [
             'success' => true,
             'item_name' => $item->name,
+            'item_id' => (int) $itemid,
             'drop_code' => $dropcode,
+            'drop_id' => $dropid,
             'provider' => $provider,
         ];
     }
@@ -268,14 +280,17 @@ class generator {
      * @param int $xp XP value.
      * @param array|null $balance Balance context.
      * @param int $amount Amount to generate.
+     * @param string $tone Optional narrative tone hint (e.g. 'Fantasia Medieval').
      * @return array Associative array with 'system' and 'user' string keys.
      */
-    protected function build_prompt($mode, $theme, $xp, $balance = null, $amount = 1): array {
+    protected function build_prompt($mode, $theme, $xp, $balance = null, $amount = 1, string $tone = ''): array {
         if ($mode === 'item') {
             $contextstr = '';
             if ($balance) {
                 $contextstr = $balance['gap'] > 0 ? self::PROMPT_CTX_HARD : self::PROMPT_CTX_EASY;
             }
+
+            $tonestr = ($tone !== '') ? "Narrative tone: {$tone}." : '';
 
             if ($amount > 1) {
                 $taskstr = "Create {$amount} distinct real items related to the theme: '{$theme}'.";
@@ -300,6 +315,7 @@ class generator {
 
             $user = implode("\n\n", [
                 $taskstr,
+                $tonestr,
                 $contextstr,
                 $techxpstr,
                 self::PROMPT_JSON_INSTRUCTION,

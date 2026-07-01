@@ -148,6 +148,61 @@ class analytics {
     }
 
     /**
+     * Computes the XP balance context used to steer AI generation difficulty.
+     *
+     * Shared by every entry point that asks the AI generator for new items: it tells
+     * the generator how far the current item pool is from the configured XP ceiling,
+     * so prompts can lean towards common or rare items accordingly.
+     *
+     * @param int $instanceid The block instance ID.
+     * @param int $xpperlevel XP required for each level.
+     * @param int $maxlevels Number of levels configured.
+     * @param int $qty Number of elements about to be generated.
+     * @return array {current_xp, target_xp, gap, qty}.
+     */
+    public static function balance_context(int $instanceid, int $xpperlevel, int $maxlevels, int $qty): array {
+        global $DB;
+
+        $xpceiling = $xpperlevel * $maxlevels;
+        $currenttotalxp = 0;
+
+        $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $instanceid, 'enabled' => 1]);
+        if ($items) {
+            // Preload all drops for this instance to avoid an N+1 query problem.
+            $sql = "SELECT d.id, d.itemid, d.maxusage
+                      FROM {block_playerhud_drops} d
+                      JOIN {block_playerhud_items} i ON d.itemid = i.id
+                     WHERE i.blockinstanceid = :instanceid AND i.enabled = 1";
+            $alldrops = $DB->get_records_sql($sql, ['instanceid' => $instanceid]);
+
+            $dropsbyitem = [];
+            foreach ($alldrops as $drop) {
+                $dropsbyitem[$drop->itemid][] = $drop;
+            }
+
+            foreach ($items as $item) {
+                if (!empty($dropsbyitem[$item->id])) {
+                    foreach ($dropsbyitem[$item->id] as $drop) {
+                        if ($drop->maxusage > 0) {
+                            $currenttotalxp += ($item->xp * $drop->maxusage);
+                        }
+                    }
+                } else {
+                    // Item without a drop still contributes 1x its XP (available in library).
+                    $currenttotalxp += $item->xp;
+                }
+            }
+        }
+
+        return [
+            'current_xp' => $currenttotalxp,
+            'target_xp' => $xpceiling,
+            'gap' => $xpceiling - $currenttotalxp,
+            'qty' => $qty,
+        ];
+    }
+
+    /**
      * Build the level-distribution histogram from a list of XP values.
      *
      * Players above the cap are grouped into a single "maxlevel+" bucket.

@@ -1,0 +1,116 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/modal_wizard
+    @package block_playerhud
+    @copyright 2026 Jean Lúcio
+    @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "instanceid": 5,
+        "courseid": 2,
+        "tone_options": [
+            {"value": "scifi", "label": "Ficção Científica"},
+            {"value": "fantasy", "label": "Fantasia Medieval"}
+        ],
+        "size_options": [
+            {"value": "short", "label": "Curta (~5 itens)"},
+            {"value": "long", "label": "Longa (~15 itens)"}
+        ]
+    }
+}}
+<div class="modal fade" id="ph-wizard-modal" tabindex="-1" aria-labelledby="ph-wizard-modal-label" aria-hidden="true"
+     data-instanceid="{{instanceid}}" data-courseid="{{courseid}}">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold m-0" id="ph-wizard-modal-label">
+            <i class="fa fa-magic me-2" aria-hidden="true"></i>{{#str}} wizard_title, block_playerhud {{/str}}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-dismiss="modal"
+                aria-label="{{#str}} close, block_playerhud {{/str}}">
+            <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="ph-wizard-form">
+            <div class="mb-3">
+                <label for="ph-wizard-theme" class="form-label fw-bold">
+                    {{#str}} wizard_theme_label, block_playerhud {{/str}}
+                </label>
+                <input type="text" class="form-control" id="ph-wizard-theme"
+                       placeholder="{{#str}} wizard_theme_placeholder, block_playerhud {{/str}}">
+            </div>
+            <div class="row mb-3">
+                <div class="col-6">
+                    <label for="ph-wizard-tone" class="form-label fw-bold">
+                        {{#str}} wizard_tone_label, block_playerhud {{/str}}
+                    </label>
+                    <select class="form-select" id="ph-wizard-tone">
+                        {{#tone_options}}
+                        <option value="{{value}}">{{label}}</option>
+                        {{/tone_options}}
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label for="ph-wizard-size" class="form-label fw-bold">
+                        {{#str}} wizard_size_label, block_playerhud {{/str}}
+                    </label>
+                    <select class="form-select" id="ph-wizard-size">
+                        {{#size_options}}
+                        <option value="{{value}}">{{label}}</option>
+                        {{/size_options}}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-2 mt-4 pt-3 border-top">
+                <span class="fw-bold text-uppercase ph-text-xs text-muted">
+                    {{#str}} wizard_modules_label, block_playerhud {{/str}}
+                </span>
+            </div>
+            <div class="form-check p-3 bg-light border rounded mb-2">
+                <input type="checkbox" class="form-check-input" id="ph-wizard-module-items" checked>
+                <label class="form-check-label" for="ph-wizard-module-items">
+                    <strong>{{#str}} wizard_module_items, block_playerhud {{/str}}</strong><br>
+                    <small class="text-muted">{{#str}} wizard_module_items_desc, block_playerhud {{/str}}</small>
+                </label>
+            </div>
+            <p class="text-muted ph-text-xs fst-italic mb-0">
+                {{#str}} wizard_more_modules_soon, block_playerhud {{/str}}
+            </p>
+
+            <div class="alert alert-danger mt-3 ph-display-none" id="ph-wizard-error" role="alert"></div>
+            <div class="alert alert-success mt-3 ph-display-none" id="ph-wizard-result" role="status"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-danger me-auto ph-display-none" id="ph-wizard-undo-btn">
+            <i class="fa fa-undo me-1" aria-hidden="true"></i> {{#str}} wizard_undo_btn, block_playerhud {{/str}}
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-dismiss="modal">
+            {{#str}} cancel, block_playerhud {{/str}}
+        </button>
+        <button type="button" class="btn btn-primary fw-bold" id="ph-wizard-generate-btn">
+            <i class="fa fa-magic me-1" aria-hidden="true"></i>
+            <span class="ph-wizard-btn-label">{{#str}} wizard_generate_btn, block_playerhud {{/str}}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
