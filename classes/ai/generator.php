@@ -111,7 +111,7 @@ class generator {
         $parts = $this->build_prompt($mode, $theme, $xp, $balance, $amount, $tone);
 
         // 5. Call API.
-        $result = $this->call_with_fallback($parts);
+        $result = $this->call_with_fallback($parts, 'item');
 
         // 6. Parse JSON.
         $jsonraw = $result['data'];
@@ -419,7 +419,8 @@ class generator {
      * consulted by the caller only when no tier holds a key. The hub tiers are
      * skipped when local_aihub is absent.
      *
-     * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel].
+     * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel, keysource].
+     *               keysource is 'own_personal', 'hub_personal', 'own_site', 'hub_site' or ''.
      */
     protected function load_api_keys(): array {
         $hubinstalled = class_exists(\local_aihub\local\keys::class);
@@ -428,11 +429,14 @@ class generator {
 
         // Tier 1: own personal (PlayerHUD user preferences).
         $tiers[] = [
-            (string) get_user_preferences('block_playerhud_gemini_key', ''),
-            (string) get_user_preferences('block_playerhud_groq_key', ''),
-            (string) get_user_preferences('block_playerhud_openai_key', ''),
-            (string) get_user_preferences('block_playerhud_openai_url', ''),
-            (string) get_user_preferences('block_playerhud_openai_model', ''),
+            'source' => 'own_personal',
+            'keys' => [
+                (string) get_user_preferences('block_playerhud_gemini_key', ''),
+                (string) get_user_preferences('block_playerhud_groq_key', ''),
+                (string) get_user_preferences('block_playerhud_openai_key', ''),
+                (string) get_user_preferences('block_playerhud_openai_url', ''),
+                (string) get_user_preferences('block_playerhud_openai_model', ''),
+            ],
         ];
 
         // Tier 2: hub personal. URL and model prefer the hub's personal values,
@@ -441,39 +445,55 @@ class generator {
             $hubpersonalurl = \local_aihub\local\keys::get_personal_openai_url();
             $hubpersonalmodel = \local_aihub\local\keys::get_personal_openai_model();
             $tiers[] = [
-                \local_aihub\local\keys::get_personal_key('gemini'),
-                \local_aihub\local\keys::get_personal_key('groq'),
-                \local_aihub\local\keys::get_personal_key('openai'),
-                $hubpersonalurl !== '' ? $hubpersonalurl : \local_aihub\local\keys::get_openai_baseurl(),
-                $hubpersonalmodel !== '' ? $hubpersonalmodel : \local_aihub\local\keys::get_openai_model(),
+                'source' => 'hub_personal',
+                'keys' => [
+                    \local_aihub\local\keys::get_personal_key('gemini'),
+                    \local_aihub\local\keys::get_personal_key('groq'),
+                    \local_aihub\local\keys::get_personal_key('openai'),
+                    $hubpersonalurl !== '' ? $hubpersonalurl : \local_aihub\local\keys::get_openai_baseurl(),
+                    $hubpersonalmodel !== '' ? $hubpersonalmodel : \local_aihub\local\keys::get_openai_model(),
+                ],
             ];
         }
 
         // Tier 3: own site (PlayerHUD config).
         $tiers[] = [
-            (string) get_config('block_playerhud', 'apikey_gemini'),
-            (string) get_config('block_playerhud', 'apikey_groq'),
-            (string) get_config('block_playerhud', 'apikey_openai'),
-            (string) get_config('block_playerhud', 'openai_baseurl'),
-            (string) get_config('block_playerhud', 'openai_model'),
+            'source' => 'own_site',
+            'keys' => [
+                (string) get_config('block_playerhud', 'apikey_gemini'),
+                (string) get_config('block_playerhud', 'apikey_groq'),
+                (string) get_config('block_playerhud', 'apikey_openai'),
+                (string) get_config('block_playerhud', 'openai_baseurl'),
+                (string) get_config('block_playerhud', 'openai_model'),
+            ],
         ];
 
         // Tier 4: hub site.
         if ($hubinstalled) {
             $tiers[] = [
-                \local_aihub\local\keys::get_site_key('gemini'),
-                \local_aihub\local\keys::get_site_key('groq'),
-                \local_aihub\local\keys::get_site_key('openai'),
-                \local_aihub\local\keys::get_openai_baseurl(),
-                \local_aihub\local\keys::get_openai_model(),
+                'source' => 'hub_site',
+                'keys' => [
+                    \local_aihub\local\keys::get_site_key('gemini'),
+                    \local_aihub\local\keys::get_site_key('groq'),
+                    \local_aihub\local\keys::get_site_key('openai'),
+                    \local_aihub\local\keys::get_openai_baseurl(),
+                    \local_aihub\local\keys::get_openai_model(),
+                ],
             ];
         }
 
         // Use the first tier that holds any provider key.
         $geminikey = $groqkey = $openaikey = $openaiurl = $openaimodel = '';
+        $keysource = '';
         foreach ($tiers as $tier) {
-            if ($tier[0] !== '' || $tier[1] !== '' || $tier[2] !== '') {
-                [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $tier;
+            [$gemini, $groq, $openai, $openaiurltier, $openaimodeltier] = $tier['keys'];
+            if ($gemini !== '' || $groq !== '' || $openai !== '') {
+                $geminikey = $gemini;
+                $groqkey = $groq;
+                $openaikey = $openai;
+                $openaiurl = $openaiurltier;
+                $openaimodel = $openaimodeltier;
+                $keysource = $tier['source'];
                 break;
             }
         }
@@ -486,7 +506,7 @@ class generator {
             $openaiurl = $this->resolve_openai_url($openaiurl);
         }
 
-        return [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel];
+        return [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $keysource];
     }
 
     /**
@@ -645,11 +665,15 @@ class generator {
      * level, so an explicitly set personal or site key always wins.
      *
      * @param array $parts Prompt parts with 'system' and 'user' keys.
+     * @param string $description Short label of what is being generated, reported to the
+     *               AI Hub's usage log when a hub-borrowed key serves the request.
      * @return array Result array with keys 'success', 'data', 'provider'.
      * @throws \moodle_exception If all providers fail or no keys are configured.
      */
-    protected function call_with_fallback(array $parts): array {
-        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $this->load_api_keys();
+    protected function call_with_fallback(array $parts, string $description = ''): array {
+        global $USER;
+
+        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $keysource] = $this->load_api_keys();
 
         $nokeys = empty($geminikey) && empty($groqkey) && empty($openaikey);
         $result = ['success' => false, 'message' => ''];
@@ -664,6 +688,22 @@ class generator {
 
         if (!$result['success'] && !empty($openaikey) && !empty($openaiurl)) {
             $result = $this->call_openai_compatible($parts, $openaikey, $openaiurl, $openaimodel);
+        }
+
+        // A hub-borrowed key served the request: this class calls providers directly
+        // instead of going through local_aihub\ai::generate_text(), so the hub never
+        // sees the request on its own. Report it after the fact so the site usage
+        // report still reflects it.
+        $hubtiers = ['hub_personal', 'hub_site'];
+        if ($result['success'] && in_array($keysource, $hubtiers, true) && class_exists(\local_aihub\ai::class)) {
+            \local_aihub\ai::report_usage(
+                (int) $USER->id,
+                'block_playerhud',
+                $description,
+                (string) ($result['provider'] ?? ''),
+                '',
+                $keysource === 'hub_personal' ? 'personal' : 'site'
+            );
         }
 
         // Bottom of the ladder: Moodle core_ai, only when no key is configured.
@@ -762,7 +802,7 @@ class generator {
         global $DB;
 
         $prompt = $this->build_prompt_class_oracle($theme);
-        $result = $this->call_with_fallback($prompt);
+        $result = $this->call_with_fallback($prompt, 'class');
 
         // Backtick markdown cleanup.
         $cleanjson = preg_replace('/^\x60{3}json|\x60{3}$/m', '', $result['data']);
@@ -813,7 +853,7 @@ class generator {
         global $DB;
 
         $prompt = $this->build_prompt_story($theme, $options);
-        $result = $this->call_with_fallback($prompt);
+        $result = $this->call_with_fallback($prompt, 'story');
 
         // Backtick markdown cleanup.
         $cleanjson = preg_replace('/^\x60{3}json|\x60{3}$/m', '', $result['data']);
