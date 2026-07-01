@@ -192,6 +192,8 @@ class wizard_generate extends external_api {
         string $size,
         int $runid
     ): array {
+        global $DB, $USER;
+
         $xpperlevel = isset($config->xp_per_level) ? (int)$config->xp_per_level : 100;
         $maxlevels = isset($config->max_levels) ? (int)$config->max_levels : 20;
         $amount = ($size === 'long') ? self::SIZE_LONG_AMOUNT : self::SIZE_SHORT_AMOUNT;
@@ -223,7 +225,24 @@ class wizard_generate extends external_api {
             \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', $result['created_drop_ids']);
         }
 
-        return $result['created_items'] ?? [];
+        $createditems = $result['created_items'] ?? [];
+        if (!empty($createditems)) {
+            $logs = [];
+            $now = time();
+            foreach ($createditems as $itemname) {
+                $log = new \stdClass();
+                $log->blockinstanceid = $instanceid;
+                $log->userid          = $USER->id;
+                $log->action_type     = 'item';
+                $log->object_name     = $itemname;
+                $log->ai_provider     = $result['provider'] ?? 'Unknown';
+                $log->timecreated     = $now;
+                $logs[] = $log;
+            }
+            $DB->insert_records('block_playerhud_ai_logs', $logs);
+        }
+
+        return $createditems;
     }
 
     /**
