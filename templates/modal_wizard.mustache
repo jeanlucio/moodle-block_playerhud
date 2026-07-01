@@ -109,9 +109,27 @@
             <div class="alert alert-danger mt-3 ph-display-none" id="ph-wizard-error" role="alert"></div>
             <div class="alert alert-success mt-3 ph-display-none" id="ph-wizard-result" role="status"></div>
         </form>
+
+        <div class="ph-display-none" id="ph-wizard-history-view">
+            <span class="fw-bold text-uppercase ph-text-xs text-muted">
+                {{#str}} wizard_history_title, block_playerhud {{/str}}
+            </span>
+            <div class="text-muted mt-3 ph-display-none" id="ph-wizard-history-empty">
+                {{#str}} wizard_history_empty, block_playerhud {{/str}}
+            </div>
+            <div class="list-group mt-3" id="ph-wizard-history-list"></div>
+        </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-danger me-auto ph-display-none" id="ph-wizard-undo-btn">
+        <button type="button" class="btn btn-outline-secondary me-auto" id="ph-wizard-history-btn">
+            <i class="fa fa-clock-rotate-left me-1" aria-hidden="true"></i>
+            {{#str}} wizard_history_btn, block_playerhud {{/str}}
+        </button>
+        <button type="button" class="btn btn-outline-secondary me-auto ph-display-none" id="ph-wizard-history-back-btn">
+            <i class="fa fa-arrow-left me-1" aria-hidden="true"></i>
+            {{#str}} wizard_history_back_btn, block_playerhud {{/str}}
+        </button>
+        <button type="button" class="btn btn-outline-danger ph-display-none" id="ph-wizard-undo-btn">
             <i class="fa fa-undo me-1" aria-hidden="true"></i> {{#str}} wizard_undo_btn, block_playerhud {{/str}}
         </button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-dismiss="modal">

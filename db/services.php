@@ -179,4 +179,13 @@ $functions = [
         'ajax'          => true,
         'loginrequired' => true,
     ],
+
+    'block_playerhud_wizard_list_runs' => [
+        'classname'     => 'block_playerhud\external\wizard_list_runs',
+        'methodname'    => 'execute',
+        'description'   => 'List recent gamification wizard runs available for rollback',
+        'type'          => 'read',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
 ];

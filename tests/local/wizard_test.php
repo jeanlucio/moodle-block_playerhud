@@ -140,4 +140,47 @@ final class wizard_test extends advanced_testcase {
         $this->expectException(\dml_missing_record_exception::class);
         wizard::rollback($runid, $this->instanceid + 999);
     }
+
+    /**
+     * Only 'done' runs are returned, newest first, with per-table object counts.
+     *
+     * @covers ::get_active_runs
+     */
+    public function test_get_active_runs_returns_only_done_runs_with_counts(): void {
+        global $USER;
+
+        $itemid1 = $this->create_item();
+        $itemid2 = $this->create_item();
+
+        $donerunid = wizard::start_run($this->instanceid, (int) $USER->id, ['items']);
+        wizard::record_objects($donerunid, 'block_playerhud_items', [$itemid1, $itemid2]);
+        wizard::finish_run($donerunid, 'done');
+
+        $rolledbackrunid = wizard::start_run($this->instanceid, (int) $USER->id, ['items']);
+        wizard::finish_run($rolledbackrunid, 'rolledback');
+
+        $runs = wizard::get_active_runs($this->instanceid);
+
+        $this->assertCount(1, $runs);
+        $this->assertSame($donerunid, $runs[0]->id);
+        $this->assertSame(['block_playerhud_items' => 2], $runs[0]->counts);
+    }
+
+    /**
+     * The limit parameter caps the number of runs returned, newest first.
+     *
+     * @covers ::get_active_runs
+     */
+    public function test_get_active_runs_respects_limit(): void {
+        global $USER;
+
+        for ($i = 0; $i < 3; $i++) {
+            $runid = wizard::start_run($this->instanceid, (int) $USER->id, ['items']);
+            wizard::finish_run($runid, 'done');
+        }
+
+        $runs = wizard::get_active_runs($this->instanceid, 2);
+
+        $this->assertCount(2, $runs);
+    }
 }

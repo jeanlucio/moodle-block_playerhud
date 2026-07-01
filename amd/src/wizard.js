@@ -52,6 +52,13 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
         const errorEl = document.getElementById('ph-wizard-error');
         const resultEl = document.getElementById('ph-wizard-result');
 
+        const formEl = document.getElementById('ph-wizard-form');
+        const historyViewEl = document.getElementById('ph-wizard-history-view');
+        const historyListEl = document.getElementById('ph-wizard-history-list');
+        const historyEmptyEl = document.getElementById('ph-wizard-history-empty');
+        const historyBtn = document.getElementById('ph-wizard-history-btn');
+        const historyBackBtn = document.getElementById('ph-wizard-history-back-btn');
+
         let lastRunId = null;
         const defaultLabel = generateLabelEl.textContent;
 
@@ -87,6 +94,126 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
             el.textContent = text;
             el.classList.remove('ph-display-none');
         };
+
+        /**
+         * Switches between the generation form and the run history list.
+         *
+         * @param {boolean} showHistory True to show the history view, false for the form.
+         */
+        const setHistoryView = (showHistory) => {
+            formEl.classList.toggle('ph-display-none', showHistory);
+            historyViewEl.classList.toggle('ph-display-none', !showHistory);
+            historyBtn.classList.toggle('ph-display-none', showHistory);
+            historyBackBtn.classList.toggle('ph-display-none', !showHistory);
+            undoBtn.classList.toggle('ph-display-none', showHistory || !lastRunId);
+            generateBtn.classList.toggle('ph-display-none', showHistory);
+        };
+
+        // Always reopen on the generation form, regardless of which view was
+        // showing when the modal was last closed.
+        modalEl.addEventListener('hidden.bs.modal', () => setHistoryView(false));
+
+        /**
+         * Undoes a wizard run and removes its row from the history list, if present.
+         *
+         * @param {number} runid The run ID to undo.
+         * @param {HTMLElement} [row] The history row element to remove on success.
+         * @param {HTMLElement} [button] The button that triggered this, disabled while running.
+         */
+        const rollbackRun = async(runid, row, button) => {
+            if (button) {
+                button.disabled = true;
+            }
+
+            try {
+                await Ajax.call([{
+                    methodname: 'block_playerhud_wizard_rollback',
+                    args: {
+                        instanceid,
+                        courseid,
+                        runid,
+                    },
+                }])[0];
+
+                if (runid === lastRunId) {
+                    lastRunId = null;
+                    undoBtn.classList.add('ph-display-none');
+                }
+                errorEl.classList.add('ph-display-none');
+                resultEl.classList.add('ph-display-none');
+
+                if (row) {
+                    row.remove();
+                    if (!historyListEl.children.length) {
+                        historyEmptyEl.classList.remove('ph-display-none');
+                    }
+                }
+            } catch (e) {
+                showAlert(errorEl, (e && e.message) ? e.message : String(e));
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                }
+            }
+        };
+
+        /**
+         * Builds one history list row for a past run, with its own undo button.
+         *
+         * @param {Object} run {runid, timecreated, summary}.
+         * @return {HTMLElement}
+         */
+        const buildHistoryRow = (run) => {
+            const row = document.createElement('div');
+            row.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+            const info = document.createElement('div');
+            const summary = document.createElement('div');
+            summary.textContent = run.summary;
+            const date = document.createElement('small');
+            date.className = 'text-muted';
+            date.textContent = run.timecreated;
+            info.appendChild(summary);
+            info.appendChild(date);
+
+            const rowUndoBtn = document.createElement('button');
+            rowUndoBtn.type = 'button';
+            rowUndoBtn.className = 'btn btn-sm btn-outline-danger';
+            const icon = document.createElement('i');
+            icon.className = 'fa fa-undo me-1';
+            icon.setAttribute('aria-hidden', 'true');
+            rowUndoBtn.appendChild(icon);
+            rowUndoBtn.appendChild(document.createTextNode(undoBtn.textContent.trim()));
+            rowUndoBtn.addEventListener('click', () => rollbackRun(run.runid, row, rowUndoBtn));
+
+            row.appendChild(info);
+            row.appendChild(rowUndoBtn);
+            return row;
+        };
+
+        historyBtn.addEventListener('click', async() => {
+            historyListEl.innerHTML = '';
+            historyEmptyEl.classList.add('ph-display-none');
+            setHistoryView(true);
+
+            try {
+                const response = await Ajax.call([{
+                    methodname: 'block_playerhud_wizard_list_runs',
+                    args: {instanceid, courseid},
+                }])[0];
+
+                if (!response.runs.length) {
+                    historyEmptyEl.classList.remove('ph-display-none');
+                    return;
+                }
+                response.runs.forEach((run) => historyListEl.appendChild(buildHistoryRow(run)));
+            } catch (e) {
+                setHistoryView(false);
+                showAlert(errorEl, (e && e.message) ? e.message : String(e));
+            }
+        });
+
+        historyBackBtn.addEventListener('click', () => setHistoryView(false));
 
         const setGenerating = async(isGenerating) => {
             generateBtn.disabled = isGenerating;
@@ -128,6 +255,12 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
                     return;
                 }
 
+                const createdCount = response.created_items.length + response.created_quests.length;
+                if (createdCount === 0) {
+                    showAlert(resultEl, await Str.get_string('wizard_nothing_generated', 'block_playerhud'));
+                    return;
+                }
+
                 const names = [...response.created_items, ...response.created_quests].join(', ');
                 lastRunId = response.runid;
                 showAlert(resultEl, names);
@@ -139,32 +272,11 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
             }
         });
 
-        undoBtn.addEventListener('click', async() => {
+        undoBtn.addEventListener('click', () => {
             if (!lastRunId) {
                 return;
             }
-
-            undoBtn.disabled = true;
-
-            try {
-                await Ajax.call([{
-                    methodname: 'block_playerhud_wizard_rollback',
-                    args: {
-                        instanceid,
-                        courseid,
-                        runid: lastRunId,
-                    },
-                }])[0];
-
-                lastRunId = null;
-                undoBtn.classList.add('ph-display-none');
-                errorEl.classList.add('ph-display-none');
-                resultEl.classList.add('ph-display-none');
-            } catch (e) {
-                showAlert(errorEl, (e && e.message) ? e.message : String(e));
-            } finally {
-                undoBtn.disabled = false;
-            }
+            rollbackRun(lastRunId, null, undoBtn);
         });
     };
 

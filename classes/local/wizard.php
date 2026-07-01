@@ -123,6 +123,63 @@ class wizard {
     }
 
     /**
+     * Returns the most recent still-active runs for an instance, with object
+     * counts per table so the caller can build a human-readable summary.
+     *
+     * Only 'done' runs are returned: a rolledback run has nothing left to undo.
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @param int $limit Maximum number of runs to return.
+     * @return \stdClass[] Records {id, timecreated, counts: array<string, int>}, newest first.
+     */
+    public static function get_active_runs(int $blockinstanceid, int $limit = 10): array {
+        global $DB;
+
+        $runs = $DB->get_records(
+            'block_playerhud_wizard_runs',
+            ['blockinstanceid' => $blockinstanceid, 'status' => 'done'],
+            'timecreated DESC',
+            'id, timecreated',
+            0,
+            $limit
+        );
+
+        if (empty($runs)) {
+            return [];
+        }
+
+        // Bulk-load object counts per run+table to avoid an N+1 query problem.
+        [$insql, $inparams] = $DB->get_in_or_equal(array_keys($runs), SQL_PARAMS_NAMED);
+        $sql = "SELECT runid, objecttable, COUNT(*) AS cnt
+                  FROM {block_playerhud_wizard_objects}
+                 WHERE runid $insql
+              GROUP BY runid, objecttable";
+        $countrows = $DB->get_recordset_sql($sql, $inparams);
+
+        $countsbyrun = [];
+        foreach ($countrows as $row) {
+            $countsbyrun[$row->runid][$row->objecttable] = (int) $row->cnt;
+        }
+        $countrows->close();
+
+        $result = [];
+        foreach ($runs as $run) {
+            // A run that created nothing (every heuristic milestone already existed)
+            // has nothing to undo, so it is not worth listing.
+            if (empty($countsbyrun[$run->id])) {
+                continue;
+            }
+            $result[] = (object) [
+                'id' => (int) $run->id,
+                'timecreated' => (int) $run->timecreated,
+                'counts' => $countsbyrun[$run->id],
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
      * Undoes a wizard run: deletes every object it created, wherever it lives.
      *
      * Scoped to the given block instance so a run ID from another instance can
