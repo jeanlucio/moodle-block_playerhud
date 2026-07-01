@@ -255,7 +255,8 @@
     cursor: pointer;
 }
 
-#ph-codegen-modal .btn-close {
+#ph-codegen-modal .btn-close,
+#ph-wizard-modal .btn-close {
     background-image: none;
     background-color: transparent;
     border: 0;
