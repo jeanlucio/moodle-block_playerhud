@@ -46,6 +46,8 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
         const sizeEl = document.getElementById('ph-wizard-size');
         const itemsModuleEl = document.getElementById('ph-wizard-module-items');
         const missionsModuleEl = document.getElementById('ph-wizard-module-missions');
+        const playercoinModuleEl = document.getElementById('ph-wizard-module-playercoin');
+        const avatarsModuleEl = document.getElementById('ph-wizard-module-avatars');
         const generateBtn = document.getElementById('ph-wizard-generate-btn');
         const generateLabelEl = generateBtn.querySelector('.ph-wizard-btn-label');
         const undoBtn = document.getElementById('ph-wizard-undo-btn');
@@ -240,7 +242,9 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
         };
 
         generateBtn.addEventListener('click', async() => {
-            if (!itemsModuleEl.checked && !missionsModuleEl.checked) {
+            const anyModuleChecked = itemsModuleEl.checked || missionsModuleEl.checked ||
+                playercoinModuleEl.checked || avatarsModuleEl.checked;
+            if (!anyModuleChecked) {
                 return;
             }
 
@@ -258,6 +262,8 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
                         size: sizeEl.value,
                         'include_items': itemsModuleEl.checked,
                         'include_missions': missionsModuleEl.checked,
+                        'include_playercoin': playercoinModuleEl.checked,
+                        'include_avatars': avatarsModuleEl.checked,
                     },
                 }])[0];
 

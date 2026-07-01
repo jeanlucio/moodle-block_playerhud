@@ -15,7 +15,8 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Tests for the wizard_generate web service (Missions module; no network involved).
+ * Tests for the wizard_generate web service (Missions/PlayerCoin/Avatars modules;
+ * no network involved).
  *
  * @package    block_playerhud
  * @category   test
@@ -32,8 +33,9 @@ use core_external\external_api;
  * Tests for the wizard_generate web service.
  *
  * The Items & Trade module calls the AI generator and is exercised manually
- * (see .docs/plano-wizard-octalysis.md); these tests cover the Missions
- * module, which is fully deterministic and needs no network access.
+ * (see .docs/plano-wizard-octalysis.md); these tests cover the Missions,
+ * PlayerCoin and Avatars modules, which are fully deterministic and need no
+ * network access.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
@@ -95,6 +97,91 @@ final class wizard_generate_test extends external_base_testcase {
 
         $this->assertGreaterThan(0, $deleted);
         $this->assertEquals(0, $DB->count_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
+     * PlayerCoin and Avatars are mechanical (no AI/network) and create items with a manifest.
+     */
+    public function test_playercoin_and_avatars_create_items_and_manifest(): void {
+        global $DB;
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            true,
+            true
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertContains('PlayerCoin', $result['created_items']);
+        $this->assertGreaterThan(1, count($result['created_items']));
+
+        $cleaned = external_api::clean_returnvalue(wizard_generate::execute_returns(), $result);
+        $this->assertTrue($cleaned['success']);
+
+        $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]);
+        $this->assertCount(count($result['created_items']), $items);
+
+        $run = $DB->get_record('block_playerhud_wizard_runs', ['id' => $result['runid']], '*', MUST_EXIST);
+        $this->assertSame(['playercoin', 'avatars'], json_decode($run->modules, true));
+
+        $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $result['runid']]);
+        $this->assertCount(count($items), $manifest);
+        foreach ($manifest as $entry) {
+            $this->assertSame('block_playerhud_items', $entry->objecttable);
+        }
+    }
+
+    /**
+     * Running PlayerCoin twice must not duplicate the item nor record it into the
+     * second run's manifest, since nothing new was actually created.
+     */
+    public function test_playercoin_is_idempotent_across_runs(): void {
+        global $DB;
+
+        $first = wizard_generate::execute($this->instanceid, $this->course->id, '', '', 'short', false, false, true, false);
+        $this->assertSame(['PlayerCoin'], $first['created_items']);
+
+        $second = wizard_generate::execute($this->instanceid, $this->course->id, '', '', 'short', false, false, true, false);
+        $this->assertSame([], $second['created_items']);
+
+        $this->assertEquals(1, $DB->count_records('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'action_type' => 'playercoin',
+        ]));
+
+        $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $second['runid']]);
+        $this->assertCount(0, $manifest);
+    }
+
+    /**
+     * Rolling back a PlayerCoin + Avatars run removes the created items.
+     */
+    public function test_playercoin_and_avatars_run_can_be_rolled_back(): void {
+        global $DB;
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            true,
+            true
+        );
+        $this->assertTrue($result['success']);
+
+        $deleted = \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid);
+
+        $this->assertGreaterThan(0, $deleted);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
     }
 
     /**

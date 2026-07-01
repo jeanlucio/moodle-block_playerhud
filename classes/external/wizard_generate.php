@@ -69,6 +69,18 @@ class wizard_generate extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            'include_playercoin' => new external_value(
+                PARAM_BOOL,
+                'Create the PlayerCoin item',
+                VALUE_DEFAULT,
+                false
+            ),
+            'include_avatars' => new external_value(
+                PARAM_BOOL,
+                'Create the pre-defined avatar item pack',
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
@@ -82,6 +94,8 @@ class wizard_generate extends external_api {
      * @param string $size Journey size: short or long.
      * @param bool $includeitems Whether to generate the Items & Trade module.
      * @param bool $includemissions Whether to generate heuristic Mission suggestions.
+     * @param bool $includeplayercoin Whether to create the PlayerCoin item.
+     * @param bool $includeavatars Whether to create the pre-defined avatar item pack.
      * @return array Result structure.
      */
     public static function execute(
@@ -91,7 +105,9 @@ class wizard_generate extends external_api {
         string $tone = '',
         string $size = 'short',
         bool $includeitems = true,
-        bool $includemissions = false
+        bool $includemissions = false,
+        bool $includeplayercoin = false,
+        bool $includeavatars = false
     ): array {
         global $DB, $USER;
 
@@ -103,6 +119,8 @@ class wizard_generate extends external_api {
             'size' => $size,
             'include_items' => $includeitems,
             'include_missions' => $includemissions,
+            'include_playercoin' => $includeplayercoin,
+            'include_avatars' => $includeavatars,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -121,6 +139,12 @@ class wizard_generate extends external_api {
         }
         if ($params['include_missions']) {
             $modules[] = 'missions';
+        }
+        if ($params['include_playercoin']) {
+            $modules[] = 'playercoin';
+        }
+        if ($params['include_avatars']) {
+            $modules[] = 'avatars';
         }
 
         $runid = \block_playerhud\local\wizard::start_run($params['instanceid'], (int) $USER->id, $modules);
@@ -146,6 +170,20 @@ class wizard_generate extends external_api {
                     $params['courseid'],
                     $config,
                     $runid
+                );
+            }
+
+            if ($params['include_playercoin']) {
+                $createditems = array_merge(
+                    $createditems,
+                    self::generate_playercoin($params['instanceid'], $params['courseid'], $runid)
+                );
+            }
+
+            if ($params['include_avatars']) {
+                $createditems = array_merge(
+                    $createditems,
+                    self::generate_avatars($params['instanceid'], $params['courseid'], $runid)
                 );
             }
 
@@ -287,6 +325,49 @@ class wizard_generate extends external_api {
         }
 
         return $createdquests;
+    }
+
+    /**
+     * Creates the PlayerCoin item and records it in the run.
+     *
+     * Only the item itself is created here — the optional drop into the course news forum
+     * (`external\setup_playercoin_drop`) writes into course content that the generic
+     * table/id rollback manifest cannot undo, so it is left as the existing manual follow-up
+     * action in the Items tab rather than something the wizard does automatically.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int $runid Wizard run ID.
+     * @return string[] Names of the created items (empty if PlayerCoin already existed).
+     */
+    protected static function generate_playercoin(int $instanceid, int $courseid, int $runid): array {
+        $result = \block_playerhud\external\create_playercoin::execute($instanceid, $courseid);
+
+        if (empty($result['created'])) {
+            return [];
+        }
+
+        \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$result['itemid']]);
+
+        return ['PlayerCoin'];
+    }
+
+    /**
+     * Creates the pre-defined avatar item pack and records the new items in the run.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int $runid Wizard run ID.
+     * @return string[] Names of the created avatar items.
+     */
+    protected static function generate_avatars(int $instanceid, int $courseid, int $runid): array {
+        $result = \block_playerhud\external\create_avatar_pack::execute($instanceid, $courseid);
+
+        if (!empty($result['created_item_ids'])) {
+            \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', $result['created_item_ids']);
+        }
+
+        return $result['created_item_names'] ?? [];
     }
 
     /**

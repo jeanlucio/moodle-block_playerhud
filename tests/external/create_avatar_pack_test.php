@@ -100,6 +100,24 @@ final class create_avatar_pack_test extends external_base_testcase {
     }
 
     /**
+     * created_item_ids/created_item_names are returned in lockstep with the actual inserts,
+     * so callers (e.g. the wizard's rollback manifest) can rely on them.
+     */
+    public function test_create_avatar_pack_returns_ids_and_names_in_lockstep(): void {
+        global $DB;
+
+        $result = create_avatar_pack::execute($this->instanceid, $this->course->id);
+
+        $this->assertCount(17, $result['created_item_ids']);
+        $this->assertCount(17, $result['created_item_names']);
+
+        foreach ($result['created_item_ids'] as $index => $itemid) {
+            $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], '*', MUST_EXIST);
+            $this->assertSame($result['created_item_names'][$index], $item->name);
+        }
+    }
+
+    /**
      * A student without block/playerhud:manage must not be able to create the avatar pack.
      */
     public function test_create_avatar_pack_requires_manage_capability(): void {
