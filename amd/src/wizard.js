@@ -48,6 +48,7 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
         const missionsModuleEl = document.getElementById('ph-wizard-module-missions');
         const playercoinModuleEl = document.getElementById('ph-wizard-module-playercoin');
         const avatarsModuleEl = document.getElementById('ph-wizard-module-avatars');
+        const rpgModuleEl = document.getElementById('ph-wizard-module-rpg');
         const generateBtn = document.getElementById('ph-wizard-generate-btn');
         const generateLabelEl = generateBtn.querySelector('.ph-wizard-btn-label');
         const undoBtn = document.getElementById('ph-wizard-undo-btn');
@@ -243,7 +244,7 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
 
         generateBtn.addEventListener('click', async() => {
             const anyModuleChecked = itemsModuleEl.checked || missionsModuleEl.checked ||
-                playercoinModuleEl.checked || avatarsModuleEl.checked;
+                playercoinModuleEl.checked || avatarsModuleEl.checked || rpgModuleEl.checked;
             if (!anyModuleChecked) {
                 return;
             }
@@ -264,6 +265,8 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
                         'include_missions': missionsModuleEl.checked,
                         'include_playercoin': playercoinModuleEl.checked,
                         'include_avatars': avatarsModuleEl.checked,
+                        'include_rpg': rpgModuleEl.checked,
+                        'tone_key': toneEl.value,
                     },
                 }])[0];
 

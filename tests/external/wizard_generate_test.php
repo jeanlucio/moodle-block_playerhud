@@ -185,6 +185,174 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
+     * RPG Classes is mechanical (no AI/network): creates 3 classes, a fixed Chapter 1 with
+     * 6 nodes and choices, and records everything into the run's manifest.
+     */
+    public function test_rpg_creates_classes_and_chapter_with_manifest(): void {
+        global $DB;
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            true,
+            'fantasy'
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertCount(4, $result['created_items'], '3 classes + 1 chapter title.');
+
+        $cleaned = external_api::clean_returnvalue(wizard_generate::execute_returns(), $result);
+        $this->assertTrue($cleaned['success']);
+
+        $classes = $DB->get_records('block_playerhud_classes', ['blockinstanceid' => $this->instanceid]);
+        $this->assertCount(3, $classes);
+
+        $chapters = $DB->get_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]);
+        $this->assertCount(1, $chapters);
+        $chapter = reset($chapters);
+
+        $nodes = $DB->get_records('block_playerhud_story_nodes', ['chapterid' => $chapter->id]);
+        $this->assertCount(6, $nodes);
+
+        $nodeids = array_keys($nodes);
+        [$insql, $inparams] = $DB->get_in_or_equal($nodeids, SQL_PARAMS_NAMED);
+        $choices = $DB->get_records_select('block_playerhud_choices', "nodeid $insql", $inparams);
+        $this->assertCount(6, $choices, '1 (continue) + 2 (help/direct) + 3 (class picks) = 6.');
+
+        $classchoices = array_filter($choices, static fn($choice): bool => (int) $choice->set_class_id > 0);
+        $this->assertCount(3, $classchoices, 'Exactly the 3 archetype-selection choices set a class.');
+        $assignedclassids = array_map(static fn($choice): int => (int) $choice->set_class_id, $classchoices);
+        sort($assignedclassids);
+        $expectedclassids = array_map('intval', array_keys($classes));
+        sort($expectedclassids);
+        $this->assertSame($expectedclassids, $assignedclassids, 'Each of the 3 classes is assignable.');
+
+        $run = $DB->get_record('block_playerhud_wizard_runs', ['id' => $result['runid']], '*', MUST_EXIST);
+        $this->assertSame(['rpg'], json_decode($run->modules, true));
+
+        $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $result['runid']]);
+        $this->assertCount(3 + 1 + 6 + 6, $manifest, 'classes + chapter + nodes + choices.');
+    }
+
+    /**
+     * Running RPG Classes twice with the same tone must not duplicate anything.
+     */
+    public function test_rpg_is_idempotent_across_runs(): void {
+        global $DB;
+
+        $first = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            true,
+            'fantasy'
+        );
+        $this->assertCount(4, $first['created_items']);
+
+        $second = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            true,
+            'fantasy'
+        );
+        $this->assertSame([], $second['created_items']);
+
+        $this->assertEquals(3, $DB->count_records('block_playerhud_classes', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(1, $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]));
+
+        $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $second['runid']]);
+        $this->assertCount(0, $manifest);
+    }
+
+    /**
+     * Rolling back an RPG Classes run removes the classes, chapter, nodes and choices.
+     */
+    public function test_rpg_run_can_be_rolled_back(): void {
+        global $DB;
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            true,
+            'fantasy'
+        );
+        $this->assertTrue($result['success']);
+
+        $deleted = \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid);
+
+        $this->assertGreaterThan(0, $deleted);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_classes', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_story_nodes', []));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_choices', []));
+    }
+
+    /**
+     * A different tone key produces a different chapter, coexisting with the first.
+     */
+    public function test_rpg_different_tone_produces_different_chapter(): void {
+        global $DB;
+
+        wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            true,
+            'fantasy'
+        );
+        $scifi = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            true,
+            'scifi'
+        );
+
+        $this->assertCount(4, $scifi['created_items'], 'Sci-Fi has different names, so nothing is skipped.');
+        $this->assertEquals(2, $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(6, $DB->count_records('block_playerhud_classes', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
      * A student without block/playerhud:manage must be rejected.
      */
     public function test_wizard_generate_requires_manage_capability(): void {

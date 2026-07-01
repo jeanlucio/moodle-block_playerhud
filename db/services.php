@@ -144,6 +144,15 @@ $functions = [
         'loginrequired' => true,
     ],
 
+    'block_playerhud_create_class_pack' => [
+        'classname'     => 'block_playerhud\external\create_class_pack',
+        'methodname'    => 'execute',
+        'description'   => 'Create the pre-defined RPG class pack for a block instance',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
     'block_playerhud_use_item' => [
         'classname'     => 'block_playerhud\external\use_item',
         'methodname'    => 'execute',

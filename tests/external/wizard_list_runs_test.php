@@ -65,6 +65,35 @@ final class wizard_list_runs_test extends external_base_testcase {
     }
 
     /**
+     * An RPG Classes run (no items/quests involved) still gets a non-empty summary,
+     * covering the classes/chapters object tables specifically.
+     */
+    public function test_list_runs_summarises_rpg_run(): void {
+        $generated = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            true,
+            'fantasy'
+        );
+        $this->assertTrue($generated['success']);
+
+        $result = wizard_list_runs::execute($this->instanceid, $this->course->id);
+
+        $this->assertCount(1, $result['runs']);
+        $summary = $result['runs'][0]['summary'];
+        $this->assertNotSame('', $summary);
+        $this->assertStringContainsString(get_string('wizard_history_classes', 'block_playerhud'), $summary);
+        $this->assertStringContainsString(get_string('wizard_history_chapters', 'block_playerhud'), $summary);
+    }
+
+    /**
      * A rolled-back run no longer appears in the list.
      */
     public function test_list_runs_excludes_rolledback_runs(): void {
