@@ -214,6 +214,11 @@ class wizard_generate extends external_api {
             [
                 'tone' => $tone,
                 'balance_context' => $balancecontext,
+                // A finite drop_max keeps the balanced XP meaningful: the Golden Rule in
+                // game.php/collect.php forces XP to 0 on infinite (maxusage=0) drops, so an
+                // unset drop_max here would silently make every wizard item worth nothing.
+                'drop_max' => 1,
+                'drop_time' => 0,
             ],
             $amount
         );
