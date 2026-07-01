@@ -27,13 +27,17 @@ namespace block_playerhud\ai;
  */
 class generator {
     /** @var string System role instruction for item generation. */
-    private const PROMPT_ROLE_ITEM = 'Act as a Subject Matter Expert and Educator.';
+    private const PROMPT_ROLE_ITEM = 'Act as a creative item designer for an educational game,'
+        . ' matching whatever narrative tone is requested.';
 
     /** @var string Item generation rules sent as system instruction. */
-    private const PROMPT_RULES_ITEM = 'IMPORTANT: Create a factual, realistic, and educational description of the item.'
+    private const PROMPT_RULES_ITEM = 'IMPORTANT: If a narrative tone is given below, fully embrace it —'
+        . ' including fantasy, sci-fi, or mystery elements as appropriate; the item does NOT need to be a'
+        . ' real-world object. If no narrative tone is given, keep the description factual, realistic, and'
+        . ' educational, and do NOT invent fantasy stories or "lore".'
         . ' RULES: 1. The "name" must be short (maximum 4 words).'
         . ' 2. The "description" must be extremely concise and direct (maximum 150 characters).'
-        . ' 3. Do NOT invent fantasy stories or "lore", and do NOT mention XP, levels, or game mechanics.'
+        . ' 3. Do NOT mention XP, levels, or game mechanics explicitly in the text.'
         . ' 4. The "emoji" field must be a single Unicode emoji that visually represents the item;'
         . ' choose it thematically and never use 📦 unless the item is literally a box or package.';
 
@@ -293,12 +297,12 @@ class generator {
             $tonestr = ($tone !== '') ? "Narrative tone: {$tone}." : '';
 
             if ($amount > 1) {
-                $taskstr = "Create {$amount} distinct real items related to the theme: '{$theme}'.";
-                $jsonstruct = '{"items":[{"name":"Name","description":"Factual Description...",'
+                $taskstr = "Create {$amount} distinct items related to the theme: '{$theme}'.";
+                $jsonstruct = '{"items":[{"name":"Name","description":"Description...",'
                     . '"emoji":"<emoji>","location_name":"Location"},...]}';
             } else {
-                $taskstr = "Create ONE real item related to the theme: '{$theme}'.";
-                $jsonstruct = '{"name":"Name","description":"Factual Description...",'
+                $taskstr = "Create ONE item related to the theme: '{$theme}'.";
+                $jsonstruct = '{"name":"Name","description":"Description...",'
                     . '"emoji":"<emoji>","location_name":"Location"}';
             }
 
@@ -309,13 +313,14 @@ class generator {
             $currentlang = get_string('thislanguage', 'langconfig');
             $langinst = "Reply strictly in the language: {$currentlang}.";
 
-            // Role + rules go to the system slot so the model treats them as
-            // hard constraints, not part of the user conversation.
-            $system = implode("\n\n", [self::PROMPT_ROLE_ITEM, self::PROMPT_RULES_ITEM]);
+            // Role + rules + tone go to the system slot so the model treats them as hard
+            // constraints, not soft hints buried in the user conversation. Tone in particular
+            // must sit here: it is what decides whether PROMPT_RULES_ITEM's fantasy/sci-fi
+            // allowance or its factual/educational fallback applies.
+            $system = implode("\n\n", array_filter([self::PROMPT_ROLE_ITEM, self::PROMPT_RULES_ITEM, $tonestr]));
 
             $user = implode("\n\n", [
                 $taskstr,
-                $tonestr,
                 $contextstr,
                 $techxpstr,
                 self::PROMPT_JSON_INSTRUCTION,
