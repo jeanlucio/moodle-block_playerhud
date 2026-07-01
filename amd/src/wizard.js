@@ -60,6 +60,7 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
         const historyBackBtn = document.getElementById('ph-wizard-history-back-btn');
 
         let lastRunId = null;
+        let contentChanged = false;
         const defaultLabel = generateLabelEl.textContent;
 
         /**
@@ -109,9 +110,17 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
             generateBtn.classList.toggle('ph-display-none', showHistory);
         };
 
-        // Always reopen on the generation form, regardless of which view was
-        // showing when the modal was last closed.
-        modalEl.addEventListener('hidden.bs.modal', () => setHistoryView(false));
+        // Reload the page on close so generated/undone content shows up immediately,
+        // matching the reload-on-close pattern used by the other AI generation modals
+        // (manage_items.js, ai_story.js, ai_oracle.js). Otherwise just reopen on the
+        // generation form, regardless of which view was showing when it was last closed.
+        modalEl.addEventListener('hidden.bs.modal', () => {
+            if (contentChanged) {
+                window.location.reload();
+                return;
+            }
+            setHistoryView(false);
+        });
 
         /**
          * Undoes a wizard run and removes its row from the history list, if present.
@@ -134,6 +143,8 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
                         runid,
                     },
                 }])[0];
+
+                contentChanged = true;
 
                 if (runid === lastRunId) {
                     lastRunId = null;
@@ -263,6 +274,7 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
 
                 const names = [...response.created_items, ...response.created_quests].join(', ');
                 lastRunId = response.runid;
+                contentChanged = true;
                 showAlert(resultEl, names);
                 undoBtn.classList.remove('ph-display-none');
             } catch (e) {
