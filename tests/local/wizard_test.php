@@ -175,7 +175,9 @@ final class wizard_test extends advanced_testcase {
         global $USER;
 
         for ($i = 0; $i < 3; $i++) {
+            $itemid = $this->create_item();
             $runid = wizard::start_run($this->instanceid, (int) $USER->id, ['items']);
+            wizard::record_objects($runid, 'block_playerhud_items', [$itemid]);
             wizard::finish_run($runid, 'done');
         }
 
