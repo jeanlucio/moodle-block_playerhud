@@ -651,7 +651,8 @@ class tab_reports implements renderable, templatable {
      * @param string $filtertext
      * @param int $showall
      * @param moodle_url $baseurl
-     * @param \core\output\core_renderer $output
+     * @param \core\output\core_renderer $output May still be the bootstrap_renderer stand-in
+     *        at this point, since manage.php builds tab content before calling $OUTPUT->header().
      * @return array
      */
     private function get_audit_logs(
@@ -663,7 +664,7 @@ class tab_reports implements renderable, templatable {
         string $filtertext,
         int $showall,
         moodle_url $baseurl,
-        \core\output\core_renderer $output
+        $output
     ): array {
         global $DB;
 
