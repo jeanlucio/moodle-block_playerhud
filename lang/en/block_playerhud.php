@@ -997,7 +997,6 @@ $string['wizard_pill_name_academic'] = 'Knowledge Pill';
 $string['wizard_pill_name_fantasy'] = 'Potion of Wisdom';
 $string['wizard_pill_name_mystery'] = 'Newspaper Clipping';
 $string['wizard_pill_name_scifi'] = 'Neural Capsule';
-$string['wizard_pill_quest_name'] = 'Collect: {$a}';
 $string['wizard_progress_item_desc_text'] = 'A resource that periodically appears around the course. Used to progress through the story.';
 $string['wizard_progress_item_name_academic'] = 'References';
 $string['wizard_progress_item_name_fantasy'] = 'Crystals';

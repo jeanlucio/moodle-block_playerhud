@@ -366,15 +366,21 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
-     * Pill creates the tone-specific Pill and Book items, spreads Pill drops across every
-     * eligible activity per drop_distribution::compute_pill_quotas(), and creates the
-     * collector quest directly — records everything into the run's manifest.
+     * Pill creates the tone-specific Pill and Book items and spreads Pill drops across every
+     * eligible activity per drop_distribution::compute_pill_quotas() — records everything into
+     * the run's manifest. Deliberately creates no "collect them all" quest (see
+     * generate_pill()'s docblock for why that would be a trap once the Pill<->Book trade exists).
+     *
+     * Also the regression test for the Page-module visibility bug: a Page's intro is never
+     * shown unless the teacher explicitly enables "Display page description", so the shortcode
+     * must land in content (always shown on the page's own view) instead.
      */
-    public function test_pill_creates_items_distributes_and_quest_with_manifest(): void {
+    public function test_pill_creates_items_and_distributes_with_manifest(): void {
         global $DB;
 
+        $pages = [];
         for ($i = 0; $i < 5; $i++) {
-            $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
+            $pages[] = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
         }
 
         $result = wizard_generate::execute(
@@ -398,7 +404,7 @@ final class wizard_generate_test extends external_base_testcase {
 
         $this->assertTrue($result['success']);
         $this->assertSame(['Knowledge Pill', 'Book of Knowledge'], $result['created_items']);
-        $this->assertSame(['Collect: Knowledge Pill'], $result['created_quests']);
+        $this->assertSame([], $result['created_quests']);
 
         $pill = $DB->get_record('block_playerhud_items', [
             'blockinstanceid' => $this->instanceid,
@@ -421,11 +427,7 @@ final class wizard_generate_test extends external_base_testcase {
             $this->assertSame(3600, (int) $drop->respawntime);
         }
 
-        $quest = $DB->get_record('block_playerhud_quests', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
-        $this->assertEquals(\block_playerhud\quest::TYPE_SPECIFIC_ITEM, (int) $quest->type);
-        $this->assertSame('11', $quest->requirement);
-        $this->assertSame((int) $pill->id, (int) $quest->req_itemid);
-        $this->assertSame(100, (int) $quest->reward_xp);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]));
 
         $manifesttables = array_column(
             $DB->get_records('block_playerhud_wizard_objects', ['runid' => $result['runid']]),
@@ -433,12 +435,22 @@ final class wizard_generate_test extends external_base_testcase {
         );
         $this->assertContains('block_playerhud_items', $manifesttables);
         $this->assertContains('block_playerhud_drops', $manifesttables);
-        $this->assertContains('block_playerhud_quests', $manifesttables);
-        $this->assertCount(5, $DB->get_records('block_playerhud_wizard_shortcodes', ['runid' => $result['runid']]));
+        $shortcoderows = $DB->get_records('block_playerhud_wizard_shortcodes', ['runid' => $result['runid']]);
+        $this->assertCount(5, $shortcoderows);
+
+        // Every eligible activity here is a Page, so every shortcode must have landed in
+        // content (always visible) rather than intro (hidden unless the teacher opts in).
+        foreach ($shortcoderows as $row) {
+            $this->assertSame('content', $row->field);
+        }
+        foreach ($pages as $page) {
+            $content = $DB->get_field('page', 'content', ['id' => $page->id]);
+            $this->assertStringContainsString('[PLAYERHUD_DROP', (string) $content);
+        }
     }
 
     /**
-     * Running Pill twice must not duplicate the item pair, drops or quest.
+     * Running Pill twice must not duplicate the item pair or its drops.
      */
     public function test_pill_is_idempotent_across_runs(): void {
         $first = wizard_generate::execute(
@@ -484,8 +496,9 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
-     * Rolling back a Pill run removes the items, drops and quest, and strips every shortcode
-     * back out of the activities it was inserted into.
+     * Rolling back a Pill run removes the items and drops, and strips every shortcode back out
+     * of the activities it was inserted into — here specifically content, since the only
+     * eligible activity is a Page.
      */
     public function test_pill_run_can_be_rolled_back(): void {
         global $DB;
@@ -1153,6 +1166,52 @@ final class wizard_generate_test extends external_base_testcase {
             get_string('wizard_distribute_no_activities', 'block_playerhud'),
             $result['distribute_message']
         );
+    }
+
+    /**
+     * Regression test for the Page-module visibility bug: a Page's intro is never shown unless
+     * the teacher explicitly enables "Display page description", so distribute_drops() must
+     * target content (always shown on the page's own view) instead when the best-matching
+     * activity is a Page — same fix as generate_pill(), exercised here via the progress item
+     * since it needs no AI key.
+     */
+    public function test_auto_distribute_targets_page_content_not_intro(): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'name' => 'Crystals',
+            'content' => 'Original body.',
+        ]);
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            true,
+            true
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertSame('', $result['distribute_message']);
+
+        $content = $DB->get_field('page', 'content', ['id' => $page->id]);
+        $this->assertStringContainsString('[PLAYERHUD_DROP', (string) $content);
+        $this->assertStringContainsString('Original body.', (string) $content);
+
+        $intro = $DB->get_field('page', 'intro', ['id' => $page->id]);
+        $this->assertStringNotContainsString('PLAYERHUD_DROP', (string) $intro);
+
+        $shortcoderow = $DB->get_record('block_playerhud_wizard_shortcodes', ['runid' => $result['runid']], '*', MUST_EXIST);
+        $this->assertSame('content', $shortcoderow->field);
     }
 
     /**

@@ -316,16 +316,12 @@ class wizard_generate extends external_api {
             }
 
             if ($params['include_pill']) {
-                $pillresult = self::generate_pill(
+                $createditems = array_merge($createditems, self::generate_pill(
                     $params['instanceid'],
                     $params['courseid'],
                     $params['tone_key'],
                     $runid
-                );
-                $createditems = array_merge($createditems, $pillresult['items']);
-                if ($pillresult['quest_name'] !== '') {
-                    $createdquests[] = $pillresult['quest_name'];
-                }
+                ));
             }
 
             if ($params['include_latepenalty']) {
@@ -860,42 +856,44 @@ class wizard_generate extends external_api {
     private const PILL_TARGET = 11;
 
     /**
-     * Creates the Knowledge Pill and Book items (paired, tone-specific names/emoji), spreads
+     * Creates the Knowledge Pill and Book items (paired, tone-specific names/emoji) and spreads
      * the Pill's drops across course activities via
      * {@see \block_playerhud\local\drop_distribution::compute_pill_quotas()} — so the total
      * collectible across the whole course is always exactly PILL_TARGET regardless of how many
-     * activities exist — and creates the "collect them all" quest directly.
+     * activities exist.
      *
-     * TYPE_SPECIFIC_ITEM is not one of the types the Missions module's heuristic suggests
-     * (`quest::get_heuristic_suggestions()` only ever proposes TYPE_LEVEL/TYPE_UNIQUE_ITEMS/
-     * TYPE_ACTIVITY/TYPE_TRADES), so the quest is built directly here instead — the first wizard
-     * module to create its own bespoke quest rather than routing through that heuristic.
+     * Deliberately does not create a "collect all PILL_TARGET" quest: the Pill<->Book trade
+     * (see generate_pill_trade()) spends 10 of the 11, and any quest requiring simultaneous
+     * possession of all 11 would become permanently unwinnable the moment a student trades —
+     * the total ever obtainable is capped at exactly 11, so once spent there is no way to hold
+     * 11 again. The "earned the exclusive trade" quest (TYPE_SPECIFIC_TRADE, in
+     * generate_pill_trade()) is the safe way to reward the Pill/Book loop, since it counts a
+     * permanent trade_log entry rather than current holdings.
      *
      * Idempotent per tone: if a Pill with this tone's name already exists, the whole module is
      * skipped, mirroring the progress item's own idempotency check. A course with no eligible
-     * activities yet still gets the items (and the quest, unreachable until drops exist) —
-     * same tolerant behaviour as the general auto-distribute step.
+     * activities yet still gets the items — same tolerant behaviour as the general
+     * auto-distribute step.
      *
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      * @param string $tonekey Narrative tone key.
      * @param int $runid Wizard run ID.
-     * @return array{items: string[], quest_name: string} Names of the created items, and the
-     *     collector quest's name (empty string when the module was skipped as already done).
+     * @return string[] Names of the created items (empty when the module was skipped as
+     *     already done).
      */
     protected static function generate_pill(int $instanceid, int $courseid, string $tonekey, int $runid): array {
         global $DB;
 
         $pillname = self::resolve_pill_name($tonekey);
         if ($DB->record_exists('block_playerhud_items', ['blockinstanceid' => $instanceid, 'name' => $pillname])) {
-            return ['items' => [], 'quest_name' => ''];
+            return [];
         }
 
         $bookname = self::resolve_book_name($tonekey);
         $pillemoji = self::pill_emoji($tonekey);
         $bookemoji = self::book_emoji($tonekey);
         $now = time();
-        $created = [];
 
         $pillid = (int) $DB->insert_record('block_playerhud_items', (object) [
             'blockinstanceid' => $instanceid,
@@ -928,8 +926,6 @@ class wizard_generate extends external_api {
             'timemodified' => $now,
         ]);
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$pillid, $bookid]);
-        $created[] = $pillname;
-        $created[] = $bookname;
 
         $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
         $quotas = \block_playerhud\local\drop_distribution::compute_pill_quotas(self::PILL_TARGET, count($modules));
@@ -948,36 +944,28 @@ class wizard_generate extends external_api {
             ]);
             $dropids[] = $dropid;
 
+            // Page modules never show their intro unless the teacher explicitly enabled
+            // "Display page description" — their content, in contrast, is always shown on the
+            // page's own view. Every other eligible module type shows its intro unconditionally
+            // on its own view page, regardless of the course-page "show description" setting.
+            $field = $modules[$i]['supports_content'] ? 'content' : 'intro';
             $result = \block_playerhud\external\insert_drop_shortcode::execute(
                 $instanceid,
                 $courseid,
                 $dropid,
                 $modules[$i]['cmid'],
-                'intro',
+                $field,
                 'top'
             );
             if ($result['success']) {
-                \block_playerhud\local\wizard::record_shortcode($runid, $dropid, (int) $modules[$i]['cmid'], 'intro');
+                \block_playerhud\local\wizard::record_shortcode($runid, $dropid, (int) $modules[$i]['cmid'], $field);
             }
         }
         if (!empty($dropids)) {
             \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', $dropids);
         }
 
-        $questsuggestion = [
-            'type' => \block_playerhud\quest::TYPE_SPECIFIC_ITEM,
-            'requirement' => self::PILL_TARGET,
-            'req_itemid' => $pillid,
-            'name' => get_string('wizard_pill_quest_name', 'block_playerhud', $pillname),
-            'reward_xp' => 100,
-            'image_todo' => $pillemoji,
-            'image_done' => $bookemoji,
-        ];
-        $questrecord = \block_playerhud\quest::build_record_from_suggestion($instanceid, $questsuggestion);
-        $questid = (int) $DB->insert_record('block_playerhud_quests', $questrecord);
-        \block_playerhud\local\wizard::record_object($runid, 'block_playerhud_quests', $questid);
-
-        return ['items' => $created, 'quest_name' => $questrecord->name];
+        return [$pillname, $bookname];
     }
 
     /** @var int Days a Deadline Extension item pushes the target activity's deadline by. */
@@ -1259,16 +1247,21 @@ class wizard_generate extends external_api {
             if (!$suggested) {
                 continue;
             }
+            // Page modules never show their intro unless the teacher explicitly enabled
+            // "Display page description" — their content, in contrast, is always shown on the
+            // page's own view. Every other eligible module type shows its intro unconditionally
+            // on its own view page, regardless of the course-page "show description" setting.
+            $field = $suggested['supports_content'] ? 'content' : 'intro';
             $result = \block_playerhud\external\insert_drop_shortcode::execute(
                 $instanceid,
                 $courseid,
                 $drop->id,
                 $suggested['cmid'],
-                'intro',
+                $field,
                 'top'
             );
             if ($result['success']) {
-                \block_playerhud\local\wizard::record_shortcode($runid, (int) $drop->id, (int) $suggested['cmid'], 'intro');
+                \block_playerhud\local\wizard::record_shortcode($runid, (int) $drop->id, (int) $suggested['cmid'], $field);
             }
         }
 
