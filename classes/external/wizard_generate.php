@@ -322,6 +322,16 @@ class wizard_generate extends external_api {
                     $params['tone_key'],
                     $runid
                 ));
+                // The Pill->Book trade (and its quest) is intrinsic to this mechanic, so it is
+                // wired here rather than in Comercio — otherwise generating the Pill without also
+                // ticking Comercio would leave the Book permanently unobtainable.
+                $pilltrade = self::generate_pill_trade($params['instanceid'], $runid);
+                if ($pilltrade['trade_name'] !== '') {
+                    $createdtrades[] = $pilltrade['trade_name'];
+                }
+                if ($pilltrade['quest_name'] !== '') {
+                    $createdquests[] = $pilltrade['quest_name'];
+                }
             }
 
             if ($params['include_latepenalty']) {
@@ -330,12 +340,19 @@ class wizard_generate extends external_api {
                 if ($lpresult['quest_name'] !== '') {
                     $createdquests[] = $lpresult['quest_name'];
                 }
+                // The PlayerCoin->Deadline Extension trade is intrinsic to this mechanic too, so it
+                // is wired here (a no-op when PlayerCoin is absent) rather than in Comercio.
+                $lptradename = self::generate_latepenalty_trade($params['instanceid'], $runid);
+                if ($lptradename !== '') {
+                    $createdtrades[] = $lptradename;
+                }
             }
 
             if ($params['include_comercio']) {
-                $comercioresult = self::generate_comercio($params['instanceid'], $runid);
-                $createdtrades = $comercioresult['trades'];
-                $createdquests = array_merge($createdquests, $comercioresult['quests']);
+                $createdtrades = array_merge(
+                    $createdtrades,
+                    self::generate_comercio($params['instanceid'], $runid)
+                );
             }
 
             if ($params['include_auto_distribute'] && !empty($createddropids)) {
@@ -571,21 +588,7 @@ class wizard_generate extends external_api {
             $createdtrades[] = $suggestion['name'];
         }
 
-        $createdquests = [];
-        $pilltrade = self::generate_pill_trade($instanceid, $runid);
-        if ($pilltrade['trade_name'] !== '') {
-            $createdtrades[] = $pilltrade['trade_name'];
-        }
-        if ($pilltrade['quest_name'] !== '') {
-            $createdquests[] = $pilltrade['quest_name'];
-        }
-
-        $lptradename = self::generate_latepenalty_trade($instanceid, $runid);
-        if ($lptradename !== '') {
-            $createdtrades[] = $lptradename;
-        }
-
-        return ['trades' => $createdtrades, 'quests' => $createdquests];
+        return $createdtrades;
     }
 
     /** @var int Knowledge Pill quantity the Book trade costs — always leaves exactly 1 spare. */

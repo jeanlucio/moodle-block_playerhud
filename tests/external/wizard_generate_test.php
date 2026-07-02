@@ -404,7 +404,10 @@ final class wizard_generate_test extends external_base_testcase {
 
         $this->assertTrue($result['success']);
         $this->assertSame(['Knowledge Pill', 'Book of Knowledge'], $result['created_items']);
-        $this->assertSame([], $result['created_quests']);
+        // The Pill module now also wires the intrinsic Pill->Book trade and its quest, so it no
+        // longer depends on the separate Comercio module being ticked.
+        $this->assertSame(['Book of Knowledge'], $result['created_trades']);
+        $this->assertSame(['Earn: Book of Knowledge'], $result['created_quests']);
 
         $pill = $DB->get_record('block_playerhud_items', [
             'blockinstanceid' => $this->instanceid,
@@ -427,7 +430,7 @@ final class wizard_generate_test extends external_base_testcase {
             $this->assertSame(3600, (int) $drop->respawntime);
         }
 
-        $this->assertEquals(0, $DB->count_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(1, $DB->count_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]));
 
         $manifesttables = array_column(
             $DB->get_records('block_playerhud_wizard_objects', ['runid' => $result['runid']]),
@@ -435,6 +438,8 @@ final class wizard_generate_test extends external_base_testcase {
         );
         $this->assertContains('block_playerhud_items', $manifesttables);
         $this->assertContains('block_playerhud_drops', $manifesttables);
+        $this->assertContains('block_playerhud_trades', $manifesttables);
+        $this->assertContains('block_playerhud_quests', $manifesttables);
         $shortcoderows = $DB->get_records('block_playerhud_wizard_shortcodes', ['runid' => $result['runid']]);
         $this->assertCount(5, $shortcoderows);
 
@@ -493,6 +498,7 @@ final class wizard_generate_test extends external_base_testcase {
         );
         $this->assertSame([], $second['created_items']);
         $this->assertSame([], $second['created_quests']);
+        $this->assertSame([], $second['created_trades']);
     }
 
     /**
@@ -533,19 +539,18 @@ final class wizard_generate_test extends external_base_testcase {
         $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
         $this->assertEquals(0, $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid]));
         $this->assertEquals(0, $DB->count_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_trades', ['blockinstanceid' => $this->instanceid]));
         $content = $DB->get_field('page', 'content', ['id' => $page->id]);
         $this->assertSame('Original body.', $content);
     }
 
     /**
-     * Trade also wires the Pill<->Book trade once both items exist, costing 10 Pills, and
-     * creates the "earned the exclusive trade" quest (TYPE_SPECIFIC_TRADE).
+     * The Pill module wires the Pill<->Book trade (10 Pills -> Book) and its TYPE_SPECIFIC_TRADE
+     * quest as part of generating the Pill — no separate Comercio tick required, so the Book can
+     * never be left unobtainable.
      */
-    public function test_trade_wires_pill_book_with_manifest(): void {
+    public function test_pill_wires_book_trade_and_quest(): void {
         global $DB;
-
-        $pill = $this->create_item($this->instanceid, 'Knowledge Pill', ['action_type' => 'knowledge_pill']);
-        $book = $this->create_item($this->instanceid, 'Book of Knowledge', ['action_type' => 'knowledge_book']);
 
         $result = wizard_generate::execute(
             $this->instanceid,
@@ -558,7 +563,8 @@ final class wizard_generate_test extends external_base_testcase {
             false,
             false,
             false,
-            'fantasy',
+            'academic',
+            false,
             false,
             false,
             false,
@@ -568,6 +574,15 @@ final class wizard_generate_test extends external_base_testcase {
         $this->assertTrue($result['success']);
         $this->assertSame(['Book of Knowledge'], $result['created_trades']);
         $this->assertSame(['Earn: Book of Knowledge'], $result['created_quests']);
+
+        $pill = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'action_type' => 'knowledge_pill',
+        ], '*', MUST_EXIST);
+        $book = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'action_type' => 'knowledge_book',
+        ], '*', MUST_EXIST);
 
         $trade = $DB->get_record('block_playerhud_trades', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
         $req = $DB->get_record('block_playerhud_trade_reqs', ['tradeid' => $trade->id], '*', MUST_EXIST);
@@ -581,53 +596,6 @@ final class wizard_generate_test extends external_base_testcase {
         $this->assertSame('1', $quest->requirement);
         $this->assertSame((int) $trade->id, (int) $quest->req_itemid);
         $this->assertSame(150, (int) $quest->reward_xp);
-    }
-
-    /**
-     * Running Trade twice must not wire a second Pill<->Book trade.
-     */
-    public function test_trade_pill_book_is_idempotent_across_runs(): void {
-        $this->create_item($this->instanceid, 'Knowledge Pill', ['action_type' => 'knowledge_pill']);
-        $this->create_item($this->instanceid, 'Book of Knowledge', ['action_type' => 'knowledge_book']);
-
-        $first = wizard_generate::execute(
-            $this->instanceid,
-            $this->course->id,
-            '',
-            '',
-            'short',
-            false,
-            false,
-            false,
-            false,
-            false,
-            'fantasy',
-            false,
-            false,
-            false,
-            true
-        );
-        $this->assertSame(['Book of Knowledge'], $first['created_trades']);
-
-        $second = wizard_generate::execute(
-            $this->instanceid,
-            $this->course->id,
-            '',
-            '',
-            'short',
-            false,
-            false,
-            false,
-            false,
-            false,
-            'fantasy',
-            false,
-            false,
-            false,
-            true
-        );
-        $this->assertSame([], $second['created_trades']);
-        $this->assertSame([], $second['created_quests']);
     }
 
     /**
@@ -810,18 +778,17 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
-     * Trade also wires PlayerCoin<->Deadline Extension once both items exist. Requires
-     * local_latepenalty (for the item) and is otherwise identical in shape to the Pill<->Book
-     * trade wiring.
+     * The Latepenalty module wires the PlayerCoin<->Deadline Extension trade as part of
+     * generating the item, when PlayerCoin already exists — no separate Comercio tick required.
+     * Requires local_latepenalty (for the item).
      */
-    public function test_trade_wires_latepenalty_with_manifest(): void {
+    public function test_latepenalty_wires_playercoin_trade(): void {
         global $DB;
         if (!class_exists('\local_latepenalty\recalculator')) {
             $this->markTestSkipped('Requires local_latepenalty.');
         }
 
         $coin = $this->create_item($this->instanceid, 'PlayerCoin', ['action_type' => 'playercoin']);
-        $item = $this->create_item($this->instanceid, 'Deadline Extension', ['action_type' => 'deadline_extension']);
 
         $result = wizard_generate::execute(
             $this->instanceid,
@@ -838,12 +805,18 @@ final class wizard_generate_test extends external_base_testcase {
             false,
             false,
             false,
+            false,
+            false,
             true
         );
 
         $this->assertTrue($result['success']);
         $this->assertSame(['Deadline Extension'], $result['created_trades']);
 
+        $item = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'action_type' => 'deadline_extension',
+        ], '*', MUST_EXIST);
         $trade = $DB->get_record('block_playerhud_trades', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
         $req = $DB->get_record('block_playerhud_trade_reqs', ['tradeid' => $trade->id], '*', MUST_EXIST);
         $this->assertSame((int) $coin->id, (int) $req->itemid);
