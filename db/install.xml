@@ -309,5 +309,22 @@
         <INDEX NAME="runid" UNIQUE="false" FIELDS="runid"/>
       </INDEXES>
     </TABLE>
+
+    <TABLE NAME="block_playerhud_wizard_shortcodes" COMMENT="Drop shortcodes a wizard run inserted into course content, so rollback can strip them back out">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="runid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="dropid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="field" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Course module field the shortcode was inserted into (intro or content)"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="runid" UNIQUE="false" FIELDS="runid"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>

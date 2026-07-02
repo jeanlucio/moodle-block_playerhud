@@ -212,5 +212,25 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026070101, 'playerhud');
     }
 
+    if ($oldversion < 2026070201) {
+        // Wizard shortcode manifest: lets rollback strip a drop shortcode back out of course
+        // content (activity intro/content, or the news forum for PlayerCoin) instead of only
+        // deleting the drop row and leaving the shortcode text orphaned.
+        if (!$dbman->table_exists('block_playerhud_wizard_shortcodes')) {
+            $table = new \xmldb_table('block_playerhud_wizard_shortcodes');
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('runid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('dropid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('cmid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('field', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_index('runid', XMLDB_INDEX_NOTUNIQUE, ['runid']);
+            $dbman->create_table($table);
+        }
+
+        upgrade_block_savepoint(true, 2026070201, 'playerhud');
+    }
+
     return true;
 }

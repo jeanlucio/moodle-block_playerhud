@@ -31,6 +31,9 @@ final class wizard_test extends advanced_testcase {
     /** @var int Block instance ID. */
     protected $instanceid;
 
+    /** @var int Course ID. */
+    protected $courseid;
+
     /**
      * Set up a block instance for the wizard tests.
      */
@@ -38,8 +41,10 @@ final class wizard_test extends advanced_testcase {
         parent::setUp();
         global $DB;
         $this->resetAfterTest(true);
+        $this->setAdminUser();
 
         $course = $this->getDataGenerator()->create_course();
+        $this->courseid = (int) $course->id;
         $coursecontext = \context_course::instance($course->id);
         $this->instanceid = $DB->insert_record('block_instances', (object) [
             'blockname' => 'playerhud', 'parentcontextid' => $coursecontext->id, 'showinsubcontexts' => 0,
@@ -116,7 +121,7 @@ final class wizard_test extends advanced_testcase {
         wizard::record_objects($runid, 'block_playerhud_drops', [$dropid]);
         wizard::finish_run($runid, 'done');
 
-        $deleted = wizard::rollback($runid, $this->instanceid);
+        $deleted = wizard::rollback($runid, $this->instanceid, $this->courseid);
 
         $this->assertSame(2, $deleted);
         $this->assertFalse($DB->record_exists('block_playerhud_items', ['id' => $itemid]));
@@ -124,6 +129,43 @@ final class wizard_test extends advanced_testcase {
         $this->assertFalse($DB->record_exists('block_playerhud_wizard_objects', ['runid' => $runid]));
         $run = $DB->get_record('block_playerhud_wizard_runs', ['id' => $runid], '*', MUST_EXIST);
         $this->assertSame('rolledback', $run->status);
+    }
+
+    /**
+     * Rollback strips a recorded shortcode back out of the course content it was
+     * inserted into, in addition to deleting the drop row.
+     *
+     * @covers ::record_shortcode
+     * @covers ::rollback
+     */
+    public function test_rollback_strips_recorded_shortcode(): void {
+        global $DB, $USER;
+
+        $itemid = $this->create_item();
+        $code = \block_playerhud\utils::generate_drop_code($this->instanceid);
+        $dropid = $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $this->instanceid, 'itemid' => $itemid, 'name' => 'Spot',
+            'maxusage' => 0, 'respawntime' => 0, 'code' => $code,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->courseid,
+            'content' => '[PLAYERHUD_DROP code=' . $code . ']' . "\n" . 'Keep this body',
+        ]);
+
+        $runid = wizard::start_run($this->instanceid, (int) $USER->id, ['items']);
+        wizard::record_objects($runid, 'block_playerhud_items', [$itemid]);
+        wizard::record_objects($runid, 'block_playerhud_drops', [$dropid]);
+        wizard::record_shortcode($runid, $dropid, (int) $page->cmid, 'content');
+        wizard::finish_run($runid, 'done');
+
+        wizard::rollback($runid, $this->instanceid, $this->courseid);
+
+        $content = $DB->get_field('page', 'content', ['id' => $page->id]);
+        $this->assertStringNotContainsString('[PLAYERHUD_DROP code=' . $code . ']', $content);
+        $this->assertStringContainsString('Keep this body', $content);
+        $this->assertFalse($DB->record_exists('block_playerhud_wizard_shortcodes', ['runid' => $runid]));
     }
 
     /**
@@ -138,7 +180,7 @@ final class wizard_test extends advanced_testcase {
         $runid = wizard::start_run($this->instanceid, (int) $USER->id, ['items']);
 
         $this->expectException(\dml_missing_record_exception::class);
-        wizard::rollback($runid, $this->instanceid + 999);
+        wizard::rollback($runid, $this->instanceid + 999, $this->courseid);
     }
 
     /**

@@ -93,7 +93,7 @@ final class wizard_generate_test extends external_base_testcase {
         $result = wizard_generate::execute($this->instanceid, $this->course->id, '', '', 'short', false, true);
         $this->assertTrue($result['success']);
 
-        $deleted = \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid);
+        $deleted = \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid, $this->course->id);
 
         $this->assertGreaterThan(0, $deleted);
         $this->assertEquals(0, $DB->count_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]));
@@ -178,7 +178,7 @@ final class wizard_generate_test extends external_base_testcase {
         );
         $this->assertTrue($result['success']);
 
-        $deleted = \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid);
+        $deleted = \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid, $this->course->id);
 
         $this->assertGreaterThan(0, $deleted);
         $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
@@ -305,7 +305,7 @@ final class wizard_generate_test extends external_base_testcase {
         );
         $this->assertTrue($result['success']);
 
-        $deleted = \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid);
+        $deleted = \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid, $this->course->id);
 
         $this->assertGreaterThan(0, $deleted);
         $this->assertEquals(0, $DB->count_records('block_playerhud_classes', ['blockinstanceid' => $this->instanceid]));
@@ -464,7 +464,7 @@ final class wizard_generate_test extends external_base_testcase {
         );
         $this->assertTrue($result['success']);
 
-        $deleted = \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid);
+        $deleted = \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid, $this->course->id);
 
         $this->assertGreaterThan(0, $deleted);
         $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));

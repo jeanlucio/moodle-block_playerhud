@@ -279,7 +279,12 @@ class wizard_generate extends external_api {
             }
 
             if ($params['include_auto_distribute'] && !empty($createddropids)) {
-                $distributemessage = self::distribute_drops($params['instanceid'], $params['courseid'], $createddropids);
+                $distributemessage = self::distribute_drops(
+                    $params['instanceid'],
+                    $params['courseid'],
+                    $createddropids,
+                    $runid
+                );
             }
 
             \block_playerhud\local\wizard::finish_run($runid, 'done');
@@ -297,7 +302,7 @@ class wizard_generate extends external_api {
             // wrote real rows, so always run the real rollback here rather than just labelling
             // the run 'rolledback' — it is a no-op when the manifest is empty (failure before
             // any insert) and a real cleanup otherwise, avoiding orphaned, unrecoverable content.
-            \block_playerhud\local\wizard::rollback($runid, $params['instanceid']);
+            \block_playerhud\local\wizard::rollback($runid, $params['instanceid'], $params['courseid']);
 
             return [
                 'success' => false,
@@ -727,9 +732,10 @@ class wizard_generate extends external_api {
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      * @param int[] $dropids Drop IDs created earlier in this same run.
+     * @param int $runid Wizard run ID, so each inserted shortcode can be recorded for rollback.
      * @return string Empty on success/no-op, or a message explaining why nothing was inserted.
      */
-    protected static function distribute_drops(int $instanceid, int $courseid, array $dropids): string {
+    protected static function distribute_drops(int $instanceid, int $courseid, array $dropids, int $runid): string {
         global $DB;
 
         $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
@@ -750,7 +756,7 @@ class wizard_generate extends external_api {
             if (!$suggested) {
                 continue;
             }
-            \block_playerhud\external\insert_drop_shortcode::execute(
+            $result = \block_playerhud\external\insert_drop_shortcode::execute(
                 $instanceid,
                 $courseid,
                 $drop->id,
@@ -758,6 +764,9 @@ class wizard_generate extends external_api {
                 'intro',
                 'top'
             );
+            if ($result['success']) {
+                \block_playerhud\local\wizard::record_shortcode($runid, (int) $drop->id, (int) $suggested['cmid'], 'intro');
+            }
         }
 
         return '';

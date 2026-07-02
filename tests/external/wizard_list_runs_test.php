@@ -98,7 +98,7 @@ final class wizard_list_runs_test extends external_base_testcase {
      */
     public function test_list_runs_excludes_rolledback_runs(): void {
         $generated = wizard_generate::execute($this->instanceid, $this->course->id, '', '', 'short', false, true);
-        \block_playerhud\local\wizard::rollback($generated['runid'], $this->instanceid);
+        \block_playerhud\local\wizard::rollback($generated['runid'], $this->instanceid, $this->course->id);
 
         $result = wizard_list_runs::execute($this->instanceid, $this->course->id);
 

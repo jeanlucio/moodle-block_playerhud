@@ -106,6 +106,28 @@ class wizard {
     }
 
     /**
+     * Records a drop shortcode inserted into course content by a run, so rollback
+     * can strip it back out via {@see \block_playerhud\external\remove_drop_shortcode}.
+     *
+     * @param int $runid The run ID.
+     * @param int $dropid The drop whose shortcode was inserted.
+     * @param int $cmid The course module the shortcode was inserted into.
+     * @param string $field The field the shortcode was inserted into (intro or content).
+     * @return void
+     */
+    public static function record_shortcode(int $runid, int $dropid, int $cmid, string $field): void {
+        global $DB;
+
+        $DB->insert_record('block_playerhud_wizard_shortcodes', (object) [
+            'runid' => $runid,
+            'dropid' => $dropid,
+            'cmid' => $cmid,
+            'field' => $field,
+            'timecreated' => time(),
+        ]);
+    }
+
+    /**
      * Marks a run as finished.
      *
      * @param int $runid The run ID.
@@ -183,13 +205,17 @@ class wizard {
      * Undoes a wizard run: deletes every object it created, wherever it lives.
      *
      * Scoped to the given block instance so a run ID from another instance can
-     * never be rolled back through this method.
+     * never be rolled back through this method. Any shortcode this run inserted into
+     * course content is stripped back out first (best-effort — a shortcode whose activity
+     * was since deleted or edited independently is skipped, never blocking the rest of the
+     * rollback), before the drop row it points to is deleted.
      *
      * @param int $runid The run ID.
      * @param int $blockinstanceid The block instance the caller is authorised for.
+     * @param int $courseid The course the block instance belongs to.
      * @return int The number of objects deleted.
      */
-    public static function rollback(int $runid, int $blockinstanceid): int {
+    public static function rollback(int $runid, int $blockinstanceid, int $courseid): int {
         global $DB;
 
         $DB->get_record(
@@ -198,6 +224,23 @@ class wizard {
             'id',
             MUST_EXIST
         );
+
+        $shortcodes = $DB->get_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]);
+        foreach ($shortcodes as $shortcode) {
+            try {
+                \block_playerhud\external\remove_drop_shortcode::execute(
+                    $blockinstanceid,
+                    $courseid,
+                    (int) $shortcode->dropid,
+                    (int) $shortcode->cmid,
+                    $shortcode->field
+                );
+            } catch (\Throwable $e) {
+                // The activity may have been deleted or edited independently since the
+                // shortcode was inserted — never let that block the rest of the rollback.
+                continue;
+            }
+        }
 
         $objects = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $runid]);
 
@@ -213,6 +256,7 @@ class wizard {
         }
 
         $DB->delete_records('block_playerhud_wizard_objects', ['runid' => $runid]);
+        $DB->delete_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]);
         self::finish_run($runid, 'rolledback');
 
         $transaction->allow_commit();

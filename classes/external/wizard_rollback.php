@@ -70,7 +70,7 @@ class wizard_rollback extends external_api {
         self::validate_context($context);
         require_capability('block/playerhud:manage', $context);
 
-        $deleted = \block_playerhud\local\wizard::rollback($params['runid'], $params['instanceid']);
+        $deleted = \block_playerhud\local\wizard::rollback($params['runid'], $params['instanceid'], $params['courseid']);
 
         return [
             'success' => true,
