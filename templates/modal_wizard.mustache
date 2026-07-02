@@ -31,12 +31,14 @@
         "size_options": [
             {"value": "short", "label": "Curta (~5 itens)"},
             {"value": "long", "label": "Longa (~15 itens)"}
-        ]
+        ],
+        "has_playergroup": false,
+        "has_latepenalty": true
     }
 }}
 <div class="modal fade" id="ph-wizard-modal" tabindex="-1" aria-labelledby="ph-wizard-modal-label" aria-hidden="true"
      data-instanceid="{{instanceid}}" data-courseid="{{courseid}}">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
       <div class="modal-header bg-primary text-white">
         <h5 class="modal-title fw-bold m-0" id="ph-wizard-modal-label">
@@ -48,6 +50,8 @@
         </button>
       </div>
       <div class="modal-body">
+        <div class="row">
+        <div class="col-lg-7">
         <form id="ph-wizard-form">
             <div class="mb-3">
                 <label for="ph-wizard-theme" class="form-label fw-bold">
@@ -86,7 +90,8 @@
             </div>
             <div class="p-3 bg-light border rounded mb-2">
                 <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-items" checked>
+                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-items"
+                           data-drives="2,5,8" checked>
                     <label class="form-check-label" for="ph-wizard-module-items">
                         <strong>{{#str}} wizard_module_items, block_playerhud {{/str}}</strong><br>
                         <small class="text-muted">{{#str}} wizard_module_items_desc, block_playerhud {{/str}}</small>
@@ -113,7 +118,8 @@
             </div>
             <div class="p-3 bg-light border rounded mb-2">
                 <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-missions">
+                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-missions"
+                           data-drives="7,1">
                     <label class="form-check-label" for="ph-wizard-module-missions">
                         <strong>{{#str}} wizard_module_missions, block_playerhud {{/str}}</strong><br>
                         <small class="text-muted">{{#str}} wizard_module_missions_desc, block_playerhud {{/str}}</small>
@@ -122,7 +128,8 @@
             </div>
             <div class="p-3 bg-light border rounded mb-2">
                 <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-playercoin">
+                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-playercoin"
+                           data-drives="8,1">
                     <label class="form-check-label" for="ph-wizard-module-playercoin">
                         <strong>{{#str}} wizard_module_playercoin, block_playerhud {{/str}}</strong><br>
                         <small class="text-muted">{{#str}} wizard_module_playercoin_desc, block_playerhud {{/str}}</small>
@@ -131,7 +138,8 @@
             </div>
             <div class="p-3 bg-light border rounded mb-2">
                 <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-avatars">
+                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-avatars"
+                           data-drives="8,2">
                     <label class="form-check-label" for="ph-wizard-module-avatars">
                         <strong>{{#str}} wizard_module_avatars, block_playerhud {{/str}}</strong><br>
                         <small class="text-muted">{{#str}} wizard_module_avatars_desc, block_playerhud {{/str}}</small>
@@ -140,14 +148,16 @@
             </div>
             <div class="p-3 bg-light border rounded mb-2">
                 <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-rpg">
+                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-rpg"
+                           data-drives="2,3,8">
                     <label class="form-check-label" for="ph-wizard-module-rpg">
                         <strong>{{#str}} wizard_module_rpg, block_playerhud {{/str}}</strong><br>
                         <small class="text-muted">{{#str}} wizard_module_rpg_desc, block_playerhud {{/str}}</small>
                     </label>
                 </div>
                 <div class="form-check ms-4 mt-2">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-nextchapter">
+                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-nextchapter"
+                           data-drives="3,7,6">
                     <label class="form-check-label" for="ph-wizard-module-nextchapter">
                         {{#str}} wizard_module_next_chapter, block_playerhud {{/str}}<br>
                         <small class="text-muted">
@@ -172,6 +182,72 @@
                 {{#str}} wizard_history_empty, block_playerhud {{/str}}
             </div>
             <div class="list-group mt-3" id="ph-wizard-history-list"></div>
+        </div>
+        </div>
+        <div class="col-lg-5 mt-4 mt-lg-0">
+            <div class="p-3 bg-light border rounded ph-wizard-octalysis-panel" id="ph-wizard-octalysis-panel">
+                <span class="fw-bold text-uppercase ph-text-xs text-muted d-block mb-2">
+                    {{#str}} wizard_octalysis_title, block_playerhud {{/str}}
+                </span>
+                <svg id="ph-wizard-octalysis-svg" viewBox="0 0 340 340" role="img"
+                     aria-label="{{#str}} wizard_octalysis_svg_label, block_playerhud {{/str}}">
+                </svg>
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between ph-text-xs text-muted mb-1">
+                        <span>{{#str}} wizard_octalysis_score_label, block_playerhud {{/str}}</span>
+                        <strong id="ph-wizard-octalysis-score-pct">0%</strong>
+                    </div>
+                    <div class="progress ph-wizard-octalysis-progress">
+                        <div class="progress-bar" id="ph-wizard-octalysis-score-bar" role="progressbar"
+                             style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                <div class="mt-3" id="ph-wizard-octalysis-warnings" aria-live="polite"></div>
+            </div>
+            <div class="p-3 bg-light border rounded mt-3">
+                <span class="fw-bold text-uppercase ph-text-xs text-muted d-block mb-2">
+                    {{#str}} wizard_octalysis_external_hdr, block_playerhud {{/str}}
+                </span>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="ph-text-xs">
+                        <strong>{{#str}} wizard_octalysis_playergroup_label, block_playerhud {{/str}}</strong><br>
+                        <span class="text-muted">
+                            {{#str}} wizard_octalysis_playergroup_desc, block_playerhud {{/str}}
+                        </span>
+                    </div>
+                    {{#has_playergroup}}
+                    <span class="badge bg-success text-white ph-text-xs ms-2">
+                        {{#str}} wizard_octalysis_status_installed, block_playerhud {{/str}}
+                    </span>
+                    {{/has_playergroup}}
+                    {{^has_playergroup}}
+                    <a href="https://moodle.org/plugins/mod_playergroup" target="_blank" rel="noopener noreferrer"
+                       class="btn btn-sm btn-outline-secondary ph-text-xs ms-2">
+                        {{#str}} wizard_octalysis_install_link, block_playerhud {{/str}}
+                    </a>
+                    {{/has_playergroup}}
+                </div>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="ph-text-xs">
+                        <strong>{{#str}} wizard_octalysis_latepenalty_label, block_playerhud {{/str}}</strong><br>
+                        <span class="text-muted">
+                            {{#str}} wizard_octalysis_latepenalty_desc, block_playerhud {{/str}}
+                        </span>
+                    </div>
+                    {{#has_latepenalty}}
+                    <span class="badge bg-success text-white ph-text-xs ms-2">
+                        {{#str}} wizard_octalysis_status_installed, block_playerhud {{/str}}
+                    </span>
+                    {{/has_latepenalty}}
+                    {{^has_latepenalty}}
+                    <a href="https://moodle.org/plugins/local_latepenalty" target="_blank" rel="noopener noreferrer"
+                       class="btn btn-sm btn-outline-secondary ph-text-xs ms-2">
+                        {{#str}} wizard_octalysis_install_link, block_playerhud {{/str}}
+                    </a>
+                    {{/has_latepenalty}}
+                </div>
+            </div>
+        </div>
         </div>
       </div>
       <div class="modal-footer">

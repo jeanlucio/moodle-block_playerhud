@@ -23,7 +23,7 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['core/ajax', 'core/str'], function(Ajax, Str) {
+define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(Ajax, Str, WizardOctalysis) {
     'use strict';
 
     /**
@@ -40,6 +40,8 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
         if (!modalEl) {
             return;
         }
+
+        WizardOctalysis.init();
 
         const themeEl = document.getElementById('ph-wizard-theme');
         const toneEl = document.getElementById('ph-wizard-tone');

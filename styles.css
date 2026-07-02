@@ -2461,3 +2461,64 @@ div.modal-dialog .visually-hidden {
         transform: none;
     }
 }
+
+/*
+ * Wizard Octalysis panel. Scoped by the modal's own ID, not by the .path-* body class: the
+ * modal is hoisted to <body> via appendChild() before opening, same as every other modal in
+ * this plugin — see the "Bootstrap Modals" convention. #ph-wizard-modal moves as a unit with
+ * all its descendants, so this scoping stays correct after hoisting.
+ */
+#ph-wizard-modal #ph-wizard-octalysis-svg {
+    display: block;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+}
+#ph-wizard-modal .ph-wizard-octalysis-progress {
+    height: 6px;
+}
+#ph-wizard-modal .ph-oct-segment {
+    cursor: default;
+    transition: opacity 0.4s ease, filter 0.4s ease;
+}
+#ph-wizard-modal .ph-oct-segment.ph-oct-active {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px currentColor);
+}
+#ph-wizard-modal .ph-oct-segment.ph-oct-inactive {
+    opacity: 0.15;
+    filter: none;
+}
+#ph-wizard-modal .ph-oct-label {
+    font-size: 7.5px;
+    font-weight: 600;
+    fill: var(--body-color, #1d2125);
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+#ph-wizard-modal .ph-oct-label.ph-oct-inactive {
+    opacity: 0.35;
+}
+#ph-wizard-modal .ph-oct-center-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    fill: var(--secondary-color, #6c757d);
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+#ph-wizard-modal #ph-wizard-octalysis-warnings .ph-oct-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    background: var(--warning-bg-subtle, #fff3cd);
+    border: 1px solid var(--warning-border-subtle, #ffe69c);
+    border-radius: 8px;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.78rem;
+    color: var(--warning-text-emphasis, #664d03);
+    margin-bottom: 0.4rem;
+}
