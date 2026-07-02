@@ -78,6 +78,7 @@ class wizard_list_runs extends external_api {
             'block_playerhud_quests' => get_string('wizard_history_quests', 'block_playerhud'),
             'block_playerhud_classes' => get_string('wizard_history_classes', 'block_playerhud'),
             'block_playerhud_chapters' => get_string('wizard_history_chapters', 'block_playerhud'),
+            'block_playerhud_trades' => get_string('wizard_history_trades', 'block_playerhud'),
         ];
 
         $result = [];

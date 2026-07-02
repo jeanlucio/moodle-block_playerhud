@@ -117,6 +117,12 @@ class wizard_generate extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            'include_comercio' => new external_value(
+                PARAM_BOOL,
+                'Wire PlayerCoin<->Avatar Pack trades from whatever already exists in the instance',
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
@@ -137,6 +143,7 @@ class wizard_generate extends external_api {
      * @param bool $includeautodistribute Whether to auto-distribute this run's drops.
      * @param bool $includeprogressitem Whether to create the themed progress item.
      * @param bool $includenextchapter Whether to generate a new AI story chapter.
+     * @param bool $includecomercio Whether to wire PlayerCoin<->Avatar Pack trades.
      * @return array Result structure.
      */
     public static function execute(
@@ -153,7 +160,8 @@ class wizard_generate extends external_api {
         string $tonekey = 'fantasy',
         bool $includeautodistribute = false,
         bool $includeprogressitem = false,
-        bool $includenextchapter = false
+        bool $includenextchapter = false,
+        bool $includecomercio = false
     ): array {
         global $DB, $USER;
 
@@ -172,6 +180,7 @@ class wizard_generate extends external_api {
             'include_auto_distribute' => $includeautodistribute,
             'include_progress_item' => $includeprogressitem,
             'include_next_chapter' => $includenextchapter,
+            'include_comercio' => $includecomercio,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -206,12 +215,16 @@ class wizard_generate extends external_api {
         if ($params['include_next_chapter']) {
             $modules[] = 'next_chapter';
         }
+        if ($params['include_comercio']) {
+            $modules[] = 'comercio';
+        }
 
         $runid = \block_playerhud\local\wizard::start_run($params['instanceid'], (int) $USER->id, $modules);
 
         try {
             $createditems = [];
             $createdquests = [];
+            $createdtrades = [];
             $createddropids = [];
             $distributemessage = '';
 
@@ -278,6 +291,10 @@ class wizard_generate extends external_api {
                 );
             }
 
+            if ($params['include_comercio']) {
+                $createdtrades = self::generate_comercio($params['instanceid'], $runid);
+            }
+
             if ($params['include_auto_distribute'] && !empty($createddropids)) {
                 $distributemessage = self::distribute_drops(
                     $params['instanceid'],
@@ -295,6 +312,7 @@ class wizard_generate extends external_api {
                 'message' => '',
                 'created_items' => $createditems,
                 'created_quests' => $createdquests,
+                'created_trades' => $createdtrades,
                 'distribute_message' => $distributemessage,
             ];
         } catch (\Exception $e) {
@@ -310,6 +328,7 @@ class wizard_generate extends external_api {
                 'message' => $e->getMessage(),
                 'created_items' => [],
                 'created_quests' => [],
+                'created_trades' => [],
                 'distribute_message' => '',
             ];
         }
@@ -482,6 +501,34 @@ class wizard_generate extends external_api {
         }
 
         return $result['created_item_names'] ?? [];
+    }
+
+    /**
+     * Wires PlayerCoin<->Avatar Pack trades via the existing heuristic suggestion engine
+     * (`game::build_trade_suggestions()`) and records each created trade, requirement and
+     * reward row in the run.
+     *
+     * Works off whatever PlayerCoin and avatar items already exist in the instance, not just
+     * ones created in this same run — same philosophy as the Missions module. A no-op when
+     * either is missing, or when every suggestion is already covered by an existing trade.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $runid Wizard run ID.
+     * @return string[] Names of the created trades.
+     */
+    protected static function generate_comercio(int $instanceid, int $runid): array {
+        $suggestions = \block_playerhud\game::build_trade_suggestions($instanceid);
+
+        $createdtrades = [];
+        foreach ($suggestions as $suggestion) {
+            $result = \block_playerhud\game::create_trade_from_suggestion($instanceid, $suggestion);
+            \block_playerhud\local\wizard::record_object($runid, 'block_playerhud_trades', $result['tradeid']);
+            \block_playerhud\local\wizard::record_object($runid, 'block_playerhud_trade_reqs', $result['reqid']);
+            \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_trade_rewards', $result['rewardids']);
+            $createdtrades[] = $suggestion['name'];
+        }
+
+        return $createdtrades;
     }
 
     /**
@@ -797,6 +844,11 @@ class wizard_generate extends external_api {
             'created_quests' => new \core_external\external_multiple_structure(
                 new external_value(PARAM_TEXT, 'Quest name'),
                 'List of created quests',
+                VALUE_OPTIONAL
+            ),
+            'created_trades' => new \core_external\external_multiple_structure(
+                new external_value(PARAM_TEXT, 'Trade name'),
+                'List of created trades',
                 VALUE_OPTIONAL
             ),
             'distribute_message' => new external_value(

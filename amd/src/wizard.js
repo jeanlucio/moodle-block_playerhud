@@ -52,6 +52,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const avatarsModuleEl = document.getElementById('ph-wizard-module-avatars');
         const rpgModuleEl = document.getElementById('ph-wizard-module-rpg');
         const nextChapterModuleEl = document.getElementById('ph-wizard-module-nextchapter');
+        const tradeModuleEl = document.getElementById('ph-wizard-module-trade');
         const progressItemModuleEl = document.getElementById('ph-wizard-module-progressitem');
         const autoDistributeModuleEl = document.getElementById('ph-wizard-module-autodistribute');
         const generateBtn = document.getElementById('ph-wizard-generate-btn');
@@ -250,7 +251,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         generateBtn.addEventListener('click', async() => {
             const anyModuleChecked = itemsModuleEl.checked || missionsModuleEl.checked ||
                 playercoinModuleEl.checked || avatarsModuleEl.checked || rpgModuleEl.checked ||
-                progressItemModuleEl.checked || nextChapterModuleEl.checked;
+                progressItemModuleEl.checked || nextChapterModuleEl.checked || tradeModuleEl.checked;
             if (!anyModuleChecked) {
                 return;
             }
@@ -276,6 +277,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                         'include_auto_distribute': autoDistributeModuleEl.checked,
                         'include_progress_item': progressItemModuleEl.checked,
                         'include_next_chapter': nextChapterModuleEl.checked,
+                        'include_comercio': tradeModuleEl.checked,
                     },
                 }])[0];
 
@@ -284,13 +286,15 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                     return;
                 }
 
-                const createdCount = response.created_items.length + response.created_quests.length;
+                const createdCount = response.created_items.length + response.created_quests.length +
+                    response.created_trades.length;
                 if (createdCount === 0) {
                     showAlert(resultEl, await Str.get_string('wizard_nothing_generated', 'block_playerhud'));
                     return;
                 }
 
-                let names = [...response.created_items, ...response.created_quests].join(', ');
+                let names = [...response.created_items, ...response.created_quests, ...response.created_trades]
+                    .join(', ');
                 if (response.distribute_message) {
                     names += ' — ' + response.distribute_message;
                 }
