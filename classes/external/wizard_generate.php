@@ -91,13 +91,20 @@ class wizard_generate extends external_api {
             ),
             'tone_key' => new external_value(
                 PARAM_ALPHA,
-                'Narrative tone key for RPG content: fantasy, scifi, mystery or academic',
+                'Narrative tone key for RPG content and the progress item: fantasy, scifi, ' .
+                    'mystery or academic',
                 VALUE_DEFAULT,
                 'fantasy'
             ),
             'include_auto_distribute' => new external_value(
                 PARAM_BOOL,
                 "Automatically insert this run's generated drops into matching course activities",
+                VALUE_DEFAULT,
+                false
+            ),
+            'include_progress_item' => new external_value(
+                PARAM_BOOL,
+                'Create a themed progress item with an infinite, cooldown-based drop',
                 VALUE_DEFAULT,
                 false
             ),
@@ -117,8 +124,9 @@ class wizard_generate extends external_api {
      * @param bool $includeplayercoin Whether to create the PlayerCoin item.
      * @param bool $includeavatars Whether to create the pre-defined avatar item pack.
      * @param bool $includerpg Whether to create the RPG class pack and fixed Chapter 1.
-     * @param string $tonekey Narrative tone key for RPG content.
+     * @param string $tonekey Narrative tone key for RPG content and the progress item.
      * @param bool $includeautodistribute Whether to auto-distribute this run's drops.
+     * @param bool $includeprogressitem Whether to create the themed progress item.
      * @return array Result structure.
      */
     public static function execute(
@@ -133,7 +141,8 @@ class wizard_generate extends external_api {
         bool $includeavatars = false,
         bool $includerpg = false,
         string $tonekey = 'fantasy',
-        bool $includeautodistribute = false
+        bool $includeautodistribute = false,
+        bool $includeprogressitem = false
     ): array {
         global $DB, $USER;
 
@@ -150,6 +159,7 @@ class wizard_generate extends external_api {
             'include_rpg' => $includerpg,
             'tone_key' => $tonekey,
             'include_auto_distribute' => $includeautodistribute,
+            'include_progress_item' => $includeprogressitem,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -177,6 +187,9 @@ class wizard_generate extends external_api {
         }
         if ($params['include_rpg']) {
             $modules[] = 'rpg';
+        }
+        if ($params['include_progress_item']) {
+            $modules[] = 'progress_item';
         }
 
         $runid = \block_playerhud\local\wizard::start_run($params['instanceid'], (int) $USER->id, $modules);
@@ -228,6 +241,12 @@ class wizard_generate extends external_api {
                     $createditems,
                     self::generate_rpg_classes($params['instanceid'], $params['tone_key'], $runid)
                 );
+            }
+
+            if ($params['include_progress_item']) {
+                $progressresult = self::generate_progress_item($params['instanceid'], $params['tone_key'], $runid);
+                $createditems = array_merge($createditems, $progressresult['names']);
+                $createddropids = array_merge($createddropids, $progressresult['drop_ids']);
             }
 
             if ($params['include_auto_distribute'] && !empty($createddropids)) {
@@ -528,6 +547,78 @@ class wizard_generate extends external_api {
         $createditems[] = $chaptertitle;
 
         return $createditems;
+    }
+
+    /**
+     * Creates a themed progress item with an infinite, cooldown-based drop.
+     *
+     * A plain "item" like PlayerCoin, not tied to RPG Classes: it can be generated whether or
+     * not the RPG module runs in the same call. Its intended use (as a `cost_itemid` in future
+     * AI-generated story chapters, via the already-existing `story_manager.php` cost mechanic)
+     * is not implemented yet — this only creates the item and its drop.
+     *
+     * `maxusage=0` (infinite) already forces XP to 0 on collection via the Golden Rule in
+     * `game.php`/`collect.php`, but `xp` is set to 0 explicitly here too for clarity: this
+     * item's value is progression, not experience points.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param string $tonekey Narrative tone key.
+     * @param int $runid Wizard run ID.
+     * @return array{names: string[], drop_ids: int[]} Empty when the item already existed.
+     */
+    protected static function generate_progress_item(int $instanceid, string $tonekey, int $runid): array {
+        global $DB;
+
+        $emojibytone = [
+            'fantasy' => "\u{1F48E}",
+            'scifi' => "\u{1F50B}",
+            'mystery' => "\u{1F9E9}",
+            'academic' => "\u{1F4D1}",
+        ];
+        $emoji = $emojibytone[$tonekey] ?? $emojibytone['fantasy'];
+
+        $namestringkey = "wizard_progress_item_name_$tonekey";
+        if (!get_string_manager()->string_exists($namestringkey, 'block_playerhud')) {
+            $namestringkey = 'wizard_progress_item_name_fantasy';
+        }
+        $name = get_string($namestringkey, 'block_playerhud');
+
+        if ($DB->record_exists('block_playerhud_items', ['blockinstanceid' => $instanceid, 'name' => $name])) {
+            return ['names' => [], 'drop_ids' => []];
+        }
+
+        $now = time();
+        $itemid = (int) $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instanceid,
+            'name' => $name,
+            'image' => $emoji,
+            'description' => get_string('wizard_progress_item_desc_text', 'block_playerhud'),
+            'xp' => 0,
+            'enabled' => 1,
+            'tradable' => 0,
+            'secret' => 0,
+            'required_class_id' => '0',
+            'action_type' => '',
+            'action_value' => '',
+            'timecreated' => $now,
+            'timemodified' => $now,
+        ]);
+
+        $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $instanceid,
+            'itemid' => $itemid,
+            'name' => $name,
+            'maxusage' => 0,
+            'respawntime' => 3600,
+            'code' => \block_playerhud\utils::generate_drop_code($instanceid),
+            'timecreated' => $now,
+            'timemodified' => $now,
+        ]);
+
+        \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$itemid]);
+        \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', [$dropid]);
+
+        return ['names' => [$name], 'drop_ids' => [$dropid]];
     }
 
     /**

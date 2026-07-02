@@ -353,6 +353,154 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
+     * The progress item is mechanical (no AI/network): creates a themed item with an
+     * infinite, cooldown-based drop, independent of RPG Classes, with a manifest.
+     */
+    public function test_progress_item_creates_item_and_drop_with_manifest(): void {
+        global $DB;
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            true
+        );
+
+        $this->assertTrue($result['success']);
+        $expectedname = get_string('wizard_progress_item_name_fantasy', 'block_playerhud');
+        $this->assertSame([$expectedname], $result['created_items']);
+
+        $cleaned = external_api::clean_returnvalue(wizard_generate::execute_returns(), $result);
+        $this->assertTrue($cleaned['success']);
+
+        $item = $DB->get_record('block_playerhud_items', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
+        $this->assertSame($expectedname, $item->name);
+        $this->assertEquals(0, $item->xp);
+        $this->assertEquals(0, $item->tradable);
+
+        $drop = $DB->get_record('block_playerhud_drops', ['itemid' => $item->id], '*', MUST_EXIST);
+        $this->assertEquals(0, $drop->maxusage);
+        $this->assertEquals(3600, $drop->respawntime);
+
+        $run = $DB->get_record('block_playerhud_wizard_runs', ['id' => $result['runid']], '*', MUST_EXIST);
+        $this->assertSame(['progress_item'], json_decode($run->modules, true));
+
+        $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $result['runid']]);
+        $this->assertCount(2, $manifest, 'item + drop.');
+    }
+
+    /**
+     * Running the progress item module twice must not duplicate anything.
+     */
+    public function test_progress_item_is_idempotent_across_runs(): void {
+        global $DB;
+
+        $first = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            true
+        );
+        $this->assertCount(1, $first['created_items']);
+
+        $second = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            true
+        );
+        $this->assertSame([], $second['created_items']);
+
+        $this->assertEquals(1, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
+     * Rolling back a progress item run removes the item and its drop.
+     */
+    public function test_progress_item_run_can_be_rolled_back(): void {
+        global $DB;
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            true
+        );
+        $this->assertTrue($result['success']);
+
+        $deleted = \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid);
+
+        $this->assertGreaterThan(0, $deleted);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
+     * Checking only the progress item (independent of RPG or Items & Trade) feeds its drop
+     * into the same run's auto-distribute step.
+     */
+    public function test_progress_item_feeds_into_auto_distribute(): void {
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            true,
+            true
+        );
+
+        $this->assertTrue($result['success']);
+        // The PHPUnit test course has no activities, so distribution is skipped with a message —
+        // proving the progress item's drop actually reached the auto-distribute step.
+        $this->assertSame(
+            get_string('wizard_distribute_no_activities', 'block_playerhud'),
+            $result['distribute_message']
+        );
+    }
+
+    /**
      * A student without block/playerhud:manage must be rejected.
      */
     public function test_wizard_generate_requires_manage_capability(): void {
