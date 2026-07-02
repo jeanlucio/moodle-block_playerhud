@@ -123,6 +123,12 @@ class wizard_generate extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            'include_pill' => new external_value(
+                PARAM_BOOL,
+                'Create the tone-specific Knowledge Pill and Book items, spread across course activities',
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
@@ -144,6 +150,7 @@ class wizard_generate extends external_api {
      * @param bool $includeprogressitem Whether to create the themed progress item.
      * @param bool $includenextchapter Whether to generate a new AI story chapter.
      * @param bool $includecomercio Whether to wire PlayerCoin<->Avatar Pack trades.
+     * @param bool $includepill Whether to create the Knowledge Pill and Book items.
      * @return array Result structure.
      */
     public static function execute(
@@ -161,7 +168,8 @@ class wizard_generate extends external_api {
         bool $includeautodistribute = false,
         bool $includeprogressitem = false,
         bool $includenextchapter = false,
-        bool $includecomercio = false
+        bool $includecomercio = false,
+        bool $includepill = false
     ): array {
         global $DB, $USER;
 
@@ -181,6 +189,7 @@ class wizard_generate extends external_api {
             'include_progress_item' => $includeprogressitem,
             'include_next_chapter' => $includenextchapter,
             'include_comercio' => $includecomercio,
+            'include_pill' => $includepill,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -217,6 +226,9 @@ class wizard_generate extends external_api {
         }
         if ($params['include_comercio']) {
             $modules[] = 'comercio';
+        }
+        if ($params['include_pill']) {
+            $modules[] = 'pill';
         }
 
         $runid = \block_playerhud\local\wizard::start_run($params['instanceid'], (int) $USER->id, $modules);
@@ -291,8 +303,23 @@ class wizard_generate extends external_api {
                 );
             }
 
+            if ($params['include_pill']) {
+                $pillresult = self::generate_pill(
+                    $params['instanceid'],
+                    $params['courseid'],
+                    $params['tone_key'],
+                    $runid
+                );
+                $createditems = array_merge($createditems, $pillresult['items']);
+                if ($pillresult['quest_name'] !== '') {
+                    $createdquests[] = $pillresult['quest_name'];
+                }
+            }
+
             if ($params['include_comercio']) {
-                $createdtrades = self::generate_comercio($params['instanceid'], $runid);
+                $comercioresult = self::generate_comercio($params['instanceid'], $runid);
+                $createdtrades = $comercioresult['trades'];
+                $createdquests = array_merge($createdquests, $comercioresult['quests']);
             }
 
             if ($params['include_auto_distribute'] && !empty($createddropids)) {
@@ -528,7 +555,91 @@ class wizard_generate extends external_api {
             $createdtrades[] = $suggestion['name'];
         }
 
-        return $createdtrades;
+        $createdquests = [];
+        $pilltrade = self::generate_pill_trade($instanceid, $runid);
+        if ($pilltrade['trade_name'] !== '') {
+            $createdtrades[] = $pilltrade['trade_name'];
+        }
+        if ($pilltrade['quest_name'] !== '') {
+            $createdquests[] = $pilltrade['quest_name'];
+        }
+
+        return ['trades' => $createdtrades, 'quests' => $createdquests];
+    }
+
+    /** @var int Knowledge Pill quantity the Book trade costs — always leaves exactly 1 spare. */
+    private const PILL_TRADE_COST = 10;
+
+    /**
+     * Wires the Pill<->Book trade (a fixed 1-item recipe, not a heuristic suggestion) once both
+     * items exist, and creates the "earned the exclusive trade" quest.
+     *
+     * The quest uses TYPE_SPECIFIC_TRADE, which counts permanent `block_playerhud_trade_log`
+     * entries rather than current item holdings — unlike the collector quest in generate_pill(),
+     * it can never be lost by spending the reward afterwards. That asymmetry is exactly why the
+     * Pill total (PILL_TARGET = 11) always leaves 1 spare after this trade's cost (10): the
+     * collector quest DOES check current holdings, so trading away the last Pill before claiming
+     * it would fail the re-verification in quest::claim_reward().
+     *
+     * Idempotent: skipped once any trade already rewards the Book item.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $runid Wizard run ID.
+     * @return array{trade_name: string, quest_name: string} Empty strings when skipped (Pill or
+     *     Book missing, or the trade already exists).
+     */
+    protected static function generate_pill_trade(int $instanceid, int $runid): array {
+        global $DB;
+
+        $pill = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $instanceid,
+            'action_type' => 'knowledge_pill',
+        ]);
+        $book = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $instanceid,
+            'action_type' => 'knowledge_book',
+        ]);
+        if (!$pill || !$book) {
+            return ['trade_name' => '', 'quest_name' => ''];
+        }
+
+        $alreadywired = $DB->record_exists_sql(
+            "SELECT 1
+               FROM {block_playerhud_trade_rewards} tr
+               JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
+              WHERE t.blockinstanceid = :iid AND tr.itemid = :bookid",
+            ['iid' => $instanceid, 'bookid' => $book->id]
+        );
+        if ($alreadywired) {
+            return ['trade_name' => '', 'quest_name' => ''];
+        }
+
+        $tradename = format_string($book->name);
+        $suggestion = [
+            'name' => $tradename,
+            'cost_itemid' => $pill->id,
+            'cost_qty' => self::PILL_TRADE_COST,
+            'rewards' => [['id' => $book->id, 'qty' => 1]],
+        ];
+        $result = \block_playerhud\game::create_trade_from_suggestion($instanceid, $suggestion);
+        \block_playerhud\local\wizard::record_object($runid, 'block_playerhud_trades', $result['tradeid']);
+        \block_playerhud\local\wizard::record_object($runid, 'block_playerhud_trade_reqs', $result['reqid']);
+        \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_trade_rewards', $result['rewardids']);
+
+        $questsuggestion = [
+            'type' => \block_playerhud\quest::TYPE_SPECIFIC_TRADE,
+            'requirement' => 1,
+            'req_itemid' => $result['tradeid'],
+            'name' => get_string('wizard_book_quest_name', 'block_playerhud', $tradename),
+            'reward_xp' => 150,
+            'image_todo' => $book->image,
+            'image_done' => $book->image,
+        ];
+        $questrecord = \block_playerhud\quest::build_record_from_suggestion($instanceid, $questsuggestion);
+        $questid = (int) $DB->insert_record('block_playerhud_quests', $questrecord);
+        \block_playerhud\local\wizard::record_object($runid, 'block_playerhud_quests', $questid);
+
+        return ['trade_name' => $tradename, 'quest_name' => $questrecord->name];
     }
 
     /**
@@ -718,6 +829,196 @@ class wizard_generate extends external_api {
         }
 
         return get_string($namestringkey, 'block_playerhud');
+    }
+
+    /** @var int Total Knowledge Pill quantity across the whole course, whatever its size. */
+    private const PILL_TARGET = 11;
+
+    /**
+     * Creates the Knowledge Pill and Book items (paired, tone-specific names/emoji), spreads
+     * the Pill's drops across course activities via
+     * {@see \block_playerhud\local\drop_distribution::compute_pill_quotas()} — so the total
+     * collectible across the whole course is always exactly PILL_TARGET regardless of how many
+     * activities exist — and creates the "collect them all" quest directly.
+     *
+     * TYPE_SPECIFIC_ITEM is not one of the types the Missions module's heuristic suggests
+     * (`quest::get_heuristic_suggestions()` only ever proposes TYPE_LEVEL/TYPE_UNIQUE_ITEMS/
+     * TYPE_ACTIVITY/TYPE_TRADES), so the quest is built directly here instead — the first wizard
+     * module to create its own bespoke quest rather than routing through that heuristic.
+     *
+     * Idempotent per tone: if a Pill with this tone's name already exists, the whole module is
+     * skipped, mirroring the progress item's own idempotency check. A course with no eligible
+     * activities yet still gets the items (and the quest, unreachable until drops exist) —
+     * same tolerant behaviour as the general auto-distribute step.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param string $tonekey Narrative tone key.
+     * @param int $runid Wizard run ID.
+     * @return array{items: string[], quest_name: string} Names of the created items, and the
+     *     collector quest's name (empty string when the module was skipped as already done).
+     */
+    protected static function generate_pill(int $instanceid, int $courseid, string $tonekey, int $runid): array {
+        global $DB;
+
+        $pillname = self::resolve_pill_name($tonekey);
+        if ($DB->record_exists('block_playerhud_items', ['blockinstanceid' => $instanceid, 'name' => $pillname])) {
+            return ['items' => [], 'quest_name' => ''];
+        }
+
+        $bookname = self::resolve_book_name($tonekey);
+        $pillemoji = self::pill_emoji($tonekey);
+        $bookemoji = self::book_emoji($tonekey);
+        $now = time();
+        $created = [];
+
+        $pillid = (int) $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instanceid,
+            'name' => $pillname,
+            'image' => $pillemoji,
+            'description' => get_string('wizard_pill_desc_text', 'block_playerhud'),
+            'xp' => 0,
+            'enabled' => 1,
+            'tradable' => 0,
+            'secret' => 0,
+            'required_class_id' => '0',
+            'action_type' => 'knowledge_pill',
+            'action_value' => '',
+            'timecreated' => $now,
+            'timemodified' => $now,
+        ]);
+        $bookid = (int) $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instanceid,
+            'name' => $bookname,
+            'image' => $bookemoji,
+            'description' => get_string('wizard_book_desc_text', 'block_playerhud'),
+            'xp' => 0,
+            'enabled' => 1,
+            'tradable' => 0,
+            'secret' => 0,
+            'required_class_id' => '0',
+            'action_type' => 'knowledge_book',
+            'action_value' => '',
+            'timecreated' => $now,
+            'timemodified' => $now,
+        ]);
+        \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$pillid, $bookid]);
+        $created[] = $pillname;
+        $created[] = $bookname;
+
+        $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
+        $quotas = \block_playerhud\local\drop_distribution::compute_pill_quotas(self::PILL_TARGET, count($modules));
+
+        $dropids = [];
+        foreach ($quotas as $i => $quota) {
+            $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
+                'blockinstanceid' => $instanceid,
+                'itemid' => $pillid,
+                'name' => $pillname,
+                'maxusage' => $quota,
+                'respawntime' => 3600,
+                'code' => \block_playerhud\utils::generate_drop_code($instanceid),
+                'timecreated' => $now,
+                'timemodified' => $now,
+            ]);
+            $dropids[] = $dropid;
+
+            $result = \block_playerhud\external\insert_drop_shortcode::execute(
+                $instanceid,
+                $courseid,
+                $dropid,
+                $modules[$i]['cmid'],
+                'intro',
+                'top'
+            );
+            if ($result['success']) {
+                \block_playerhud\local\wizard::record_shortcode($runid, $dropid, (int) $modules[$i]['cmid'], 'intro');
+            }
+        }
+        if (!empty($dropids)) {
+            \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', $dropids);
+        }
+
+        $questsuggestion = [
+            'type' => \block_playerhud\quest::TYPE_SPECIFIC_ITEM,
+            'requirement' => self::PILL_TARGET,
+            'req_itemid' => $pillid,
+            'name' => get_string('wizard_pill_quest_name', 'block_playerhud', $pillname),
+            'reward_xp' => 100,
+            'image_todo' => $pillemoji,
+            'image_done' => $bookemoji,
+        ];
+        $questrecord = \block_playerhud\quest::build_record_from_suggestion($instanceid, $questsuggestion);
+        $questid = (int) $DB->insert_record('block_playerhud_quests', $questrecord);
+        \block_playerhud\local\wizard::record_object($runid, 'block_playerhud_quests', $questid);
+
+        return ['items' => $created, 'quest_name' => $questrecord->name];
+    }
+
+    /**
+     * Resolves the tone-specific Knowledge Pill name, falling back to the Fantasy name for an
+     * unrecognised tone key.
+     *
+     * @param string $tonekey Narrative tone key.
+     * @return string The item name.
+     */
+    protected static function resolve_pill_name(string $tonekey): string {
+        $namestringkey = "wizard_pill_name_$tonekey";
+        if (!get_string_manager()->string_exists($namestringkey, 'block_playerhud')) {
+            $namestringkey = 'wizard_pill_name_fantasy';
+        }
+
+        return get_string($namestringkey, 'block_playerhud');
+    }
+
+    /**
+     * Resolves the tone-specific Book name, falling back to the Fantasy name for an
+     * unrecognised tone key.
+     *
+     * @param string $tonekey Narrative tone key.
+     * @return string The item name.
+     */
+    protected static function resolve_book_name(string $tonekey): string {
+        $namestringkey = "wizard_book_name_$tonekey";
+        if (!get_string_manager()->string_exists($namestringkey, 'block_playerhud')) {
+            $namestringkey = 'wizard_book_name_fantasy';
+        }
+
+        return get_string($namestringkey, 'block_playerhud');
+    }
+
+    /**
+     * Returns the Knowledge Pill emoji for a tone.
+     *
+     * @param string $tonekey The tone key.
+     * @return string The emoji character.
+     */
+    protected static function pill_emoji(string $tonekey): string {
+        $map = [
+            'fantasy' => "\u{1F9EA}",
+            'scifi' => "\u{1F489}",
+            'mystery' => "\u{1F4F0}",
+            'academic' => "\u{1F48A}",
+        ];
+
+        return $map[$tonekey] ?? $map['fantasy'];
+    }
+
+    /**
+     * Returns the Book emoji for a tone.
+     *
+     * @param string $tonekey The tone key.
+     * @return string The emoji character.
+     */
+    protected static function book_emoji(string $tonekey): string {
+        $map = [
+            'fantasy' => "\u{1F4D6}",
+            'scifi' => "\u{1F4BE}",
+            'mystery' => "\u{1F5C2}\u{FE0F}",
+            'academic' => "\u{1F4DA}",
+        ];
+
+        return $map[$tonekey] ?? $map['fantasy'];
     }
 
     /**

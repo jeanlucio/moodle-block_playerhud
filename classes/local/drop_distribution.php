@@ -72,6 +72,43 @@ class drop_distribution {
     }
 
     /**
+     * Splits a fixed total into one quota per eligible activity, always summing to exactly
+     * that total regardless of how many activities the course has.
+     *
+     * Every activity gets the same base quota (`intdiv($target, $activitycount)`); activities
+     * whose maxusage/respawntime cooldown gives students the most elapsed course time to reach
+     * it get first pick of the remainder (`$target % $activitycount`), so the first activities
+     * in course order — the ones students reach earliest — carry the extra unit. When there are
+     * more eligible activities than the target itself, only the first `$target` of them get a
+     * quota of 1 each; the rest get none.
+     *
+     * @param int $target Total quantity to split across activities.
+     * @param int $activitycount Number of eligible activities, in course order.
+     * @return int[] Quota per activity, one entry per activity that gets a drop (0-indexed,
+     *     same order as the caller's activity list; fewer entries than $activitycount when
+     *     $activitycount > $target).
+     */
+    public static function compute_pill_quotas(int $target, int $activitycount): array {
+        if ($target <= 0 || $activitycount <= 0) {
+            return [];
+        }
+
+        if ($activitycount >= $target) {
+            return array_fill(0, $target, 1);
+        }
+
+        $base = intdiv($target, $activitycount);
+        $remainder = $target % $activitycount;
+
+        $quotas = array_fill(0, $activitycount, $base);
+        for ($i = 0; $i < $remainder; $i++) {
+            $quotas[$i]++;
+        }
+
+        return $quotas;
+    }
+
+    /**
      * Suggests the course module whose name best matches the given text.
      *
      * @param string $haystack Text to match against module names (e.g. drop/item name).

@@ -366,6 +366,258 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
+     * Pill creates the tone-specific Pill and Book items, spreads Pill drops across every
+     * eligible activity per drop_distribution::compute_pill_quotas(), and creates the
+     * collector quest directly — records everything into the run's manifest.
+     */
+    public function test_pill_creates_items_distributes_and_quest_with_manifest(): void {
+        global $DB;
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
+        }
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'academic',
+            false,
+            false,
+            false,
+            false,
+            true
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(['Knowledge Pill', 'Book of Knowledge'], $result['created_items']);
+        $this->assertSame(['Collect: Knowledge Pill'], $result['created_quests']);
+
+        $pill = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'action_type' => 'knowledge_pill',
+        ], '*', MUST_EXIST);
+        $this->assertSame('💊', $pill->image);
+        $this->assertSame(0, (int) $pill->xp);
+        $this->assertSame(0, (int) $pill->tradable);
+
+        $book = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'action_type' => 'knowledge_book',
+        ], '*', MUST_EXIST);
+        $this->assertSame('📚', $book->image);
+
+        $drops = $DB->get_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid, 'itemid' => $pill->id]);
+        $this->assertCount(5, $drops);
+        $this->assertSame(11, array_sum(array_column($drops, 'maxusage')));
+        foreach ($drops as $drop) {
+            $this->assertSame(3600, (int) $drop->respawntime);
+        }
+
+        $quest = $DB->get_record('block_playerhud_quests', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
+        $this->assertEquals(\block_playerhud\quest::TYPE_SPECIFIC_ITEM, (int) $quest->type);
+        $this->assertSame('11', $quest->requirement);
+        $this->assertSame((int) $pill->id, (int) $quest->req_itemid);
+        $this->assertSame(100, (int) $quest->reward_xp);
+
+        $manifesttables = array_column(
+            $DB->get_records('block_playerhud_wizard_objects', ['runid' => $result['runid']]),
+            'objecttable'
+        );
+        $this->assertContains('block_playerhud_items', $manifesttables);
+        $this->assertContains('block_playerhud_drops', $manifesttables);
+        $this->assertContains('block_playerhud_quests', $manifesttables);
+        $this->assertCount(5, $DB->get_records('block_playerhud_wizard_shortcodes', ['runid' => $result['runid']]));
+    }
+
+    /**
+     * Running Pill twice must not duplicate the item pair, drops or quest.
+     */
+    public function test_pill_is_idempotent_across_runs(): void {
+        $first = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'academic',
+            false,
+            false,
+            false,
+            false,
+            true
+        );
+        $this->assertNotEmpty($first['created_items']);
+
+        $second = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'academic',
+            false,
+            false,
+            false,
+            false,
+            true
+        );
+        $this->assertSame([], $second['created_items']);
+        $this->assertSame([], $second['created_quests']);
+    }
+
+    /**
+     * Rolling back a Pill run removes the items, drops and quest, and strips every shortcode
+     * back out of the activities it was inserted into.
+     */
+    public function test_pill_run_can_be_rolled_back(): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'content' => 'Original body.',
+        ]);
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'academic',
+            false,
+            false,
+            false,
+            false,
+            true
+        );
+        $this->assertTrue($result['success']);
+
+        \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid, $this->course->id);
+
+        $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]));
+        $content = $DB->get_field('page', 'content', ['id' => $page->id]);
+        $this->assertSame('Original body.', $content);
+    }
+
+    /**
+     * Trade also wires the Pill<->Book trade once both items exist, costing 10 Pills, and
+     * creates the "earned the exclusive trade" quest (TYPE_SPECIFIC_TRADE).
+     */
+    public function test_trade_wires_pill_book_with_manifest(): void {
+        global $DB;
+
+        $pill = $this->create_item($this->instanceid, 'Knowledge Pill', ['action_type' => 'knowledge_pill']);
+        $book = $this->create_item($this->instanceid, 'Book of Knowledge', ['action_type' => 'knowledge_book']);
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            false,
+            true
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(['Book of Knowledge'], $result['created_trades']);
+        $this->assertSame(['Earn: Book of Knowledge'], $result['created_quests']);
+
+        $trade = $DB->get_record('block_playerhud_trades', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
+        $req = $DB->get_record('block_playerhud_trade_reqs', ['tradeid' => $trade->id], '*', MUST_EXIST);
+        $this->assertSame((int) $pill->id, (int) $req->itemid);
+        $this->assertSame(10, (int) $req->qty);
+        $reward = $DB->get_record('block_playerhud_trade_rewards', ['tradeid' => $trade->id], '*', MUST_EXIST);
+        $this->assertSame((int) $book->id, (int) $reward->itemid);
+
+        $quest = $DB->get_record('block_playerhud_quests', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
+        $this->assertEquals(\block_playerhud\quest::TYPE_SPECIFIC_TRADE, (int) $quest->type);
+        $this->assertSame('1', $quest->requirement);
+        $this->assertSame((int) $trade->id, (int) $quest->req_itemid);
+        $this->assertSame(150, (int) $quest->reward_xp);
+    }
+
+    /**
+     * Running Trade twice must not wire a second Pill<->Book trade.
+     */
+    public function test_trade_pill_book_is_idempotent_across_runs(): void {
+        $this->create_item($this->instanceid, 'Knowledge Pill', ['action_type' => 'knowledge_pill']);
+        $this->create_item($this->instanceid, 'Book of Knowledge', ['action_type' => 'knowledge_book']);
+
+        $first = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            false,
+            true
+        );
+        $this->assertSame(['Book of Knowledge'], $first['created_trades']);
+
+        $second = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            false,
+            true
+        );
+        $this->assertSame([], $second['created_trades']);
+        $this->assertSame([], $second['created_quests']);
+    }
+
+    /**
      * RPG Classes is mechanical (no AI/network): creates 3 classes, a fixed Chapter 1 with
      * 6 nodes and choices, and records everything into the run's manifest.
      */

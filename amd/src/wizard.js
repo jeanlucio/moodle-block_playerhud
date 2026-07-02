@@ -50,6 +50,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const missionsModuleEl = document.getElementById('ph-wizard-module-missions');
         const playercoinModuleEl = document.getElementById('ph-wizard-module-playercoin');
         const avatarsModuleEl = document.getElementById('ph-wizard-module-avatars');
+        const pillModuleEl = document.getElementById('ph-wizard-module-pill');
         const rpgModuleEl = document.getElementById('ph-wizard-module-rpg');
         const nextChapterModuleEl = document.getElementById('ph-wizard-module-nextchapter');
         const tradeModuleEl = document.getElementById('ph-wizard-module-trade');
@@ -251,7 +252,8 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         generateBtn.addEventListener('click', async() => {
             const anyModuleChecked = itemsModuleEl.checked || missionsModuleEl.checked ||
                 playercoinModuleEl.checked || avatarsModuleEl.checked || rpgModuleEl.checked ||
-                progressItemModuleEl.checked || nextChapterModuleEl.checked || tradeModuleEl.checked;
+                progressItemModuleEl.checked || nextChapterModuleEl.checked || tradeModuleEl.checked ||
+                pillModuleEl.checked;
             if (!anyModuleChecked) {
                 return;
             }
@@ -278,6 +280,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                         'include_progress_item': progressItemModuleEl.checked,
                         'include_next_chapter': nextChapterModuleEl.checked,
                         'include_comercio': tradeModuleEl.checked,
+                        'include_pill': pillModuleEl.checked,
                     },
                 }])[0];
 
