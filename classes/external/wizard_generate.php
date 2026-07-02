@@ -273,6 +273,8 @@ class wizard_generate extends external_api {
                     $params['instanceid'],
                     $params['courseid'],
                     $config,
+                    $params['size'],
+                    $params['tone_key'],
                     $runid
                 );
             }
@@ -436,7 +438,7 @@ class wizard_generate extends external_api {
         // A deterministic per-item share of the remaining XP room, instead of a single random
         // value picked once from a coarse gap-size bucket and applied identically to every item
         // regardless of how many are being generated (see xp_budget's docblock).
-        $itemxp = \block_playerhud\local\xp_budget::compute_item_xp($balancecontext['gap'], $amount);
+        $itemxp = \block_playerhud\local\xp_budget::compute_share($balancecontext['gap'], $amount);
 
         $generator = new \block_playerhud\ai\generator($instanceid);
         $result = $generator->generate(
@@ -489,30 +491,61 @@ class wizard_generate extends external_api {
     /**
      * Generates heuristic Mission suggestions and records them in the run.
      *
-     * Only level and collection milestones are used: they depend solely on the
-     * block configuration and the item pool, never on course modules or trades
-     * that the wizard has no guarantee exist yet.
+     * Level, collection and activity-completion milestones are the candidates. Unlike a manual
+     * "Suggest Missions" run (which creates every candidate the teacher leaves ticked), the
+     * wizard limits itself to a journey-sized subset, round-robining across the candidate types
+     * so a course with many completion-enabled activities cannot crowd out level or collection
+     * milestones. Each selected mission's name is re-flavoured for the chosen tone, and its
+     * reward_xp is overridden to an even share of the XP room still left after any items this
+     * run (or a previous one) already created — see `xp_budget`.
      *
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      * @param \stdClass $config Block configuration.
+     * @param string $size Journey size: short, medium or long.
+     * @param string $tonekey Narrative tone key.
      * @param int $runid Wizard run ID.
      * @return string[] Names of the created quests.
      */
-    protected static function generate_missions(int $instanceid, int $courseid, \stdClass $config, int $runid): array {
+    protected static function generate_missions(
+        int $instanceid,
+        int $courseid,
+        \stdClass $config,
+        string $size,
+        string $tonekey,
+        int $runid
+    ): array {
         global $DB;
 
-        $allowedtypes = [\block_playerhud\quest::TYPE_LEVEL, \block_playerhud\quest::TYPE_UNIQUE_ITEMS];
+        $xpperlevel = isset($config->xp_per_level) ? (int) $config->xp_per_level : 100;
+        $maxlevels = isset($config->max_levels) ? (int) $config->max_levels : 20;
+
+        $allowedtypes = [
+            \block_playerhud\quest::TYPE_LEVEL,
+            \block_playerhud\quest::TYPE_UNIQUE_ITEMS,
+            \block_playerhud\quest::TYPE_ACTIVITY,
+        ];
         $suggestions = \block_playerhud\quest::get_heuristic_suggestions($instanceid, $courseid, $config);
+        $suggestions = array_values(array_filter(
+            $suggestions,
+            static fn(array $suggestion): bool => in_array($suggestion['type'], $allowedtypes, true)
+        ));
+
+        $limit = \block_playerhud\local\xp_budget::compute_mission_count($size);
+        $selected = \block_playerhud\local\xp_budget::select_balanced_missions($suggestions, $limit);
+
+        // Economy_health() (unlike balance_context(), used for items) also accounts for existing
+        // quest reward_xp, so missions never overshoot the ceiling on top of quests already there.
+        $health = \block_playerhud\local\analytics::economy_health($instanceid, $xpperlevel, $maxlevels);
+        $gap = max(0, $health->xp_ceiling - $health->total_items_xp);
+        $missionxp = \block_playerhud\local\xp_budget::compute_share($gap, count($selected));
 
         $createdquests = [];
         $createdids = [];
 
-        foreach ($suggestions as $suggestion) {
-            if (!in_array($suggestion['type'], $allowedtypes, true)) {
-                continue;
-            }
-            $record = \block_playerhud\quest::build_record_from_suggestion($instanceid, $suggestion);
+        foreach ($selected as $suggestion) {
+            $suggestion['name'] = self::resolve_mission_name($suggestion, $courseid, $tonekey);
+            $record = \block_playerhud\quest::build_record_from_suggestion($instanceid, $suggestion, $missionxp);
             $questid = (int) $DB->insert_record('block_playerhud_quests', $record);
             $createdids[] = $questid;
             $createdquests[] = $record->name;
@@ -1104,6 +1137,45 @@ class wizard_generate extends external_api {
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_trade_rewards', $result['rewardids']);
 
         return $tradename;
+    }
+
+    /**
+     * Resolves a tone-flavoured name for a heuristic mission suggestion, falling back to the
+     * Fantasy tone's phrasing for an unrecognised tone key, and to the suggestion's own
+     * generic name for an unsupported quest type or a since-removed activity.
+     *
+     * @param array $suggestion A suggestion from quest::get_heuristic_suggestions().
+     * @param int $courseid Course ID, to resolve an activity's display name for TYPE_ACTIVITY.
+     * @param string $tonekey Narrative tone key.
+     * @return string The tone-flavoured mission name.
+     */
+    protected static function resolve_mission_name(array $suggestion, int $courseid, string $tonekey): string {
+        $typekey = match ((int) $suggestion['type']) {
+            \block_playerhud\quest::TYPE_LEVEL => 'level',
+            \block_playerhud\quest::TYPE_UNIQUE_ITEMS => 'unique',
+            \block_playerhud\quest::TYPE_ACTIVITY => 'activity',
+            default => '',
+        };
+        if ($typekey === '') {
+            return $suggestion['name'];
+        }
+
+        $placeholder = $suggestion['requirement'];
+        if ($typekey === 'activity') {
+            $modinfo = get_fast_modinfo($courseid);
+            $cmid = (int) $suggestion['requirement'];
+            if (!isset($modinfo->cms[$cmid])) {
+                return $suggestion['name'];
+            }
+            $placeholder = format_string($modinfo->get_cm($cmid)->name);
+        }
+
+        $namestringkey = "wizard_mission_name_{$typekey}_{$tonekey}";
+        if (!get_string_manager()->string_exists($namestringkey, 'block_playerhud')) {
+            $namestringkey = "wizard_mission_name_{$typekey}_fantasy";
+        }
+
+        return get_string($namestringkey, 'block_playerhud', $placeholder);
     }
 
     /**

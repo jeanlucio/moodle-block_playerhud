@@ -100,6 +100,107 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
+     * More candidate missions than the journey's mission count are trimmed down to the
+     * limit, drawing from more than one candidate type rather than exhausting the first.
+     */
+    public function test_missions_are_capped_by_journey_size_and_stay_mixed(): void {
+        global $DB;
+
+        for ($i = 1; $i <= 4; $i++) {
+            $this->create_item($this->instanceid, "Item $i");
+        }
+
+        $result = wizard_generate::execute($this->instanceid, $this->course->id, '', '', 'short', false, true);
+
+        $this->assertTrue($result['success']);
+        // Short size caps at 3 missions, even though level (5/10/15) and unique-item (2/4)
+        // milestones together offer 5 candidates.
+        $this->assertCount(3, $result['created_quests']);
+
+        $quests = array_values($DB->get_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]));
+        $types = array_unique(array_map(static fn($q): int => (int) $q->type, $quests));
+        $this->assertGreaterThan(1, count($types), 'Selection must not be entirely one candidate type.');
+    }
+
+    /**
+     * Every selected mission's reward_xp is overridden to the same deterministic share of the
+     * XP room, instead of each type's own hardcoded formula (level*20, items*30...).
+     */
+    public function test_missions_reward_xp_is_an_even_share_of_the_gap(): void {
+        global $DB;
+
+        for ($i = 1; $i <= 4; $i++) {
+            $this->create_item($this->instanceid, "Item $i");
+        }
+
+        $result = wizard_generate::execute($this->instanceid, $this->course->id, '', '', 'short', false, true);
+
+        $this->assertTrue($result['success']);
+        $quests = $DB->get_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]);
+        // Empty economy: ceiling 100 * 20 = 2000, 3 missions selected -> intdiv(2000, 3) = 666.
+        foreach ($quests as $quest) {
+            $this->assertSame(666, (int) $quest->reward_xp);
+        }
+    }
+
+    /**
+     * A level-milestone mission's name is re-flavoured for the chosen tone, replacing the
+     * generic "Reach Level N" wording.
+     */
+    public function test_missions_names_are_tone_flavoured(): void {
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            true,
+            false,
+            false,
+            false,
+            'scifi'
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertContains('Reach access level 5', $result['created_quests']);
+    }
+
+    /**
+     * Activity-completion suggestions, filtered out of the wizard before, are now included:
+     * a completion-enabled activity produces a tone-flavoured "complete this activity" mission.
+     */
+    public function test_missions_include_activity_completion(): void {
+        global $CFG, $DB;
+
+        $CFG->enablecompletion = 1;
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'name' => 'Intro Reading',
+            'completion' => COMPLETION_TRACKING_MANUAL,
+        ]);
+
+        $coursecontext = \context_course::instance($course->id);
+        $instanceid = (int) $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud',
+            'parentcontextid' => $coursecontext->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern' => 'course-view-*',
+            'defaultregion' => 'side-pre',
+            'defaultweight' => 0,
+            'configdata' => base64_encode(serialize((object) [])),
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ]);
+
+        $result = wizard_generate::execute($instanceid, $course->id, '', '', 'short', false, true);
+
+        $this->assertTrue($result['success']);
+        $this->assertContains('Complete the trial: Intro Reading', $result['created_quests']);
+    }
+
+    /**
      * PlayerCoin and Avatars are mechanical (no AI/network) and create items with a manifest.
      */
     public function test_playercoin_and_avatars_create_items_and_manifest(): void {
