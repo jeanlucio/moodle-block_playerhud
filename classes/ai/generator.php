@@ -851,7 +851,8 @@ class generator {
      *
      * @param string $theme The story theme or setting.
      * @param array $options Optional mechanics constraints: karma_gain, karma_loss, item_id, item_qty.
-     * @return array Result array with 'success', 'chapter_title', and 'provider'.
+     * @return array Result array with 'success', 'chapter_title', 'provider', 'chapter_id',
+     *     'node_ids' (int[]) and 'choice_ids' (int[]).
      * @throws \moodle_exception If parsing fails or key loading fails.
      */
     public function generate_story(string $theme, array $options = []): array {
@@ -895,6 +896,7 @@ class generator {
         }
 
         // Second pass: insert choices with resolved next_nodeid.
+        $choiceids = [];
         foreach ($aidata['nodes'] as $nodedata) {
             if (empty($nodedata['choices'])) {
                 continue;
@@ -923,7 +925,7 @@ class generator {
                 $choice->set_class_id = 0;
                 $choice->cost_itemid  = ($choiceitemid > 0 && $choiceitemqty > 0) ? $choiceitemid : 0;
                 $choice->cost_item_qty = ($choiceitemid > 0 && $choiceitemqty > 0) ? $choiceitemqty : 1;
-                $DB->insert_record('block_playerhud_choices', $choice);
+                $choiceids[] = (int) $DB->insert_record('block_playerhud_choices', $choice);
             }
         }
 
@@ -933,6 +935,9 @@ class generator {
             'success'       => true,
             'chapter_title' => $aidata['title'],
             'provider'      => $result['provider'],
+            'chapter_id'    => (int) $chapterid,
+            'node_ids'      => array_values($idxmap),
+            'choice_ids'    => $choiceids,
         ];
     }
 

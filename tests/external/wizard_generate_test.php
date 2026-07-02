@@ -501,6 +501,49 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
+     * Without an AI key, generate_story() throws before creating any chapter — but the progress
+     * item this same call auto-creates first still needs to be rolled back, since it's an
+     * earlier real write in the same run. Exercises the wizard::rollback() fix (see
+     * "reload the page..." commit history) with a fully deterministic failure, no AI needed.
+     */
+    public function test_next_chapter_without_key_rolls_back_progress_item(): void {
+        global $DB;
+
+        set_config('apikey_gemini', '', 'block_playerhud');
+        set_config('apikey_groq', '', 'block_playerhud');
+        set_config('apikey_openai', '', 'block_playerhud');
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            'A haunted forest',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            true
+        );
+
+        $this->assertFalse($result['success']);
+        $cleaned = external_api::clean_returnvalue(wizard_generate::execute_returns(), $result);
+        $this->assertFalse($cleaned['success']);
+
+        $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_drops'));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]));
+
+        $run = $DB->get_record('block_playerhud_wizard_runs', ['id' => $result['runid']], '*', MUST_EXIST);
+        $this->assertSame('rolledback', $run->status);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_wizard_objects', ['runid' => $result['runid']]));
+    }
+
+    /**
      * A student without block/playerhud:manage must be rejected.
      */
     public function test_wizard_generate_requires_manage_capability(): void {

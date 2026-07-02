@@ -52,6 +52,9 @@ class wizard_generate extends external_api {
     /** @var int Number of items generated for the "long journey" size. */
     private const SIZE_LONG_AMOUNT = 15;
 
+    /** @var int How many progress items a chapter's costed choices ask for, in total. */
+    private const CHAPTER_ITEM_COST = 2;
+
     /**
      * Define parameters for wizard_generate.
      *
@@ -108,6 +111,12 @@ class wizard_generate extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            'include_next_chapter' => new external_value(
+                PARAM_BOOL,
+                'Generate a new AI story chapter that costs the progress item on some choices',
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
@@ -127,6 +136,7 @@ class wizard_generate extends external_api {
      * @param string $tonekey Narrative tone key for RPG content and the progress item.
      * @param bool $includeautodistribute Whether to auto-distribute this run's drops.
      * @param bool $includeprogressitem Whether to create the themed progress item.
+     * @param bool $includenextchapter Whether to generate a new AI story chapter.
      * @return array Result structure.
      */
     public static function execute(
@@ -142,7 +152,8 @@ class wizard_generate extends external_api {
         bool $includerpg = false,
         string $tonekey = 'fantasy',
         bool $includeautodistribute = false,
-        bool $includeprogressitem = false
+        bool $includeprogressitem = false,
+        bool $includenextchapter = false
     ): array {
         global $DB, $USER;
 
@@ -160,6 +171,7 @@ class wizard_generate extends external_api {
             'tone_key' => $tonekey,
             'include_auto_distribute' => $includeautodistribute,
             'include_progress_item' => $includeprogressitem,
+            'include_next_chapter' => $includenextchapter,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -190,6 +202,9 @@ class wizard_generate extends external_api {
         }
         if ($params['include_progress_item']) {
             $modules[] = 'progress_item';
+        }
+        if ($params['include_next_chapter']) {
+            $modules[] = 'next_chapter';
         }
 
         $runid = \block_playerhud\local\wizard::start_run($params['instanceid'], (int) $USER->id, $modules);
@@ -247,6 +262,20 @@ class wizard_generate extends external_api {
                 $progressresult = self::generate_progress_item($params['instanceid'], $params['tone_key'], $runid);
                 $createditems = array_merge($createditems, $progressresult['names']);
                 $createddropids = array_merge($createddropids, $progressresult['drop_ids']);
+            }
+
+            if ($params['include_next_chapter']) {
+                $chapterresult = self::generate_next_chapter(
+                    $params['instanceid'],
+                    $params['theme'],
+                    $params['tone_key'],
+                    $runid
+                );
+                $createditems = array_merge(
+                    $createditems,
+                    $chapterresult['created_items'],
+                    [$chapterresult['chapter_title']]
+                );
             }
 
             if ($params['include_auto_distribute'] && !empty($createddropids)) {
@@ -576,12 +605,7 @@ class wizard_generate extends external_api {
             'academic' => "\u{1F4D1}",
         ];
         $emoji = $emojibytone[$tonekey] ?? $emojibytone['fantasy'];
-
-        $namestringkey = "wizard_progress_item_name_$tonekey";
-        if (!get_string_manager()->string_exists($namestringkey, 'block_playerhud')) {
-            $namestringkey = 'wizard_progress_item_name_fantasy';
-        }
-        $name = get_string($namestringkey, 'block_playerhud');
+        $name = self::resolve_progress_item_name($tonekey);
 
         if ($DB->record_exists('block_playerhud_items', ['blockinstanceid' => $instanceid, 'name' => $name])) {
             return ['names' => [], 'drop_ids' => []];
@@ -619,6 +643,76 @@ class wizard_generate extends external_api {
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', [$dropid]);
 
         return ['names' => [$name], 'drop_ids' => [$dropid]];
+    }
+
+    /**
+     * Resolves the tone-specific progress item name, falling back to the Fantasy name for an
+     * unrecognised tone key.
+     *
+     * @param string $tonekey Narrative tone key.
+     * @return string The item name.
+     */
+    protected static function resolve_progress_item_name(string $tonekey): string {
+        $namestringkey = "wizard_progress_item_name_$tonekey";
+        if (!get_string_manager()->string_exists($namestringkey, 'block_playerhud')) {
+            $namestringkey = 'wizard_progress_item_name_fantasy';
+        }
+
+        return get_string($namestringkey, 'block_playerhud');
+    }
+
+    /**
+     * Generates a new AI story chapter, costing the progress item on some of its choices.
+     *
+     * Ensures the progress item exists first (creating it if this is the first module in this
+     * instance to need it) — a story chapter with no cost item defeats the point of it. Logs to
+     * `block_playerhud_ai_logs` like every other AI generation entry point in this plugin.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param string $theme Subject theme.
+     * @param string $tonekey Narrative tone key.
+     * @param int $runid Wizard run ID.
+     * @return array{created_items: string[], chapter_title: string} Progress item names created
+     *     as a side effect (empty if it already existed) and the new chapter's title.
+     */
+    protected static function generate_next_chapter(int $instanceid, string $theme, string $tonekey, int $runid): array {
+        global $DB, $USER;
+
+        $itemname = self::resolve_progress_item_name($tonekey);
+        $item = $DB->get_record('block_playerhud_items', ['blockinstanceid' => $instanceid, 'name' => $itemname]);
+
+        $createditems = [];
+        if (!$item) {
+            $progressresult = self::generate_progress_item($instanceid, $tonekey, $runid);
+            $createditems = $progressresult['names'];
+            $itemconditions = ['blockinstanceid' => $instanceid, 'name' => $itemname];
+            $item = $DB->get_record('block_playerhud_items', $itemconditions, '*', MUST_EXIST);
+        }
+
+        $generator = new \block_playerhud\ai\generator($instanceid);
+        $result = $generator->generate_story($theme, [
+            'item_id' => (int) $item->id,
+            'item_qty' => self::CHAPTER_ITEM_COST,
+        ]);
+
+        $log = new \stdClass();
+        $log->blockinstanceid = $instanceid;
+        $log->userid          = $USER->id;
+        $log->action_type     = 'story';
+        $log->object_name     = $result['chapter_title'];
+        $log->ai_provider     = $result['provider'] ?? 'Unknown';
+        $log->timecreated     = time();
+        $DB->insert_record('block_playerhud_ai_logs', $log);
+
+        \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_chapters', [$result['chapter_id']]);
+        if (!empty($result['node_ids'])) {
+            \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_story_nodes', $result['node_ids']);
+        }
+        if (!empty($result['choice_ids'])) {
+            \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_choices', $result['choice_ids']);
+        }
+
+        return ['created_items' => $createditems, 'chapter_title' => $result['chapter_title']];
     }
 
     /**

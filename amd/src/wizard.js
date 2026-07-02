@@ -49,6 +49,7 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
         const playercoinModuleEl = document.getElementById('ph-wizard-module-playercoin');
         const avatarsModuleEl = document.getElementById('ph-wizard-module-avatars');
         const rpgModuleEl = document.getElementById('ph-wizard-module-rpg');
+        const nextChapterModuleEl = document.getElementById('ph-wizard-module-nextchapter');
         const progressItemModuleEl = document.getElementById('ph-wizard-module-progressitem');
         const autoDistributeModuleEl = document.getElementById('ph-wizard-module-autodistribute');
         const generateBtn = document.getElementById('ph-wizard-generate-btn');
@@ -247,7 +248,7 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
         generateBtn.addEventListener('click', async() => {
             const anyModuleChecked = itemsModuleEl.checked || missionsModuleEl.checked ||
                 playercoinModuleEl.checked || avatarsModuleEl.checked || rpgModuleEl.checked ||
-                progressItemModuleEl.checked;
+                progressItemModuleEl.checked || nextChapterModuleEl.checked;
             if (!anyModuleChecked) {
                 return;
             }
@@ -272,6 +273,7 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
                         'tone_key': toneEl.value,
                         'include_auto_distribute': autoDistributeModuleEl.checked,
                         'include_progress_item': progressItemModuleEl.checked,
+                        'include_next_chapter': nextChapterModuleEl.checked,
                     },
                 }])[0];
 
