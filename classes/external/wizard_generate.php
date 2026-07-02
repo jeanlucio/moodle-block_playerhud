@@ -433,11 +433,16 @@ class wizard_generate extends external_api {
             $amount
         );
 
+        // A deterministic per-item share of the remaining XP room, instead of a single random
+        // value picked once from a coarse gap-size bucket and applied identically to every item
+        // regardless of how many are being generated (see xp_budget's docblock).
+        $itemxp = \block_playerhud\local\xp_budget::compute_item_xp($balancecontext['gap'], $amount);
+
         $generator = new \block_playerhud\ai\generator($instanceid);
         $result = $generator->generate(
             'item',
             $theme,
-            -1,
+            $itemxp,
             true,
             [
                 'tone' => $tone,
