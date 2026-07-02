@@ -208,7 +208,13 @@ class wizard {
      * never be rolled back through this method. Any shortcode this run inserted into
      * course content is stripped back out first (best-effort — a shortcode whose activity
      * was since deleted or edited independently is skipped, never blocking the rest of the
-     * rollback), before the drop row it points to is deleted.
+     * rollback), before the objects it points to are deleted.
+     *
+     * Each object is deleted through the same controller the management UI uses
+     * (item/quest/trade/chapter delete), so a rollback reverts the XP students earned
+     * from what it created and clears their play history (inventory, quest and trade
+     * logs) exactly as deleting each object by hand would — rather than a raw DELETE that
+     * would leave the earned XP standing and strand those rows as orphans.
      *
      * @param int $runid The run ID.
      * @param int $blockinstanceid The block instance the caller is authorised for.
@@ -249,10 +255,45 @@ class wizard {
             $idsbytable[$object->objecttable][] = (int) $object->objectid;
         }
 
+        $context = \context_block::instance($blockinstanceid);
+
         $transaction = $DB->start_delegated_transaction();
 
+        // Route the objects that carry XP or play history through their controllers so a
+        // rollback mirrors a manual delete. Order matters: trades and quests first (they
+        // own their own log rows), then items (whose delete reverts item XP and cascades
+        // to inventory, drops and trade references), then chapters (cascade to scenes).
+        self::rollback_trades($idsbytable['block_playerhud_trades'] ?? [], $blockinstanceid);
+        self::rollback_quests($idsbytable['block_playerhud_quests'] ?? [], $blockinstanceid);
+        self::rollback_items($idsbytable['block_playerhud_items'] ?? [], $blockinstanceid, $context);
+        self::rollback_chapters($idsbytable['block_playerhud_chapters'] ?? [], $blockinstanceid);
+
+        // Defensive sweep for the pure child rows the cascades above normally remove
+        // already (trade req/reward, story node/choice, drop). Deleting an id that is
+        // already gone is a harmless no-op; this only matters if a parent was missing.
+        $childtables = [
+            'block_playerhud_trade_reqs',
+            'block_playerhud_trade_rewards',
+            'block_playerhud_story_nodes',
+            'block_playerhud_choices',
+            'block_playerhud_drops',
+        ];
+        foreach ($childtables as $childtable) {
+            if (!empty($idsbytable[$childtable])) {
+                $DB->delete_records_list($childtable, 'id', $idsbytable[$childtable]);
+            }
+        }
+
+        // Safety net: any other recorded table a future module might add falls back to a
+        // raw delete, so nothing the run created is ever left behind.
+        $handled = array_merge(
+            ['block_playerhud_items', 'block_playerhud_quests', 'block_playerhud_trades', 'block_playerhud_chapters'],
+            $childtables
+        );
         foreach ($idsbytable as $table => $ids) {
-            $DB->delete_records_list($table, 'id', $ids);
+            if (!in_array($table, $handled, true)) {
+                $DB->delete_records_list($table, 'id', $ids);
+            }
         }
 
         $DB->delete_records('block_playerhud_wizard_objects', ['runid' => $runid]);
@@ -262,5 +303,92 @@ class wizard {
         $transaction->allow_commit();
 
         return count($objects);
+    }
+
+    /**
+     * Deletes the run's trades through the trade controller, so each trade's
+     * requirement, reward and log rows are cleaned up the same way a manual trade
+     * deletion would. Ids no longer present are skipped.
+     *
+     * @param int[] $tradeids The recorded trade IDs.
+     * @param int $instanceid The owning block instance ID.
+     * @return void
+     */
+    private static function rollback_trades(array $tradeids, int $instanceid): void {
+        global $DB;
+
+        if (empty($tradeids)) {
+            return;
+        }
+
+        $existing = $DB->get_records_list('block_playerhud_trades', 'id', $tradeids, '', 'id');
+        $controller = new \block_playerhud\controller\trades();
+        foreach ($existing as $trade) {
+            $controller->delete_trade((int) $trade->id, $instanceid);
+        }
+    }
+
+    /**
+     * Deletes the run's quests through the quest controller, reverting the reward
+     * XP of every student who had claimed them and clearing the quest log.
+     *
+     * @param int[] $questids The recorded quest IDs.
+     * @param int $instanceid The owning block instance ID.
+     * @return void
+     */
+    private static function rollback_quests(array $questids, int $instanceid): void {
+        if (empty($questids)) {
+            return;
+        }
+
+        \block_playerhud\controller\quests::bulk_delete_quests($questids, $instanceid);
+    }
+
+    /**
+     * Deletes the run's items through the item controller, reverting the XP of every
+     * holder and cascading to inventory, drops and trade references, exactly as a
+     * manual item deletion would. Foreign-instance ids are filtered out first.
+     *
+     * @param int[] $itemids The recorded item IDs.
+     * @param int $instanceid The owning block instance ID.
+     * @param \context_block $context The block context, for file area cleanup.
+     * @return void
+     */
+    private static function rollback_items(array $itemids, int $instanceid, \context_block $context): void {
+        global $DB;
+
+        if (empty($itemids)) {
+            return;
+        }
+
+        $items = $DB->get_records_list('block_playerhud_items', 'id', $itemids, '', 'id, blockinstanceid');
+        $items = array_filter($items, static fn($item): bool => (int) $item->blockinstanceid === $instanceid);
+        if (empty($items)) {
+            return;
+        }
+
+        \block_playerhud\controller\items::bulk_delete_items($items, $instanceid, $context);
+    }
+
+    /**
+     * Deletes the run's story chapters through the chapter controller, cascading to
+     * their scenes and choices. Ids no longer present are skipped.
+     *
+     * @param int[] $chapterids The recorded chapter IDs.
+     * @param int $instanceid The owning block instance ID.
+     * @return void
+     */
+    private static function rollback_chapters(array $chapterids, int $instanceid): void {
+        global $DB;
+
+        if (empty($chapterids)) {
+            return;
+        }
+
+        $existing = $DB->get_records_list('block_playerhud_chapters', 'id', $chapterids, '', 'id');
+        $controller = new \block_playerhud\controller\chapters();
+        foreach ($existing as $chapter) {
+            $controller->delete_chapter((int) $chapter->id, $instanceid);
+        }
     }
 }

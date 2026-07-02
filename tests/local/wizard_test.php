@@ -169,6 +169,54 @@ final class wizard_test extends advanced_testcase {
     }
 
     /**
+     * Rollback reverts the XP students earned from the objects it removes and clears
+     * their play history, matching a manual delete rather than a raw wipe.
+     *
+     * @covers ::rollback
+     */
+    public function test_rollback_reverts_xp_and_clears_play_history(): void {
+        global $DB, $USER;
+
+        $student = $this->getDataGenerator()->create_user();
+        $player = \block_playerhud\game::get_player($this->instanceid, (int) $student->id);
+        $DB->set_field('block_playerhud_user', 'currentxp', 100, ['id' => $player->id]);
+
+        // An item worth 10 XP the student is holding once.
+        $itemid = $this->create_item();
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid' => $student->id, 'itemid' => $itemid, 'dropid' => 0,
+            'source' => 'map', 'timecreated' => time(),
+        ]);
+
+        // A quest worth 15 XP the student has already claimed.
+        $questid = (int) $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Quest', 'description' => '',
+            'type' => 1, 'requirement' => '1', 'req_itemid' => 0, 'reward_xp' => 15,
+            'reward_itemid' => 0, 'required_class_id' => '0', 'image_todo' => '📋',
+            'image_done' => '🏅', 'enabled' => 1, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_quest_log', (object) [
+            'questid' => $questid, 'userid' => $student->id, 'timecreated' => time(),
+        ]);
+
+        $runid = wizard::start_run($this->instanceid, (int) $USER->id, ['items', 'missions']);
+        wizard::record_objects($runid, 'block_playerhud_items', [$itemid]);
+        wizard::record_objects($runid, 'block_playerhud_quests', [$questid]);
+        wizard::finish_run($runid, 'done');
+
+        wizard::rollback($runid, $this->instanceid, $this->courseid);
+
+        // The generated objects and their play-history rows are gone...
+        $this->assertFalse($DB->record_exists('block_playerhud_items', ['id' => $itemid]));
+        $this->assertFalse($DB->record_exists('block_playerhud_quests', ['id' => $questid]));
+        $this->assertFalse($DB->record_exists('block_playerhud_inventory', ['itemid' => $itemid]));
+        $this->assertFalse($DB->record_exists('block_playerhud_quest_log', ['questid' => $questid]));
+
+        // ...and the 10 + 15 XP they granted has been taken back.
+        $this->assertSame(75, (int) $DB->get_field('block_playerhud_user', 'currentxp', ['id' => $player->id]));
+    }
+
+    /**
      * Rollback is scoped to the caller's own instance: a run ID that belongs to
      * a different block instance must never be rolled back.
      *
