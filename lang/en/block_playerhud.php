@@ -1005,6 +1005,7 @@ $string['wizard_progress_item_name_scifi'] = 'Energy Cores';
 $string['wizard_rpg_continue'] = 'Continue';
 $string['wizard_size_label'] = 'Journey size';
 $string['wizard_size_long'] = 'Long (~15 items)';
+$string['wizard_size_medium'] = 'Medium (~10 items)';
 $string['wizard_size_short'] = 'Short (~5 items)';
 $string['wizard_theme_label'] = 'Subject theme';
 $string['wizard_theme_placeholder'] = 'E.g. Art History';

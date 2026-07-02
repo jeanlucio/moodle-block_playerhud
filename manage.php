@@ -571,6 +571,7 @@ $wizardtoneoptions = [
 ];
 $wizardsizeoptions = [
     ['value' => 'short', 'label' => get_string('wizard_size_short', 'block_playerhud')],
+    ['value' => 'medium', 'label' => get_string('wizard_size_medium', 'block_playerhud')],
     ['value' => 'long', 'label' => get_string('wizard_size_long', 'block_playerhud')],
 ];
 $wizardhasplayergroup = class_exists('\mod_playergroup\api\group_info');

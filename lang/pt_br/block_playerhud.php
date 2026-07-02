@@ -1005,6 +1005,7 @@ $string['wizard_progress_item_name_scifi'] = 'Núcleos de Energia';
 $string['wizard_rpg_continue'] = 'Continuar';
 $string['wizard_size_label'] = 'Tamanho da jornada';
 $string['wizard_size_long'] = 'Longa (~15 itens)';
+$string['wizard_size_medium'] = 'Média (~10 itens)';
 $string['wizard_size_short'] = 'Curta (~5 itens)';
 $string['wizard_theme_label'] = 'Tema da disciplina';
 $string['wizard_theme_placeholder'] = 'Ex.: História da Arte';

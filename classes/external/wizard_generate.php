@@ -49,6 +49,9 @@ class wizard_generate extends external_api {
     /** @var int Number of items generated for the "short journey" size. */
     private const SIZE_SHORT_AMOUNT = 5;
 
+    /** @var int Number of items generated for the "medium journey" size. */
+    private const SIZE_MEDIUM_AMOUNT = 10;
+
     /** @var int Number of items generated for the "long journey" size. */
     private const SIZE_LONG_AMOUNT = 15;
 
@@ -66,7 +69,7 @@ class wizard_generate extends external_api {
             'courseid' => new external_value(PARAM_INT, 'Course ID'),
             'theme' => new external_value(PARAM_TEXT, 'Subject theme'),
             'tone' => new external_value(PARAM_TEXT, 'Narrative tone', VALUE_DEFAULT, ''),
-            'size' => new external_value(PARAM_ALPHA, 'Journey size: short or long', VALUE_DEFAULT, 'short'),
+            'size' => new external_value(PARAM_ALPHA, 'Journey size: short, medium or long', VALUE_DEFAULT, 'short'),
             'include_items' => new external_value(PARAM_BOOL, 'Generate the Items & Trade module', VALUE_DEFAULT, true),
             'include_missions' => new external_value(
                 PARAM_BOOL,
@@ -145,7 +148,7 @@ class wizard_generate extends external_api {
      * @param int $courseid Course ID.
      * @param string $theme Subject theme.
      * @param string $tone Narrative tone.
-     * @param string $size Journey size: short or long.
+     * @param string $size Journey size: short, medium or long.
      * @param bool $includeitems Whether to generate the Items & Trade module.
      * @param bool $includemissions Whether to generate heuristic Mission suggestions.
      * @param bool $includeplayercoin Whether to create the PlayerCoin item.
@@ -401,7 +404,7 @@ class wizard_generate extends external_api {
      * @param \stdClass $config Block configuration.
      * @param string $theme Subject theme.
      * @param string $tone Narrative tone.
-     * @param string $size Journey size: short or long.
+     * @param string $size Journey size: short, medium or long.
      * @param int $runid Wizard run ID.
      * @return array{names: string[], drop_ids: int[]} Created item names and drop IDs.
      */
@@ -417,7 +420,11 @@ class wizard_generate extends external_api {
 
         $xpperlevel = isset($config->xp_per_level) ? (int)$config->xp_per_level : 100;
         $maxlevels = isset($config->max_levels) ? (int)$config->max_levels : 20;
-        $amount = ($size === 'long') ? self::SIZE_LONG_AMOUNT : self::SIZE_SHORT_AMOUNT;
+        $amount = match ($size) {
+            'long' => self::SIZE_LONG_AMOUNT,
+            'medium' => self::SIZE_MEDIUM_AMOUNT,
+            default => self::SIZE_SHORT_AMOUNT,
+        };
 
         $balancecontext = \block_playerhud\local\analytics::balance_context(
             $instanceid,
