@@ -435,12 +435,13 @@ class wizard_generate extends external_api {
     }
 
     /**
-     * Creates the PlayerCoin item and records it in the run.
+     * Creates the PlayerCoin item, auto-distributes its drop into the course news forum
+     * and records both in the run.
      *
-     * Only the item itself is created here — the optional drop into the course news forum
-     * (`external\setup_playercoin_drop`) writes into course content that the generic
-     * table/id rollback manifest cannot undo, so it is left as the existing manual follow-up
-     * action in the Items tab rather than something the wizard does automatically.
+     * The drop is only attempted right after the item itself was just created — PlayerCoin
+     * already existing means a previous run (or the manual Items tab) already decided whether
+     * to set up the forum drop, so this never risks inserting a second one on a rerun. A
+     * missing news forum is a tolerated no-op, same as the manual flow in the Items tab.
      *
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
@@ -455,6 +456,12 @@ class wizard_generate extends external_api {
         }
 
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$result['itemid']]);
+
+        $dropresult = \block_playerhud\external\setup_playercoin_drop::execute($instanceid, $courseid, $result['itemid']);
+        if (!empty($dropresult['success']) && !empty($dropresult['dropid'])) {
+            \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', [$dropresult['dropid']]);
+            \block_playerhud\local\wizard::record_shortcode($runid, $dropresult['dropid'], $dropresult['cmid'], 'intro');
+        }
 
         return ['PlayerCoin'];
     }

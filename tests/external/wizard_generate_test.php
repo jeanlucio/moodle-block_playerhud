@@ -185,6 +185,48 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
+     * When the course has a news forum, PlayerCoin auto-distributes its drop into it and
+     * records both the drop and the shortcode for rollback — undoing the run must remove the
+     * item, the drop and strip the shortcode back out of the forum intro.
+     */
+    public function test_playercoin_auto_distributes_drop_and_rolls_back_cleanly(): void {
+        global $DB;
+
+        $forum = $this->getDataGenerator()->create_module('forum', [
+            'course' => $this->course->id,
+            'type'   => 'news',
+            'intro'  => '',
+        ]);
+
+        $result = wizard_generate::execute($this->instanceid, $this->course->id, '', '', 'short', false, false, true, false);
+        $this->assertSame(['PlayerCoin'], $result['created_items']);
+
+        $item = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'action_type'     => 'playercoin',
+        ], '*', MUST_EXIST);
+        $drop = $DB->get_record('block_playerhud_drops', ['itemid' => $item->id], '*', MUST_EXIST);
+
+        $introafter = $DB->get_field('forum', 'intro', ['id' => $forum->id]);
+        $this->assertStringContainsString('[PLAYERHUD_DROP code=' . $drop->code . ']', $introafter);
+
+        $manifesttables = $DB->get_records_menu(
+            'block_playerhud_wizard_objects',
+            ['runid' => $result['runid']],
+            '',
+            'id, objecttable'
+        );
+        $this->assertContains('block_playerhud_drops', $manifesttables);
+        $this->assertCount(1, $DB->get_records('block_playerhud_wizard_shortcodes', ['runid' => $result['runid']]));
+
+        \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid, $this->course->id);
+
+        $this->assertFalse($DB->record_exists('block_playerhud_drops', ['id' => $drop->id]));
+        $introrolledback = $DB->get_field('forum', 'intro', ['id' => $forum->id]);
+        $this->assertStringNotContainsString('PLAYERHUD_DROP', (string) $introrolledback);
+    }
+
+    /**
      * RPG Classes is mechanical (no AI/network): creates 3 classes, a fixed Chapter 1 with
      * 6 nodes and choices, and records everything into the run's manifest.
      */

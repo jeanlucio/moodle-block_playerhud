@@ -134,10 +134,20 @@ class remove_drop_shortcode extends external_api {
             return ['success' => true, 'message' => ''];
         }
 
-        // Remove the shortcode along with any immediately adjacent newlines.
+        // Remove the shortcode along with any immediately adjacent separator — a newline
+        // for activity intro/content (insert_drop_shortcode's own convention) or a <br> for
+        // the PlayerCoin news forum drop (setup_playercoin_drop's convention).
         $newval = str_replace(
-            ["\n" . $shortcode . "\n", "\n" . $shortcode, $shortcode . "\n", $shortcode],
-            ['', '', '', ''],
+            [
+                "\n" . $shortcode . "\n",
+                "\n" . $shortcode,
+                $shortcode . "\n",
+                '<br>' . $shortcode . '<br>',
+                '<br>' . $shortcode,
+                $shortcode . '<br>',
+                $shortcode,
+            ],
+            '',
             $currentval
         );
         $newval = trim($newval);

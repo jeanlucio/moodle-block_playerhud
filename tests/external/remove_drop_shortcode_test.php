@@ -87,6 +87,35 @@ final class remove_drop_shortcode_test extends external_base_testcase {
     }
 
     /**
+     * The <br> separator used by setup_playercoin_drop for the news forum intro is stripped
+     * cleanly too, not just the newline separator used by insert_drop_shortcode.
+     */
+    public function test_remove_strips_br_separated_shortcode(): void {
+        global $DB;
+
+        $item = $this->create_item($this->instanceid, 'PlayerCoin');
+        [$dropid, $code] = $this->create_drop($item->id);
+
+        $forum = $this->getDataGenerator()->create_module('forum', [
+            'course' => $this->course->id,
+            'type'   => 'news',
+            'intro'  => '[PLAYERHUD_DROP code=' . $code . ']<br>Notícias e avisos',
+        ]);
+
+        $result = remove_drop_shortcode::execute(
+            $this->instanceid,
+            $this->course->id,
+            $dropid,
+            $forum->cmid,
+            'intro'
+        );
+
+        $this->assertTrue($result['success']);
+        $intro = $DB->get_field('forum', 'intro', ['id' => $forum->id]);
+        $this->assertSame('Notícias e avisos', $intro);
+    }
+
+    /**
      * When the shortcode is absent the call still succeeds (idempotent no-op).
      */
     public function test_remove_absent_shortcode_is_noop_success(): void {

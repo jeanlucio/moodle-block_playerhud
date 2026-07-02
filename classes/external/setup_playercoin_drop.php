@@ -101,7 +101,7 @@ class setup_playercoin_drop extends external_api {
 
         $code = \block_playerhud\utils::generate_drop_code($instanceid);
 
-        $DB->insert_record('block_playerhud_drops', (object) [
+        $dropid = $DB->insert_record('block_playerhud_drops', (object) [
             'blockinstanceid' => $instanceid,
             'itemid'          => $itemid,
             'name'            => get_string('playercoin_drop_name', 'block_playerhud'),
@@ -119,6 +119,8 @@ class setup_playercoin_drop extends external_api {
         return [
             'success' => true,
             'message' => get_string('playercoin_drop_created', 'block_playerhud'),
+            'dropid'  => (int) $dropid,
+            'cmid'    => (int) $forum->cmid,
         ];
     }
 
@@ -131,6 +133,8 @@ class setup_playercoin_drop extends external_api {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Whether the drop was created'),
             'message' => new external_value(PARAM_RAW, 'Result or error message'),
+            'dropid'  => new external_value(PARAM_INT, 'The new drop ID', VALUE_DEFAULT, 0),
+            'cmid'    => new external_value(PARAM_INT, 'The news forum course module ID', VALUE_DEFAULT, 0),
         ]);
     }
 }
