@@ -42,6 +42,24 @@ Feature: PlayerHUD teacher management panel
     And I click on "Reports" "link" in the "#ph-manage-tabs" "css_element"
     Then I should see "Reports" in the "#ph-manage-tabs .active" "css_element"
 
+  @javascript
+  Scenario: Teacher opens a student's audit log without error
+    Given the following "users" exist:
+      | username | firstname | lastname | email                |
+      | student1 | Student   | One      | student1@example.com |
+    And the following "course enrolments" exist:
+      | user     | course | role    |
+      | student1 | C1     | student |
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I log in as "teacher1"
+    And I am on "Course 1" course homepage
+    When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
+    And I click on "Reports" "link" in the "#ph-manage-tabs" "css_element"
+    And I set the field "r_userid" to "Student One (student1@example.com)"
+    Then "#ph-live-search" "css_element" should exist
+    And I should see "Student One"
+
   Scenario: Teacher can return to the course from the management panel
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     Then I should see the PlayerHUD management tabs
