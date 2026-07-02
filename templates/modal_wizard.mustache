@@ -106,13 +106,29 @@
                         </small>
                     </label>
                 </div>
-                <div class="form-check ms-4 mt-2">
+                <div class="form-check ms-5 mt-2">
                     <input type="checkbox" class="form-check-input" id="ph-wizard-module-autodistribute">
                     <label class="form-check-label" for="ph-wizard-module-autodistribute">
                         {{#str}} wizard_module_autodistribute, block_playerhud {{/str}}<br>
                         <small class="text-muted">
                             {{#str}} wizard_module_autodistribute_desc, block_playerhud {{/str}}
                         </small>
+                    </label>
+                </div>
+                <div class="form-check ms-4 mt-2">
+                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-playercoin"
+                           data-drives="8,1">
+                    <label class="form-check-label" for="ph-wizard-module-playercoin">
+                        {{#str}} wizard_module_playercoin, block_playerhud {{/str}}<br>
+                        <small class="text-muted">{{#str}} wizard_module_playercoin_desc, block_playerhud {{/str}}</small>
+                    </label>
+                </div>
+                <div class="form-check ms-4 mt-2">
+                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-avatars"
+                           data-drives="8,2">
+                    <label class="form-check-label" for="ph-wizard-module-avatars">
+                        {{#str}} wizard_module_avatars, block_playerhud {{/str}}<br>
+                        <small class="text-muted">{{#str}} wizard_module_avatars_desc, block_playerhud {{/str}}</small>
                     </label>
                 </div>
             </div>
@@ -123,26 +139,6 @@
                     <label class="form-check-label" for="ph-wizard-module-missions">
                         <strong>{{#str}} wizard_module_missions, block_playerhud {{/str}}</strong><br>
                         <small class="text-muted">{{#str}} wizard_module_missions_desc, block_playerhud {{/str}}</small>
-                    </label>
-                </div>
-            </div>
-            <div class="p-3 bg-light border rounded mb-2">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-playercoin"
-                           data-drives="8,1">
-                    <label class="form-check-label" for="ph-wizard-module-playercoin">
-                        <strong>{{#str}} wizard_module_playercoin, block_playerhud {{/str}}</strong><br>
-                        <small class="text-muted">{{#str}} wizard_module_playercoin_desc, block_playerhud {{/str}}</small>
-                    </label>
-                </div>
-            </div>
-            <div class="p-3 bg-light border rounded mb-2">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-avatars"
-                           data-drives="8,2">
-                    <label class="form-check-label" for="ph-wizard-module-avatars">
-                        <strong>{{#str}} wizard_module_avatars, block_playerhud {{/str}}</strong><br>
-                        <small class="text-muted">{{#str}} wizard_module_avatars_desc, block_playerhud {{/str}}</small>
                     </label>
                 </div>
             </div>
