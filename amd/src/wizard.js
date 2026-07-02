@@ -51,6 +51,10 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const playercoinModuleEl = document.getElementById('ph-wizard-module-playercoin');
         const avatarsModuleEl = document.getElementById('ph-wizard-module-avatars');
         const pillModuleEl = document.getElementById('ph-wizard-module-pill');
+        // Only rendered when local_latepenalty is installed — every other module checkbox
+        // always exists, so this is the one spot in the form that needs a null guard.
+        const latepenaltyModuleEl = document.getElementById('ph-wizard-module-latepenalty');
+        const latepenaltyChecked = () => (latepenaltyModuleEl ? latepenaltyModuleEl.checked : false);
         const rpgModuleEl = document.getElementById('ph-wizard-module-rpg');
         const nextChapterModuleEl = document.getElementById('ph-wizard-module-nextchapter');
         const tradeModuleEl = document.getElementById('ph-wizard-module-trade');
@@ -253,7 +257,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             const anyModuleChecked = itemsModuleEl.checked || missionsModuleEl.checked ||
                 playercoinModuleEl.checked || avatarsModuleEl.checked || rpgModuleEl.checked ||
                 progressItemModuleEl.checked || nextChapterModuleEl.checked || tradeModuleEl.checked ||
-                pillModuleEl.checked;
+                pillModuleEl.checked || latepenaltyChecked();
             if (!anyModuleChecked) {
                 return;
             }
@@ -281,6 +285,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                         'include_next_chapter': nextChapterModuleEl.checked,
                         'include_comercio': tradeModuleEl.checked,
                         'include_pill': pillModuleEl.checked,
+                        'include_latepenalty': latepenaltyChecked(),
                     },
                 }])[0];
 

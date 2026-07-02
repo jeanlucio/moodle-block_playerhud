@@ -129,6 +129,12 @@ class wizard_generate extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            'include_latepenalty' => new external_value(
+                PARAM_BOOL,
+                'Create the Deadline Extension item (soft dependency on local_latepenalty)',
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
@@ -151,6 +157,7 @@ class wizard_generate extends external_api {
      * @param bool $includenextchapter Whether to generate a new AI story chapter.
      * @param bool $includecomercio Whether to wire PlayerCoin<->Avatar Pack trades.
      * @param bool $includepill Whether to create the Knowledge Pill and Book items.
+     * @param bool $includelatepenalty Whether to create the Deadline Extension item.
      * @return array Result structure.
      */
     public static function execute(
@@ -169,7 +176,8 @@ class wizard_generate extends external_api {
         bool $includeprogressitem = false,
         bool $includenextchapter = false,
         bool $includecomercio = false,
-        bool $includepill = false
+        bool $includepill = false,
+        bool $includelatepenalty = false
     ): array {
         global $DB, $USER;
 
@@ -190,6 +198,7 @@ class wizard_generate extends external_api {
             'include_next_chapter' => $includenextchapter,
             'include_comercio' => $includecomercio,
             'include_pill' => $includepill,
+            'include_latepenalty' => $includelatepenalty,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -229,6 +238,9 @@ class wizard_generate extends external_api {
         }
         if ($params['include_pill']) {
             $modules[] = 'pill';
+        }
+        if ($params['include_latepenalty']) {
+            $modules[] = 'latepenalty';
         }
 
         $runid = \block_playerhud\local\wizard::start_run($params['instanceid'], (int) $USER->id, $modules);
@@ -313,6 +325,14 @@ class wizard_generate extends external_api {
                 $createditems = array_merge($createditems, $pillresult['items']);
                 if ($pillresult['quest_name'] !== '') {
                     $createdquests[] = $pillresult['quest_name'];
+                }
+            }
+
+            if ($params['include_latepenalty']) {
+                $lpresult = self::generate_latepenalty($params['instanceid'], $runid);
+                $createditems = array_merge($createditems, $lpresult['items']);
+                if ($lpresult['quest_name'] !== '') {
+                    $createdquests[] = $lpresult['quest_name'];
                 }
             }
 
@@ -562,6 +582,11 @@ class wizard_generate extends external_api {
         }
         if ($pilltrade['quest_name'] !== '') {
             $createdquests[] = $pilltrade['quest_name'];
+        }
+
+        $lptradename = self::generate_latepenalty_trade($instanceid, $runid);
+        if ($lptradename !== '') {
+            $createdtrades[] = $lptradename;
         }
 
         return ['trades' => $createdtrades, 'quests' => $createdquests];
@@ -953,6 +978,129 @@ class wizard_generate extends external_api {
         \block_playerhud\local\wizard::record_object($runid, 'block_playerhud_quests', $questid);
 
         return ['items' => $created, 'quest_name' => $questrecord->name];
+    }
+
+    /** @var int Days a Deadline Extension item pushes the target activity's deadline by. */
+    private const LATEPENALTY_EXTENSION_DAYS = 2;
+
+    /** @var int Level requirement for the Deadline Extension "early win" milestone quest. */
+    private const LATEPENALTY_QUEST_LEVEL = 2;
+
+    /**
+     * Creates the Deadline Extension item (soft dependency on local_latepenalty, same
+     * action_type='deadline_extension' the manual Items form already supports) and an "early
+     * win" milestone quest that hands it out as a reward alongside XP.
+     *
+     * Not tone-specific — reuses the existing item_power_deadline string, since this is a
+     * utility tool rather than narrative flavour. cmid is left at 0 so the student picks which
+     * LP-eligible activity to extend when they use it, same as the manual form's "Any" option.
+     *
+     * A no-op when local_latepenalty is not installed (re-checked here even though the wizard
+     * UI already hides this module's checkbox in that case — never trust the client alone for a
+     * server-side decision). Tolerant when the course has no LP-eligible activity yet: the item
+     * and quest are still created, simply unusable until the teacher configures an LP rule.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $runid Wizard run ID.
+     * @return array{items: string[], quest_name: string} Empty when LP isn't installed or the
+     *     item already exists.
+     */
+    protected static function generate_latepenalty(int $instanceid, int $runid): array {
+        global $DB;
+
+        if (!class_exists('\local_latepenalty\recalculator')) {
+            return ['items' => [], 'quest_name' => ''];
+        }
+
+        $itemname = get_string('item_power_deadline', 'block_playerhud');
+        if ($DB->record_exists('block_playerhud_items', ['blockinstanceid' => $instanceid, 'name' => $itemname])) {
+            return ['items' => [], 'quest_name' => ''];
+        }
+
+        $now = time();
+        $itemid = (int) $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instanceid,
+            'name' => $itemname,
+            'image' => "\u{23F3}",
+            'description' => get_string('wizard_latepenalty_desc_text', 'block_playerhud'),
+            'xp' => 0,
+            'enabled' => 1,
+            'tradable' => 0,
+            'secret' => 0,
+            'required_class_id' => '0',
+            'action_type' => 'deadline_extension',
+            'action_value' => json_encode(['days' => self::LATEPENALTY_EXTENSION_DAYS, 'cmid' => 0]),
+            'timecreated' => $now,
+            'timemodified' => $now,
+        ]);
+        \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$itemid]);
+
+        $questsuggestion = [
+            'type' => \block_playerhud\quest::TYPE_LEVEL,
+            'requirement' => self::LATEPENALTY_QUEST_LEVEL,
+            'reward_itemid' => $itemid,
+            'name' => get_string('wizard_latepenalty_quest_name', 'block_playerhud', self::LATEPENALTY_QUEST_LEVEL),
+            'reward_xp' => self::LATEPENALTY_QUEST_LEVEL * 20,
+            'image_todo' => "\u{1F4C8}",
+            'image_done' => "\u{23F3}",
+        ];
+        $questrecord = \block_playerhud\quest::build_record_from_suggestion($instanceid, $questsuggestion);
+        $questid = (int) $DB->insert_record('block_playerhud_quests', $questrecord);
+        \block_playerhud\local\wizard::record_object($runid, 'block_playerhud_quests', $questid);
+
+        return ['items' => [$itemname], 'quest_name' => $questrecord->name];
+    }
+
+    /** @var int PlayerCoin quantity the Deadline Extension trade costs. */
+    private const LATEPENALTY_TRADE_COST = 20;
+
+    /**
+     * Wires the PlayerCoin<->Deadline Extension trade once both items exist.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $runid Wizard run ID.
+     * @return string Name of the created trade, or an empty string when skipped (PlayerCoin or
+     *     the Deadline Extension item missing, or the trade already exists).
+     */
+    protected static function generate_latepenalty_trade(int $instanceid, int $runid): string {
+        global $DB;
+
+        $coin = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $instanceid,
+            'action_type' => 'playercoin',
+        ]);
+        $item = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $instanceid,
+            'action_type' => 'deadline_extension',
+        ]);
+        if (!$coin || !$item) {
+            return '';
+        }
+
+        $alreadywired = $DB->record_exists_sql(
+            "SELECT 1
+               FROM {block_playerhud_trade_rewards} tr
+               JOIN {block_playerhud_trades} t ON t.id = tr.tradeid
+              WHERE t.blockinstanceid = :iid AND tr.itemid = :itemid",
+            ['iid' => $instanceid, 'itemid' => $item->id]
+        );
+        if ($alreadywired) {
+            return '';
+        }
+
+        $tradename = format_string($item->name);
+        $suggestion = [
+            'name' => $tradename,
+            'cost_itemid' => $coin->id,
+            'cost_qty' => self::LATEPENALTY_TRADE_COST,
+            'rewards' => [['id' => $item->id, 'qty' => 1]],
+        ];
+        $result = \block_playerhud\game::create_trade_from_suggestion($instanceid, $suggestion);
+        \block_playerhud\local\wizard::record_object($runid, 'block_playerhud_trades', $result['tradeid']);
+        \block_playerhud\local\wizard::record_object($runid, 'block_playerhud_trade_reqs', $result['reqid']);
+        \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_trade_rewards', $result['rewardids']);
+
+        return $tradename;
     }
 
     /**

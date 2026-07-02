@@ -139,6 +139,18 @@
                         <small class="text-muted">{{#str}} wizard_module_pill_desc, block_playerhud {{/str}}</small>
                     </label>
                 </div>
+                {{#has_latepenalty}}
+                <div class="form-check ms-4 mt-2">
+                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-latepenalty"
+                           data-drives="3">
+                    <label class="form-check-label" for="ph-wizard-module-latepenalty">
+                        {{#str}} wizard_module_latepenalty, block_playerhud {{/str}}<br>
+                        <small class="text-muted">
+                            {{#str}} wizard_module_latepenalty_desc, block_playerhud {{/str}}
+                        </small>
+                    </label>
+                </div>
+                {{/has_latepenalty}}
             </div>
             <div class="p-3 bg-light border rounded mb-2">
                 <div class="form-check">

@@ -70,7 +70,8 @@ class quest {
      *
      * @param int $instanceid Block instance ID.
      * @param array $sug Suggestion descriptor (type, requirement, name, reward_xp, image_todo,
-     *        image_done, and optionally req_itemid for TYPE_SPECIFIC_ITEM/TYPE_SPECIFIC_TRADE).
+     *        image_done, and optionally req_itemid for TYPE_SPECIFIC_ITEM/TYPE_SPECIFIC_TRADE,
+     *        and/or reward_itemid to grant an item alongside the XP reward).
      * @param int|null $rewardxpoverride Optional XP reward to use instead of the suggestion's value.
      * @return \stdClass Quest record ready for insert_record/insert_records.
      */
@@ -84,7 +85,7 @@ class quest {
         $record->requirement       = (string)$sug['requirement'];
         $record->req_itemid        = (int)($sug['req_itemid'] ?? 0);
         $record->reward_xp         = $rewardxpoverride !== null ? max(0, $rewardxpoverride) : (int)$sug['reward_xp'];
-        $record->reward_itemid     = 0;
+        $record->reward_itemid     = (int)($sug['reward_itemid'] ?? 0);
         $record->required_class_id = '0';
         $record->image_todo        = $sug['image_todo'];
         $record->image_done        = $sug['image_done'];
