@@ -95,6 +95,12 @@ class wizard_generate extends external_api {
                 VALUE_DEFAULT,
                 'fantasy'
             ),
+            'include_auto_distribute' => new external_value(
+                PARAM_BOOL,
+                "Automatically insert this run's generated drops into matching course activities",
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
@@ -112,6 +118,7 @@ class wizard_generate extends external_api {
      * @param bool $includeavatars Whether to create the pre-defined avatar item pack.
      * @param bool $includerpg Whether to create the RPG class pack and fixed Chapter 1.
      * @param string $tonekey Narrative tone key for RPG content.
+     * @param bool $includeautodistribute Whether to auto-distribute this run's drops.
      * @return array Result structure.
      */
     public static function execute(
@@ -125,7 +132,8 @@ class wizard_generate extends external_api {
         bool $includeplayercoin = false,
         bool $includeavatars = false,
         bool $includerpg = false,
-        string $tonekey = 'fantasy'
+        string $tonekey = 'fantasy',
+        bool $includeautodistribute = false
     ): array {
         global $DB, $USER;
 
@@ -141,6 +149,7 @@ class wizard_generate extends external_api {
             'include_avatars' => $includeavatars,
             'include_rpg' => $includerpg,
             'tone_key' => $tonekey,
+            'include_auto_distribute' => $includeautodistribute,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -175,9 +184,11 @@ class wizard_generate extends external_api {
         try {
             $createditems = [];
             $createdquests = [];
+            $createddropids = [];
+            $distributemessage = '';
 
             if ($params['include_items']) {
-                $createditems = self::generate_items(
+                $itemsresult = self::generate_items(
                     $params['instanceid'],
                     $config,
                     $params['theme'],
@@ -185,6 +196,8 @@ class wizard_generate extends external_api {
                     $params['size'],
                     $runid
                 );
+                $createditems = $itemsresult['names'];
+                $createddropids = $itemsresult['drop_ids'];
             }
 
             if ($params['include_missions']) {
@@ -217,6 +230,10 @@ class wizard_generate extends external_api {
                 );
             }
 
+            if ($params['include_auto_distribute'] && !empty($createddropids)) {
+                $distributemessage = self::distribute_drops($params['instanceid'], $params['courseid'], $createddropids);
+            }
+
             \block_playerhud\local\wizard::finish_run($runid, 'done');
 
             return [
@@ -225,11 +242,14 @@ class wizard_generate extends external_api {
                 'message' => '',
                 'created_items' => $createditems,
                 'created_quests' => $createdquests,
+                'distribute_message' => $distributemessage,
             ];
         } catch (\Exception $e) {
-            // Generation failures happen before any object is saved, so the run leaves
-            // nothing to roll back; 'rolledback' accurately reflects that end state.
-            \block_playerhud\local\wizard::finish_run($runid, 'rolledback');
+            // A later module (e.g. auto-distribute) can fail after earlier modules already
+            // wrote real rows, so always run the real rollback here rather than just labelling
+            // the run 'rolledback' — it is a no-op when the manifest is empty (failure before
+            // any insert) and a real cleanup otherwise, avoiding orphaned, unrecoverable content.
+            \block_playerhud\local\wizard::rollback($runid, $params['instanceid']);
 
             return [
                 'success' => false,
@@ -237,6 +257,7 @@ class wizard_generate extends external_api {
                 'message' => $e->getMessage(),
                 'created_items' => [],
                 'created_quests' => [],
+                'distribute_message' => '',
             ];
         }
     }
@@ -250,7 +271,7 @@ class wizard_generate extends external_api {
      * @param string $tone Narrative tone.
      * @param string $size Journey size: short or long.
      * @param int $runid Wizard run ID.
-     * @return string[] Names of the created items.
+     * @return array{names: string[], drop_ids: int[]} Created item names and drop IDs.
      */
     protected static function generate_items(
         int $instanceid,
@@ -315,7 +336,10 @@ class wizard_generate extends external_api {
             $DB->insert_records('block_playerhud_ai_logs', $logs);
         }
 
-        return $createditems;
+        return [
+            'names' => $createditems,
+            'drop_ids' => $result['created_drop_ids'] ?? [],
+        ];
     }
 
     /**
@@ -507,6 +531,54 @@ class wizard_generate extends external_api {
     }
 
     /**
+     * Auto-distributes this run's newly created drops into the course's best-matching
+     * activities, when the course already has any eligible for a shortcode.
+     *
+     * Deliberately scoped to only the drops this run just created — not a general "fix
+     * every undistributed drop" sweep. If the course has no eligible activities yet, this
+     * is a no-op that returns a message telling the teacher to come back later; the manual
+     * distribution screen (`tab_items::render_distribute_view()`) always remains available.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int[] $dropids Drop IDs created earlier in this same run.
+     * @return string Empty on success/no-op, or a message explaining why nothing was inserted.
+     */
+    protected static function distribute_drops(int $instanceid, int $courseid, array $dropids): string {
+        global $DB;
+
+        $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
+        if (empty($modules)) {
+            return get_string('wizard_distribute_no_activities', 'block_playerhud');
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($dropids, SQL_PARAMS_NAMED);
+        $sql = "SELECT d.id, d.code, d.name AS drop_name, i.name AS item_name
+                  FROM {block_playerhud_drops} d
+                  JOIN {block_playerhud_items} i ON d.itemid = i.id
+                 WHERE d.id $insql";
+        $drops = $DB->get_records_sql($sql, $inparams);
+
+        foreach ($drops as $drop) {
+            $haystack = $drop->drop_name . ' ' . $drop->item_name;
+            $suggested = \block_playerhud\local\drop_distribution::suggest_module($haystack, $modules);
+            if (!$suggested) {
+                continue;
+            }
+            \block_playerhud\external\insert_drop_shortcode::execute(
+                $instanceid,
+                $courseid,
+                $drop->id,
+                $suggested['cmid'],
+                'intro',
+                'top'
+            );
+        }
+
+        return '';
+    }
+
+    /**
      * Return structure for wizard_generate.
      *
      * @return external_single_structure
@@ -524,6 +596,11 @@ class wizard_generate extends external_api {
             'created_quests' => new \core_external\external_multiple_structure(
                 new external_value(PARAM_TEXT, 'Quest name'),
                 'List of created quests',
+                VALUE_OPTIONAL
+            ),
+            'distribute_message' => new external_value(
+                PARAM_TEXT,
+                'Note about drop auto-distribution, empty when nothing to report',
                 VALUE_OPTIONAL
             ),
         ]);

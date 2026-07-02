@@ -49,6 +49,7 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
         const playercoinModuleEl = document.getElementById('ph-wizard-module-playercoin');
         const avatarsModuleEl = document.getElementById('ph-wizard-module-avatars');
         const rpgModuleEl = document.getElementById('ph-wizard-module-rpg');
+        const autoDistributeModuleEl = document.getElementById('ph-wizard-module-autodistribute');
         const generateBtn = document.getElementById('ph-wizard-generate-btn');
         const generateLabelEl = generateBtn.querySelector('.ph-wizard-btn-label');
         const undoBtn = document.getElementById('ph-wizard-undo-btn');
@@ -267,6 +268,7 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
                         'include_avatars': avatarsModuleEl.checked,
                         'include_rpg': rpgModuleEl.checked,
                         'tone_key': toneEl.value,
+                        'include_auto_distribute': autoDistributeModuleEl.checked,
                     },
                 }])[0];
 
@@ -281,7 +283,10 @@ define(['core/ajax', 'core/str'], function(Ajax, Str) {
                     return;
                 }
 
-                const names = [...response.created_items, ...response.created_quests].join(', ');
+                let names = [...response.created_items, ...response.created_quests].join(', ');
+                if (response.distribute_message) {
+                    names += ' — ' + response.distribute_message;
+                }
                 lastRunId = response.runid;
                 contentChanged = true;
                 showAlert(resultEl, names);
