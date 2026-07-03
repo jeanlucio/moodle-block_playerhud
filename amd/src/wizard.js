@@ -146,6 +146,20 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             wireGroupToggle(groupItemsEl, cardItemsEl);
         }
 
+        // Item H: each mechanic card and the external-recommendations panel start collapsed to
+        // fit the modal on a common desktop without scrolling; a chevron button reveals details.
+        document.querySelectorAll('.ph-wizard-card-toggle').forEach((toggleBtn) => {
+            const body = document.getElementById(toggleBtn.getAttribute('aria-controls'));
+            if (!body) {
+                return;
+            }
+            toggleBtn.addEventListener('click', () => {
+                const expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+                toggleBtn.setAttribute('aria-expanded', String(!expanded));
+                body.classList.toggle('ph-display-none', expanded);
+            });
+        });
+
         // Only rendered when the instance's level settings are still at the edit form's
         // defaults (100 XP per level, 20 levels) — every other element in the modal always
         // exists, so this is the other spot (besides latepenaltyModuleEl) needing a null guard.

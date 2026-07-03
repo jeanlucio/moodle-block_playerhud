@@ -913,6 +913,7 @@ $string['wizard_book_name_fantasy'] = 'Grimório Ancestral';
 $string['wizard_book_name_mystery'] = 'Dossiê Completo';
 $string['wizard_book_name_scifi'] = 'Arquivo Mestre';
 $string['wizard_book_quest_name'] = 'Conquistar: {$a}';
+$string['wizard_card_toggle_label'] = 'Mostrar ou ocultar detalhes';
 $string['wizard_distribute_no_activities'] = 'Gamificação criada — volte aqui quando o curso tiver atividades para distribuir os drops automaticamente.';
 $string['wizard_economy_easy'] = 'Economia generosa: cobre {$a}% do teto de níveis — os estudantes alcançarão o nível máximo com folga.';
 $string['wizard_economy_empty'] = 'Ainda não há XP gerado nesta economia.';

@@ -40,7 +40,7 @@
 }}
 <div class="modal fade" id="ph-wizard-modal" tabindex="-1" aria-labelledby="ph-wizard-modal-label" aria-hidden="true"
      data-instanceid="{{instanceid}}" data-courseid="{{courseid}}">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content border-0 shadow-lg">
       <div class="modal-header bg-primary text-white">
         <h5 class="modal-title fw-bold m-0" id="ph-wizard-modal-label">
@@ -52,18 +52,18 @@
         </button>
       </div>
       <div class="modal-body">
-        <div class="row">
+        <div class="row align-items-start">
         <div class="col-lg-7">
         <form id="ph-wizard-form">
-            <div class="mb-3">
-                <label for="ph-wizard-theme" class="form-label fw-bold">
-                    {{#str}} wizard_theme_label, block_playerhud {{/str}}
-                </label>
-                <input type="text" class="form-control" id="ph-wizard-theme"
-                       placeholder="{{#str}} wizard_theme_placeholder, block_playerhud {{/str}}">
-            </div>
-            <div class="row mb-3">
-                <div class="col-6">
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-4">
+                    <label for="ph-wizard-theme" class="form-label fw-bold">
+                        {{#str}} wizard_theme_label, block_playerhud {{/str}}
+                    </label>
+                    <input type="text" class="form-control" id="ph-wizard-theme"
+                           placeholder="{{#str}} wizard_theme_placeholder, block_playerhud {{/str}}">
+                </div>
+                <div class="col-6 col-md-4">
                     <label for="ph-wizard-tone" class="form-label fw-bold">
                         {{#str}} wizard_tone_label, block_playerhud {{/str}}
                     </label>
@@ -73,7 +73,7 @@
                         {{/tone_options}}
                     </select>
                 </div>
-                <div class="col-6">
+                <div class="col-6 col-md-4">
                     <label for="ph-wizard-size" class="form-label fw-bold">
                         {{#str}} wizard_size_label, block_playerhud {{/str}}
                     </label>
@@ -107,133 +107,210 @@
                     {{#str}} wizard_modules_label, block_playerhud {{/str}}
                 </span>
             </div>
-            <div class="p-3 bg-light border rounded mb-2" id="ph-wizard-card-items">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-group-items">
-                    <label class="form-check-label" for="ph-wizard-group-items">
-                        <strong>{{#str}} wizard_module_items, block_playerhud {{/str}}</strong><br>
-                        <small class="text-muted">{{#str}} wizard_group_items_desc, block_playerhud {{/str}}</small>
-                    </label>
+            <div class="row row-cols-1 row-cols-md-2 g-2 mb-2">
+                <div class="col">
+                    <div class="ph-wizard-card bg-light border rounded p-3 h-100" id="ph-wizard-card-items">
+                        <div class="ph-wizard-card-header d-flex align-items-center justify-content-between">
+                            <div class="form-check mb-0">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-group-items">
+                                <label class="form-check-label fw-bold" for="ph-wizard-group-items">
+                                    {{#str}} wizard_module_items, block_playerhud {{/str}}
+                                </label>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-link p-0 ph-wizard-card-toggle"
+                                    aria-expanded="false" aria-controls="ph-wizard-card-items-body"
+                                    aria-label="{{#str}} wizard_card_toggle_label, block_playerhud {{/str}}">
+                                <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="ph-wizard-card-body ph-display-none" id="ph-wizard-card-items-body">
+                            <small class="text-muted d-block mb-2">
+                                {{#str}} wizard_group_items_desc, block_playerhud {{/str}}
+                            </small>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-items"
+                                       data-drives="2" checked>
+                                <label class="form-check-label" for="ph-wizard-module-items">
+                                    {{#str}} wizard_module_items_ai, block_playerhud {{/str}}<br>
+                                    <small class="text-muted">
+                                        {{#str}} wizard_module_items_desc, block_playerhud {{/str}}
+                                    </small>
+                                </label>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-progressitem">
+                                <label class="form-check-label" for="ph-wizard-module-progressitem">
+                                    {{#str}} wizard_module_progress_item, block_playerhud {{/str}}<br>
+                                    <small class="text-muted">
+                                        {{#str}} wizard_module_progress_item_desc, block_playerhud {{/str}}
+                                    </small>
+                                </label>
+                            </div>
+                            <div class="form-check ms-4 mt-2">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-autodistribute">
+                                <label class="form-check-label" for="ph-wizard-module-autodistribute">
+                                    {{#str}} wizard_module_autodistribute, block_playerhud {{/str}}<br>
+                                    <small class="text-muted">
+                                        {{#str}} wizard_module_autodistribute_desc, block_playerhud {{/str}}
+                                    </small>
+                                </label>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-playercoin"
+                                       data-drives="8,1">
+                                <label class="form-check-label" for="ph-wizard-module-playercoin">
+                                    {{#str}} wizard_module_playercoin, block_playerhud {{/str}}<br>
+                                    <small class="text-muted">
+                                        {{#str}} wizard_module_playercoin_desc, block_playerhud {{/str}}
+                                    </small>
+                                </label>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-avatars"
+                                       data-drives="8,2">
+                                <label class="form-check-label" for="ph-wizard-module-avatars">
+                                    {{#str}} wizard_module_avatars, block_playerhud {{/str}}<br>
+                                    <small class="text-muted">
+                                        {{#str}} wizard_module_avatars_desc, block_playerhud {{/str}}
+                                    </small>
+                                </label>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-pill"
+                                       data-drives="6,7">
+                                <label class="form-check-label" for="ph-wizard-module-pill">
+                                    {{#str}} wizard_module_pill, block_playerhud {{/str}}<br>
+                                    <small class="text-muted">
+                                        {{#str}} wizard_module_pill_desc, block_playerhud {{/str}}
+                                    </small>
+                                </label>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-secret"
+                                       data-drives="6,5">
+                                <label class="form-check-label" for="ph-wizard-module-secret">
+                                    {{#str}} wizard_module_secret, block_playerhud {{/str}}<br>
+                                    <small class="text-muted">
+                                        {{#str}} wizard_module_secret_desc, block_playerhud {{/str}}
+                                    </small>
+                                </label>
+                            </div>
+                            {{#has_latepenalty}}
+                            <div class="form-check mt-2">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-latepenalty"
+                                       data-drives="3">
+                                <label class="form-check-label" for="ph-wizard-module-latepenalty">
+                                    {{#str}} wizard_module_latepenalty, block_playerhud {{/str}}<br>
+                                    <small class="text-muted">
+                                        {{#str}} wizard_module_latepenalty_desc, block_playerhud {{/str}}
+                                    </small>
+                                </label>
+                            </div>
+                            {{/has_latepenalty}}
+                        </div>
+                    </div>
                 </div>
-                <div class="form-check ms-4 mt-2">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-items"
-                           data-drives="2" checked>
-                    <label class="form-check-label" for="ph-wizard-module-items">
-                        {{#str}} wizard_module_items_ai, block_playerhud {{/str}}<br>
-                        <small class="text-muted">{{#str}} wizard_module_items_desc, block_playerhud {{/str}}</small>
-                    </label>
+                <div class="col">
+                    <div class="ph-wizard-card bg-light border rounded p-3 h-100">
+                        <div class="ph-wizard-card-header d-flex align-items-center justify-content-between">
+                            <div class="form-check mb-0">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-trade"
+                                       data-drives="3,5">
+                                <label class="form-check-label fw-bold" for="ph-wizard-module-trade">
+                                    {{#str}} wizard_module_trade, block_playerhud {{/str}}
+                                </label>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-link p-0 ph-wizard-card-toggle"
+                                    aria-expanded="false" aria-controls="ph-wizard-card-trade-body"
+                                    aria-label="{{#str}} wizard_card_toggle_label, block_playerhud {{/str}}">
+                                <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="ph-wizard-card-body ph-display-none" id="ph-wizard-card-trade-body">
+                            <small class="text-muted">
+                                {{#str}} wizard_module_trade_desc, block_playerhud {{/str}}
+                            </small>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-check ms-4 mt-2">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-progressitem">
-                    <label class="form-check-label" for="ph-wizard-module-progressitem">
-                        {{#str}} wizard_module_progress_item, block_playerhud {{/str}}<br>
-                        <small class="text-muted">
-                            {{#str}} wizard_module_progress_item_desc, block_playerhud {{/str}}
-                        </small>
-                    </label>
+                <div class="col">
+                    <div class="ph-wizard-card bg-light border rounded p-3 h-100">
+                        <div class="ph-wizard-card-header d-flex align-items-center justify-content-between">
+                            <div class="form-check mb-0">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-missions"
+                                       data-drives="7,1">
+                                <label class="form-check-label fw-bold" for="ph-wizard-module-missions">
+                                    {{#str}} wizard_module_missions, block_playerhud {{/str}}
+                                </label>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-link p-0 ph-wizard-card-toggle"
+                                    aria-expanded="false" aria-controls="ph-wizard-card-missions-body"
+                                    aria-label="{{#str}} wizard_card_toggle_label, block_playerhud {{/str}}">
+                                <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="ph-wizard-card-body ph-display-none" id="ph-wizard-card-missions-body">
+                            <small class="text-muted">
+                                {{#str}} wizard_module_missions_desc, block_playerhud {{/str}}
+                            </small>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-check ms-5 mt-2">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-autodistribute">
-                    <label class="form-check-label" for="ph-wizard-module-autodistribute">
-                        {{#str}} wizard_module_autodistribute, block_playerhud {{/str}}<br>
-                        <small class="text-muted">
-                            {{#str}} wizard_module_autodistribute_desc, block_playerhud {{/str}}
-                        </small>
-                    </label>
+                <div class="col">
+                    <div class="ph-wizard-card bg-light border rounded p-3 h-100">
+                        <div class="ph-wizard-card-header d-flex align-items-center justify-content-between">
+                            <div class="form-check mb-0">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-rpg"
+                                       data-drives="2,3,8">
+                                <label class="form-check-label fw-bold" for="ph-wizard-module-rpg">
+                                    {{#str}} wizard_module_rpg, block_playerhud {{/str}}
+                                </label>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-link p-0 ph-wizard-card-toggle"
+                                    aria-expanded="false" aria-controls="ph-wizard-card-rpg-body"
+                                    aria-label="{{#str}} wizard_card_toggle_label, block_playerhud {{/str}}">
+                                <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="ph-wizard-card-body ph-display-none" id="ph-wizard-card-rpg-body">
+                            <small class="text-muted d-block mb-2">
+                                {{#str}} wizard_module_rpg_desc, block_playerhud {{/str}}
+                            </small>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-nextchapter"
+                                       data-drives="3,7,6">
+                                <label class="form-check-label" for="ph-wizard-module-nextchapter">
+                                    {{#str}} wizard_module_next_chapter, block_playerhud {{/str}}<br>
+                                    <small class="text-muted">
+                                        {{#str}} wizard_module_next_chapter_desc, block_playerhud {{/str}}
+                                    </small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-check ms-4 mt-2">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-playercoin"
-                           data-drives="8,1">
-                    <label class="form-check-label" for="ph-wizard-module-playercoin">
-                        {{#str}} wizard_module_playercoin, block_playerhud {{/str}}<br>
-                        <small class="text-muted">{{#str}} wizard_module_playercoin_desc, block_playerhud {{/str}}</small>
-                    </label>
-                </div>
-                <div class="form-check ms-4 mt-2">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-avatars"
-                           data-drives="8,2">
-                    <label class="form-check-label" for="ph-wizard-module-avatars">
-                        {{#str}} wizard_module_avatars, block_playerhud {{/str}}<br>
-                        <small class="text-muted">{{#str}} wizard_module_avatars_desc, block_playerhud {{/str}}</small>
-                    </label>
-                </div>
-                <div class="form-check ms-4 mt-2">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-pill"
-                           data-drives="6,7">
-                    <label class="form-check-label" for="ph-wizard-module-pill">
-                        {{#str}} wizard_module_pill, block_playerhud {{/str}}<br>
-                        <small class="text-muted">{{#str}} wizard_module_pill_desc, block_playerhud {{/str}}</small>
-                    </label>
-                </div>
-                <div class="form-check ms-4 mt-2">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-secret"
-                           data-drives="6,5">
-                    <label class="form-check-label" for="ph-wizard-module-secret">
-                        {{#str}} wizard_module_secret, block_playerhud {{/str}}<br>
-                        <small class="text-muted">{{#str}} wizard_module_secret_desc, block_playerhud {{/str}}</small>
-                    </label>
-                </div>
-                {{#has_latepenalty}}
-                <div class="form-check ms-4 mt-2">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-latepenalty"
-                           data-drives="3">
-                    <label class="form-check-label" for="ph-wizard-module-latepenalty">
-                        {{#str}} wizard_module_latepenalty, block_playerhud {{/str}}<br>
-                        <small class="text-muted">
-                            {{#str}} wizard_module_latepenalty_desc, block_playerhud {{/str}}
-                        </small>
-                    </label>
-                </div>
-                {{/has_latepenalty}}
-            </div>
-            <div class="p-3 bg-light border rounded mb-2">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-trade"
-                           data-drives="3,5">
-                    <label class="form-check-label" for="ph-wizard-module-trade">
-                        <strong>{{#str}} wizard_module_trade, block_playerhud {{/str}}</strong><br>
-                        <small class="text-muted">{{#str}} wizard_module_trade_desc, block_playerhud {{/str}}</small>
-                    </label>
-                </div>
-            </div>
-            <div class="p-3 bg-light border rounded mb-2">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-missions"
-                           data-drives="7,1">
-                    <label class="form-check-label" for="ph-wizard-module-missions">
-                        <strong>{{#str}} wizard_module_missions, block_playerhud {{/str}}</strong><br>
-                        <small class="text-muted">{{#str}} wizard_module_missions_desc, block_playerhud {{/str}}</small>
-                    </label>
-                </div>
-            </div>
-            <div class="p-3 bg-light border rounded mb-2">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-rpg"
-                           data-drives="2,3,8">
-                    <label class="form-check-label" for="ph-wizard-module-rpg">
-                        <strong>{{#str}} wizard_module_rpg, block_playerhud {{/str}}</strong><br>
-                        <small class="text-muted">{{#str}} wizard_module_rpg_desc, block_playerhud {{/str}}</small>
-                    </label>
-                </div>
-                <div class="form-check ms-4 mt-2">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-nextchapter"
-                           data-drives="3,7,6">
-                    <label class="form-check-label" for="ph-wizard-module-nextchapter">
-                        {{#str}} wizard_module_next_chapter, block_playerhud {{/str}}<br>
-                        <small class="text-muted">
-                            {{#str}} wizard_module_next_chapter_desc, block_playerhud {{/str}}
-                        </small>
-                    </label>
-                </div>
-            </div>
-            <div class="p-3 bg-light border rounded mb-2">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-ranking"
-                           data-drives="4,1" checked>
-                    <label class="form-check-label" for="ph-wizard-module-ranking">
-                        <strong>{{#str}} wizard_module_ranking, block_playerhud {{/str}}</strong><br>
-                        <small class="text-muted">{{#str}} wizard_module_ranking_desc, block_playerhud {{/str}}</small>
-                    </label>
+                <div class="col">
+                    <div class="ph-wizard-card bg-light border rounded p-3 h-100">
+                        <div class="ph-wizard-card-header d-flex align-items-center justify-content-between">
+                            <div class="form-check mb-0">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-ranking"
+                                       data-drives="4,1" checked>
+                                <label class="form-check-label fw-bold" for="ph-wizard-module-ranking">
+                                    {{#str}} wizard_module_ranking, block_playerhud {{/str}}
+                                </label>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-link p-0 ph-wizard-card-toggle"
+                                    aria-expanded="false" aria-controls="ph-wizard-card-ranking-body"
+                                    aria-label="{{#str}} wizard_card_toggle_label, block_playerhud {{/str}}">
+                                <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="ph-wizard-card-body ph-display-none" id="ph-wizard-card-ranking-body">
+                            <small class="text-muted">
+                                {{#str}} wizard_module_ranking_desc, block_playerhud {{/str}}
+                            </small>
+                        </div>
+                    </div>
                 </div>
             </div>
             <p class="text-muted ph-text-xs fst-italic mb-0">
@@ -254,7 +331,7 @@
             <div class="list-group mt-3" id="ph-wizard-history-list"></div>
         </div>
         </div>
-        <div class="col-lg-5 mt-4 mt-lg-0">
+        <div class="col-lg-5 mt-4 mt-lg-0 ph-wizard-sidebar-sticky">
             <div class="p-3 bg-light border rounded ph-wizard-octalysis-panel" id="ph-wizard-octalysis-panel">
                 <span class="fw-bold text-uppercase ph-text-xs text-muted d-block mb-2">
                     {{#str}} wizard_octalysis_title, block_playerhud {{/str}}
@@ -274,47 +351,52 @@
                 </div>
                 <div class="mt-3" id="ph-wizard-octalysis-warnings" aria-live="polite"></div>
             </div>
-            <div class="p-3 bg-light border rounded mt-3">
-                <span class="fw-bold text-uppercase ph-text-xs text-muted d-block mb-2">
+            <div class="mt-3">
+                <button type="button"
+                        class="btn btn-sm btn-link p-0 text-muted fw-bold text-uppercase ph-text-xs ph-wizard-card-toggle"
+                        aria-expanded="false" aria-controls="ph-wizard-external-body">
+                    <i class="fa fa-chevron-down me-1" aria-hidden="true"></i>
                     {{#str}} wizard_octalysis_external_hdr, block_playerhud {{/str}}
-                </span>
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div class="ph-text-xs">
-                        <strong>{{#str}} wizard_octalysis_playergroup_label, block_playerhud {{/str}}</strong><br>
-                        <span class="text-muted">
-                            {{#str}} wizard_octalysis_playergroup_desc, block_playerhud {{/str}}
+                </button>
+                <div class="ph-wizard-card-body ph-display-none mt-2" id="ph-wizard-external-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="ph-text-xs">
+                            <strong>{{#str}} wizard_octalysis_playergroup_label, block_playerhud {{/str}}</strong><br>
+                            <span class="text-muted">
+                                {{#str}} wizard_octalysis_playergroup_desc, block_playerhud {{/str}}
+                            </span>
+                        </div>
+                        {{#has_playergroup}}
+                        <span class="badge bg-success text-white ph-text-xs ms-2">
+                            {{#str}} wizard_octalysis_status_installed, block_playerhud {{/str}}
                         </span>
+                        {{/has_playergroup}}
+                        {{^has_playergroup}}
+                        <a href="https://moodle.org/plugins/mod_playergroup" target="_blank" rel="noopener noreferrer"
+                           class="btn btn-sm btn-outline-secondary ph-text-xs ms-2">
+                            {{#str}} wizard_octalysis_install_link, block_playerhud {{/str}}
+                        </a>
+                        {{/has_playergroup}}
                     </div>
-                    {{#has_playergroup}}
-                    <span class="badge bg-success text-white ph-text-xs ms-2">
-                        {{#str}} wizard_octalysis_status_installed, block_playerhud {{/str}}
-                    </span>
-                    {{/has_playergroup}}
-                    {{^has_playergroup}}
-                    <a href="https://moodle.org/plugins/mod_playergroup" target="_blank" rel="noopener noreferrer"
-                       class="btn btn-sm btn-outline-secondary ph-text-xs ms-2">
-                        {{#str}} wizard_octalysis_install_link, block_playerhud {{/str}}
-                    </a>
-                    {{/has_playergroup}}
-                </div>
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="ph-text-xs">
-                        <strong>{{#str}} wizard_octalysis_latepenalty_label, block_playerhud {{/str}}</strong><br>
-                        <span class="text-muted">
-                            {{#str}} wizard_octalysis_latepenalty_desc, block_playerhud {{/str}}
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="ph-text-xs">
+                            <strong>{{#str}} wizard_octalysis_latepenalty_label, block_playerhud {{/str}}</strong><br>
+                            <span class="text-muted">
+                                {{#str}} wizard_octalysis_latepenalty_desc, block_playerhud {{/str}}
+                            </span>
+                        </div>
+                        {{#has_latepenalty}}
+                        <span class="badge bg-success text-white ph-text-xs ms-2">
+                            {{#str}} wizard_octalysis_status_installed, block_playerhud {{/str}}
                         </span>
+                        {{/has_latepenalty}}
+                        {{^has_latepenalty}}
+                        <a href="https://moodle.org/plugins/local_latepenalty" target="_blank" rel="noopener noreferrer"
+                           class="btn btn-sm btn-outline-secondary ph-text-xs ms-2">
+                            {{#str}} wizard_octalysis_install_link, block_playerhud {{/str}}
+                        </a>
+                        {{/has_latepenalty}}
                     </div>
-                    {{#has_latepenalty}}
-                    <span class="badge bg-success text-white ph-text-xs ms-2">
-                        {{#str}} wizard_octalysis_status_installed, block_playerhud {{/str}}
-                    </span>
-                    {{/has_latepenalty}}
-                    {{^has_latepenalty}}
-                    <a href="https://moodle.org/plugins/local_latepenalty" target="_blank" rel="noopener noreferrer"
-                       class="btn btn-sm btn-outline-secondary ph-text-xs ms-2">
-                        {{#str}} wizard_octalysis_install_link, block_playerhud {{/str}}
-                    </a>
-                    {{/has_latepenalty}}
                 </div>
             </div>
         </div>

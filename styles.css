@@ -2530,3 +2530,27 @@ div.modal-dialog .visually-hidden {
     border: 1px solid var(--secondary-border-subtle, #c4c8cb);
     color: var(--secondary-text-emphasis, #41464b);
 }
+
+/*
+ * Item H: collapsible mechanic cards + sticky octagon sidebar. Keeps the modal usable without
+ * scrolling on a common desktop by hiding each card's description/sub-checkboxes until expanded.
+ */
+#ph-wizard-modal .ph-wizard-card-toggle {
+    text-decoration: none;
+    line-height: 1;
+}
+#ph-wizard-modal .ph-wizard-card-toggle i {
+    transition: transform 0.2s ease;
+}
+#ph-wizard-modal .ph-wizard-card-toggle[aria-expanded="true"] i {
+    transform: rotate(180deg);
+}
+#ph-wizard-modal .ph-wizard-card-body {
+    margin-top: 0.75rem;
+}
+@media (min-width: 992px) {
+    #ph-wizard-modal .ph-wizard-sidebar-sticky {
+        position: sticky;
+        top: 0;
+    }
+}
