@@ -180,6 +180,24 @@ $functions = [
         'loginrequired' => true,
     ],
 
+    'block_playerhud_wizard_start' => [
+        'classname'     => 'block_playerhud\external\wizard_start',
+        'methodname'    => 'execute',
+        'description'   => 'Start a live, step-by-step gamification wizard run and return its plan',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_wizard_run_step' => [
+        'classname'     => 'block_playerhud\external\wizard_run_step',
+        'methodname'    => 'execute',
+        'description'   => 'Run a single step of a live gamification wizard run',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
     'block_playerhud_wizard_apply_suggested_levels' => [
         'classname'     => 'block_playerhud\external\wizard_apply_suggested_levels',
         'methodname'    => 'execute',

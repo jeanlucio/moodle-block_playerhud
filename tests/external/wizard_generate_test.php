@@ -1572,4 +1572,78 @@ final class wizard_generate_test extends external_base_testcase {
         $this->expectException(\required_capability_exception::class);
         wizard_generate::execute($this->instanceid, $this->course->id, '', '', 'short', false, true);
     }
+
+    /**
+     * build_step_types() must return exactly one step type per checked module, in the fixed
+     * order execute() itself runs them, ending with auto_distribute — the § 5.9 step plan
+     * (wizard_start) and the single-call execute() must always agree on this order.
+     */
+    public function test_build_step_types_matches_selected_modules_in_order(): void {
+        $params = self::wizard_generate_params([
+            'include_ranking' => true,
+            'include_avatars' => true,
+            'include_missions' => true,
+            'include_auto_distribute' => true,
+        ]);
+
+        $this->assertSame(
+            ['missions', 'avatars', 'ranking', 'auto_distribute'],
+            wizard_generate::build_step_types($params)
+        );
+    }
+
+    /**
+     * With every module flag left off, the plan is empty.
+     */
+    public function test_build_step_types_empty_when_nothing_selected(): void {
+        $this->assertSame([], wizard_generate::build_step_types(self::wizard_generate_params([])));
+    }
+
+    /**
+     * compute_shared_xp_shares() is a no-op — no economy_health() query, empty shares — when
+     * neither Items nor Missions is selected, since nothing would consume the shared XP room.
+     */
+    public function test_compute_shared_xp_shares_empty_when_items_and_missions_excluded(): void {
+        [$itemshares, $missionshares] = wizard_generate::compute_shared_xp_shares(
+            $this->instanceid,
+            new \stdClass(),
+            self::wizard_generate_params(['include_playercoin' => true])
+        );
+
+        $this->assertSame([], $itemshares);
+        $this->assertSame([], $missionshares);
+    }
+
+    /**
+     * Builds a validated params array matching wizard_generate::execute_parameters()'s shape,
+     * with every include_* flag defaulting to false — mirrors what self::validate_parameters()
+     * produces inside execute(), since build_step_types()/compute_shared_xp_shares() are called
+     * with that same validated array, not raw booleans.
+     *
+     * @param array $overrides Flags to override, e.g. ['include_missions' => true].
+     * @return array The params array.
+     */
+    private static function wizard_generate_params(array $overrides): array {
+        return array_merge([
+            'instanceid' => 0,
+            'courseid' => 0,
+            'theme' => '',
+            'tone' => '',
+            'size' => 'short',
+            'include_items' => false,
+            'include_missions' => false,
+            'include_playercoin' => false,
+            'include_avatars' => false,
+            'include_rpg' => false,
+            'tone_key' => 'fantasy',
+            'include_auto_distribute' => false,
+            'include_progress_item' => false,
+            'include_next_chapter' => false,
+            'include_comercio' => false,
+            'include_pill' => false,
+            'include_latepenalty' => false,
+            'include_secret_drops' => false,
+            'include_ranking' => false,
+        ], $overrides);
+    }
 }

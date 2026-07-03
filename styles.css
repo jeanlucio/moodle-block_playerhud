@@ -2554,3 +2554,12 @@ div.modal-dialog .visually-hidden {
         top: 0;
     }
 }
+
+/*
+ * § 5.9 Fatia 1: live step-by-step progress bar. progress-bar-striped/animated (Bootstrap
+ * utilities, added in the template) already keep the bar visibly "alive" during a slow AI step
+ * where the width itself does not move for several seconds.
+ */
+#ph-wizard-modal .ph-wizard-progress-bar-wrap {
+    height: 10px;
+}

@@ -223,43 +223,7 @@ class wizard_generate extends external_api {
             $config = new \stdClass();
         }
 
-        $modules = [];
-        if ($params['include_items']) {
-            $modules[] = 'items';
-        }
-        if ($params['include_missions']) {
-            $modules[] = 'missions';
-        }
-        if ($params['include_playercoin']) {
-            $modules[] = 'playercoin';
-        }
-        if ($params['include_avatars']) {
-            $modules[] = 'avatars';
-        }
-        if ($params['include_rpg']) {
-            $modules[] = 'rpg';
-        }
-        if ($params['include_progress_item']) {
-            $modules[] = 'progress_item';
-        }
-        if ($params['include_next_chapter']) {
-            $modules[] = 'next_chapter';
-        }
-        if ($params['include_comercio']) {
-            $modules[] = 'comercio';
-        }
-        if ($params['include_pill']) {
-            $modules[] = 'pill';
-        }
-        if ($params['include_latepenalty']) {
-            $modules[] = 'latepenalty';
-        }
-        if ($params['include_secret_drops']) {
-            $modules[] = 'secret_drops';
-        }
-        if ($params['include_ranking']) {
-            $modules[] = 'ranking';
-        }
+        $modules = self::build_step_types($params);
 
         $runid = \block_playerhud\local\wizard::start_run($params['instanceid'], (int) $USER->id, $modules);
 
@@ -270,36 +234,7 @@ class wizard_generate extends external_api {
             $createddropids = [];
             $distributemessage = '';
 
-            // A single shared XP distribution, snapshotted once from the economy as it stands
-            // before either module runs, and split across every element BOTH will generate this
-            // call — so the batch's total always lands on exactly the remaining gap (the
-            // "Item Épico"/"Missão Final" leftover-absorption from the original plan), instead of
-            // each element getting a flat floor share that quietly leaves a remainder unused.
-            // Computing this separately inside each module (each calling economy_health() only
-            // when it runs) would also let whichever module runs first — Items always runs before
-            // Missions — silently consume the entire remaining gap for itself, leaving the other
-            // with a shrunken or zeroed-out gap despite xp_budget's per-module math looking correct
-            // in isolation. Items are sliced off the front of the distribution (the remainder
-            // bonus, if any, lands on the first items) since students encounter items earlier and
-            // more continuously than milestone-style missions.
-            $itemxpshares = [];
-            $missionxpshares = [];
-            if ($params['include_items'] || $params['include_missions']) {
-                [$xpperlevel, $maxlevels] = self::resolve_xp_settings($config);
-                $health = \block_playerhud\local\analytics::economy_health($params['instanceid'], $xpperlevel, $maxlevels);
-                $gap = max(0, $health->xp_ceiling - $health->total_items_xp);
-
-                $itemcount = $params['include_items']
-                    ? \block_playerhud\local\xp_budget::compute_item_count($params['size'])
-                    : 0;
-                $elementcount = $itemcount + ($params['include_missions']
-                    ? \block_playerhud\local\xp_budget::compute_mission_count($params['size'])
-                    : 0);
-
-                $shares = \block_playerhud\local\xp_budget::distribute_share($gap, $elementcount);
-                $itemxpshares = array_slice($shares, 0, $itemcount);
-                $missionxpshares = array_slice($shares, $itemcount);
-            }
+            [$itemxpshares, $missionxpshares] = self::compute_shared_xp_shares($params['instanceid'], $config, $params);
 
             if ($params['include_items']) {
                 $itemsresult = self::generate_items(
@@ -342,10 +277,11 @@ class wizard_generate extends external_api {
             }
 
             if ($params['include_rpg']) {
-                $createditems = array_merge(
-                    $createditems,
-                    self::generate_rpg_classes($params['instanceid'], $params['tone_key'], $runid)
-                );
+                $rpgresult = self::generate_rpg_classes($params['instanceid'], $params['tone_key'], $runid);
+                $createditems = array_merge($createditems, $rpgresult['class_names']);
+                if ($rpgresult['chapter_title'] !== '') {
+                    $createditems[] = $rpgresult['chapter_title'];
+                }
             }
 
             if ($params['include_progress_item']) {
@@ -472,6 +408,103 @@ class wizard_generate extends external_api {
     }
 
     /**
+     * Builds the ordered list of step types selected by the `include_*` flags.
+     *
+     * Shared by the single-call {@see execute()} (which runs every step in one request) and the
+     * step-by-step {@see \block_playerhud\external\wizard_start} (which returns this same list as
+     * the live-progress plan the browser drives one step at a time) — both must agree on which
+     * modules run and in what order.
+     *
+     * @param array $params Validated parameters (same shape as execute_parameters()).
+     * @return string[] Ordered step type identifiers, e.g. ['items', 'missions', 'ranking'].
+     */
+    public static function build_step_types(array $params): array {
+        $steptypes = [];
+        if ($params['include_items']) {
+            $steptypes[] = 'items';
+        }
+        if ($params['include_missions']) {
+            $steptypes[] = 'missions';
+        }
+        if ($params['include_playercoin']) {
+            $steptypes[] = 'playercoin';
+        }
+        if ($params['include_avatars']) {
+            $steptypes[] = 'avatars';
+        }
+        if ($params['include_rpg']) {
+            $steptypes[] = 'rpg';
+        }
+        if ($params['include_progress_item']) {
+            $steptypes[] = 'progress_item';
+        }
+        if ($params['include_next_chapter']) {
+            $steptypes[] = 'next_chapter';
+        }
+        if ($params['include_pill']) {
+            $steptypes[] = 'pill';
+        }
+        if ($params['include_latepenalty']) {
+            $steptypes[] = 'latepenalty';
+        }
+        if ($params['include_comercio']) {
+            $steptypes[] = 'comercio';
+        }
+        if ($params['include_secret_drops']) {
+            $steptypes[] = 'secret_drops';
+        }
+        if ($params['include_ranking']) {
+            $steptypes[] = 'ranking';
+        }
+        if ($params['include_auto_distribute']) {
+            $steptypes[] = 'auto_distribute';
+        }
+
+        return $steptypes;
+    }
+
+    /**
+     * Computes the single shared XP distribution for the Items and Missions steps.
+     *
+     * A single shared XP distribution, snapshotted once from the economy as it stands before
+     * either module runs, and split across every element BOTH will generate this call — so the
+     * batch's total always lands on exactly the remaining gap (the "Item Épico"/"Missão Final"
+     * leftover-absorption from the original plan), instead of each element getting a flat floor
+     * share that quietly leaves a remainder unused. Computing this separately inside each module
+     * (each calling economy_health() only when it runs) would also let whichever module runs
+     * first — Items always runs before Missions — silently consume the entire remaining gap for
+     * itself, leaving the other with a shrunken or zeroed-out gap despite xp_budget's per-module
+     * math looking correct in isolation. Items are sliced off the front of the distribution (the
+     * remainder bonus, if any, lands on the first items) since students encounter items earlier
+     * and more continuously than milestone-style missions.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param \stdClass $config Block configuration.
+     * @param array $params Validated parameters (same shape as execute_parameters()).
+     * @return array{0: int[], 1: int[]} [itemxpshares, missionxpshares].
+     */
+    public static function compute_shared_xp_shares(int $instanceid, \stdClass $config, array $params): array {
+        if (!$params['include_items'] && !$params['include_missions']) {
+            return [[], []];
+        }
+
+        [$xpperlevel, $maxlevels] = self::resolve_xp_settings($config);
+        $health = \block_playerhud\local\analytics::economy_health($instanceid, $xpperlevel, $maxlevels);
+        $gap = max(0, $health->xp_ceiling - $health->total_items_xp);
+
+        $itemcount = $params['include_items']
+            ? \block_playerhud\local\xp_budget::compute_item_count($params['size'])
+            : 0;
+        $elementcount = $itemcount + ($params['include_missions']
+            ? \block_playerhud\local\xp_budget::compute_mission_count($params['size'])
+            : 0);
+
+        $shares = \block_playerhud\local\xp_budget::distribute_share($gap, $elementcount);
+
+        return [array_slice($shares, 0, $itemcount), array_slice($shares, $itemcount)];
+    }
+
+    /**
      * Generates the Items & Trade module (AI items with drops) and records them in the run.
      *
      * @param int $instanceid Block instance ID.
@@ -486,7 +519,7 @@ class wizard_generate extends external_api {
      * @param int $runid Wizard run ID.
      * @return array{names: string[], drop_ids: int[]} Created item names and drop IDs.
      */
-    protected static function generate_items(
+    public static function generate_items(
         int $instanceid,
         \stdClass $config,
         string $theme,
@@ -590,7 +623,7 @@ class wizard_generate extends external_api {
      * @param int $runid Wizard run ID.
      * @return string[] Names of the created quests.
      */
-    protected static function generate_missions(
+    public static function generate_missions(
         int $instanceid,
         int $courseid,
         \stdClass $config,
@@ -648,7 +681,7 @@ class wizard_generate extends external_api {
      * @param int $runid Wizard run ID.
      * @return string[] Names of the created items (empty if PlayerCoin already existed).
      */
-    protected static function generate_playercoin(int $instanceid, int $courseid, int $runid): array {
+    public static function generate_playercoin(int $instanceid, int $courseid, int $runid): array {
         $result = \block_playerhud\external\create_playercoin::execute($instanceid, $courseid);
 
         if (empty($result['created'])) {
@@ -674,7 +707,7 @@ class wizard_generate extends external_api {
      * @param int $runid Wizard run ID.
      * @return string[] Names of the created avatar items.
      */
-    protected static function generate_avatars(int $instanceid, int $courseid, int $runid): array {
+    public static function generate_avatars(int $instanceid, int $courseid, int $runid): array {
         $result = \block_playerhud\external\create_avatar_pack::execute($instanceid, $courseid);
 
         if (!empty($result['created_item_ids'])) {
@@ -697,7 +730,7 @@ class wizard_generate extends external_api {
      * @param int $runid Wizard run ID.
      * @return string[] Names of the created trades.
      */
-    protected static function generate_comercio(int $instanceid, int $runid): array {
+    public static function generate_comercio(int $instanceid, int $runid): array {
         $suggestions = \block_playerhud\game::build_trade_suggestions($instanceid);
 
         $createdtrades = [];
@@ -733,7 +766,7 @@ class wizard_generate extends external_api {
      * @return array{trade_name: string, quest_name: string} Empty strings when skipped (Pill or
      *     Book missing, or the trade already exists).
      */
-    protected static function generate_pill_trade(int $instanceid, int $runid): array {
+    public static function generate_pill_trade(int $instanceid, int $runid): array {
         global $DB;
 
         $pill = $DB->get_record('block_playerhud_items', [
@@ -801,9 +834,10 @@ class wizard_generate extends external_api {
      * @param int $instanceid Block instance ID.
      * @param string $tonekey Narrative tone key.
      * @param int $runid Wizard run ID.
-     * @return string[] Names of the created classes, plus the chapter title if it was created.
+     * @return array{class_names: string[], chapter_title: string} Names of the created classes,
+     *     and the chapter title, empty when Chapter 1 already existed for this tone.
      */
-    protected static function generate_rpg_classes(int $instanceid, string $tonekey, int $runid): array {
+    public static function generate_rpg_classes(int $instanceid, string $tonekey, int $runid): array {
         global $DB;
 
         $pack = \block_playerhud\local\rpg_archetypes::get_pack($tonekey);
@@ -816,14 +850,14 @@ class wizard_generate extends external_api {
                 $classresult['created_class_ids']
             );
         }
-        $createditems = $classresult['created_class_names'] ?? [];
+        $classnames = $classresult['created_class_names'] ?? [];
 
         // Chapter 1 already exists for this tone (e.g. the module was run before): the class
         // pack call above is idempotent by name, so nothing more to do here.
         $chaptertitle = $pack['chapter_title'];
         $chapterconditions = ['blockinstanceid' => $instanceid, 'title' => $chaptertitle];
         if ($DB->record_exists('block_playerhud_chapters', $chapterconditions)) {
-            return $createditems;
+            return ['class_names' => $classnames, 'chapter_title' => ''];
         }
 
         // Resolve role => classid for every archetype in the pack, covering both classes
@@ -888,9 +922,7 @@ class wizard_generate extends external_api {
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_story_nodes', array_values($nodeids));
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_choices', $choiceids);
 
-        $createditems[] = $chaptertitle;
-
-        return $createditems;
+        return ['class_names' => $classnames, 'chapter_title' => $chaptertitle];
     }
 
     /**
@@ -910,7 +942,7 @@ class wizard_generate extends external_api {
      * @param int $runid Wizard run ID.
      * @return array{names: string[], drop_ids: int[]} Empty when the item already existed.
      */
-    protected static function generate_progress_item(int $instanceid, string $tonekey, int $runid): array {
+    public static function generate_progress_item(int $instanceid, string $tonekey, int $runid): array {
         global $DB;
 
         $emojibytone = [
@@ -1006,7 +1038,7 @@ class wizard_generate extends external_api {
      * @return string[] Names of the created items (empty when the module was skipped as
      *     already done).
      */
-    protected static function generate_pill(int $instanceid, int $courseid, string $tonekey, int $runid): array {
+    public static function generate_pill(int $instanceid, int $courseid, string $tonekey, int $runid): array {
         global $DB;
 
         $pillname = self::resolve_pill_name($tonekey);
@@ -1115,7 +1147,7 @@ class wizard_generate extends external_api {
      * @param int $runid Wizard run ID.
      * @return string[] Names of the created items (empty if the item already existed).
      */
-    protected static function generate_secret_drops(int $instanceid, int $courseid, string $tonekey, int $runid): array {
+    public static function generate_secret_drops(int $instanceid, int $courseid, string $tonekey, int $runid): array {
         global $DB;
 
         $itemname = self::resolve_secret_name($tonekey);
@@ -1196,7 +1228,7 @@ class wizard_generate extends external_api {
      * @param int $instanceid Block instance ID.
      * @return void
      */
-    protected static function generate_ranking(int $instanceid): void {
+    public static function generate_ranking(int $instanceid): void {
         $blockinstance = \block_instance_by_id($instanceid);
         $config = $blockinstance->config ?: new \stdClass();
 
@@ -1266,7 +1298,7 @@ class wizard_generate extends external_api {
      * @return array{items: string[], quest_name: string} Empty when LP isn't installed or the
      *     item already exists.
      */
-    protected static function generate_latepenalty(int $instanceid, int $runid): array {
+    public static function generate_latepenalty(int $instanceid, int $runid): array {
         global $DB;
 
         if (!class_exists('\local_latepenalty\recalculator')) {
@@ -1323,7 +1355,7 @@ class wizard_generate extends external_api {
      * @return string Name of the created trade, or an empty string when skipped (PlayerCoin or
      *     the Deadline Extension item missing, or the trade already exists).
      */
-    protected static function generate_latepenalty_trade(int $instanceid, int $runid): string {
+    public static function generate_latepenalty_trade(int $instanceid, int $runid): string {
         global $DB;
 
         $coin = $DB->get_record('block_playerhud_items', [
@@ -1371,7 +1403,7 @@ class wizard_generate extends external_api {
      * @param \stdClass $config Block configuration.
      * @return array{0: int, 1: int} [xpperlevel, maxlevels].
      */
-    protected static function resolve_xp_settings(\stdClass $config): array {
+    public static function resolve_xp_settings(\stdClass $config): array {
         $xpperlevel = isset($config->xp_per_level) ? (int) $config->xp_per_level : 100;
         $maxlevels = isset($config->max_levels) ? (int) $config->max_levels : 20;
 
@@ -1385,7 +1417,7 @@ class wizard_generate extends external_api {
      * @param \stdClass $health Result of analytics::economy_health().
      * @return string The localised summary message.
      */
-    protected static function build_economy_message(\stdClass $health): string {
+    public static function build_economy_message(\stdClass $health): string {
         $ratio = (int) round($health->ratio);
 
         return match ($health->status) {
@@ -1515,7 +1547,7 @@ class wizard_generate extends external_api {
      * @return array{created_items: string[], chapter_title: string} Progress item names created
      *     as a side effect (empty if it already existed) and the new chapter's title.
      */
-    protected static function generate_next_chapter(int $instanceid, string $theme, string $tonekey, int $runid): array {
+    public static function generate_next_chapter(int $instanceid, string $theme, string $tonekey, int $runid): array {
         global $DB, $USER;
 
         $itemname = self::resolve_progress_item_name($tonekey);
@@ -1570,7 +1602,7 @@ class wizard_generate extends external_api {
      * @param int $runid Wizard run ID, so each inserted shortcode can be recorded for rollback.
      * @return string Empty on success/no-op, or a message explaining why nothing was inserted.
      */
-    protected static function distribute_drops(int $instanceid, int $courseid, array $dropids, int $runid): string {
+    public static function distribute_drops(int $instanceid, int $courseid, array $dropids, int $runid): string {
         global $DB;
 
         $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);

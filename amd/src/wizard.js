@@ -63,7 +63,6 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const secretModuleEl = document.getElementById('ph-wizard-module-secret');
         const rankingModuleEl = document.getElementById('ph-wizard-module-ranking');
         const generateBtn = document.getElementById('ph-wizard-generate-btn');
-        const generateLabelEl = generateBtn.querySelector('.ph-wizard-btn-label');
         const undoBtn = document.getElementById('ph-wizard-undo-btn');
         const errorEl = document.getElementById('ph-wizard-error');
         const resultEl = document.getElementById('ph-wizard-result');
@@ -75,9 +74,25 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const historyBtn = document.getElementById('ph-wizard-history-btn');
         const historyBackBtn = document.getElementById('ph-wizard-history-back-btn');
 
+        const progressViewEl = document.getElementById('ph-wizard-progress-view');
+        const progressCloseWarningEl = document.getElementById('ph-wizard-progress-close-warning');
+        const progressLabelEl = document.getElementById('ph-wizard-progress-label');
+        const progressSubstepEl = document.getElementById('ph-wizard-progress-substep');
+        const progressBarEl = document.getElementById('ph-wizard-progress-bar');
+        const progressBarWrapEl = document.getElementById('ph-wizard-progress-bar-wrap');
+        const progressSlowWarningEl = document.getElementById('ph-wizard-progress-slow-warning');
+        const progressReportEl = document.getElementById('ph-wizard-progress-report');
+        const progressReportTextEl = document.getElementById('ph-wizard-progress-report-text');
+        const progressOkBtn = document.getElementById('ph-wizard-progress-ok-btn');
+        const progressBackBtn = document.getElementById('ph-wizard-progress-back-btn');
+        const progressErrorEl = document.getElementById('ph-wizard-progress-error');
+        const progressErrorTextEl = document.getElementById('ph-wizard-progress-error-text');
+        const progressRetryBtn = document.getElementById('ph-wizard-progress-retry-btn');
+        const progressUndoBtn = document.getElementById('ph-wizard-progress-undo-btn');
+
         let lastRunId = null;
         let contentChanged = false;
-        const defaultLabel = generateLabelEl.textContent;
+        let pendingRetry = null;
 
         /**
          * Opens the wizard modal, hoisting it to the body first (established
@@ -228,6 +243,19 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             generateBtn.classList.toggle('ph-display-none', showHistory);
         };
 
+        /**
+         * Switches between the generation form and the live step-by-step progress view.
+         *
+         * @param {boolean} showProgress True to show the progress view, false for the form.
+         */
+        const setProgressView = (showProgress) => {
+            formEl.classList.toggle('ph-display-none', showProgress);
+            progressViewEl.classList.toggle('ph-display-none', !showProgress);
+            historyBtn.classList.toggle('ph-display-none', showProgress);
+            generateBtn.classList.toggle('ph-display-none', showProgress);
+            undoBtn.classList.toggle('ph-display-none', showProgress || !lastRunId);
+        };
+
         // Reload the page on close so generated/undone content shows up immediately,
         // matching the reload-on-close pattern used by the other AI generation modals
         // (manage_items.js, ai_story.js, ai_oracle.js). Otherwise just reopen on the
@@ -238,6 +266,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 return;
             }
             setHistoryView(false);
+            setProgressView(false);
         });
 
         /**
@@ -344,17 +373,172 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
 
         historyBackBtn.addEventListener('click', () => setHistoryView(false));
 
-        const setGenerating = async(isGenerating) => {
-            generateBtn.disabled = isGenerating;
-            if (!isGenerating) {
-                generateLabelEl.textContent = defaultLabel;
+        /**
+         * Shows the step-by-step progress view's error state with a "try again" action that
+         * resumes from the failed step, plus the always-available undo.
+         *
+         * @param {string} message The error message to display.
+         * @param {Function} retry Called when the teacher clicks "Try again".
+         */
+        const showProgressError = (message, retry) => {
+            contentChanged = true;
+            progressCloseWarningEl.classList.add('ph-display-none');
+            progressErrorTextEl.textContent = message;
+            progressErrorEl.classList.remove('ph-display-none');
+            pendingRetry = retry;
+        };
+
+        /**
+         * Formats the run's accumulated counts into the same "N items, N quests…" quantity
+         * summary the run history list already builds server-side in wizard_list_runs.
+         *
+         * @param {Object} totals {items, quests, trades, chapters, classes}.
+         * @return {Promise<string>}
+         */
+        const formatTotals = async(totals) => {
+            const [items, quests, classes, chapters, trades] = await Str.get_strings([
+                {key: 'wizard_history_items', component: 'block_playerhud'},
+                {key: 'wizard_history_quests', component: 'block_playerhud'},
+                {key: 'wizard_history_classes', component: 'block_playerhud'},
+                {key: 'wizard_history_chapters', component: 'block_playerhud'},
+                {key: 'wizard_history_trades', component: 'block_playerhud'},
+            ]);
+            const labels = {items, quests, classes, chapters, trades};
+
+            const parts = Object.keys(labels)
+                .map((key) => (totals[key] ? `${totals[key]} ${labels[key]}` : ''))
+                .filter(Boolean);
+
+            return parts.length ? parts.join(', ') : Str.get_string('wizard_nothing_generated', 'block_playerhud');
+        };
+
+        /**
+         * Shows the step-by-step progress view's final report: quantities generated plus the
+         * OK (close + reload) and Back (stay on the form, no reload) actions.
+         *
+         * @param {Object} totals {items, quests, trades, chapters, classes}.
+         * @param {string[]} stepMessages Notes collected from individual steps (e.g.
+         *     auto_distribute's "no activities yet" note), in step order.
+         * @param {string} economyMessage XP economy summary, or an empty string.
+         */
+        const showProgressReport = async(totals, stepMessages, economyMessage) => {
+            contentChanged = true;
+            progressCloseWarningEl.classList.add('ph-display-none');
+            progressSlowWarningEl.classList.add('ph-display-none');
+
+            let text = await formatTotals(totals);
+            [...stepMessages, economyMessage].filter(Boolean).forEach((message) => {
+                text += ' — ' + message;
+            });
+            progressReportTextEl.textContent = text;
+            progressReportEl.classList.remove('ph-display-none');
+        };
+
+        /**
+         * Runs the wizard's step plan from `startIndex` onwards, updating the progress bar live
+         * after each step and stopping (with a retry/undo choice) on the first failure — retrying
+         * resumes from the same failed step rather than restarting the whole run.
+         *
+         * @param {Object} runParams The generation params (theme, tone, size, include_*…).
+         * @param {number} runid The wizard run ID, from wizard_start.
+         * @param {Array} steps Ordered step plan, from wizard_start.
+         * @param {number} startIndex Index to resume from (0 for a fresh run).
+         * @param {Object} totals Accumulated counts, mutated in place across retries.
+         * @param {number[]} dropids Accumulated drop IDs, mutated in place across retries.
+         * @param {string[]} stepMessages Accumulated step notes, mutated in place across retries.
+         * @param {number[]} itemxpshares XP shares for the "items" step, from wizard_start.
+         * @param {number[]} missionxpshares XP shares for the "missions" step, from wizard_start.
+         */
+        const runStepsFrom = async(
+            runParams, runid, steps, startIndex, totals, dropids, stepMessages, itemxpshares, missionxpshares
+        ) => {
+            const reporteconomy = steps.some((step) => step.type === 'items' || step.type === 'missions');
+
+            for (let index = startIndex; index < steps.length; index++) {
+                const step = steps[index];
+                const islaststep = index === steps.length - 1;
+
+                progressLabelEl.textContent = step.label;
+                progressSubstepEl.textContent = await Str.get_string('wizard_progress_step_of', 'block_playerhud',
+                    {current: index + 1, total: steps.length});
+
+                const resume = () => runStepsFrom(
+                    runParams, runid, steps, index, totals, dropids, stepMessages, itemxpshares, missionxpshares
+                );
+
+                let result;
+                try {
+                    result = await Ajax.call([{
+                        methodname: 'block_playerhud_wizard_run_step',
+                        args: {
+                            instanceid,
+                            courseid,
+                            runid,
+                            steptype: step.type,
+                            theme: runParams.theme,
+                            tone: runParams.tone,
+                            'tone_key': runParams.tone_key,
+                            size: runParams.size,
+                            'item_xp_shares': step.type === 'items' ? itemxpshares : [],
+                            'mission_xp_shares': step.type === 'missions' ? missionxpshares : [],
+                            'drop_ids': step.type === 'auto_distribute' ? dropids : [],
+                            'is_last_step': islaststep,
+                            'report_economy': islaststep && reporteconomy,
+                        },
+                    }])[0];
+                } catch (e) {
+                    showProgressError((e && e.message) ? e.message : String(e), resume);
+                    return;
+                }
+
+                if (!result.success) {
+                    const label = await Str.get_string('wizard_progress_error_at', 'block_playerhud', step.label);
+                    showProgressError(result.message ? `${label} — ${result.message}` : label, resume);
+                    return;
+                }
+
+                totals.items += result.counts.items;
+                totals.quests += result.counts.quests;
+                totals.trades += result.counts.trades;
+                totals.chapters += result.counts.chapters;
+                totals.classes += result.counts.classes;
+                dropids.push(...result.drop_ids);
+                if (result.message) {
+                    stepMessages.push(result.message);
+                }
+
+                const pct = Math.round(((index + 1) / steps.length) * 100);
+                progressBarEl.style.width = `${pct}%`;
+                progressBarWrapEl.setAttribute('aria-valuenow', String(pct));
+
+                if (islaststep) {
+                    await showProgressReport(totals, stepMessages, result.economy_message || '');
+                }
+            }
+        };
+
+        /**
+         * Starts a fresh wizard run: asks the server for its step plan, then drives it live.
+         *
+         * @param {Object} runParams The generation params (theme, tone, size, include_*…).
+         */
+        const runWizard = async(runParams) => {
+            let started;
+            try {
+                started = await Ajax.call([{methodname: 'block_playerhud_wizard_start', args: runParams}])[0];
+            } catch (e) {
+                showProgressError((e && e.message) ? e.message : String(e), () => runWizard(runParams));
                 return;
             }
-            try {
-                generateLabelEl.textContent = await Str.get_string('wizard_generating', 'block_playerhud');
-            } catch (e) {
-                generateLabelEl.textContent = defaultLabel;
-            }
+
+            lastRunId = started.runid;
+            progressSlowWarningEl.classList.toggle('ph-display-none', !started.has_slow_step);
+
+            const totals = {items: 0, quests: 0, trades: 0, chapters: 0, classes: 0};
+            await runStepsFrom(
+                runParams, started.runid, started.steps, 0, totals, [], [],
+                started.item_xp_shares, started.mission_xp_shares
+            );
         };
 
         generateBtn.addEventListener('click', async() => {
@@ -368,65 +552,63 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 return;
             }
 
-            await setGenerating(true);
-            undoBtn.classList.add('ph-display-none');
+            const runParams = {
+                instanceid,
+                courseid,
+                theme: themeEl.value.trim(),
+                tone: toneEl.options[toneEl.selectedIndex].text,
+                size: sizeEl.value,
+                'include_items': itemsModuleEl.checked,
+                'include_missions': missionsModuleEl.checked,
+                'include_playercoin': playercoinModuleEl.checked,
+                'include_avatars': avatarsModuleEl.checked,
+                'include_rpg': rpgModuleEl.checked,
+                'tone_key': toneEl.value,
+                'include_auto_distribute': autoDistributeModuleEl.checked,
+                'include_progress_item': progressItemModuleEl.checked,
+                'include_next_chapter': nextChapterModuleEl.checked,
+                'include_comercio': tradeModuleEl.checked,
+                'include_pill': pillModuleEl.checked,
+                'include_latepenalty': latepenaltyChecked(),
+                'include_secret_drops': secretModuleEl.checked,
+                'include_ranking': rankingModuleEl.checked,
+            };
 
-            try {
-                const response = await Ajax.call([{
-                    methodname: 'block_playerhud_wizard_generate',
-                    args: {
-                        instanceid,
-                        courseid,
-                        theme: themeEl.value.trim(),
-                        tone: toneEl.options[toneEl.selectedIndex].text,
-                        size: sizeEl.value,
-                        'include_items': itemsModuleEl.checked,
-                        'include_missions': missionsModuleEl.checked,
-                        'include_playercoin': playercoinModuleEl.checked,
-                        'include_avatars': avatarsModuleEl.checked,
-                        'include_rpg': rpgModuleEl.checked,
-                        'tone_key': toneEl.value,
-                        'include_auto_distribute': autoDistributeModuleEl.checked,
-                        'include_progress_item': progressItemModuleEl.checked,
-                        'include_next_chapter': nextChapterModuleEl.checked,
-                        'include_comercio': tradeModuleEl.checked,
-                        'include_pill': pillModuleEl.checked,
-                        'include_latepenalty': latepenaltyChecked(),
-                        'include_secret_drops': secretModuleEl.checked,
-                        'include_ranking': rankingModuleEl.checked,
-                    },
-                }])[0];
+            setProgressView(true);
+            progressReportEl.classList.add('ph-display-none');
+            progressErrorEl.classList.add('ph-display-none');
+            progressCloseWarningEl.classList.remove('ph-display-none');
+            progressBarEl.style.width = '0%';
+            progressBarWrapEl.setAttribute('aria-valuenow', '0');
+            progressSubstepEl.textContent = '';
 
-                if (!response.success) {
-                    showAlert(errorEl, response.message || '');
-                    return;
-                }
-
-                const createdCount = response.created_items.length + response.created_quests.length +
-                    response.created_trades.length;
-                if (createdCount === 0) {
-                    showAlert(resultEl, await Str.get_string('wizard_nothing_generated', 'block_playerhud'));
-                    return;
-                }
-
-                let names = [...response.created_items, ...response.created_quests, ...response.created_trades]
-                    .join(', ');
-                if (response.distribute_message) {
-                    names += ' — ' + response.distribute_message;
-                }
-                if (response.economy_message) {
-                    names += ' — ' + response.economy_message;
-                }
-                lastRunId = response.runid;
-                contentChanged = true;
-                showAlert(resultEl, names);
-                undoBtn.classList.remove('ph-display-none');
-            } catch (e) {
-                showAlert(errorEl, (e && e.message) ? e.message : String(e));
-            } finally {
-                await setGenerating(false);
-            }
+            await runWizard(runParams);
         });
+
+        progressRetryBtn.addEventListener('click', async() => {
+            if (!pendingRetry) {
+                return;
+            }
+            const retry = pendingRetry;
+            pendingRetry = null;
+            progressErrorEl.classList.add('ph-display-none');
+            progressCloseWarningEl.classList.remove('ph-display-none');
+            await retry();
+        });
+
+        progressUndoBtn.addEventListener('click', () => {
+            if (!lastRunId) {
+                return;
+            }
+            rollbackRun(lastRunId, null, progressUndoBtn);
+        });
+
+        progressOkBtn.addEventListener('click', () => {
+            contentChanged = true;
+            modalEl.querySelector('.btn-close').click();
+        });
+
+        progressBackBtn.addEventListener('click', () => setProgressView(false));
 
         undoBtn.addEventListener('click', () => {
             if (!lastRunId) {

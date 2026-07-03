@@ -321,6 +321,49 @@
             <div class="alert alert-success mt-3 ph-display-none" id="ph-wizard-result" role="status"></div>
         </form>
 
+        <div class="ph-display-none" id="ph-wizard-progress-view">
+            <div class="alert alert-warning py-2 px-3 ph-text-xs ph-display-none" id="ph-wizard-progress-close-warning">
+                {{#str}} wizard_progress_close_warning, block_playerhud {{/str}}
+            </div>
+            <div class="text-center mb-2">
+                <strong id="ph-wizard-progress-label">&nbsp;</strong>
+                <div class="text-muted ph-text-xs" id="ph-wizard-progress-substep"></div>
+            </div>
+            <div class="progress ph-wizard-progress-bar-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                 id="ph-wizard-progress-bar-wrap">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                     id="ph-wizard-progress-bar" style="width: 0%"></div>
+            </div>
+            <div class="alert alert-info mt-3 py-2 px-3 ph-text-xs ph-display-none" id="ph-wizard-progress-slow-warning">
+                {{#str}} wizard_progress_slow_warning, block_playerhud {{/str}}
+            </div>
+
+            <div class="ph-display-none mt-3" id="ph-wizard-progress-report">
+                <div id="ph-wizard-progress-report-text"></div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="button" class="btn btn-primary fw-bold" id="ph-wizard-progress-ok-btn">
+                        {{#str}} wizard_progress_ok_btn, block_playerhud {{/str}}
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="ph-wizard-progress-back-btn">
+                        {{#str}} wizard_history_back_btn, block_playerhud {{/str}}
+                    </button>
+                </div>
+            </div>
+
+            <div class="ph-display-none mt-3" id="ph-wizard-progress-error">
+                <div class="alert alert-danger py-2 px-3 ph-text-xs" id="ph-wizard-progress-error-text"></div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary fw-bold" id="ph-wizard-progress-retry-btn">
+                        {{#str}} wizard_progress_retry_btn, block_playerhud {{/str}}
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" id="ph-wizard-progress-undo-btn">
+                        <i class="fa fa-undo me-1" aria-hidden="true"></i>
+                        {{#str}} wizard_undo_btn, block_playerhud {{/str}}
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="ph-display-none" id="ph-wizard-history-view">
             <span class="fw-bold text-uppercase ph-text-xs text-muted">
                 {{#str}} wizard_history_title, block_playerhud {{/str}}
