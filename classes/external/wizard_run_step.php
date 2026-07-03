@@ -392,6 +392,11 @@ class wizard_run_step extends external_api {
      * the next chapter against the full arc + this chapter's own beat + that previous text, and
      * records the new chapter/nodes/choices in the run's manifest.
      *
+     * Every chapter also gets reputation stakes (`karma_gain`/`karma_loss`), unlike the legacy
+     * single-chapter `generate_next_chapter()` (never extended to pass these): an arc chapter's
+     * choices carry moral weight the same way the fixed Chapter 1 skeleton's "call to adventure"
+     * choice already does (see § 5.6's `karma_delta` note), instead of only ever costing an item.
+     *
      * @param int $chapterindex 1-based AI chapter number within the arc (chapter 1 is the fixed
      *     RPG chapter, so AI chapter 1 here is the story's chapter 2 overall).
      * @param array $params Validated wizard_run_step params.
@@ -415,6 +420,8 @@ class wizard_run_step extends external_api {
                 $params['runid']
             ),
             'item_qty' => wizard_generate::CHAPTER_ITEM_COST,
+            'karma_gain' => wizard_generate::CHAPTER_KARMA_GAIN,
+            'karma_loss' => wizard_generate::CHAPTER_KARMA_LOSS,
             'beat' => $beat,
             'arc_summary' => $arcsummary,
             'previous_context' => wizard_generate::resolve_previous_chapter_context($params['instanceid']),

@@ -49,6 +49,12 @@ class wizard_generate extends external_api {
     /** @var int How many progress items a chapter's costed choices ask for, in total. */
     public const CHAPTER_ITEM_COST = 2;
 
+    /** @var int Total positive karma_delta a chapter's virtuous choices add up to. */
+    public const CHAPTER_KARMA_GAIN = 15;
+
+    /** @var int Total negative karma_delta a chapter's questionable choices add up to. */
+    public const CHAPTER_KARMA_LOSS = 10;
+
     /**
      * Define parameters for wizard_generate.
      *
