@@ -293,13 +293,9 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         };
 
         const startHuddyCarousel = async() => {
-            if (!huddyTips) {
-                try {
-                    huddyTips = await Str.get_strings(HUDDY_TIP_KEYS.map((key) => ({key, component: 'block_playerhud'})));
-                } catch (e) {
-                    huddyTips = [];
-                }
-            }
+            // Shows the carousel and its first image synchronously — waiting on the tip strings
+            // first (a network round-trip) would delay the mascot showing up at all, defeating
+            // the point of it being the activity indicator from the very first instant.
             huddyCarouselEl.classList.remove('ph-display-none');
             let index = 0;
             showHuddySlide(index);
@@ -307,6 +303,15 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 index += 1;
                 showHuddySlide(index);
             }, HUDDY_INTERVAL_MS);
+
+            if (!huddyTips) {
+                try {
+                    huddyTips = await Str.get_strings(HUDDY_TIP_KEYS.map((key) => ({key, component: 'block_playerhud'})));
+                    showHuddySlide(index);
+                } catch (e) {
+                    huddyTips = [];
+                }
+            }
         };
 
         const stopHuddyCarousel = () => {
