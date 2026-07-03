@@ -59,38 +59,43 @@ final class xp_budget_test extends advanced_testcase {
     }
 
     /**
-     * A batch's per-item XP is an even floor share of the gap, so the batch total scales with
-     * how many items are being generated rather than staying fixed regardless of item count.
+     * A batch that divides evenly gets a flat share, and the shares always sum to exactly the
+     * gap — never leaving a floor-division remainder unused.
      */
-    public function test_compute_share_divides_gap_evenly(): void {
-        $this->assertSame(60, xp_budget::compute_share(300, 5));
-        $this->assertSame(20, xp_budget::compute_share(300, 15));
+    public function test_distribute_share_divides_gap_evenly(): void {
+        $this->assertSame([60, 60, 60, 60, 60], xp_budget::distribute_share(300, 5));
+        $this->assertSame(array_fill(0, 15, 20), xp_budget::distribute_share(300, 15));
     }
 
     /**
-     * A remainder that does not divide evenly is floored, not rounded up or redistributed.
+     * A remainder that does not divide evenly is spread as a +1 bonus on the first elements
+     * (mirrors drop_distribution::compute_pill_quotas()'s remainder-to-the-front pattern), so
+     * the total always sums to exactly the gap instead of quietly losing the remainder.
      */
-    public function test_compute_share_floors_the_remainder(): void {
-        $this->assertSame(3, xp_budget::compute_share(17, 5));
+    public function test_distribute_share_spreads_the_remainder_on_the_first_elements(): void {
+        $this->assertSame([4, 3, 3, 3, 3], xp_budget::distribute_share(16, 5));
+        $this->assertSame(16, array_sum(xp_budget::distribute_share(16, 5)));
     }
 
     /**
-     * A generated item is never left worth 0 XP while the economy still has any positive room,
-     * even when the floor division would otherwise round down to 0.
+     * When there is less gap than elements, only the first $gap elements get 1 XP each and the
+     * rest get 0 — honest about there being no more room, rather than inflating past the ceiling
+     * to avoid a 0-XP element.
      */
-    public function test_compute_share_never_zero_when_gap_is_positive(): void {
-        $this->assertSame(1, xp_budget::compute_share(3, 10));
+    public function test_distribute_share_caps_at_the_gap_when_elements_outnumber_it(): void {
+        $this->assertSame([1, 1, 1, 0, 0], xp_budget::distribute_share(3, 5));
+        $this->assertSame(3, array_sum(xp_budget::distribute_share(3, 5)));
     }
 
     /**
-     * A non-positive gap or a non-positive item count yields 0: no room left, or nothing to
-     * divide XP across.
+     * A non-positive gap yields all zeros (still one entry per element); a non-positive element
+     * count yields an empty array.
      */
-    public function test_compute_share_zero_on_non_positive_input(): void {
-        $this->assertSame(0, xp_budget::compute_share(0, 5));
-        $this->assertSame(0, xp_budget::compute_share(-10, 5));
-        $this->assertSame(0, xp_budget::compute_share(300, 0));
-        $this->assertSame(0, xp_budget::compute_share(300, -1));
+    public function test_distribute_share_handles_edge_cases(): void {
+        $this->assertSame([0, 0, 0], xp_budget::distribute_share(0, 3));
+        $this->assertSame([0, 0, 0], xp_budget::distribute_share(-10, 3));
+        $this->assertSame([], xp_budget::distribute_share(300, 0));
+        $this->assertSame([], xp_budget::distribute_share(300, -1));
     }
 
     /**

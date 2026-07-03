@@ -126,25 +126,48 @@ final class xp_budget {
     }
 
     /**
-     * Computes how much XP each of a batch of elements (items or missions) should be worth so
-     * the batch's total approximates the remaining XP room, rather than a value that ignores how
-     * many elements are being generated.
+     * Distributes the remaining XP room across a batch of elements (items or missions) so the
+     * batch's total always lands on exactly the gap, instead of a flat floor share per element
+     * that quietly leaves the division's remainder unused.
      *
-     * At least 1 XP is returned whenever there is any positive gap and at least one element, even
-     * if the floor division would otherwise round down to 0 — a generated element is never left
-     * worthless while the economy still has room. The floor division's remainder is not
-     * redistributed here; each element gets an equal share.
+     * Mirrors `drop_distribution::compute_pill_quotas()`'s remainder-to-the-front pattern: every
+     * element gets the base floor share, and the leftover remainder is added as a +1 bonus to
+     * the first `$gap % $count` elements, in order — so `array_sum()` of the result always
+     * equals `min($gap, ...)`, never leaving XP on the table.
+     *
+     * When there is less gap than elements (the economy is nearly at the ceiling but a full
+     * batch is still being generated), only the first `$gap` elements get 1 XP each and the
+     * rest get 0 — honest about there being no more room left, rather than inflating past the
+     * ceiling to avoid a 0-XP element.
      *
      * @param int $gap Remaining XP room under the level ceiling (target minus current economy).
      * @param int $count Number of elements about to be generated.
-     * @return int XP to assign to each element. 0 when there is no gap or no elements.
+     * @return int[] $count XP values, order-significant (earlier elements get the remainder
+     *     bonus first), summing to exactly max(0, min($gap, ...)). Empty when $count <= 0.
      */
-    public static function compute_share(int $gap, int $count): int {
-        if ($count <= 0 || $gap <= 0) {
-            return 0;
+    public static function distribute_share(int $gap, int $count): array {
+        if ($count <= 0) {
+            return [];
+        }
+        if ($gap <= 0) {
+            return array_fill(0, $count, 0);
+        }
+        if ($gap < $count) {
+            $shares = array_fill(0, $count, 0);
+            for ($i = 0; $i < $gap; $i++) {
+                $shares[$i] = 1;
+            }
+            return $shares;
         }
 
-        return max(1, intdiv($gap, $count));
+        $base = intdiv($gap, $count);
+        $remainder = $gap % $count;
+        $shares = array_fill(0, $count, $base);
+        for ($i = 0; $i < $remainder; $i++) {
+            $shares[$i]++;
+        }
+
+        return $shares;
     }
 
     /**

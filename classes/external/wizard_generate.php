@@ -246,26 +246,35 @@ class wizard_generate extends external_api {
             $createddropids = [];
             $distributemessage = '';
 
-            // A single shared XP share, snapshotted once from the economy as it stands before
-            // either module runs, and split across every element BOTH will generate this call.
+            // A single shared XP distribution, snapshotted once from the economy as it stands
+            // before either module runs, and split across every element BOTH will generate this
+            // call — so the batch's total always lands on exactly the remaining gap (the
+            // "Item Épico"/"Missão Final" leftover-absorption from the original plan), instead of
+            // each element getting a flat floor share that quietly leaves a remainder unused.
             // Computing this separately inside each module (each calling economy_health() only
-            // when it runs) would let whichever module runs first — Items always runs before
+            // when it runs) would also let whichever module runs first — Items always runs before
             // Missions — silently consume the entire remaining gap for itself, leaving the other
             // with a shrunken or zeroed-out gap despite xp_budget's per-module math looking correct
-            // in isolation.
-            $sharedxp = 0;
+            // in isolation. Items are sliced off the front of the distribution (the remainder
+            // bonus, if any, lands on the first items) since students encounter items earlier and
+            // more continuously than milestone-style missions.
+            $itemxpshares = [];
+            $missionxpshares = [];
             if ($params['include_items'] || $params['include_missions']) {
                 [$xpperlevel, $maxlevels] = self::resolve_xp_settings($config);
                 $health = \block_playerhud\local\analytics::economy_health($params['instanceid'], $xpperlevel, $maxlevels);
                 $gap = max(0, $health->xp_ceiling - $health->total_items_xp);
 
-                $elementcount = \block_playerhud\local\xp_budget::compute_element_count(
-                    $params['size'],
-                    $params['include_items'],
-                    $params['include_missions']
-                );
+                $itemcount = $params['include_items']
+                    ? \block_playerhud\local\xp_budget::compute_item_count($params['size'])
+                    : 0;
+                $elementcount = $itemcount + ($params['include_missions']
+                    ? \block_playerhud\local\xp_budget::compute_mission_count($params['size'])
+                    : 0);
 
-                $sharedxp = \block_playerhud\local\xp_budget::compute_share($gap, $elementcount);
+                $shares = \block_playerhud\local\xp_budget::distribute_share($gap, $elementcount);
+                $itemxpshares = array_slice($shares, 0, $itemcount);
+                $missionxpshares = array_slice($shares, $itemcount);
             }
 
             if ($params['include_items']) {
@@ -275,7 +284,7 @@ class wizard_generate extends external_api {
                     $params['theme'],
                     $params['tone'],
                     $params['size'],
-                    $sharedxp,
+                    $itemxpshares,
                     $runid
                 );
                 $createditems = $itemsresult['names'];
@@ -289,7 +298,7 @@ class wizard_generate extends external_api {
                     $config,
                     $params['size'],
                     $params['tone_key'],
-                    $sharedxp,
+                    $missionxpshares,
                     $runid
                 );
             }
@@ -433,10 +442,10 @@ class wizard_generate extends external_api {
      * @param string $theme Subject theme.
      * @param string $tone Narrative tone.
      * @param string $size Journey size: short, medium or long.
-     * @param int $itemxp XP to assign to each item — a shared, deterministic per-element split
-     *     of the XP room computed once by the caller across every module running this call (see
-     *     execute()'s $sharedxp), not recomputed here against a gap items would otherwise see
-     *     entirely to themselves.
+     * @param int[] $itemxpshares XP to assign to each item, one value per item in creation order
+     *     — a shared, deterministic split of the XP room computed once by the caller across every
+     *     module running this call (see execute()'s distribute_share() call), not recomputed here
+     *     against a gap items would otherwise see entirely to themselves.
      * @param int $runid Wizard run ID.
      * @return array{names: string[], drop_ids: int[]} Created item names and drop IDs.
      */
@@ -446,7 +455,7 @@ class wizard_generate extends external_api {
         string $theme,
         string $tone,
         string $size,
-        int $itemxp,
+        array $itemxpshares,
         int $runid
     ): array {
         global $DB, $USER;
@@ -455,7 +464,7 @@ class wizard_generate extends external_api {
         $amount = \block_playerhud\local\xp_budget::compute_item_count($size);
 
         // Only used for the AI prompt's narrative framing (easy/hard wording, from the gap's
-        // sign) — the numeric itemxp above is the caller's shared, pre-computed split.
+        // sign) — the actual per-item XP is reassigned individually below from $itemxpshares.
         $balancecontext = \block_playerhud\local\analytics::balance_context(
             $instanceid,
             $xpperlevel,
@@ -467,7 +476,7 @@ class wizard_generate extends external_api {
         $result = $generator->generate(
             'item',
             $theme,
-            $itemxp,
+            $itemxpshares[0] ?? 0,
             true,
             [
                 'tone' => $tone,
@@ -481,7 +490,17 @@ class wizard_generate extends external_api {
             $amount
         );
 
+        // Generate() applies a single XP value identically to every item in the batch (the AI
+        // itself never decides XP, only name/description/emoji), so the distributed shares are
+        // reassigned individually here — cheap, item counts are small (5-15), and this is the
+        // only way to give each item its own share of the "Item Épico" leftover bonus without
+        // one AI call per item.
         if (!empty($result['created_item_ids'])) {
+            foreach ($result['created_item_ids'] as $index => $itemid) {
+                if (isset($itemxpshares[$index])) {
+                    $DB->set_field('block_playerhud_items', 'xp', $itemxpshares[$index], ['id' => $itemid]);
+                }
+            }
             \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', $result['created_item_ids']);
         }
         if (!empty($result['created_drop_ids'])) {
@@ -527,10 +546,10 @@ class wizard_generate extends external_api {
      * @param \stdClass $config Block configuration.
      * @param string $size Journey size: short, medium or long.
      * @param string $tonekey Narrative tone key.
-     * @param int $missionxp XP to assign to each selected mission — a shared, deterministic
-     *     per-element split of the XP room computed once by the caller across every module
-     *     running this call (see execute()'s $sharedxp), not recomputed here against a gap
-     *     missions would otherwise see entirely to themselves.
+     * @param int[] $missionxpshares XP to assign to each selected mission, one value per mission
+     *     in selection order — a shared, deterministic split of the XP room computed once by the
+     *     caller across every module running this call (see execute()'s distribute_share() call),
+     *     not recomputed here against a gap missions would otherwise see entirely to themselves.
      * @param int $runid Wizard run ID.
      * @return string[] Names of the created quests.
      */
@@ -540,7 +559,7 @@ class wizard_generate extends external_api {
         \stdClass $config,
         string $size,
         string $tonekey,
-        int $missionxp,
+        array $missionxpshares,
         int $runid
     ): array {
         global $DB;
@@ -562,8 +581,9 @@ class wizard_generate extends external_api {
         $createdquests = [];
         $createdids = [];
 
-        foreach ($selected as $suggestion) {
+        foreach ($selected as $index => $suggestion) {
             $suggestion['name'] = self::resolve_mission_name($suggestion, $courseid, $tonekey);
+            $missionxp = $missionxpshares[$index] ?? 0;
             $record = \block_playerhud\quest::build_record_from_suggestion($instanceid, $suggestion, $missionxp);
             $questid = (int) $DB->insert_record('block_playerhud_quests', $record);
             $createdids[] = $questid;

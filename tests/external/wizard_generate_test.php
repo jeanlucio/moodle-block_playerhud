@@ -123,8 +123,10 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
-     * Every selected mission's reward_xp is overridden to the same deterministic share of the
-     * XP room, instead of each type's own hardcoded formula (level*20, items*30...).
+     * Every selected mission's reward_xp is overridden to a deterministic share of the XP room
+     * (instead of each type's own hardcoded formula: level*20, items*30...), and the shares
+     * always sum to exactly the gap — the division's remainder lands as a +1 bonus on the first
+     * selected missions rather than being quietly lost.
      */
     public function test_missions_reward_xp_is_an_even_share_of_the_gap(): void {
         global $DB;
@@ -136,11 +138,12 @@ final class wizard_generate_test extends external_base_testcase {
         $result = wizard_generate::execute($this->instanceid, $this->course->id, '', '', 'short', false, true);
 
         $this->assertTrue($result['success']);
-        $quests = $DB->get_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]);
-        // Empty economy: ceiling 100 * 20 = 2000, 3 missions selected -> intdiv(2000, 3) = 666.
-        foreach ($quests as $quest) {
-            $this->assertSame(666, (int) $quest->reward_xp);
-        }
+        $quests = $DB->get_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid], 'id ASC');
+        $rewards = array_values(array_map(static fn($q): int => (int) $q->reward_xp, $quests));
+        // Empty economy: ceiling 100 * 20 = 2000, 3 missions selected -> base 666, remainder 2,
+        // so the first 2 missions get 667 and the last gets 666. Sum is exactly 2000.
+        $this->assertSame([667, 667, 666], $rewards);
+        $this->assertSame(2000, array_sum($rewards));
     }
 
     /**
