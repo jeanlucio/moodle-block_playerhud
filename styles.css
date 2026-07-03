@@ -2589,21 +2589,22 @@ div.modal-dialog .visually-hidden {
     background: var(--secondary-bg-subtle, #e2e3e5);
     animation: ph-wizard-huddy-pulse-anim 1.2s ease-in-out infinite;
 }
-#ph-wizard-modal .ph-wizard-huddy-badge {
+/*
+ * Same technique as .ph-levelup-number (levelup.js/styles.css): a number painted over the
+ * shield artwork in levelup.webp specifically, at the same relative position/tilt — only shown
+ * while that image is the current carousel slide (see wizard.js's showHuddySlide()), not on the
+ * other 4 images, which have no shield to paint it on.
+ */
+#ph-wizard-modal .ph-wizard-huddy-number {
     position: absolute;
-    bottom: 0;
-    right: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--warning, #f0ad4e);
-    color: var(--dark, #1d2125);
-    font-size: 0.85rem;
-    font-weight: 700;
-    border: 2px solid var(--card-bg, #fff);
+    left: 78%;
+    top: 61%;
+    transform: translate(-50%, -50%) rotate(9deg);
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.6), 0 2px 3px rgba(0, 0, 0, 0.5);
 }
 @keyframes ph-wizard-huddy-pulse-anim {
     0%, 100% {

@@ -93,6 +93,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const huddyCarouselEl = document.getElementById('ph-wizard-huddy-carousel');
         const huddyImgEl = document.getElementById('ph-wizard-huddy-img');
         const huddyPulseEl = document.getElementById('ph-wizard-huddy-pulse');
+        const huddyNumberEl = document.getElementById('ph-wizard-huddy-number');
         const huddyTipEl = document.getElementById('ph-wizard-huddy-tip');
 
         let lastRunId = null;
@@ -286,10 +287,15 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         });
 
         const showHuddySlide = (index) => {
-            huddyImgEl.src = huddyBaseUrl + HUDDY_IMAGES[index % HUDDY_IMAGES.length];
+            const image = HUDDY_IMAGES[index % HUDDY_IMAGES.length];
+            huddyImgEl.src = huddyBaseUrl + image;
             if (huddyTips) {
                 huddyTipEl.textContent = huddyTips[index % huddyTips.length];
             }
+            // Same technique as the level-up celebration (levelup.js): the number is painted
+            // over the shield in levelup.webp specifically — the other 4 images have no shield
+            // to paint it on, so it only shows up for that one slide.
+            huddyNumberEl.classList.toggle('ph-display-none', image !== 'levelup.webp');
         };
 
         const startHuddyCarousel = async() => {
