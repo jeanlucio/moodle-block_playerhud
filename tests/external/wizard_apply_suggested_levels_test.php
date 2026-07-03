@@ -53,20 +53,20 @@ final class wizard_apply_suggested_levels_test extends external_base_testcase {
     }
 
     /**
-     * An instance whose level settings were already customised away from the defaults is left
-     * untouched, even if the client requests it — re-checked server-side rather than trusted
-     * from a possibly stale modal state.
+     * An instance whose level settings were already customised away from the defaults still gets
+     * overwritten: the wizard's "auto-adjust levels" checkbox is the consent gate, not this
+     * server-side call — a teacher only reaches it by explicitly opting in.
      */
-    public function test_refuses_when_not_at_defaults(): void {
+    public function test_applies_even_when_already_customised(): void {
         $instanceid = $this->create_block_instance(['xp_per_level' => 100, 'max_levels' => 30]);
 
         $result = wizard_apply_suggested_levels::execute($instanceid, 'short');
 
-        $this->assertFalse($result['applied']);
-        $this->assertSame(30, $result['max_levels']);
+        $this->assertTrue($result['applied']);
+        $this->assertSame(10, $result['max_levels']);
 
         $blockinstance = \block_instance_by_id($instanceid);
-        $this->assertSame(30, (int) $blockinstance->config->max_levels);
+        $this->assertSame(10, (int) $blockinstance->config->max_levels);
     }
 
     /**

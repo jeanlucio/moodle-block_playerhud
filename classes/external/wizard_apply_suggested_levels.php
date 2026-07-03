@@ -32,12 +32,13 @@ use core_external\external_single_structure;
 /**
  * External API that applies the wizard's suggested max_levels for a journey size.
  *
- * An opt-in convenience for a teacher who never touched the block's level settings: instead of
- * generating content sized for a journey against a level curve that was never tailored for it,
- * one click applies a size-appropriate max_levels. Writes through the block's own
- * `instance_config_save()` (not a raw DB update), which merges into the existing config object
- * rather than replacing it, so every other setting the teacher already configured — items,
- * quests, RPG, ranking, mascot... — is left untouched.
+ * An opt-in convenience, gated by the wizard's own "auto-adjust levels" checkbox rather than a
+ * server-side "still untouched" heuristic: the checkbox can be re-toggled and the journey size
+ * re-picked any number of times in one session, so every call applies unconditionally — the
+ * checkbox being checked at all is the teacher's explicit consent, not an accident to guard
+ * against. Writes through the block's own `instance_config_save()` (not a raw DB update), which
+ * merges into the existing config object rather than replacing it, so every other setting the
+ * teacher already configured — items, quests, RPG, ranking, mascot... — is left untouched.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
@@ -57,10 +58,8 @@ class wizard_apply_suggested_levels extends external_api {
     }
 
     /**
-     * Applies the suggested max_levels for the given journey size, but only when the instance's
-     * level settings are still at the edit form's own defaults (100 XP per level, 20 levels) —
-     * re-checked server-side so a stale client state can never silently overwrite settings a
-     * teacher deliberately customised since the modal was opened.
+     * Applies the suggested max_levels for the given journey size, unconditionally: the wizard's
+     * "auto-adjust levels" checkbox is the consent gate, not this method.
      *
      * @param int $instanceid Block instance ID.
      * @param string $size Journey size: short, medium or long.
@@ -81,18 +80,6 @@ class wizard_apply_suggested_levels extends external_api {
         $blockinstance = \block_instance_by_id($instanceid);
         $config = $blockinstance->config ?: new \stdClass();
 
-        $currentxpperlevel = isset($config->xp_per_level) ? (int) $config->xp_per_level : 100;
-        $currentmaxlevels = isset($config->max_levels) ? (int) $config->max_levels : 20;
-        $atdefaults = ($currentxpperlevel === 100 && $currentmaxlevels === 20);
-
-        if (!$atdefaults) {
-            return [
-                'applied' => false,
-                'xp_per_level' => $currentxpperlevel,
-                'max_levels' => $currentmaxlevels,
-            ];
-        }
-
         $suggestedlevels = \block_playerhud\local\xp_budget::compute_suggested_max_levels($size);
         $config->xp_per_level = 100;
         $config->max_levels = $suggestedlevels;
@@ -112,10 +99,7 @@ class wizard_apply_suggested_levels extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'applied' => new external_value(
-                PARAM_BOOL,
-                'False when the instance was no longer at the default level settings'
-            ),
+            'applied' => new external_value(PARAM_BOOL, 'Always true; kept for API stability'),
             'xp_per_level' => new external_value(PARAM_INT, 'The instance\'s XP per level after this call'),
             'max_levels' => new external_value(PARAM_INT, 'The instance\'s max levels after this call'),
         ]);

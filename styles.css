@@ -2547,6 +2547,15 @@ div.modal-dialog .visually-hidden {
 #ph-wizard-modal .ph-wizard-card-body {
     margin-top: 0.75rem;
 }
+#ph-wizard-modal .ph-wizard-info-btn {
+    color: var(--gray-500, #adb5bd);
+    font-size: 0.85rem;
+    line-height: 1;
+}
+#ph-wizard-modal .ph-wizard-info-btn:hover,
+#ph-wizard-modal .ph-wizard-info-btn:focus-visible {
+    color: var(--primary, #0d6efd);
+}
 @media (min-width: 992px) {
     #ph-wizard-modal .ph-wizard-sidebar-sticky {
         position: sticky;

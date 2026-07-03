@@ -44,6 +44,17 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
 
         WizardOctalysis.init();
 
+        // Same info-icon tooltip pattern as view.js's quest description button. No jQuery
+        // fallback needed here (unlike view.js): this file already relies on
+        // theme_boost/bootstrap/modal exporting a plain constructor on both BS4 and BS5 (see
+        // openModal() below), and the sibling tooltip module works the same way.
+        const infoEls = document.querySelectorAll('.js-ph-wizard-info');
+        if (infoEls.length) {
+            require(['theme_boost/bootstrap/tooltip'], (BSTooltip) => {
+                infoEls.forEach((el) => new BSTooltip(el, {trigger: 'hover focus', placement: 'bottom'}));
+            });
+        }
+
         const themeEl = document.getElementById('ph-wizard-theme');
         const toneEl = document.getElementById('ph-wizard-tone');
         const sizeEl = document.getElementById('ph-wizard-size');
@@ -152,46 +163,22 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             });
         });
 
-        // Only rendered when the instance's level settings are still at the edit form's
-        // defaults (100 XP per level, 20 levels) — every other element in the modal always
-        // exists, so this is the other spot (besides latepenaltyModuleEl) needing a null guard.
-        const levelsSuggestionEl = document.getElementById('ph-wizard-levels-suggestion');
-        if (levelsSuggestionEl) {
-            const levelsSuggestionTextEl = document.getElementById('ph-wizard-levels-suggestion-text');
-            const applyLevelsBtn = document.getElementById('ph-wizard-apply-levels-btn');
-
-            Str.get_strings([
-                {key: 'wizard_levels_suggestion_short', component: 'block_playerhud'},
-                {key: 'wizard_levels_suggestion_medium', component: 'block_playerhud'},
-                {key: 'wizard_levels_suggestion_long', component: 'block_playerhud'},
-            ]).then(([short, medium, long]) => {
-                const suggestionBySize = {short, medium, long};
-                const updateSuggestionText = () => {
-                    levelsSuggestionTextEl.textContent = suggestionBySize[sizeEl.value] || short;
-                };
-                updateSuggestionText();
-                sizeEl.addEventListener('change', updateSuggestionText);
-                return null;
-            }).catch(() => {
-                // A failed string lookup should not break the rest of the modal; the suggestion
-                // box just stays without text and can still be dismissed via Apply/generation.
-            });
-
-            applyLevelsBtn.addEventListener('click', async() => {
-                applyLevelsBtn.disabled = true;
-                try {
-                    const result = await Ajax.call([{
-                        methodname: 'block_playerhud_wizard_apply_suggested_levels',
-                        args: {instanceid, size: sizeEl.value},
-                    }])[0];
-                    if (result.applied) {
-                        levelsSuggestionEl.classList.add('ph-display-none');
-                    }
-                } finally {
-                    applyLevelsBtn.disabled = false;
-                }
-            });
-        }
+        // Checked by default only when the instance is still at the edit form's defaults (100
+        // XP per level, 20 levels) — see levels_at_default in the template. While checked, every
+        // change to either the checkbox itself or the journey size re-applies the matching
+        // suggestion; unchecking it just stops future syncing, it never reverts a past one.
+        const applyLevelsEl = document.getElementById('ph-wizard-apply-levels');
+        const applySuggestedLevels = async() => {
+            if (!applyLevelsEl.checked) {
+                return;
+            }
+            await Ajax.call([{
+                methodname: 'block_playerhud_wizard_apply_suggested_levels',
+                args: {instanceid, size: sizeEl.value},
+            }])[0];
+        };
+        applyLevelsEl.addEventListener('change', applySuggestedLevels);
+        sizeEl.addEventListener('change', applySuggestedLevels);
 
         /**
          * Shows a message in one of the modal's alert boxes, hiding the other.
