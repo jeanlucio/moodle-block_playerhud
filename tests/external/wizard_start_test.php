@@ -110,6 +110,35 @@ final class wizard_start_test extends external_base_testcase {
     }
 
     /**
+     * Pill's bonus XP is returned even when it runs alone (its own fixed default, since there is
+     * no Items/Missions budget context to share) — the browser always gets a usable value to
+     * round-trip into the "pill" step, whichever case applies.
+     */
+    public function test_pill_bonus_xp_present_when_pill_selected_alone(): void {
+        $result = wizard_start::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            false,
+            false,
+            true
+        );
+
+        $this->assertSame(150, $result['pill_bonus_xp']);
+        $this->assertSame(0, $result['latepenalty_bonus_xp']);
+    }
+
+    /**
      * § 5.9 Fatia 2: selecting the story arc module expands into one "story_outline" step
      * followed by one "story_chapter_N" step per AI-generated chapter — chapter count minus 1
      * (Chapter 1 is the fixed RPG chapter, never part of this expansion) — sized to the journey.

@@ -1602,9 +1602,10 @@ final class wizard_generate_test extends external_base_testcase {
     /**
      * compute_shared_xp_shares() is a no-op — no economy_health() query, empty shares — when
      * neither Items nor Missions is selected, since nothing would consume the shared XP room.
+     * Pill/Latepenalty are also excluded here, so their bonus XP is 0 too (unused).
      */
     public function test_compute_shared_xp_shares_empty_when_items_and_missions_excluded(): void {
-        [$itemshares, $missionshares] = wizard_generate::compute_shared_xp_shares(
+        [$itemshares, $missionshares, $pillbonus, $latepenaltybonus] = wizard_generate::compute_shared_xp_shares(
             $this->instanceid,
             new \stdClass(),
             self::wizard_generate_params(['include_playercoin' => true])
@@ -1612,6 +1613,51 @@ final class wizard_generate_test extends external_base_testcase {
 
         $this->assertSame([], $itemshares);
         $this->assertSame([], $missionshares);
+        $this->assertSame(0, $pillbonus);
+        $this->assertSame(0, $latepenaltybonus);
+    }
+
+    /**
+     * Without Items/Missions, Pill and Latepenalty keep their own fixed default reward instead
+     * of competing for a share of the ceiling — there is no active budget context to reconcile
+     * against, and handing either of them the *entire* remaining gap (as a 1-element shared
+     * distribution would) would be a wildly disproportionate single-quest reward.
+     */
+    public function test_compute_shared_xp_shares_pill_and_latepenalty_use_defaults_when_alone(): void {
+        [, , $pillbonus, $latepenaltybonus] = wizard_generate::compute_shared_xp_shares(
+            $this->instanceid,
+            new \stdClass(),
+            self::wizard_generate_params(['include_pill' => true, 'include_latepenalty' => true])
+        );
+
+        $this->assertSame(150, $pillbonus);
+        $this->assertSame(40, $latepenaltybonus);
+    }
+
+    /**
+     * With Items/Missions in the same run, Pill and Latepenalty each claim one more slice of the
+     * same shared distribution — so a full run (Items + Missions + Pill + Latepenalty) lands its
+     * combined total on exactly the level ceiling, instead of overshooting it by their old fixed
+     * defaults (150 + 40 = 190 XP that the budget never accounted for).
+     */
+    public function test_compute_shared_xp_shares_pill_and_latepenalty_share_the_budget_with_items(): void {
+        $config = (object) ['xp_per_level' => 100, 'max_levels' => 20];
+        $params = self::wizard_generate_params([
+            'include_items' => true,
+            'include_missions' => true,
+            'include_pill' => true,
+            'include_latepenalty' => true,
+            'size' => 'short',
+        ]);
+
+        [$itemshares, $missionshares, $pillbonus, $latepenaltybonus] = wizard_generate::compute_shared_xp_shares(
+            $this->instanceid,
+            $config,
+            $params
+        );
+
+        $total = array_sum($itemshares) + array_sum($missionshares) + $pillbonus + $latepenaltybonus;
+        $this->assertSame(2000, $total);
     }
 
     /**

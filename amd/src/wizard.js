@@ -518,9 +518,12 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
          * @param {string[]} arcBeats Story arc beats, mutated in place once "story_outline" runs.
          * @param {number[]} itemxpshares XP shares for the "items" step, from wizard_start.
          * @param {number[]} missionxpshares XP shares for the "missions" step, from wizard_start.
+         * @param {number} pillBonusXp Reward XP for the "pill" step's trade quest, from wizard_start.
+         * @param {number} latepenaltyBonusXp Reward XP for the "latepenalty" step's quest, from wizard_start.
          */
         const runStepsFrom = async(
-            runParams, runid, steps, startIndex, totals, dropids, stepMessages, arcBeats, itemxpshares, missionxpshares
+            runParams, runid, steps, startIndex, totals, dropids, stepMessages, arcBeats,
+            itemxpshares, missionxpshares, pillBonusXp, latepenaltyBonusXp
         ) => {
             const reporteconomy = steps.some((step) => step.type === 'items' || step.type === 'missions');
 
@@ -534,7 +537,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
 
                 const resume = () => runStepsFrom(
                     runParams, runid, steps, index, totals, dropids, stepMessages, arcBeats,
-                    itemxpshares, missionxpshares
+                    itemxpshares, missionxpshares, pillBonusXp, latepenaltyBonusXp
                 );
 
                 let result;
@@ -556,6 +559,8 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                             'arc_beats': step.type.startsWith('story_chapter_') ? arcBeats : [],
                             'is_last_step': islaststep,
                             'report_economy': islaststep && reporteconomy,
+                            'pill_bonus_xp': step.type === 'pill' ? pillBonusXp : 0,
+                            'latepenalty_bonus_xp': step.type === 'latepenalty' ? latepenaltyBonusXp : 0,
                         },
                     }])[0];
                 } catch (e) {
@@ -610,7 +615,8 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             const totals = {items: 0, quests: 0, trades: 0, chapters: 0, classes: 0};
             await runStepsFrom(
                 runParams, started.runid, started.steps, 0, totals, [], [], [],
-                started.item_xp_shares, started.mission_xp_shares
+                started.item_xp_shares, started.mission_xp_shares,
+                started.pill_bonus_xp, started.latepenalty_bonus_xp
             );
         };
 

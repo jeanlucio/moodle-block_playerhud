@@ -240,7 +240,8 @@ class wizard_generate extends external_api {
             $createddropids = [];
             $distributemessage = '';
 
-            [$itemxpshares, $missionxpshares] = self::compute_shared_xp_shares($params['instanceid'], $config, $params);
+            [$itemxpshares, $missionxpshares, $pillbonusxp, $latepenaltybonusxp] =
+                self::compute_shared_xp_shares($params['instanceid'], $config, $params);
 
             if ($params['include_items']) {
                 $itemsresult = self::generate_items(
@@ -320,7 +321,7 @@ class wizard_generate extends external_api {
                 // The Pill->Book trade (and its quest) is intrinsic to this mechanic, so it is
                 // wired here rather than in Comercio — otherwise generating the Pill without also
                 // ticking Comercio would leave the Book permanently unobtainable.
-                $pilltrade = self::generate_pill_trade($params['instanceid'], $runid);
+                $pilltrade = self::generate_pill_trade($params['instanceid'], $runid, $pillbonusxp);
                 if ($pilltrade['trade_name'] !== '') {
                     $createdtrades[] = $pilltrade['trade_name'];
                 }
@@ -330,7 +331,7 @@ class wizard_generate extends external_api {
             }
 
             if ($params['include_latepenalty']) {
-                $lpresult = self::generate_latepenalty($params['instanceid'], $runid);
+                $lpresult = self::generate_latepenalty($params['instanceid'], $runid, $latepenaltybonusxp);
                 $createditems = array_merge($createditems, $lpresult['items']);
                 if ($lpresult['quest_name'] !== '') {
                     $createdquests[] = $lpresult['quest_name'];
@@ -470,44 +471,71 @@ class wizard_generate extends external_api {
     }
 
     /**
-     * Computes the single shared XP distribution for the Items and Missions steps.
+     * Computes the single shared XP distribution for Items, Missions, and the Pill-trade and
+     * Latepenalty bonus quests — every mechanism that grants a fixed chunk of XP against the
+     * same level ceiling.
      *
-     * A single shared XP distribution, snapshotted once from the economy as it stands before
-     * either module runs, and split across every element BOTH will generate this call — so the
-     * batch's total always lands on exactly the remaining gap (the "Item Épico"/"Missão Final"
+     * A single shared XP distribution, snapshotted once from the economy as it stands before any
+     * of them runs, and split across every element this call will generate — so the batch's total
+     * always lands on exactly the remaining gap (the "Item Épico"/"Missão Final"
      * leftover-absorption from the original plan), instead of each element getting a flat floor
      * share that quietly leaves a remainder unused. Computing this separately inside each module
      * (each calling economy_health() only when it runs) would also let whichever module runs
-     * first — Items always runs before Missions — silently consume the entire remaining gap for
-     * itself, leaving the other with a shrunken or zeroed-out gap despite xp_budget's per-module
-     * math looking correct in isolation. Items are sliced off the front of the distribution (the
-     * remainder bonus, if any, lands on the first items) since students encounter items earlier
-     * and more continuously than milestone-style missions.
+     * first silently consume the entire remaining gap for itself, leaving the others with a
+     * shrunken or zeroed-out gap despite xp_budget's per-module math looking correct in
+     * isolation. Items are sliced off the front of the distribution, then Missions, then the
+     * Pill-trade bonus, then the Latepenalty bonus (the remainder bonus, if any, lands on the
+     * first items) since students encounter items earlier and more continuously than
+     * milestone-style missions or one-off bonus quests.
+     *
+     * Pill's trade-completion quest and Latepenalty's early-win quest only compete for a slice of
+     * this shared room when Items and/or Missions are also part of the same run — with neither of
+     * those selected there is no active budget context to reconcile against (e.g. running Pill
+     * alone would otherwise hand its one quest the *entire* remaining ceiling), so each keeps its
+     * own sane fixed default reward instead.
      *
      * @param int $instanceid Block instance ID.
      * @param \stdClass $config Block configuration.
      * @param array $params Validated parameters (same shape as execute_parameters()).
-     * @return array{0: int[], 1: int[]} [itemxpshares, missionxpshares].
+     * @return array{0: int[], 1: int[], 2: int, 3: int} [itemxpshares, missionxpshares,
+     *     pillbonusxp, latepenaltybonusxp].
      */
     public static function compute_shared_xp_shares(int $instanceid, \stdClass $config, array $params): array {
-        if (!$params['include_items'] && !$params['include_missions']) {
-            return [[], []];
+        $hasbudgetcontext = $params['include_items'] || $params['include_missions'];
+        $pilldefault = self::PILL_TRADE_DEFAULT_XP;
+        $latepenaltydefault = self::LATEPENALTY_QUEST_LEVEL * 20;
+
+        if (!$hasbudgetcontext) {
+            return [
+                [],
+                [],
+                $params['include_pill'] ? $pilldefault : 0,
+                $params['include_latepenalty'] ? $latepenaltydefault : 0,
+            ];
         }
+
+        $itemcount = $params['include_items']
+            ? \block_playerhud\local\xp_budget::compute_item_count($params['size'])
+            : 0;
+        $missioncount = $params['include_missions']
+            ? \block_playerhud\local\xp_budget::compute_mission_count($params['size'])
+            : 0;
+        $pillcount = $params['include_pill'] ? 1 : 0;
+        $latepenaltycount = $params['include_latepenalty'] ? 1 : 0;
+        $elementcount = $itemcount + $missioncount + $pillcount + $latepenaltycount;
 
         [$xpperlevel, $maxlevels] = self::resolve_xp_settings($config);
         $health = \block_playerhud\local\analytics::economy_health($instanceid, $xpperlevel, $maxlevels);
         $gap = max(0, $health->xp_ceiling - $health->total_items_xp);
 
-        $itemcount = $params['include_items']
-            ? \block_playerhud\local\xp_budget::compute_item_count($params['size'])
-            : 0;
-        $elementcount = $itemcount + ($params['include_missions']
-            ? \block_playerhud\local\xp_budget::compute_mission_count($params['size'])
-            : 0);
-
         $shares = \block_playerhud\local\xp_budget::distribute_share($gap, $elementcount);
 
-        return [array_slice($shares, 0, $itemcount), array_slice($shares, $itemcount)];
+        $itemshares = array_slice($shares, 0, $itemcount);
+        $missionshares = array_slice($shares, $itemcount, $missioncount);
+        $pillbonus = $pillcount ? $shares[$itemcount + $missioncount] : 0;
+        $latepenaltybonus = $latepenaltycount ? $shares[$itemcount + $missioncount + $pillcount] : 0;
+
+        return [$itemshares, $missionshares, $pillbonus, $latepenaltybonus];
     }
 
     /**
@@ -755,6 +783,12 @@ class wizard_generate extends external_api {
     private const PILL_TRADE_COST = 10;
 
     /**
+     * @var int Trade-completion quest reward when Pill runs without a shared budget context (no
+     *     Items/Missions in the same run) — see compute_shared_xp_shares().
+     */
+    private const PILL_TRADE_DEFAULT_XP = 150;
+
+    /**
      * Wires the Pill<->Book trade (a fixed 1-item recipe, not a heuristic suggestion) once both
      * items exist, and creates the "earned the exclusive trade" quest.
      *
@@ -769,10 +803,13 @@ class wizard_generate extends external_api {
      *
      * @param int $instanceid Block instance ID.
      * @param int $runid Wizard run ID.
+     * @param int $bonusxp Quest reward XP — the shared budget's slice for this run
+     *     (compute_shared_xp_shares()) when Items/Missions are also present, or
+     *     PILL_TRADE_DEFAULT_XP otherwise.
      * @return array{trade_name: string, quest_name: string} Empty strings when skipped (Pill or
      *     Book missing, or the trade already exists).
      */
-    public static function generate_pill_trade(int $instanceid, int $runid): array {
+    public static function generate_pill_trade(int $instanceid, int $runid, int $bonusxp = self::PILL_TRADE_DEFAULT_XP): array {
         global $DB;
 
         $pill = $DB->get_record('block_playerhud_items', [
@@ -815,7 +852,7 @@ class wizard_generate extends external_api {
             'requirement' => 1,
             'req_itemid' => $result['tradeid'],
             'name' => get_string('wizard_book_quest_name', 'block_playerhud', $tradename),
-            'reward_xp' => 150,
+            'reward_xp' => $bonusxp,
             'image_todo' => $book->image,
             'image_done' => $book->image,
         ];
@@ -1301,10 +1338,17 @@ class wizard_generate extends external_api {
      *
      * @param int $instanceid Block instance ID.
      * @param int $runid Wizard run ID.
+     * @param int $bonusxp Quest reward XP — the shared budget's slice for this run
+     *     (compute_shared_xp_shares()) when Items/Missions are also present, or
+     *     LATEPENALTY_QUEST_LEVEL * 20 otherwise.
      * @return array{items: string[], quest_name: string} Empty when LP isn't installed or the
      *     item already exists.
      */
-    public static function generate_latepenalty(int $instanceid, int $runid): array {
+    public static function generate_latepenalty(
+        int $instanceid,
+        int $runid,
+        int $bonusxp = self::LATEPENALTY_QUEST_LEVEL * 20
+    ): array {
         global $DB;
 
         if (!class_exists('\local_latepenalty\recalculator')) {
@@ -1339,7 +1383,7 @@ class wizard_generate extends external_api {
             'requirement' => self::LATEPENALTY_QUEST_LEVEL,
             'reward_itemid' => $itemid,
             'name' => get_string('wizard_latepenalty_quest_name', 'block_playerhud', self::LATEPENALTY_QUEST_LEVEL),
-            'reward_xp' => self::LATEPENALTY_QUEST_LEVEL * 20,
+            'reward_xp' => $bonusxp,
             'image_todo' => "\u{1F4C8}",
             'image_done' => "\u{23F3}",
         ];

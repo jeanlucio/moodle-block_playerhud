@@ -139,7 +139,7 @@ class wizard_start extends external_api {
         // the run history should see "next_chapter", not 6 individual "story_chapter_N" entries.
         $runid = \block_playerhud\local\wizard::start_run($params['instanceid'], (int) $USER->id, $steptypes);
 
-        [$itemxpshares, $missionxpshares] = wizard_generate::compute_shared_xp_shares(
+        [$itemxpshares, $missionxpshares, $pillbonusxp, $latepenaltybonusxp] = wizard_generate::compute_shared_xp_shares(
             $params['instanceid'],
             $config,
             $params
@@ -157,6 +157,8 @@ class wizard_start extends external_api {
             'total' => count($steps),
             'item_xp_shares' => $itemxpshares,
             'mission_xp_shares' => $missionxpshares,
+            'pill_bonus_xp' => $pillbonusxp,
+            'latepenalty_bonus_xp' => $latepenaltybonusxp,
             'has_slow_step' => in_array('next_chapter', $steptypes, true),
         ];
     }
@@ -250,6 +252,14 @@ class wizard_start extends external_api {
             'mission_xp_shares' => new external_multiple_structure(
                 new external_value(PARAM_INT, 'XP share'),
                 'XP to assign to each generated mission, in selection order'
+            ),
+            'pill_bonus_xp' => new external_value(
+                PARAM_INT,
+                'Reward XP for the Pill trade-completion quest, from the shared budget'
+            ),
+            'latepenalty_bonus_xp' => new external_value(
+                PARAM_INT,
+                'Reward XP for the Latepenalty early-win quest, from the shared budget'
             ),
             'has_slow_step' => new external_value(
                 PARAM_BOOL,

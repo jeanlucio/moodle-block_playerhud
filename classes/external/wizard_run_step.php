@@ -99,6 +99,18 @@ class wizard_run_step extends external_api {
                 VALUE_DEFAULT,
                 []
             ),
+            'pill_bonus_xp' => new external_value(
+                PARAM_INT,
+                'Reward XP for the Pill trade-completion quest, from wizard_start, only used by the "pill" step',
+                VALUE_DEFAULT,
+                0
+            ),
+            'latepenalty_bonus_xp' => new external_value(
+                PARAM_INT,
+                'Reward XP for the Latepenalty early-win quest, from wizard_start, only used by the "latepenalty" step',
+                VALUE_DEFAULT,
+                0
+            ),
         ]);
     }
 
@@ -119,6 +131,8 @@ class wizard_run_step extends external_api {
      * @param bool $islaststep Whether this is the final step of the plan.
      * @param bool $reporteconomy Whether to include the XP economy summary.
      * @param string[] $arcbeats Story arc beats from the "story_outline" step.
+     * @param int $pillbonusxp Reward XP for the Pill trade-completion quest, from wizard_start.
+     * @param int $latepenaltybonusxp Reward XP for the Latepenalty early-win quest, from wizard_start.
      * @return array Result structure.
      */
     public static function execute(
@@ -135,7 +149,9 @@ class wizard_run_step extends external_api {
         array $dropids = [],
         bool $islaststep = false,
         bool $reporteconomy = false,
-        array $arcbeats = []
+        array $arcbeats = [],
+        int $pillbonusxp = 0,
+        int $latepenaltybonusxp = 0
     ): array {
         global $DB, $USER;
 
@@ -154,6 +170,8 @@ class wizard_run_step extends external_api {
             'is_last_step' => $islaststep,
             'report_economy' => $reporteconomy,
             'arc_beats' => $arcbeats,
+            'pill_bonus_xp' => $pillbonusxp,
+            'latepenalty_bonus_xp' => $latepenaltybonusxp,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -292,13 +310,21 @@ class wizard_run_step extends external_api {
                         $params['runid']
                     );
                     $counts['items'] = count($names);
-                    $pilltrade = wizard_generate::generate_pill_trade($params['instanceid'], $params['runid']);
+                    $pilltrade = wizard_generate::generate_pill_trade(
+                        $params['instanceid'],
+                        $params['runid'],
+                        $params['pill_bonus_xp']
+                    );
                     $counts['trades'] += $pilltrade['trade_name'] !== '' ? 1 : 0;
                     $counts['quests'] += $pilltrade['quest_name'] !== '' ? 1 : 0;
                     break;
 
                 case 'latepenalty':
-                    $lpresult = wizard_generate::generate_latepenalty($params['instanceid'], $params['runid']);
+                    $lpresult = wizard_generate::generate_latepenalty(
+                        $params['instanceid'],
+                        $params['runid'],
+                        $params['latepenalty_bonus_xp']
+                    );
                     $counts['items'] = count($lpresult['items']);
                     $counts['quests'] += $lpresult['quest_name'] !== '' ? 1 : 0;
                     $lptradename = wizard_generate::generate_latepenalty_trade($params['instanceid'], $params['runid']);
