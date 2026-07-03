@@ -137,7 +137,7 @@ class wizard_run_step extends external_api {
         bool $reporteconomy = false,
         array $arcbeats = []
     ): array {
-        global $DB;
+        global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'instanceid' => $instanceid,
@@ -184,7 +184,7 @@ class wizard_run_step extends external_api {
         try {
             switch ($dispatchtype) {
                 case 'story_chapter':
-                    self::run_story_chapter_step($chapterindex, $params, $config);
+                    self::run_story_chapter_step($chapterindex, $params);
                     $counts['chapters'] = 1;
                     break;
 
@@ -198,6 +198,18 @@ class wizard_run_step extends external_api {
                         static fn(): array => $generator->generate_story_outline($params['theme'], $aichapters)
                     );
                     $newarcbeats = $outline['beats'];
+
+                    $log = new \stdClass();
+                    $log->blockinstanceid = $params['instanceid'];
+                    $log->userid          = $USER->id;
+                    $log->action_type     = 'story_outline';
+                    // Object_name is char(255) — a single AI-written beat can already run past
+                    // 190 chars, so joining several would risk a DB insert failure. Only the
+                    // first beat is stored, truncated defensively, as a representative summary.
+                    $log->object_name     = \core_text::substr($newarcbeats[0] ?? '', 0, 255);
+                    $log->ai_provider     = $outline['provider'] ?? 'Unknown';
+                    $log->timecreated     = time();
+                    $DB->insert_record('block_playerhud_ai_logs', $log);
                     break;
 
                 case 'items':
@@ -383,10 +395,11 @@ class wizard_run_step extends external_api {
      * @param int $chapterindex 1-based AI chapter number within the arc (chapter 1 is the fixed
      *     RPG chapter, so AI chapter 1 here is the story's chapter 2 overall).
      * @param array $params Validated wizard_run_step params.
-     * @param \stdClass $config Block configuration.
      * @return void
      */
-    protected static function run_story_chapter_step(int $chapterindex, array $params, \stdClass $config): void {
+    protected static function run_story_chapter_step(int $chapterindex, array $params): void {
+        global $DB, $USER;
+
         $beat = $params['arc_beats'][$chapterindex - 1] ?? '';
         $arcsummary = implode("\n", array_map(
             static fn(int $i, string $b): string => ($i + 1) . '. ' . $b,
@@ -414,6 +427,15 @@ class wizard_run_step extends external_api {
         if (!empty($result['choice_ids'])) {
             \block_playerhud\local\wizard::record_objects($params['runid'], 'block_playerhud_choices', $result['choice_ids']);
         }
+
+        $log = new \stdClass();
+        $log->blockinstanceid = $params['instanceid'];
+        $log->userid          = $USER->id;
+        $log->action_type     = 'story';
+        $log->object_name     = $result['chapter_title'];
+        $log->ai_provider     = $result['provider'] ?? 'Unknown';
+        $log->timecreated     = time();
+        $DB->insert_record('block_playerhud_ai_logs', $log);
     }
 
     /**
