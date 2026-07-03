@@ -576,6 +576,13 @@ $wizardsizeoptions = [
 ];
 $wizardhasplayergroup = class_exists('\mod_playergroup\api\group_info');
 $wizardhaslatepenalty = class_exists('\local_latepenalty\recalculator');
+// Value-based check (not isset()): once a teacher saves the edit form at all, xp_per_level and
+// max_levels are always present in configdata (the form sends both every time), so isset() alone
+// cannot tell "never touched" apart from "touched and kept at the default value" — which is fine,
+// since the suggestion is harmless to show either way.
+$wizardxpperlevel = isset($blockconfig->xp_per_level) ? (int) $blockconfig->xp_per_level : 100;
+$wizardmaxlevels = isset($blockconfig->max_levels) ? (int) $blockconfig->max_levels : 20;
+$wizardlevelsatdefault = ($wizardxpperlevel === 100 && $wizardmaxlevels === 20);
 
 $modalwizardhtml = $OUTPUT->render_from_template('block_playerhud/modal_wizard', [
     'instanceid' => $instanceid,
@@ -584,6 +591,7 @@ $modalwizardhtml = $OUTPUT->render_from_template('block_playerhud/modal_wizard',
     'size_options' => $wizardsizeoptions,
     'has_playergroup' => $wizardhasplayergroup,
     'has_latepenalty' => $wizardhaslatepenalty,
+    'levels_at_default' => $wizardlevelsatdefault,
 ]);
 
 $PAGE->requires->js_call_amd('block_playerhud/wizard', 'init', [[

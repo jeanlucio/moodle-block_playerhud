@@ -46,15 +46,6 @@ use context_block;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class wizard_generate extends external_api {
-    /** @var int Number of items generated for the "short journey" size. */
-    private const SIZE_SHORT_AMOUNT = 5;
-
-    /** @var int Number of items generated for the "medium journey" size. */
-    private const SIZE_MEDIUM_AMOUNT = 10;
-
-    /** @var int Number of items generated for the "long journey" size. */
-    private const SIZE_LONG_AMOUNT = 15;
-
     /** @var int How many progress items a chapter's costed choices ask for, in total. */
     private const CHAPTER_ITEM_COST = 2;
 
@@ -255,6 +246,28 @@ class wizard_generate extends external_api {
             $createddropids = [];
             $distributemessage = '';
 
+            // A single shared XP share, snapshotted once from the economy as it stands before
+            // either module runs, and split across every element BOTH will generate this call.
+            // Computing this separately inside each module (each calling economy_health() only
+            // when it runs) would let whichever module runs first — Items always runs before
+            // Missions — silently consume the entire remaining gap for itself, leaving the other
+            // with a shrunken or zeroed-out gap despite xp_budget's per-module math looking correct
+            // in isolation.
+            $sharedxp = 0;
+            if ($params['include_items'] || $params['include_missions']) {
+                [$xpperlevel, $maxlevels] = self::resolve_xp_settings($config);
+                $health = \block_playerhud\local\analytics::economy_health($params['instanceid'], $xpperlevel, $maxlevels);
+                $gap = max(0, $health->xp_ceiling - $health->total_items_xp);
+
+                $elementcount = \block_playerhud\local\xp_budget::compute_element_count(
+                    $params['size'],
+                    $params['include_items'],
+                    $params['include_missions']
+                );
+
+                $sharedxp = \block_playerhud\local\xp_budget::compute_share($gap, $elementcount);
+            }
+
             if ($params['include_items']) {
                 $itemsresult = self::generate_items(
                     $params['instanceid'],
@@ -262,6 +275,7 @@ class wizard_generate extends external_api {
                     $params['theme'],
                     $params['tone'],
                     $params['size'],
+                    $sharedxp,
                     $runid
                 );
                 $createditems = $itemsresult['names'];
@@ -275,6 +289,7 @@ class wizard_generate extends external_api {
                     $config,
                     $params['size'],
                     $params['tone_key'],
+                    $sharedxp,
                     $runid
                 );
             }
@@ -371,6 +386,15 @@ class wizard_generate extends external_api {
 
             \block_playerhud\local\wizard::finish_run($runid, 'done');
 
+            // Only worth reporting when this run could have moved the needle: Items and
+            // Missions are the modules xp_budget actually sizes against the level ceiling.
+            $economymessage = '';
+            if ($params['include_items'] || $params['include_missions']) {
+                [$xpperlevel, $maxlevels] = self::resolve_xp_settings($config);
+                $health = \block_playerhud\local\analytics::economy_health($params['instanceid'], $xpperlevel, $maxlevels);
+                $economymessage = self::build_economy_message($health);
+            }
+
             return [
                 'success' => true,
                 'runid' => $runid,
@@ -379,6 +403,7 @@ class wizard_generate extends external_api {
                 'created_quests' => $createdquests,
                 'created_trades' => $createdtrades,
                 'distribute_message' => $distributemessage,
+                'economy_message' => $economymessage,
             ];
         } catch (\Exception $e) {
             // A later module (e.g. auto-distribute) can fail after earlier modules already
@@ -395,6 +420,7 @@ class wizard_generate extends external_api {
                 'created_quests' => [],
                 'created_trades' => [],
                 'distribute_message' => '',
+                'economy_message' => '',
             ];
         }
     }
@@ -407,6 +433,10 @@ class wizard_generate extends external_api {
      * @param string $theme Subject theme.
      * @param string $tone Narrative tone.
      * @param string $size Journey size: short, medium or long.
+     * @param int $itemxp XP to assign to each item — a shared, deterministic per-element split
+     *     of the XP room computed once by the caller across every module running this call (see
+     *     execute()'s $sharedxp), not recomputed here against a gap items would otherwise see
+     *     entirely to themselves.
      * @param int $runid Wizard run ID.
      * @return array{names: string[], drop_ids: int[]} Created item names and drop IDs.
      */
@@ -416,29 +446,22 @@ class wizard_generate extends external_api {
         string $theme,
         string $tone,
         string $size,
+        int $itemxp,
         int $runid
     ): array {
         global $DB, $USER;
 
-        $xpperlevel = isset($config->xp_per_level) ? (int)$config->xp_per_level : 100;
-        $maxlevels = isset($config->max_levels) ? (int)$config->max_levels : 20;
-        $amount = match ($size) {
-            'long' => self::SIZE_LONG_AMOUNT,
-            'medium' => self::SIZE_MEDIUM_AMOUNT,
-            default => self::SIZE_SHORT_AMOUNT,
-        };
+        [$xpperlevel, $maxlevels] = self::resolve_xp_settings($config);
+        $amount = \block_playerhud\local\xp_budget::compute_item_count($size);
 
+        // Only used for the AI prompt's narrative framing (easy/hard wording, from the gap's
+        // sign) — the numeric itemxp above is the caller's shared, pre-computed split.
         $balancecontext = \block_playerhud\local\analytics::balance_context(
             $instanceid,
             $xpperlevel,
             $maxlevels,
             $amount
         );
-
-        // A deterministic per-item share of the remaining XP room, instead of a single random
-        // value picked once from a coarse gap-size bucket and applied identically to every item
-        // regardless of how many are being generated (see xp_budget's docblock).
-        $itemxp = \block_playerhud\local\xp_budget::compute_share($balancecontext['gap'], $amount);
 
         $generator = new \block_playerhud\ai\generator($instanceid);
         $result = $generator->generate(
@@ -504,6 +527,10 @@ class wizard_generate extends external_api {
      * @param \stdClass $config Block configuration.
      * @param string $size Journey size: short, medium or long.
      * @param string $tonekey Narrative tone key.
+     * @param int $missionxp XP to assign to each selected mission — a shared, deterministic
+     *     per-element split of the XP room computed once by the caller across every module
+     *     running this call (see execute()'s $sharedxp), not recomputed here against a gap
+     *     missions would otherwise see entirely to themselves.
      * @param int $runid Wizard run ID.
      * @return string[] Names of the created quests.
      */
@@ -513,12 +540,10 @@ class wizard_generate extends external_api {
         \stdClass $config,
         string $size,
         string $tonekey,
+        int $missionxp,
         int $runid
     ): array {
         global $DB;
-
-        $xpperlevel = isset($config->xp_per_level) ? (int) $config->xp_per_level : 100;
-        $maxlevels = isset($config->max_levels) ? (int) $config->max_levels : 20;
 
         $allowedtypes = [
             \block_playerhud\quest::TYPE_LEVEL,
@@ -533,12 +558,6 @@ class wizard_generate extends external_api {
 
         $limit = \block_playerhud\local\xp_budget::compute_mission_count($size);
         $selected = \block_playerhud\local\xp_budget::select_balanced_missions($suggestions, $limit);
-
-        // Economy_health() (unlike balance_context(), used for items) also accounts for existing
-        // quest reward_xp, so missions never overshoot the ceiling on top of quests already there.
-        $health = \block_playerhud\local\analytics::economy_health($instanceid, $xpperlevel, $maxlevels);
-        $gap = max(0, $health->xp_ceiling - $health->total_items_xp);
-        $missionxp = \block_playerhud\local\xp_budget::compute_share($gap, count($selected));
 
         $createdquests = [];
         $createdids = [];
@@ -1140,6 +1159,38 @@ class wizard_generate extends external_api {
     }
 
     /**
+     * Resolves the block's XP-per-level and max-levels settings, falling back to the edit
+     * form's own defaults (100 XP, 20 levels — see edit_form.php) when unset.
+     *
+     * @param \stdClass $config Block configuration.
+     * @return array{0: int, 1: int} [xpperlevel, maxlevels].
+     */
+    protected static function resolve_xp_settings(\stdClass $config): array {
+        $xpperlevel = isset($config->xp_per_level) ? (int) $config->xp_per_level : 100;
+        $maxlevels = isset($config->max_levels) ? (int) $config->max_levels : 20;
+
+        return [$xpperlevel, $maxlevels];
+    }
+
+    /**
+     * Builds a human-readable summary of how much of the level ceiling the instance's XP
+     * economy covers, from an `analytics::economy_health()` result.
+     *
+     * @param \stdClass $health Result of analytics::economy_health().
+     * @return string The localised summary message.
+     */
+    protected static function build_economy_message(\stdClass $health): string {
+        $ratio = (int) round($health->ratio);
+
+        return match ($health->status) {
+            'perfect' => get_string('wizard_economy_perfect', 'block_playerhud', $ratio),
+            'easy' => get_string('wizard_economy_easy', 'block_playerhud', $ratio),
+            'hard' => get_string('wizard_economy_hard', 'block_playerhud', $ratio),
+            default => get_string('wizard_economy_empty', 'block_playerhud'),
+        };
+    }
+
+    /**
      * Resolves a tone-flavoured name for a heuristic mission suggestion, falling back to the
      * Fantasy tone's phrasing for an unrecognised tone key, and to the suggestion's own
      * generic name for an unsupported quest type or a since-removed activity.
@@ -1383,6 +1434,12 @@ class wizard_generate extends external_api {
             'distribute_message' => new external_value(
                 PARAM_TEXT,
                 'Note about drop auto-distribution, empty when nothing to report',
+                VALUE_OPTIONAL
+            ),
+            'economy_message' => new external_value(
+                PARAM_TEXT,
+                "Note about how much of the level ceiling the instance's XP economy covers, " .
+                    'empty when Items and Missions were both left unticked',
                 VALUE_OPTIONAL
             ),
         ]);

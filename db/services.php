@@ -180,6 +180,15 @@ $functions = [
         'loginrequired' => true,
     ],
 
+    'block_playerhud_wizard_apply_suggested_levels' => [
+        'classname'     => 'block_playerhud\external\wizard_apply_suggested_levels',
+        'methodname'    => 'execute',
+        'description'   => "Apply the wizard's suggested max_levels for a journey size",
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
     'block_playerhud_wizard_rollback' => [
         'classname'     => 'block_playerhud\external\wizard_rollback',
         'methodname'    => 'execute',

@@ -37,6 +37,28 @@ use advanced_testcase;
  */
 final class xp_budget_test extends advanced_testcase {
     /**
+     * Each journey size maps to its own item count.
+     */
+    public function test_compute_item_count_maps_each_size(): void {
+        $this->assertSame(5, xp_budget::compute_item_count('short'));
+        $this->assertSame(10, xp_budget::compute_item_count('medium'));
+        $this->assertSame(15, xp_budget::compute_item_count('long'));
+    }
+
+    /**
+     * Items and Missions running in the same call share ONE combined element count, so a
+     * caller can split a single gap across both rather than each seeing the whole gap to
+     * itself — the fix for wizard_generate running Items first and silently starving
+     * Missions of the entire budget before it even ran.
+     */
+    public function test_compute_element_count_combines_both_modules(): void {
+        $this->assertSame(5, xp_budget::compute_element_count('short', true, false));
+        $this->assertSame(3, xp_budget::compute_element_count('short', false, true));
+        $this->assertSame(8, xp_budget::compute_element_count('short', true, true));
+        $this->assertSame(0, xp_budget::compute_element_count('short', false, false));
+    }
+
+    /**
      * A batch's per-item XP is an even floor share of the gap, so the batch total scales with
      * how many items are being generated rather than staying fixed regardless of item count.
      */
@@ -69,6 +91,24 @@ final class xp_budget_test extends advanced_testcase {
         $this->assertSame(0, xp_budget::compute_share(-10, 5));
         $this->assertSame(0, xp_budget::compute_share(300, 0));
         $this->assertSame(0, xp_budget::compute_share(300, -1));
+    }
+
+    /**
+     * Each journey size maps to its own suggested max_levels, offered as an opt-in suggestion
+     * when the instance is still at the form's defaults.
+     */
+    public function test_compute_suggested_max_levels_maps_each_size(): void {
+        $this->assertSame(10, xp_budget::compute_suggested_max_levels('short'));
+        $this->assertSame(15, xp_budget::compute_suggested_max_levels('medium'));
+        $this->assertSame(20, xp_budget::compute_suggested_max_levels('long'));
+    }
+
+    /**
+     * An unrecognised size string falls back to the short suggestion, matching the size
+     * parameter's own PARAM_ALPHA default of 'short'.
+     */
+    public function test_compute_suggested_max_levels_falls_back_to_short(): void {
+        $this->assertSame(10, xp_budget::compute_suggested_max_levels('unknown'));
     }
 
     /**
