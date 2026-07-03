@@ -223,6 +223,61 @@ final class wizard_run_step_test extends external_base_testcase {
     }
 
     /**
+     * § 5.9 Fatia 2: the "story_outline" step is AI-backed and exercised manually with a real
+     * key (like "items"/"next_chapter" in wizard_generate_test.php); this only proves that with
+     * no key configured it fails gracefully (success: false, no exception) and writes nothing —
+     * the internal 1x retry (see generate_with_retry()) still ends in failure when both attempts
+     * have no key to call, rather than looping forever or throwing past the try/catch.
+     */
+    public function test_story_outline_step_fails_gracefully_without_an_ai_key(): void {
+        global $DB;
+
+        set_config('apikey_gemini', '', 'block_playerhud');
+        set_config('apikey_groq', '', 'block_playerhud');
+        set_config('apikey_openai', '', 'block_playerhud');
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'story_outline', 'A haunted forest');
+
+        $this->assertFalse($result['success']);
+        $this->assertSame([], $result['arc_beats']);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
+     * Same as above for an individual "story_chapter_N" step — it must not create the progress
+     * item nor any chapter/node/choice row when the AI call itself never succeeds.
+     */
+    public function test_story_chapter_step_fails_gracefully_without_an_ai_key(): void {
+        global $DB;
+
+        set_config('apikey_gemini', '', 'block_playerhud');
+        set_config('apikey_groq', '', 'block_playerhud');
+        set_config('apikey_openai', '', 'block_playerhud');
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute(
+            $this->instanceid,
+            $this->course->id,
+            $runid,
+            'story_chapter_1',
+            'A haunted forest',
+            '',
+            'fantasy',
+            'short',
+            [],
+            [],
+            [],
+            false,
+            false,
+            ['Chapter 2: the descent begins.']
+        );
+
+        $this->assertFalse($result['success']);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
      * A student without block/playerhud:manage must be rejected.
      */
     public function test_wizard_run_step_requires_manage_capability(): void {

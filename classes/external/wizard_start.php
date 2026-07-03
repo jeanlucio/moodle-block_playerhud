@@ -135,6 +135,8 @@ class wizard_start extends external_api {
         }
 
         $steptypes = wizard_generate::build_step_types($params);
+        // The run's own manifest stores the logical module list (unexpanded) — a human reading
+        // the run history should see "next_chapter", not 6 individual "story_chapter_N" entries.
         $runid = \block_playerhud\local\wizard::start_run($params['instanceid'], (int) $USER->id, $steptypes);
 
         [$itemxpshares, $missionxpshares] = wizard_generate::compute_shared_xp_shares(
@@ -143,9 +145,10 @@ class wizard_start extends external_api {
             $params
         );
 
+        $plansteptypes = self::expand_story_arc($steptypes, $params['size']);
         $steps = array_map(
             static fn(string $type): array => ['type' => $type, 'label' => self::step_label($type)],
-            $steptypes
+            $plansteptypes
         );
 
         return [
@@ -159,13 +162,52 @@ class wizard_start extends external_api {
     }
 
     /**
+     * Expands the single "next_chapter" module into the live-progress plan's real granularity:
+     * one "story_outline" step (the AI arc skeleton) followed by one "story_chapter_N" step per
+     * AI-generated chapter — so the progress bar can show "Chapter 3 of 6" instead of the whole
+     * arc looking like one opaque step. Every other step type passes through unchanged.
+     *
+     * @param string[] $steptypes The logical module list from build_step_types().
+     * @param string $size Journey size: short, medium or long.
+     * @return string[] The expanded, execution-ready step plan.
+     */
+    protected static function expand_story_arc(array $steptypes, string $size): array {
+        $aichapters = max(0, \block_playerhud\local\xp_budget::compute_chapter_count($size) - 1);
+
+        $expanded = [];
+        foreach ($steptypes as $type) {
+            if ($type !== 'next_chapter') {
+                $expanded[] = $type;
+                continue;
+            }
+            if ($aichapters === 0) {
+                continue;
+            }
+            $expanded[] = 'story_outline';
+            for ($i = 1; $i <= $aichapters; $i++) {
+                $expanded[] = "story_chapter_{$i}";
+            }
+        }
+
+        return $expanded;
+    }
+
+    /**
      * Resolves the localised label for a step type, reusing the same strings the module
-     * checkboxes already use in the wizard form.
+     * checkboxes already use in the wizard form. "story_outline"/"story_chapter_N" (the expanded
+     * story arc steps) get their own labels instead, since they have no matching checkbox.
      *
      * @param string $type Step type identifier, e.g. 'items'.
      * @return string The localised label.
      */
     protected static function step_label(string $type): string {
+        if ($type === 'story_outline') {
+            return get_string('wizard_step_story_outline', 'block_playerhud');
+        }
+        if (preg_match('/^story_chapter_(\d+)$/', $type, $matches) === 1) {
+            return get_string('wizard_step_story_chapter', 'block_playerhud', (int) $matches[1]);
+        }
+
         $stringkeybytype = [
             'items' => 'wizard_module_items_ai',
             'missions' => 'wizard_module_missions',

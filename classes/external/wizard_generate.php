@@ -47,7 +47,7 @@ use context_block;
  */
 class wizard_generate extends external_api {
     /** @var int How many progress items a chapter's costed choices ask for, in total. */
-    private const CHAPTER_ITEM_COST = 2;
+    public const CHAPTER_ITEM_COST = 2;
 
     /**
      * Define parameters for wizard_generate.
@@ -1534,6 +1534,71 @@ class wizard_generate extends external_api {
     }
 
     /**
+     * Ensures the tone's progress item exists (creating it if this is the first module in this
+     * instance to need it) and returns its ID — a story chapter with no cost item defeats the
+     * point of it. Shared by {@see generate_next_chapter()} and the § 5.9 story-arc chapter step.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param string $tonekey Narrative tone key.
+     * @param int $runid Wizard run ID, used only if the item still needs creating.
+     * @return int The progress item's ID.
+     */
+    public static function resolve_or_create_progress_item(int $instanceid, string $tonekey, int $runid): int {
+        global $DB;
+
+        $itemname = self::resolve_progress_item_name($tonekey);
+        $item = $DB->get_record('block_playerhud_items', ['blockinstanceid' => $instanceid, 'name' => $itemname]);
+        if ($item) {
+            return (int) $item->id;
+        }
+
+        self::generate_progress_item($instanceid, $tonekey, $runid);
+        $item = $DB->get_record(
+            'block_playerhud_items',
+            ['blockinstanceid' => $instanceid, 'name' => $itemname],
+            '*',
+            MUST_EXIST
+        );
+
+        return (int) $item->id;
+    }
+
+    /**
+     * Builds a short recap of the instance's most recently created story chapter — its title,
+     * one-line summary and opening scene text — for the § 5.9 story-arc chapter step to keep the
+     * next AI chapter consistent with. Deliberately reads from the database rather than accepting
+     * this from the caller: the previous chapter was just written by an earlier step in the same
+     * run, so the server always has the real, final text, never a client-held draft.
+     *
+     * @param int $instanceid Block instance ID.
+     * @return string The recap, or an empty string if the instance has no chapters yet.
+     */
+    public static function resolve_previous_chapter_context(int $instanceid): string {
+        global $DB;
+
+        $chapters = $DB->get_records('block_playerhud_chapters', ['blockinstanceid' => $instanceid], 'sortorder DESC', '*', 0, 1);
+        $chapter = reset($chapters);
+        if (!$chapter) {
+            return '';
+        }
+
+        $context = $chapter->title;
+        if ($chapter->intro_text !== '') {
+            $context .= ' — ' . $chapter->intro_text;
+        }
+
+        $startnode = $DB->get_record(
+            'block_playerhud_story_nodes',
+            ['chapterid' => $chapter->id, 'is_start' => 1]
+        );
+        if ($startnode) {
+            $context .= "\n" . $startnode->content;
+        }
+
+        return $context;
+    }
+
+    /**
      * Generates a new AI story chapter, costing the progress item on some of its choices.
      *
      * Ensures the progress item exists first (creating it if this is the first module in this
@@ -1551,19 +1616,16 @@ class wizard_generate extends external_api {
         global $DB, $USER;
 
         $itemname = self::resolve_progress_item_name($tonekey);
-        $item = $DB->get_record('block_playerhud_items', ['blockinstanceid' => $instanceid, 'name' => $itemname]);
-
-        $createditems = [];
-        if (!$item) {
-            $progressresult = self::generate_progress_item($instanceid, $tonekey, $runid);
-            $createditems = $progressresult['names'];
-            $itemconditions = ['blockinstanceid' => $instanceid, 'name' => $itemname];
-            $item = $DB->get_record('block_playerhud_items', $itemconditions, '*', MUST_EXIST);
-        }
+        $alreadyexisted = $DB->record_exists(
+            'block_playerhud_items',
+            ['blockinstanceid' => $instanceid, 'name' => $itemname]
+        );
+        $itemid = self::resolve_or_create_progress_item($instanceid, $tonekey, $runid);
+        $createditems = $alreadyexisted ? [] : [$itemname];
 
         $generator = new \block_playerhud\ai\generator($instanceid);
         $result = $generator->generate_story($theme, [
-            'item_id' => (int) $item->id,
+            'item_id' => $itemid,
             'item_qty' => self::CHAPTER_ITEM_COST,
         ]);
 

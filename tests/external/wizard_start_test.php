@@ -110,6 +110,90 @@ final class wizard_start_test extends external_base_testcase {
     }
 
     /**
+     * § 5.9 Fatia 2: selecting the story arc module expands into one "story_outline" step
+     * followed by one "story_chapter_N" step per AI-generated chapter — chapter count minus 1
+     * (Chapter 1 is the fixed RPG chapter, never part of this expansion) — sized to the journey.
+     * This is pure plan-building: wizard_start never calls the AI generator itself.
+     */
+    public function test_story_arc_module_expands_into_outline_and_chapter_steps(): void {
+        $result = wizard_start::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            true
+        );
+
+        $this->assertSame(
+            ['story_outline', 'story_chapter_1', 'story_chapter_2', 'story_chapter_3', 'story_chapter_4'],
+            array_column($result['steps'], 'type')
+        );
+        $this->assertNotSame('', $result['steps'][0]['label']);
+        $this->assertNotSame('', $result['steps'][1]['label']);
+    }
+
+    /**
+     * The expansion is sized to the journey — a "long" run has more AI chapters than "short".
+     */
+    public function test_story_arc_step_count_grows_with_journey_size(): void {
+        $result = wizard_start::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'long',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            true
+        );
+
+        $this->assertCount(7, $result['steps']);
+    }
+
+    /**
+     * The run's manifest keeps the logical module name ("next_chapter"), not the expanded
+     * per-chapter step list — a human reading the run history should see one entry, not 5.
+     */
+    public function test_story_arc_manifest_keeps_the_logical_module_name(): void {
+        global $DB;
+
+        $result = wizard_start::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            true
+        );
+
+        $run = $DB->get_record('block_playerhud_wizard_runs', ['id' => $result['runid']], '*', MUST_EXIST);
+        $this->assertSame(['next_chapter'], json_decode($run->modules, true));
+    }
+
+    /**
      * A student without block/playerhud:manage must be rejected.
      */
     public function test_wizard_start_requires_manage_capability(): void {

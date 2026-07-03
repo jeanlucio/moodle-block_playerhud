@@ -1615,6 +1615,43 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
+     * resolve_or_create_progress_item() creates the item on first call and reuses the same ID
+     * on a second call — the § 5.9 story-arc chapter step relies on this to never duplicate it
+     * across the arc's several chapter steps.
+     */
+    public function test_resolve_or_create_progress_item_is_idempotent(): void {
+        global $DB;
+
+        $runid = \block_playerhud\local\wizard::start_run($this->instanceid, 2, []);
+
+        $first = wizard_generate::resolve_or_create_progress_item($this->instanceid, 'fantasy', $runid);
+        $second = wizard_generate::resolve_or_create_progress_item($this->instanceid, 'fantasy', $runid);
+
+        $this->assertSame($first, $second);
+        $this->assertEquals(1, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
+     * resolve_previous_chapter_context() is empty for an instance with no chapters yet, and
+     * combines the latest chapter's title/intro with its starting node's real text once one
+     * exists — the § 5.9 story-arc chapter step uses this, read from the database rather than
+     * trusting the browser, to keep each new AI chapter consistent with the one before it.
+     */
+    public function test_resolve_previous_chapter_context_reads_the_latest_chapter(): void {
+        $this->assertSame('', wizard_generate::resolve_previous_chapter_context($this->instanceid));
+
+        global $DB;
+        $chapter = $this->create_chapter('The Sunken Library');
+        $DB->set_field('block_playerhud_chapters', 'intro_text', 'A flooded archive of secrets.', ['id' => $chapter->id]);
+        $this->create_node($chapter->id, 'You wade into the flooded archive, torch held high.', true);
+
+        $context = wizard_generate::resolve_previous_chapter_context($this->instanceid);
+        $this->assertStringContainsString('The Sunken Library', $context);
+        $this->assertStringContainsString('A flooded archive of secrets.', $context);
+        $this->assertStringContainsString('You wade into the flooded archive, torch held high.', $context);
+    }
+
+    /**
      * Builds a validated params array matching wizard_generate::execute_parameters()'s shape,
      * with every include_* flag defaulting to false — mirrors what self::validate_parameters()
      * produces inside execute(), since build_step_types()/compute_shared_xp_shares() are called

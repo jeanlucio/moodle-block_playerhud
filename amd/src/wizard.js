@@ -446,11 +446,12 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
          * @param {Object} totals Accumulated counts, mutated in place across retries.
          * @param {number[]} dropids Accumulated drop IDs, mutated in place across retries.
          * @param {string[]} stepMessages Accumulated step notes, mutated in place across retries.
+         * @param {string[]} arcBeats Story arc beats, mutated in place once "story_outline" runs.
          * @param {number[]} itemxpshares XP shares for the "items" step, from wizard_start.
          * @param {number[]} missionxpshares XP shares for the "missions" step, from wizard_start.
          */
         const runStepsFrom = async(
-            runParams, runid, steps, startIndex, totals, dropids, stepMessages, itemxpshares, missionxpshares
+            runParams, runid, steps, startIndex, totals, dropids, stepMessages, arcBeats, itemxpshares, missionxpshares
         ) => {
             const reporteconomy = steps.some((step) => step.type === 'items' || step.type === 'missions');
 
@@ -463,7 +464,8 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                     {current: index + 1, total: steps.length});
 
                 const resume = () => runStepsFrom(
-                    runParams, runid, steps, index, totals, dropids, stepMessages, itemxpshares, missionxpshares
+                    runParams, runid, steps, index, totals, dropids, stepMessages, arcBeats,
+                    itemxpshares, missionxpshares
                 );
 
                 let result;
@@ -482,6 +484,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                             'item_xp_shares': step.type === 'items' ? itemxpshares : [],
                             'mission_xp_shares': step.type === 'missions' ? missionxpshares : [],
                             'drop_ids': step.type === 'auto_distribute' ? dropids : [],
+                            'arc_beats': step.type.startsWith('story_chapter_') ? arcBeats : [],
                             'is_last_step': islaststep,
                             'report_economy': islaststep && reporteconomy,
                         },
@@ -503,6 +506,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 totals.chapters += result.counts.chapters;
                 totals.classes += result.counts.classes;
                 dropids.push(...result.drop_ids);
+                arcBeats.push(...result.arc_beats);
                 if (result.message) {
                     stepMessages.push(result.message);
                 }
@@ -536,7 +540,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
 
             const totals = {items: 0, quests: 0, trades: 0, chapters: 0, classes: 0};
             await runStepsFrom(
-                runParams, started.runid, started.steps, 0, totals, [], [],
+                runParams, started.runid, started.steps, 0, totals, [], [], [],
                 started.item_xp_shares, started.mission_xp_shares
             );
         };

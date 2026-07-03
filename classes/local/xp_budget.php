@@ -56,6 +56,20 @@ final class xp_budget {
     private const MISSION_COUNT_LONG = 8;
 
     /**
+     * @var int Total chapter count (including the fixed Chapter 1) for the "short journey" size.
+     *     5 is a design floor, not an arbitrary minimum: the RPG tier system awards 1 star per
+     *     completed chapter up to 5, so anything less would make the max tier unreachable via the
+     *     wizard's own story arc.
+     */
+    private const CHAPTER_COUNT_SHORT = 5;
+
+    /** @var int Total chapter count (including the fixed Chapter 1) for the "medium journey" size. */
+    private const CHAPTER_COUNT_MEDIUM = 6;
+
+    /** @var int Total chapter count (including the fixed Chapter 1) for the "long journey" size. */
+    private const CHAPTER_COUNT_LONG = 7;
+
+    /**
      * Maps a wizard journey size to how many items to generate.
      *
      * @param string $size Journey size: short, medium or long.
@@ -89,6 +103,21 @@ final class xp_budget {
         }
 
         return $count;
+    }
+
+    /**
+     * Maps a wizard journey size to the story arc's total chapter count, including the fixed
+     * Chapter 1 — so the wizard's story-arc step generates exactly this minus 1 AI chapters.
+     *
+     * @param string $size Journey size: short, medium or long.
+     * @return int Total chapter count.
+     */
+    public static function compute_chapter_count(string $size): int {
+        return match ($size) {
+            'long' => self::CHAPTER_COUNT_LONG,
+            'medium' => self::CHAPTER_COUNT_MEDIUM,
+            default => self::CHAPTER_COUNT_SHORT,
+        };
     }
 
     // The 3 constants below are echoed as plain numbers in the wizard_levels_suggestion_* lang

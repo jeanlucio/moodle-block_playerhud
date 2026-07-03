@@ -135,6 +135,25 @@ final class xp_budget_test extends advanced_testcase {
     }
 
     /**
+     * Each journey size maps to its own total chapter count (including the fixed Chapter 1) —
+     * short's floor of 5 is a design requirement, not an arbitrary minimum: 1 star per completed
+     * chapter up to 5 means the wizard's own story arc must reach the max RPG tier on its own.
+     */
+    public function test_compute_chapter_count_maps_each_size(): void {
+        $this->assertSame(5, xp_budget::compute_chapter_count('short'));
+        $this->assertSame(6, xp_budget::compute_chapter_count('medium'));
+        $this->assertSame(7, xp_budget::compute_chapter_count('long'));
+    }
+
+    /**
+     * An unrecognised size string falls back to the short chapter count, matching the size
+     * parameter's own PARAM_ALPHA default of 'short'.
+     */
+    public function test_compute_chapter_count_falls_back_to_short(): void {
+        $this->assertSame(5, xp_budget::compute_chapter_count('unknown'));
+    }
+
+    /**
      * Selection round-robins across suggestion types instead of taking candidates in list
      * order, so a type with many candidates cannot crowd out the others before the limit is
      * reached.

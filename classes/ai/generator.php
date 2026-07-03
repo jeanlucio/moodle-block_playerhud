@@ -790,10 +790,83 @@ class generator {
                 . "across key choices where the player must pay a price to proceed.";
         }
 
+        $arcsummary = trim((string) ($options['arc_summary'] ?? ''));
+        if ($arcsummary !== '') {
+            $prompt .= "\n\nFull story arc, for consistency only — do not restate it, just keep the tone, "
+                . "characters and setting coherent with where the story is headed:\n{$arcsummary}";
+        }
+
+        $beat = trim((string) ($options['beat'] ?? ''));
+        if ($beat !== '') {
+            $prompt .= "\n\nThis chapter's specific role in the arc: {$beat}";
+        }
+
+        $previouscontext = trim((string) ($options['previous_context'] ?? ''));
+        if ($previouscontext !== '') {
+            $prompt .= "\n\nContinue directly from the previous chapter, which ended like this:\n"
+                . "{$previouscontext}\nKeep character names, tone and setting consistent with it — "
+                . 'this is chapter 2 or later, not a new opening.';
+        }
+
         $currentlang = get_string('thislanguage', 'langconfig');
         $prompt .= "\nGenerate all text content in the language: {$currentlang}.";
 
         return ['system' => '', 'user' => $prompt];
+    }
+
+    /**
+     * Builds the prompt for generating a multi-chapter story arc outline: one short beat per
+     * chapter, so later chapters can be generated individually while staying consistent with a
+     * plan that has a real beginning, middle and end — instead of only knowing the immediately
+     * previous chapter (a Markov chain that tends to wander over 5+ chapters).
+     *
+     * @param string $theme The story theme or setting.
+     * @param int $chaptercount How many beats to produce, one per chapter.
+     * @return array{system: string, user: string} Prompt parts for call_with_fallback().
+     */
+    protected function build_prompt_story_outline(string $theme, int $chaptercount): array {
+        $prompt = "You are an interactive story designer for an educational text-adventure game."
+            . " Design a {$chaptercount}-chapter story arc outline based on the theme: {$theme}."
+            . ' The arc must have a clear beginning (chapter 1), rising tension through the middle'
+            . ' chapters, and a satisfying climax and resolution on the final chapter — do not let'
+            . ' the story wander without direction.'
+            . ' Reply ONLY with valid JSON — no markdown, no extra text.'
+            . ' Structure: {"beats":["one-sentence summary of chapter 1\'s events",'
+            . '"one-sentence summary of chapter 2\'s events"]}.'
+            . " The \"beats\" array must have exactly {$chaptercount} entries, in chapter order.";
+
+        $currentlang = get_string('thislanguage', 'langconfig');
+        $prompt .= "\nGenerate all text content in the language: {$currentlang}.";
+
+        return ['system' => '', 'user' => $prompt];
+    }
+
+    /**
+     * Generates a story arc outline via AI: one short beat per chapter, used to keep a
+     * multi-chapter arc coherent (see build_prompt_story_outline()).
+     *
+     * @param string $theme The story theme or setting.
+     * @param int $chaptercount How many beats to produce, one per chapter.
+     * @return array{beats: string[], provider: string} Exactly $chaptercount beats, in order.
+     * @throws \moodle_exception If parsing fails, key loading fails, or fewer beats than
+     *     requested come back.
+     */
+    public function generate_story_outline(string $theme, int $chaptercount): array {
+        $prompt = $this->build_prompt_story_outline($theme, $chaptercount);
+        $result = $this->call_with_fallback($prompt, 'story');
+
+        // Backtick markdown cleanup.
+        $cleanjson = preg_replace('/^\x60{3}json|\x60{3}$/m', '', $result['data']);
+        $aidata = json_decode($cleanjson, true);
+
+        if (!$aidata || empty($aidata['beats']) || count($aidata['beats']) < $chaptercount) {
+            throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
+        }
+
+        return [
+            'beats' => array_slice(array_values($aidata['beats']), 0, $chaptercount),
+            'provider' => $result['provider'],
+        ];
     }
 
     /**

@@ -90,6 +90,15 @@ class wizard_run_step extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            // Kept last: the ordered keys here must match execute()'s own parameter order — core's
+            // external API dispatcher calls the method positionally, using this array's key order,
+            // not the incoming AJAX call's argument names.
+            'arc_beats' => new external_multiple_structure(
+                new external_value(PARAM_TEXT, 'Beat'),
+                'Story arc beats returned by the "story_outline" step, only used by "story_chapter_N" steps',
+                VALUE_DEFAULT,
+                []
+            ),
         ]);
     }
 
@@ -109,6 +118,7 @@ class wizard_run_step extends external_api {
      * @param int[] $dropids Drop IDs accumulated from earlier steps.
      * @param bool $islaststep Whether this is the final step of the plan.
      * @param bool $reporteconomy Whether to include the XP economy summary.
+     * @param string[] $arcbeats Story arc beats from the "story_outline" step.
      * @return array Result structure.
      */
     public static function execute(
@@ -124,7 +134,8 @@ class wizard_run_step extends external_api {
         array $missionxpshares = [],
         array $dropids = [],
         bool $islaststep = false,
-        bool $reporteconomy = false
+        bool $reporteconomy = false,
+        array $arcbeats = []
     ): array {
         global $DB;
 
@@ -142,6 +153,7 @@ class wizard_run_step extends external_api {
             'drop_ids' => $dropids,
             'is_last_step' => $islaststep,
             'report_economy' => $reporteconomy,
+            'arc_beats' => $arcbeats,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -157,9 +169,37 @@ class wizard_run_step extends external_api {
         $counts = ['items' => 0, 'quests' => 0, 'trades' => 0, 'chapters' => 0, 'classes' => 0];
         $newdropids = [];
         $message = '';
+        $newarcbeats = [];
+
+        // Step types like "story_chapter_3" (one per AI chapter in the arc) are normalized to a
+        // single 'story_chapter' switch case here — the index is the only per-call variable, so
+        // this avoids one case per possible chapter number.
+        $chapterindex = 0;
+        $dispatchtype = $params['steptype'];
+        if (preg_match('/^story_chapter_(\d+)$/', $dispatchtype, $matches) === 1) {
+            $chapterindex = (int) $matches[1];
+            $dispatchtype = 'story_chapter';
+        }
 
         try {
-            switch ($params['steptype']) {
+            switch ($dispatchtype) {
+                case 'story_chapter':
+                    self::run_story_chapter_step($chapterindex, $params, $config);
+                    $counts['chapters'] = 1;
+                    break;
+
+                case 'story_outline':
+                    $aichapters = max(
+                        0,
+                        \block_playerhud\local\xp_budget::compute_chapter_count($params['size']) - 1
+                    );
+                    $generator = new \block_playerhud\ai\generator($params['instanceid']);
+                    $outline = self::generate_with_retry(
+                        static fn(): array => $generator->generate_story_outline($params['theme'], $aichapters)
+                    );
+                    $newarcbeats = $outline['beats'];
+                    break;
+
                 case 'items':
                     $result = wizard_generate::generate_items(
                         $params['instanceid'],
@@ -291,6 +331,7 @@ class wizard_run_step extends external_api {
                 'counts' => $counts,
                 'drop_ids' => $newdropids,
                 'economy_message' => '',
+                'arc_beats' => [],
             ];
         }
 
@@ -310,7 +351,69 @@ class wizard_run_step extends external_api {
             'counts' => $counts,
             'drop_ids' => $newdropids,
             'economy_message' => $economymessage,
+            'arc_beats' => $newarcbeats,
         ];
+    }
+
+    /**
+     * Runs a single AI-backed callable, retrying it exactly once on failure — AI generation
+     * fails more often than the deterministic modules, and a chapter/outline step never writes
+     * anything before this succeeds, so retrying in place is safe (see § 5.9 of the project plan:
+     * this is a per-step, in-request retry, distinct from the browser's own "try again" button,
+     * which resumes the whole failed step from scratch after a click).
+     *
+     * @param callable $callable Callable with no arguments, returning the generation result.
+     * @return mixed The callable's return value.
+     * @throws \Exception The second attempt's exception, if both attempts fail.
+     */
+    protected static function generate_with_retry(callable $callable) {
+        try {
+            return $callable();
+        } catch (\Exception $e) {
+            return $callable();
+        }
+    }
+
+    /**
+     * Runs one story-arc chapter step: reads the previous chapter's real text from the database
+     * (never from the client — see § 5.9's "contexto vem do servidor, não do cliente"), generates
+     * the next chapter against the full arc + this chapter's own beat + that previous text, and
+     * records the new chapter/nodes/choices in the run's manifest.
+     *
+     * @param int $chapterindex 1-based AI chapter number within the arc (chapter 1 is the fixed
+     *     RPG chapter, so AI chapter 1 here is the story's chapter 2 overall).
+     * @param array $params Validated wizard_run_step params.
+     * @param \stdClass $config Block configuration.
+     * @return void
+     */
+    protected static function run_story_chapter_step(int $chapterindex, array $params, \stdClass $config): void {
+        $beat = $params['arc_beats'][$chapterindex - 1] ?? '';
+        $arcsummary = implode("\n", array_map(
+            static fn(int $i, string $b): string => ($i + 1) . '. ' . $b,
+            array_keys($params['arc_beats']),
+            $params['arc_beats']
+        ));
+
+        $generator = new \block_playerhud\ai\generator($params['instanceid']);
+        $result = self::generate_with_retry(static fn(): array => $generator->generate_story($params['theme'], [
+            'item_id' => wizard_generate::resolve_or_create_progress_item(
+                $params['instanceid'],
+                $params['tone_key'],
+                $params['runid']
+            ),
+            'item_qty' => wizard_generate::CHAPTER_ITEM_COST,
+            'beat' => $beat,
+            'arc_summary' => $arcsummary,
+            'previous_context' => wizard_generate::resolve_previous_chapter_context($params['instanceid']),
+        ]));
+
+        \block_playerhud\local\wizard::record_objects($params['runid'], 'block_playerhud_chapters', [$result['chapter_id']]);
+        if (!empty($result['node_ids'])) {
+            \block_playerhud\local\wizard::record_objects($params['runid'], 'block_playerhud_story_nodes', $result['node_ids']);
+        }
+        if (!empty($result['choice_ids'])) {
+            \block_playerhud\local\wizard::record_objects($params['runid'], 'block_playerhud_choices', $result['choice_ids']);
+        }
     }
 
     /**
@@ -337,6 +440,10 @@ class wizard_run_step extends external_api {
                 PARAM_TEXT,
                 'XP economy summary, only present on the last step when requested',
                 VALUE_OPTIONAL
+            ),
+            'arc_beats' => new external_multiple_structure(
+                new external_value(PARAM_TEXT, 'Beat'),
+                'Story arc beats, only present after the "story_outline" step'
             ),
         ]);
     }
