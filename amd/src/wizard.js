@@ -322,11 +322,16 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             huddyCarouselEl.classList.add('ph-display-none');
         };
 
-        // Reload the page on close so generated/undone content shows up immediately,
-        // matching the reload-on-close pattern used by the other AI generation modals
-        // (manage_items.js, ai_story.js, ai_oracle.js). Otherwise just reopen on the
-        // generation form, regardless of which view was showing when it was last closed.
-        modalEl.addEventListener('hidden.bs.modal', () => {
+        /**
+         * Runs once the modal has actually finished closing: reloads the page on close so
+         * generated/undone content shows up immediately, matching the reload-on-close pattern
+         * used by the other AI generation modals (manage_items.js, ai_story.js, ai_oracle.js).
+         * Otherwise just reopens on the generation form, regardless of which view was showing
+         * when it was last closed.
+         *
+         * @return {void}
+         */
+        const onModalHidden = () => {
             stopHuddyCarousel();
             if (contentChanged) {
                 window.location.reload();
@@ -334,7 +339,25 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             }
             setHistoryView(false);
             setProgressView(false);
-        });
+        };
+
+        // Detected via the 'show' class instead of listening for the 'hidden.bs.modal' event:
+        // Bootstrap 4 (Moodle 4.5, still jQuery-based under the hood) dispatches that event only
+        // through jQuery's own event system, which a vanilla addEventListener here never
+        // receives — the modal still closes correctly, but this code silently never ran, so the
+        // page never reloaded after a run. Bootstrap 4 and 5 both add/remove the same 'show'
+        // class to signal the modal's visibility, so watching for its removal works identically
+        // on both, regardless of which event-dispatch system is firing underneath. The short
+        // delay lets the close transition finish before reloading/resetting, roughly matching
+        // when 'hidden.bs.modal' would have fired anyway.
+        let modalWasVisible = false;
+        new MutationObserver(() => {
+            const isVisible = modalEl.classList.contains('show');
+            if (modalWasVisible && !isVisible) {
+                window.setTimeout(onModalHidden, 300);
+            }
+            modalWasVisible = isVisible;
+        }).observe(modalEl, {attributes: true, attributeFilter: ['class']});
 
         /**
          * Undoes a wizard run and removes its row from the history list, if present.
