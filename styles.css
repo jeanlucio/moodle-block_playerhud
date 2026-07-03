@@ -2510,15 +2510,23 @@ div.modal-dialog .visually-hidden {
     text-anchor: middle;
     dominant-baseline: middle;
 }
-#ph-wizard-modal #ph-wizard-octalysis-warnings .ph-oct-warning {
+#ph-wizard-modal #ph-wizard-octalysis-warnings .ph-oct-gain,
+#ph-wizard-modal #ph-wizard-octalysis-warnings .ph-oct-invite {
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
-    background: var(--warning-bg-subtle, #fff3cd);
-    border: 1px solid var(--warning-border-subtle, #ffe69c);
     border-radius: 8px;
     padding: 0.5rem 0.7rem;
     font-size: 0.78rem;
-    color: var(--warning-text-emphasis, #664d03);
     margin-bottom: 0.4rem;
+}
+#ph-wizard-modal #ph-wizard-octalysis-warnings .ph-oct-gain {
+    background: var(--success-bg-subtle, #d1e7dd);
+    border: 1px solid var(--success-border-subtle, #a3cfbb);
+    color: var(--success-text-emphasis, #0a3622);
+}
+#ph-wizard-modal #ph-wizard-octalysis-warnings .ph-oct-invite {
+    background: var(--secondary-bg-subtle, #e2e3e5);
+    border: 1px solid var(--secondary-border-subtle, #c4c8cb);
+    color: var(--secondary-text-emphasis, #41464b);
 }

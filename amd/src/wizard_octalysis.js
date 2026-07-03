@@ -28,13 +28,6 @@
 define(['core/str'], function(Str) {
     'use strict';
 
-    /**
-     * @var {number[]} Drive IDs that are always active, regardless of any checkbox: XP & Levels
-     * (Achievement, Ownership) and Ranking (Social Influence, Achievement) are core block
-     * features, not opt-in wizard modules.
-     */
-    const ALWAYS_ACTIVE_DRIVES = [1, 4, 8];
-
     /** @var {Object[]} The 8 Octalysis core drives, in wheel order starting at the top. */
     const DRIVES = [
         {id: 1, color: '#e8a020', labelkey: 'wizard_octalysis_drive1_label'},
@@ -143,19 +136,23 @@ define(['core/str'], function(Str) {
             return;
         }
 
-        const stringrequests = [{key: 'wizard_octalysis_center_label', component: 'block_playerhud'}];
+        const stringrequests = [
+            {key: 'wizard_octalysis_center_label', component: 'block_playerhud'},
+            {key: 'wizard_octalysis_invite', component: 'block_playerhud'},
+        ];
         DRIVES.forEach((drive) => {
             stringrequests.push({key: drive.labelkey, component: 'block_playerhud'});
         });
         DRIVES.forEach((drive) => {
-            stringrequests.push({key: `wizard_octalysis_warning${drive.id}`, component: 'block_playerhud'});
+            stringrequests.push({key: `wizard_octalysis_drive${drive.id}_sub`, component: 'block_playerhud'});
         });
         const strings = await Str.get_strings(stringrequests);
         const centerlabel = strings[0];
+        const invitetext = strings[1];
 
         DRIVES.forEach((drive, index) => {
-            drive.label = strings[1 + index];
-            drive.warning = strings[1 + DRIVES.length + index];
+            drive.label = strings[2 + index];
+            drive.sub = strings[2 + DRIVES.length + index];
         });
 
         buildSegments(svg, DRIVES, centerlabel);
@@ -165,8 +162,12 @@ define(['core/str'], function(Str) {
         const scorebar = document.getElementById('ph-wizard-octalysis-score-bar');
         const warningsbox = document.getElementById('ph-wizard-octalysis-warnings');
 
+        // No drive starts active: the octagon is a pure function of what is actually ticked, so
+        // an untouched form honestly reads 0% rather than crediting drives no module has yet
+        // switched on (see the wizard's plan doc, § 10.2 Item E, for why a non-zero baseline was
+        // judged misleading).
         const recompute = () => {
-            const active = new Set(ALWAYS_ACTIVE_DRIVES);
+            const active = new Set();
             checkboxes.forEach((checkbox) => {
                 if (!checkbox.checked) {
                     return;
@@ -188,15 +189,20 @@ define(['core/str'], function(Str) {
             scorebar.style.width = `${pct}%`;
             scorebar.setAttribute('aria-valuenow', String(pct));
 
+            // Every drive gets a line — what marking it earns when active, or a gentle nudge
+            // toward it when not — instead of only ever calling out what is missing.
             warningsbox.innerHTML = '';
             DRIVES.forEach((drive) => {
-                if (active.has(drive.id)) {
-                    return;
-                }
-                const warning = document.createElement('div');
-                warning.className = 'ph-oct-warning';
-                warning.textContent = drive.warning;
-                warningsbox.appendChild(warning);
+                const isactive = active.has(drive.id);
+                const row = document.createElement('div');
+                row.className = isactive ? 'ph-oct-gain' : 'ph-oct-invite';
+
+                const strong = document.createElement('strong');
+                strong.textContent = isactive ? `✓ ${drive.label}` : drive.label;
+                row.appendChild(strong);
+                row.appendChild(document.createTextNode(` — ${isactive ? drive.sub : invitetext}`));
+
+                warningsbox.appendChild(row);
             });
         };
 
