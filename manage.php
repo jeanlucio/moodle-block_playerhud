@@ -595,8 +595,9 @@ $modalwizardhtml = $OUTPUT->render_from_template('block_playerhud/modal_wizard',
 ]);
 
 $PAGE->requires->js_call_amd('block_playerhud/wizard', 'init', [[
-    'instanceid' => $instanceid,
-    'courseid'   => $courseid,
+    'instanceid'     => $instanceid,
+    'courseid'       => $courseid,
+    'huddy_base_url' => (new moodle_url('/blocks/playerhud/pix/huddy/'))->out(false),
 ]]);
 
 // Data for Layout.

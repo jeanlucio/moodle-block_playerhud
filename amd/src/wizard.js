@@ -35,6 +35,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
      */
     const init = (config) => {
         const {instanceid, courseid} = config;
+        const huddyBaseUrl = config.huddy_base_url;
 
         const modalEl = document.getElementById('ph-wizard-modal');
         if (!modalEl) {
@@ -89,6 +90,10 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const progressErrorTextEl = document.getElementById('ph-wizard-progress-error-text');
         const progressRetryBtn = document.getElementById('ph-wizard-progress-retry-btn');
         const progressUndoBtn = document.getElementById('ph-wizard-progress-undo-btn');
+        const huddyCarouselEl = document.getElementById('ph-wizard-huddy-carousel');
+        const huddyImgEl = document.getElementById('ph-wizard-huddy-img');
+        const huddyPulseEl = document.getElementById('ph-wizard-huddy-pulse');
+        const huddyTipEl = document.getElementById('ph-wizard-huddy-tip');
 
         let lastRunId = null;
         let contentChanged = false;
@@ -256,11 +261,68 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             undoBtn.classList.toggle('ph-display-none', showProgress || !lastRunId);
         };
 
+        // Huddy carousel: the wizard's own "game loading screen" — 5 mascot images alternating
+        // with pedagogical tips, masking the ~10-40s an AI story-arc step spends without moving
+        // the progress bar. It is the activity indicator, not decoration (see § 5.9 Fatia 3): it
+        // runs for the whole progress view, not only during story steps, so there is never a
+        // separate spinner to keep in sync with it.
+        const HUDDY_IMAGES = ['hello.webp', 'coins.webp', 'achievement.webp', 'levelup.webp', 'quest.webp'];
+        const HUDDY_TIP_KEYS = [
+            'wizard_huddy_tip1', 'wizard_huddy_tip2', 'wizard_huddy_tip3', 'wizard_huddy_tip4', 'wizard_huddy_tip5',
+        ];
+        const HUDDY_INTERVAL_MS = 4000;
+        let huddyTimer = null;
+        let huddyTips = null;
+
+        huddyImgEl.addEventListener('error', () => {
+            // The art failing to load must never leave the UI looking frozen — falls back to an
+            // indeterminate pulsing placeholder instead, per § 5.9 Fatia 3's decision.
+            huddyImgEl.classList.add('ph-display-none');
+            huddyPulseEl.classList.remove('ph-display-none');
+        });
+        huddyImgEl.addEventListener('load', () => {
+            huddyImgEl.classList.remove('ph-display-none');
+            huddyPulseEl.classList.add('ph-display-none');
+        });
+
+        const showHuddySlide = (index) => {
+            huddyImgEl.src = huddyBaseUrl + HUDDY_IMAGES[index % HUDDY_IMAGES.length];
+            if (huddyTips) {
+                huddyTipEl.textContent = huddyTips[index % huddyTips.length];
+            }
+        };
+
+        const startHuddyCarousel = async() => {
+            if (!huddyTips) {
+                try {
+                    huddyTips = await Str.get_strings(HUDDY_TIP_KEYS.map((key) => ({key, component: 'block_playerhud'})));
+                } catch (e) {
+                    huddyTips = [];
+                }
+            }
+            huddyCarouselEl.classList.remove('ph-display-none');
+            let index = 0;
+            showHuddySlide(index);
+            huddyTimer = setInterval(() => {
+                index += 1;
+                showHuddySlide(index);
+            }, HUDDY_INTERVAL_MS);
+        };
+
+        const stopHuddyCarousel = () => {
+            if (huddyTimer) {
+                clearInterval(huddyTimer);
+                huddyTimer = null;
+            }
+            huddyCarouselEl.classList.add('ph-display-none');
+        };
+
         // Reload the page on close so generated/undone content shows up immediately,
         // matching the reload-on-close pattern used by the other AI generation modals
         // (manage_items.js, ai_story.js, ai_oracle.js). Otherwise just reopen on the
         // generation form, regardless of which view was showing when it was last closed.
         modalEl.addEventListener('hidden.bs.modal', () => {
+            stopHuddyCarousel();
             if (contentChanged) {
                 window.location.reload();
                 return;
@@ -382,6 +444,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
          */
         const showProgressError = (message, retry) => {
             contentChanged = true;
+            stopHuddyCarousel();
             progressCloseWarningEl.classList.add('ph-display-none');
             progressErrorTextEl.textContent = message;
             progressErrorEl.classList.remove('ph-display-none');
@@ -423,6 +486,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
          */
         const showProgressReport = async(totals, stepMessages, economyMessage) => {
             contentChanged = true;
+            stopHuddyCarousel();
             progressCloseWarningEl.classList.add('ph-display-none');
             progressSlowWarningEl.classList.add('ph-display-none');
 
@@ -586,6 +650,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             progressBarWrapEl.setAttribute('aria-valuenow', '0');
             progressSubstepEl.textContent = '';
 
+            await startHuddyCarousel();
             await runWizard(runParams);
         });
 
@@ -597,6 +662,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             pendingRetry = null;
             progressErrorEl.classList.add('ph-display-none');
             progressCloseWarningEl.classList.remove('ph-display-none');
+            await startHuddyCarousel();
             await retry();
         });
 
