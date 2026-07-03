@@ -71,6 +71,7 @@ class utils {
         // Process each item using the in-memory map.
         foreach ($items as $item) {
             $itemid = $item->id;
+            $image = $item->image ?? '';
             if (isset($filesbyitem[$itemid])) {
                 $f = $filesbyitem[$itemid];
                 $url = \moodle_url::make_pluginfile_url(
@@ -87,17 +88,17 @@ class utils {
                     'is_image' => true,
                     'content' => $url,
                 ];
-            } else if (strpos($item->image, 'http') === 0) {
+            } else if (strpos($image, 'http') === 0) {
                 $results[$itemid] = [
-                    'url' => $item->image,
+                    'url' => $image,
                     'is_image' => true,
-                    'content' => $item->image,
+                    'content' => $image,
                 ];
             } else {
                 $results[$itemid] = [
                     'url' => null,
                     'is_image' => false,
-                    'content' => $item->image,
+                    'content' => $image,
                 ];
             }
         }

@@ -82,6 +82,39 @@ final class utils_test extends advanced_testcase {
     }
 
     /**
+     * An item with a null image (no file uploaded, no emoji/URL set) must not
+     * crash get_items_display_data() with a TypeError/deprecation on strpos().
+     *
+     * @covers ::get_items_display_data
+     */
+    public function test_get_items_display_data_with_null_image_does_not_throw(): void {
+        $item = $this->create_item_with_null_image();
+        $context = \context_block::instance($this->instanceid);
+
+        $result = utils::get_items_display_data([$item], $context);
+
+        $this->assertFalse($result[$item->id]['is_image']);
+        $this->assertNull($result[$item->id]['url']);
+        $this->assertSame('', $result[$item->id]['content']);
+    }
+
+    /**
+     * The same null-image item must also survive get_avatar_html(), which
+     * calls strip_tags() on the returned content.
+     *
+     * @covers ::get_avatar_html
+     */
+    public function test_get_avatar_html_with_null_image_does_not_throw(): void {
+        $item = $this->create_item_with_null_image();
+        $context = \context_block::instance($this->instanceid);
+
+        $html = utils::get_avatar_html($item, $context, null);
+
+        $this->assertStringContainsString('ph-avatar-emoji', $html);
+        $this->assertStringNotContainsString('<img', $html);
+    }
+
+    /**
      * Insert a minimal block_instances row and return its ID.
      *
      * @return int The new instance ID.
@@ -115,6 +148,29 @@ final class utils_test extends advanced_testcase {
             'blockinstanceid' => $this->instanceid,
             'name'            => 'Test Avatar',
             'image'           => $image,
+            'description'     => '',
+            'xp'              => 0,
+            'enabled'         => 1,
+            'secret'          => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ];
+        $item->id = $DB->insert_record('block_playerhud_items', $item);
+        return $item;
+    }
+
+    /**
+     * Insert a minimal item with a null image field, mirroring a real
+     * NOTNULL="false" column value, and return it with id set.
+     *
+     * @return \stdClass The inserted item record.
+     */
+    private function create_item_with_null_image(): \stdClass {
+        global $DB;
+        $item = (object) [
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'Test No Image',
+            'image'           => null,
             'description'     => '',
             'xp'              => 0,
             'enabled'         => 1,
