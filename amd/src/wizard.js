@@ -97,6 +97,53 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             btn.addEventListener('click', openModal);
         });
 
+        /**
+         * Wires a "select all" group checkbox that cascades its checked state down to every
+         * other checkbox in the given container, and reflects the children's combined state
+         * back up: checked when all are checked, indeterminate when only some are, unchecked
+         * when none are — the standard "table header checkbox" pattern.
+         *
+         * @param {HTMLInputElement} groupEl The group toggle checkbox.
+         * @param {HTMLElement} containerEl The container whose other checkboxes this toggle
+         *     controls (every checkbox inside it except groupEl itself).
+         */
+        const wireGroupToggle = (groupEl, containerEl) => {
+            const children = () => Array.from(containerEl.querySelectorAll('input[type="checkbox"]'))
+                .filter((el) => el !== groupEl);
+
+            const syncGroupState = () => {
+                const all = children();
+                const checkedcount = all.filter((el) => el.checked).length;
+                groupEl.checked = all.length > 0 && checkedcount === all.length;
+                groupEl.indeterminate = checkedcount > 0 && checkedcount < all.length;
+            };
+
+            groupEl.addEventListener('change', () => {
+                // Captured once: each child's dispatched 'change' below synchronously re-enters
+                // syncGroupState(), which would otherwise overwrite groupEl.checked mid-loop (once
+                // some but not all children are updated) and make later iterations compare against
+                // that clobbered value instead of the user's original click intent.
+                const target = groupEl.checked;
+                children().forEach((child) => {
+                    if (child.checked !== target) {
+                        child.checked = target;
+                        child.dispatchEvent(new Event('change'));
+                    }
+                });
+                groupEl.checked = target;
+                groupEl.indeterminate = false;
+            });
+
+            children().forEach((child) => child.addEventListener('change', syncGroupState));
+            syncGroupState();
+        };
+
+        const groupItemsEl = document.getElementById('ph-wizard-group-items');
+        const cardItemsEl = document.getElementById('ph-wizard-card-items');
+        if (groupItemsEl && cardItemsEl) {
+            wireGroupToggle(groupItemsEl, cardItemsEl);
+        }
+
         // Only rendered when the instance's level settings are still at the edit form's
         // defaults (100 XP per level, 20 levels) — every other element in the modal always
         // exists, so this is the other spot (besides latepenaltyModuleEl) needing a null guard.

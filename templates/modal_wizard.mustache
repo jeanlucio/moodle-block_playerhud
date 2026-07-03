@@ -107,12 +107,19 @@
                     {{#str}} wizard_modules_label, block_playerhud {{/str}}
                 </span>
             </div>
-            <div class="p-3 bg-light border rounded mb-2">
+            <div class="p-3 bg-light border rounded mb-2" id="ph-wizard-card-items">
                 <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="ph-wizard-group-items">
+                    <label class="form-check-label" for="ph-wizard-group-items">
+                        <strong>{{#str}} wizard_module_items, block_playerhud {{/str}}</strong><br>
+                        <small class="text-muted">{{#str}} wizard_group_items_desc, block_playerhud {{/str}}</small>
+                    </label>
+                </div>
+                <div class="form-check ms-4 mt-2">
                     <input type="checkbox" class="form-check-input" id="ph-wizard-module-items"
                            data-drives="2" checked>
                     <label class="form-check-label" for="ph-wizard-module-items">
-                        <strong>{{#str}} wizard_module_items, block_playerhud {{/str}}</strong><br>
+                        {{#str}} wizard_module_items_ai, block_playerhud {{/str}}<br>
                         <small class="text-muted">{{#str}} wizard_module_items_desc, block_playerhud {{/str}}</small>
                     </label>
                 </div>
