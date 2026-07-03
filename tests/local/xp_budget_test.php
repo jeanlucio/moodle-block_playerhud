@@ -69,7 +69,7 @@ final class xp_budget_test extends advanced_testcase {
 
     /**
      * A remainder that does not divide evenly is spread as a +1 bonus on the first elements
-     * (mirrors drop_distribution::compute_pill_quotas()'s remainder-to-the-front pattern), so
+     * (mirrors drop_distribution::compute_activity_quotas()'s remainder-to-the-front pattern), so
      * the total always sums to exactly the gap instead of quietly losing the remainder.
      */
     public function test_distribute_share_spreads_the_remainder_on_the_first_elements(): void {

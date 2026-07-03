@@ -157,18 +157,18 @@ final class drop_distribution_test extends advanced_testcase {
     }
 
     /**
-     * compute_pill_quotas always sums to exactly the target, spreading the remainder as a
+     * compute_activity_quotas always sums to exactly the target, spreading the remainder as a
      * +1 bonus on the first activities (course order) rather than the last.
      */
-    public function test_compute_pill_quotas_always_sums_to_target(): void {
-        $this->assertSame([2, 1, 1, 1, 1, 1, 1, 1, 1, 1], drop_distribution::compute_pill_quotas(11, 10));
-        $this->assertSame([3, 2, 2, 2, 2], drop_distribution::compute_pill_quotas(11, 5));
-        $this->assertSame([4, 4, 3], drop_distribution::compute_pill_quotas(11, 3));
-        $this->assertSame(array_fill(0, 11, 1), drop_distribution::compute_pill_quotas(11, 11));
-        $this->assertSame([11], drop_distribution::compute_pill_quotas(11, 1));
+    public function test_compute_activity_quotas_always_sums_to_target(): void {
+        $this->assertSame([2, 1, 1, 1, 1, 1, 1, 1, 1, 1], drop_distribution::compute_activity_quotas(11, 10));
+        $this->assertSame([3, 2, 2, 2, 2], drop_distribution::compute_activity_quotas(11, 5));
+        $this->assertSame([4, 4, 3], drop_distribution::compute_activity_quotas(11, 3));
+        $this->assertSame(array_fill(0, 11, 1), drop_distribution::compute_activity_quotas(11, 11));
+        $this->assertSame([11], drop_distribution::compute_activity_quotas(11, 1));
 
         foreach ([[11, 10], [11, 5], [11, 3], [11, 11], [11, 1]] as [$target, $count]) {
-            $this->assertSame($target, array_sum(drop_distribution::compute_pill_quotas($target, $count)));
+            $this->assertSame($target, array_sum(drop_distribution::compute_activity_quotas($target, $count)));
         }
     }
 
@@ -176,8 +176,8 @@ final class drop_distribution_test extends advanced_testcase {
      * More eligible activities than the target: only the first $target of them get a quota
      * of 1, the rest get none — never spreading below 1 per activity.
      */
-    public function test_compute_pill_quotas_caps_activity_count_at_target(): void {
-        $quotas = drop_distribution::compute_pill_quotas(11, 15);
+    public function test_compute_activity_quotas_caps_activity_count_at_target(): void {
+        $quotas = drop_distribution::compute_activity_quotas(11, 15);
 
         $this->assertCount(11, $quotas);
         $this->assertSame(array_fill(0, 11, 1), $quotas);
@@ -187,9 +187,9 @@ final class drop_distribution_test extends advanced_testcase {
     /**
      * Zero activities or a non-positive target yield no quotas at all.
      */
-    public function test_compute_pill_quotas_handles_edge_cases(): void {
-        $this->assertSame([], drop_distribution::compute_pill_quotas(11, 0));
-        $this->assertSame([], drop_distribution::compute_pill_quotas(0, 5));
-        $this->assertSame([], drop_distribution::compute_pill_quotas(-1, 5));
+    public function test_compute_activity_quotas_handles_edge_cases(): void {
+        $this->assertSame([], drop_distribution::compute_activity_quotas(11, 0));
+        $this->assertSame([], drop_distribution::compute_activity_quotas(0, 5));
+        $this->assertSame([], drop_distribution::compute_activity_quotas(-1, 5));
     }
 }

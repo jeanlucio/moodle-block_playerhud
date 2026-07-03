@@ -471,7 +471,7 @@ final class wizard_generate_test extends external_base_testcase {
 
     /**
      * Pill creates the tone-specific Pill and Book items and spreads Pill drops across every
-     * eligible activity per drop_distribution::compute_pill_quotas() — records everything into
+     * eligible activity per drop_distribution::compute_activity_quotas() — records everything into
      * the run's manifest. Deliberately creates no "collect them all" quest (see
      * generate_pill()'s docblock for why that would be a trap once the Pill<->Book trade exists).
      *
@@ -646,6 +646,233 @@ final class wizard_generate_test extends external_base_testcase {
         $this->assertEquals(0, $DB->count_records('block_playerhud_trades', ['blockinstanceid' => $this->instanceid]));
         $content = $DB->get_field('page', 'content', ['id' => $page->id]);
         $this->assertSame('Original body.', $content);
+    }
+
+    /**
+     * Secret Drops creates a tone-specific item flagged secret=1, worth 0 XP and non-tradable,
+     * and spreads exactly SECRET_DROP_COUNT (3) one-time drops across eligible activities —
+     * records everything into the run's manifest.
+     */
+    public function test_secret_drops_creates_item_and_distributes_with_manifest(): void {
+        global $DB;
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
+        }
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(['Lost Relic'], $result['created_items']);
+
+        $item = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'name' => 'Lost Relic',
+        ], '*', MUST_EXIST);
+        $this->assertSame(1, (int) $item->secret);
+        $this->assertSame(0, (int) $item->xp);
+        $this->assertSame(0, (int) $item->tradable);
+
+        $drops = $DB->get_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid, 'itemid' => $item->id]);
+        $this->assertCount(3, $drops);
+        $this->assertSame(3, array_sum(array_column($drops, 'maxusage')));
+        foreach ($drops as $drop) {
+            $this->assertSame(1, (int) $drop->maxusage);
+        }
+
+        $manifesttables = array_column(
+            $DB->get_records('block_playerhud_wizard_objects', ['runid' => $result['runid']]),
+            'objecttable'
+        );
+        $this->assertContains('block_playerhud_items', $manifesttables);
+        $this->assertContains('block_playerhud_drops', $manifesttables);
+        $shortcoderows = $DB->get_records('block_playerhud_wizard_shortcodes', ['runid' => $result['runid']]);
+        $this->assertCount(3, $shortcoderows);
+
+        // Every eligible activity here is a Page, so every shortcode must have landed in
+        // content (always visible) rather than intro (hidden unless the teacher opts in).
+        foreach ($shortcoderows as $row) {
+            $this->assertSame('content', $row->field);
+        }
+    }
+
+    /**
+     * Running Secret Drops twice must not duplicate the item or its drops.
+     */
+    public function test_secret_drops_is_idempotent_across_runs(): void {
+        $first = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true
+        );
+        $this->assertSame(['Lost Relic'], $first['created_items']);
+
+        $second = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true
+        );
+        $this->assertSame([], $second['created_items']);
+    }
+
+    /**
+     * Rolling back a Secret Drops run removes the item and drops, and strips every shortcode
+     * back out of the activities it was inserted into.
+     */
+    public function test_secret_drops_run_can_be_rolled_back(): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'content' => 'Original body.',
+        ]);
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true
+        );
+        $this->assertTrue($result['success']);
+
+        \block_playerhud\local\wizard::rollback($result['runid'], $this->instanceid, $this->course->id);
+
+        $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid]));
+        $content = $DB->get_field('page', 'content', ['id' => $page->id]);
+        $this->assertSame('Original body.', $content);
+    }
+
+    /**
+     * Ranking turns the block's ranking setting on when it is off, merging into the existing
+     * config object rather than replacing it (proven here with a pre-existing, unrelated
+     * config value that must survive untouched).
+     */
+    public function test_ranking_turns_on_when_off(): void {
+        $instanceid = $this->create_block_instance(['enable_ranking' => 0, 'enable_items' => 0]);
+
+        $result = wizard_generate::execute(
+            $instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true
+        );
+
+        $this->assertTrue($result['success']);
+        $blockinstance = \block_instance_by_id($instanceid);
+        $this->assertSame(1, (int) $blockinstance->config->enable_ranking);
+        $this->assertSame(0, (int) $blockinstance->config->enable_items);
+    }
+
+    /**
+     * Ranking already on is left untouched (no unnecessary config write).
+     */
+    public function test_ranking_noop_when_already_on(): void {
+        $instanceid = $this->create_block_instance(['enable_ranking' => 1]);
+
+        $result = wizard_generate::execute(
+            $instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'fantasy',
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true
+        );
+
+        $this->assertTrue($result['success']);
+        $blockinstance = \block_instance_by_id($instanceid);
+        $this->assertSame(1, (int) $blockinstance->config->enable_ranking);
     }
 
     /**

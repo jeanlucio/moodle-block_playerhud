@@ -88,7 +88,7 @@ class drop_distribution {
      *     same order as the caller's activity list; fewer entries than $activitycount when
      *     $activitycount > $target).
      */
-    public static function compute_pill_quotas(int $target, int $activitycount): array {
+    public static function compute_activity_quotas(int $target, int $activitycount): array {
         if ($target <= 0 || $activitycount <= 0) {
             return [];
         }

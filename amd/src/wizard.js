@@ -60,6 +60,8 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const tradeModuleEl = document.getElementById('ph-wizard-module-trade');
         const progressItemModuleEl = document.getElementById('ph-wizard-module-progressitem');
         const autoDistributeModuleEl = document.getElementById('ph-wizard-module-autodistribute');
+        const secretModuleEl = document.getElementById('ph-wizard-module-secret');
+        const rankingModuleEl = document.getElementById('ph-wizard-module-ranking');
         const generateBtn = document.getElementById('ph-wizard-generate-btn');
         const generateLabelEl = generateBtn.querySelector('.ph-wizard-btn-label');
         const undoBtn = document.getElementById('ph-wizard-undo-btn');
@@ -342,11 +344,13 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         };
 
         generateBtn.addEventListener('click', async() => {
-            const anyModuleChecked = itemsModuleEl.checked || missionsModuleEl.checked ||
-                playercoinModuleEl.checked || avatarsModuleEl.checked || rpgModuleEl.checked ||
-                progressItemModuleEl.checked || nextChapterModuleEl.checked || tradeModuleEl.checked ||
-                pillModuleEl.checked || latepenaltyChecked();
-            if (!anyModuleChecked) {
+            const moduleCheckedFlags = [
+                itemsModuleEl.checked, missionsModuleEl.checked, playercoinModuleEl.checked,
+                avatarsModuleEl.checked, rpgModuleEl.checked, progressItemModuleEl.checked,
+                nextChapterModuleEl.checked, tradeModuleEl.checked, pillModuleEl.checked,
+                latepenaltyChecked(), secretModuleEl.checked, rankingModuleEl.checked,
+            ];
+            if (!moduleCheckedFlags.some(Boolean)) {
                 return;
             }
 
@@ -374,6 +378,8 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                         'include_comercio': tradeModuleEl.checked,
                         'include_pill': pillModuleEl.checked,
                         'include_latepenalty': latepenaltyChecked(),
+                        'include_secret_drops': secretModuleEl.checked,
+                        'include_ranking': rankingModuleEl.checked,
                     },
                 }])[0];
 

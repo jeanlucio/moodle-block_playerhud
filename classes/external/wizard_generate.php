@@ -129,6 +129,18 @@ class wizard_generate extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            'include_secret_drops' => new external_value(
+                PARAM_BOOL,
+                'Create a rare, hidden collectible scattered through a few course activities',
+                VALUE_DEFAULT,
+                false
+            ),
+            'include_ranking' => new external_value(
+                PARAM_BOOL,
+                "Turn on the block's ranking, if not already on",
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
@@ -152,6 +164,8 @@ class wizard_generate extends external_api {
      * @param bool $includecomercio Whether to wire PlayerCoin<->Avatar Pack trades.
      * @param bool $includepill Whether to create the Knowledge Pill and Book items.
      * @param bool $includelatepenalty Whether to create the Deadline Extension item.
+     * @param bool $includesecretdrops Whether to create the Secret Drops collectible.
+     * @param bool $includeranking Whether to turn on the block's ranking, if not already on.
      * @return array Result structure.
      */
     public static function execute(
@@ -171,7 +185,9 @@ class wizard_generate extends external_api {
         bool $includenextchapter = false,
         bool $includecomercio = false,
         bool $includepill = false,
-        bool $includelatepenalty = false
+        bool $includelatepenalty = false,
+        bool $includesecretdrops = false,
+        bool $includeranking = false
     ): array {
         global $DB, $USER;
 
@@ -193,6 +209,8 @@ class wizard_generate extends external_api {
             'include_comercio' => $includecomercio,
             'include_pill' => $includepill,
             'include_latepenalty' => $includelatepenalty,
+            'include_secret_drops' => $includesecretdrops,
+            'include_ranking' => $includeranking,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -235,6 +253,12 @@ class wizard_generate extends external_api {
         }
         if ($params['include_latepenalty']) {
             $modules[] = 'latepenalty';
+        }
+        if ($params['include_secret_drops']) {
+            $modules[] = 'secret_drops';
+        }
+        if ($params['include_ranking']) {
+            $modules[] = 'ranking';
         }
 
         $runid = \block_playerhud\local\wizard::start_run($params['instanceid'], (int) $USER->id, $modules);
@@ -382,6 +406,19 @@ class wizard_generate extends external_api {
                     $createdtrades,
                     self::generate_comercio($params['instanceid'], $runid)
                 );
+            }
+
+            if ($params['include_secret_drops']) {
+                $createditems = array_merge($createditems, self::generate_secret_drops(
+                    $params['instanceid'],
+                    $params['courseid'],
+                    $params['tone_key'],
+                    $runid
+                ));
+            }
+
+            if ($params['include_ranking']) {
+                self::generate_ranking($params['instanceid']);
             }
 
             if ($params['include_auto_distribute'] && !empty($createddropids)) {
@@ -945,7 +982,7 @@ class wizard_generate extends external_api {
     /**
      * Creates the Knowledge Pill and Book items (paired, tone-specific names/emoji) and spreads
      * the Pill's drops across course activities via
-     * {@see \block_playerhud\local\drop_distribution::compute_pill_quotas()} — so the total
+     * {@see \block_playerhud\local\drop_distribution::compute_activity_quotas()} — so the total
      * collectible across the whole course is always exactly PILL_TARGET regardless of how many
      * activities exist.
      *
@@ -1015,7 +1052,7 @@ class wizard_generate extends external_api {
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$pillid, $bookid]);
 
         $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
-        $quotas = \block_playerhud\local\drop_distribution::compute_pill_quotas(self::PILL_TARGET, count($modules));
+        $quotas = \block_playerhud\local\drop_distribution::compute_activity_quotas(self::PILL_TARGET, count($modules));
 
         $dropids = [];
         foreach ($quotas as $i => $quota) {
@@ -1053,6 +1090,155 @@ class wizard_generate extends external_api {
         }
 
         return [$pillname, $bookname];
+    }
+
+    /**
+     * Total secret drop instances to distribute across course activities. Deliberately small
+     * and fixed regardless of journey size — scarcity is the whole point of this mechanic, not
+     * scale, so a "Long" journey should not feel less rare than a "Short" one.
+     */
+    private const SECRET_DROP_COUNT = 3;
+
+    /**
+     * Creates a tone-specific secret collectible (`secret = 1`) and spreads a small, fixed
+     * number of one-time drops for it across the course's eligible activities.
+     *
+     * No quest or trade is attached: the reward here is the collection moment itself. While
+     * uncollected, `tab_collection::export_for_template()` already renders any secret item as an
+     * unrevealed "???" card (see its `$item->secret` branch) — this method only needs to create
+     * the item and its drops; the mystery/reveal UI is a pre-existing engine behaviour, not
+     * something new built for this module.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param string $tonekey Narrative tone key.
+     * @param int $runid Wizard run ID.
+     * @return string[] Names of the created items (empty if the item already existed).
+     */
+    protected static function generate_secret_drops(int $instanceid, int $courseid, string $tonekey, int $runid): array {
+        global $DB;
+
+        $itemname = self::resolve_secret_name($tonekey);
+        if ($DB->record_exists('block_playerhud_items', ['blockinstanceid' => $instanceid, 'name' => $itemname])) {
+            return [];
+        }
+
+        $now = time();
+        $itemid = (int) $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instanceid,
+            'name' => $itemname,
+            'image' => self::secret_emoji($tonekey),
+            'description' => get_string('wizard_secret_desc_text', 'block_playerhud'),
+            'xp' => 0,
+            'enabled' => 1,
+            'tradable' => 0,
+            'secret' => 1,
+            'required_class_id' => '0',
+            'action_type' => '',
+            'action_value' => '',
+            'timecreated' => $now,
+            'timemodified' => $now,
+        ]);
+        \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$itemid]);
+
+        $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
+        $quotas = \block_playerhud\local\drop_distribution::compute_activity_quotas(self::SECRET_DROP_COUNT, count($modules));
+
+        $dropids = [];
+        foreach ($quotas as $i => $quota) {
+            $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
+                'blockinstanceid' => $instanceid,
+                'itemid' => $itemid,
+                'name' => $itemname,
+                'maxusage' => $quota,
+                'respawntime' => 0,
+                'code' => \block_playerhud\utils::generate_drop_code($instanceid),
+                'timecreated' => $now,
+                'timemodified' => $now,
+            ]);
+            $dropids[] = $dropid;
+
+            // Page modules never show their intro unless the teacher explicitly enabled
+            // "Display page description" — their content, in contrast, is always shown on the
+            // page's own view. Every other eligible module type shows its intro unconditionally
+            // on its own view page, regardless of the course-page "show description" setting.
+            $field = $modules[$i]['supports_content'] ? 'content' : 'intro';
+            $result = \block_playerhud\external\insert_drop_shortcode::execute(
+                $instanceid,
+                $courseid,
+                $dropid,
+                $modules[$i]['cmid'],
+                $field,
+                'top'
+            );
+            if ($result['success']) {
+                \block_playerhud\local\wizard::record_shortcode($runid, $dropid, (int) $modules[$i]['cmid'], $field);
+            }
+        }
+        if (!empty($dropids)) {
+            \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', $dropids);
+        }
+
+        return [$itemname];
+    }
+
+    /**
+     * Turns on the block's ranking setting, if it is not already on.
+     *
+     * Deliberately one-directional: checking this module ensures ranking is on, but leaving it
+     * unchecked never turns it off — the wizard only ever adds gamification, it never disables a
+     * setting a teacher may have deliberately configured. Writes through the block's own
+     * `instance_config_save()` (merges into the existing config object rather than replacing it),
+     * same safe pattern as `wizard_apply_suggested_levels`. Unlike every other module, this is a
+     * settings change, not a generated row, so it is intentionally not recorded in the run's
+     * rollback manifest — undoing the run does not turn ranking back off.
+     *
+     * @param int $instanceid Block instance ID.
+     * @return void
+     */
+    protected static function generate_ranking(int $instanceid): void {
+        $blockinstance = \block_instance_by_id($instanceid);
+        $config = $blockinstance->config ?: new \stdClass();
+
+        if (!empty($config->enable_ranking)) {
+            return;
+        }
+
+        $config->enable_ranking = 1;
+        $blockinstance->instance_config_save($config);
+    }
+
+    /**
+     * Resolves the tone-specific Secret Drops item name, falling back to the Fantasy name for
+     * an unrecognised tone key.
+     *
+     * @param string $tonekey Narrative tone key.
+     * @return string The item name.
+     */
+    protected static function resolve_secret_name(string $tonekey): string {
+        $namestringkey = "wizard_secret_name_$tonekey";
+        if (!get_string_manager()->string_exists($namestringkey, 'block_playerhud')) {
+            $namestringkey = 'wizard_secret_name_fantasy';
+        }
+
+        return get_string($namestringkey, 'block_playerhud');
+    }
+
+    /**
+     * Returns the Secret Drops emoji for a tone.
+     *
+     * @param string $tonekey The tone key.
+     * @return string The emoji character.
+     */
+    protected static function secret_emoji(string $tonekey): string {
+        $map = [
+            'fantasy' => "\u{1F511}",
+            'scifi' => "\u{1F6F8}",
+            'mystery' => "\u{1F50D}",
+            'academic' => "\u{1F4DC}",
+        ];
+
+        return $map[$tonekey] ?? $map['fantasy'];
     }
 
     /** @var int Days a Deadline Extension item pushes the target activity's deadline by. */

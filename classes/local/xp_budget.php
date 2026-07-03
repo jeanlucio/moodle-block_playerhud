@@ -130,7 +130,7 @@ final class xp_budget {
      * batch's total always lands on exactly the gap, instead of a flat floor share per element
      * that quietly leaves the division's remainder unused.
      *
-     * Mirrors `drop_distribution::compute_pill_quotas()`'s remainder-to-the-front pattern: every
+     * Mirrors `drop_distribution::compute_activity_quotas()`'s remainder-to-the-front pattern: every
      * element gets the base floor share, and the leftover remainder is added as a +1 bonus to
      * the first `$gap % $count` elements, in order — so `array_sum()` of the result always
      * equals `min($gap, ...)`, never leaving XP on the table.

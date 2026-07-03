@@ -165,6 +165,14 @@
                         <small class="text-muted">{{#str}} wizard_module_pill_desc, block_playerhud {{/str}}</small>
                     </label>
                 </div>
+                <div class="form-check ms-4 mt-2">
+                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-secret"
+                           data-drives="6,5">
+                    <label class="form-check-label" for="ph-wizard-module-secret">
+                        {{#str}} wizard_module_secret, block_playerhud {{/str}}<br>
+                        <small class="text-muted">{{#str}} wizard_module_secret_desc, block_playerhud {{/str}}</small>
+                    </label>
+                </div>
                 {{#has_latepenalty}}
                 <div class="form-check ms-4 mt-2">
                     <input type="checkbox" class="form-check-input" id="ph-wizard-module-latepenalty"
@@ -215,6 +223,16 @@
                         <small class="text-muted">
                             {{#str}} wizard_module_next_chapter_desc, block_playerhud {{/str}}
                         </small>
+                    </label>
+                </div>
+            </div>
+            <div class="p-3 bg-light border rounded mb-2">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="ph-wizard-module-ranking"
+                           data-drives="4,1" checked>
+                    <label class="form-check-label" for="ph-wizard-module-ranking">
+                        <strong>{{#str}} wizard_module_ranking, block_playerhud {{/str}}</strong><br>
+                        <small class="text-muted">{{#str}} wizard_module_ranking_desc, block_playerhud {{/str}}</small>
                     </label>
                 </div>
             </div>
