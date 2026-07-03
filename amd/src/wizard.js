@@ -57,8 +57,8 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const latepenaltyModuleEl = document.getElementById('ph-wizard-module-latepenalty');
         const latepenaltyChecked = () => (latepenaltyModuleEl ? latepenaltyModuleEl.checked : false);
         const rpgModuleEl = document.getElementById('ph-wizard-module-rpg');
-        const nextChapterModuleEl = document.getElementById('ph-wizard-module-nextchapter');
         const tradeModuleEl = document.getElementById('ph-wizard-module-trade');
+        const tradeRequirementEl = document.getElementById('ph-wizard-trade-requirement');
         const progressItemModuleEl = document.getElementById('ph-wizard-module-progressitem');
         const autoDistributeModuleEl = document.getElementById('ph-wizard-module-autodistribute');
         const secretModuleEl = document.getElementById('ph-wizard-module-secret');
@@ -120,55 +120,26 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             btn.addEventListener('click', openModal);
         });
 
-        /**
-         * Wires a "select all" group checkbox that cascades its checked state down to every
-         * other checkbox in the given container, and reflects the children's combined state
-         * back up: checked when all are checked, indeterminate when only some are, unchecked
-         * when none are — the standard "table header checkbox" pattern.
-         *
-         * @param {HTMLInputElement} groupEl The group toggle checkbox.
-         * @param {HTMLElement} containerEl The container whose other checkboxes this toggle
-         *     controls (every checkbox inside it except groupEl itself).
-         */
-        const wireGroupToggle = (groupEl, containerEl) => {
-            const children = () => Array.from(containerEl.querySelectorAll('input[type="checkbox"]'))
-                .filter((el) => el !== groupEl);
-
-            const syncGroupState = () => {
-                const all = children();
-                const checkedcount = all.filter((el) => el.checked).length;
-                groupEl.checked = all.length > 0 && checkedcount === all.length;
-                groupEl.indeterminate = checkedcount > 0 && checkedcount < all.length;
-            };
-
-            groupEl.addEventListener('change', () => {
-                // Captured once: each child's dispatched 'change' below synchronously re-enters
-                // syncGroupState(), which would otherwise overwrite groupEl.checked mid-loop (once
-                // some but not all children are updated) and make later iterations compare against
-                // that clobbered value instead of the user's original click intent.
-                const target = groupEl.checked;
-                children().forEach((child) => {
-                    if (child.checked !== target) {
-                        child.checked = target;
-                        child.dispatchEvent(new Event('change'));
-                    }
-                });
-                groupEl.checked = target;
-                groupEl.indeterminate = false;
-            });
-
-            children().forEach((child) => child.addEventListener('change', syncGroupState));
-            syncGroupState();
+        // Trade silently creates 0 trades without a PlayerCoin and an Avatar Pack to wire
+        // together (game::build_trade_suggestions() returns empty otherwise) — disabled here
+        // until both are checked, instead of letting a teacher select it and get nothing.
+        const syncTradeRequirement = async() => {
+            const met = playercoinModuleEl.checked && avatarsModuleEl.checked;
+            tradeModuleEl.disabled = !met;
+            if (!met) {
+                tradeModuleEl.checked = false;
+            }
+            tradeRequirementEl.classList.toggle('ph-wizard-trade-requirement-met', met);
+            tradeRequirementEl.textContent = await Str.get_string(
+                met ? 'wizard_module_trade_requirement_met' : 'wizard_module_trade_requirement_unmet',
+                'block_playerhud'
+            );
         };
+        playercoinModuleEl.addEventListener('change', syncTradeRequirement);
+        avatarsModuleEl.addEventListener('change', syncTradeRequirement);
 
-        const groupItemsEl = document.getElementById('ph-wizard-group-items');
-        const cardItemsEl = document.getElementById('ph-wizard-card-items');
-        if (groupItemsEl && cardItemsEl) {
-            wireGroupToggle(groupItemsEl, cardItemsEl);
-        }
-
-        // Item H: each mechanic card and the external-recommendations panel start collapsed to
-        // fit the modal on a common desktop without scrolling; a chevron button reveals details.
+        // The external-recommendations panel is the only remaining collapsible card; a chevron
+        // button reveals its details.
         document.querySelectorAll('.ph-wizard-card-toggle').forEach((toggleBtn) => {
             const body = document.getElementById(toggleBtn.getAttribute('aria-controls'));
             if (!body) {
@@ -653,7 +624,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             const moduleCheckedFlags = [
                 itemsModuleEl.checked, missionsModuleEl.checked, playercoinModuleEl.checked,
                 avatarsModuleEl.checked, rpgModuleEl.checked, progressItemModuleEl.checked,
-                nextChapterModuleEl.checked, tradeModuleEl.checked, pillModuleEl.checked,
+                tradeModuleEl.checked, pillModuleEl.checked,
                 latepenaltyChecked(), secretModuleEl.checked, rankingModuleEl.checked,
             ];
             if (!moduleCheckedFlags.some(Boolean)) {
@@ -674,7 +645,10 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 'tone_key': toneEl.value,
                 'include_auto_distribute': autoDistributeModuleEl.checked,
                 'include_progress_item': progressItemModuleEl.checked,
-                'include_next_chapter': nextChapterModuleEl.checked,
+                // The wizard now bundles "RPG classes" and "full story arc" into a single
+                // checkbox — see wizard_module_rpg in the template — so both server-side flags
+                // are always sent together.
+                'include_next_chapter': rpgModuleEl.checked,
                 'include_comercio': tradeModuleEl.checked,
                 'include_pill': pillModuleEl.checked,
                 'include_latepenalty': latepenaltyChecked(),

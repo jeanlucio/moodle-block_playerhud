@@ -2532,8 +2532,7 @@ div.modal-dialog .visually-hidden {
 }
 
 /*
- * Item H: collapsible mechanic cards + sticky octagon sidebar. Keeps the modal usable without
- * scrolling on a common desktop by hiding each card's description/sub-checkboxes until expanded.
+ * Item H: collapsible external-recommendations panel + sticky octagon sidebar.
  */
 #ph-wizard-modal .ph-wizard-card-toggle {
     text-decoration: none;
@@ -2553,6 +2552,20 @@ div.modal-dialog .visually-hidden {
         position: sticky;
         top: 0;
     }
+}
+
+/*
+ * Mechanic mini-cards: one checkbox + description per card, always visible (no accordion),
+ * grouped into labelled sections instead — see wizard_section_items_trade/wizard_section_other.
+ */
+#ph-wizard-modal .ph-wizard-mech-card:has(input:disabled) {
+    opacity: 0.6;
+}
+#ph-wizard-modal .ph-wizard-trade-requirement {
+    color: var(--warning, #997404);
+}
+#ph-wizard-modal .ph-wizard-trade-requirement.ph-wizard-trade-requirement-met {
+    color: var(--success, #0a6b3d);
 }
 
 /*
