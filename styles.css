@@ -2568,18 +2568,42 @@ div.modal-dialog .visually-hidden {
  * § 5.9 Fatia 3: Huddy carousel, the wizard's own "game loading screen" — the activity indicator
  * for the whole progress view, not decoration (see wizard.js's startHuddyCarousel()).
  */
+#ph-wizard-modal .ph-wizard-huddy-frame {
+    position: relative;
+    display: inline-block;
+    width: 160px;
+    height: 160px;
+}
 #ph-wizard-modal .ph-wizard-huddy-img {
-    width: 96px;
-    height: 96px;
+    width: 160px;
+    height: 160px;
     object-fit: contain;
 }
 #ph-wizard-modal .ph-wizard-huddy-pulse {
-    width: 96px;
-    height: 96px;
-    margin: 0 auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 160px;
+    height: 160px;
     border-radius: 50%;
     background: var(--secondary-bg-subtle, #e2e3e5);
     animation: ph-wizard-huddy-pulse-anim 1.2s ease-in-out infinite;
+}
+#ph-wizard-modal .ph-wizard-huddy-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--warning, #f0ad4e);
+    color: var(--dark, #1d2125);
+    font-size: 0.85rem;
+    font-weight: 700;
+    border: 2px solid var(--card-bg, #fff);
 }
 @keyframes ph-wizard-huddy-pulse-anim {
     0%, 100% {
