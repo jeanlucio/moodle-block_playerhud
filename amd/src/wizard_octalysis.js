@@ -64,8 +64,8 @@ define(['core/str'], function(Str) {
     const buildSegments = (svg, drives, centerlabel) => {
         const cx = 170;
         const cy = 170;
-        const outerradius = 118;
-        const innerradius = 44;
+        const outerradius = 150;
+        const innerradius = 56;
         const gap = 1.8;
 
         drives.forEach((drive, index) => {
@@ -83,6 +83,8 @@ define(['core/str'], function(Str) {
             path.setAttribute('fill', drive.color);
             path.setAttribute('class', 'ph-oct-segment ph-oct-active');
             path.setAttribute('id', `ph-oct-seg-${drive.id}`);
+            path.setAttribute('tabindex', '0');
+            path.setAttribute('role', 'img');
             svg.appendChild(path);
 
             const mid = (a0 + a1) / 2;
@@ -157,10 +159,24 @@ define(['core/str'], function(Str) {
 
         buildSegments(svg, DRIVES, centerlabel);
 
+        // Each segment gets its own hover/focus tooltip instead of a list below the octagon —
+        // same trigger pattern as the form's "i" info buttons. The title is a function so
+        // Bootstrap re-reads it from the dataset at show-time, picking up whatever recompute()
+        // last wrote there rather than the stale string captured at init.
+        require(['theme_boost/bootstrap/tooltip'], (BSTooltip) => {
+            DRIVES.forEach((drive) => {
+                const segment = document.getElementById(`ph-oct-seg-${drive.id}`);
+                new BSTooltip(segment, {
+                    trigger: 'hover focus',
+                    placement: 'top',
+                    title: () => segment.dataset.tooltipText || '',
+                });
+            });
+        });
+
         const checkboxes = Array.from(document.querySelectorAll('#ph-wizard-form [data-drives]'));
         const scorepct = document.getElementById('ph-wizard-octalysis-score-pct');
         const scorebar = document.getElementById('ph-wizard-octalysis-score-bar');
-        const warningsbox = document.getElementById('ph-wizard-octalysis-warnings');
 
         // No drive starts active: the octagon is a pure function of what is actually ticked, so
         // an untouched form honestly reads 0% rather than crediting drives no module has yet
@@ -175,6 +191,8 @@ define(['core/str'], function(Str) {
                 checkbox.dataset.drives.split(',').forEach((id) => active.add(Number(id)));
             });
 
+            // Every drive gets its own tooltip text — what marking it earns when active, or a
+            // gentle nudge toward it when not — instead of only ever calling out what is missing.
             DRIVES.forEach((drive) => {
                 const segment = document.getElementById(`ph-oct-seg-${drive.id}`);
                 const label = document.getElementById(`ph-oct-lbl-${drive.id}`);
@@ -182,28 +200,18 @@ define(['core/str'], function(Str) {
                 segment.classList.toggle('ph-oct-active', isactive);
                 segment.classList.toggle('ph-oct-inactive', !isactive);
                 label.classList.toggle('ph-oct-inactive', !isactive);
+
+                const tooltiptext = isactive
+                    ? `✓ ${drive.label} — ${drive.sub}`
+                    : `${drive.label} — ${invitetext}`;
+                segment.dataset.tooltipText = tooltiptext;
+                segment.setAttribute('aria-label', tooltiptext);
             });
 
             const pct = Math.round((active.size / DRIVES.length) * 100);
             scorepct.textContent = `${pct}%`;
             scorebar.style.width = `${pct}%`;
             scorebar.setAttribute('aria-valuenow', String(pct));
-
-            // Every drive gets a line — what marking it earns when active, or a gentle nudge
-            // toward it when not — instead of only ever calling out what is missing.
-            warningsbox.innerHTML = '';
-            DRIVES.forEach((drive) => {
-                const isactive = active.has(drive.id);
-                const row = document.createElement('div');
-                row.className = isactive ? 'ph-oct-gain' : 'ph-oct-invite';
-
-                const strong = document.createElement('strong');
-                strong.textContent = isactive ? `✓ ${drive.label}` : drive.label;
-                row.appendChild(strong);
-                row.appendChild(document.createTextNode(` — ${isactive ? drive.sub : invitetext}`));
-
-                warningsbox.appendChild(row);
-            });
         };
 
         checkboxes.forEach((checkbox) => checkbox.addEventListener('change', recompute));
