@@ -2555,8 +2555,21 @@ div.modal-dialog .visually-hidden {
  * Mechanic mini-cards: one checkbox + description per card, always visible (no accordion),
  * grouped into labelled sections instead — see wizard_section_items_trade/wizard_section_other.
  */
+#ph-wizard-modal .ph-wizard-mech-card {
+    position: relative;
+}
 #ph-wizard-modal .ph-wizard-mech-card:has(input:disabled) {
     opacity: 0.6;
+}
+#ph-wizard-modal .badge.ph-wizard-ai-badge {
+    position: absolute;
+    top: 0.5rem;
+    inset-inline-end: 0.5rem;
+    background-color: var(--primary, #0d6efd);
+    color: var(--light, #fff);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
 }
 #ph-wizard-modal .ph-wizard-trade-requirement {
     color: var(--warning, #997404);
