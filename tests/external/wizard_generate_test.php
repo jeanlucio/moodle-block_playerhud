@@ -1519,6 +1519,53 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
+     * Auto-distributing a drop must rename it to the activity it actually landed in — otherwise
+     * the drops management table's "Localização/Nome" column keeps showing the item's own name,
+     * useless for finding where a drop physically is. Uses a page name deliberately different
+     * from the item's own name so a pass can only mean a real rename, not a coincidence.
+     */
+    public function test_auto_distribute_renames_drop_to_its_activity(): void {
+        global $DB;
+
+        $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'name' => 'Reactor Room',
+            'content' => 'Original body.',
+        ]);
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            false,
+            'scifi',
+            true,
+            true
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertSame('', $result['distribute_message']);
+
+        $itemname = get_string('wizard_progress_item_name_scifi', 'block_playerhud');
+        $item = $DB->get_record(
+            'block_playerhud_items',
+            ['blockinstanceid' => $this->instanceid, 'name' => $itemname],
+            '*',
+            MUST_EXIST
+        );
+        $drop = $DB->get_record('block_playerhud_drops', ['itemid' => $item->id], '*', MUST_EXIST);
+
+        $this->assertSame('Reactor Room', $drop->name);
+        $this->assertNotSame($itemname, $drop->name);
+    }
+
+    /**
      * Without an AI key, generate_story() throws before creating any chapter — but the progress
      * item this same call auto-creates first still needs to be rolled back, since it's an
      * earlier real write in the same run. Exercises the wizard::rollback() fix (see

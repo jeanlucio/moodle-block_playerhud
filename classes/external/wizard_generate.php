@@ -1749,6 +1749,9 @@ class wizard_generate extends external_api {
                 'top'
             );
             if ($result['success']) {
+                // The rename to the activity's name already happened inside
+                // insert_drop_shortcode::execute(), shared with the manual "Distribuir Drops"
+                // screen, so it applies here too.
                 \block_playerhud\local\wizard::record_shortcode($runid, (int) $drop->id, (int) $suggested['cmid'], $field);
             }
         }

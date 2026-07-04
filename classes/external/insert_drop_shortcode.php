@@ -159,6 +159,18 @@ class insert_drop_shortcode extends external_api {
         // Rebuild course cache so the change is visible immediately.
         rebuild_course_cache($params['courseid'], true);
 
+        // The drop's own name is its "Localização/Nome" in the drops management table — renaming
+        // it to the activity it just landed in (instead of leaving whatever it was created with)
+        // is what makes that table useful for finding a drop later. Never shown to students: the
+        // shortcode renders the item's own name, not this. Applies here rather than in each
+        // caller (the wizard's auto-distribute step and the manual "Distribuir Drops" screen both
+        // go through this same method) so neither can forget it.
+        $DB->update_record('block_playerhud_drops', (object) [
+            'id' => $drop->id,
+            'name' => format_string($cm->name),
+            'timemodified' => time(),
+        ]);
+
         return ['success' => true, 'message' => get_string('distribute_inserted', 'block_playerhud')];
     }
 
