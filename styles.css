@@ -2576,6 +2576,11 @@ div.modal-dialog .visually-hidden {
 #ph-wizard-modal .ph-wizard-trade-requirement.ph-wizard-trade-requirement-met {
     color: var(--success, #0a6b3d);
 }
+#ph-wizard-modal .ph-wizard-mech-icon {
+    color: var(--primary, #0d6efd);
+    width: 1.1em;
+    text-align: center;
+}
 
 /*
  * § 5.9 Fatia 1: live step-by-step progress bar. progress-bar-striped/animated (Bootstrap
