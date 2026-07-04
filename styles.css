@@ -2540,6 +2540,10 @@ div.modal-dialog .visually-hidden {
 #ph-wizard-modal .ph-wizard-info-btn:focus-visible {
     color: var(--primary, #0d6efd);
 }
+#ph-wizard-modal .ph-wizard-levels-label {
+    max-width: 3.6em;
+    line-height: 1.15;
+}
 @media (min-width: 992px) {
     #ph-wizard-modal .ph-wizard-sidebar-sticky {
         position: sticky;

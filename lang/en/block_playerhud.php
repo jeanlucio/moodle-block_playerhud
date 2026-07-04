@@ -939,7 +939,7 @@ $string['wizard_huddy_tip4'] = 'Tip: every run can be undone with one click from
 $string['wizard_huddy_tip5'] = 'Tip: story chapters spend progress items on some choices — generate more Items (AI) for more paths.';
 $string['wizard_latepenalty_desc_text'] = 'Pushes the deadline of a chosen activity forward when the going gets tough.';
 $string['wizard_latepenalty_quest_name'] = 'Reach level {$a}';
-$string['wizard_levels_checkbox_label'] = 'Auto-adjust levels to journey size';
+$string['wizard_levels_checkbox_label'] = 'Adjust levels';
 $string['wizard_levels_help'] = 'Sets the instance to the levels this journey size suggests, and keeps it in sync if you change the size — always 100 XP per level. Short = 10 levels, Medium = 15, Long = 20.';
 $string['wizard_levels_help_label'] = 'More information about auto-adjusting levels';
 $string['wizard_mission_name_activity_academic'] = 'Complete the module: {$a}';

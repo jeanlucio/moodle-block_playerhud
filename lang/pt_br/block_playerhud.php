@@ -939,7 +939,7 @@ $string['wizard_huddy_tip4'] = 'Dica: toda rodada pode ser desfeita com um cliqu
 $string['wizard_huddy_tip5'] = 'Dica: capítulos da história custam itens de progresso em algumas escolhas — gere mais Itens (IA) pra ter mais caminhos.';
 $string['wizard_latepenalty_desc_text'] = 'Empurra o prazo de uma atividade escolhida quando o aperto vem.';
 $string['wizard_latepenalty_quest_name'] = 'Alcançar o nível {$a}';
-$string['wizard_levels_checkbox_label'] = 'Ajustar níveis automaticamente ao tamanho';
+$string['wizard_levels_checkbox_label'] = 'Ajustar níveis';
 $string['wizard_levels_help'] = 'Ajusta a instância para os níveis sugeridos por esse tamanho de jornada, e mantém sincronizado se você trocar o tamanho — sempre 100 XP por nível. Curta = 10 níveis, Média = 15, Longa = 20.';
 $string['wizard_levels_help_label'] = 'Mais informações sobre o ajuste automático de níveis';
 $string['wizard_mission_name_activity_academic'] = 'Concluir o módulo: {$a}';

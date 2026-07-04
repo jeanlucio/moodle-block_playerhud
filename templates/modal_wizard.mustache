@@ -85,25 +85,26 @@
                             <i class="fa fa-info-circle" aria-hidden="true"></i>
                         </button>
                     </div>
-                    <select class="form-select" id="ph-wizard-size">
-                        {{#size_options}}
-                        <option value="{{value}}">{{label}}</option>
-                        {{/size_options}}
-                    </select>
-                    <div class="d-flex align-items-center gap-1 mt-1">
-                        <div class="form-check mb-0">
-                            <input type="checkbox" class="form-check-input" id="ph-wizard-apply-levels"
+                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                        <select class="form-select w-auto" id="ph-wizard-size">
+                            {{#size_options}}
+                            <option value="{{value}}">{{label}}</option>
+                            {{/size_options}}
+                        </select>
+                        <div class="form-check mb-0 d-flex align-items-center gap-1">
+                            <input type="checkbox" class="form-check-input mt-0" id="ph-wizard-apply-levels"
                                    {{#levels_at_default}}checked{{/levels_at_default}}>
-                            <label class="form-check-label ph-text-xs" for="ph-wizard-apply-levels">
+                            <label class="form-check-label ph-text-sm mb-0 ph-wizard-levels-label"
+                                   for="ph-wizard-apply-levels">
                                 {{#str}} wizard_levels_checkbox_label, block_playerhud {{/str}}
                             </label>
+                            <button type="button"
+                                    class="btn btn-link p-0 ph-wizard-info-btn js-ph-wizard-info"
+                                    aria-label="{{#str}} wizard_levels_help_label, block_playerhud {{/str}}"
+                                    title="{{#str}} wizard_levels_help, block_playerhud {{/str}}">
+                                <i class="fa fa-info-circle" aria-hidden="true"></i>
+                            </button>
                         </div>
-                        <button type="button"
-                                class="btn btn-link p-0 ph-wizard-info-btn js-ph-wizard-info"
-                                aria-label="{{#str}} wizard_levels_help_label, block_playerhud {{/str}}"
-                                title="{{#str}} wizard_levels_help, block_playerhud {{/str}}">
-                            <i class="fa fa-info-circle" aria-hidden="true"></i>
-                        </button>
                     </div>
                 </div>
             </div>
