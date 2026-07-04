@@ -1678,6 +1678,35 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
+     * This is what lets the merged RPG checkbox (classes, Chapter 1 and the rest of the AI story
+     * arc) run without the teacher ever ticking "Item de progresso" on its own: on an instance
+     * with none yet, the item created on demand must be indistinguishable from one
+     * generate_progress_item() created directly — correct tone-based name and emoji, an infinite
+     * drop (maxusage 0, so future chapters can spend it any number of times), and both rows
+     * recorded in the run's manifest so an interrupted run can still be rolled back.
+     */
+    public function test_resolve_or_create_progress_item_creates_a_complete_item_when_missing(): void {
+        global $DB;
+
+        $runid = \block_playerhud\local\wizard::start_run($this->instanceid, 2, []);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+
+        $itemid = wizard_generate::resolve_or_create_progress_item($this->instanceid, 'scifi', $runid);
+
+        $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], '*', MUST_EXIST);
+        $this->assertSame(get_string('wizard_progress_item_name_scifi', 'block_playerhud'), $item->name);
+        $this->assertSame("\u{1F50B}", $item->image);
+        $this->assertEquals(0, (int) $item->tradable);
+        $this->assertSame('', $item->action_type);
+
+        $drop = $DB->get_record('block_playerhud_drops', ['itemid' => $itemid], '*', MUST_EXIST);
+        $this->assertEquals(0, (int) $drop->maxusage, 'Infinite drop: future chapters can spend it any number of times.');
+
+        $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $runid]);
+        $this->assertCount(2, $manifest, 'item + drop, so an interrupted run can still roll it back.');
+    }
+
+    /**
      * resolve_previous_chapter_context() is empty for an instance with no chapters yet, and
      * combines the latest chapter's title/intro with its starting node's real text once one
      * exists — the § 5.9 story-arc chapter step uses this, read from the database rather than
