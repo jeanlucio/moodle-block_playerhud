@@ -308,6 +308,37 @@ final class wizard_test extends advanced_testcase {
     }
 
     /**
+     * A 'done' run alone must not keep a fingerprint-checkable mechanic disabled once its
+     * content is gone — e.g. deleted through the Items management screen instead of the
+     * wizard's own undo, which always flips the run's status away from 'done'. Regression test
+     * for a real course where PlayerCoin/RPG item stayed permanently disabled after their items
+     * were deleted outside the wizard, despite two 'done' runs long done rolling back.
+     *
+     * @covers ::get_generated_modules
+     */
+    public function test_get_generated_modules_ignores_stale_done_run_without_content(): void {
+        $donerun = wizard::start_run(
+            $this->instanceid,
+            2,
+            ['items', 'playercoin', 'avatars', 'pill', 'secret_drops', 'latepenalty', 'progress_item']
+        );
+        wizard::finish_run($donerun, 'done');
+
+        $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
+
+        // Items has no fingerprint of its own, so run history is still authoritative for it.
+        $this->assertTrue($generated['items']);
+        // These six all have a real fingerprint, so a stale 'done' run with nothing left to
+        // show for it must not keep the card disabled.
+        $this->assertFalse($generated['playercoin']);
+        $this->assertFalse($generated['avatars']);
+        $this->assertFalse($generated['pill']);
+        $this->assertFalse($generated['secret_drops']);
+        $this->assertFalse($generated['latepenalty']);
+        $this->assertFalse($generated['progress_item']);
+    }
+
+    /**
      * Content that already exists in the instance counts as generated even without any wizard
      * run — created before this rule existed, or through the manual management screens, the
      * wizard's own generators would skip it anyway.

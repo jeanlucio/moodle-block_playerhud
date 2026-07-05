@@ -208,11 +208,20 @@ class wizard {
      *
      * The wizard is deliberately one-shot per mechanic per course: the dedicated management
      * screens ("Criar Item Mágico", "Sugerir Missões", "Sugerir Trocas", "Distribuir Drops")
-     * are the intended path for adding more of anything later. A mechanic counts as generated
-     * when a completed ('done') run included it, or when its own idempotency fingerprint already
-     * exists in the database (content created before this rule, or through those manual screens
-     * — the wizard's generators would skip or pile on top of it either way). Rolled-back runs do
-     * not count: undoing a run re-enables its mechanics.
+     * are the intended path for adding more of anything later.
+     *
+     * Two different signals decide this, and they are NOT interchangeable:
+     * - Items, Missions and Comércio have no reliable fingerprint of their own (their content
+     *   is arbitrary AI-generated names or heuristic trades), so a completed ('done') run
+     *   having included them is the only signal available. Rolling back that run — which always
+     *   flips its status away from 'done' in the same transaction that deletes what it made —
+     *   is the only way to re-enable them.
+     * - PlayerCoin, Avatars, Pill, Secret Drops, Latepenalty and the RPG progress item each have
+     *   a real idempotency fingerprint (a fixed action_type or tone-specific name), so these
+     *   check that fingerprint's live existence instead of run history. A 'done' run is not
+     *   enough on its own: content deleted through some other route (e.g. the Items management
+     *   screen) leaves the run's status untouched, and trusting that stale history would disable
+     *   the card forever with no way back short of editing the database directly.
      *
      * @param int $blockinstanceid The block instance ID.
      * @param \stdClass $config The block instance configuration (for the ranking flag).
@@ -266,13 +275,13 @@ class wizard {
         return [
             'items' => !empty($ran['items']),
             'missions' => !empty($ran['missions']),
-            'playercoin' => !empty($ran['playercoin']) || isset($actiontypes['playercoin']),
-            'avatars' => !empty($ran['avatars']) || isset($actiontypes['avatar_profile']),
+            'playercoin' => isset($actiontypes['playercoin']),
+            'avatars' => isset($actiontypes['avatar_profile']),
             'comercio' => !empty($ran['comercio']),
-            'pill' => !empty($ran['pill']) || isset($actiontypes['knowledge_pill']),
-            'secret_drops' => !empty($ran['secret_drops']) || $hassecretitem,
-            'latepenalty' => !empty($ran['latepenalty']) || isset($actiontypes['deadline_extension']),
-            'progress_item' => !empty($ran['progress_item']) || $hasprogressitem,
+            'pill' => isset($actiontypes['knowledge_pill']),
+            'secret_drops' => $hassecretitem,
+            'latepenalty' => isset($actiontypes['deadline_extension']),
+            'progress_item' => $hasprogressitem,
             'rpg' => !empty($ran['rpg']) || !empty($ran['next_chapter']) || $hasstory,
             'ranking' => !empty($config->enable_ranking),
         ];
