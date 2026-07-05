@@ -87,6 +87,8 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const historyBackBtn = document.getElementById('ph-wizard-history-back-btn');
         const externalViewEl = document.getElementById('ph-wizard-external-view');
         const externalBtn = document.getElementById('ph-wizard-external-btn');
+        const helpViewEl = document.getElementById('ph-wizard-help-view');
+        const helpBtn = document.getElementById('ph-wizard-help-btn');
 
         const progressViewEl = document.getElementById('ph-wizard-progress-view');
         const progressCloseWarningEl = document.getElementById('ph-wizard-progress-close-warning');
@@ -204,35 +206,25 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             el.classList.remove('ph-display-none');
         };
 
-        /**
-         * Switches between the generation form and the run history list.
-         *
-         * @param {boolean} showHistory True to show the history view, false for the form.
-         */
-        const setHistoryView = (showHistory) => {
-            formEl.classList.toggle('ph-display-none', showHistory);
-            historyViewEl.classList.toggle('ph-display-none', !showHistory);
-            historyBtn.classList.toggle('ph-display-none', showHistory);
-            externalBtn.classList.toggle('ph-display-none', showHistory);
-            historyBackBtn.classList.toggle('ph-display-none', !showHistory);
-            undoBtn.classList.toggle('ph-display-none', showHistory || !lastRunId);
-            generateBtn.classList.toggle('ph-display-none', showHistory);
-        };
+        // The form and its three footer-triggered alternates (history, external
+        // recommendations, help) all swap into the same spot and share one back button —
+        // showing one always means hiding the form and the other two.
+        const sideViews = [historyViewEl, externalViewEl, helpViewEl];
+        const sideTriggerBtns = [historyBtn, externalBtn, helpBtn];
 
         /**
-         * Switches between the generation form and the external plugin recommendations —
-         * same in-modal view swap as the history list, sharing its footer back button.
+         * Switches between the generation form and one of the footer-triggered side views.
          *
-         * @param {boolean} showExternal True to show the recommendations, false for the form.
+         * @param {?HTMLElement} viewEl The side view to show, or null to show the form instead.
          */
-        const setExternalView = (showExternal) => {
-            formEl.classList.toggle('ph-display-none', showExternal);
-            externalViewEl.classList.toggle('ph-display-none', !showExternal);
-            historyBtn.classList.toggle('ph-display-none', showExternal);
-            externalBtn.classList.toggle('ph-display-none', showExternal);
-            historyBackBtn.classList.toggle('ph-display-none', !showExternal);
-            undoBtn.classList.toggle('ph-display-none', showExternal || !lastRunId);
-            generateBtn.classList.toggle('ph-display-none', showExternal);
+        const setSideView = (viewEl) => {
+            const showing = viewEl !== null;
+            formEl.classList.toggle('ph-display-none', showing);
+            sideViews.forEach((el) => el.classList.toggle('ph-display-none', el !== viewEl));
+            sideTriggerBtns.forEach((btn) => btn.classList.toggle('ph-display-none', showing));
+            historyBackBtn.classList.toggle('ph-display-none', !showing);
+            undoBtn.classList.toggle('ph-display-none', showing || !lastRunId);
+            generateBtn.classList.toggle('ph-display-none', showing);
         };
 
         /**
@@ -243,8 +235,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const setProgressView = (showProgress) => {
             formEl.classList.toggle('ph-display-none', showProgress);
             progressViewEl.classList.toggle('ph-display-none', !showProgress);
-            historyBtn.classList.toggle('ph-display-none', showProgress);
-            externalBtn.classList.toggle('ph-display-none', showProgress);
+            sideTriggerBtns.forEach((btn) => btn.classList.toggle('ph-display-none', showProgress));
             generateBtn.classList.toggle('ph-display-none', showProgress);
             undoBtn.classList.toggle('ph-display-none', showProgress || !lastRunId);
         };
@@ -330,8 +321,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 window.location.reload();
                 return;
             }
-            setHistoryView(false);
-            setExternalView(false);
+            setSideView(null);
             setProgressView(false);
         };
 
@@ -436,7 +426,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         historyBtn.addEventListener('click', async() => {
             historyListEl.innerHTML = '';
             historyEmptyEl.classList.add('ph-display-none');
-            setHistoryView(true);
+            setSideView(historyViewEl);
 
             try {
                 const response = await Ajax.call([{
@@ -450,16 +440,14 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 }
                 response.runs.forEach((run) => historyListEl.appendChild(buildHistoryRow(run)));
             } catch (e) {
-                setHistoryView(false);
+                setSideView(null);
                 showAlert(errorEl, (e && e.message) ? e.message : String(e));
             }
         });
 
-        historyBackBtn.addEventListener('click', () => {
-            setHistoryView(false);
-            setExternalView(false);
-        });
-        externalBtn.addEventListener('click', () => setExternalView(true));
+        historyBackBtn.addEventListener('click', () => setSideView(null));
+        externalBtn.addEventListener('click', () => setSideView(externalViewEl));
+        helpBtn.addEventListener('click', () => setSideView(helpViewEl));
 
         /**
          * Shows the step-by-step progress view's error state with a "try again" action that

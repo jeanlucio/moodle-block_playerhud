@@ -495,6 +495,47 @@
                 {{/has_latepenalty}}
             </div>
         </div>
+
+        <div class="ph-display-none" id="ph-wizard-help-view">
+            <span class="fw-bold text-uppercase ph-text-xs text-muted">
+                {{#str}} wizard_help_title, block_playerhud {{/str}}
+            </span>
+            <p class="mt-2 mb-3">
+                {{#str}} wizard_help_intro, block_playerhud {{/str}}
+            </p>
+            <div class="bg-light border rounded p-3 mb-3">
+                <strong class="d-block mb-1">
+                    <i class="fa fa-object-ungroup me-1" aria-hidden="true"></i>
+                    {{#str}} wizard_help_sections_title, block_playerhud {{/str}}
+                </strong>
+                <span class="text-muted ph-text-sm">
+                    {{#str}} wizard_help_sections_desc, block_playerhud {{/str}}
+                </span>
+            </div>
+            <div class="bg-light border rounded p-3 mb-3">
+                <strong class="d-block mb-1">
+                    <i class="fa fa-check-circle me-1" aria-hidden="true"></i>
+                    {{#str}} wizard_help_once_title, block_playerhud {{/str}}
+                </strong>
+                <span class="text-muted ph-text-sm">
+                    {{#str}} wizard_help_once_desc, block_playerhud {{/str}}
+                </span>
+            </div>
+            <div class="bg-light border rounded p-3">
+                <strong class="d-block mb-1">
+                    <i class="fa fa-shapes me-1" aria-hidden="true"></i>
+                    {{#str}} wizard_help_octalysis_title, block_playerhud {{/str}}
+                </strong>
+                <span class="text-muted ph-text-sm d-block mb-2">
+                    {{#str}} wizard_help_octalysis_desc, block_playerhud {{/str}}
+                </span>
+                <a href="https://yukaichou.com/" target="_blank" rel="noopener noreferrer"
+                   class="btn btn-sm btn-outline-secondary ph-text-xs">
+                    <i class="fa fa-external-link-alt me-1" aria-hidden="true"></i>
+                    {{#str}} wizard_help_octalysis_link, block_playerhud {{/str}}
+                </a>
+            </div>
+        </div>
         </div>
         <div class="col-lg-5 mt-4 mt-lg-0 ph-wizard-sidebar-sticky">
             <div class="p-3 bg-light border rounded ph-wizard-octalysis-panel" id="ph-wizard-octalysis-panel">
@@ -523,9 +564,13 @@
             <i class="fa fa-clock-rotate-left me-1" aria-hidden="true"></i>
             {{#str}} wizard_history_btn, block_playerhud {{/str}}
         </button>
-        <button type="button" class="btn btn-outline-secondary me-auto" id="ph-wizard-external-btn">
+        <button type="button" class="btn btn-outline-secondary" id="ph-wizard-external-btn">
             <i class="fa fa-puzzle-piece me-1" aria-hidden="true"></i>
             {{#str}} wizard_octalysis_external_hdr, block_playerhud {{/str}}
+        </button>
+        <button type="button" class="btn btn-outline-secondary me-auto" id="ph-wizard-help-btn">
+            <i class="fa fa-circle-question me-1" aria-hidden="true"></i>
+            {{#str}} wizard_help_btn, block_playerhud {{/str}}
         </button>
         <button type="button" class="btn btn-outline-secondary me-auto ph-display-none" id="ph-wizard-history-back-btn">
             <i class="fa fa-arrow-left me-1" aria-hidden="true"></i>
