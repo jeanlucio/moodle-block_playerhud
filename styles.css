@@ -2537,7 +2537,7 @@ div.modal-dialog .visually-hidden {
 
 /*
  * Mechanic mini-cards: one checkbox + description per card, always visible (no accordion),
- * grouped into labelled sections instead — see wizard_section_items_trade/wizard_section_other.
+ * grouped into labelled sections instead — see wizard_section_economy/_collectibles/_other.
  */
 #ph-wizard-modal .ph-wizard-mech-card {
     position: relative;
