@@ -2542,7 +2542,13 @@ div.modal-dialog .visually-hidden {
 #ph-wizard-modal .ph-wizard-mech-card {
     position: relative;
 }
-#ph-wizard-modal .ph-wizard-mech-card:has(input:disabled) {
+/*
+ * Scoped to .ph-wizard-mech-module specifically (not "any input"): each card's own
+ * "Distribuir nas atividades" checkbox is legitimately disabled whenever its module is simply
+ * left unchecked (not "already generated"), and a bare input:disabled selector would dim the
+ * whole card for that alone.
+ */
+#ph-wizard-modal .ph-wizard-mech-card:has(input.ph-wizard-mech-module:disabled) {
     opacity: 0.6;
 }
 #ph-wizard-modal .badge.ph-wizard-ai-badge {
