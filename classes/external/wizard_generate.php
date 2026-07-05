@@ -99,11 +99,11 @@ class wizard_generate extends external_api {
                 VALUE_DEFAULT,
                 'fantasy'
             ),
-            'include_auto_distribute' => new external_value(
+            'distribute_items' => new external_value(
                 PARAM_BOOL,
-                "Automatically insert this run's generated drops into matching course activities",
+                "Insert the Items module's generated drops into matching course activities",
                 VALUE_DEFAULT,
-                false
+                true
             ),
             'include_progress_item' => new external_value(
                 PARAM_BOOL,
@@ -147,6 +147,30 @@ class wizard_generate extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            'distribute_progress_item' => new external_value(
+                PARAM_BOOL,
+                "Insert the RPG item's generated drop into a matching course activity",
+                VALUE_DEFAULT,
+                true
+            ),
+            'distribute_playercoin' => new external_value(
+                PARAM_BOOL,
+                'Automatically insert the PlayerCoin drop into the course news forum',
+                VALUE_DEFAULT,
+                true
+            ),
+            'distribute_pill' => new external_value(
+                PARAM_BOOL,
+                'Automatically spread the Knowledge Pill drops across course activities',
+                VALUE_DEFAULT,
+                true
+            ),
+            'distribute_secret' => new external_value(
+                PARAM_BOOL,
+                'Automatically spread the Secret Drops collectible across course activities',
+                VALUE_DEFAULT,
+                true
+            ),
         ]);
     }
 
@@ -164,7 +188,7 @@ class wizard_generate extends external_api {
      * @param bool $includeavatars Whether to create the pre-defined avatar item pack.
      * @param bool $includerpg Whether to create the RPG class pack and fixed Chapter 1.
      * @param string $tonekey Narrative tone key for RPG content and the progress item.
-     * @param bool $includeautodistribute Whether to auto-distribute this run's drops.
+     * @param bool $distributeitems Whether to insert the Items module's drops into activities.
      * @param bool $includeprogressitem Whether to create the themed progress item.
      * @param bool $includenextchapter Whether to generate a new AI story chapter.
      * @param bool $includecomercio Whether to wire PlayerCoin<->Avatar Pack trades.
@@ -172,6 +196,10 @@ class wizard_generate extends external_api {
      * @param bool $includelatepenalty Whether to create the Deadline Extension item.
      * @param bool $includesecretdrops Whether to create the Secret Drops collectible.
      * @param bool $includeranking Whether to turn on the block's ranking, if not already on.
+     * @param bool $distributeprogressitem Whether to insert the RPG item's drop into an activity.
+     * @param bool $distributeplayercoin Whether to auto-insert the PlayerCoin drop into the news forum.
+     * @param bool $distributepill Whether to auto-spread the Knowledge Pill drops across activities.
+     * @param bool $distributesecret Whether to auto-spread the Secret Drops collectible across activities.
      * @return array Result structure.
      */
     public static function execute(
@@ -186,14 +214,18 @@ class wizard_generate extends external_api {
         bool $includeavatars = false,
         bool $includerpg = false,
         string $tonekey = 'fantasy',
-        bool $includeautodistribute = false,
+        bool $distributeitems = true,
         bool $includeprogressitem = false,
         bool $includenextchapter = false,
         bool $includecomercio = false,
         bool $includepill = false,
         bool $includelatepenalty = false,
         bool $includesecretdrops = false,
-        bool $includeranking = false
+        bool $includeranking = false,
+        bool $distributeprogressitem = true,
+        bool $distributeplayercoin = true,
+        bool $distributepill = true,
+        bool $distributesecret = true
     ): array {
         global $DB, $USER;
 
@@ -209,7 +241,7 @@ class wizard_generate extends external_api {
             'include_avatars' => $includeavatars,
             'include_rpg' => $includerpg,
             'tone_key' => $tonekey,
-            'include_auto_distribute' => $includeautodistribute,
+            'distribute_items' => $distributeitems,
             'include_progress_item' => $includeprogressitem,
             'include_next_chapter' => $includenextchapter,
             'include_comercio' => $includecomercio,
@@ -217,6 +249,10 @@ class wizard_generate extends external_api {
             'include_latepenalty' => $includelatepenalty,
             'include_secret_drops' => $includesecretdrops,
             'include_ranking' => $includeranking,
+            'distribute_progress_item' => $distributeprogressitem,
+            'distribute_playercoin' => $distributeplayercoin,
+            'distribute_pill' => $distributepill,
+            'distribute_secret' => $distributesecret,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -254,7 +290,9 @@ class wizard_generate extends external_api {
                     $runid
                 );
                 $createditems = $itemsresult['names'];
-                $createddropids = $itemsresult['drop_ids'];
+                if ($params['distribute_items']) {
+                    $createddropids = $itemsresult['drop_ids'];
+                }
             }
 
             if ($params['include_missions']) {
@@ -272,7 +310,12 @@ class wizard_generate extends external_api {
             if ($params['include_playercoin']) {
                 $createditems = array_merge(
                     $createditems,
-                    self::generate_playercoin($params['instanceid'], $params['courseid'], $runid)
+                    self::generate_playercoin(
+                        $params['instanceid'],
+                        $params['courseid'],
+                        $runid,
+                        $params['distribute_playercoin']
+                    )
                 );
             }
 
@@ -294,7 +337,9 @@ class wizard_generate extends external_api {
             if ($params['include_progress_item']) {
                 $progressresult = self::generate_progress_item($params['instanceid'], $params['tone_key'], $runid);
                 $createditems = array_merge($createditems, $progressresult['names']);
-                $createddropids = array_merge($createddropids, $progressresult['drop_ids']);
+                if ($params['distribute_progress_item']) {
+                    $createddropids = array_merge($createddropids, $progressresult['drop_ids']);
+                }
             }
 
             if ($params['include_next_chapter']) {
@@ -316,7 +361,8 @@ class wizard_generate extends external_api {
                     $params['instanceid'],
                     $params['courseid'],
                     $params['tone_key'],
-                    $runid
+                    $runid,
+                    $params['distribute_pill']
                 ));
                 // The Pill->Book trade (and its quest) is intrinsic to this mechanic, so it is
                 // wired here rather than in Comercio — otherwise generating the Pill without also
@@ -356,7 +402,8 @@ class wizard_generate extends external_api {
                     $params['instanceid'],
                     $params['courseid'],
                     $params['tone_key'],
-                    $runid
+                    $runid,
+                    $params['distribute_secret']
                 ));
             }
 
@@ -364,7 +411,7 @@ class wizard_generate extends external_api {
                 self::generate_ranking($params['instanceid']);
             }
 
-            if ($params['include_auto_distribute'] && !empty($createddropids)) {
+            if (!empty($createddropids)) {
                 $distributemessage = self::distribute_drops(
                     $params['instanceid'],
                     $params['courseid'],
@@ -463,7 +510,13 @@ class wizard_generate extends external_api {
         if ($params['include_ranking']) {
             $steptypes[] = 'ranking';
         }
-        if ($params['include_auto_distribute']) {
+        // Only worth its own step when at least one earlier step will actually feed it a drop
+        // to place — Items and the RPG item are the only two mechanics without their own
+        // built-in distribution (PlayerCoin/Pill/Secret Drops each place their own drops
+        // directly, gated by their own distribute_* flag instead).
+        $hasdistributefeeder = ($params['include_items'] && $params['distribute_items'])
+            || ($params['include_progress_item'] && $params['distribute_progress_item']);
+        if ($hasdistributefeeder) {
             $steptypes[] = 'auto_distribute';
         }
 
@@ -713,9 +766,10 @@ class wizard_generate extends external_api {
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      * @param int $runid Wizard run ID.
+     * @param bool $distribute Whether to also insert the drop into the course news forum.
      * @return string[] Names of the created items (empty if PlayerCoin already existed).
      */
-    public static function generate_playercoin(int $instanceid, int $courseid, int $runid): array {
+    public static function generate_playercoin(int $instanceid, int $courseid, int $runid, bool $distribute = true): array {
         $result = \block_playerhud\external\create_playercoin::execute($instanceid, $courseid);
 
         if (empty($result['created'])) {
@@ -724,10 +778,21 @@ class wizard_generate extends external_api {
 
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$result['itemid']]);
 
-        $dropresult = \block_playerhud\external\setup_playercoin_drop::execute($instanceid, $courseid, $result['itemid']);
-        if (!empty($dropresult['success']) && !empty($dropresult['dropid'])) {
-            \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', [$dropresult['dropid']]);
-            \block_playerhud\local\wizard::record_shortcode($runid, $dropresult['dropid'], $dropresult['cmid'], 'intro');
+        if ($distribute) {
+            $dropresult = \block_playerhud\external\setup_playercoin_drop::execute(
+                $instanceid,
+                $courseid,
+                $result['itemid']
+            );
+            if (!empty($dropresult['success']) && !empty($dropresult['dropid'])) {
+                \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', [$dropresult['dropid']]);
+                \block_playerhud\local\wizard::record_shortcode(
+                    $runid,
+                    $dropresult['dropid'],
+                    $dropresult['cmid'],
+                    'intro'
+                );
+            }
         }
 
         return ['PlayerCoin'];
@@ -1078,10 +1143,17 @@ class wizard_generate extends external_api {
      * @param int $courseid Course ID.
      * @param string $tonekey Narrative tone key.
      * @param int $runid Wizard run ID.
+     * @param bool $distribute Whether to also spread the Pill's drops across course activities.
      * @return string[] Names of the created items (empty when the module was skipped as
      *     already done).
      */
-    public static function generate_pill(int $instanceid, int $courseid, string $tonekey, int $runid): array {
+    public static function generate_pill(
+        int $instanceid,
+        int $courseid,
+        string $tonekey,
+        int $runid,
+        bool $distribute = true
+    ): array {
         global $DB;
 
         $pillname = self::resolve_pill_name($tonekey);
@@ -1126,42 +1198,48 @@ class wizard_generate extends external_api {
         ]);
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$pillid, $bookid]);
 
-        $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
-        $quotas = \block_playerhud\local\drop_distribution::compute_activity_quotas(self::PILL_TARGET, count($modules));
-
-        $dropids = [];
-        foreach ($quotas as $i => $quota) {
-            $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
-                'blockinstanceid' => $instanceid,
-                'itemid' => $pillid,
-                'name' => $pillname,
-                'maxusage' => $quota,
-                'respawntime' => 3600,
-                'code' => \block_playerhud\utils::generate_drop_code($instanceid),
-                'timecreated' => $now,
-                'timemodified' => $now,
-            ]);
-            $dropids[] = $dropid;
-
-            // Page modules never show their intro unless the teacher explicitly enabled
-            // "Display page description" — their content, in contrast, is always shown on the
-            // page's own view. Every other eligible module type shows its intro unconditionally
-            // on its own view page, regardless of the course-page "show description" setting.
-            $field = $modules[$i]['supports_content'] ? 'content' : 'intro';
-            $result = \block_playerhud\external\insert_drop_shortcode::execute(
-                $instanceid,
-                $courseid,
-                $dropid,
-                $modules[$i]['cmid'],
-                $field,
-                'top'
+        if ($distribute) {
+            $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
+            $quotas = \block_playerhud\local\drop_distribution::compute_activity_quotas(
+                self::PILL_TARGET,
+                count($modules)
             );
-            if ($result['success']) {
-                \block_playerhud\local\wizard::record_shortcode($runid, $dropid, (int) $modules[$i]['cmid'], $field);
+
+            $dropids = [];
+            foreach ($quotas as $i => $quota) {
+                $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
+                    'blockinstanceid' => $instanceid,
+                    'itemid' => $pillid,
+                    'name' => $pillname,
+                    'maxusage' => $quota,
+                    'respawntime' => 3600,
+                    'code' => \block_playerhud\utils::generate_drop_code($instanceid),
+                    'timecreated' => $now,
+                    'timemodified' => $now,
+                ]);
+                $dropids[] = $dropid;
+
+                // Page modules never show their intro unless the teacher explicitly enabled
+                // "Display page description" — their content, in contrast, is always shown on
+                // the page's own view. Every other eligible module type shows its intro
+                // unconditionally on its own view page, regardless of the course-page "show
+                // description" setting.
+                $field = $modules[$i]['supports_content'] ? 'content' : 'intro';
+                $result = \block_playerhud\external\insert_drop_shortcode::execute(
+                    $instanceid,
+                    $courseid,
+                    $dropid,
+                    $modules[$i]['cmid'],
+                    $field,
+                    'top'
+                );
+                if ($result['success']) {
+                    \block_playerhud\local\wizard::record_shortcode($runid, $dropid, (int) $modules[$i]['cmid'], $field);
+                }
             }
-        }
-        if (!empty($dropids)) {
-            \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', $dropids);
+            if (!empty($dropids)) {
+                \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', $dropids);
+            }
         }
 
         return [$pillname, $bookname];
@@ -1188,9 +1266,16 @@ class wizard_generate extends external_api {
      * @param int $courseid Course ID.
      * @param string $tonekey Narrative tone key.
      * @param int $runid Wizard run ID.
+     * @param bool $distribute Whether to also spread the collectible's drops across activities.
      * @return string[] Names of the created items (empty if the item already existed).
      */
-    public static function generate_secret_drops(int $instanceid, int $courseid, string $tonekey, int $runid): array {
+    public static function generate_secret_drops(
+        int $instanceid,
+        int $courseid,
+        string $tonekey,
+        int $runid,
+        bool $distribute = true
+    ): array {
         global $DB;
 
         $itemname = self::resolve_secret_name($tonekey);
@@ -1216,42 +1301,48 @@ class wizard_generate extends external_api {
         ]);
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$itemid]);
 
-        $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
-        $quotas = \block_playerhud\local\drop_distribution::compute_activity_quotas(self::SECRET_DROP_COUNT, count($modules));
-
-        $dropids = [];
-        foreach ($quotas as $i => $quota) {
-            $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
-                'blockinstanceid' => $instanceid,
-                'itemid' => $itemid,
-                'name' => $itemname,
-                'maxusage' => $quota,
-                'respawntime' => 0,
-                'code' => \block_playerhud\utils::generate_drop_code($instanceid),
-                'timecreated' => $now,
-                'timemodified' => $now,
-            ]);
-            $dropids[] = $dropid;
-
-            // Page modules never show their intro unless the teacher explicitly enabled
-            // "Display page description" — their content, in contrast, is always shown on the
-            // page's own view. Every other eligible module type shows its intro unconditionally
-            // on its own view page, regardless of the course-page "show description" setting.
-            $field = $modules[$i]['supports_content'] ? 'content' : 'intro';
-            $result = \block_playerhud\external\insert_drop_shortcode::execute(
-                $instanceid,
-                $courseid,
-                $dropid,
-                $modules[$i]['cmid'],
-                $field,
-                'top'
+        if ($distribute) {
+            $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
+            $quotas = \block_playerhud\local\drop_distribution::compute_activity_quotas(
+                self::SECRET_DROP_COUNT,
+                count($modules)
             );
-            if ($result['success']) {
-                \block_playerhud\local\wizard::record_shortcode($runid, $dropid, (int) $modules[$i]['cmid'], $field);
+
+            $dropids = [];
+            foreach ($quotas as $i => $quota) {
+                $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
+                    'blockinstanceid' => $instanceid,
+                    'itemid' => $itemid,
+                    'name' => $itemname,
+                    'maxusage' => $quota,
+                    'respawntime' => 0,
+                    'code' => \block_playerhud\utils::generate_drop_code($instanceid),
+                    'timecreated' => $now,
+                    'timemodified' => $now,
+                ]);
+                $dropids[] = $dropid;
+
+                // Page modules never show their intro unless the teacher explicitly enabled
+                // "Display page description" — their content, in contrast, is always shown on
+                // the page's own view. Every other eligible module type shows its intro
+                // unconditionally on its own view page, regardless of the course-page "show
+                // description" setting.
+                $field = $modules[$i]['supports_content'] ? 'content' : 'intro';
+                $result = \block_playerhud\external\insert_drop_shortcode::execute(
+                    $instanceid,
+                    $courseid,
+                    $dropid,
+                    $modules[$i]['cmid'],
+                    $field,
+                    'top'
+                );
+                if ($result['success']) {
+                    \block_playerhud\local\wizard::record_shortcode($runid, $dropid, (int) $modules[$i]['cmid'], $field);
+                }
             }
-        }
-        if (!empty($dropids)) {
-            \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', $dropids);
+            if (!empty($dropids)) {
+                \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', $dropids);
+            }
         }
 
         return [$itemname];

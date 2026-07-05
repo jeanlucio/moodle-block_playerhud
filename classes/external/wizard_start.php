@@ -69,7 +69,7 @@ class wizard_start extends external_api {
      * @param bool $includeavatars Whether to create the pre-defined avatar item pack.
      * @param bool $includerpg Whether to create the RPG class pack and fixed Chapter 1.
      * @param string $tonekey Narrative tone key for RPG content and the progress item.
-     * @param bool $includeautodistribute Whether to auto-distribute this run's drops.
+     * @param bool $distributeitems Whether to insert the Items module's drops into activities.
      * @param bool $includeprogressitem Whether to create the themed progress item.
      * @param bool $includenextchapter Whether to generate a new AI story chapter.
      * @param bool $includecomercio Whether to wire PlayerCoin<->Avatar Pack trades.
@@ -77,6 +77,10 @@ class wizard_start extends external_api {
      * @param bool $includelatepenalty Whether to create the Deadline Extension item.
      * @param bool $includesecretdrops Whether to create the Secret Drops collectible.
      * @param bool $includeranking Whether to turn on the block's ranking, if not already on.
+     * @param bool $distributeprogressitem Whether to insert the RPG item's drop into an activity.
+     * @param bool $distributeplayercoin Whether to auto-insert the PlayerCoin drop into the news forum.
+     * @param bool $distributepill Whether to auto-spread the Knowledge Pill drops across activities.
+     * @param bool $distributesecret Whether to auto-spread the Secret Drops collectible across activities.
      * @return array Result structure.
      */
     public static function execute(
@@ -91,14 +95,18 @@ class wizard_start extends external_api {
         bool $includeavatars = false,
         bool $includerpg = false,
         string $tonekey = 'fantasy',
-        bool $includeautodistribute = false,
+        bool $distributeitems = true,
         bool $includeprogressitem = false,
         bool $includenextchapter = false,
         bool $includecomercio = false,
         bool $includepill = false,
         bool $includelatepenalty = false,
         bool $includesecretdrops = false,
-        bool $includeranking = false
+        bool $includeranking = false,
+        bool $distributeprogressitem = true,
+        bool $distributeplayercoin = true,
+        bool $distributepill = true,
+        bool $distributesecret = true
     ): array {
         global $DB, $USER;
 
@@ -114,7 +122,7 @@ class wizard_start extends external_api {
             'include_avatars' => $includeavatars,
             'include_rpg' => $includerpg,
             'tone_key' => $tonekey,
-            'include_auto_distribute' => $includeautodistribute,
+            'distribute_items' => $distributeitems,
             'include_progress_item' => $includeprogressitem,
             'include_next_chapter' => $includenextchapter,
             'include_comercio' => $includecomercio,
@@ -122,6 +130,10 @@ class wizard_start extends external_api {
             'include_latepenalty' => $includelatepenalty,
             'include_secret_drops' => $includesecretdrops,
             'include_ranking' => $includeranking,
+            'distribute_progress_item' => $distributeprogressitem,
+            'distribute_playercoin' => $distributeplayercoin,
+            'distribute_pill' => $distributepill,
+            'distribute_secret' => $distributesecret,
         ]);
 
         $context = context_block::instance($params['instanceid']);

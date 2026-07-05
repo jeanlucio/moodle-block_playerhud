@@ -142,6 +142,14 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_items_desc, block_playerhud {{/str}}
                         </small>
+                        {{^gen_items}}
+                        <div class="form-check mt-2 ph-wizard-distribute-check">
+                            <input type="checkbox" class="form-check-input" id="ph-wizard-distribute-items" checked>
+                            <label class="form-check-label ph-text-sm" for="ph-wizard-distribute-items">
+                                {{#str}} wizard_distribute_checkbox_label, block_playerhud {{/str}}
+                            </label>
+                        </div>
+                        {{/gen_items}}
                         {{#gen_items}}
                         <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
                             <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
@@ -162,6 +170,14 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_playercoin_desc, block_playerhud {{/str}}
                         </small>
+                        {{^gen_playercoin}}
+                        <div class="form-check mt-2 ph-wizard-distribute-check">
+                            <input type="checkbox" class="form-check-input" id="ph-wizard-distribute-playercoin" checked>
+                            <label class="form-check-label ph-text-sm" for="ph-wizard-distribute-playercoin">
+                                {{#str}} wizard_distribute_playercoin_checkbox_label, block_playerhud {{/str}}
+                            </label>
+                        </div>
+                        {{/gen_playercoin}}
                         {{#gen_playercoin}}
                         <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
                             <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
@@ -215,21 +231,6 @@
                         {{/gen_trade}}
                     </div>
                 </div>
-                <div class="col">
-                    <div class="ph-wizard-mech-card bg-light border rounded p-3 h-100">
-                        <div class="form-check mb-0">
-                            <input type="checkbox" class="form-check-input" id="ph-wizard-module-autodistribute"
-                                   {{#gen_items}}disabled{{/gen_items}}>
-                            <label class="form-check-label fw-bold" for="ph-wizard-module-autodistribute">
-                                <i class="fa fa-random ph-wizard-mech-icon me-1" aria-hidden="true"></i>
-                                {{#str}} wizard_module_autodistribute, block_playerhud {{/str}}
-                            </label>
-                        </div>
-                        <small class="text-muted d-block mt-1">
-                            {{#str}} wizard_module_autodistribute_desc, block_playerhud {{/str}}
-                        </small>
-                    </div>
-                </div>
             </div>
 
             <div class="mb-2 mt-2">
@@ -251,6 +252,15 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_progress_item_desc, block_playerhud {{/str}}
                         </small>
+                        {{^gen_progressitem}}
+                        <div class="form-check mt-2 ph-wizard-distribute-check">
+                            <input type="checkbox" class="form-check-input" id="ph-wizard-distribute-progressitem"
+                                   checked>
+                            <label class="form-check-label ph-text-sm" for="ph-wizard-distribute-progressitem">
+                                {{#str}} wizard_distribute_checkbox_label, block_playerhud {{/str}}
+                            </label>
+                        </div>
+                        {{/gen_progressitem}}
                         {{#gen_progressitem}}
                         <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
                             <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
@@ -271,6 +281,14 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_pill_desc, block_playerhud {{/str}}
                         </small>
+                        {{^gen_pill}}
+                        <div class="form-check mt-2 ph-wizard-distribute-check">
+                            <input type="checkbox" class="form-check-input" id="ph-wizard-distribute-pill" checked>
+                            <label class="form-check-label ph-text-sm" for="ph-wizard-distribute-pill">
+                                {{#str}} wizard_distribute_checkbox_label, block_playerhud {{/str}}
+                            </label>
+                        </div>
+                        {{/gen_pill}}
                         {{#gen_pill}}
                         <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
                             <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
@@ -291,6 +309,14 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_secret_desc, block_playerhud {{/str}}
                         </small>
+                        {{^gen_secret}}
+                        <div class="form-check mt-2 ph-wizard-distribute-check">
+                            <input type="checkbox" class="form-check-input" id="ph-wizard-distribute-secret" checked>
+                            <label class="form-check-label ph-text-sm" for="ph-wizard-distribute-secret">
+                                {{#str}} wizard_distribute_checkbox_label, block_playerhud {{/str}}
+                            </label>
+                        </div>
+                        {{/gen_secret}}
                         {{#gen_secret}}
                         <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
                             <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
@@ -527,6 +553,15 @@
                 </strong>
                 <span class="text-muted ph-text-sm">
                     {{#str}} wizard_help_once_desc, block_playerhud {{/str}}
+                </span>
+            </div>
+            <div class="bg-light border rounded p-3 mb-3">
+                <strong class="d-block mb-1">
+                    <i class="fa fa-random me-1" aria-hidden="true"></i>
+                    {{#str}} wizard_help_distribute_title, block_playerhud {{/str}}
+                </strong>
+                <span class="text-muted ph-text-sm">
+                    {{#str}} wizard_help_distribute_desc, block_playerhud {{/str}}
                 </span>
             </div>
             <div class="bg-light border rounded p-3">

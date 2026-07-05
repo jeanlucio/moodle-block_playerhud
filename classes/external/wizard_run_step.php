@@ -111,6 +111,13 @@ class wizard_run_step extends external_api {
                 VALUE_DEFAULT,
                 0
             ),
+            'distribute' => new external_value(
+                PARAM_BOOL,
+                "Whether to auto-distribute this step's own drop(s) into course activities, only " .
+                    'used by the "playercoin", "pill" and "secret_drops" steps',
+                VALUE_DEFAULT,
+                true
+            ),
         ]);
     }
 
@@ -133,6 +140,8 @@ class wizard_run_step extends external_api {
      * @param string[] $arcbeats Story arc beats from the "story_outline" step.
      * @param int $pillbonusxp Reward XP for the Pill trade-completion quest, from wizard_start.
      * @param int $latepenaltybonusxp Reward XP for the Latepenalty early-win quest, from wizard_start.
+     * @param bool $distribute Whether to auto-distribute this step's own drop(s), only used by
+     *     the "playercoin", "pill" and "secret_drops" steps.
      * @return array Result structure.
      */
     public static function execute(
@@ -151,7 +160,8 @@ class wizard_run_step extends external_api {
         bool $reporteconomy = false,
         array $arcbeats = [],
         int $pillbonusxp = 0,
-        int $latepenaltybonusxp = 0
+        int $latepenaltybonusxp = 0,
+        bool $distribute = true
     ): array {
         global $DB, $USER;
 
@@ -172,6 +182,7 @@ class wizard_run_step extends external_api {
             'arc_beats' => $arcbeats,
             'pill_bonus_xp' => $pillbonusxp,
             'latepenalty_bonus_xp' => $latepenaltybonusxp,
+            'distribute' => $distribute,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -261,7 +272,8 @@ class wizard_run_step extends external_api {
                     $names = wizard_generate::generate_playercoin(
                         $params['instanceid'],
                         $params['courseid'],
-                        $params['runid']
+                        $params['runid'],
+                        $params['distribute']
                     );
                     $counts['items'] = count($names);
                     break;
@@ -307,7 +319,8 @@ class wizard_run_step extends external_api {
                         $params['instanceid'],
                         $params['courseid'],
                         $params['tone_key'],
-                        $params['runid']
+                        $params['runid'],
+                        $params['distribute']
                     );
                     $counts['items'] = count($names);
                     $pilltrade = wizard_generate::generate_pill_trade(
@@ -341,7 +354,8 @@ class wizard_run_step extends external_api {
                         $params['instanceid'],
                         $params['courseid'],
                         $params['tone_key'],
-                        $params['runid']
+                        $params['runid'],
+                        $params['distribute']
                     );
                     $counts['items'] = count($names);
                     break;

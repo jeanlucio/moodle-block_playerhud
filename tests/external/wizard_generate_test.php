@@ -331,6 +331,34 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
+     * Unchecking PlayerCoin's own "insert into the news forum" checkbox still creates the
+     * item, but skips setup_playercoin_drop() entirely — even with a news forum available.
+     */
+    public function test_playercoin_distribute_false_skips_forum_drop(): void {
+        global $DB;
+
+        $this->getDataGenerator()->create_module('forum', [
+            'course' => $this->course->id,
+            'type'   => 'news',
+            'intro'  => '',
+        ]);
+
+        $result = wizard_generate::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            theme: '',
+            size: 'short',
+            includeitems: false,
+            includeplayercoin: true,
+            distributeplayercoin: false
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(['PlayerCoin'], $result['created_items']);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_drops'));
+    }
+
+    /**
      * Trade wires PlayerCoin<->Avatar Pack trades from whatever already exists in the
      * instance (not just this run's own creations), and records the trade plus its
      * requirement and reward rows into the manifest.
@@ -559,6 +587,32 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
+     * Unchecking Pill's own "distribute into activities" checkbox still creates both items, but
+     * skips the quota-scatter across course activities entirely — proving distribute_pill
+     * actually gates generate_pill()'s own placement, independent of every other module.
+     */
+    public function test_pill_distribute_false_skips_activity_scatter(): void {
+        global $DB;
+
+        $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
+
+        $result = wizard_generate::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            theme: '',
+            size: 'short',
+            includeitems: false,
+            tonekey: 'academic',
+            includepill: true,
+            distributepill: false
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(['Knowledge Pill', 'Book of Knowledge'], $result['created_items']);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_drops'));
+    }
+
+    /**
      * Running Pill twice must not duplicate the item pair or its drops.
      */
     public function test_pill_is_idempotent_across_runs(): void {
@@ -713,6 +767,32 @@ final class wizard_generate_test extends external_base_testcase {
         foreach ($shortcoderows as $row) {
             $this->assertSame('content', $row->field);
         }
+    }
+
+    /**
+     * Unchecking Secret Drops' own "distribute into activities" checkbox still creates the
+     * item, but skips scattering its drops entirely — same gating proof as Pill's, for the
+     * quota-scatter mechanic distribute_secret controls.
+     */
+    public function test_secret_drops_distribute_false_skips_activity_scatter(): void {
+        global $DB;
+
+        $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
+
+        $result = wizard_generate::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            theme: '',
+            size: 'short',
+            includeitems: false,
+            tonekey: 'fantasy',
+            includesecretdrops: true,
+            distributesecret: false
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(['Lost Relic'], $result['created_items']);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_drops'));
     }
 
     /**
@@ -1363,8 +1443,10 @@ final class wizard_generate_test extends external_base_testcase {
         $this->assertEquals(0, $drop->maxusage);
         $this->assertEquals(3600, $drop->respawntime);
 
+        // Distribute_progress_item defaults to true, so a plain progress-item run also earns an
+        // auto_distribute module in its own manifest — it is the one feeding that step a drop.
         $run = $DB->get_record('block_playerhud_wizard_runs', ['id' => $result['runid']], '*', MUST_EXIST);
-        $this->assertSame(['progress_item'], json_decode($run->modules, true));
+        $this->assertSame(['progress_item', 'auto_distribute'], json_decode($run->modules, true));
 
         $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $result['runid']]);
         $this->assertCount(2, $manifest, 'item + drop.');
@@ -1627,16 +1709,30 @@ final class wizard_generate_test extends external_base_testcase {
      */
     public function test_build_step_types_matches_selected_modules_in_order(): void {
         $params = self::wizard_generate_params([
+            'include_items' => true,
             'include_ranking' => true,
             'include_avatars' => true,
             'include_missions' => true,
-            'include_auto_distribute' => true,
+            'distribute_items' => true,
         ]);
 
         $this->assertSame(
-            ['missions', 'avatars', 'ranking', 'auto_distribute'],
+            ['items', 'missions', 'avatars', 'ranking', 'auto_distribute'],
             wizard_generate::build_step_types($params)
         );
+    }
+
+    /**
+     * The auto_distribute step is skipped when Items is selected but its own distribute
+     * checkbox was left off — nothing would be forwarded to it, so it earns no step of its own.
+     */
+    public function test_build_step_types_skips_auto_distribute_when_items_distribute_is_off(): void {
+        $params = self::wizard_generate_params([
+            'include_items' => true,
+            'distribute_items' => false,
+        ]);
+
+        $this->assertSame(['items'], wizard_generate::build_step_types($params));
     }
 
     /**
@@ -1775,9 +1871,10 @@ final class wizard_generate_test extends external_base_testcase {
 
     /**
      * Builds a validated params array matching wizard_generate::execute_parameters()'s shape,
-     * with every include_* flag defaulting to false — mirrors what self::validate_parameters()
-     * produces inside execute(), since build_step_types()/compute_shared_xp_shares() are called
-     * with that same validated array, not raw booleans.
+     * with every include_* flag defaulting to false and every distribute_* flag defaulting to
+     * true (its real default) — mirrors what self::validate_parameters() produces inside
+     * execute(), since build_step_types()/compute_shared_xp_shares() are called with that same
+     * validated array, not raw booleans.
      *
      * @param array $overrides Flags to override, e.g. ['include_missions' => true].
      * @return array The params array.
@@ -1795,7 +1892,7 @@ final class wizard_generate_test extends external_base_testcase {
             'include_avatars' => false,
             'include_rpg' => false,
             'tone_key' => 'fantasy',
-            'include_auto_distribute' => false,
+            'distribute_items' => true,
             'include_progress_item' => false,
             'include_next_chapter' => false,
             'include_comercio' => false,
@@ -1803,6 +1900,10 @@ final class wizard_generate_test extends external_base_testcase {
             'include_latepenalty' => false,
             'include_secret_drops' => false,
             'include_ranking' => false,
+            'distribute_progress_item' => true,
+            'distribute_playercoin' => true,
+            'distribute_pill' => true,
+            'distribute_secret' => true,
         ], $overrides);
     }
 }

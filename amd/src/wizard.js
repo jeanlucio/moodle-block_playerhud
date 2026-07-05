@@ -71,9 +71,19 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const tradeModuleEl = document.getElementById('ph-wizard-module-trade');
         const tradeRequirementEl = document.getElementById('ph-wizard-trade-requirement');
         const progressItemModuleEl = document.getElementById('ph-wizard-module-progressitem');
-        const autoDistributeModuleEl = document.getElementById('ph-wizard-module-autodistribute');
         const secretModuleEl = document.getElementById('ph-wizard-module-secret');
         const rankingModuleEl = document.getElementById('ph-wizard-module-ranking');
+
+        // Each of these only exists in the DOM while its own mechanic is still available to run
+        // (the template hides the checkbox once gen_* is true) — every read goes through
+        // distributeChecked(), never el.checked directly, so a missing element (harmless: its
+        // module can no longer run anyway) never throws.
+        const distributeItemsEl = document.getElementById('ph-wizard-distribute-items');
+        const distributeProgressItemEl = document.getElementById('ph-wizard-distribute-progressitem');
+        const distributePlayercoinEl = document.getElementById('ph-wizard-distribute-playercoin');
+        const distributePillEl = document.getElementById('ph-wizard-distribute-pill');
+        const distributeSecretEl = document.getElementById('ph-wizard-distribute-secret');
+        const distributeChecked = (el) => (el ? el.checked : true);
         const generateBtn = document.getElementById('ph-wizard-generate-btn');
         const undoBtn = document.getElementById('ph-wizard-undo-btn');
         const errorEl = document.getElementById('ph-wizard-error');
@@ -162,19 +172,24 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         avatarsModuleEl.addEventListener('change', syncTradeRequirement);
         syncTradeRequirement();
 
-        // Auto-distribute only places drops created in the same run (items and the RPG item),
-        // so it is pointless without at least one of those two checked. The template already
-        // renders it disabled when Items was generated; this keeps it in sync afterwards.
-        const syncAutoDistribute = () => {
-            const hasfeeder = itemsModuleEl.checked || progressItemModuleEl.checked;
-            autoDistributeModuleEl.disabled = !hasfeeder;
-            if (!hasfeeder) {
-                autoDistributeModuleEl.checked = false;
+        // Each mechanic's own "distribute into activities" checkbox is meaningless once its
+        // parent module checkbox is unchecked — nothing new would be created to distribute.
+        const syncDistributeCheckbox = (moduleEl, distributeEl) => {
+            if (!distributeEl) {
+                return;
             }
+            distributeEl.disabled = !moduleEl.checked;
         };
-        itemsModuleEl.addEventListener('change', syncAutoDistribute);
-        progressItemModuleEl.addEventListener('change', syncAutoDistribute);
-        syncAutoDistribute();
+        [
+            [itemsModuleEl, distributeItemsEl],
+            [progressItemModuleEl, distributeProgressItemEl],
+            [playercoinModuleEl, distributePlayercoinEl],
+            [pillModuleEl, distributePillEl],
+            [secretModuleEl, distributeSecretEl],
+        ].forEach(([moduleEl, distributeEl]) => {
+            moduleEl.addEventListener('change', () => syncDistributeCheckbox(moduleEl, distributeEl));
+            syncDistributeCheckbox(moduleEl, distributeEl);
+        });
 
         // Checked by default only when the instance is still at the edit form's defaults (100
         // XP per level, 20 levels) — see levels_at_default in the template. While checked, every
@@ -513,6 +528,38 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         };
 
         /**
+         * Resolves the "distribute" flag to send for a step — only the mechanics with no
+         * built-in distribution of their own (playercoin, pill and secret_drops each place
+         * their own drops directly) read this flag; every other step type ignores it.
+         *
+         * @param {string} steptype The step type identifier.
+         * @param {Object} runParams The generation params (theme, tone, size, include_*…).
+         * @return {boolean}
+         */
+        const distributeFlagForStep = (steptype, runParams) => {
+            const distributebystep = {
+                playercoin: runParams.distribute_playercoin,
+                pill: runParams.distribute_pill,
+                'secret_drops': runParams.distribute_secret,
+            };
+            return steptype in distributebystep ? distributebystep[steptype] : true;
+        };
+
+        /**
+         * Whether a step's own drop_ids should be forwarded into the accumulator for a later
+         * auto_distribute step — Items and the RPG item are the only step types that ever
+         * return a non-empty drop_ids, each gated by its own card's distribute checkbox.
+         *
+         * @param {string} steptype The step type identifier.
+         * @param {Object} runParams The generation params (theme, tone, size, include_*…).
+         * @return {boolean}
+         */
+        const shouldForwardDropIds = (steptype, runParams) => !(
+            (steptype === 'items' && !runParams.distribute_items)
+            || (steptype === 'progress_item' && !runParams.distribute_progress_item)
+        );
+
+        /**
          * Runs the wizard's step plan from `startIndex` onwards, updating the progress bar live
          * after each step and stopping (with a retry/undo choice) on the first failure — retrying
          * resumes from the same failed step rather than restarting the whole run.
@@ -570,6 +617,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                             'report_economy': islaststep && reporteconomy,
                             'pill_bonus_xp': step.type === 'pill' ? pillBonusXp : 0,
                             'latepenalty_bonus_xp': step.type === 'latepenalty' ? latepenaltyBonusXp : 0,
+                            'distribute': distributeFlagForStep(step.type, runParams),
                         },
                     }])[0];
                 } catch (e) {
@@ -588,7 +636,9 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 totals.trades += result.counts.trades;
                 totals.chapters += result.counts.chapters;
                 totals.classes += result.counts.classes;
-                dropids.push(...result.drop_ids);
+                if (shouldForwardDropIds(step.type, runParams)) {
+                    dropids.push(...result.drop_ids);
+                }
                 arcBeats.push(...result.arc_beats);
                 if (result.message) {
                     stepMessages.push(result.message);
@@ -652,7 +702,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 'include_avatars': avatarsModuleEl.checked,
                 'include_rpg': rpgModuleEl.checked,
                 'tone_key': toneEl.value,
-                'include_auto_distribute': autoDistributeModuleEl.checked,
+                'distribute_items': distributeChecked(distributeItemsEl),
                 'include_progress_item': progressItemModuleEl.checked,
                 // The wizard now bundles "RPG classes" and "full story arc" into a single
                 // checkbox — see wizard_module_rpg in the template — so both server-side flags
@@ -663,6 +713,10 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 'include_latepenalty': latepenaltyChecked(),
                 'include_secret_drops': secretModuleEl.checked,
                 'include_ranking': rankingModuleEl.checked,
+                'distribute_progress_item': distributeChecked(distributeProgressItemEl),
+                'distribute_playercoin': distributeChecked(distributePlayercoinEl),
+                'distribute_pill': distributeChecked(distributePillEl),
+                'distribute_secret': distributeChecked(distributeSecretEl),
             };
 
             setProgressView(true);

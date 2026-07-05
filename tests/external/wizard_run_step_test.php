@@ -75,6 +75,35 @@ final class wizard_run_step_test extends external_base_testcase {
     }
 
     /**
+     * The "playercoin" step's own "distribute" flag reaches generate_playercoin() the same way
+     * it does through the single-call execute() — even with a news forum available, passing
+     * distribute: false must still create the item without a drop.
+     */
+    public function test_playercoin_step_respects_distribute_false(): void {
+        global $DB;
+
+        $this->getDataGenerator()->create_module('forum', [
+            'course' => $this->course->id,
+            'type'   => 'news',
+            'intro'  => '',
+        ]);
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            runid: $runid,
+            steptype: 'playercoin',
+            theme: '',
+            distribute: false
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(1, $result['counts']['items']);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_drops'));
+    }
+
+    /**
      * The "rpg" step separates class and chapter counts — Chapter 1 is fixed content, never
      * AI-generated, so this step is deterministic and safe to exercise here.
      */
