@@ -202,6 +202,83 @@ class wizard {
     }
 
     /**
+     * Returns, per wizard mechanic, whether it has already been generated for this instance —
+     * used to disable each mechanic's card after its first successful run, instead of letting
+     * the teacher re-run it and hit an unexplained "nothing new was generated" no-op.
+     *
+     * The wizard is deliberately one-shot per mechanic per course: the dedicated management
+     * screens ("Criar Item Mágico", "Sugerir Missões", "Sugerir Trocas", "Distribuir Drops")
+     * are the intended path for adding more of anything later. A mechanic counts as generated
+     * when a completed ('done') run included it, or when its own idempotency fingerprint already
+     * exists in the database (content created before this rule, or through those manual screens
+     * — the wizard's generators would skip or pile on top of it either way). Rolled-back runs do
+     * not count: undoing a run re-enables its mechanics.
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @param \stdClass $config The block instance configuration (for the ranking flag).
+     * @return array<string, bool> Keyed by mechanic: items, missions, playercoin, avatars,
+     *     comercio, pill, secret_drops, latepenalty, progress_item, rpg, ranking.
+     */
+    public static function get_generated_modules(int $blockinstanceid, \stdClass $config): array {
+        global $DB;
+
+        $ran = [];
+        $runs = $DB->get_records(
+            'block_playerhud_wizard_runs',
+            ['blockinstanceid' => $blockinstanceid, 'status' => 'done'],
+            '',
+            'id, modules'
+        );
+        foreach ($runs as $run) {
+            foreach ((array) json_decode($run->modules ?? '[]') as $module) {
+                $ran[$module] = true;
+            }
+        }
+
+        $items = $DB->get_records(
+            'block_playerhud_items',
+            ['blockinstanceid' => $blockinstanceid],
+            '',
+            'id, name, action_type'
+        );
+        $actiontypes = [];
+        $itemnames = [];
+        foreach ($items as $item) {
+            $actiontypes[$item->action_type] = true;
+            $itemnames[$item->name] = true;
+        }
+
+        $tonekeys = ['fantasy', 'scifi', 'mystery', 'academic'];
+        $hasprogressitem = false;
+        $hassecretitem = false;
+        foreach ($tonekeys as $tonekey) {
+            $progressname = \block_playerhud\external\wizard_generate::resolve_progress_item_name($tonekey);
+            $secretname = \block_playerhud\external\wizard_generate::resolve_secret_name($tonekey);
+            $hasprogressitem = $hasprogressitem || isset($itemnames[$progressname]);
+            $hassecretitem = $hassecretitem || isset($itemnames[$secretname]);
+        }
+
+        // RPG counts classes and chapters from any origin (hand-made ones included): generating
+        // a wizard arc on top of an existing story is exactly the pile-up this rule prevents.
+        $hasstory = $DB->record_exists('block_playerhud_classes', ['blockinstanceid' => $blockinstanceid])
+            || $DB->record_exists('block_playerhud_chapters', ['blockinstanceid' => $blockinstanceid]);
+
+        return [
+            'items' => !empty($ran['items']),
+            'missions' => !empty($ran['missions']),
+            'playercoin' => !empty($ran['playercoin']) || isset($actiontypes['playercoin']),
+            'avatars' => !empty($ran['avatars']) || isset($actiontypes['avatar_profile']),
+            'comercio' => !empty($ran['comercio']),
+            'pill' => !empty($ran['pill']) || isset($actiontypes['knowledge_pill']),
+            'secret_drops' => !empty($ran['secret_drops']) || $hassecretitem,
+            'latepenalty' => !empty($ran['latepenalty']) || isset($actiontypes['deadline_extension']),
+            'progress_item' => !empty($ran['progress_item']) || $hasprogressitem,
+            'rpg' => !empty($ran['rpg']) || !empty($ran['next_chapter']) || $hasstory,
+            'ranking' => !empty($config->enable_ranking),
+        ];
+    }
+
+    /**
      * Undoes a wizard run: deletes every object it created, wherever it lives.
      *
      * Scoped to the given block instance so a run ID from another instance can

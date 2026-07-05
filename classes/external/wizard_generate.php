@@ -1042,7 +1042,7 @@ class wizard_generate extends external_api {
      * @param string $tonekey Narrative tone key.
      * @return string The item name.
      */
-    protected static function resolve_progress_item_name(string $tonekey): string {
+    public static function resolve_progress_item_name(string $tonekey): string {
         $namestringkey = "wizard_progress_item_name_$tonekey";
         if (!get_string_manager()->string_exists($namestringkey, 'block_playerhud')) {
             $namestringkey = 'wizard_progress_item_name_fantasy';
@@ -1290,7 +1290,7 @@ class wizard_generate extends external_api {
      * @param string $tonekey Narrative tone key.
      * @return string The item name.
      */
-    protected static function resolve_secret_name(string $tonekey): string {
+    public static function resolve_secret_name(string $tonekey): string {
         $namestringkey = "wizard_secret_name_$tonekey";
         if (!get_string_manager()->string_exists($namestringkey, 'block_playerhud')) {
             $namestringkey = 'wizard_secret_name_fantasy';

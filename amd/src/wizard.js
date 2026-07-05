@@ -133,9 +133,17 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
 
         // Trade silently creates 0 trades without a PlayerCoin and an Avatar Pack to wire
         // together (game::build_trade_suggestions() returns empty otherwise) — disabled here
-        // until both are checked, instead of letting a teacher select it and get nothing.
+        // until both are available, instead of letting a teacher select it and get nothing.
+        // A prerequisite counts as available when checked for this run OR already generated
+        // (its checkbox disabled by the template): generate_comercio() works off whatever
+        // already exists in the instance, not just this run's output. When Trade itself was
+        // already generated, the requirement note is not rendered at all and this stays off.
         const syncTradeRequirement = async() => {
-            const met = playercoinModuleEl.checked && avatarsModuleEl.checked;
+            if (!tradeRequirementEl) {
+                return;
+            }
+            const met = (playercoinModuleEl.checked || playercoinModuleEl.disabled)
+                && (avatarsModuleEl.checked || avatarsModuleEl.disabled);
             tradeModuleEl.disabled = !met;
             if (!met) {
                 tradeModuleEl.checked = false;
@@ -148,6 +156,21 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         };
         playercoinModuleEl.addEventListener('change', syncTradeRequirement);
         avatarsModuleEl.addEventListener('change', syncTradeRequirement);
+        syncTradeRequirement();
+
+        // Auto-distribute only places drops created in the same run (items and the RPG item),
+        // so it is pointless without at least one of those two checked. The template already
+        // renders it disabled when Items was generated; this keeps it in sync afterwards.
+        const syncAutoDistribute = () => {
+            const hasfeeder = itemsModuleEl.checked || progressItemModuleEl.checked;
+            autoDistributeModuleEl.disabled = !hasfeeder;
+            if (!hasfeeder) {
+                autoDistributeModuleEl.checked = false;
+            }
+        };
+        itemsModuleEl.addEventListener('change', syncAutoDistribute);
+        progressItemModuleEl.addEventListener('change', syncAutoDistribute);
+        syncAutoDistribute();
 
         // The external-recommendations panel is the only remaining collapsible card; a chevron
         // button reveals its details.

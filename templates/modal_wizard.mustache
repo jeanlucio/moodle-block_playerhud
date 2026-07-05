@@ -35,7 +35,18 @@
         ],
         "has_playergroup": false,
         "has_latepenalty": true,
-        "levels_at_default": true
+        "levels_at_default": true,
+        "gen_items": false,
+        "gen_missions": false,
+        "gen_playercoin": true,
+        "gen_avatars": false,
+        "gen_trade": false,
+        "gen_pill": false,
+        "gen_secret": false,
+        "gen_latepenalty": false,
+        "gen_progressitem": false,
+        "gen_rpg": false,
+        "gen_ranking": true
     }
 }}
 <div class="modal fade" id="ph-wizard-modal" tabindex="-1" aria-labelledby="ph-wizard-modal-label" aria-hidden="true"
@@ -122,7 +133,7 @@
                         </span>
                         <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input" id="ph-wizard-module-items"
-                                   data-drives="2" checked>
+                                   data-drives="2" {{#gen_items}}disabled{{/gen_items}}{{^gen_items}}checked{{/gen_items}}>
                             <label class="form-check-label fw-bold" for="ph-wizard-module-items">
                                 <i class="fa fa-cube ph-wizard-mech-icon me-1" aria-hidden="true"></i>
                                 {{#str}} wizard_module_items_ai, block_playerhud {{/str}}
@@ -131,12 +142,18 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_items_desc, block_playerhud {{/str}}
                         </small>
+                        {{#gen_items}}
+                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
+                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
+                        </small>
+                        {{/gen_items}}
                     </div>
                 </div>
                 <div class="col">
                     <div class="ph-wizard-mech-card bg-light border rounded p-3 h-100">
                         <div class="form-check mb-0">
-                            <input type="checkbox" class="form-check-input" id="ph-wizard-module-progressitem">
+                            <input type="checkbox" class="form-check-input" id="ph-wizard-module-progressitem"
+                                   {{#gen_progressitem}}disabled{{/gen_progressitem}}>
                             <label class="form-check-label fw-bold" for="ph-wizard-module-progressitem">
                                 <i class="fa fa-key ph-wizard-mech-icon me-1" aria-hidden="true"></i>
                                 {{#str}} wizard_module_progress_item, block_playerhud {{/str}}
@@ -145,12 +162,18 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_progress_item_desc, block_playerhud {{/str}}
                         </small>
+                        {{#gen_progressitem}}
+                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
+                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
+                        </small>
+                        {{/gen_progressitem}}
                     </div>
                 </div>
                 <div class="col">
                     <div class="ph-wizard-mech-card bg-light border rounded p-3 h-100">
                         <div class="form-check mb-0">
-                            <input type="checkbox" class="form-check-input" id="ph-wizard-module-autodistribute">
+                            <input type="checkbox" class="form-check-input" id="ph-wizard-module-autodistribute"
+                                   {{#gen_items}}disabled{{/gen_items}}>
                             <label class="form-check-label fw-bold" for="ph-wizard-module-autodistribute">
                                 <i class="fa fa-random ph-wizard-mech-icon me-1" aria-hidden="true"></i>
                                 {{#str}} wizard_module_autodistribute, block_playerhud {{/str}}
@@ -165,7 +188,7 @@
                     <div class="ph-wizard-mech-card bg-light border rounded p-3 h-100">
                         <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input" id="ph-wizard-module-playercoin"
-                                   data-drives="8,1">
+                                   data-drives="8,1" {{#gen_playercoin}}disabled{{/gen_playercoin}}>
                             <label class="form-check-label fw-bold" for="ph-wizard-module-playercoin">
                                 <i class="fa fa-coins ph-wizard-mech-icon me-1" aria-hidden="true"></i>
                                 {{#str}} wizard_module_playercoin, block_playerhud {{/str}}
@@ -174,13 +197,18 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_playercoin_desc, block_playerhud {{/str}}
                         </small>
+                        {{#gen_playercoin}}
+                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
+                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
+                        </small>
+                        {{/gen_playercoin}}
                     </div>
                 </div>
                 <div class="col">
                     <div class="ph-wizard-mech-card bg-light border rounded p-3 h-100">
                         <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input" id="ph-wizard-module-avatars"
-                                   data-drives="8,2">
+                                   data-drives="8,2" {{#gen_avatars}}disabled{{/gen_avatars}}>
                             <label class="form-check-label fw-bold" for="ph-wizard-module-avatars">
                                 <i class="fa fa-theater-masks ph-wizard-mech-icon me-1" aria-hidden="true"></i>
                                 {{#str}} wizard_module_avatars, block_playerhud {{/str}}
@@ -189,6 +217,11 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_avatars_desc, block_playerhud {{/str}}
                         </small>
+                        {{#gen_avatars}}
+                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
+                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
+                        </small>
+                        {{/gen_avatars}}
                     </div>
                 </div>
                 <div class="col">
@@ -204,17 +237,24 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_trade_desc, block_playerhud {{/str}}
                         </small>
+                        {{^gen_trade}}
                         <small class="d-block mt-2 fw-bold ph-wizard-trade-requirement"
                                id="ph-wizard-trade-requirement">
                             {{#str}} wizard_module_trade_requirement_unmet, block_playerhud {{/str}}
                         </small>
+                        {{/gen_trade}}
+                        {{#gen_trade}}
+                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
+                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
+                        </small>
+                        {{/gen_trade}}
                     </div>
                 </div>
                 <div class="col">
                     <div class="ph-wizard-mech-card bg-light border rounded p-3 h-100">
                         <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input" id="ph-wizard-module-pill"
-                                   data-drives="6,7">
+                                   data-drives="6,7" {{#gen_pill}}disabled{{/gen_pill}}>
                             <label class="form-check-label fw-bold" for="ph-wizard-module-pill">
                                 <i class="fa fa-graduation-cap ph-wizard-mech-icon me-1" aria-hidden="true"></i>
                                 {{#str}} wizard_module_pill, block_playerhud {{/str}}
@@ -223,13 +263,18 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_pill_desc, block_playerhud {{/str}}
                         </small>
+                        {{#gen_pill}}
+                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
+                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
+                        </small>
+                        {{/gen_pill}}
                     </div>
                 </div>
                 <div class="col">
                     <div class="ph-wizard-mech-card bg-light border rounded p-3 h-100">
                         <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input" id="ph-wizard-module-secret"
-                                   data-drives="6,5">
+                                   data-drives="6,5" {{#gen_secret}}disabled{{/gen_secret}}>
                             <label class="form-check-label fw-bold" for="ph-wizard-module-secret">
                                 <i class="fa fa-question-circle ph-wizard-mech-icon me-1" aria-hidden="true"></i>
                                 {{#str}} wizard_module_secret, block_playerhud {{/str}}
@@ -238,6 +283,11 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_secret_desc, block_playerhud {{/str}}
                         </small>
+                        {{#gen_secret}}
+                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
+                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
+                        </small>
+                        {{/gen_secret}}
                     </div>
                 </div>
                 {{#has_latepenalty}}
@@ -245,7 +295,7 @@
                     <div class="ph-wizard-mech-card bg-light border rounded p-3 h-100">
                         <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input" id="ph-wizard-module-latepenalty"
-                                   data-drives="3">
+                                   data-drives="3" {{#gen_latepenalty}}disabled{{/gen_latepenalty}}>
                             <label class="form-check-label fw-bold" for="ph-wizard-module-latepenalty">
                                 <i class="fa fa-hourglass-half ph-wizard-mech-icon me-1" aria-hidden="true"></i>
                                 {{#str}} wizard_module_latepenalty, block_playerhud {{/str}}
@@ -254,6 +304,11 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_latepenalty_desc, block_playerhud {{/str}}
                         </small>
+                        {{#gen_latepenalty}}
+                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
+                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
+                        </small>
+                        {{/gen_latepenalty}}
                     </div>
                 </div>
                 {{/has_latepenalty}}
@@ -269,7 +324,7 @@
                     <div class="ph-wizard-mech-card bg-light border rounded p-3 h-100">
                         <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input" id="ph-wizard-module-missions"
-                                   data-drives="7,1">
+                                   data-drives="7,1" {{#gen_missions}}disabled{{/gen_missions}}>
                             <label class="form-check-label fw-bold" for="ph-wizard-module-missions">
                                 <i class="fa fa-bullseye ph-wizard-mech-icon me-1" aria-hidden="true"></i>
                                 {{#str}} wizard_module_missions, block_playerhud {{/str}}
@@ -278,6 +333,11 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_missions_desc, block_playerhud {{/str}}
                         </small>
+                        {{#gen_missions}}
+                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
+                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
+                        </small>
+                        {{/gen_missions}}
                     </div>
                 </div>
                 <div class="col">
@@ -287,7 +347,7 @@
                         </span>
                         <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input" id="ph-wizard-module-rpg"
-                                   data-drives="2,3,6,7,8">
+                                   data-drives="2,3,6,7,8" {{#gen_rpg}}disabled{{/gen_rpg}}>
                             <label class="form-check-label fw-bold" for="ph-wizard-module-rpg">
                                 <i class="fa fa-book ph-wizard-mech-icon me-1" aria-hidden="true"></i>
                                 {{#str}} wizard_module_rpg, block_playerhud {{/str}}
@@ -296,13 +356,18 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_rpg_desc, block_playerhud {{/str}}
                         </small>
+                        {{#gen_rpg}}
+                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
+                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
+                        </small>
+                        {{/gen_rpg}}
                     </div>
                 </div>
                 <div class="col">
                     <div class="ph-wizard-mech-card bg-light border rounded p-3 h-100">
                         <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input" id="ph-wizard-module-ranking"
-                                   data-drives="4,1" checked>
+                                   data-drives="4,1" {{#gen_ranking}}disabled{{/gen_ranking}}{{^gen_ranking}}checked{{/gen_ranking}}>
                             <label class="form-check-label fw-bold" for="ph-wizard-module-ranking">
                                 <i class="fa fa-trophy ph-wizard-mech-icon me-1" aria-hidden="true"></i>
                                 {{#str}} wizard_module_ranking, block_playerhud {{/str}}
@@ -311,6 +376,11 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_ranking_desc, block_playerhud {{/str}}
                         </small>
+                        {{#gen_ranking}}
+                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
+                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_active, block_playerhud {{/str}}
+                        </small>
+                        {{/gen_ranking}}
                     </div>
                 </div>
             </div>

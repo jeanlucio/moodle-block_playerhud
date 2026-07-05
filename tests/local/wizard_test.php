@@ -275,4 +275,75 @@ final class wizard_test extends advanced_testcase {
 
         $this->assertCount(2, $runs);
     }
+
+    /**
+     * A fresh instance has nothing generated: every mechanic reports false, so every wizard
+     * card starts enabled.
+     *
+     * @covers ::get_generated_modules
+     */
+    public function test_get_generated_modules_all_false_on_fresh_instance(): void {
+        $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
+
+        $this->assertSame([], array_keys(array_filter($generated)));
+    }
+
+    /**
+     * Mechanics included in a completed run report generated; a rolled-back run does not count
+     * (undoing a run re-enables its cards).
+     *
+     * @covers ::get_generated_modules
+     */
+    public function test_get_generated_modules_counts_done_runs_only(): void {
+        $donerun = wizard::start_run($this->instanceid, 2, ['items', 'missions']);
+        wizard::finish_run($donerun, 'done');
+        $undonerun = wizard::start_run($this->instanceid, 2, ['comercio']);
+        wizard::finish_run($undonerun, 'rolledback');
+
+        $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
+
+        $this->assertTrue($generated['items']);
+        $this->assertTrue($generated['missions']);
+        $this->assertFalse($generated['comercio']);
+    }
+
+    /**
+     * Content that already exists in the instance counts as generated even without any wizard
+     * run — created before this rule existed, or through the manual management screens, the
+     * wizard's own generators would skip it anyway.
+     *
+     * @covers ::get_generated_modules
+     */
+    public function test_get_generated_modules_detects_existing_content(): void {
+        global $DB;
+
+        $now = time();
+        $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'PlayerCoin', 'xp' => 0, 'enabled' => 1,
+            'tradable' => 1, 'secret' => 0, 'required_class_id' => '0', 'action_type' => 'playercoin',
+            'action_value' => '', 'timecreated' => $now, 'timemodified' => $now,
+        ]);
+        $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'name' => get_string('wizard_progress_item_name_scifi', 'block_playerhud'),
+            'xp' => 0, 'enabled' => 1, 'tradable' => 0, 'secret' => 0, 'required_class_id' => '0',
+            'action_type' => '', 'action_value' => '', 'timecreated' => $now, 'timemodified' => $now,
+        ]);
+        $DB->insert_record('block_playerhud_chapters', (object) [
+            'blockinstanceid' => $this->instanceid, 'title' => 'Chapter 1', 'intro_text' => '',
+            'unlock_date' => 0, 'required_level' => 0, 'sortorder' => 1,
+        ]);
+        $config = (object) ['enable_ranking' => 1];
+
+        $generated = wizard::get_generated_modules($this->instanceid, $config);
+
+        $this->assertTrue($generated['playercoin']);
+        $this->assertTrue($generated['progress_item'], 'Any tone\'s progress item name counts.');
+        $this->assertTrue($generated['rpg'], 'An existing chapter blocks generating an arc on top.');
+        $this->assertTrue($generated['ranking']);
+        $this->assertFalse($generated['avatars']);
+        $this->assertFalse($generated['pill']);
+        $this->assertFalse($generated['secret_drops']);
+        $this->assertFalse($generated['latepenalty']);
+    }
 }
