@@ -85,6 +85,8 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const historyEmptyEl = document.getElementById('ph-wizard-history-empty');
         const historyBtn = document.getElementById('ph-wizard-history-btn');
         const historyBackBtn = document.getElementById('ph-wizard-history-back-btn');
+        const externalViewEl = document.getElementById('ph-wizard-external-view');
+        const externalBtn = document.getElementById('ph-wizard-external-btn');
 
         const progressViewEl = document.getElementById('ph-wizard-progress-view');
         const progressCloseWarningEl = document.getElementById('ph-wizard-progress-close-warning');
@@ -172,20 +174,6 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         progressItemModuleEl.addEventListener('change', syncAutoDistribute);
         syncAutoDistribute();
 
-        // The external-recommendations panel is the only remaining collapsible card; a chevron
-        // button reveals its details.
-        document.querySelectorAll('.ph-wizard-card-toggle').forEach((toggleBtn) => {
-            const body = document.getElementById(toggleBtn.getAttribute('aria-controls'));
-            if (!body) {
-                return;
-            }
-            toggleBtn.addEventListener('click', () => {
-                const expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
-                toggleBtn.setAttribute('aria-expanded', String(!expanded));
-                body.classList.toggle('ph-display-none', expanded);
-            });
-        });
-
         // Checked by default only when the instance is still at the edit form's defaults (100
         // XP per level, 20 levels) — see levels_at_default in the template. While checked, every
         // change to either the checkbox itself or the journey size re-applies the matching
@@ -225,9 +213,26 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             formEl.classList.toggle('ph-display-none', showHistory);
             historyViewEl.classList.toggle('ph-display-none', !showHistory);
             historyBtn.classList.toggle('ph-display-none', showHistory);
+            externalBtn.classList.toggle('ph-display-none', showHistory);
             historyBackBtn.classList.toggle('ph-display-none', !showHistory);
             undoBtn.classList.toggle('ph-display-none', showHistory || !lastRunId);
             generateBtn.classList.toggle('ph-display-none', showHistory);
+        };
+
+        /**
+         * Switches between the generation form and the external plugin recommendations —
+         * same in-modal view swap as the history list, sharing its footer back button.
+         *
+         * @param {boolean} showExternal True to show the recommendations, false for the form.
+         */
+        const setExternalView = (showExternal) => {
+            formEl.classList.toggle('ph-display-none', showExternal);
+            externalViewEl.classList.toggle('ph-display-none', !showExternal);
+            historyBtn.classList.toggle('ph-display-none', showExternal);
+            externalBtn.classList.toggle('ph-display-none', showExternal);
+            historyBackBtn.classList.toggle('ph-display-none', !showExternal);
+            undoBtn.classList.toggle('ph-display-none', showExternal || !lastRunId);
+            generateBtn.classList.toggle('ph-display-none', showExternal);
         };
 
         /**
@@ -239,6 +244,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             formEl.classList.toggle('ph-display-none', showProgress);
             progressViewEl.classList.toggle('ph-display-none', !showProgress);
             historyBtn.classList.toggle('ph-display-none', showProgress);
+            externalBtn.classList.toggle('ph-display-none', showProgress);
             generateBtn.classList.toggle('ph-display-none', showProgress);
             undoBtn.classList.toggle('ph-display-none', showProgress || !lastRunId);
         };
@@ -325,6 +331,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 return;
             }
             setHistoryView(false);
+            setExternalView(false);
             setProgressView(false);
         };
 
@@ -448,7 +455,11 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             }
         });
 
-        historyBackBtn.addEventListener('click', () => setHistoryView(false));
+        historyBackBtn.addEventListener('click', () => {
+            setHistoryView(false);
+            setExternalView(false);
+        });
+        externalBtn.addEventListener('click', () => setExternalView(true));
 
         /**
          * Shows the step-by-step progress view's error state with a "try again" action that
