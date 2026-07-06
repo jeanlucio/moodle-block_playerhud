@@ -580,4 +580,37 @@ class behat_block_playerhud extends behat_base {
             'timemodified'      => time(),
         ]);
     }
+
+    // Step definitions for the gamification wizard (block_playerhud_wizard.feature).
+
+    /**
+     * Opens the gamification wizard modal from the management panel and waits for it to
+     * finish its fade-in transition.
+     *
+     * @When I open the PlayerHUD wizard
+     */
+    public function i_open_the_playerhud_wizard(): void {
+        $this->execute('behat_general::i_click_on', ['#ph-wizard-open-btn', 'css_element']);
+
+        $this->spin(function () {
+            $node = $this->find('css', '#ph-wizard-modal');
+            return $node && $node->isVisible();
+        });
+    }
+
+    /**
+     * Waits for the wizard's live progress bar to finish and its success report to appear.
+     *
+     * A generous timeout accounts for a run driving several deterministic steps in sequence
+     * (each its own AJAX round-trip), still well short of the AI-backed steps this feature
+     * deliberately never exercises.
+     *
+     * @Then I should see the PlayerHUD wizard success report
+     */
+    public function i_should_see_the_playerhud_wizard_success_report(): void {
+        $this->spin(function () {
+            $node = $this->find('css', '#ph-wizard-progress-report');
+            return $node && $node->isVisible();
+        }, false, 30);
+    }
 }
