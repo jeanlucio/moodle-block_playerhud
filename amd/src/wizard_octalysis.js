@@ -248,13 +248,16 @@ define(['core/str'], function(Str) {
                 segment.classList.toggle('ph-oct-unavailable', isunavailable);
                 label.classList.toggle('ph-oct-inactive', !isactive);
 
+                // The drive's own explanation (label + sub) always shows, active or not — an
+                // inactive drive is exactly when a teacher is most likely hovering to find out
+                // what it even means, not only after they have already ticked something for it.
                 let tooltiptext;
                 if (isactive) {
                     tooltiptext = `✓ ${drive.label} — ${drive.sub}`;
                 } else if (isunavailable && drive.id === 8) {
-                    tooltiptext = `${drive.label} — ${drive8unavailabletext}`;
+                    tooltiptext = `${drive.label} — ${drive.sub}. ${drive8unavailabletext}`;
                 } else {
-                    tooltiptext = `${drive.label} — ${invitetext}`;
+                    tooltiptext = `${drive.label} — ${drive.sub}. ${invitetext}`;
                 }
                 segment.dataset.tooltipText = tooltiptext;
                 segment.setAttribute('aria-label', tooltiptext);
