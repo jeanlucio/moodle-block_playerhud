@@ -2651,3 +2651,26 @@ div.modal-dialog .visually-hidden {
         opacity: 0.7;
     }
 }
+/*
+ * Bootstrap 4 (Moodle 4.5) has no gap-* utilities, so flex/grid children using them collapse
+ * with zero spacing instead of just being unstyled. These match Bootstrap 5's own spacer scale,
+ * so on Moodle 5.x (Bootstrap 5) the rule is a harmless no-op next to Bootstrap's own gap-*.
+ */
+.path-blocks-playerhud .gap-0 {
+    gap: 0;
+}
+.path-blocks-playerhud .gap-1 {
+    gap: 0.25rem;
+}
+.path-blocks-playerhud .gap-2 {
+    gap: 0.5rem;
+}
+.path-blocks-playerhud .gap-3 {
+    gap: 1rem;
+}
+.path-blocks-playerhud .gap-4 {
+    gap: 1.5rem;
+}
+.path-blocks-playerhud .gap-5 {
+    gap: 3rem;
+}
