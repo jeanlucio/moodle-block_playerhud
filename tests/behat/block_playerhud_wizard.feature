@@ -43,6 +43,7 @@ Feature: PlayerHUD gamification wizard
     And I click on "#ph-wizard-generate-btn" "css_element"
     Then I should see the PlayerHUD wizard success report
     When I click on "#ph-wizard-progress-ok-btn" "css_element"
+    And I wait for the PlayerHUD wizard to close and reload the page
     And I follow "Item Library"
     Then I should see "PlayerCoin"
 
@@ -52,6 +53,7 @@ Feature: PlayerHUD gamification wizard
     And I click on "#ph-wizard-generate-btn" "css_element"
     Then I should see the PlayerHUD wizard success report
     When I click on "#ph-wizard-progress-ok-btn" "css_element"
+    And I wait for the PlayerHUD wizard to close and reload the page
     And I open the PlayerHUD wizard
     Then the "#ph-wizard-module-playercoin" element is disabled
     And I should see "Already generated in this course" in the "#ph-wizard-modal" "css_element"
@@ -62,11 +64,13 @@ Feature: PlayerHUD gamification wizard
     And I click on "#ph-wizard-generate-btn" "css_element"
     Then I should see the PlayerHUD wizard success report
     When I click on "#ph-wizard-progress-ok-btn" "css_element"
+    And I wait for the PlayerHUD wizard to close and reload the page
     And I open the PlayerHUD wizard
     And I click on "#ph-wizard-history-btn" "css_element"
     Then I should see "items" in the "#ph-wizard-history-list" "css_element"
     When I click on "Undo gamification" "button" in the "#ph-wizard-history-list" "css_element"
     Then I should see "No runs to undo yet." in the "#ph-wizard-history-view" "css_element"
     When I click on "Cancel" "button" in the "#ph-wizard-modal" "css_element"
+    And I wait for the PlayerHUD wizard to close and reload the page
     And I follow "Item Library"
     Then I should not see "PlayerCoin"

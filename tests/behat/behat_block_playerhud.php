@@ -625,14 +625,42 @@ class behat_block_playerhud extends behat_base {
      */
     public function i_open_the_playerhud_wizard(): void {
         $this->spin(function () {
+            $modal = $this->find('css', '#ph-wizard-modal');
+            if ($modal && $modal->isVisible()) {
+                return true;
+            }
+            // Checked (not just clicked unconditionally) on every retry: once the modal is
+            // open, this same button sits behind it, and clicking it again would throw an
+            // element-click-intercepted error instead of the spin loop ever seeing it settle.
             $btn = $this->find('css', '#ph-wizard-open-btn');
-            if ($btn) {
+            if ($btn && $btn->isVisible()) {
                 $btn->click();
             }
-            $modal = $this->find('css', '#ph-wizard-modal');
 
-            return $modal && $modal->isVisible();
+            return false;
         });
+    }
+
+    /**
+     * Waits for the wizard modal to finish its close transition and for the page reload that
+     * follows it to actually happen.
+     *
+     * Clicking "Close"/"Cancel" after a successful run sets contentChanged and closes the modal,
+     * but window.location.reload() only fires ~300ms after the modal's own 'show' class is
+     * removed (see onModalHidden() in wizard.js) — proceeding immediately (e.g. reopening the
+     * wizard to check server-rendered post-reload state) can otherwise still land on the stale,
+     * pre-reload page.
+     *
+     * @Given I wait for the PlayerHUD wizard to close and reload the page
+     */
+    public function i_wait_for_playerhud_wizard_reload(): void {
+        $this->spin(function () {
+            $modal = $this->find('css', '#ph-wizard-modal');
+            $class = $modal ? (string) $modal->getAttribute('class') : '';
+
+            return strpos($class, 'show') === false;
+        });
+        $this->getSession()->wait(1000);
     }
 
     /**
