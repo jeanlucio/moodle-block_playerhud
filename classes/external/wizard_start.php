@@ -162,7 +162,7 @@ class wizard_start extends external_api {
             ),
             'distribute_secret' => new external_value(
                 PARAM_BOOL,
-                'Automatically spread the Secret Drops collectible across course activities',
+                'Automatically insert the Secret Item drop into the course news forum',
                 VALUE_DEFAULT,
                 true
             ),
@@ -189,12 +189,12 @@ class wizard_start extends external_api {
      * @param bool $includecomercio Whether to wire PlayerCoin<->Avatar Pack trades.
      * @param bool $includepill Whether to create the Knowledge Pill and Book items.
      * @param bool $includelatepenalty Whether to create the Deadline Extension item.
-     * @param bool $includesecretdrops Whether to create the Secret Drops collectible.
+     * @param bool $includesecretdrops Whether to create the Secret Item.
      * @param bool $includeranking Whether to turn on the block's ranking, if not already on.
      * @param bool $distributeprogressitem Whether to insert the RPG item's drop into an activity.
      * @param bool $distributeplayercoin Whether to auto-insert the PlayerCoin drop into the news forum.
      * @param bool $distributepill Whether to auto-spread the Knowledge Pill drops across activities.
-     * @param bool $distributesecret Whether to auto-spread the Secret Drops collectible across activities.
+     * @param bool $distributesecret Whether to auto-insert the Secret Item drop into the news forum.
      * @return array Result structure.
      */
     public static function execute(
