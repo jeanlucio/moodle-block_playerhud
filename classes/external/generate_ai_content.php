@@ -111,47 +111,13 @@ class generate_ai_content extends external_api {
 
         $xpperlevel = isset($config->xp_per_level) ? (int)$config->xp_per_level : 100;
         $maxlevels = isset($config->max_levels) ? (int)$config->max_levels : 20;
-        $xpceiling = $xpperlevel * $maxlevels;
 
-        $currenttotalxp = 0;
-        $items = $DB->get_records('block_playerhud_items', [
-            'blockinstanceid' => $params['instanceid'],
-            'enabled' => 1,
-        ]);
-
-        if ($items) {
-            // Preload all drops for this instance to avoid N+1 query problem.
-            $sql = "SELECT d.id, d.itemid, d.maxusage
-                      FROM {block_playerhud_drops} d
-                      JOIN {block_playerhud_items} i ON d.itemid = i.id
-                     WHERE i.blockinstanceid = :instanceid AND i.enabled = 1";
-            $alldrops = $DB->get_records_sql($sql, ['instanceid' => $params['instanceid']]);
-
-            // Group drops by itemid in memory.
-            $dropsbyitem = [];
-            foreach ($alldrops as $drop) {
-                $dropsbyitem[$drop->itemid][] = $drop;
-            }
-
-            foreach ($items as $it) {
-                if (!empty($dropsbyitem[$it->id])) {
-                    foreach ($dropsbyitem[$it->id] as $drop) {
-                        if ($drop->maxusage > 0) {
-                            $currenttotalxp += ($it->xp * $drop->maxusage);
-                        }
-                    }
-                } else {
-                    $currenttotalxp += $it->xp;
-                }
-            }
-        }
-
-        $balancecontext = [
-            'current_xp' => $currenttotalxp,
-            'target_xp' => $xpceiling,
-            'gap' => $xpceiling - $currenttotalxp,
-            'qty' => $params['amount'],
-        ];
+        $balancecontext = \block_playerhud\local\analytics::balance_context(
+            $params['instanceid'],
+            $xpperlevel,
+            $maxlevels,
+            $params['amount']
+        );
 
         $extraoptions = [
             'drop_location' => $params['drop_location'],

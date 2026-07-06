@@ -255,7 +255,8 @@
     cursor: pointer;
 }
 
-#ph-codegen-modal .btn-close {
+#ph-codegen-modal .btn-close,
+#ph-wizard-modal .btn-close {
     background-image: none;
     background-color: transparent;
     border: 0;
@@ -2459,4 +2460,227 @@ div.modal-dialog .visually-hidden {
     .ph-levelup-overlay .ph-levelup-card {
         transform: none;
     }
+}
+
+/*
+ * Wizard Octalysis panel. Scoped by the modal's own ID, not by the .path-* body class: the
+ * modal is hoisted to <body> via appendChild() before opening, same as every other modal in
+ * this plugin — see the "Bootstrap Modals" convention. #ph-wizard-modal moves as a unit with
+ * all its descendants, so this scoping stays correct after hoisting.
+ */
+#ph-wizard-modal #ph-wizard-octalysis-svg {
+    display: block;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+#ph-wizard-modal .ph-wizard-octalysis-progress {
+    height: 6px;
+}
+#ph-wizard-modal .ph-oct-segment {
+    cursor: default;
+    transition: opacity 0.4s ease, filter 0.4s ease;
+}
+#ph-wizard-modal .ph-oct-segment.ph-oct-active {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px currentColor);
+}
+#ph-wizard-modal .ph-oct-segment.ph-oct-inactive {
+    opacity: 0.15;
+    filter: none;
+}
+/*
+ * A drive with no checkbox able to reach it at all (only Avoidance today, when
+ * local_latepenalty is not installed) gets a dashed outline on top of the normal inactive
+ * dimming, to read as "not currently reachable" rather than "just not ticked yet".
+ */
+#ph-wizard-modal .ph-oct-segment.ph-oct-unavailable {
+    stroke: var(--body-color, #1d2125);
+    stroke-width: 1;
+    stroke-dasharray: 3 2;
+}
+#ph-wizard-modal .ph-oct-segment:focus-visible {
+    outline: 2px solid var(--primary, #0d6efd);
+    outline-offset: 2px;
+}
+#ph-wizard-modal .ph-oct-label {
+    font-size: 7.5px;
+    font-weight: 600;
+    fill: var(--body-color, #1d2125);
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+#ph-wizard-modal .ph-oct-label.ph-oct-inactive {
+    opacity: 0.35;
+}
+#ph-wizard-modal .ph-oct-center-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    fill: var(--secondary-color, #6c757d);
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+
+#ph-wizard-modal .ph-wizard-info-btn {
+    color: var(--gray-500, #adb5bd);
+    font-size: 0.85rem;
+    line-height: 1;
+}
+#ph-wizard-modal .ph-wizard-info-btn:hover,
+#ph-wizard-modal .ph-wizard-info-btn:focus-visible {
+    color: var(--primary, #0d6efd);
+}
+#ph-wizard-modal .ph-wizard-levels-label {
+    max-width: 3.6em;
+    line-height: 1.15;
+}
+@media (min-width: 992px) {
+    #ph-wizard-modal .ph-wizard-sidebar-sticky {
+        position: sticky;
+        top: 0;
+    }
+}
+
+/*
+ * Mechanic mini-cards: one checkbox + description per card, always visible (no accordion),
+ * grouped into labelled sections instead — see wizard_section_basic/_intermediate/_advanced.
+ */
+#ph-wizard-modal .ph-wizard-mech-card {
+    position: relative;
+}
+/*
+ * Scoped to .ph-wizard-mech-module specifically (not "any input"): each card's own
+ * "Distribuir nas atividades" checkbox is legitimately disabled whenever its module is simply
+ * left unchecked (not "already generated"), and a bare input:disabled selector would dim the
+ * whole card for that alone.
+ */
+#ph-wizard-modal .ph-wizard-mech-card:has(input.ph-wizard-mech-module:disabled) {
+    opacity: 0.6;
+}
+#ph-wizard-modal .badge.ph-wizard-ai-badge {
+    position: absolute;
+    top: 0.5rem;
+    inset-inline-end: 0.5rem;
+    background-color: var(--primary, #0d6efd);
+    color: var(--light, #fff);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+#ph-wizard-modal .ph-wizard-trade-requirement {
+    color: var(--warning, #997404);
+}
+#ph-wizard-modal .ph-wizard-trade-requirement.ph-wizard-trade-requirement-met {
+    color: var(--success, #0a6b3d);
+}
+#ph-wizard-modal .ph-wizard-generated-note {
+    color: var(--success, #0a6b3d);
+}
+#ph-wizard-modal .ph-wizard-mech-icon {
+    color: var(--primary, #0d6efd);
+    width: 1.1em;
+    text-align: center;
+}
+
+/*
+ * § 5.9 Fatia 1: live step-by-step progress bar. progress-bar-striped/animated (Bootstrap
+ * utilities, added in the template) already keep the bar visibly "alive" during a slow AI step
+ * where the width itself does not move for several seconds.
+ */
+#ph-wizard-modal .ph-wizard-progress-bar-wrap {
+    height: 10px;
+}
+
+/*
+ * § 5.9 Fatia 3: Huddy carousel, the wizard's own "game loading screen" — the activity indicator
+ * for the whole progress view, not decoration (see wizard.js's startHuddyCarousel()).
+ */
+#ph-wizard-modal .ph-wizard-huddy-frame {
+    position: relative;
+    display: inline-block;
+    width: 160px;
+    height: 160px;
+}
+#ph-wizard-modal .ph-wizard-huddy-img {
+    width: 160px;
+    height: 160px;
+    object-fit: contain;
+}
+#ph-wizard-modal .ph-wizard-huddy-pulse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: var(--secondary-bg-subtle, #e2e3e5);
+    animation: ph-wizard-huddy-pulse-anim 1.2s ease-in-out infinite;
+}
+/*
+ * Same technique as .ph-levelup-number (levelup.js/styles.css): a number painted over the
+ * shield artwork in levelup.webp specifically, at the same relative position/tilt — only shown
+ * while that image is the current carousel slide (see wizard.js's showHuddySlide()), not on the
+ * other 4 images, which have no shield to paint it on.
+ */
+#ph-wizard-modal .ph-wizard-huddy-number {
+    position: absolute;
+    left: 78%;
+    top: 61%;
+    transform: translate(-50%, -50%) rotate(9deg);
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.6), 0 2px 3px rgba(0, 0, 0, 0.5);
+}
+@keyframes ph-wizard-huddy-pulse-anim {
+    0%, 100% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+#ph-wizard-modal .ph-wizard-huddy-nav {
+    color: var(--gray-500, #adb5bd);
+    font-size: 1.25rem;
+    padding: 0.25rem 0.5rem;
+    text-decoration: none;
+}
+#ph-wizard-modal .ph-wizard-huddy-nav:hover,
+#ph-wizard-modal .ph-wizard-huddy-nav:focus-visible {
+    color: var(--primary, #0d6efd);
+}
+@media (prefers-reduced-motion: reduce) {
+    #ph-wizard-modal .ph-wizard-huddy-pulse {
+        animation: none;
+        opacity: 0.7;
+    }
+}
+/*
+ * Bootstrap 4 (Moodle 4.5) has no gap-* utilities, so flex/grid children using them collapse
+ * with zero spacing instead of just being unstyled. These match Bootstrap 5's own spacer scale,
+ * so on Moodle 5.x (Bootstrap 5) the rule is a harmless no-op next to Bootstrap's own gap-*.
+ */
+.path-blocks-playerhud .gap-0 {
+    gap: 0;
+}
+.path-blocks-playerhud .gap-1 {
+    gap: 0.25rem;
+}
+.path-blocks-playerhud .gap-2 {
+    gap: 0.5rem;
+}
+.path-blocks-playerhud .gap-3 {
+    gap: 1rem;
+}
+.path-blocks-playerhud .gap-4 {
+    gap: 1.5rem;
+}
+.path-blocks-playerhud .gap-5 {
+    gap: 3rem;
 }

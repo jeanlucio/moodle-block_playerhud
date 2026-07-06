@@ -136,6 +136,97 @@ final class insert_drop_shortcode_test extends external_base_testcase {
     }
 
     /**
+     * A successful insert renames the drop to the activity it just landed in — this is what
+     * makes the drops management table's "Localização/Nome" column useful for finding a drop
+     * later, instead of just repeating the item's own name. Shared by both callers (the wizard's
+     * auto-distribute step and this manual screen), so it only needs proving once, here.
+     */
+    public function test_insert_renames_drop_to_the_activity(): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course'  => $this->course->id,
+            'name'    => 'Reactor Control Room',
+            'content' => 'Original body',
+        ]);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid] = $this->create_drop($item->id);
+
+        $result = insert_drop_shortcode::execute(
+            $this->instanceid,
+            $this->course->id,
+            $dropid,
+            $page->cmid,
+            'content',
+            'top'
+        );
+
+        $this->assertTrue($result['success']);
+        $drop = $DB->get_record('block_playerhud_drops', ['id' => $dropid], '*', MUST_EXIST);
+        $this->assertSame('Reactor Control Room', $drop->name);
+        $this->assertNotSame('Gem', $drop->name);
+    }
+
+    /**
+     * mode=text with a custom label builds a shortcode carrying both attributes, so the filter
+     * renders the drop as a plain text link with that exact label instead of the default card.
+     */
+    public function test_insert_text_mode_with_custom_label(): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course'  => $this->course->id,
+            'content' => 'Original body',
+        ]);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid, $code] = $this->create_drop($item->id);
+
+        $result = insert_drop_shortcode::execute(
+            $this->instanceid,
+            $this->course->id,
+            $dropid,
+            $page->cmid,
+            'content',
+            'top',
+            'text',
+            '💻'
+        );
+
+        $this->assertTrue($result['success']);
+        $content = $DB->get_field('page', 'content', ['id' => $page->id]);
+        $this->assertStringContainsString('[PLAYERHUD_DROP code=' . $code . ' mode=text text="💻"]', $content);
+    }
+
+    /**
+     * An unrecognised mode value falls back to the default card form, ignoring any custom text.
+     */
+    public function test_insert_falls_back_to_card_mode_for_unknown_mode(): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course'  => $this->course->id,
+            'content' => '',
+        ]);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid, $code] = $this->create_drop($item->id);
+
+        $result = insert_drop_shortcode::execute(
+            $this->instanceid,
+            $this->course->id,
+            $dropid,
+            $page->cmid,
+            'content',
+            'top',
+            'bogus',
+            'ignored'
+        );
+
+        $this->assertTrue($result['success']);
+        $content = $DB->get_field('page', 'content', ['id' => $page->id]);
+        $this->assertStringContainsString('[PLAYERHUD_DROP code=' . $code . ']', $content);
+    }
+
+    /**
      * A student without manage capability is rejected.
      */
     public function test_insert_requires_manage_capability(): void {

@@ -29,6 +29,12 @@
         "str_help": "Help",
         "url_course": "#",
         "str_back_course": "Back to Course",
+        "str_wizard_open": "Generate Gamification",
+        "wizard_show_empty_banner": true,
+        "str_wizard_empty_title": "Start this course's gamification",
+        "str_wizard_empty_desc": "The Gamification Wizard builds your entire course's gamified structure, from Basic to Advanced — give it a try!",
+        "str_wizard_empty_btn": "Generate Gamification",
+        "modal_wizard_html": "",
         "tabs": [
             { "active": true, "url": "#", "text": "Items", "icon": "<i class='fa fa-cube'></i>" },
             { "active": false, "url": "#", "text": "Settings", "icon": "<i class='fa fa-cog'></i>" }
@@ -42,6 +48,9 @@
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <h2 class="m-0">{{str_title}}</h2>
         <div class="d-flex">
+            <button type="button" class="btn btn-primary shadow-sm fw-bold me-2" id="ph-wizard-open-btn">
+                <i class="fa fa-magic me-1" aria-hidden="true"></i> {{str_wizard_open}}
+            </button>
             <a href="{{url_student_area}}" class="btn btn-outline-primary shadow-sm fw-bold me-2">
                 <i class="fa fa-graduation-cap me-1" aria-hidden="true"></i> {{str_student_area}}
             </a>
@@ -53,6 +62,18 @@
             </a>
         </div>
     </div>
+
+    {{#wizard_show_empty_banner}}
+    <div class="alert alert-primary d-flex justify-content-between align-items-center mb-4" role="status">
+        <div>
+            <strong>{{str_wizard_empty_title}}</strong>
+            <div class="ph-text-xs">{{str_wizard_empty_desc}}</div>
+        </div>
+        <button type="button" class="btn btn-primary fw-bold ph-wizard-open-btn-banner">
+            <i class="fa fa-magic me-1" aria-hidden="true"></i> {{str_wizard_empty_btn}}
+        </button>
+    </div>
+    {{/wizard_show_empty_banner}}
 
     {{! Navigation Tabs }}
     <ul class="nav nav-tabs mb-4" id="ph-manage-tabs">
@@ -71,3 +92,5 @@
     </div>
 
 </div>
+
+{{{modal_wizard_html}}}

@@ -43,7 +43,9 @@ class chat extends generator {
      * @throws \moodle_exception If no key is available or all providers fail.
      */
     public function send(string $systemprompt, array $messages): array {
-        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $this->load_api_keys();
+        global $USER;
+
+        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $keysource] = $this->load_api_keys();
 
         $nokeys = empty($geminikey) && empty($groqkey) && empty($openaikey);
         $result = ['success' => false, 'message' => ''];
@@ -64,6 +66,20 @@ class chat extends generator {
                 $openaikey,
                 $openaiurl,
                 $openaimodel
+            );
+        }
+
+        // A hub-borrowed key served the request: report it so the hub's usage report
+        // reflects requests it never saw directly (see generator::call_with_fallback).
+        $hubtiers = ['hub_personal', 'hub_site'];
+        if ($result['success'] && in_array($keysource, $hubtiers, true) && class_exists(\local_aihub\ai::class)) {
+            \local_aihub\ai::report_usage(
+                (int) $USER->id,
+                'block_playerhud',
+                'chat',
+                (string) ($result['provider'] ?? ''),
+                '',
+                $keysource === 'hub_personal' ? 'personal' : 'site'
             );
         }
 

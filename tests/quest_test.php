@@ -879,6 +879,40 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
+     * req_itemid and reward_itemid default to 0 when absent from the descriptor, and are
+     * carried through when a bespoke suggestion (built directly by a wizard module rather than
+     * by get_heuristic_suggestions()) supplies them.
+     *
+     * @covers ::build_record_from_suggestion
+     */
+    public function test_build_record_from_suggestion_carries_item_ids(): void {
+        $sug = [
+            'type' => quest::TYPE_SPECIFIC_ITEM,
+            'requirement' => 11,
+            'name' => 'Collect: Pill',
+            'reward_xp' => 100,
+            'reward_itemid' => 42,
+            'req_itemid' => 7,
+            'image_todo' => '💊',
+            'image_done' => '📚',
+        ];
+        $record = quest::build_record_from_suggestion($this->instanceid, $sug);
+        $this->assertSame(7, $record->req_itemid);
+        $this->assertSame(42, $record->reward_itemid);
+
+        $bare = quest::build_record_from_suggestion($this->instanceid, [
+            'type' => quest::TYPE_LEVEL,
+            'requirement' => 2,
+            'name' => 'Reach level 2',
+            'reward_xp' => 40,
+            'image_todo' => '📈',
+            'image_done' => '👑',
+        ]);
+        $this->assertSame(0, $bare->req_itemid);
+        $this->assertSame(0, $bare->reward_itemid);
+    }
+
+    /**
      * get_heuristic_suggestions proposes level, collection and economy milestones
      * and skips milestones that already exist as quests.
      *

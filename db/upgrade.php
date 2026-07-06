@@ -124,5 +124,113 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026062303, 'playerhud');
     }
 
+    if ($oldversion < 2026070101) {
+        // 1. Backfill any missing drop codes before enforcing NOTNULL + UNIQUE.
+        // Sites installed before the code field existed may still hold NULL/empty values.
+        $drops = $DB->get_records_select(
+            'block_playerhud_drops',
+            'code IS NULL OR code = :empty',
+            ['empty' => '']
+        );
+        foreach ($drops as $drop) {
+            $exists = true;
+            while ($exists) {
+                $code = strtoupper(random_string(6));
+                $exists = $DB->record_exists('block_playerhud_drops', [
+                    'blockinstanceid' => $drop->blockinstanceid,
+                    'code' => $code,
+                ]);
+            }
+            $DB->set_field('block_playerhud_drops', 'code', $code, ['id' => $drop->id]);
+        }
+
+        // Drops.code becomes mandatory and unique per block instance, so the shortcode
+        // lookup in filter_playerhud can never be ambiguous.
+        $dropstable = new \xmldb_table('block_playerhud_drops');
+        $codefield = new \xmldb_field('code', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $dbman->change_field_notnull($dropstable, $codefield);
+
+        $codeindex = new \xmldb_index('blockinstance_code', XMLDB_INDEX_UNIQUE, ['blockinstanceid', 'code']);
+        if (!$dbman->index_exists($dropstable, $codeindex)) {
+            $dbman->add_index($dropstable, $codeindex);
+        }
+
+        // 2. Add the missing timecreated/timemodified audit fields.
+        $tablenames = [
+            'block_playerhud_rpg_progress',
+            'block_playerhud_chapters',
+            'block_playerhud_story_nodes',
+            'block_playerhud_choices',
+            'block_playerhud_trade_reqs',
+            'block_playerhud_trade_rewards',
+        ];
+        foreach ($tablenames as $tablename) {
+            $table = new \xmldb_table($tablename);
+            foreach (['timecreated', 'timemodified'] as $fieldname) {
+                $field = new \xmldb_field($fieldname, XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+                if (!$dbman->field_exists($table, $field)) {
+                    $dbman->add_field($table, $field);
+                    $DB->set_field_select($tablename, $fieldname, time(), '1=1');
+                }
+            }
+        }
+
+        // Trades already has timecreated; only timemodified is missing.
+        $tradestable = new \xmldb_table('block_playerhud_trades');
+        $timemodifiedfield = new \xmldb_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($tradestable, $timemodifiedfield)) {
+            $dbman->add_field($tradestable, $timemodifiedfield);
+            $DB->set_field_select('block_playerhud_trades', 'timemodified', time(), '1=1');
+        }
+
+        // 3. Wizard rollback manifest: one row per generation run, one row per object it created.
+        if (!$dbman->table_exists('block_playerhud_wizard_runs')) {
+            $table = new \xmldb_table('block_playerhud_wizard_runs');
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('blockinstanceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('modules', XMLDB_TYPE_TEXT, null, null, null, null, null);
+            $table->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'running');
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $dbman->create_table($table);
+        }
+
+        if (!$dbman->table_exists('block_playerhud_wizard_objects')) {
+            $table = new \xmldb_table('block_playerhud_wizard_objects');
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('runid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('objecttable', XMLDB_TYPE_CHAR, '60', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('objectid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_index('runid', XMLDB_INDEX_NOTUNIQUE, ['runid']);
+            $dbman->create_table($table);
+        }
+
+        upgrade_block_savepoint(true, 2026070101, 'playerhud');
+    }
+
+    if ($oldversion < 2026070201) {
+        // Wizard shortcode manifest: lets rollback strip a drop shortcode back out of course
+        // content (activity intro/content, or the news forum for PlayerCoin) instead of only
+        // deleting the drop row and leaving the shortcode text orphaned.
+        if (!$dbman->table_exists('block_playerhud_wizard_shortcodes')) {
+            $table = new \xmldb_table('block_playerhud_wizard_shortcodes');
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('runid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('dropid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('cmid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('field', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_index('runid', XMLDB_INDEX_NOTUNIQUE, ['runid']);
+            $dbman->create_table($table);
+        }
+
+        upgrade_block_savepoint(true, 2026070201, 'playerhud');
+    }
+
     return true;
 }

@@ -27,13 +27,17 @@ namespace block_playerhud\ai;
  */
 class generator {
     /** @var string System role instruction for item generation. */
-    private const PROMPT_ROLE_ITEM = 'Act as a Subject Matter Expert and Educator.';
+    private const PROMPT_ROLE_ITEM = 'Act as a creative item designer for an educational game,'
+        . ' matching whatever narrative tone is requested.';
 
     /** @var string Item generation rules sent as system instruction. */
-    private const PROMPT_RULES_ITEM = 'IMPORTANT: Create a factual, realistic, and educational description of the item.'
+    private const PROMPT_RULES_ITEM = 'IMPORTANT: If a narrative tone is given below, fully embrace it —'
+        . ' including fantasy, sci-fi, or mystery elements as appropriate; the item does NOT need to be a'
+        . ' real-world object. If no narrative tone is given, keep the description factual, realistic, and'
+        . ' educational, and do NOT invent fantasy stories or "lore".'
         . ' RULES: 1. The "name" must be short (maximum 4 words).'
         . ' 2. The "description" must be extremely concise and direct (maximum 150 characters).'
-        . ' 3. Do NOT invent fantasy stories or "lore", and do NOT mention XP, levels, or game mechanics.'
+        . ' 3. Do NOT mention XP, levels, or game mechanics explicitly in the text.'
         . ' 4. The "emoji" field must be a single Unicode emoji that visually represents the item;'
         . ' choose it thematically and never use 📦 unless the item is literally a box or package.';
 
@@ -74,7 +78,7 @@ class generator {
      * @param string $theme The theme for generation.
      * @param int $xp Target XP value.
      * @param bool $createdrop Whether to create a drop location.
-     * @param array $extraoptions Additional options for drops and balancing.
+     * @param array $extraoptions Additional options for drops, balancing and 'tone'.
      * @param int $amount Number of items to generate.
      * @return array Result array with success status and data.
      * @throws \moodle_exception If API keys are missing or parsing fails.
@@ -107,10 +111,11 @@ class generator {
         }
 
         // 4. Build Prompt.
-        $parts = $this->build_prompt($mode, $theme, $xp, $balance, $amount);
+        $tone = (string)($extraoptions['tone'] ?? '');
+        $parts = $this->build_prompt($mode, $theme, $xp, $balance, $amount, $tone);
 
         // 5. Call API.
-        $result = $this->call_with_fallback($parts);
+        $result = $this->call_with_fallback($parts, 'item');
 
         // 6. Parse JSON.
         $jsonraw = $result['data'];
@@ -137,6 +142,8 @@ class generator {
         // 7. Save Loop.
         if ($mode === 'item') {
             $creatednames = [];
+            $createditemids = [];
+            $createddropids = [];
             $lastdropcode = '';
 
             foreach ($itemstosave as $singleitemdata) {
@@ -152,12 +159,18 @@ class generator {
                     $extraoptions
                 );
                 $creatednames[] = $saved['item_name'];
+                $createditemids[] = $saved['item_id'];
+                if ($saved['drop_id'] !== null) {
+                    $createddropids[] = $saved['drop_id'];
+                }
                 $lastdropcode = $saved['drop_code'];
             }
 
             $response = [
                 'success' => true,
                 'created_items' => $creatednames,
+                'created_item_ids' => $createditemids,
+                'created_drop_ids' => $createddropids,
                 'item_name' => $creatednames[0],
                 'drop_code' => (count($creatednames) == 1) ? $lastdropcode : null,
                 'provider' => $result['provider'],
@@ -205,15 +218,18 @@ class generator {
      * @param bool $createdrop Whether to create a drop.
      * @param string $provider AI Provider name.
      * @param array $options Additional options.
-     * @return array Result with item name and drop code.
+     * @return array Result with item name, item id, drop code and drop id.
      */
     protected function save_item($data, $targetxp, $createdrop, $provider, $options = []) {
         global $DB;
 
+        // The AI's JSON is untrusted input: coerce to string defensively (a malformed response
+        // could hand back an unexpected type) and clamp name to the column's own char(255) limit,
+        // same defensive pattern already used for AI story text in wizard_run_step.php.
         $item = new \stdClass();
         $item->blockinstanceid = $this->instanceid;
-        $item->name = $data['name'];
-        $item->description = $data['description'];
+        $item->name = \core_text::substr((string) $data['name'], 0, 255);
+        $item->description = (string) $data['description'];
         $item->image = $data['emoji'];
         $item->xp = $targetxp;
 
@@ -229,6 +245,7 @@ class generator {
         $itemid = $DB->insert_record('block_playerhud_items', $item);
 
         $dropcode = null;
+        $dropid = null;
         if ($createdrop) {
             $dropcode = \block_playerhud\utils::generate_drop_code($this->instanceid);
             $drop = new \stdClass();
@@ -245,13 +262,15 @@ class generator {
             $drop->respawntime = $minutes * 60;
             $drop->timecreated = time();
             $drop->timemodified = time();
-            $DB->insert_record('block_playerhud_drops', $drop);
+            $dropid = (int) $DB->insert_record('block_playerhud_drops', $drop);
         }
 
         return [
             'success' => true,
             'item_name' => $item->name,
+            'item_id' => (int) $itemid,
             'drop_code' => $dropcode,
+            'drop_id' => $dropid,
             'provider' => $provider,
         ];
     }
@@ -268,22 +287,25 @@ class generator {
      * @param int $xp XP value.
      * @param array|null $balance Balance context.
      * @param int $amount Amount to generate.
+     * @param string $tone Optional narrative tone hint (e.g. 'Fantasia Medieval').
      * @return array Associative array with 'system' and 'user' string keys.
      */
-    protected function build_prompt($mode, $theme, $xp, $balance = null, $amount = 1): array {
+    protected function build_prompt($mode, $theme, $xp, $balance = null, $amount = 1, string $tone = ''): array {
         if ($mode === 'item') {
             $contextstr = '';
             if ($balance) {
                 $contextstr = $balance['gap'] > 0 ? self::PROMPT_CTX_HARD : self::PROMPT_CTX_EASY;
             }
 
+            $tonestr = ($tone !== '') ? "Narrative tone: {$tone}." : '';
+
             if ($amount > 1) {
-                $taskstr = "Create {$amount} distinct real items related to the theme: '{$theme}'.";
-                $jsonstruct = '{"items":[{"name":"Name","description":"Factual Description...",'
+                $taskstr = "Create {$amount} distinct items related to the theme: '{$theme}'.";
+                $jsonstruct = '{"items":[{"name":"Name","description":"Description...",'
                     . '"emoji":"<emoji>","location_name":"Location"},...]}';
             } else {
-                $taskstr = "Create ONE real item related to the theme: '{$theme}'.";
-                $jsonstruct = '{"name":"Name","description":"Factual Description...",'
+                $taskstr = "Create ONE item related to the theme: '{$theme}'.";
+                $jsonstruct = '{"name":"Name","description":"Description...",'
                     . '"emoji":"<emoji>","location_name":"Location"}';
             }
 
@@ -294,9 +316,11 @@ class generator {
             $currentlang = get_string('thislanguage', 'langconfig');
             $langinst = "Reply strictly in the language: {$currentlang}.";
 
-            // Role + rules go to the system slot so the model treats them as
-            // hard constraints, not part of the user conversation.
-            $system = implode("\n\n", [self::PROMPT_ROLE_ITEM, self::PROMPT_RULES_ITEM]);
+            // Role + rules + tone go to the system slot so the model treats them as hard
+            // constraints, not soft hints buried in the user conversation. Tone in particular
+            // must sit here: it is what decides whether PROMPT_RULES_ITEM's fantasy/sci-fi
+            // allowance or its factual/educational fallback applies.
+            $system = implode("\n\n", array_filter([self::PROMPT_ROLE_ITEM, self::PROMPT_RULES_ITEM, $tonestr]));
 
             $user = implode("\n\n", [
                 $taskstr,
@@ -403,7 +427,8 @@ class generator {
      * consulted by the caller only when no tier holds a key. The hub tiers are
      * skipped when local_aihub is absent.
      *
-     * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel].
+     * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel, keysource].
+     *               keysource is 'own_personal', 'hub_personal', 'own_site', 'hub_site' or ''.
      */
     protected function load_api_keys(): array {
         $hubinstalled = class_exists(\local_aihub\local\keys::class);
@@ -412,11 +437,14 @@ class generator {
 
         // Tier 1: own personal (PlayerHUD user preferences).
         $tiers[] = [
-            (string) get_user_preferences('block_playerhud_gemini_key', ''),
-            (string) get_user_preferences('block_playerhud_groq_key', ''),
-            (string) get_user_preferences('block_playerhud_openai_key', ''),
-            (string) get_user_preferences('block_playerhud_openai_url', ''),
-            (string) get_user_preferences('block_playerhud_openai_model', ''),
+            'source' => 'own_personal',
+            'keys' => [
+                (string) get_user_preferences('block_playerhud_gemini_key', ''),
+                (string) get_user_preferences('block_playerhud_groq_key', ''),
+                (string) get_user_preferences('block_playerhud_openai_key', ''),
+                (string) get_user_preferences('block_playerhud_openai_url', ''),
+                (string) get_user_preferences('block_playerhud_openai_model', ''),
+            ],
         ];
 
         // Tier 2: hub personal. URL and model prefer the hub's personal values,
@@ -425,39 +453,55 @@ class generator {
             $hubpersonalurl = \local_aihub\local\keys::get_personal_openai_url();
             $hubpersonalmodel = \local_aihub\local\keys::get_personal_openai_model();
             $tiers[] = [
-                \local_aihub\local\keys::get_personal_key('gemini'),
-                \local_aihub\local\keys::get_personal_key('groq'),
-                \local_aihub\local\keys::get_personal_key('openai'),
-                $hubpersonalurl !== '' ? $hubpersonalurl : \local_aihub\local\keys::get_openai_baseurl(),
-                $hubpersonalmodel !== '' ? $hubpersonalmodel : \local_aihub\local\keys::get_openai_model(),
+                'source' => 'hub_personal',
+                'keys' => [
+                    \local_aihub\local\keys::get_personal_key('gemini'),
+                    \local_aihub\local\keys::get_personal_key('groq'),
+                    \local_aihub\local\keys::get_personal_key('openai'),
+                    $hubpersonalurl !== '' ? $hubpersonalurl : \local_aihub\local\keys::get_openai_baseurl(),
+                    $hubpersonalmodel !== '' ? $hubpersonalmodel : \local_aihub\local\keys::get_openai_model(),
+                ],
             ];
         }
 
         // Tier 3: own site (PlayerHUD config).
         $tiers[] = [
-            (string) get_config('block_playerhud', 'apikey_gemini'),
-            (string) get_config('block_playerhud', 'apikey_groq'),
-            (string) get_config('block_playerhud', 'apikey_openai'),
-            (string) get_config('block_playerhud', 'openai_baseurl'),
-            (string) get_config('block_playerhud', 'openai_model'),
+            'source' => 'own_site',
+            'keys' => [
+                (string) get_config('block_playerhud', 'apikey_gemini'),
+                (string) get_config('block_playerhud', 'apikey_groq'),
+                (string) get_config('block_playerhud', 'apikey_openai'),
+                (string) get_config('block_playerhud', 'openai_baseurl'),
+                (string) get_config('block_playerhud', 'openai_model'),
+            ],
         ];
 
         // Tier 4: hub site.
         if ($hubinstalled) {
             $tiers[] = [
-                \local_aihub\local\keys::get_site_key('gemini'),
-                \local_aihub\local\keys::get_site_key('groq'),
-                \local_aihub\local\keys::get_site_key('openai'),
-                \local_aihub\local\keys::get_openai_baseurl(),
-                \local_aihub\local\keys::get_openai_model(),
+                'source' => 'hub_site',
+                'keys' => [
+                    \local_aihub\local\keys::get_site_key('gemini'),
+                    \local_aihub\local\keys::get_site_key('groq'),
+                    \local_aihub\local\keys::get_site_key('openai'),
+                    \local_aihub\local\keys::get_openai_baseurl(),
+                    \local_aihub\local\keys::get_openai_model(),
+                ],
             ];
         }
 
         // Use the first tier that holds any provider key.
         $geminikey = $groqkey = $openaikey = $openaiurl = $openaimodel = '';
+        $keysource = '';
         foreach ($tiers as $tier) {
-            if ($tier[0] !== '' || $tier[1] !== '' || $tier[2] !== '') {
-                [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $tier;
+            [$gemini, $groq, $openai, $openaiurltier, $openaimodeltier] = $tier['keys'];
+            if ($gemini !== '' || $groq !== '' || $openai !== '') {
+                $geminikey = $gemini;
+                $groqkey = $groq;
+                $openaikey = $openai;
+                $openaiurl = $openaiurltier;
+                $openaimodel = $openaimodeltier;
+                $keysource = $tier['source'];
                 break;
             }
         }
@@ -470,7 +514,7 @@ class generator {
             $openaiurl = $this->resolve_openai_url($openaiurl);
         }
 
-        return [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel];
+        return [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $keysource];
     }
 
     /**
@@ -629,11 +673,15 @@ class generator {
      * level, so an explicitly set personal or site key always wins.
      *
      * @param array $parts Prompt parts with 'system' and 'user' keys.
+     * @param string $description Short label of what is being generated, reported to the
+     *               AI Hub's usage log when a hub-borrowed key serves the request.
      * @return array Result array with keys 'success', 'data', 'provider'.
      * @throws \moodle_exception If all providers fail or no keys are configured.
      */
-    protected function call_with_fallback(array $parts): array {
-        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel] = $this->load_api_keys();
+    protected function call_with_fallback(array $parts, string $description = ''): array {
+        global $USER;
+
+        [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $keysource] = $this->load_api_keys();
 
         $nokeys = empty($geminikey) && empty($groqkey) && empty($openaikey);
         $result = ['success' => false, 'message' => ''];
@@ -648,6 +696,22 @@ class generator {
 
         if (!$result['success'] && !empty($openaikey) && !empty($openaiurl)) {
             $result = $this->call_openai_compatible($parts, $openaikey, $openaiurl, $openaimodel);
+        }
+
+        // A hub-borrowed key served the request: this class calls providers directly
+        // instead of going through local_aihub\ai::generate_text(), so the hub never
+        // sees the request on its own. Report it after the fact so the site usage
+        // report still reflects it.
+        $hubtiers = ['hub_personal', 'hub_site'];
+        if ($result['success'] && in_array($keysource, $hubtiers, true) && class_exists(\local_aihub\ai::class)) {
+            \local_aihub\ai::report_usage(
+                (int) $USER->id,
+                'block_playerhud',
+                $description,
+                (string) ($result['provider'] ?? ''),
+                '',
+                $keysource === 'hub_personal' ? 'personal' : 'site'
+            );
         }
 
         // Bottom of the ladder: Moodle core_ai, only when no key is configured.
@@ -729,10 +793,83 @@ class generator {
                 . "across key choices where the player must pay a price to proceed.";
         }
 
+        $arcsummary = trim((string) ($options['arc_summary'] ?? ''));
+        if ($arcsummary !== '') {
+            $prompt .= "\n\nFull story arc, for consistency only — do not restate it, just keep the tone, "
+                . "characters and setting coherent with where the story is headed:\n{$arcsummary}";
+        }
+
+        $beat = trim((string) ($options['beat'] ?? ''));
+        if ($beat !== '') {
+            $prompt .= "\n\nThis chapter's specific role in the arc: {$beat}";
+        }
+
+        $previouscontext = trim((string) ($options['previous_context'] ?? ''));
+        if ($previouscontext !== '') {
+            $prompt .= "\n\nContinue directly from the previous chapter, which ended like this:\n"
+                . "{$previouscontext}\nKeep character names, tone and setting consistent with it — "
+                . 'this is chapter 2 or later, not a new opening.';
+        }
+
         $currentlang = get_string('thislanguage', 'langconfig');
         $prompt .= "\nGenerate all text content in the language: {$currentlang}.";
 
         return ['system' => '', 'user' => $prompt];
+    }
+
+    /**
+     * Builds the prompt for generating a multi-chapter story arc outline: one short beat per
+     * chapter, so later chapters can be generated individually while staying consistent with a
+     * plan that has a real beginning, middle and end — instead of only knowing the immediately
+     * previous chapter (a Markov chain that tends to wander over 5+ chapters).
+     *
+     * @param string $theme The story theme or setting.
+     * @param int $chaptercount How many beats to produce, one per chapter.
+     * @return array{system: string, user: string} Prompt parts for call_with_fallback().
+     */
+    protected function build_prompt_story_outline(string $theme, int $chaptercount): array {
+        $prompt = "You are an interactive story designer for an educational text-adventure game."
+            . " Design a {$chaptercount}-chapter story arc outline based on the theme: {$theme}."
+            . ' The arc must have a clear beginning (chapter 1), rising tension through the middle'
+            . ' chapters, and a satisfying climax and resolution on the final chapter — do not let'
+            . ' the story wander without direction.'
+            . ' Reply ONLY with valid JSON — no markdown, no extra text.'
+            . ' Structure: {"beats":["one-sentence summary of chapter 1\'s events",'
+            . '"one-sentence summary of chapter 2\'s events"]}.'
+            . " The \"beats\" array must have exactly {$chaptercount} entries, in chapter order.";
+
+        $currentlang = get_string('thislanguage', 'langconfig');
+        $prompt .= "\nGenerate all text content in the language: {$currentlang}.";
+
+        return ['system' => '', 'user' => $prompt];
+    }
+
+    /**
+     * Generates a story arc outline via AI: one short beat per chapter, used to keep a
+     * multi-chapter arc coherent (see build_prompt_story_outline()).
+     *
+     * @param string $theme The story theme or setting.
+     * @param int $chaptercount How many beats to produce, one per chapter.
+     * @return array{beats: string[], provider: string} Exactly $chaptercount beats, in order.
+     * @throws \moodle_exception If parsing fails, key loading fails, or fewer beats than
+     *     requested come back.
+     */
+    public function generate_story_outline(string $theme, int $chaptercount): array {
+        $prompt = $this->build_prompt_story_outline($theme, $chaptercount);
+        $result = $this->call_with_fallback($prompt, 'story');
+
+        // Backtick markdown cleanup.
+        $cleanjson = preg_replace('/^\x60{3}json|\x60{3}$/m', '', $result['data']);
+        $aidata = json_decode($cleanjson, true);
+
+        if (!$aidata || empty($aidata['beats']) || count($aidata['beats']) < $chaptercount) {
+            throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
+        }
+
+        return [
+            'beats' => array_slice(array_values($aidata['beats']), 0, $chaptercount),
+            'provider' => $result['provider'],
+        ];
     }
 
     /**
@@ -746,7 +883,7 @@ class generator {
         global $DB;
 
         $prompt = $this->build_prompt_class_oracle($theme);
-        $result = $this->call_with_fallback($prompt);
+        $result = $this->call_with_fallback($prompt, 'class');
 
         // Backtick markdown cleanup.
         $cleanjson = preg_replace('/^\x60{3}json|\x60{3}$/m', '', $result['data']);
@@ -790,14 +927,15 @@ class generator {
      *
      * @param string $theme The story theme or setting.
      * @param array $options Optional mechanics constraints: karma_gain, karma_loss, item_id, item_qty.
-     * @return array Result array with 'success', 'chapter_title', and 'provider'.
+     * @return array Result array with 'success', 'chapter_title', 'provider', 'chapter_id',
+     *     'node_ids' (int[]) and 'choice_ids' (int[]).
      * @throws \moodle_exception If parsing fails or key loading fails.
      */
     public function generate_story(string $theme, array $options = []): array {
         global $DB;
 
         $prompt = $this->build_prompt_story($theme, $options);
-        $result = $this->call_with_fallback($prompt);
+        $result = $this->call_with_fallback($prompt, 'story');
 
         // Backtick markdown cleanup.
         $cleanjson = preg_replace('/^\x60{3}json|\x60{3}$/m', '', $result['data']);
@@ -834,6 +972,7 @@ class generator {
         }
 
         // Second pass: insert choices with resolved next_nodeid.
+        $choiceids = [];
         foreach ($aidata['nodes'] as $nodedata) {
             if (empty($nodedata['choices'])) {
                 continue;
@@ -862,7 +1001,7 @@ class generator {
                 $choice->set_class_id = 0;
                 $choice->cost_itemid  = ($choiceitemid > 0 && $choiceitemqty > 0) ? $choiceitemid : 0;
                 $choice->cost_item_qty = ($choiceitemid > 0 && $choiceitemqty > 0) ? $choiceitemqty : 1;
-                $DB->insert_record('block_playerhud_choices', $choice);
+                $choiceids[] = (int) $DB->insert_record('block_playerhud_choices', $choice);
             }
         }
 
@@ -872,6 +1011,9 @@ class generator {
             'success'       => true,
             'chapter_title' => $aidata['title'],
             'provider'      => $result['provider'],
+            'chapter_id'    => (int) $chapterid,
+            'node_ids'      => array_values($idxmap),
+            'choice_ids'    => $choiceids,
         ];
     }
 

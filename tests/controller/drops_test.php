@@ -95,7 +95,7 @@ final class drops_test extends advanced_testcase {
             'name'            => 'Old spot',
             'maxusage'        => 1,
             'respawntime'     => 0,
-            'code'            => 'OLDXYZ',
+            'code'            => \block_playerhud\utils::generate_drop_code($instanceid),
             'timecreated'     => time(),
             'timemodified'    => time(),
         ]);

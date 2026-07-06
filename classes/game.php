@@ -1167,9 +1167,10 @@ class game {
      *
      * @param int $instanceid Block instance ID.
      * @param array $sug Suggestion descriptor from build_trade_suggestions().
-     * @return int The new trade ID.
+     * @return array{tradeid: int, reqid: int, rewardids: int[]} The new trade's own ID and
+     *         the IDs of the requirement and reward rows it created.
      */
-    public static function create_trade_from_suggestion(int $instanceid, array $sug): int {
+    public static function create_trade_from_suggestion(int $instanceid, array $sug): array {
         global $DB;
 
         $now = time();
@@ -1181,19 +1182,20 @@ class game {
             'onetime'         => 1,
             'timecreated'     => $now,
         ]);
-        $DB->insert_record('block_playerhud_trade_reqs', (object) [
+        $reqid = $DB->insert_record('block_playerhud_trade_reqs', (object) [
             'tradeid' => $tradeid,
             'itemid'  => $sug['cost_itemid'],
             'qty'     => $sug['cost_qty'],
         ]);
+        $rewardids = [];
         foreach ($sug['rewards'] as $reward) {
-            $DB->insert_record('block_playerhud_trade_rewards', (object) [
+            $rewardids[] = $DB->insert_record('block_playerhud_trade_rewards', (object) [
                 'tradeid' => $tradeid,
                 'itemid'  => $reward['id'],
                 'qty'     => $reward['qty'],
             ]);
         }
 
-        return $tradeid;
+        return ['tradeid' => $tradeid, 'reqid' => $reqid, 'rewardids' => $rewardids];
     }
 }

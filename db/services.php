@@ -144,6 +144,15 @@ $functions = [
         'loginrequired' => true,
     ],
 
+    'block_playerhud_create_class_pack' => [
+        'classname'     => 'block_playerhud\external\create_class_pack',
+        'methodname'    => 'execute',
+        'description'   => 'Create the pre-defined RPG class pack for a block instance',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
     'block_playerhud_use_item' => [
         'classname'     => 'block_playerhud\external\use_item',
         'methodname'    => 'execute',
@@ -158,6 +167,51 @@ $functions = [
         'methodname'    => 'execute',
         'description'   => 'Create an infinite drop for the PlayerCoin in the course news forum',
         'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_wizard_start' => [
+        'classname'     => 'block_playerhud\external\wizard_start',
+        'methodname'    => 'execute',
+        'description'   => 'Start a live, step-by-step gamification wizard run and return its plan',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_wizard_run_step' => [
+        'classname'     => 'block_playerhud\external\wizard_run_step',
+        'methodname'    => 'execute',
+        'description'   => 'Run a single step of a live gamification wizard run',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_wizard_apply_suggested_levels' => [
+        'classname'     => 'block_playerhud\external\wizard_apply_suggested_levels',
+        'methodname'    => 'execute',
+        'description'   => "Apply the wizard's suggested max_levels for a journey size",
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_wizard_rollback' => [
+        'classname'     => 'block_playerhud\external\wizard_rollback',
+        'methodname'    => 'execute',
+        'description'   => 'Undo a gamification wizard run',
+        'type'          => 'write',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+
+    'block_playerhud_wizard_list_runs' => [
+        'classname'     => 'block_playerhud\external\wizard_list_runs',
+        'methodname'    => 'execute',
+        'description'   => 'List recent gamification wizard runs available for rollback',
+        'type'          => 'read',
         'ajax'          => true,
         'loginrequired' => true,
     ],

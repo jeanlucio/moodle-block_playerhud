@@ -443,4 +443,16 @@ class block_playerhud extends block_base {
     public function has_config() {
         return true;
     }
+
+    /**
+     * Deletes every row this instance owns across the plugin's own tables, before Moodle
+     * removes the block_instances row and its context.
+     *
+     * @return bool
+     */
+    #[\Override]
+    public function instance_delete() {
+        \block_playerhud\instance_cleanup::delete_instance_data((int) $this->instance->id);
+        return true;
+    }
 }

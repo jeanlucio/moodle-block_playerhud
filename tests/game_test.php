@@ -977,18 +977,22 @@ final class game_test extends advanced_testcase {
             'name' => 'Fox Avatar', 'cost_itemid' => $coin->id, 'cost_qty' => 5,
             'rewards' => [['id' => $avatar->id, 'qty' => 1]],
         ];
-        $tradeid = game::create_trade_from_suggestion($this->instanceid, $sug);
+        $result = game::create_trade_from_suggestion($this->instanceid, $sug);
+        $tradeid = $result['tradeid'];
 
         $trade = $DB->get_record('block_playerhud_trades', ['id' => $tradeid], '*', MUST_EXIST);
         $this->assertEquals('Fox Avatar', $trade->name);
         $this->assertEquals(1, (int) $trade->onetime);
         $this->assertEquals(1, (int) $trade->centralized);
 
-        $req = $DB->get_record('block_playerhud_trade_reqs', ['tradeid' => $tradeid], '*', MUST_EXIST);
+        $req = $DB->get_record('block_playerhud_trade_reqs', ['id' => $result['reqid']], '*', MUST_EXIST);
+        $this->assertEquals($tradeid, (int) $req->tradeid);
         $this->assertEquals($coin->id, (int) $req->itemid);
         $this->assertEquals(5, (int) $req->qty);
 
-        $reward = $DB->get_record('block_playerhud_trade_rewards', ['tradeid' => $tradeid], '*', MUST_EXIST);
+        $this->assertCount(1, $result['rewardids']);
+        $reward = $DB->get_record('block_playerhud_trade_rewards', ['id' => $result['rewardids'][0]], '*', MUST_EXIST);
+        $this->assertEquals($tradeid, (int) $reward->tradeid);
         $this->assertEquals($avatar->id, (int) $reward->itemid);
     }
 }

@@ -60,16 +60,18 @@ class quest {
     const TYPE_CHAPTER = 9;
 
     /**
-     * Build a quest DB record from a heuristic suggestion descriptor.
+     * Build a quest DB record from a suggestion descriptor.
      *
-     * Maps a suggestion produced by get_heuristic_suggestions() to a quest
-     * record ready for insertion. Does not touch the database, so callers can
-     * collect several records and persist them in a single batch insert.
-     * Allows an optional XP reward override so callers can scale rewards
-     * (e.g. per gamification profile).
+     * Maps a suggestion — either produced by get_heuristic_suggestions() or built directly by
+     * a caller (e.g. a wizard module creating its own bespoke quest) — to a quest record ready
+     * for insertion. Does not touch the database, so callers can collect several records and
+     * persist them in a single batch insert. Allows an optional XP reward override so callers
+     * can scale rewards (e.g. per gamification profile).
      *
      * @param int $instanceid Block instance ID.
-     * @param array $sug Suggestion descriptor (type, requirement, name, reward_xp, image_todo, image_done).
+     * @param array $sug Suggestion descriptor (type, requirement, name, reward_xp, image_todo,
+     *        image_done, and optionally req_itemid for TYPE_SPECIFIC_ITEM/TYPE_SPECIFIC_TRADE,
+     *        and/or reward_itemid to grant an item alongside the XP reward).
      * @param int|null $rewardxpoverride Optional XP reward to use instead of the suggestion's value.
      * @return \stdClass Quest record ready for insert_record/insert_records.
      */
@@ -81,9 +83,9 @@ class quest {
         $record->description       = '';
         $record->type              = $sug['type'];
         $record->requirement       = (string)$sug['requirement'];
-        $record->req_itemid        = 0;
+        $record->req_itemid        = (int)($sug['req_itemid'] ?? 0);
         $record->reward_xp         = $rewardxpoverride !== null ? max(0, $rewardxpoverride) : (int)$sug['reward_xp'];
-        $record->reward_itemid     = 0;
+        $record->reward_itemid     = (int)($sug['reward_itemid'] ?? 0);
         $record->required_class_id = '0';
         $record->image_todo        = $sug['image_todo'];
         $record->image_done        = $sug['image_done'];

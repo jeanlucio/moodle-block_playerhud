@@ -107,15 +107,18 @@ class create_avatar_pack extends external_api {
         $existingimages = array_flip($existingimages);
 
         $created = 0;
+        $createdids = [];
+        $creatednames = [];
         $now = time();
 
         foreach ($avatars as $avatar) {
             if (isset($existingimages[$avatar['emoji']])) {
                 continue;
             }
-            $DB->insert_record('block_playerhud_items', (object) [
+            $name = get_string($avatar['name_key'], 'block_playerhud');
+            $itemid = (int) $DB->insert_record('block_playerhud_items', (object) [
                 'blockinstanceid' => $instanceid,
-                'name'            => get_string($avatar['name_key'], 'block_playerhud'),
+                'name'            => $name,
                 'image'           => $avatar['emoji'],
                 'description'     => get_string($avatar['desc_key'], 'block_playerhud'),
                 'xp'              => 0,
@@ -128,10 +131,16 @@ class create_avatar_pack extends external_api {
                 'timecreated'     => $now,
                 'timemodified'    => $now,
             ]);
+            $createdids[] = $itemid;
+            $creatednames[] = $name;
             $created++;
         }
 
-        return ['created' => $created];
+        return [
+            'created' => $created,
+            'created_item_ids' => $createdids,
+            'created_item_names' => $creatednames,
+        ];
     }
 
     /**
@@ -142,6 +151,16 @@ class create_avatar_pack extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'created' => new external_value(PARAM_INT, 'Number of avatar items created'),
+            'created_item_ids' => new \core_external\external_multiple_structure(
+                new external_value(PARAM_INT, 'Item ID'),
+                'IDs of the created avatar items',
+                VALUE_OPTIONAL
+            ),
+            'created_item_names' => new \core_external\external_multiple_structure(
+                new external_value(PARAM_TEXT, 'Item name'),
+                'Names of the created avatar items',
+                VALUE_OPTIONAL
+            ),
         ]);
     }
 }

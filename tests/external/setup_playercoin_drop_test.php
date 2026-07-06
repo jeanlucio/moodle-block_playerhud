@@ -112,6 +112,26 @@ final class setup_playercoin_drop_test extends external_base_testcase {
     }
 
     /**
+     * A courseid that does not own the block instance must be rejected, even for an
+     * otherwise-valid item — the news forum lookup must never run against a foreign course.
+     */
+    public function test_setup_playercoin_drop_rejects_course_not_owning_the_instance(): void {
+        global $DB;
+
+        $othercourse = $this->getDataGenerator()->create_course();
+        $item = $this->create_item($this->instanceid, 'PlayerCoin');
+
+        $this->expectException(\moodle_exception::class);
+        setup_playercoin_drop::execute($this->instanceid, $othercourse->id, $item->id);
+
+        $this->assertEquals(
+            0,
+            $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid]),
+            'No drop must be created when courseid does not own the block instance.'
+        );
+    }
+
+    /**
      * When the news forum already has an intro the shortcode is prepended and
      * the original intro is preserved after a <br>.
      */

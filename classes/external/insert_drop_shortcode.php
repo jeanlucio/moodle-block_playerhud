@@ -51,6 +51,18 @@ class insert_drop_shortcode extends external_api {
             'cmid'       => new external_value(PARAM_INT, 'Course module ID'),
             'field'      => new external_value(PARAM_ALPHANUMEXT, 'Field name (intro or content)'),
             'position'   => new external_value(PARAM_ALPHA, 'Position: top or bottom'),
+            'mode'       => new external_value(
+                PARAM_ALPHA,
+                'Rendering mode for the inserted shortcode: card, text or image',
+                VALUE_DEFAULT,
+                'card'
+            ),
+            'customtext' => new external_value(
+                PARAM_TEXT,
+                "Custom label for mode=text (e.g. an emoji, to blend into the field's own content)",
+                VALUE_DEFAULT,
+                ''
+            ),
         ]);
     }
 
@@ -63,9 +75,20 @@ class insert_drop_shortcode extends external_api {
      * @param int $cmid Course module ID.
      * @param string $field Field name (intro or content).
      * @param string $position Position: top or bottom.
+     * @param string $mode Rendering mode: card, text or image.
+     * @param string $customtext Custom label for mode=text.
      * @return array Result structure.
      */
-    public static function execute($instanceid, $courseid, $dropid, $cmid, $field, $position): array {
+    public static function execute(
+        $instanceid,
+        $courseid,
+        $dropid,
+        $cmid,
+        $field,
+        $position,
+        $mode = 'card',
+        $customtext = ''
+    ): array {
         global $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [
@@ -75,6 +98,8 @@ class insert_drop_shortcode extends external_api {
             'cmid'       => $cmid,
             'field'      => $field,
             'position'   => $position,
+            'mode'       => $mode,
+            'customtext' => $customtext,
         ]);
 
         $context = context_block::instance($params['instanceid']);
@@ -93,6 +118,11 @@ class insert_drop_shortcode extends external_api {
         // Validate position.
         if (!in_array($params['position'], ['top', 'bottom'])) {
             $params['position'] = 'top';
+        }
+
+        // Validate mode.
+        if (!in_array($params['mode'], ['card', 'text', 'image'], true)) {
+            $params['mode'] = 'card';
         }
 
         // Validate field name (only allow safe identifiers).
@@ -136,7 +166,18 @@ class insert_drop_shortcode extends external_api {
         }
 
         // Prevent duplicate insertion.
-        $shortcode = '[PLAYERHUD_DROP code=' . $drop->code . ']';
+        $shortcode = '[PLAYERHUD_DROP code=' . $drop->code;
+        if ($params['mode'] !== 'card') {
+            $shortcode .= ' mode=' . $params['mode'];
+            // The filter's own text= regex has no escaping, so quote characters would prematurely
+            // truncate the match — stripped rather than escaped, since they add nothing to a
+            // custom label anyway (typically a short word or a single emoji).
+            $customtext = str_replace(['"', "'"], '', $params['customtext']);
+            if ($params['mode'] === 'text' && $customtext !== '') {
+                $shortcode .= ' text="' . $customtext . '"';
+            }
+        }
+        $shortcode .= ']';
         if (strpos($currentval, 'code=' . $drop->code) !== false) {
             return ['success' => false, 'message' => get_string('distribute_already_inserted', 'block_playerhud')];
         }
@@ -158,6 +199,18 @@ class insert_drop_shortcode extends external_api {
 
         // Rebuild course cache so the change is visible immediately.
         rebuild_course_cache($params['courseid'], true);
+
+        // The drop's own name is its "Localização/Nome" in the drops management table — renaming
+        // it to the activity it just landed in (instead of leaving whatever it was created with)
+        // is what makes that table useful for finding a drop later. Never shown to students: the
+        // shortcode renders the item's own name, not this. Applies here rather than in each
+        // caller (the wizard's auto-distribute step and the manual "Distribuir Drops" screen both
+        // go through this same method) so neither can forget it.
+        $DB->update_record('block_playerhud_drops', (object) [
+            'id' => $drop->id,
+            'name' => format_string($cm->name),
+            'timemodified' => time(),
+        ]);
 
         return ['success' => true, 'message' => get_string('distribute_inserted', 'block_playerhud')];
     }

@@ -629,36 +629,20 @@ class tab_items implements renderable {
         $drops = $DB->get_records_sql($sql, ['instanceid' => $this->instanceid]);
 
         // 2. Load all course modules that have editable text fields.
-        $course = get_course($this->courseid);
-        $modinfo = get_fast_modinfo($course);
-        $modules = [];
-        foreach ($modinfo->get_cms() as $cm) {
-            // Skip modules being deleted; include hidden modules (teachers can distribute to them).
-            if (!empty($cm->deletioninprogress)) {
-                continue;
-            }
-            // Only include modules whose table has an intro or content field.
-            $columns = $DB->get_columns($cm->modname);
-            if (!isset($columns['intro']) && !isset($columns['content'])) {
-                continue;
-            }
-            $supportscontent = ($cm->modname === 'page');
-            $islabel         = ($cm->modname === 'label');
-            $modules[] = [
-                'cmid'               => $cm->id,
-                'instance'           => $cm->instance,
-                'name'               => format_string($cm->name),
-                'modname'            => $cm->modname,
-                'modname_translated' => get_string('modulename', 'mod_' . $cm->modname),
-                'supports_content'   => $supportscontent,
-                'supports_content_int' => $supportscontent ? 1 : 0,
-                'is_label'           => $islabel,
-                'is_label_int'       => $islabel ? 1 : 0,
-            ];
+        $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($this->courseid);
+        foreach ($modules as &$mod) {
+            // Mustache-friendly int flags alongside the booleans, for this view only.
+            $mod['supports_content_int'] = $mod['supports_content'] ? 1 : 0;
+            $mod['is_label_int'] = $mod['is_label'] ? 1 : 0;
         }
+        unset($mod);
 
         // 3. Pre-compute which cmids already contain each drop's shortcode.
-        $insertedmap = $this->get_inserted_cmids($drops, $modules);
+        $codesbydropid = [];
+        foreach ($drops as $drop) {
+            $codesbydropid[$drop->id] = $drop->code;
+        }
+        $insertedmap = \block_playerhud\local\drop_distribution::find_inserted_cmids($codesbydropid, $modules);
 
         // 4. Bulk-load item images to avoid N+1.
         $context = \context_block::instance($this->instanceid);
@@ -684,7 +668,10 @@ class tab_items implements renderable {
             if ($insertedanywhere) {
                 $suggestedcmid = $insertedinfo['first_cmid'];
             } else {
-                $suggested = $this->suggest_module($drop->drop_name . ' ' . $drop->item_name, $modules);
+                $suggested = \block_playerhud\local\drop_distribution::suggest_module(
+                    $drop->drop_name . ' ' . $drop->item_name,
+                    $modules
+                );
                 $suggestedcmid = $suggested ? $suggested['cmid'] : null;
             }
 
@@ -779,114 +766,6 @@ class tab_items implements renderable {
         $PAGE->requires->js_call_amd('block_playerhud/distribute_drops', 'init', [$jsvars]);
 
         return $OUTPUT->render_from_template('block_playerhud/distribute_drops', $templatedata);
-    }
-
-    /**
-     * Suggest the best matching module for a drop based on name similarity.
-     *
-     * @param string $haystack Combined drop and item name.
-     * @param array $modules List of module data arrays.
-     * @return array|null Best matching module or null if list is empty.
-     */
-    private function suggest_module($haystack, $modules) {
-        if (empty($modules)) {
-            return null;
-        }
-        $best = null;
-        $bestscore = -1;
-        $haystack = strtolower($haystack);
-        foreach ($modules as $mod) {
-            similar_text($haystack, strtolower($mod['name']), $percent);
-            if ($percent > $bestscore) {
-                $bestscore = $percent;
-                $best = $mod;
-            }
-        }
-        return $best;
-    }
-
-    /**
-     * Return a map of drop ID => list of cmids where the drop shortcode is already present.
-     *
-     * Queries are batched per module type to avoid N+1.
-     *
-     * @param array $drops Keyed by drop ID, each with a ->code property.
-     * @param array $modules List of module data arrays (must include 'cmid', 'instance', 'modname').
-     * @return array [dropid => int[]]
-     */
-    private function get_inserted_cmids(array $drops, array $modules): array {
-        global $DB;
-
-        if (empty($drops) || empty($modules)) {
-            return [];
-        }
-
-        // Group modules by type: [modname => [instance_id => cmid]].
-        $bytype = [];
-        foreach ($modules as $mod) {
-            $bytype[$mod['modname']][$mod['instance']] = $mod['cmid'];
-        }
-
-        // For each module type, load intro/content fields in one query.
-        // Result: [cmid => ['intro' => text, 'content' => text]].
-        $contentbycmid = [];
-        foreach ($bytype as $modname => $instances) {
-            $instanceids = array_keys($instances);
-            [$insql, $inparams] = $DB->get_in_or_equal($instanceids);
-
-            $columns = $DB->get_columns($modname);
-            $fields = ['id'];
-            if (isset($columns['intro'])) {
-                $fields[] = 'intro';
-            }
-            if (isset($columns['content'])) {
-                $fields[] = 'content';
-            }
-
-            $rows = $DB->get_records_select($modname, "id $insql", $inparams, '', implode(',', $fields));
-            foreach ($rows as $row) {
-                $cmid = $instances[$row->id];
-                $contentbycmid[$cmid] = [];
-                if (isset($row->intro)) {
-                    $contentbycmid[$cmid]['intro'] = (string)$row->intro;
-                }
-                if (isset($row->content)) {
-                    $contentbycmid[$cmid]['content'] = (string)$row->content;
-                }
-            }
-        }
-
-        // For each drop, collect cmids and note the first field where the shortcode was found.
-        $result = [];
-        foreach ($drops as $drop) {
-            $needle = 'code=' . $drop->code;
-            $insertedcmids = [];
-            $firstcmid = null;
-            $firstfield = 'intro';
-
-            foreach ($contentbycmid as $cmid => $fields) {
-                foreach ($fields as $fieldname => $text) {
-                    if (strpos($text, $needle) !== false) {
-                        if ($firstcmid === null) {
-                            $firstcmid = $cmid;
-                            $firstfield = $fieldname;
-                        }
-                        if (!in_array($cmid, $insertedcmids)) {
-                            $insertedcmids[] = $cmid;
-                        }
-                        break; // One field match per cmid is enough.
-                    }
-                }
-            }
-
-            $result[$drop->id] = [
-                'cmids'       => $insertedcmids,
-                'first_cmid'  => $firstcmid,
-                'first_field' => $firstfield,
-            ];
-        }
-
-        return $result;
     }
 
     /**
