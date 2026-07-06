@@ -193,6 +193,43 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             syncDistributeCheckbox(moduleEl, distributeEl);
         });
 
+        // "Select all" for the Economy section: checks/unchecks every enabled mechanic checkbox
+        // in that section at once (Comércio's own nested checkbox is excluded on purpose — it
+        // has no ph-wizard-mech-module class, since its own requirement-gating logic decides
+        // whether it can be checked at all, not a bulk action). Reflects back — including an
+        // indeterminate state — when the teacher toggles those checkboxes individually instead.
+        const economySelectAllEl = document.getElementById('ph-wizard-select-all-economy');
+        if (economySelectAllEl) {
+            const economyModuleEls = Array.from(
+                document.querySelectorAll('#ph-wizard-section-economy .ph-wizard-mech-module')
+            );
+
+            const syncEconomySelectAll = () => {
+                const selectable = economyModuleEls.filter((checkbox) => !checkbox.disabled);
+                const checkedcount = selectable.filter((checkbox) => checkbox.checked).length;
+                economySelectAllEl.checked = selectable.length > 0 && checkedcount === selectable.length;
+                economySelectAllEl.indeterminate = checkedcount > 0 && checkedcount < selectable.length;
+            };
+
+            economySelectAllEl.addEventListener('change', () => {
+                // Captured once: each dispatched change below re-enters syncEconomySelectAll(),
+                // which recomputes and overwrites economySelectAllEl.checked mid-loop — reading
+                // the live property on every iteration would corrupt later checkboxes with an
+                // intermediate (not the teacher's intended) value.
+                const shouldCheck = economySelectAllEl.checked;
+                economyModuleEls.forEach((checkbox) => {
+                    if (checkbox.disabled) {
+                        return;
+                    }
+                    checkbox.checked = shouldCheck;
+                    checkbox.dispatchEvent(new Event('change'));
+                });
+            });
+
+            economyModuleEls.forEach((checkbox) => checkbox.addEventListener('change', syncEconomySelectAll));
+            syncEconomySelectAll();
+        }
+
         // Checked by default only when the instance is still at the edit form's defaults (100
         // XP per level, 20 levels) — see levels_at_default in the template. While checked, every
         // change to either the checkbox itself or the journey size re-applies the matching

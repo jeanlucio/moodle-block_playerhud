@@ -1062,6 +1062,7 @@ $string['wizard_secret_name_scifi'] = 'Anomalous Artifact';
 $string['wizard_section_collectibles'] = 'Special collectibles';
 $string['wizard_section_economy'] = 'Economy';
 $string['wizard_section_other'] = 'Progression systems';
+$string['wizard_select_all_label'] = 'Select all';
 $string['wizard_size_help'] = 'Sets how much AI content is generated: items, missions and story chapters. Fixed-size mechanics (PlayerCoin, Avatar Pack, Knowledge Collectible, Secret Drops, RPG classes) do not change with it.';
 $string['wizard_size_help_label'] = 'More information about journey size';
 $string['wizard_size_label'] = 'Journey size';

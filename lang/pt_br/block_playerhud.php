@@ -1062,6 +1062,7 @@ $string['wizard_secret_name_scifi'] = 'Artefato Anômalo';
 $string['wizard_section_collectibles'] = 'Colecionáveis especiais';
 $string['wizard_section_economy'] = 'Economia';
 $string['wizard_section_other'] = 'Sistemas de progressão';
+$string['wizard_select_all_label'] = 'Selecionar todos';
 $string['wizard_size_help'] = 'Define a quantidade de conteúdo gerado por IA: itens, missões e capítulos da história. Mecânicas de quantidade fixa (PlayerCoin, Pacote de avatares, Colecionável de conhecimento, Drops Secretos, classes de RPG) não mudam com ele.';
 $string['wizard_size_help_label'] = 'Mais informações sobre o tamanho da jornada';
 $string['wizard_size_label'] = 'Tamanho da jornada';
