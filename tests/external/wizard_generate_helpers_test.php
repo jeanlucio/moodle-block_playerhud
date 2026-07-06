@@ -208,11 +208,11 @@ final class wizard_generate_helpers_test extends external_base_testcase {
     }
 
     /**
-     * Builds a validated params array matching wizard_generate::execute_parameters()'s shape,
-     * with every include_* flag defaulting to false and every distribute_* flag defaulting to
-     * true (its real default) — mirrors what self::validate_parameters() produces inside
-     * execute(), since build_step_types()/compute_shared_xp_shares() are called with that same
-     * validated array, not raw booleans.
+     * Builds a params array matching wizard_start::execute_parameters()'s shape, with every
+     * include_* flag defaulting to false and every distribute_* flag defaulting to true (its
+     * real default) — mirrors what wizard_start's own validate_parameters() produces, since
+     * build_step_types()/compute_shared_xp_shares() are called with that same validated array,
+     * not raw booleans.
      *
      * @param array $overrides Flags to override, e.g. ['include_missions' => true].
      * @return array The params array.

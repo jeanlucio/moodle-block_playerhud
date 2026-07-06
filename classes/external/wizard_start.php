@@ -34,8 +34,7 @@ use context_block;
 /**
  * Creates a wizard run and returns its step plan, for the browser-driven live progress bar.
  *
- * Mirrors {@see wizard_generate::execute_parameters()} exactly (same `include_*` flags), but
- * instead of running every selected module in one request, this only creates the run and
+ * Instead of running every selected module in one request, this only creates the run and
  * computes the ordered plan of steps — one per module, plus one for auto-distribute when
  * selected. The browser then drives {@see wizard_run_step} once per step, updating a single
  * progress bar live, ending in a quantity report instead of a name list. See § 5.9 of the
@@ -49,10 +48,125 @@ class wizard_start extends external_api {
     /**
      * Define parameters for wizard_start.
      *
+     * Same `include_*`/`distribute_*` flag set {@see wizard_generate}'s `generate_*` methods and
+     * {@see wizard_run_step} both key off — this is the one canonical definition of what a wizard
+     * run accepts, shared by build_step_types() and compute_shared_xp_shares() via the validated
+     * array this produces.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
-        return wizard_generate::execute_parameters();
+        return new external_function_parameters([
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
+            'courseid' => new external_value(PARAM_INT, 'Course ID'),
+            'theme' => new external_value(PARAM_TEXT, 'Subject theme'),
+            'tone' => new external_value(PARAM_TEXT, 'Narrative tone', VALUE_DEFAULT, ''),
+            'size' => new external_value(PARAM_ALPHA, 'Journey size: short, medium or long', VALUE_DEFAULT, 'short'),
+            'include_items' => new external_value(PARAM_BOOL, 'Generate the Items & Trade module', VALUE_DEFAULT, true),
+            'include_missions' => new external_value(
+                PARAM_BOOL,
+                'Generate heuristic Mission suggestions',
+                VALUE_DEFAULT,
+                false
+            ),
+            'include_playercoin' => new external_value(
+                PARAM_BOOL,
+                'Create the PlayerCoin item',
+                VALUE_DEFAULT,
+                false
+            ),
+            'include_avatars' => new external_value(
+                PARAM_BOOL,
+                'Create the pre-defined avatar item pack',
+                VALUE_DEFAULT,
+                false
+            ),
+            'include_rpg' => new external_value(
+                PARAM_BOOL,
+                'Create the RPG class pack and the fixed Chapter 1 that assigns one to the student',
+                VALUE_DEFAULT,
+                false
+            ),
+            'tone_key' => new external_value(
+                PARAM_ALPHA,
+                'Narrative tone key for RPG content and the progress item: fantasy, scifi, ' .
+                    'mystery or academic',
+                VALUE_DEFAULT,
+                'fantasy'
+            ),
+            'distribute_items' => new external_value(
+                PARAM_BOOL,
+                "Insert the Items module's generated drops into matching course activities",
+                VALUE_DEFAULT,
+                true
+            ),
+            'include_progress_item' => new external_value(
+                PARAM_BOOL,
+                'Create a themed progress item with an infinite, cooldown-based drop',
+                VALUE_DEFAULT,
+                false
+            ),
+            'include_next_chapter' => new external_value(
+                PARAM_BOOL,
+                'Generate a new AI story chapter that costs the progress item on some choices',
+                VALUE_DEFAULT,
+                false
+            ),
+            'include_comercio' => new external_value(
+                PARAM_BOOL,
+                'Wire PlayerCoin<->Avatar Pack trades from whatever already exists in the instance',
+                VALUE_DEFAULT,
+                false
+            ),
+            'include_pill' => new external_value(
+                PARAM_BOOL,
+                'Create the tone-specific Knowledge Pill and Book items, spread across course activities',
+                VALUE_DEFAULT,
+                false
+            ),
+            'include_latepenalty' => new external_value(
+                PARAM_BOOL,
+                'Create the Deadline Extension item (soft dependency on local_latepenalty)',
+                VALUE_DEFAULT,
+                false
+            ),
+            'include_secret_drops' => new external_value(
+                PARAM_BOOL,
+                'Create a rare, hidden collectible scattered through a few course activities',
+                VALUE_DEFAULT,
+                false
+            ),
+            'include_ranking' => new external_value(
+                PARAM_BOOL,
+                "Turn on the block's ranking, if not already on",
+                VALUE_DEFAULT,
+                false
+            ),
+            'distribute_progress_item' => new external_value(
+                PARAM_BOOL,
+                "Insert the RPG item's generated drop into a matching course activity",
+                VALUE_DEFAULT,
+                true
+            ),
+            'distribute_playercoin' => new external_value(
+                PARAM_BOOL,
+                'Automatically insert the PlayerCoin drop into the course news forum',
+                VALUE_DEFAULT,
+                true
+            ),
+            'distribute_pill' => new external_value(
+                PARAM_BOOL,
+                'Automatically spread the Knowledge Pill drops across course activities',
+                VALUE_DEFAULT,
+                true
+            ),
+            'distribute_secret' => new external_value(
+                PARAM_BOOL,
+                'Automatically spread the Secret Drops collectible across course activities',
+                VALUE_DEFAULT,
+                true
+            ),
+        ]);
     }
 
     /**

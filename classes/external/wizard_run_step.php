@@ -32,8 +32,8 @@ use core_external\external_multiple_structure;
 use context_block;
 
 /**
- * Runs exactly one step of a wizard run started by {@see wizard_start}, reusing the same
- * `generate_*` methods {@see wizard_generate::execute()} calls all at once.
+ * Runs exactly one step of a wizard run started by {@see wizard_start}, dispatching to
+ * {@see wizard_generate}'s `generate_*` methods one at a time.
  *
  * Deliberately does not roll back on failure — the browser-driven loop stops instead, showing
  * the teacher a retry (re-call this same step) or undo (existing `wizard_rollback`, which works

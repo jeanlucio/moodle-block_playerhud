@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Web service to run the gamification wizard.
+ * Static library backing the gamification wizard's generation logic.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
@@ -24,28 +24,26 @@
 
 namespace block_playerhud\external;
 
-use core_external\external_api;
-use core_external\external_function_parameters;
-use core_external\external_value;
-use core_external\external_single_structure;
-use context_block;
-
 /**
- * External API that runs the gamification wizard.
+ * Static library of the gamification wizard's generation logic.
  *
  * Covers the Items & Trade module (AI generation), the Missions module (heuristic
  * suggestions derived from existing items/levels), the mechanical PlayerCoin/Avatars
- * modules, and RPG Classes (3 pre-defined archetypes + a fixed Chapter 1 that assigns
- * one to the student — a class can never exist without the story that grants it, see
- * `local\rpg_archetypes`). Later modules (Story chapters 2+...) will be added to this
- * same entry point, each recording its own objects into the same wizard run for a
- * single combined rollback.
+ * modules, RPG Classes (3 pre-defined archetypes + a fixed Chapter 1 that assigns one to
+ * the student — a class can never exist without the story that grants it, see
+ * `local\rpg_archetypes`), and every other mechanic the wizard can generate. Each
+ * `generate_*` method records its own objects into the run passed to it, for a single
+ * combined rollback.
+ *
+ * This class has no web service entry point of its own — {@see \block_playerhud\external\wizard_start}
+ * defines the canonical parameter shape and creates the run; {@see \block_playerhud\external\wizard_run_step}
+ * drives these `generate_*` methods one at a time, live, from the browser.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class wizard_generate extends external_api {
+class wizard_generate {
     /** @var int How many progress items a chapter's costed choices ask for, in total. */
     public const CHAPTER_ITEM_COST = 2;
 
@@ -56,418 +54,11 @@ class wizard_generate extends external_api {
     public const CHAPTER_KARMA_LOSS = 10;
 
     /**
-     * Define parameters for wizard_generate.
-     *
-     * @return external_function_parameters
-     */
-    public static function execute_parameters(): external_function_parameters {
-        return new external_function_parameters([
-            'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
-            'courseid' => new external_value(PARAM_INT, 'Course ID'),
-            'theme' => new external_value(PARAM_TEXT, 'Subject theme'),
-            'tone' => new external_value(PARAM_TEXT, 'Narrative tone', VALUE_DEFAULT, ''),
-            'size' => new external_value(PARAM_ALPHA, 'Journey size: short, medium or long', VALUE_DEFAULT, 'short'),
-            'include_items' => new external_value(PARAM_BOOL, 'Generate the Items & Trade module', VALUE_DEFAULT, true),
-            'include_missions' => new external_value(
-                PARAM_BOOL,
-                'Generate heuristic Mission suggestions',
-                VALUE_DEFAULT,
-                false
-            ),
-            'include_playercoin' => new external_value(
-                PARAM_BOOL,
-                'Create the PlayerCoin item',
-                VALUE_DEFAULT,
-                false
-            ),
-            'include_avatars' => new external_value(
-                PARAM_BOOL,
-                'Create the pre-defined avatar item pack',
-                VALUE_DEFAULT,
-                false
-            ),
-            'include_rpg' => new external_value(
-                PARAM_BOOL,
-                'Create the RPG class pack and the fixed Chapter 1 that assigns one to the student',
-                VALUE_DEFAULT,
-                false
-            ),
-            'tone_key' => new external_value(
-                PARAM_ALPHA,
-                'Narrative tone key for RPG content and the progress item: fantasy, scifi, ' .
-                    'mystery or academic',
-                VALUE_DEFAULT,
-                'fantasy'
-            ),
-            'distribute_items' => new external_value(
-                PARAM_BOOL,
-                "Insert the Items module's generated drops into matching course activities",
-                VALUE_DEFAULT,
-                true
-            ),
-            'include_progress_item' => new external_value(
-                PARAM_BOOL,
-                'Create a themed progress item with an infinite, cooldown-based drop',
-                VALUE_DEFAULT,
-                false
-            ),
-            'include_next_chapter' => new external_value(
-                PARAM_BOOL,
-                'Generate a new AI story chapter that costs the progress item on some choices',
-                VALUE_DEFAULT,
-                false
-            ),
-            'include_comercio' => new external_value(
-                PARAM_BOOL,
-                'Wire PlayerCoin<->Avatar Pack trades from whatever already exists in the instance',
-                VALUE_DEFAULT,
-                false
-            ),
-            'include_pill' => new external_value(
-                PARAM_BOOL,
-                'Create the tone-specific Knowledge Pill and Book items, spread across course activities',
-                VALUE_DEFAULT,
-                false
-            ),
-            'include_latepenalty' => new external_value(
-                PARAM_BOOL,
-                'Create the Deadline Extension item (soft dependency on local_latepenalty)',
-                VALUE_DEFAULT,
-                false
-            ),
-            'include_secret_drops' => new external_value(
-                PARAM_BOOL,
-                'Create a rare, hidden collectible scattered through a few course activities',
-                VALUE_DEFAULT,
-                false
-            ),
-            'include_ranking' => new external_value(
-                PARAM_BOOL,
-                "Turn on the block's ranking, if not already on",
-                VALUE_DEFAULT,
-                false
-            ),
-            'distribute_progress_item' => new external_value(
-                PARAM_BOOL,
-                "Insert the RPG item's generated drop into a matching course activity",
-                VALUE_DEFAULT,
-                true
-            ),
-            'distribute_playercoin' => new external_value(
-                PARAM_BOOL,
-                'Automatically insert the PlayerCoin drop into the course news forum',
-                VALUE_DEFAULT,
-                true
-            ),
-            'distribute_pill' => new external_value(
-                PARAM_BOOL,
-                'Automatically spread the Knowledge Pill drops across course activities',
-                VALUE_DEFAULT,
-                true
-            ),
-            'distribute_secret' => new external_value(
-                PARAM_BOOL,
-                'Automatically spread the Secret Drops collectible across course activities',
-                VALUE_DEFAULT,
-                true
-            ),
-        ]);
-    }
-
-    /**
-     * Runs the gamification wizard.
-     *
-     * @param int $instanceid Block instance ID.
-     * @param int $courseid Course ID.
-     * @param string $theme Subject theme.
-     * @param string $tone Narrative tone.
-     * @param string $size Journey size: short, medium or long.
-     * @param bool $includeitems Whether to generate the Items & Trade module.
-     * @param bool $includemissions Whether to generate heuristic Mission suggestions.
-     * @param bool $includeplayercoin Whether to create the PlayerCoin item.
-     * @param bool $includeavatars Whether to create the pre-defined avatar item pack.
-     * @param bool $includerpg Whether to create the RPG class pack and fixed Chapter 1.
-     * @param string $tonekey Narrative tone key for RPG content and the progress item.
-     * @param bool $distributeitems Whether to insert the Items module's drops into activities.
-     * @param bool $includeprogressitem Whether to create the themed progress item.
-     * @param bool $includenextchapter Whether to generate a new AI story chapter.
-     * @param bool $includecomercio Whether to wire PlayerCoin<->Avatar Pack trades.
-     * @param bool $includepill Whether to create the Knowledge Pill and Book items.
-     * @param bool $includelatepenalty Whether to create the Deadline Extension item.
-     * @param bool $includesecretdrops Whether to create the Secret Drops collectible.
-     * @param bool $includeranking Whether to turn on the block's ranking, if not already on.
-     * @param bool $distributeprogressitem Whether to insert the RPG item's drop into an activity.
-     * @param bool $distributeplayercoin Whether to auto-insert the PlayerCoin drop into the news forum.
-     * @param bool $distributepill Whether to auto-spread the Knowledge Pill drops across activities.
-     * @param bool $distributesecret Whether to auto-spread the Secret Drops collectible across activities.
-     * @return array Result structure.
-     */
-    public static function execute(
-        int $instanceid,
-        int $courseid,
-        string $theme,
-        string $tone = '',
-        string $size = 'short',
-        bool $includeitems = true,
-        bool $includemissions = false,
-        bool $includeplayercoin = false,
-        bool $includeavatars = false,
-        bool $includerpg = false,
-        string $tonekey = 'fantasy',
-        bool $distributeitems = true,
-        bool $includeprogressitem = false,
-        bool $includenextchapter = false,
-        bool $includecomercio = false,
-        bool $includepill = false,
-        bool $includelatepenalty = false,
-        bool $includesecretdrops = false,
-        bool $includeranking = false,
-        bool $distributeprogressitem = true,
-        bool $distributeplayercoin = true,
-        bool $distributepill = true,
-        bool $distributesecret = true
-    ): array {
-        global $DB, $USER;
-
-        $params = self::validate_parameters(self::execute_parameters(), [
-            'instanceid' => $instanceid,
-            'courseid' => $courseid,
-            'theme' => $theme,
-            'tone' => $tone,
-            'size' => $size,
-            'include_items' => $includeitems,
-            'include_missions' => $includemissions,
-            'include_playercoin' => $includeplayercoin,
-            'include_avatars' => $includeavatars,
-            'include_rpg' => $includerpg,
-            'tone_key' => $tonekey,
-            'distribute_items' => $distributeitems,
-            'include_progress_item' => $includeprogressitem,
-            'include_next_chapter' => $includenextchapter,
-            'include_comercio' => $includecomercio,
-            'include_pill' => $includepill,
-            'include_latepenalty' => $includelatepenalty,
-            'include_secret_drops' => $includesecretdrops,
-            'include_ranking' => $includeranking,
-            'distribute_progress_item' => $distributeprogressitem,
-            'distribute_playercoin' => $distributeplayercoin,
-            'distribute_pill' => $distributepill,
-            'distribute_secret' => $distributesecret,
-        ]);
-
-        $context = context_block::instance($params['instanceid']);
-        self::validate_context($context);
-        require_capability('block/playerhud:manage', $context);
-
-        $bi = $DB->get_record('block_instances', ['id' => $params['instanceid']], '*', MUST_EXIST);
-        $config = unserialize_object(base64_decode($bi->configdata));
-        if (!$config) {
-            $config = new \stdClass();
-        }
-
-        $modules = self::build_step_types($params);
-
-        $runid = \block_playerhud\local\wizard::start_run($params['instanceid'], (int) $USER->id, $modules);
-
-        try {
-            $createditems = [];
-            $createdquests = [];
-            $createdtrades = [];
-            $createddropids = [];
-            $distributemessage = '';
-
-            [$itemxpshares, $missionxpshares, $pillbonusxp, $latepenaltybonusxp] =
-                self::compute_shared_xp_shares($params['instanceid'], $config, $params);
-
-            if ($params['include_items']) {
-                $itemsresult = self::generate_items(
-                    $params['instanceid'],
-                    $config,
-                    $params['theme'],
-                    $params['tone'],
-                    $params['size'],
-                    $itemxpshares,
-                    $runid
-                );
-                $createditems = $itemsresult['names'];
-                if ($params['distribute_items']) {
-                    $createddropids = $itemsresult['drop_ids'];
-                }
-            }
-
-            if ($params['include_missions']) {
-                $createdquests = self::generate_missions(
-                    $params['instanceid'],
-                    $params['courseid'],
-                    $config,
-                    $params['size'],
-                    $params['tone_key'],
-                    $missionxpshares,
-                    $runid
-                );
-            }
-
-            if ($params['include_playercoin']) {
-                $createditems = array_merge(
-                    $createditems,
-                    self::generate_playercoin(
-                        $params['instanceid'],
-                        $params['courseid'],
-                        $runid,
-                        $params['distribute_playercoin']
-                    )
-                );
-            }
-
-            if ($params['include_avatars']) {
-                $createditems = array_merge(
-                    $createditems,
-                    self::generate_avatars($params['instanceid'], $params['courseid'], $runid)
-                );
-            }
-
-            if ($params['include_rpg']) {
-                $rpgresult = self::generate_rpg_classes($params['instanceid'], $params['tone_key'], $runid);
-                $createditems = array_merge($createditems, $rpgresult['class_names']);
-                if ($rpgresult['chapter_title'] !== '') {
-                    $createditems[] = $rpgresult['chapter_title'];
-                }
-            }
-
-            if ($params['include_progress_item']) {
-                $progressresult = self::generate_progress_item($params['instanceid'], $params['tone_key'], $runid);
-                $createditems = array_merge($createditems, $progressresult['names']);
-                if ($params['distribute_progress_item']) {
-                    $createddropids = array_merge($createddropids, $progressresult['drop_ids']);
-                }
-            }
-
-            if ($params['include_next_chapter']) {
-                $chapterresult = self::generate_next_chapter(
-                    $params['instanceid'],
-                    $params['theme'],
-                    $params['tone_key'],
-                    $runid
-                );
-                $createditems = array_merge(
-                    $createditems,
-                    $chapterresult['created_items'],
-                    [$chapterresult['chapter_title']]
-                );
-            }
-
-            if ($params['include_pill']) {
-                $createditems = array_merge($createditems, self::generate_pill(
-                    $params['instanceid'],
-                    $params['courseid'],
-                    $params['tone_key'],
-                    $runid,
-                    $params['distribute_pill']
-                ));
-                // The Pill->Book trade (and its quest) is intrinsic to this mechanic, so it is
-                // wired here rather than in Comercio — otherwise generating the Pill without also
-                // ticking Comercio would leave the Book permanently unobtainable.
-                $pilltrade = self::generate_pill_trade($params['instanceid'], $runid, $pillbonusxp);
-                if ($pilltrade['trade_name'] !== '') {
-                    $createdtrades[] = $pilltrade['trade_name'];
-                }
-                if ($pilltrade['quest_name'] !== '') {
-                    $createdquests[] = $pilltrade['quest_name'];
-                }
-            }
-
-            if ($params['include_latepenalty']) {
-                $lpresult = self::generate_latepenalty($params['instanceid'], $runid, $latepenaltybonusxp);
-                $createditems = array_merge($createditems, $lpresult['items']);
-                if ($lpresult['quest_name'] !== '') {
-                    $createdquests[] = $lpresult['quest_name'];
-                }
-                // The PlayerCoin->Deadline Extension trade is intrinsic to this mechanic too, so it
-                // is wired here (a no-op when PlayerCoin is absent) rather than in Comercio.
-                $lptradename = self::generate_latepenalty_trade($params['instanceid'], $runid);
-                if ($lptradename !== '') {
-                    $createdtrades[] = $lptradename;
-                }
-            }
-
-            if ($params['include_comercio']) {
-                $createdtrades = array_merge(
-                    $createdtrades,
-                    self::generate_comercio($params['instanceid'], $runid)
-                );
-            }
-
-            if ($params['include_secret_drops']) {
-                $createditems = array_merge($createditems, self::generate_secret_drops(
-                    $params['instanceid'],
-                    $params['courseid'],
-                    $params['tone_key'],
-                    $runid,
-                    $params['distribute_secret']
-                ));
-            }
-
-            if ($params['include_ranking']) {
-                self::generate_ranking($params['instanceid']);
-            }
-
-            if (!empty($createddropids)) {
-                $distributemessage = self::distribute_drops(
-                    $params['instanceid'],
-                    $params['courseid'],
-                    $createddropids,
-                    $runid
-                );
-            }
-
-            \block_playerhud\local\wizard::finish_run($runid, 'done');
-
-            // Only worth reporting when this run could have moved the needle: Items and
-            // Missions are the modules xp_budget actually sizes against the level ceiling.
-            $economymessage = '';
-            if ($params['include_items'] || $params['include_missions']) {
-                [$xpperlevel, $maxlevels] = self::resolve_xp_settings($config);
-                $health = \block_playerhud\local\analytics::economy_health($params['instanceid'], $xpperlevel, $maxlevels);
-                $economymessage = self::build_economy_message($health);
-            }
-
-            return [
-                'success' => true,
-                'runid' => $runid,
-                'message' => '',
-                'created_items' => $createditems,
-                'created_quests' => $createdquests,
-                'created_trades' => $createdtrades,
-                'distribute_message' => $distributemessage,
-                'economy_message' => $economymessage,
-            ];
-        } catch (\Exception $e) {
-            // A later module (e.g. auto-distribute) can fail after earlier modules already
-            // wrote real rows, so always run the real rollback here rather than just labelling
-            // the run 'rolledback' — it is a no-op when the manifest is empty (failure before
-            // any insert) and a real cleanup otherwise, avoiding orphaned, unrecoverable content.
-            \block_playerhud\local\wizard::rollback($runid, $params['instanceid'], $params['courseid']);
-
-            return [
-                'success' => false,
-                'runid' => $runid,
-                'message' => $e->getMessage(),
-                'created_items' => [],
-                'created_quests' => [],
-                'created_trades' => [],
-                'distribute_message' => '',
-                'economy_message' => '',
-            ];
-        }
-    }
-
-    /**
      * Builds the ordered list of step types selected by the `include_*` flags.
      *
-     * Shared by the single-call {@see execute()} (which runs every step in one request) and the
-     * step-by-step {@see \block_playerhud\external\wizard_start} (which returns this same list as
-     * the live-progress plan the browser drives one step at a time) — both must agree on which
-     * modules run and in what order.
+     * Shared by {@see \block_playerhud\external\wizard_start} (which returns this same list as
+     * the live-progress plan the browser drives one step at a time) and
+     * {@see compute_shared_xp_shares()}.
      *
      * Invariant relied on by {@see already_recorded()}: "items" must always come before any other
      * step that writes to `block_playerhud_items` (playercoin, avatars, rpg, progress_item, pill,
@@ -475,7 +66,8 @@ class wizard_generate extends external_api {
      * `block_playerhud_quests` (pill, latepenalty). Reordering this method would let a legitimate
      * earlier step's manifest rows be mistaken for a retried "items"/"missions" step's own output.
      *
-     * @param array $params Validated parameters (same shape as execute_parameters()).
+     * @param array $params Validated parameters (same shape as
+     *     {@see \block_playerhud\external\wizard_start::execute_parameters()}).
      * @return string[] Ordered step type identifiers, e.g. ['items', 'missions', 'ranking'].
      */
     public static function build_step_types(array $params): array {
@@ -1919,44 +1511,5 @@ class wizard_generate extends external_api {
         }
 
         return '';
-    }
-
-    /**
-     * Return structure for wizard_generate.
-     *
-     * @return external_single_structure
-     */
-    public static function execute_returns(): external_single_structure {
-        return new external_single_structure([
-            'success' => new external_value(PARAM_BOOL, 'Success status'),
-            'runid' => new external_value(PARAM_INT, 'Wizard run ID, for rollback'),
-            'message' => new external_value(PARAM_RAW, 'Error message', VALUE_OPTIONAL),
-            'created_items' => new \core_external\external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Item name'),
-                'List of created items',
-                VALUE_OPTIONAL
-            ),
-            'created_quests' => new \core_external\external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Quest name'),
-                'List of created quests',
-                VALUE_OPTIONAL
-            ),
-            'created_trades' => new \core_external\external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Trade name'),
-                'List of created trades',
-                VALUE_OPTIONAL
-            ),
-            'distribute_message' => new external_value(
-                PARAM_TEXT,
-                'Note about drop auto-distribution, empty when nothing to report',
-                VALUE_OPTIONAL
-            ),
-            'economy_message' => new external_value(
-                PARAM_TEXT,
-                "Note about how much of the level ceiling the instance's XP economy covers, " .
-                    'empty when Items and Missions were both left unticked',
-                VALUE_OPTIONAL
-            ),
-        ]);
     }
 }

@@ -171,15 +171,6 @@ $functions = [
         'loginrequired' => true,
     ],
 
-    'block_playerhud_wizard_generate' => [
-        'classname'     => 'block_playerhud\external\wizard_generate',
-        'methodname'    => 'execute',
-        'description'   => 'Run the gamification wizard for a block instance',
-        'type'          => 'write',
-        'ajax'          => true,
-        'loginrequired' => true,
-    ],
-
     'block_playerhud_wizard_start' => [
         'classname'     => 'block_playerhud\external\wizard_start',
         'methodname'    => 'execute',
