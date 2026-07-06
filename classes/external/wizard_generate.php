@@ -1454,6 +1454,14 @@ class wizard_generate {
      * is a no-op that returns a message telling the teacher to come back later; the manual
      * distribution screen (`tab_items::render_distribute_view()`) always remains available.
      *
+     * Each activity's fair share is capped up front via
+     * {@see \block_playerhud\local\drop_distribution::compute_activity_quotas()} (the same
+     * helper Pill uses) so a run with many drops and few activities spreads evenly instead of
+     * every drop independently picking its own best name match — which, with only a couple of
+     * eligible activities, could otherwise stack all of them onto the single best-scoring one.
+     * Name-matching is still used to choose WHICH of the not-yet-full activities each drop
+     * goes to, just no longer without a cap.
+     *
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      * @param int[] $dropids Drop IDs created earlier in this same run.
@@ -1475,9 +1483,22 @@ class wizard_generate {
                  WHERE d.id $insql";
         $drops = $DB->get_records_sql($sql, $inparams);
 
+        $modules = array_values($modules);
+        $quotas = \block_playerhud\local\drop_distribution::compute_activity_quotas(count($drops), count($modules));
+        $remaining = [];
+        foreach ($modules as $index => $mod) {
+            $remaining[$mod['cmid']] = $quotas[$index] ?? 0;
+        }
+
         foreach ($drops as $drop) {
+            $available = array_values(array_filter($modules, fn($mod) => $remaining[$mod['cmid']] > 0));
+            if (empty($available)) {
+                // Every activity's quota is already spent — quotas sum to count($drops), so
+                // this only happens if a prior insert_drop_shortcode call failed silently.
+                continue;
+            }
             $haystack = $drop->drop_name . ' ' . $drop->item_name;
-            $suggested = \block_playerhud\local\drop_distribution::suggest_module($haystack, $modules);
+            $suggested = \block_playerhud\local\drop_distribution::suggest_module($haystack, $available);
             if (!$suggested) {
                 continue;
             }
@@ -1495,6 +1516,7 @@ class wizard_generate {
                 'top'
             );
             if ($result['success']) {
+                $remaining[$suggested['cmid']]--;
                 // The rename to the activity's name already happened inside
                 // insert_drop_shortcode::execute(), shared with the manual "Distribuir Drops"
                 // screen, so it applies here too.

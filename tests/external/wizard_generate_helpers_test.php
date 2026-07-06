@@ -208,6 +208,55 @@ final class wizard_generate_helpers_test extends external_base_testcase {
     }
 
     /**
+     * With more drops than eligible activities, distribute_drops() must cap each activity's
+     * share via compute_activity_quotas() instead of letting every drop independently pick its
+     * own best name match — without a cap, name-similarity alone could stack every drop onto
+     * the single best-scoring activity even when several exist. Five drops over two activities
+     * must split 3/2 (the exact compute_activity_quotas(5, 2) shares), never 5/0.
+     */
+    public function test_distribute_drops_caps_each_activity_to_its_quota(): void {
+        global $DB;
+
+        $pagea = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'name' => 'Alpha Wing',
+            'content' => 'Original alpha body.',
+        ]);
+        $pageb = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'name' => 'Beta Wing',
+            'content' => 'Original beta body.',
+        ]);
+
+        $runid = \block_playerhud\local\wizard::start_run($this->instanceid, 2, []);
+        $dropids = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $item = $this->create_item($this->instanceid, 'Relic ' . $i);
+            $dropids[] = (int) $DB->insert_record('block_playerhud_drops', (object) [
+                'blockinstanceid' => $this->instanceid,
+                'itemid' => $item->id,
+                'name' => $item->name,
+                'maxusage' => 1,
+                'respawntime' => 0,
+                'code' => \block_playerhud\utils::generate_drop_code($this->instanceid),
+                'timecreated' => time(),
+                'timemodified' => time(),
+            ]);
+        }
+
+        $message = wizard_generate::distribute_drops($this->instanceid, $this->course->id, $dropids, $runid);
+        $this->assertSame('', $message);
+
+        $countshortcodes = fn(string $content): int => substr_count($content, '[PLAYERHUD_DROP');
+        $contenta = (string) $DB->get_field('page', 'content', ['id' => $pagea->id]);
+        $contentb = (string) $DB->get_field('page', 'content', ['id' => $pageb->id]);
+
+        $this->assertSame(5, $countshortcodes($contenta) + $countshortcodes($contentb));
+        $this->assertLessThanOrEqual(3, $countshortcodes($contenta), 'No activity may exceed its quota share.');
+        $this->assertLessThanOrEqual(3, $countshortcodes($contentb), 'No activity may exceed its quota share.');
+    }
+
+    /**
      * Builds a params array matching wizard_start::execute_parameters()'s shape, with every
      * include_* flag defaulting to false and every distribute_* flag defaulting to true (its
      * real default) — mirrors what wizard_start's own validate_parameters() produces, since
