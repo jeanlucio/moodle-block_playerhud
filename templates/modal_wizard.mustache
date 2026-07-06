@@ -45,8 +45,7 @@
         "gen_secret": false,
         "gen_latepenalty": false,
         "gen_progressitem": false,
-        "gen_rpg": false,
-        "gen_ranking": true
+        "gen_rpg": false
     }
 }}
 <div class="modal fade" id="ph-wizard-modal" tabindex="-1" aria-labelledby="ph-wizard-modal-label" aria-hidden="true"
@@ -401,7 +400,7 @@
                     <div class="ph-wizard-mech-card bg-light border rounded p-3 h-100">
                         <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input ph-wizard-mech-module" id="ph-wizard-module-ranking"
-                                   data-drives="4,1" {{#gen_ranking}}disabled{{/gen_ranking}}{{^gen_ranking}}checked{{/gen_ranking}}>
+                                   data-drives="4,1" checked>
                             <label class="form-check-label fw-bold" for="ph-wizard-module-ranking">
                                 <i class="fa fa-trophy ph-wizard-mech-icon me-1" aria-hidden="true"></i>
                                 {{#str}} wizard_module_ranking, block_playerhud {{/str}}
@@ -410,11 +409,6 @@
                         <small class="text-muted d-block mt-1">
                             {{#str}} wizard_module_ranking_desc, block_playerhud {{/str}}
                         </small>
-                        {{#gen_ranking}}
-                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
-                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_active, block_playerhud {{/str}}
-                        </small>
-                        {{/gen_ranking}}
                     </div>
                 </div>
             </div>

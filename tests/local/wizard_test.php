@@ -283,7 +283,7 @@ final class wizard_test extends advanced_testcase {
      * @covers ::get_generated_modules
      */
     public function test_get_generated_modules_all_false_on_fresh_instance(): void {
-        $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
+        $generated = wizard::get_generated_modules($this->instanceid);
 
         $this->assertSame([], array_keys(array_filter($generated)));
     }
@@ -300,7 +300,7 @@ final class wizard_test extends advanced_testcase {
         $undonerun = wizard::start_run($this->instanceid, 2, ['comercio']);
         wizard::finish_run($undonerun, 'rolledback');
 
-        $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
+        $generated = wizard::get_generated_modules($this->instanceid);
 
         $this->assertTrue($generated['items']);
         $this->assertTrue($generated['missions']);
@@ -324,7 +324,7 @@ final class wizard_test extends advanced_testcase {
         );
         wizard::finish_run($donerun, 'done');
 
-        $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
+        $generated = wizard::get_generated_modules($this->instanceid);
 
         // Items has no fingerprint of its own, so run history is still authoritative for it.
         $this->assertTrue($generated['items']);
@@ -364,14 +364,12 @@ final class wizard_test extends advanced_testcase {
             'blockinstanceid' => $this->instanceid, 'title' => 'Chapter 1', 'intro_text' => '',
             'unlock_date' => 0, 'required_level' => 0, 'sortorder' => 1,
         ]);
-        $config = (object) ['enable_ranking' => 1];
 
-        $generated = wizard::get_generated_modules($this->instanceid, $config);
+        $generated = wizard::get_generated_modules($this->instanceid);
 
         $this->assertTrue($generated['playercoin']);
         $this->assertTrue($generated['progress_item'], 'Any tone\'s progress item name counts.');
         $this->assertTrue($generated['rpg'], 'An existing chapter blocks generating an arc on top.');
-        $this->assertTrue($generated['ranking']);
         $this->assertFalse($generated['avatars']);
         $this->assertFalse($generated['pill']);
         $this->assertFalse($generated['secret_drops']);

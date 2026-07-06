@@ -584,7 +584,7 @@ $wizardxpperlevel = isset($blockconfig->xp_per_level) ? (int) $blockconfig->xp_p
 $wizardmaxlevels = isset($blockconfig->max_levels) ? (int) $blockconfig->max_levels : 20;
 $wizardlevelsatdefault = ($wizardxpperlevel === 100 && $wizardmaxlevels === 20);
 
-$wizardgenerated = \block_playerhud\local\wizard::get_generated_modules($instanceid, $blockconfig);
+$wizardgenerated = \block_playerhud\local\wizard::get_generated_modules($instanceid);
 
 $modalwizardhtml = $OUTPUT->render_from_template('block_playerhud/modal_wizard', [
     'instanceid' => $instanceid,
@@ -604,7 +604,6 @@ $modalwizardhtml = $OUTPUT->render_from_template('block_playerhud/modal_wizard',
     'gen_latepenalty' => $wizardgenerated['latepenalty'],
     'gen_progressitem' => $wizardgenerated['progress_item'],
     'gen_rpg' => $wizardgenerated['rpg'],
-    'gen_ranking' => $wizardgenerated['ranking'],
 ]);
 
 $PAGE->requires->js_call_amd('block_playerhud/wizard', 'init', [[

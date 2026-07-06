@@ -223,12 +223,16 @@ class wizard {
      *   screen) leaves the run's status untouched, and trusting that stale history would disable
      *   the card forever with no way back short of editing the database directly.
      *
+     * Ranking is deliberately excluded from this rule entirely — unlike every other mechanic
+     * here, checking its box twice was always a harmless no-op (generate_ranking() already
+     * no-ops if it is already on), so it never needed a one-shot lock. Its card stays a plain,
+     * always-available checkbox; turning it back off remains a block-settings-only action.
+     *
      * @param int $blockinstanceid The block instance ID.
-     * @param \stdClass $config The block instance configuration (for the ranking flag).
      * @return array<string, bool> Keyed by mechanic: items, missions, playercoin, avatars,
-     *     comercio, pill, secret_drops, latepenalty, progress_item, rpg, ranking.
+     *     comercio, pill, secret_drops, latepenalty, progress_item, rpg.
      */
-    public static function get_generated_modules(int $blockinstanceid, \stdClass $config): array {
+    public static function get_generated_modules(int $blockinstanceid): array {
         global $DB;
 
         $ran = [];
@@ -283,7 +287,6 @@ class wizard {
             'latepenalty' => isset($actiontypes['deadline_extension']),
             'progress_item' => $hasprogressitem,
             'rpg' => !empty($ran['rpg']) || !empty($ran['next_chapter']) || $hasstory,
-            'ranking' => !empty($config->enable_ranking),
         ];
     }
 
