@@ -210,25 +210,31 @@ class wizard {
      * screens ("Criar Item Mágico", "Sugerir Missões", "Sugerir Trocas", "Distribuir Drops")
      * are the intended path for adding more of anything later.
      *
-     * Two different signals decide this, and they are NOT interchangeable:
-     * - Items, Missions and Comércio have no reliable fingerprint of their own (their content
-     *   is arbitrary AI-generated names or heuristic trades), so a completed ('done') run
-     *   having included them is the only signal available. Rolling back that run — which always
-     *   flips its status away from 'done' in the same transaction that deletes what it made —
-     *   is the only way to re-enable them.
+     * Three different signals decide this, and they are NOT interchangeable:
      * - PlayerCoin, Avatars, Pill, Secret Drops, Latepenalty and the RPG progress item each have
      *   a real idempotency fingerprint (a fixed action_type or tone-specific name), so these
      *   check that fingerprint's live existence instead of run history. A 'done' run is not
      *   enough on its own: content deleted through some other route (e.g. the Items management
      *   screen) leaves the run's status untouched, and trusting that stale history would disable
      *   the card forever with no way back short of editing the database directly.
-     *
-     * Ranking uses neither signal: it is a live read of the block's own current
-     * `enable_ranking` setting, not run history or a fixed content fingerprint. Checking its
-     * box any number of times is harmless either way (generate_ranking() already no-ops if it
-     * is already on) — its card simply mirrors whatever the setting is right now, disabling
-     * itself while ranking is on and re-enabling the instant a teacher turns it back off via
-     * the block's own settings screen, regardless of how many wizard runs ever touched it.
+     * - Items, Missions and Comércio have no fixed-name fingerprint of their own (their content
+     *   is arbitrary AI-generated names or heuristic trades), so existence cannot be checked the
+     *   same way. Instead, a completed ('done') run having included the module only counts when
+     *   at least one object that SAME run recorded in its own manifest still exists — the
+     *   manifest is a real proxy for "this specific run's output survived", not just "some run
+     *   once claimed to have done this". A run whose manifest is empty (e.g. its content was
+     *   deleted through some other route, outside the wizard's own undo) no longer counts,
+     *   exactly like the fingerprint checks above. This is imprecise only when a single run
+     *   bundled the module with another item-creating mechanic (e.g. Items + PlayerCoin
+     *   together) and only the OTHER mechanic's item survived — a known, narrow limitation
+     *   accepted because the alternative (trusting stale history unconditionally) is the exact
+     *   bug this exists to prevent.
+     * - Ranking uses neither signal: it is a live read of the block's own current
+     *   `enable_ranking` setting, not run history or a fixed content fingerprint. Checking its
+     *   box any number of times is harmless either way (generate_ranking() already no-ops if it
+     *   is already on) — its card simply mirrors whatever the setting is right now, disabling
+     *   itself while ranking is on and re-enabling the instant a teacher turns it back off via
+     *   the block's own settings screen, regardless of how many wizard runs ever touched it.
      *
      * @param int $blockinstanceid The block instance ID.
      * @param \stdClass $config The block instance configuration (for the ranking flag).
@@ -238,7 +244,7 @@ class wizard {
     public static function get_generated_modules(int $blockinstanceid, \stdClass $config): array {
         global $DB;
 
-        $ran = [];
+        $ranrunids = [];
         $runs = $DB->get_records(
             'block_playerhud_wizard_runs',
             ['blockinstanceid' => $blockinstanceid, 'status' => 'done'],
@@ -247,7 +253,7 @@ class wizard {
         );
         foreach ($runs as $run) {
             foreach ((array) json_decode($run->modules ?? '[]') as $module) {
-                $ran[$module] = true;
+                $ranrunids[$module][] = (int) $run->id;
             }
         }
 
@@ -280,18 +286,50 @@ class wizard {
             || $DB->record_exists('block_playerhud_chapters', ['blockinstanceid' => $blockinstanceid]);
 
         return [
-            'items' => !empty($ran['items']),
-            'missions' => !empty($ran['missions']),
+            'items' => self::has_manifest_content($ranrunids['items'] ?? [], 'block_playerhud_items'),
+            'missions' => self::has_manifest_content($ranrunids['missions'] ?? [], 'block_playerhud_quests'),
             'playercoin' => isset($actiontypes['playercoin']),
             'avatars' => isset($actiontypes['avatar_profile']),
-            'comercio' => !empty($ran['comercio']),
+            'comercio' => self::has_manifest_content($ranrunids['comercio'] ?? [], 'block_playerhud_trades'),
             'pill' => isset($actiontypes['knowledge_pill']),
             'secret_drops' => $hassecretitem,
             'latepenalty' => isset($actiontypes['deadline_extension']),
             'progress_item' => $hasprogressitem,
-            'rpg' => !empty($ran['rpg']) || !empty($ran['next_chapter']) || $hasstory,
+            'rpg' => !empty($ranrunids['rpg']) || !empty($ranrunids['next_chapter']) || $hasstory,
             'ranking' => !empty($config->enable_ranking),
         ];
+    }
+
+    /**
+     * Whether at least one object recorded in the manifest of any of the given runs, for the
+     * given table, still exists — used by get_generated_modules() for the mechanics with no
+     * fixed-name fingerprint of their own (Items, Missions, Comércio), so a 'done' run whose
+     * output was entirely deleted through some other route no longer counts as generated.
+     *
+     * @param int[] $runids Wizard run IDs to check the manifest of.
+     * @param string $table The object table to check existence in (e.g. 'block_playerhud_items').
+     * @return bool
+     */
+    protected static function has_manifest_content(array $runids, string $table): bool {
+        global $DB;
+
+        if (empty($runids)) {
+            return false;
+        }
+
+        [$runinsql, $runinparams] = $DB->get_in_or_equal($runids, SQL_PARAMS_NAMED);
+        $objectids = $DB->get_fieldset_select(
+            'block_playerhud_wizard_objects',
+            'objectid',
+            "runid $runinsql AND objecttable = :objecttable",
+            array_merge($runinparams, ['objecttable' => $table])
+        );
+        if (empty($objectids)) {
+            return false;
+        }
+
+        [$objinsql, $objinparams] = $DB->get_in_or_equal(array_unique($objectids));
+        return $DB->record_exists_select($table, "id $objinsql", $objinparams);
     }
 
     /**

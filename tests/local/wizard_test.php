@@ -289,13 +289,31 @@ final class wizard_test extends advanced_testcase {
     }
 
     /**
-     * Mechanics included in a completed run report generated; a rolled-back run does not count
-     * (undoing a run re-enables its cards).
+     * Inserts a minimal quest and returns its ID.
+     *
+     * @return int The new quest ID.
+     */
+    protected function create_quest(): int {
+        global $DB;
+        return (int) $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Quest', 'description' => '',
+            'type' => 1, 'requirement' => '1', 'req_itemid' => 0, 'reward_xp' => 15,
+            'reward_itemid' => 0, 'required_class_id' => '0', 'image_todo' => '📋',
+            'image_done' => '🏅', 'enabled' => 1, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+    }
+
+    /**
+     * Mechanics included in a completed run report generated only when that run's own manifest
+     * still points at real content; a rolled-back run does not count (undoing a run re-enables
+     * its cards).
      *
      * @covers ::get_generated_modules
      */
     public function test_get_generated_modules_counts_done_runs_only(): void {
         $donerun = wizard::start_run($this->instanceid, 2, ['items', 'missions']);
+        wizard::record_object($donerun, 'block_playerhud_items', $this->create_item());
+        wizard::record_object($donerun, 'block_playerhud_quests', $this->create_quest());
         wizard::finish_run($donerun, 'done');
         $undonerun = wizard::start_run($this->instanceid, 2, ['comercio']);
         wizard::finish_run($undonerun, 'rolledback');
@@ -308,11 +326,13 @@ final class wizard_test extends advanced_testcase {
     }
 
     /**
-     * A 'done' run alone must not keep a fingerprint-checkable mechanic disabled once its
-     * content is gone — e.g. deleted through the Items management screen instead of the
-     * wizard's own undo, which always flips the run's status away from 'done'. Regression test
-     * for a real course where PlayerCoin/RPG item stayed permanently disabled after their items
-     * were deleted outside the wizard, despite two 'done' runs long done rolling back.
+     * A 'done' run alone must not keep a mechanic disabled once its content is gone — e.g.
+     * deleted through the Items management screen instead of the wizard's own undo, which
+     * always flips the run's status away from 'done'. Regression test for a real course where
+     * PlayerCoin/RPG item stayed permanently disabled after their items were deleted outside
+     * the wizard, despite two 'done' runs long done rolling back — and a second real course
+     * where Items itself stayed disabled after its run's manifest was recorded but the AI-created
+     * items vanished before the run even finished.
      *
      * @covers ::get_generated_modules
      */
@@ -320,14 +340,20 @@ final class wizard_test extends advanced_testcase {
         $donerun = wizard::start_run(
             $this->instanceid,
             2,
-            ['items', 'playercoin', 'avatars', 'pill', 'secret_drops', 'latepenalty', 'progress_item']
+            ['items', 'missions', 'comercio', 'playercoin', 'avatars', 'pill', 'secret_drops',
+                'latepenalty', 'progress_item']
         );
+        // Deliberately no record_object() calls: this run's manifest stays empty, simulating a
+        // run that claims to have generated content no wizard_objects row ever backed.
         wizard::finish_run($donerun, 'done');
 
         $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
 
-        // Items has no fingerprint of its own, so run history is still authoritative for it.
-        $this->assertTrue($generated['items']);
+        // Items/Missions/Comércio now also require their own run's manifest to still point at
+        // real content — an empty manifest must not keep the card disabled either.
+        $this->assertFalse($generated['items']);
+        $this->assertFalse($generated['missions']);
+        $this->assertFalse($generated['comercio']);
         // These six all have a real fingerprint, so a stale 'done' run with nothing left to
         // show for it must not keep the card disabled.
         $this->assertFalse($generated['playercoin']);
@@ -336,6 +362,44 @@ final class wizard_test extends advanced_testcase {
         $this->assertFalse($generated['secret_drops']);
         $this->assertFalse($generated['latepenalty']);
         $this->assertFalse($generated['progress_item']);
+    }
+
+    /**
+     * The exact regression this exists for: a 'done' run recorded NO manifest entries for Items
+     * even though the AI genuinely created named items (proven by ai_logs in the real incident)
+     * — the run's manifest is the source of truth, not the module having been requested.
+     *
+     * @covers ::get_generated_modules
+     */
+    public function test_get_generated_modules_items_false_when_run_manifest_is_empty_but_ai_logged(): void {
+        global $DB;
+
+        $donerun = wizard::start_run($this->instanceid, 2, ['items']);
+        wizard::finish_run($donerun, 'done');
+        $DB->insert_record('block_playerhud_ai_logs', (object) [
+            'blockinstanceid' => $this->instanceid, 'userid' => 2, 'action_type' => 'item',
+            'object_name' => 'Ghost Item', 'ai_provider' => 'Gemini', 'timecreated' => time(),
+        ]);
+
+        $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
+
+        $this->assertFalse($generated['items']);
+    }
+
+    /**
+     * Items reports generated once its run's manifest points at an item that still exists —
+     * the positive counterpart of the empty-manifest tests above.
+     *
+     * @covers ::get_generated_modules
+     */
+    public function test_get_generated_modules_items_true_when_manifest_item_exists(): void {
+        $donerun = wizard::start_run($this->instanceid, 2, ['items']);
+        wizard::record_object($donerun, 'block_playerhud_items', $this->create_item());
+        wizard::finish_run($donerun, 'done');
+
+        $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
+
+        $this->assertTrue($generated['items']);
     }
 
     /**
