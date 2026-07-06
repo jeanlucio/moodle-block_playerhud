@@ -564,4 +564,117 @@ final class wizard_run_step_test extends external_base_testcase {
         );
         $this->assertContains('Complete the trial: Intro Reading', $names);
     }
+
+    /**
+     * PlayerCoin and Avatars are mechanical (no AI/network) and create items with a manifest —
+     * driven here as the browser would, one step at a time against the same run.
+     */
+    public function test_playercoin_and_avatars_steps_create_items_and_manifest(): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        $playercoinresult = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'playercoin', '');
+        $avatarsresult = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'avatars', '');
+
+        $this->assertTrue($playercoinresult['success']);
+        $this->assertTrue($avatarsresult['success']);
+        $totalitems = $playercoinresult['counts']['items'] + $avatarsresult['counts']['items'];
+        $this->assertGreaterThan(1, $totalitems);
+
+        $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]);
+        $this->assertCount($totalitems, $items);
+        $this->assertTrue($DB->record_exists('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'action_type' => 'playercoin',
+        ]));
+
+        $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $runid]);
+        $this->assertCount(count($items), $manifest);
+        foreach ($manifest as $entry) {
+            $this->assertSame('block_playerhud_items', $entry->objecttable);
+        }
+    }
+
+    /**
+     * Running the "playercoin" step twice, in two different runs, must not duplicate the item
+     * nor record it into the second run's manifest, since nothing new was actually created.
+     */
+    public function test_playercoin_step_is_idempotent_across_runs(): void {
+        global $DB;
+
+        $firstrunid = $this->start_empty_run();
+        $first = wizard_run_step::execute($this->instanceid, $this->course->id, $firstrunid, 'playercoin', '');
+        $this->assertSame(1, $first['counts']['items']);
+
+        $secondrunid = $this->start_empty_run();
+        $second = wizard_run_step::execute($this->instanceid, $this->course->id, $secondrunid, 'playercoin', '');
+        $this->assertSame(0, $second['counts']['items']);
+
+        $this->assertEquals(1, $DB->count_records('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'action_type' => 'playercoin',
+        ]));
+
+        $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $secondrunid]);
+        $this->assertCount(0, $manifest);
+    }
+
+    /**
+     * Rolling back a PlayerCoin + Avatars run removes the created items.
+     */
+    public function test_playercoin_and_avatars_steps_run_can_be_rolled_back(): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'playercoin', '');
+        wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'avatars', '');
+
+        $deleted = \block_playerhud\local\wizard::rollback($runid, $this->instanceid, $this->course->id);
+
+        $this->assertGreaterThan(0, $deleted);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
+     * When the course has a news forum, the "playercoin" step auto-distributes its drop into it
+     * and records both the drop and the shortcode for rollback — undoing the run must remove the
+     * item, the drop and strip the shortcode back out of the forum intro.
+     */
+    public function test_playercoin_step_auto_distributes_drop_and_rolls_back_cleanly(): void {
+        global $DB;
+
+        $forum = $this->getDataGenerator()->create_module('forum', [
+            'course' => $this->course->id,
+            'type'   => 'news',
+            'intro'  => '',
+        ]);
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'playercoin', '');
+        $this->assertSame(1, $result['counts']['items']);
+
+        $item = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'action_type'     => 'playercoin',
+        ], '*', MUST_EXIST);
+        $drop = $DB->get_record('block_playerhud_drops', ['itemid' => $item->id], '*', MUST_EXIST);
+
+        $introafter = $DB->get_field('forum', 'intro', ['id' => $forum->id]);
+        $this->assertStringContainsString('[PLAYERHUD_DROP code=' . $drop->code . ']', $introafter);
+
+        $manifesttables = $DB->get_records_menu(
+            'block_playerhud_wizard_objects',
+            ['runid' => $runid],
+            '',
+            'id, objecttable'
+        );
+        $this->assertContains('block_playerhud_drops', $manifesttables);
+        $this->assertCount(1, $DB->get_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]));
+
+        \block_playerhud\local\wizard::rollback($runid, $this->instanceid, $this->course->id);
+
+        $this->assertFalse($DB->record_exists('block_playerhud_drops', ['id' => $drop->id]));
+        $introrolledback = $DB->get_field('forum', 'intro', ['id' => $forum->id]);
+        $this->assertStringNotContainsString('PLAYERHUD_DROP', (string) $introrolledback);
+    }
 }
