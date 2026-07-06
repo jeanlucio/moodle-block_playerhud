@@ -120,6 +120,8 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const huddyPulseEl = document.getElementById('ph-wizard-huddy-pulse');
         const huddyNumberEl = document.getElementById('ph-wizard-huddy-number');
         const huddyTipEl = document.getElementById('ph-wizard-huddy-tip');
+        const huddyPrevBtn = document.getElementById('ph-wizard-huddy-prev');
+        const huddyNextBtn = document.getElementById('ph-wizard-huddy-next');
 
         let lastRunId = null;
         let contentChanged = false;
@@ -253,20 +255,35 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             sideTriggerBtns.forEach((btn) => btn.classList.toggle('ph-display-none', showProgress));
             generateBtn.classList.toggle('ph-display-none', showProgress);
             undoBtn.classList.toggle('ph-display-none', showProgress || !lastRunId);
+            // The form can be scrolled deep down (e.g. a mechanic near the bottom was just
+            // checked) — carrying that same scroll position into the progress view would leave
+            // Huddy and the progress bar off-screen above the visible area.
+            if (showProgress) {
+                const modalBodyEl = modalEl.querySelector('.modal-body');
+                if (modalBodyEl) {
+                    modalBodyEl.scrollTop = 0;
+                }
+            }
         };
 
-        // Huddy carousel: the wizard's own "game loading screen" — 5 mascot images alternating
-        // with pedagogical tips, masking the ~10-40s an AI story-arc step spends without moving
-        // the progress bar. It is the activity indicator, not decoration (see § 5.9 Fatia 3): it
-        // runs for the whole progress view, not only during story steps, so there is never a
-        // separate spinner to keep in sync with it.
+        // Huddy carousel: the wizard's own "game loading screen" — 5 mascot images (reused
+        // across more tips than images, cycling independently) alternating with pedagogical
+        // tips, masking the ~10-40s an AI story-arc step spends without moving the progress
+        // bar. It is the activity indicator, not decoration (see § 5.9 Fatia 3): it runs for
+        // the whole progress view, not only during story steps, so there is never a separate
+        // spinner to keep in sync with it. It also stays up (manually navigable) once the
+        // final report shows, so the tips remain browsable after generation finishes.
         const HUDDY_IMAGES = ['hello.webp', 'coins.webp', 'achievement.webp', 'levelup.webp', 'quest.webp'];
         const HUDDY_TIP_KEYS = [
-            'wizard_huddy_tip1', 'wizard_huddy_tip2', 'wizard_huddy_tip3', 'wizard_huddy_tip4', 'wizard_huddy_tip5',
+            'wizard_huddy_tip1', 'wizard_huddy_tip2', 'wizard_huddy_tip3', 'wizard_huddy_tip4',
+            'wizard_huddy_tip5', 'wizard_huddy_tip6', 'wizard_huddy_tip7', 'wizard_huddy_tip8',
+            'wizard_huddy_tip9', 'wizard_huddy_tip10', 'wizard_huddy_tip11', 'wizard_huddy_tip12',
         ];
         const HUDDY_INTERVAL_MS = 7000;
         let huddyTimer = null;
         let huddyTips = null;
+        let huddyTipLabels = null;
+        let huddyIndex = 0;
 
         huddyImgEl.addEventListener('error', () => {
             // The art failing to load must never leave the UI looking frozen — falls back to an
@@ -280,10 +297,12 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         });
 
         const showHuddySlide = (index) => {
+            huddyIndex = index;
             const image = HUDDY_IMAGES[index % HUDDY_IMAGES.length];
             huddyImgEl.src = huddyBaseUrl + image;
             if (huddyTips) {
-                huddyTipEl.textContent = huddyTips[index % huddyTips.length];
+                const label = huddyTipLabels ? huddyTipLabels[index % huddyTipLabels.length] : '';
+                huddyTipEl.textContent = label + huddyTips[index % huddyTips.length];
             }
             // Same technique as the level-up celebration (levelup.js): the number is painted
             // over the shield in levelup.webp specifically — the other 4 images have no shield
@@ -291,33 +310,48 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             huddyNumberEl.classList.toggle('ph-display-none', image !== 'levelup.webp');
         };
 
+        huddyPrevBtn.addEventListener('click', () => {
+            showHuddySlide((huddyIndex - 1 + HUDDY_TIP_KEYS.length) % HUDDY_TIP_KEYS.length);
+        });
+        huddyNextBtn.addEventListener('click', () => {
+            showHuddySlide(huddyIndex + 1);
+        });
+
         const startHuddyCarousel = async() => {
             // Shows the carousel and its first image synchronously — waiting on the tip strings
             // first (a network round-trip) would delay the mascot showing up at all, defeating
             // the point of it being the activity indicator from the very first instant.
             huddyCarouselEl.classList.remove('ph-display-none');
-            let index = 0;
-            showHuddySlide(index);
+            showHuddySlide(0);
             huddyTimer = setInterval(() => {
-                index += 1;
-                showHuddySlide(index);
+                showHuddySlide(huddyIndex + 1);
             }, HUDDY_INTERVAL_MS);
 
             if (!huddyTips) {
                 try {
                     huddyTips = await Str.get_strings(HUDDY_TIP_KEYS.map((key) => ({key, component: 'block_playerhud'})));
-                    showHuddySlide(index);
+                    huddyTipLabels = await Str.get_strings(HUDDY_TIP_KEYS.map((key, i) => ({
+                        key: 'wizard_huddy_tip_label', component: 'block_playerhud', param: i + 1,
+                    })));
+                    showHuddySlide(huddyIndex);
                 } catch (e) {
                     huddyTips = [];
                 }
             }
         };
 
-        const stopHuddyCarousel = () => {
+        // Stops only the automatic advance — used once the final report shows, so the teacher
+        // can keep browsing tips manually with the prev/next arrows instead of the carousel
+        // disappearing outright.
+        const pauseHuddyCarousel = () => {
             if (huddyTimer) {
                 clearInterval(huddyTimer);
                 huddyTimer = null;
             }
+        };
+
+        const stopHuddyCarousel = () => {
+            pauseHuddyCarousel();
             huddyCarouselEl.classList.add('ph-display-none');
         };
 
@@ -515,9 +549,12 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
          */
         const showProgressReport = async(totals, stepMessages, economyMessage) => {
             contentChanged = true;
-            stopHuddyCarousel();
+            // Huddy stays up so its tips remain browsable — only the automatic advance stops.
+            pauseHuddyCarousel();
             progressCloseWarningEl.classList.add('ph-display-none');
             progressSlowWarningEl.classList.add('ph-display-none');
+            progressBarEl.classList.remove('progress-bar-striped', 'progress-bar-animated', 'bg-primary');
+            progressBarEl.classList.add('bg-success');
 
             let text = await formatTotals(totals);
             [...stepMessages, economyMessage].filter(Boolean).forEach((message) => {
@@ -726,6 +763,10 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             progressBarEl.style.width = '0%';
             progressBarWrapEl.setAttribute('aria-valuenow', '0');
             progressSubstepEl.textContent = '';
+            // A previous run in the same modal session may have left the bar green and static
+            // (showProgressReport()'s completion state) — back to the in-progress look here.
+            progressBarEl.classList.remove('bg-success');
+            progressBarEl.classList.add('bg-primary', 'progress-bar-striped', 'progress-bar-animated');
 
             await startHuddyCarousel();
             await runWizard(runParams);

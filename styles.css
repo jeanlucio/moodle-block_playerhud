@@ -2635,6 +2635,16 @@ div.modal-dialog .visually-hidden {
         opacity: 1;
     }
 }
+#ph-wizard-modal .ph-wizard-huddy-nav {
+    color: var(--gray-500, #adb5bd);
+    font-size: 1.25rem;
+    padding: 0.25rem 0.5rem;
+    text-decoration: none;
+}
+#ph-wizard-modal .ph-wizard-huddy-nav:hover,
+#ph-wizard-modal .ph-wizard-huddy-nav:focus-visible {
+    color: var(--primary, #0d6efd);
+}
 @media (prefers-reduced-motion: reduce) {
     #ph-wizard-modal .ph-wizard-huddy-pulse {
         animation: none;
