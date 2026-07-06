@@ -330,4 +330,49 @@ final class wizard_run_step_test extends external_base_testcase {
         $this->expectException(\dml_missing_record_exception::class);
         wizard_run_step::execute($this->instanceid, $this->course->id, $foreignrunid, 'ranking', '');
     }
+
+    /**
+     * A client retry of the "missions" step for a run that already succeeded must not create a
+     * second batch of quests — same manifest-based guard as generate_items(), exercised here
+     * through the real, AI-free "missions" step.
+     */
+    public function test_missions_step_retry_does_not_duplicate(): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        $first = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'missions', '');
+        $this->assertTrue($first['success']);
+        $this->assertGreaterThan(0, $first['counts']['quests']);
+
+        $second = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'missions', '');
+
+        $this->assertTrue($second['success']);
+        $this->assertSame($first['counts']['quests'], $second['counts']['quests']);
+        $this->assertEquals(
+            $first['counts']['quests'],
+            $DB->count_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]),
+            'Retrying the same step must not create a second batch of quests.'
+        );
+    }
+
+    /**
+     * generate_items() must reuse a run's already-recorded items/drops instead of calling the AI
+     * again — proven here with no AI key configured at all: if the guard did not short-circuit
+     * before the AI call, this would fail or return an empty batch instead of the fixture's own
+     * item.
+     */
+    public function test_generate_items_reuses_manifest_when_step_already_ran(): void {
+        set_config('apikey_gemini', '', 'block_playerhud');
+        set_config('apikey_groq', '', 'block_playerhud');
+        set_config('apikey_openai', '', 'block_playerhud');
+
+        $runid = $this->start_empty_run();
+        $item = $this->create_item($this->instanceid, 'Already generated item');
+        \block_playerhud\local\wizard::record_object($runid, 'block_playerhud_items', $item->id);
+
+        $result = wizard_generate::generate_items($this->instanceid, new \stdClass(), '', '', 'short', [], $runid);
+
+        $this->assertSame(['Already generated item'], $result['names']);
+        $this->assertSame([], $result['drop_ids']);
+    }
 }

@@ -469,6 +469,12 @@ class wizard_generate extends external_api {
      * the live-progress plan the browser drives one step at a time) — both must agree on which
      * modules run and in what order.
      *
+     * Invariant relied on by {@see already_recorded()}: "items" must always come before any other
+     * step that writes to `block_playerhud_items` (playercoin, avatars, rpg, progress_item, pill,
+     * latepenalty, secret_drops), and "missions" before any other step that writes to
+     * `block_playerhud_quests` (pill, latepenalty). Reordering this method would let a legitimate
+     * earlier step's manifest rows be mistaken for a retried "items"/"missions" step's own output.
+     *
      * @param array $params Validated parameters (same shape as execute_parameters()).
      * @return string[] Ordered step type identifiers, e.g. ['items', 'missions', 'ranking'].
      */
@@ -521,6 +527,32 @@ class wizard_generate extends external_api {
         }
 
         return $steptypes;
+    }
+
+    /**
+     * Object IDs a run has already recorded in its manifest for the given table — used by
+     * generate_items()/generate_missions() to detect a client retry of a step that already
+     * succeeded server-side (e.g. its response was lost in transit after the server had already
+     * written everything), so a second AI/DB batch is never created for the same run.
+     *
+     * Safe without tracking "which steps ran" anywhere: {@see build_step_types()} always orders
+     * "items" before any other step writing to `block_playerhud_items`, and "missions" before any
+     * other step writing to `block_playerhud_quests` — so any manifest rows found here for those
+     * tables, at the point either step itself runs, can only be that step's own earlier attempt.
+     *
+     * @param int $runid Wizard run ID.
+     * @param string $objecttable The table to check, e.g. 'block_playerhud_items'.
+     * @return int[] Object IDs already recorded, empty when the step has not run yet for this run.
+     */
+    protected static function already_recorded(int $runid, string $objecttable): array {
+        global $DB;
+
+        return array_values($DB->get_fieldset_select(
+            'block_playerhud_wizard_objects',
+            'objectid',
+            'runid = :runid AND objecttable = :objecttable',
+            ['runid' => $runid, 'objecttable' => $objecttable]
+        ));
     }
 
     /**
@@ -622,6 +654,21 @@ class wizard_generate extends external_api {
         global $DB, $USER;
 
         \block_playerhud\local\wizard::ensure_config_flag($instanceid, 'enable_items');
+
+        $existingitemids = self::already_recorded($runid, 'block_playerhud_items');
+        if (!empty($existingitemids)) {
+            // A retry of a step that already succeeded for this run (e.g. the client's response
+            // was lost in transit after the server had already written everything) — reuse what
+            // exists instead of generating a second AI batch. See already_recorded()'s docblock
+            // for why this is safe.
+            [$itemsql, $itemparams] = $DB->get_in_or_equal($existingitemids);
+            return [
+                'names' => array_values(
+                    $DB->get_fieldset_select('block_playerhud_items', 'name', "id $itemsql", $itemparams)
+                ),
+                'drop_ids' => self::already_recorded($runid, 'block_playerhud_drops'),
+            ];
+        }
 
         [$xpperlevel, $maxlevels] = self::resolve_xp_settings($config);
         $amount = \block_playerhud\local\xp_budget::compute_item_count($size);
@@ -731,6 +778,16 @@ class wizard_generate extends external_api {
         global $DB;
 
         \block_playerhud\local\wizard::ensure_config_flag($instanceid, 'enable_quests');
+
+        $existingquestids = self::already_recorded($runid, 'block_playerhud_quests');
+        if (!empty($existingquestids)) {
+            // Same retry-of-an-already-succeeded-step guard as generate_items() — see
+            // already_recorded()'s docblock.
+            [$questsql, $questparams] = $DB->get_in_or_equal($existingquestids);
+            return array_values(
+                $DB->get_fieldset_select('block_playerhud_quests', 'name', "id $questsql", $questparams)
+            );
+        }
 
         $allowedtypes = [
             \block_playerhud\quest::TYPE_LEVEL,
