@@ -84,28 +84,6 @@ final class xp_budget {
     }
 
     /**
-     * Counts how many XP-budget-sharing elements (items and/or missions) a wizard call will
-     * generate for the given journey size, so their combined total can share a single XP split
-     * computed once — see execute()'s $sharedxp, which this feeds.
-     *
-     * @param string $size Journey size: short, medium or long.
-     * @param bool $includeitems Whether the Items module is running this call.
-     * @param bool $includemissions Whether the Missions module is running this call.
-     * @return int Combined element count. 0 when neither module is running.
-     */
-    public static function compute_element_count(string $size, bool $includeitems, bool $includemissions): int {
-        $count = 0;
-        if ($includeitems) {
-            $count += self::compute_item_count($size);
-        }
-        if ($includemissions) {
-            $count += self::compute_mission_count($size);
-        }
-
-        return $count;
-    }
-
-    /**
      * Maps a wizard journey size to the story arc's total chapter count, including the fixed
      * Chapter 1 — so the wizard's story-arc step generates exactly this minus 1 AI chapters.
      *

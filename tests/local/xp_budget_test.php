@@ -46,19 +46,6 @@ final class xp_budget_test extends advanced_testcase {
     }
 
     /**
-     * Items and Missions running in the same call share ONE combined element count, so a
-     * caller can split a single gap across both rather than each seeing the whole gap to
-     * itself — the fix for wizard_generate running Items first and silently starving
-     * Missions of the entire budget before it even ran.
-     */
-    public function test_compute_element_count_combines_both_modules(): void {
-        $this->assertSame(5, xp_budget::compute_element_count('short', true, false));
-        $this->assertSame(3, xp_budget::compute_element_count('short', false, true));
-        $this->assertSame(8, xp_budget::compute_element_count('short', true, true));
-        $this->assertSame(0, xp_budget::compute_element_count('short', false, false));
-    }
-
-    /**
      * A batch that divides evenly gets a flat share, and the shares always sum to exactly the
      * gap — never leaving a floor-division remainder unused.
      */
