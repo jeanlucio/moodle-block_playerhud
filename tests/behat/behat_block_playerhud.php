@@ -289,6 +289,19 @@ class behat_block_playerhud extends behat_base {
     }
 
     /**
+     * Asserts that the given CSS element is visible on the page.
+     *
+     * @param string $selector CSS selector.
+     * @Then the :selector element is visible
+     */
+    public function element_is_visible(string $selector): void {
+        $node = $this->find('css', $selector);
+        if (!$node->isVisible()) {
+            throw new \Exception("Element '{$selector}' is expected to be visible but is not.");
+        }
+    }
+
+    /**
      * Asserts that the given CSS element is not visible on the page.
      *
      * Matches the pattern used in block_playerhud_modals.feature:
@@ -306,6 +319,22 @@ class behat_block_playerhud extends behat_base {
         } catch (\Behat\Mink\Exception\ElementNotFoundException $e) {
             // Element absent from DOM — considered not visible, return normally.
             return;
+        }
+    }
+
+    /**
+     * Asserts that the given CSS element has the disabled attribute.
+     *
+     * Custom rather than relying on core's own "should be disabled" step: that step is not
+     * defined on every Moodle version this plugin supports (confirmed missing on 4.5/5.0/5.2).
+     *
+     * @param string $selector CSS selector.
+     * @Then the :selector element is disabled
+     */
+    public function element_is_disabled(string $selector): void {
+        $node = $this->find('css', $selector);
+        if (!$node->hasAttribute('disabled')) {
+            throw new \Exception("Element '{$selector}' is expected to be disabled but is not.");
         }
     }
 
@@ -587,14 +616,22 @@ class behat_block_playerhud extends behat_base {
      * Opens the gamification wizard modal from the management panel and waits for it to
      * finish its fade-in transition.
      *
+     * Retries the click itself inside the spin loop rather than clicking once and only waiting
+     * afterwards: right after the page loads, block_playerhud/wizard's AMD init() may not have
+     * finished attaching its own click listener yet, so a single immediate click can silently do
+     * nothing — the modal would then never appear and the wait alone would time out.
+     *
      * @When I open the PlayerHUD wizard
      */
     public function i_open_the_playerhud_wizard(): void {
-        $this->execute('behat_general::i_click_on', ['#ph-wizard-open-btn', 'css_element']);
-
         $this->spin(function () {
-            $node = $this->find('css', '#ph-wizard-modal');
-            return $node && $node->isVisible();
+            $btn = $this->find('css', '#ph-wizard-open-btn');
+            if ($btn) {
+                $btn->click();
+            }
+            $modal = $this->find('css', '#ph-wizard-modal');
+
+            return $modal && $modal->isVisible();
         });
     }
 

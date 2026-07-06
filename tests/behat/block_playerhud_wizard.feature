@@ -24,14 +24,14 @@ Feature: PlayerHUD gamification wizard
     And I should see "PlayerCoin" in the "#ph-wizard-modal" "css_element"
 
   Scenario: Teacher opens the wizard's help view
-    When I click on "Help" "button"
-    Then "#ph-wizard-help-view" "css_element" should be visible
+    When I click on "#ph-wizard-help-btn" "css_element"
+    Then the "#ph-wizard-help-view" element is visible
     And I should see "How the wizard works" in the "#ph-wizard-help-view" "css_element"
     And I should see "The three sections" in the "#ph-wizard-help-view" "css_element"
 
   Scenario: Teacher opens the wizard's external recommendations view
-    When I click on "External recommendations" "button"
-    Then "#ph-wizard-external-view" "css_element" should be visible
+    When I click on "#ph-wizard-external-btn" "css_element"
+    Then the "#ph-wizard-external-view" element is visible
     And I should see "Groups (PlayerGroup)" in the "#ph-wizard-external-view" "css_element"
     And I should see "Deadline Extension (latepenalty)" in the "#ph-wizard-external-view" "css_element"
 
@@ -53,7 +53,7 @@ Feature: PlayerHUD gamification wizard
     Then I should see the PlayerHUD wizard success report
     When I click on "#ph-wizard-progress-ok-btn" "css_element"
     And I open the PlayerHUD wizard
-    Then "#ph-wizard-module-playercoin" "css_element" should be disabled
+    Then the "#ph-wizard-module-playercoin" element is disabled
     And I should see "Already generated in this course" in the "#ph-wizard-modal" "css_element"
 
   Scenario: Teacher undoes a wizard run from the history view
@@ -63,7 +63,7 @@ Feature: PlayerHUD gamification wizard
     Then I should see the PlayerHUD wizard success report
     When I click on "#ph-wizard-progress-ok-btn" "css_element"
     And I open the PlayerHUD wizard
-    And I click on "History" "button"
+    And I click on "#ph-wizard-history-btn" "css_element"
     Then I should see "items" in the "#ph-wizard-history-list" "css_element"
     When I click on "Undo gamification" "button" in the "#ph-wizard-history-list" "css_element"
     Then I should see "No runs to undo yet." in the "#ph-wizard-history-view" "css_element"
