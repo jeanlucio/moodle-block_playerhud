@@ -446,15 +446,11 @@ vendor/bin/behat --tags=@block_playerhud --profile=chrome
 
 PlayerHUD includes optional AI-powered features: a **Content Generator** (items, chapters, class backstories) and a **Game Master Assistant** (a conversational chat for teachers that can also trigger game actions).
 
-[⬆️ Back to index](#toc-en)
-
 ### Is the AI feature required?
 
 No. The plugin works fully without any external AI service.
 All content can be created manually inside Moodle.
 The AI features are productivity tools — the assistant also accepts confirmation before saving anything.
-
-[⬆️ Back to index](#toc-en)
 
 ### 🔗 AI Provider Chain
 
@@ -485,8 +481,6 @@ Groq → OpenAI-compatible (first key found is used; if its call fails, the next
 This also means: if a teacher configured their own key in the AI Hub,
 PlayerHUD uses it automatically — no need to re-enter the key in PlayerHUD.
 
-[⬆️ Back to index](#toc-en)
-
 ### Supported Direct Providers
 
 - **Google Gemini** — https://ai.google.dev/
@@ -494,8 +488,6 @@ PlayerHUD uses it automatically — no need to re-enter the key in PlayerHUD.
 - **OpenAI-compatible APIs** — Any provider that follows the OpenAI API format (e.g. OpenRouter, self-hosted models via LM Studio, Ollama proxy, etc.)
 
 These services operate under their own terms of service and privacy policies.
-
-[⬆️ Back to index](#toc-en)
 
 ### How to obtain an API key
 
@@ -509,8 +501,6 @@ Both Gemini and Groq currently offer free usage tiers. However, pricing policies
 
 The PlayerHUD plugin does not provide API keys.
 
-[⬆️ Back to index](#toc-en)
-
 ### Where API keys are configured
 
 API keys may be configured through any of the following sources (in decreasing priority):
@@ -520,8 +510,6 @@ API keys may be configured through any of the following sources (in decreasing p
 3. **PlayerHUD site key** — set by the site admin in *Site administration → Plugins → Blocks → PlayerHUD*.
 4. **AI Hub site key** — set by the site admin in *local_aihub* settings (if the hub is installed).
 5. **Moodle `core_ai`** — configured by the site admin in *Site administration → AI → AI providers* (no key stored in PlayerHUD; used only when no key above is set).
-
-[⬆️ Back to index](#toc-en)
 
 ### Data Transmission
 
@@ -982,15 +970,11 @@ vendor/bin/behat --tags=@block_playerhud --profile=chrome
 
 O PlayerHUD inclui recursos opcionais de IA: um **Gerador de Conteúdo** (itens, capítulos, backstories de classes) e um **Assistente Game Master** (chat conversacional para professores que também pode acionar ações no jogo).
 
-[⬆️ Voltar ao índice](#toc-pt)
-
 ### O recurso de IA é obrigatório?
 
 Não. O plugin funciona de forma completa sem qualquer serviço externo.
 Todo o conteúdo pode ser criado manualmente dentro do Moodle.
 Os recursos de IA são ferramentas de produtividade — o assistente exige confirmação antes de salvar qualquer coisa.
-
-[⬆️ Voltar ao índice](#toc-pt)
 
 ### 🔗 Cadeia de Provedores de IA
 
@@ -1012,8 +996,6 @@ O PlayerHUD seleciona o provedor de IA **nível por nível**, seguindo a escada 
 
 Isso também significa: se o professor configurou sua própria chave no hub PlayerGames, o PlayerHUD a utiliza automaticamente — sem necessidade de recadastrar no PlayerHUD.
 
-[⬆️ Voltar ao índice](#toc-pt)
-
 ### Provedores diretos suportados
 
 - **Google Gemini** — https://ai.google.dev/
@@ -1021,8 +1003,6 @@ Isso também significa: se o professor configurou sua própria chave no hub Play
 - **APIs compatíveis com OpenAI** — Qualquer provedor que siga o formato da API OpenAI (ex.: OpenRouter, modelos locais via LM Studio, proxy Ollama, etc.)
 
 Esses serviços seguem seus próprios termos de uso e políticas de privacidade.
-
-[⬆️ Voltar ao índice](#toc-pt)
 
 ### Como obter a chave de API
 
@@ -1036,8 +1016,6 @@ Gemini e Groq atualmente oferecem planos gratuitos, porém as políticas de pre�
 
 O PlayerHUD não fornece chaves de API.
 
-[⬆️ Voltar ao índice](#toc-pt)
-
 ### Onde a chave é configurada
 
 As chaves de API podem ser configuradas por qualquer uma das seguintes origens (em ordem decrescente de prioridade):
@@ -1047,8 +1025,6 @@ As chaves de API podem ser configuradas por qualquer uma das seguintes origens (
 3. **Chave de site no PlayerHUD** — configurada pelo admin em *Administração do site → Plugins → Blocos → PlayerHUD*.
 4. **Chave de site na Central de IA** — configurada pelo admin nas configurações do *local_aihub* (se o hub estiver instalado).
 5. **Moodle `core_ai`** — configurado pelo admin em *Administração do site → IA → Provedores de IA* (nenhuma chave armazenada no PlayerHUD; consultado apenas quando nenhuma das origens acima tiver chave configurada).
-
-[⬆️ Voltar ao índice](#toc-pt)
 
 ### Transmissão de dados
 
