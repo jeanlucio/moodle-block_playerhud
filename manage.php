@@ -585,6 +585,7 @@ $wizardmaxlevels = isset($blockconfig->max_levels) ? (int) $blockconfig->max_lev
 $wizardlevelsatdefault = ($wizardxpperlevel === 100 && $wizardmaxlevels === 20);
 
 $wizardgenerated = \block_playerhud\local\wizard::get_generated_modules($instanceid, $blockconfig);
+$wizardeligibleactivitycount = count(\block_playerhud\local\drop_distribution::get_eligible_modules($courseid));
 
 $modalwizardhtml = $OUTPUT->render_from_template('block_playerhud/modal_wizard', [
     'instanceid' => $instanceid,
@@ -608,9 +609,10 @@ $modalwizardhtml = $OUTPUT->render_from_template('block_playerhud/modal_wizard',
 ]);
 
 $PAGE->requires->js_call_amd('block_playerhud/wizard', 'init', [[
-    'instanceid'     => $instanceid,
-    'courseid'       => $courseid,
-    'huddy_base_url' => (new moodle_url('/blocks/playerhud/pix/huddy/'))->out(false),
+    'instanceid'              => $instanceid,
+    'courseid'                => $courseid,
+    'huddy_base_url'          => (new moodle_url('/blocks/playerhud/pix/huddy/'))->out(false),
+    'eligible_activity_count' => $wizardeligibleactivitycount,
 ]]);
 
 // Data for Layout.

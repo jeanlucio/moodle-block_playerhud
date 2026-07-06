@@ -597,6 +597,28 @@
                 </a>
             </div>
         </div>
+
+        <div class="ph-display-none" id="ph-wizard-confirm-few-activities-view">
+            <div class="alert alert-warning d-flex align-items-start" role="alert">
+                <i class="fa fa-triangle-exclamation me-2 mt-1" aria-hidden="true"></i>
+                <div>
+                    <strong class="d-block mb-1">
+                        {{#str}} wizard_few_activities_title, block_playerhud {{/str}}
+                    </strong>
+                    <span class="ph-text-sm">
+                        {{#str}} wizard_few_activities_desc, block_playerhud {{/str}}
+                    </span>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-outline-secondary" id="ph-wizard-confirm-cancel-btn">
+                    {{#str}} cancel, block_playerhud {{/str}}
+                </button>
+                <button type="button" class="btn btn-primary fw-bold" id="ph-wizard-confirm-continue-btn">
+                    {{#str}} wizard_few_activities_continue_btn, block_playerhud {{/str}}
+                </button>
+            </div>
+        </div>
         </div>
         <div class="col-lg-5 mt-4 mt-lg-0 ph-wizard-sidebar-sticky">
             <div class="p-3 bg-light border rounded ph-wizard-octalysis-panel" id="ph-wizard-octalysis-panel">

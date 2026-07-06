@@ -32,10 +32,13 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
      * @param {Object} config Configuration object passed from PHP.
      * @param {number} config.instanceid Block instance ID.
      * @param {number} config.courseid Course ID.
+     * @param {number} config.eligible_activity_count Course modules eligible for a drop
+     *     shortcode, precomputed server-side (see drop_distribution::get_eligible_modules()).
      */
     const init = (config) => {
         const {instanceid, courseid} = config;
         const huddyBaseUrl = config.huddy_base_url;
+        const eligibleActivityCount = config.eligible_activity_count;
 
         const modalEl = document.getElementById('ph-wizard-modal');
         if (!modalEl) {
@@ -99,6 +102,10 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const externalBtn = document.getElementById('ph-wizard-external-btn');
         const helpViewEl = document.getElementById('ph-wizard-help-view');
         const helpBtn = document.getElementById('ph-wizard-help-btn');
+
+        const confirmFewActivitiesViewEl = document.getElementById('ph-wizard-confirm-few-activities-view');
+        const confirmContinueBtn = document.getElementById('ph-wizard-confirm-continue-btn');
+        const confirmCancelBtn = document.getElementById('ph-wizard-confirm-cancel-btn');
 
         const progressViewEl = document.getElementById('ph-wizard-progress-view');
         const progressCloseWarningEl = document.getElementById('ph-wizard-progress-close-warning');
@@ -307,6 +314,21 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                     modalBodyEl.scrollTop = 0;
                 }
             }
+        };
+
+        /**
+         * Shows or hides the "few/no activities" confirmation, in place of the generation form —
+         * same swap mechanic as setProgressView(), without an Undo button (nothing has been
+         * generated yet at this point).
+         *
+         * @param {boolean} showConfirm True to show the confirmation, false for the form.
+         */
+        const setConfirmFewActivitiesView = (showConfirm) => {
+            formEl.classList.toggle('ph-display-none', showConfirm);
+            confirmFewActivitiesViewEl.classList.toggle('ph-display-none', !showConfirm);
+            sideTriggerBtns.forEach((btn) => btn.classList.toggle('ph-display-none', showConfirm));
+            generateBtn.classList.toggle('ph-display-none', showConfirm);
+            undoBtn.classList.toggle('ph-display-none', showConfirm || !lastRunId);
         };
 
         // Huddy carousel: the wizard's own "game loading screen" — 5 mascot images (reused
@@ -762,17 +784,12 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             );
         };
 
-        generateBtn.addEventListener('click', async() => {
-            const moduleCheckedFlags = [
-                itemsModuleEl.checked, missionsModuleEl.checked, playercoinModuleEl.checked,
-                avatarsModuleEl.checked, rpgModuleEl.checked, progressItemModuleEl.checked,
-                tradeModuleEl.checked, pillModuleEl.checked,
-                latepenaltyChecked(), secretModuleEl.checked, rankingModuleEl.checked,
-            ];
-            if (!moduleCheckedFlags.some(Boolean)) {
-                return;
-            }
-
+        /**
+         * Builds the run params from the form's current state and starts the live progress view.
+         * Split out of generateBtn's own click handler so the "few/no activities" confirmation
+         * can call it too, once the teacher chooses to continue anyway.
+         */
+        const beginGeneration = async() => {
             const runParams = {
                 instanceid,
                 courseid,
@@ -816,6 +833,41 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
 
             await startHuddyCarousel();
             await runWizard(runParams);
+        };
+
+        generateBtn.addEventListener('click', async() => {
+            const moduleCheckedFlags = [
+                itemsModuleEl.checked, missionsModuleEl.checked, playercoinModuleEl.checked,
+                avatarsModuleEl.checked, rpgModuleEl.checked, progressItemModuleEl.checked,
+                tradeModuleEl.checked, pillModuleEl.checked,
+                latepenaltyChecked(), secretModuleEl.checked, rankingModuleEl.checked,
+            ];
+            if (!moduleCheckedFlags.some(Boolean)) {
+                return;
+            }
+
+            // Items and the RPG item are the only two mechanics whose drops need an actual
+            // course activity to land in (PlayerCoin/Secret Item insert into the news forum
+            // instead, and everything else has no drop at all) — so only their own distribute
+            // flag matters here, same condition build_step_types() uses server-side to decide
+            // whether an auto_distribute step is even worth scheduling.
+            const needsActivities = (itemsModuleEl.checked && distributeChecked(distributeItemsEl))
+                || (progressItemModuleEl.checked && distributeChecked(distributeProgressItemEl));
+            if (needsActivities && eligibleActivityCount < 3) {
+                setConfirmFewActivitiesView(true);
+                return;
+            }
+
+            await beginGeneration();
+        });
+
+        confirmContinueBtn.addEventListener('click', async() => {
+            setConfirmFewActivitiesView(false);
+            await beginGeneration();
+        });
+
+        confirmCancelBtn.addEventListener('click', () => {
+            setConfirmFewActivitiesView(false);
         });
 
         progressRetryBtn.addEventListener('click', async() => {
