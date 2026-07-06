@@ -223,10 +223,13 @@ class generator {
     protected function save_item($data, $targetxp, $createdrop, $provider, $options = []) {
         global $DB;
 
+        // The AI's JSON is untrusted input: coerce to string defensively (a malformed response
+        // could hand back an unexpected type) and clamp name to the column's own char(255) limit,
+        // same defensive pattern already used for AI story text in wizard_run_step.php.
         $item = new \stdClass();
         $item->blockinstanceid = $this->instanceid;
-        $item->name = $data['name'];
-        $item->description = $data['description'];
+        $item->name = \core_text::substr((string) $data['name'], 0, 255);
+        $item->description = (string) $data['description'];
         $item->image = $data['emoji'];
         $item->xp = $targetxp;
 
