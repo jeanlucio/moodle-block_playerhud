@@ -127,28 +127,33 @@ class remove_drop_shortcode extends external_api {
             $currentval = '';
         }
 
-        $shortcode = '[PLAYERHUD_DROP code=' . $drop->code . ']';
+        // Matches the shortcode regardless of any mode=/text= attributes it may carry
+        // (insert_drop_shortcode's card form has none; its text/image forms do), not just the
+        // bare code=X form.
+        $shortcodepattern = '\[PLAYERHUD_DROP code=' . preg_quote($drop->code, '/') . '(?:\s[^\]]*)?\]';
 
         // Shortcode not present — nothing to remove.
-        if (strpos($currentval, $shortcode) === false) {
+        if (!preg_match('/' . $shortcodepattern . '/', $currentval)) {
             return ['success' => true, 'message' => ''];
         }
 
         // Remove the shortcode along with any immediately adjacent separator — a newline
         // for activity intro/content (insert_drop_shortcode's own convention) or a <br> for
-        // the PlayerCoin news forum drop (setup_playercoin_drop's convention).
-        $newval = str_replace(
+        // the PlayerCoin/Secret Drops news forum placement (setup_playercoin_drop's and
+        // generate_secret_drops' convention).
+        $newval = preg_replace(
             [
-                "\n" . $shortcode . "\n",
-                "\n" . $shortcode,
-                $shortcode . "\n",
-                '<br>' . $shortcode . '<br>',
-                '<br>' . $shortcode,
-                $shortcode . '<br>',
-                $shortcode,
+                '/\n' . $shortcodepattern . '\n/',
+                '/\n' . $shortcodepattern . '/',
+                '/' . $shortcodepattern . '\n/',
+                '/<br>' . $shortcodepattern . '<br>/',
+                '/<br>' . $shortcodepattern . '/',
+                '/' . $shortcodepattern . '<br>/',
+                '/' . $shortcodepattern . '/',
             ],
             '',
-            $currentval
+            $currentval,
+            1
         );
         $newval = trim($newval);
 
