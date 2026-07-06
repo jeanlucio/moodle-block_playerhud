@@ -104,6 +104,8 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         const helpBtn = document.getElementById('ph-wizard-help-btn');
 
         const confirmFewActivitiesViewEl = document.getElementById('ph-wizard-confirm-few-activities-view');
+        const confirmTitleEl = document.getElementById('ph-wizard-confirm-few-activities-title');
+        const confirmDescEl = document.getElementById('ph-wizard-confirm-few-activities-desc');
         const confirmContinueBtn = document.getElementById('ph-wizard-confirm-continue-btn');
         const confirmCancelBtn = document.getElementById('ph-wizard-confirm-cancel-btn');
 
@@ -203,20 +205,39 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         // Course-wide activity count never changes during the modal's lifetime, so this is
         // computed once: a caption under each mechanic that actually auto-distributes into
         // course activities (Items, Item de Progresso, Colecionável de Conhecimento — PlayerCoin
-        // and the Secret Item target the news forum instead, unrelated to this count), warning
-        // that its drops will be either concentrated on very few activities or not placed at all.
+        // and the Secret Item target the news forum instead, unrelated to this count), plus the
+        // pre-generate confirmation view's own title/description. Zero and 1-2 activities are
+        // worded differently on purpose: with zero, distribution is skipped entirely and needs a
+        // manual follow-up; with 1-2, distribute_drops()/generate_pill() still place every drop,
+        // just concentrated on those few activities instead of spread out — saying "will need to
+        // be placed manually" for that case would be inaccurate.
         if (eligibleActivityCount < 3) {
+            const suffix = eligibleActivityCount === 0 ? 'zero' : 'few';
             (async() => {
                 const hintText = eligibleActivityCount === 0
                     ? await Str.get_string('wizard_few_activities_hint_zero', 'block_playerhud')
                     : await Str.get_string('wizard_few_activities_hint_few', 'block_playerhud', eligibleActivityCount);
-                ['items', 'pill', 'progressitem'].forEach((suffix) => {
-                    const hintEl = document.getElementById(`ph-wizard-few-activities-hint-${suffix}`);
+                ['items', 'pill', 'progressitem'].forEach((mech) => {
+                    const hintEl = document.getElementById(`ph-wizard-few-activities-hint-${mech}`);
                     if (hintEl) {
                         hintEl.textContent = hintText;
                         hintEl.classList.remove('ph-display-none');
                     }
                 });
+
+                if (confirmTitleEl && confirmDescEl) {
+                    confirmTitleEl.textContent = await Str.get_string(
+                        `wizard_few_activities_title_${suffix}`,
+                        'block_playerhud'
+                    );
+                    confirmDescEl.textContent = eligibleActivityCount === 0
+                        ? await Str.get_string('wizard_few_activities_desc_zero', 'block_playerhud')
+                        : await Str.get_string(
+                            'wizard_few_activities_desc_few',
+                            'block_playerhud',
+                            eligibleActivityCount
+                        );
+                }
             })();
         }
 
