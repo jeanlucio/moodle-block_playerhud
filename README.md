@@ -10,8 +10,16 @@
 
 [English](#english) | [Português](#português)
 
-<details>
-<summary><b>📑 Table of Contents</b></summary>
+---
+
+## English
+
+The **PlayerHUD Block** is a modular gamification system for Moodle that introduces structured progression mechanics based on **XP, Levels, Inventory, and Ranking**.
+
+It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing students to track their progress in real time while teachers configure engagement mechanics aligned with pedagogical objectives.
+
+<a id="toc-en"></a>
+**📑 Table of Contents**
 
 - [✨ Features](#-features)
 - [🏆 Group Ranking Behavior](#-group-ranking-behavior)
@@ -32,16 +40,6 @@
   - [Where API keys are configured](#where-api-keys-are-configured)
   - [Data Transmission](#data-transmission)
 - [📄 License / Licença](#-license--licença)
-
-</details>
-
----
-
-## English
-
-The **PlayerHUD Block** is a modular gamification system for Moodle that introduces structured progression mechanics based on **XP, Levels, Inventory, and Ranking**.
-
-It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing students to track their progress in real time while teachers configure engagement mechanics aligned with pedagogical objectives.
 
 ---
 
@@ -67,6 +65,8 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
   * **Content Generator** — creates items, story chapters with branching nodes, and RPG class backstories on demand.
   * **Game Master Assistant** — a conversational chat tab for teachers. Ask questions about game design, get suggestions, and trigger actions (create item, create quest, generate chapter) with a confirmation step before anything is saved.
 * 📱 **Mobile-Ready:** Compatible with Moodle web services.
+
+[⬆️ Back to index](#toc-en)
 
 ---
 
@@ -95,6 +95,8 @@ The two features are independent:
 | PlayerGroup installed, student has a PlayerGroup group | ✅ Group appears in ranking | ✅ Badge + name + slots displayed |
 | PlayerGroup installed, student is in a manual group only | ✅ Group appears in ranking | — Not shown (manual groups not in PlayerGroup API) |
 
+[⬆️ Back to index](#toc-en)
+
 ---
 
 ### ⚖️ Economy Health Panel
@@ -108,6 +110,8 @@ The **Config** tab in the management panel includes an **Economy Health** widget
 | Above 100% | 🔴 Red — students can exceed the cap; reduce item/quest XP or increase the cap |
 
 The widget also shows a collapsible breakdown table listing every item and quest with its individual XP contribution, making it easy to identify which content is over- or under-contributing to the economy.
+
+[⬆️ Back to index](#toc-en)
 
 ---
 
@@ -128,6 +132,8 @@ Suitable for:
 * Certification pathways
 * Engagement reinforcement strategies
 
+[⬆️ Back to index](#toc-en)
+
 ---
 
 ### 🕹️ PlayerGames Ecosystem
@@ -143,6 +149,8 @@ PlayerHUD is part of the **PlayerGames** gamification ecosystem. Together, these
 * **PlayerGroup:** Lets students autonomously form their own groups directly from the activity page — no teacher intervention needed.
   👉 https://github.com/jeanlucio/moodle-mod_playergroup
 
+[⬆️ Back to index](#toc-en)
+
 ---
 
 ### 📦 Requirements
@@ -151,6 +159,8 @@ PlayerHUD is part of the **PlayerGames** gamification ecosystem. Together, these
 |-----------|---------|
 | Moodle    | 4.5+    |
 | PHP       | 8.1+    |
+
+[⬆️ Back to index](#toc-en)
 
 ---
 
@@ -164,6 +174,8 @@ PlayerHUD is part of the **PlayerGames** gamification ecosystem. Together, these
 4. Install the required **PlayerHUD Filter** plugin.
 5. Visit **Site administration > Notifications** to complete installation.
 6. Add the block to a course.
+
+[⬆️ Back to index](#toc-en)
 
 ---
 
@@ -181,6 +193,8 @@ PlayerHUD is part of the **PlayerGames** gamification ecosystem. Together, these
    * Collection limits
 4. Students collect items directly within course sections.
 5. XP, levels, and ranking update automatically.
+
+[⬆️ Back to index](#toc-en)
 
 ---
 
@@ -231,6 +245,8 @@ php blocks/playerhud/cli/seed.php --password=YourDevPassword --force
 The `--password` flag is **required** and sets the login password for all seed accounts. The script refuses to run on non-development URLs (`localhost`, `*.local`, `*.test`) unless `--force` is passed.
 
 > Via Docker Compose: `docker compose exec <webserver-service> php blocks/playerhud/cli/seed.php --password=YourDevPassword`
+
+[⬆️ Back to index](#toc-en)
 
 ---
 
@@ -410,6 +426,8 @@ php admin/tool/behat/cli/init.php
 vendor/bin/behat --tags=@block_playerhud --profile=chrome
 ```
 
+[⬆️ Back to index](#toc-en)
+
 ---
 
 ### 🔐 Security & Compliance
@@ -420,17 +438,23 @@ vendor/bin/behat --tags=@block_playerhud --profile=chrome
 * Moodle External API compliant
 * Privacy-aware ranking participation
 
+[⬆️ Back to index](#toc-en)
+
 ---
 
 ### 🔎 Third-party Service Disclosure
 
 PlayerHUD includes optional AI-powered features: a **Content Generator** (items, chapters, class backstories) and a **Game Master Assistant** (a conversational chat for teachers that can also trigger game actions).
 
+[⬆️ Back to index](#toc-en)
+
 ### Is the AI feature required?
 
 No. The plugin works fully without any external AI service.
 All content can be created manually inside Moodle.
 The AI features are productivity tools — the assistant also accepts confirmation before saving anything.
+
+[⬆️ Back to index](#toc-en)
 
 ### 🔗 AI Provider Chain
 
@@ -461,6 +485,8 @@ Groq → OpenAI-compatible (first key found is used; if its call fails, the next
 This also means: if a teacher configured their own key in the AI Hub,
 PlayerHUD uses it automatically — no need to re-enter the key in PlayerHUD.
 
+[⬆️ Back to index](#toc-en)
+
 ### Supported Direct Providers
 
 - **Google Gemini** — https://ai.google.dev/
@@ -468,6 +494,8 @@ PlayerHUD uses it automatically — no need to re-enter the key in PlayerHUD.
 - **OpenAI-compatible APIs** — Any provider that follows the OpenAI API format (e.g. OpenRouter, self-hosted models via LM Studio, Ollama proxy, etc.)
 
 These services operate under their own terms of service and privacy policies.
+
+[⬆️ Back to index](#toc-en)
 
 ### How to obtain an API key
 
@@ -481,6 +509,8 @@ Both Gemini and Groq currently offer free usage tiers. However, pricing policies
 
 The PlayerHUD plugin does not provide API keys.
 
+[⬆️ Back to index](#toc-en)
+
 ### Where API keys are configured
 
 API keys may be configured through any of the following sources (in decreasing priority):
@@ -490,6 +520,8 @@ API keys may be configured through any of the following sources (in decreasing p
 3. **PlayerHUD site key** — set by the site admin in *Site administration → Plugins → Blocks → PlayerHUD*.
 4. **AI Hub site key** — set by the site admin in *local_aihub* settings (if the hub is installed).
 5. **Moodle `core_ai`** — configured by the site admin in *Site administration → AI → AI providers* (no key stored in PlayerHUD; used only when no key above is set).
+
+[⬆️ Back to index](#toc-en)
 
 ### Data Transmission
 
@@ -502,6 +534,8 @@ The plugin:
 
 No external communication occurs unless an AI feature is explicitly used.
 
+[⬆️ Back to index](#toc-en)
+
 ---
 
 ## 📄 License / Licença
@@ -509,6 +543,8 @@ No external communication occurs unless an AI feature is explicitly used.
 This project is licensed under the **GNU General Public License v3 (GPLv3)**.
 
 **Copyright:** 2026 Jean Lúcio
+
+[⬆️ Back to index](#toc-en)
 
 ---
 
@@ -518,8 +554,8 @@ O **Bloco PlayerHUD** é um sistema modular de gamificação para Moodle que int
 
 Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo que os alunos acompanhem seu progresso em tempo real, enquanto o professor configura as mecânicas de engajamento de acordo com seus objetivos pedagógicos.
 
-<details>
-<summary><b>📑 Índice</b></summary>
+<a id="toc-pt"></a>
+**📑 Índice**
 
 - [✨ Funcionalidades](#-funcionalidades)
 - [🏆 Comportamento do Ranking de Grupos](#-comportamento-do-ranking-de-grupos)
@@ -540,8 +576,6 @@ Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo q
   - [Onde a chave é configurada](#onde-a-chave-é-configurada)
   - [Transmissão de dados](#transmissão-de-dados)
 - [📄 Licença](#-licença)
-
-</details>
 
 ---
 
@@ -567,6 +601,8 @@ Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo q
   * **Gerador de Conteúdo** — cria itens, capítulos de história com nós ramificados e backstories de classes RPG sob demanda.
   * **Assistente Game Master** — aba de chat conversacional para professores. Tire dúvidas sobre design de jogo, receba sugestões e acione ações (criar item, missão, capítulo) com uma etapa de confirmação antes de salvar.
 * 📱 **Compatível com Mobile.**
+
+[⬆️ Voltar ao índice](#toc-pt)
 
 ---
 
@@ -595,6 +631,8 @@ As duas funcionalidades são independentes:
 | PlayerGroup instalado, estudante tem grupo do PlayerGroup | ✅ Grupo aparece no ranking | ✅ Badge + nome + vagas exibidos |
 | PlayerGroup instalado, estudante está só em grupo manual | ✅ Grupo aparece no ranking | — Não exibido (grupos manuais não estão na API do PlayerGroup) |
 
+[⬆️ Voltar ao índice](#toc-pt)
+
 ---
 
 ### ⚖️ Painel de Saúde da Economia
@@ -608,6 +646,8 @@ A aba **Configurações** do painel de gerenciamento inclui um widget de **Saúd
 | Acima de 100% | 🔴 Vermelho — os estudantes podem ultrapassar o teto; reduza o XP de itens/missões ou aumente o teto |
 
 O widget também exibe uma tabela expansível com o detalhamento de cada item e missão e sua contribuição individual de XP, facilitando a identificação do conteúdo que está contribuindo mais ou menos para a economia.
+
+[⬆️ Voltar ao índice](#toc-pt)
 
 ---
 
@@ -628,6 +668,8 @@ Indicado para:
 * Trilhas de certificação
 * Estratégias de reforço de engajamento
 
+[⬆️ Voltar ao índice](#toc-pt)
+
 ---
 
 ### 🕹️ Ecossistema PlayerGames
@@ -643,6 +685,8 @@ O PlayerHUD faz parte do ecossistema de gamificação **PlayerGames**. Juntos, e
 * **PlayerGroup:** Permite que os alunos formem seus próprios grupos de forma autônoma diretamente na página da atividade — sem necessidade de intervenção do professor.
   👉 https://github.com/jeanlucio/moodle-mod_playergroup
 
+[⬆️ Voltar ao índice](#toc-pt)
+
 ---
 
 ### 📦 Requisitos
@@ -651,6 +695,8 @@ O PlayerHUD faz parte do ecossistema de gamificação **PlayerGames**. Juntos, e
 |------------|--------|
 | Moodle     | 4.5+   |
 | PHP        | 8.1+   |
+
+[⬆️ Voltar ao índice](#toc-pt)
 
 ---
 
@@ -664,6 +710,8 @@ O PlayerHUD faz parte do ecossistema de gamificação **PlayerGames**. Juntos, e
 4. Instale o plugin obrigatório **Filtro PlayerHUD**.
 5. Acesse **Administração do site > Notificações** para concluir a instalação.
 6. Adicione o bloco ao curso.
+
+[⬆️ Voltar ao índice](#toc-pt)
 
 ---
 
@@ -681,6 +729,8 @@ O PlayerHUD faz parte do ecossistema de gamificação **PlayerGames**. Juntos, e
    - Limites de coleta
 4. Os alunos coletam itens diretamente nas seções do curso.
 5. O sistema atualiza automaticamente XP, níveis e ranking.
+
+[⬆️ Voltar ao índice](#toc-pt)
 
 ---
 
@@ -731,6 +781,8 @@ php blocks/playerhud/cli/seed_pt_br.php --password=SuaSenhaDev --force
 O parâmetro `--password` é **obrigatório** e define a senha de login de todas as contas seed. O script recusa executar em URLs que não sejam de desenvolvimento (`localhost`, `*.local`, `*.test`), a menos que `--force` seja passado.
 
 > Via Docker Compose: `docker compose exec <servico-webserver> php blocks/playerhud/cli/seed_pt_br.php --password=SuaSenhaDev`
+
+[⬆️ Voltar ao índice](#toc-pt)
 
 ---
 
@@ -910,6 +962,8 @@ php admin/tool/behat/cli/init.php
 vendor/bin/behat --tags=@block_playerhud --profile=chrome
 ```
 
+[⬆️ Voltar ao índice](#toc-pt)
+
 ---
 
 ### 🔐 Segurança e Conformidade
@@ -920,17 +974,23 @@ vendor/bin/behat --tags=@block_playerhud --profile=chrome
 - Compatível com a API externa do Moodle
 - Participação no ranking com controle de privacidade
 
+[⬆️ Voltar ao índice](#toc-pt)
+
 ---
 
 ### 🔎 Divulgação de Serviço de Terceiros
 
 O PlayerHUD inclui recursos opcionais de IA: um **Gerador de Conteúdo** (itens, capítulos, backstories de classes) e um **Assistente Game Master** (chat conversacional para professores que também pode acionar ações no jogo).
 
+[⬆️ Voltar ao índice](#toc-pt)
+
 ### O recurso de IA é obrigatório?
 
 Não. O plugin funciona de forma completa sem qualquer serviço externo.
 Todo o conteúdo pode ser criado manualmente dentro do Moodle.
 Os recursos de IA são ferramentas de produtividade — o assistente exige confirmação antes de salvar qualquer coisa.
+
+[⬆️ Voltar ao índice](#toc-pt)
 
 ### 🔗 Cadeia de Provedores de IA
 
@@ -952,6 +1012,8 @@ O PlayerHUD seleciona o provedor de IA **nível por nível**, seguindo a escada 
 
 Isso também significa: se o professor configurou sua própria chave no hub PlayerGames, o PlayerHUD a utiliza automaticamente — sem necessidade de recadastrar no PlayerHUD.
 
+[⬆️ Voltar ao índice](#toc-pt)
+
 ### Provedores diretos suportados
 
 - **Google Gemini** — https://ai.google.dev/
@@ -959,6 +1021,8 @@ Isso também significa: se o professor configurou sua própria chave no hub Play
 - **APIs compatíveis com OpenAI** — Qualquer provedor que siga o formato da API OpenAI (ex.: OpenRouter, modelos locais via LM Studio, proxy Ollama, etc.)
 
 Esses serviços seguem seus próprios termos de uso e políticas de privacidade.
+
+[⬆️ Voltar ao índice](#toc-pt)
 
 ### Como obter a chave de API
 
@@ -972,6 +1036,8 @@ Gemini e Groq atualmente oferecem planos gratuitos, porém as políticas de pre�
 
 O PlayerHUD não fornece chaves de API.
 
+[⬆️ Voltar ao índice](#toc-pt)
+
 ### Onde a chave é configurada
 
 As chaves de API podem ser configuradas por qualquer uma das seguintes origens (em ordem decrescente de prioridade):
@@ -981,6 +1047,8 @@ As chaves de API podem ser configuradas por qualquer uma das seguintes origens (
 3. **Chave de site no PlayerHUD** — configurada pelo admin em *Administração do site → Plugins → Blocos → PlayerHUD*.
 4. **Chave de site na Central de IA** — configurada pelo admin nas configurações do *local_aihub* (se o hub estiver instalado).
 5. **Moodle `core_ai`** — configurado pelo admin em *Administração do site → IA → Provedores de IA* (nenhuma chave armazenada no PlayerHUD; consultado apenas quando nenhuma das origens acima tiver chave configurada).
+
+[⬆️ Voltar ao índice](#toc-pt)
 
 ### Transmissão de dados
 
@@ -993,6 +1061,8 @@ O plugin:
 
 Nenhuma comunicação externa ocorre sem ativação explícita de um recurso de IA.
 
+[⬆️ Voltar ao índice](#toc-pt)
+
 ---
 
 ## 📄 Licença
@@ -1000,3 +1070,5 @@ Nenhuma comunicação externa ocorre sem ativação explícita de um recurso de 
 Este projeto é licenciado sob a **GNU General Public License v3 (GPLv3)**.
 
 **Copyright:** 2026 Jean Lúcio
+
+[⬆️ Voltar ao índice](#toc-pt)
