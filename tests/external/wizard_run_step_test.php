@@ -1015,4 +1015,116 @@ final class wizard_run_step_test extends external_base_testcase {
         $this->assertSame((int) $trade->id, (int) $quest->req_itemid);
         $this->assertSame(150, (int) $quest->reward_xp);
     }
+
+    /**
+     * The "secret_drops" step creates a tone-specific item flagged secret=1, worth 0 XP and
+     * non-tradable, and spreads exactly SECRET_DROP_COUNT (3) one-time drops across eligible
+     * activities — records everything into the run's manifest.
+     */
+    public function test_secret_drops_step_creates_item_and_distributes_with_manifest(): void {
+        global $DB;
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
+        }
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'secret_drops', '');
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(1, $result['counts']['items']);
+
+        $item = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'name' => 'Lost Relic',
+        ], '*', MUST_EXIST);
+        $this->assertSame(1, (int) $item->secret);
+        $this->assertSame(0, (int) $item->xp);
+        $this->assertSame(0, (int) $item->tradable);
+
+        $drops = $DB->get_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid, 'itemid' => $item->id]);
+        $this->assertCount(3, $drops);
+        $this->assertSame(3, array_sum(array_column($drops, 'maxusage')));
+        foreach ($drops as $drop) {
+            $this->assertSame(1, (int) $drop->maxusage);
+        }
+
+        $manifesttables = array_column(
+            $DB->get_records('block_playerhud_wizard_objects', ['runid' => $runid]),
+            'objecttable'
+        );
+        $this->assertContains('block_playerhud_items', $manifesttables);
+        $this->assertContains('block_playerhud_drops', $manifesttables);
+        $shortcoderows = $DB->get_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]);
+        $this->assertCount(3, $shortcoderows);
+
+        // Every eligible activity here is a Page, so every shortcode must have landed in
+        // content (always visible) rather than intro (hidden unless the teacher opts in).
+        foreach ($shortcoderows as $row) {
+            $this->assertSame('content', $row->field);
+        }
+    }
+
+    /**
+     * Unchecking Secret Drops' own "distribute into activities" flag still creates the item, but
+     * skips scattering its drops entirely — same gating proof as Pill's, for the quota-scatter
+     * mechanic the distribute flag controls.
+     */
+    public function test_secret_drops_step_distribute_false_skips_activity_scatter(): void {
+        global $DB;
+
+        $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            runid: $runid,
+            steptype: 'secret_drops',
+            theme: '',
+            distribute: false
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(1, $result['counts']['items']);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_drops'));
+    }
+
+    /**
+     * Running the "secret_drops" step twice, in two different runs, must not duplicate the item
+     * or its drops.
+     */
+    public function test_secret_drops_step_is_idempotent_across_runs(): void {
+        $firstrunid = $this->start_empty_run();
+        $first = wizard_run_step::execute($this->instanceid, $this->course->id, $firstrunid, 'secret_drops', '');
+        $this->assertSame(1, $first['counts']['items']);
+
+        $secondrunid = $this->start_empty_run();
+        $second = wizard_run_step::execute($this->instanceid, $this->course->id, $secondrunid, 'secret_drops', '');
+        $this->assertSame(0, $second['counts']['items']);
+    }
+
+    /**
+     * Rolling back a "secret_drops" run removes the item and drops, and strips every shortcode
+     * back out of the activities it was inserted into.
+     */
+    public function test_secret_drops_step_run_can_be_rolled_back(): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'content' => 'Original body.',
+        ]);
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'secret_drops', '');
+        $this->assertTrue($result['success']);
+
+        \block_playerhud\local\wizard::rollback($runid, $this->instanceid, $this->course->id);
+
+        $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid]));
+        $content = $DB->get_field('page', 'content', ['id' => $page->id]);
+        $this->assertSame('Original body.', $content);
+    }
 }
