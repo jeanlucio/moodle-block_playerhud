@@ -1485,4 +1485,218 @@ final class wizard_run_step_test extends external_base_testcase {
         $this->assertEquals(2, $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]));
         $this->assertEquals(6, $DB->count_records('block_playerhud_classes', ['blockinstanceid' => $this->instanceid]));
     }
+
+    /**
+     * The "progress_item" step is mechanical (no AI/network): creates a themed item with an
+     * infinite, cooldown-based drop, independent of RPG Classes, with a manifest.
+     */
+    public function test_progress_item_step_creates_item_and_drop_with_manifest(): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'progress_item', '', '', 'fantasy');
+
+        $this->assertTrue($result['success']);
+        $expectedname = get_string('wizard_progress_item_name_fantasy', 'block_playerhud');
+        $this->assertSame(1, $result['counts']['items']);
+
+        $item = $DB->get_record('block_playerhud_items', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
+        $this->assertSame($expectedname, $item->name);
+        $this->assertEquals(0, $item->xp);
+        $this->assertEquals(0, $item->tradable);
+
+        $drop = $DB->get_record('block_playerhud_drops', ['itemid' => $item->id], '*', MUST_EXIST);
+        $this->assertEquals(0, $drop->maxusage);
+        $this->assertEquals(3600, $drop->respawntime);
+
+        $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $runid]);
+        $this->assertCount(2, $manifest, 'item + drop.');
+    }
+
+    /**
+     * Running the "progress_item" step twice, in two different runs, must not duplicate
+     * anything.
+     */
+    public function test_progress_item_step_is_idempotent_across_runs(): void {
+        global $DB;
+
+        $firstrunid = $this->start_empty_run();
+        $first = wizard_run_step::execute(
+            $this->instanceid,
+            $this->course->id,
+            $firstrunid,
+            'progress_item',
+            '',
+            '',
+            'fantasy'
+        );
+        $this->assertSame(1, $first['counts']['items']);
+
+        $secondrunid = $this->start_empty_run();
+        $second = wizard_run_step::execute(
+            $this->instanceid,
+            $this->course->id,
+            $secondrunid,
+            'progress_item',
+            '',
+            '',
+            'fantasy'
+        );
+        $this->assertSame(0, $second['counts']['items']);
+
+        $this->assertEquals(1, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
+     * Rolling back a "progress_item" run removes the item and its drop.
+     */
+    public function test_progress_item_step_run_can_be_rolled_back(): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'progress_item', '', '', 'fantasy');
+        $this->assertTrue($result['success']);
+
+        $deleted = \block_playerhud\local\wizard::rollback($runid, $this->instanceid, $this->course->id);
+
+        $this->assertGreaterThan(0, $deleted);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
+     * Checking only the progress item (independent of RPG or Items & Trade) feeds its drop into
+     * the same run's "auto_distribute" step, exactly as the browser forwards drop_ids between
+     * steps.
+     */
+    public function test_progress_item_step_feeds_into_auto_distribute(): void {
+        $runid = $this->start_empty_run();
+        $progressresult = wizard_run_step::execute(
+            $this->instanceid,
+            $this->course->id,
+            $runid,
+            'progress_item',
+            '',
+            '',
+            'fantasy'
+        );
+
+        $distributeresult = wizard_run_step::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            runid: $runid,
+            steptype: 'auto_distribute',
+            theme: '',
+            tonekey: 'fantasy',
+            dropids: $progressresult['drop_ids']
+        );
+
+        $this->assertTrue($distributeresult['success']);
+        // The PHPUnit test course has no activities, so distribution is skipped with a message —
+        // proving the progress item's drop actually reached the auto-distribute step.
+        $this->assertSame(
+            get_string('wizard_distribute_no_activities', 'block_playerhud'),
+            $distributeresult['message']
+        );
+    }
+
+    /**
+     * Regression test for the Page-module visibility bug: a Page's intro is never shown unless
+     * the teacher explicitly enables "Display page description", so distribute_drops() must
+     * target content (always shown on the page's own view) instead when the best-matching
+     * activity is a Page — same fix as generate_pill(), exercised here via the progress item
+     * since it needs no AI key.
+     */
+    public function test_auto_distribute_step_targets_page_content_not_intro(): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'name' => 'Crystals',
+            'content' => 'Original body.',
+        ]);
+
+        $runid = $this->start_empty_run();
+        $progressresult = wizard_run_step::execute(
+            $this->instanceid,
+            $this->course->id,
+            $runid,
+            'progress_item',
+            '',
+            '',
+            'fantasy'
+        );
+        $distributeresult = wizard_run_step::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            runid: $runid,
+            steptype: 'auto_distribute',
+            theme: '',
+            tonekey: 'fantasy',
+            dropids: $progressresult['drop_ids']
+        );
+
+        $this->assertTrue($distributeresult['success']);
+        $this->assertSame('', $distributeresult['message']);
+
+        $content = $DB->get_field('page', 'content', ['id' => $page->id]);
+        $this->assertStringContainsString('[PLAYERHUD_DROP', (string) $content);
+        $this->assertStringContainsString('Original body.', (string) $content);
+
+        $intro = $DB->get_field('page', 'intro', ['id' => $page->id]);
+        $this->assertStringNotContainsString('PLAYERHUD_DROP', (string) $intro);
+
+        $shortcoderow = $DB->get_record('block_playerhud_wizard_shortcodes', ['runid' => $runid], '*', MUST_EXIST);
+        $this->assertSame('content', $shortcoderow->field);
+    }
+
+    /**
+     * Auto-distributing a drop must rename it to the activity it actually landed in — otherwise
+     * the drops management table's "Localização/Nome" column keeps showing the item's own name,
+     * useless for finding where a drop physically is. Uses a page name deliberately different
+     * from the item's own name so a pass can only mean a real rename, not a coincidence.
+     */
+    public function test_auto_distribute_step_renames_drop_to_its_activity(): void {
+        global $DB;
+
+        $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'name' => 'Reactor Room',
+            'content' => 'Original body.',
+        ]);
+
+        $runid = $this->start_empty_run();
+        $progressresult = wizard_run_step::execute(
+            $this->instanceid,
+            $this->course->id,
+            $runid,
+            'progress_item',
+            '',
+            '',
+            'scifi'
+        );
+        $distributeresult = wizard_run_step::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            runid: $runid,
+            steptype: 'auto_distribute',
+            theme: '',
+            tonekey: 'scifi',
+            dropids: $progressresult['drop_ids']
+        );
+
+        $this->assertTrue($distributeresult['success']);
+        $this->assertSame('', $distributeresult['message']);
+
+        $itemname = get_string('wizard_progress_item_name_scifi', 'block_playerhud');
+        $item = $DB->get_record(
+            'block_playerhud_items',
+            ['blockinstanceid' => $this->instanceid, 'name' => $itemname],
+            '*',
+            MUST_EXIST
+        );
+        $drop = $DB->get_record('block_playerhud_drops', ['itemid' => $item->id], '*', MUST_EXIST);
+
+        $this->assertSame('Reactor Room', $drop->name);
+        $this->assertNotSame($itemname, $drop->name);
+    }
 }
