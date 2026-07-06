@@ -223,16 +223,19 @@ class wizard {
      *   screen) leaves the run's status untouched, and trusting that stale history would disable
      *   the card forever with no way back short of editing the database directly.
      *
-     * Ranking is deliberately excluded from this rule entirely — unlike every other mechanic
-     * here, checking its box twice was always a harmless no-op (generate_ranking() already
-     * no-ops if it is already on), so it never needed a one-shot lock. Its card stays a plain,
-     * always-available checkbox; turning it back off remains a block-settings-only action.
+     * Ranking uses neither signal: it is a live read of the block's own current
+     * `enable_ranking` setting, not run history or a fixed content fingerprint. Checking its
+     * box any number of times is harmless either way (generate_ranking() already no-ops if it
+     * is already on) — its card simply mirrors whatever the setting is right now, disabling
+     * itself while ranking is on and re-enabling the instant a teacher turns it back off via
+     * the block's own settings screen, regardless of how many wizard runs ever touched it.
      *
      * @param int $blockinstanceid The block instance ID.
+     * @param \stdClass $config The block instance configuration (for the ranking flag).
      * @return array<string, bool> Keyed by mechanic: items, missions, playercoin, avatars,
-     *     comercio, pill, secret_drops, latepenalty, progress_item, rpg.
+     *     comercio, pill, secret_drops, latepenalty, progress_item, rpg, ranking.
      */
-    public static function get_generated_modules(int $blockinstanceid): array {
+    public static function get_generated_modules(int $blockinstanceid, \stdClass $config): array {
         global $DB;
 
         $ran = [];
@@ -287,6 +290,7 @@ class wizard {
             'latepenalty' => isset($actiontypes['deadline_extension']),
             'progress_item' => $hasprogressitem,
             'rpg' => !empty($ran['rpg']) || !empty($ran['next_chapter']) || $hasstory,
+            'ranking' => !empty($config->enable_ranking),
         ];
     }
 

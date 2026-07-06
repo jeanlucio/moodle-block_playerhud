@@ -283,7 +283,7 @@ final class wizard_test extends advanced_testcase {
      * @covers ::get_generated_modules
      */
     public function test_get_generated_modules_all_false_on_fresh_instance(): void {
-        $generated = wizard::get_generated_modules($this->instanceid);
+        $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
 
         $this->assertSame([], array_keys(array_filter($generated)));
     }
@@ -300,7 +300,7 @@ final class wizard_test extends advanced_testcase {
         $undonerun = wizard::start_run($this->instanceid, 2, ['comercio']);
         wizard::finish_run($undonerun, 'rolledback');
 
-        $generated = wizard::get_generated_modules($this->instanceid);
+        $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
 
         $this->assertTrue($generated['items']);
         $this->assertTrue($generated['missions']);
@@ -324,7 +324,7 @@ final class wizard_test extends advanced_testcase {
         );
         wizard::finish_run($donerun, 'done');
 
-        $generated = wizard::get_generated_modules($this->instanceid);
+        $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
 
         // Items has no fingerprint of its own, so run history is still authoritative for it.
         $this->assertTrue($generated['items']);
@@ -364,15 +364,44 @@ final class wizard_test extends advanced_testcase {
             'blockinstanceid' => $this->instanceid, 'title' => 'Chapter 1', 'intro_text' => '',
             'unlock_date' => 0, 'required_level' => 0, 'sortorder' => 1,
         ]);
+        $config = (object) ['enable_ranking' => 1];
 
-        $generated = wizard::get_generated_modules($this->instanceid);
+        $generated = wizard::get_generated_modules($this->instanceid, $config);
 
         $this->assertTrue($generated['playercoin']);
         $this->assertTrue($generated['progress_item'], 'Any tone\'s progress item name counts.');
         $this->assertTrue($generated['rpg'], 'An existing chapter blocks generating an arc on top.');
+        $this->assertTrue($generated['ranking']);
         $this->assertFalse($generated['avatars']);
         $this->assertFalse($generated['pill']);
         $this->assertFalse($generated['secret_drops']);
         $this->assertFalse($generated['latepenalty']);
+    }
+
+    /**
+     * Ranking reads live off the block's own enable_ranking setting, never off run history —
+     * checking its box any number of times across any number of completed runs must never make
+     * it report generated while the setting itself is off, and must always report generated the
+     * instant the setting is on, with zero wizard runs at all.
+     *
+     * @covers ::get_generated_modules
+     */
+    public function test_get_generated_modules_ranking_ignores_run_count(): void {
+        for ($i = 0; $i < 3; $i++) {
+            $run = wizard::start_run($this->instanceid, 2, ['ranking']);
+            wizard::finish_run($run, 'done');
+        }
+
+        $off = wizard::get_generated_modules($this->instanceid, (object) ['enable_ranking' => 0]);
+        $this->assertFalse($off['ranking'], 'Off in settings must report false no matter how many runs touched it.');
+
+        $on = wizard::get_generated_modules($this->instanceid, (object) ['enable_ranking' => 1]);
+        $this->assertTrue($on['ranking']);
+
+        // No wizard run at all, setting simply on: still reports generated.
+        $context = \context_course::instance($this->courseid);
+        $freshinstance = $this->getDataGenerator()->create_block('playerhud', ['parentcontextid' => $context->id]);
+        $generated = wizard::get_generated_modules($freshinstance->id, (object) ['enable_ranking' => 1]);
+        $this->assertTrue($generated['ranking']);
     }
 }
