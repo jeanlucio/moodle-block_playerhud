@@ -318,4 +318,16 @@ final class wizard_run_step_test extends external_base_testcase {
         $this->expectException(\required_capability_exception::class);
         wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'ranking', '');
     }
+
+    /**
+     * A runid that belongs to a different block instance must be rejected — the manifest must
+     * never be written to on behalf of a run the caller does not own.
+     */
+    public function test_wizard_run_step_rejects_runid_from_other_instance(): void {
+        $otherinstanceid = $this->create_block_instance();
+        $foreignrunid = \block_playerhud\local\wizard::start_run($otherinstanceid, 2, []);
+
+        $this->expectException(\dml_missing_record_exception::class);
+        wizard_run_step::execute($this->instanceid, $this->course->id, $foreignrunid, 'ranking', '');
+    }
 }

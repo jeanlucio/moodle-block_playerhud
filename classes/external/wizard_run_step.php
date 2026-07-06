@@ -189,6 +189,13 @@ class wizard_run_step extends external_api {
         self::validate_context($context);
         require_capability('block/playerhud:manage', $context);
 
+        $DB->get_record(
+            'block_playerhud_wizard_runs',
+            ['id' => $params['runid'], 'blockinstanceid' => $params['instanceid']],
+            'id',
+            MUST_EXIST
+        );
+
         $bi = $DB->get_record('block_instances', ['id' => $params['instanceid']], '*', MUST_EXIST);
         $config = unserialize_object(base64_decode($bi->configdata));
         if (!$config) {
