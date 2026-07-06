@@ -1127,4 +1127,35 @@ final class wizard_run_step_test extends external_base_testcase {
         $content = $DB->get_field('page', 'content', ['id' => $page->id]);
         $this->assertSame('Original body.', $content);
     }
+
+    /**
+     * The "ranking" step turns the block's ranking setting on when it is off, merging into the
+     * existing config object rather than replacing it (proven here with a pre-existing,
+     * unrelated config value that must survive untouched).
+     */
+    public function test_ranking_step_turns_on_when_off(): void {
+        $instanceid = $this->create_block_instance(['enable_ranking' => 0, 'enable_items' => 0]);
+
+        $runid = \block_playerhud\local\wizard::start_run($instanceid, 2, []);
+        $result = wizard_run_step::execute($instanceid, $this->course->id, $runid, 'ranking', '');
+
+        $this->assertTrue($result['success']);
+        $blockinstance = \block_instance_by_id($instanceid);
+        $this->assertSame(1, (int) $blockinstance->config->enable_ranking);
+        $this->assertSame(0, (int) $blockinstance->config->enable_items);
+    }
+
+    /**
+     * Ranking already on is left untouched (no unnecessary config write).
+     */
+    public function test_ranking_step_noop_when_already_on(): void {
+        $instanceid = $this->create_block_instance(['enable_ranking' => 1]);
+
+        $runid = \block_playerhud\local\wizard::start_run($instanceid, 2, []);
+        $result = wizard_run_step::execute($instanceid, $this->course->id, $runid, 'ranking', '');
+
+        $this->assertTrue($result['success']);
+        $blockinstance = \block_instance_by_id($instanceid);
+        $this->assertSame(1, (int) $blockinstance->config->enable_ranking);
+    }
 }
