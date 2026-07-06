@@ -178,14 +178,35 @@ define(['core/str'], function(Str) {
         const scorepct = document.getElementById('ph-wizard-octalysis-score-pct');
         const scorebar = document.getElementById('ph-wizard-octalysis-score-bar');
 
-        // No drive starts active: the octagon is a pure function of what is actually ticked, so
-        // an untouched form honestly reads 0% rather than crediting drives no module has yet
-        // switched on (see the wizard's plan doc, § 10.2 Item E, for why a non-zero baseline was
-        // judged misleading).
+        /**
+         * Whether a mechanic checkbox is disabled specifically because it was already
+         * generated (or, for Ranking, is already active) — as opposed to disabled for some
+         * other reason, e.g. Trade's own unmet-requirement gate, which must NOT count towards
+         * coverage since nothing has actually happened for it yet. Detected via the "✓ Já
+         * gerado"/"✓ Já ativo" note rendered as a direct sibling of the checkbox's own
+         * form-check wrapper — scoped with :scope > so Trade's nested card (inside Avatar
+         * Pack's own card) never matches on Avatar Pack's own note, or vice versa.
+         *
+         * @param {HTMLInputElement} checkbox
+         * @return {boolean}
+         */
+        const isAlreadyGenerated = (checkbox) => {
+            const wrapper = checkbox.closest('.form-check');
+            const localcontainer = wrapper ? wrapper.parentElement : null;
+            return Boolean(checkbox.disabled && localcontainer
+                && localcontainer.querySelector(':scope > .ph-wizard-generated-note'));
+        };
+
+        // A drive is active when its checkbox is either checked (about to be generated) or
+        // already generated — an untouched, empty course still honestly reads 0% (nothing
+        // checked, nothing generated yet), but a course that already has content keeps
+        // crediting it instead of the octagon zeroing out the moment that card locks itself
+        // (see the wizard's plan doc, § 10.2 Item E, for the original all-or-nothing baseline
+        // this refines).
         const recompute = () => {
             const active = new Set();
             checkboxes.forEach((checkbox) => {
-                if (!checkbox.checked) {
+                if (!checkbox.checked && !isAlreadyGenerated(checkbox)) {
                     return;
                 }
                 checkbox.dataset.drives.split(',').forEach((id) => active.add(Number(id)));
