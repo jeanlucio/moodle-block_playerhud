@@ -83,6 +83,27 @@ final class drop_distribution_test extends advanced_testcase {
     }
 
     /**
+     * The course's own news forum is excluded, since it is reserved for PlayerCoin and Secret
+     * Drops' own discreet placement — a regular (non-news) forum in the same course is still
+     * included.
+     */
+    public function test_get_eligible_modules_excludes_news_forum(): void {
+        $this->getDataGenerator()->create_module('forum', [
+            'course' => $this->course->id,
+            'type' => 'news',
+        ]);
+        $regularforum = $this->getDataGenerator()->create_module('forum', [
+            'course' => $this->course->id,
+            'name' => 'Fórum de dúvidas',
+        ]);
+        $regularcm = get_coursemodule_from_instance('forum', $regularforum->id, $this->course->id);
+
+        $modules = drop_distribution::get_eligible_modules($this->course->id);
+        $this->assertCount(1, $modules);
+        $this->assertSame($regularcm->id, $modules[0]['cmid']);
+    }
+
+    /**
      * A course with no activities returns an empty eligible-modules list.
      */
     public function test_get_eligible_modules_returns_empty_for_activity_less_course(): void {

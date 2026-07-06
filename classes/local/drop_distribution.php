@@ -36,7 +36,13 @@ namespace block_playerhud\local;
 class drop_distribution {
     /**
      * Lists the course modules that can receive a drop shortcode (their table has an
-     * intro or content field), excluding modules pending deletion.
+     * intro or content field), excluding modules pending deletion and the course's own news
+     * forum (reserved for PlayerCoin and Secret Drops' dedicated, discreet placement — see
+     * {@see \block_playerhud\external\wizard_generate::generate_playercoin()} and
+     * {@see \block_playerhud\external\wizard_generate::generate_secret_drops()}). Without this
+     * exclusion, a bare course with no other activities yet would have the news forum picked
+     * as the "only eligible activity" for generic item distribution too, dumping unrelated
+     * item cards right next to those two mechanics' own discreet shortcodes.
      *
      * @param int $courseid Course ID.
      * @return array<int, array{cmid: int, instance: int, name: string, modname: string,
@@ -47,10 +53,14 @@ class drop_distribution {
 
         $course = get_course($courseid);
         $modinfo = get_fast_modinfo($course);
+        $newsforumcmid = \block_playerhud\utils::find_news_forum_cmid($courseid);
 
         $modules = [];
         foreach ($modinfo->get_cms() as $cm) {
             if (!empty($cm->deletioninprogress)) {
+                continue;
+            }
+            if ($newsforumcmid !== null && (int) $cm->id === $newsforumcmid) {
                 continue;
             }
             $columns = $DB->get_columns($cm->modname);
