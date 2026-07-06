@@ -1033,7 +1033,6 @@ $string['wizard_octalysis_playergroup_desc'] = "Lets students form groups and co
 $string['wizard_octalysis_playergroup_label'] = 'Groups (PlayerGroup)';
 $string['wizard_octalysis_score_label'] = 'Octalysis coverage';
 $string['wizard_octalysis_status_installed'] = 'Installed';
-$string['wizard_octalysis_status_notinstalled'] = 'Not installed';
 $string['wizard_octalysis_svg_label'] = 'Octalysis framework coverage octagon';
 $string['wizard_octalysis_title'] = 'Octalysis framework';
 $string['wizard_open_btn'] = 'Generate gamification';
