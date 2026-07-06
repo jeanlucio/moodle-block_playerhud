@@ -200,6 +200,26 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             syncDistributeCheckbox(moduleEl, distributeEl);
         });
 
+        // Course-wide activity count never changes during the modal's lifetime, so this is
+        // computed once: a caption under each mechanic that actually auto-distributes into
+        // course activities (Items, Item de Progresso, Colecionável de Conhecimento — PlayerCoin
+        // and the Secret Item target the news forum instead, unrelated to this count), warning
+        // that its drops will be either concentrated on very few activities or not placed at all.
+        if (eligibleActivityCount < 3) {
+            (async() => {
+                const hintText = eligibleActivityCount === 0
+                    ? await Str.get_string('wizard_few_activities_hint_zero', 'block_playerhud')
+                    : await Str.get_string('wizard_few_activities_hint_few', 'block_playerhud', eligibleActivityCount);
+                ['items', 'pill', 'progressitem'].forEach((suffix) => {
+                    const hintEl = document.getElementById(`ph-wizard-few-activities-hint-${suffix}`);
+                    if (hintEl) {
+                        hintEl.textContent = hintText;
+                        hintEl.classList.remove('ph-display-none');
+                    }
+                });
+            })();
+        }
+
         // "Select all" (sits in the Economy section header, but controls every mechanic
         // checkbox in the whole form) checks/unchecks every enabled one at once, including
         // Comércio — appended explicitly since it has no ph-wizard-mech-module class of its own
@@ -846,13 +866,13 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 return;
             }
 
-            // Items and the RPG item are the only two mechanics whose drops need an actual
-            // course activity to land in (PlayerCoin/Secret Item insert into the news forum
-            // instead, and everything else has no drop at all) — so only their own distribute
-            // flag matters here, same condition build_step_types() uses server-side to decide
-            // whether an auto_distribute step is even worth scheduling.
+            // Items, Item de Progresso and Colecionável de Conhecimento are the only mechanics
+            // whose drops need an actual course activity to land in (PlayerCoin/Secret Item
+            // insert into the news forum instead, and everything else has no drop at all) — so
+            // only their own distribute flag matters here.
             const needsActivities = (itemsModuleEl.checked && distributeChecked(distributeItemsEl))
-                || (progressItemModuleEl.checked && distributeChecked(distributeProgressItemEl));
+                || (progressItemModuleEl.checked && distributeChecked(distributeProgressItemEl))
+                || (pillModuleEl.checked && distributeChecked(distributePillEl));
             if (needsActivities && eligibleActivityCount < 3) {
                 setConfirmFewActivitiesView(true);
                 return;
