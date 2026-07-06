@@ -677,4 +677,84 @@ final class wizard_run_step_test extends external_base_testcase {
         $introrolledback = $DB->get_field('forum', 'intro', ['id' => $forum->id]);
         $this->assertStringNotContainsString('PLAYERHUD_DROP', (string) $introrolledback);
     }
+
+    /**
+     * The "comercio" step wires PlayerCoin<->Avatar Pack trades from whatever already exists in
+     * the instance (not just this run's own creations), and records the trade plus its
+     * requirement and reward rows into the manifest.
+     */
+    public function test_comercio_step_wires_playercoin_and_avatars_with_manifest(): void {
+        global $DB;
+
+        $this->create_item($this->instanceid, 'PlayerCoin', ['action_type' => 'playercoin']);
+        $avatar = $this->create_item($this->instanceid, 'Fox', ['action_type' => 'avatar_profile']);
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'comercio', '');
+
+        $this->assertTrue($result['success']);
+        // One avatar yields 2 suggestions: the individual trade for it, plus the "bundle all
+        // avatars" trade — see game::build_trade_suggestions().
+        $this->assertSame(2, $result['counts']['trades']);
+
+        $trades = $DB->get_records('block_playerhud_trades', ['blockinstanceid' => $this->instanceid]);
+        $this->assertCount(2, $trades);
+        foreach ($trades as $trade) {
+            $this->assertSame(1, (int) $trade->onetime);
+            $req = $DB->get_record('block_playerhud_trade_reqs', ['tradeid' => $trade->id], '*', MUST_EXIST);
+            $this->assertGreaterThan(0, (int) $req->qty);
+            $reward = $DB->get_record(
+                'block_playerhud_trade_rewards',
+                ['tradeid' => $trade->id, 'itemid' => $avatar->id],
+                '*',
+                MUST_EXIST
+            );
+            $this->assertSame($avatar->id, (int) $reward->itemid);
+        }
+
+        $manifesttables = array_column(
+            $DB->get_records('block_playerhud_wizard_objects', ['runid' => $runid]),
+            'objecttable'
+        );
+        $this->assertContains('block_playerhud_trades', $manifesttables);
+        $this->assertContains('block_playerhud_trade_reqs', $manifesttables);
+        $this->assertContains('block_playerhud_trade_rewards', $manifesttables);
+    }
+
+    /**
+     * Running the "comercio" step twice, in two different runs, must not duplicate a trade that
+     * already covers the same avatar.
+     */
+    public function test_comercio_step_is_idempotent_across_runs(): void {
+        $this->create_item($this->instanceid, 'PlayerCoin', ['action_type' => 'playercoin']);
+        $this->create_item($this->instanceid, 'Fox', ['action_type' => 'avatar_profile']);
+
+        $firstrunid = $this->start_empty_run();
+        $first = wizard_run_step::execute($this->instanceid, $this->course->id, $firstrunid, 'comercio', '');
+        $this->assertGreaterThan(0, $first['counts']['trades']);
+
+        $secondrunid = $this->start_empty_run();
+        $second = wizard_run_step::execute($this->instanceid, $this->course->id, $secondrunid, 'comercio', '');
+        $this->assertSame(0, $second['counts']['trades']);
+    }
+
+    /**
+     * Rolling back a "comercio" run removes the trade and its requirement/reward rows.
+     */
+    public function test_comercio_step_run_can_be_rolled_back(): void {
+        global $DB;
+
+        $this->create_item($this->instanceid, 'PlayerCoin', ['action_type' => 'playercoin']);
+        $this->create_item($this->instanceid, 'Fox', ['action_type' => 'avatar_profile']);
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'comercio', '');
+        $this->assertTrue($result['success']);
+
+        \block_playerhud\local\wizard::rollback($runid, $this->instanceid, $this->course->id);
+
+        $this->assertEquals(0, $DB->count_records('block_playerhud_trades', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_trade_reqs', []));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_trade_rewards', []));
+    }
 }
