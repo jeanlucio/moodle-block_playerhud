@@ -702,14 +702,21 @@ class wizard_generate extends external_api {
 
         // Generate() applies a single XP value identically to every item in the batch (the AI
         // itself never decides XP, only name/description/emoji), so the distributed shares are
-        // reassigned individually here — cheap, item counts are small (5-15), and this is the
-        // only way to give each item its own share of the "Item Épico" leftover bonus without
-        // one AI call per item.
+        // reassigned individually here — this is the only way to give each item its own share of
+        // the "Item Épico" leftover bonus without one AI call per item.
         if (!empty($result['created_item_ids'])) {
+            $itemidsbyshare = [];
             foreach ($result['created_item_ids'] as $index => $itemid) {
                 if (isset($itemxpshares[$index])) {
-                    $DB->set_field('block_playerhud_items', 'xp', $itemxpshares[$index], ['id' => $itemid]);
+                    $itemidsbyshare[$itemxpshares[$index]][] = $itemid;
                 }
+            }
+            // Distribute_share() only ever produces at most 2 distinct values (a floor share and,
+            // for the leftover remainder, floor+1) — grouping here keeps this to at most 2
+            // UPDATEs no matter how many items were created, instead of one per item.
+            foreach ($itemidsbyshare as $xpvalue => $ids) {
+                [$idsql, $idparams] = $DB->get_in_or_equal($ids);
+                $DB->set_field_select('block_playerhud_items', 'xp', $xpvalue, "id $idsql", $idparams);
             }
             \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', $result['created_item_ids']);
         }
