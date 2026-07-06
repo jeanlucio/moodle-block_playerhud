@@ -78,7 +78,7 @@
                     <label for="ph-wizard-tone" class="form-label fw-bold">
                         {{#str}} wizard_tone_label, block_playerhud {{/str}}
                     </label>
-                    <select class="form-select" id="ph-wizard-tone">
+                    <select class="form-control form-select" id="ph-wizard-tone">
                         {{#tone_options}}
                         <option value="{{value}}">{{label}}</option>
                         {{/tone_options}}
@@ -96,8 +96,8 @@
                             <i class="fa fa-info-circle" aria-hidden="true"></i>
                         </button>
                     </div>
-                    <div class="d-flex align-items-center gap-1 flex-wrap">
-                        <select class="form-select w-auto" id="ph-wizard-size">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <select class="form-control form-select w-auto" id="ph-wizard-size">
                             {{#size_options}}
                             <option value="{{value}}">{{label}}</option>
                             {{/size_options}}
