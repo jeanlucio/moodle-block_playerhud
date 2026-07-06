@@ -327,7 +327,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 showHuddySlide(huddyIndex + 1);
             }, HUDDY_INTERVAL_MS);
 
-            if (!huddyTips) {
+            if (huddyTips === null) {
                 try {
                     huddyTips = await Str.get_strings(HUDDY_TIP_KEYS.map((key) => ({key, component: 'block_playerhud'})));
                     huddyTipLabels = await Str.get_strings(HUDDY_TIP_KEYS.map((key, i) => ({
@@ -335,7 +335,9 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                     })));
                     showHuddySlide(huddyIndex);
                 } catch (e) {
-                    huddyTips = [];
+                    // Left as null (not []) so the next carousel start retries the fetch instead
+                    // of permanently rendering with no tip text for the rest of the page session.
+                    huddyTips = null;
                 }
             }
         };
