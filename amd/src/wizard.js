@@ -193,31 +193,37 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             syncDistributeCheckbox(moduleEl, distributeEl);
         });
 
-        // "Select all" for the Economy section: checks/unchecks every enabled mechanic checkbox
-        // in that section at once (Comércio's own nested checkbox is excluded on purpose — it
-        // has no ph-wizard-mech-module class, since its own requirement-gating logic decides
-        // whether it can be checked at all, not a bulk action). Reflects back — including an
-        // indeterminate state — when the teacher toggles those checkboxes individually instead.
-        const economySelectAllEl = document.getElementById('ph-wizard-select-all-economy');
-        if (economySelectAllEl) {
-            const economyModuleEls = Array.from(
-                document.querySelectorAll('#ph-wizard-section-economy .ph-wizard-mech-module')
+        // "Select all" (sits in the Economy section header, but controls every mechanic
+        // checkbox in the whole form) checks/unchecks every enabled one at once, including
+        // Comércio — appended explicitly since it has no ph-wizard-mech-module class of its own
+        // (its own requirement-gating decides whether it can be checked at all) and pushed to
+        // the END of the list so it is always processed after PlayerCoin/Avatar Pack: by then
+        // syncTradeRequirement() has already re-evaluated (and, when checking, cleared) its
+        // disabled state from their own dispatched change events. Reflects back — including an
+        // indeterminate state — when the teacher toggles any of those checkboxes individually.
+        const selectAllEl = document.getElementById('ph-wizard-select-all');
+        if (selectAllEl) {
+            const selectAllModuleEls = Array.from(
+                document.querySelectorAll('#ph-wizard-form .ph-wizard-mech-module')
             );
+            if (tradeModuleEl) {
+                selectAllModuleEls.push(tradeModuleEl);
+            }
 
-            const syncEconomySelectAll = () => {
-                const selectable = economyModuleEls.filter((checkbox) => !checkbox.disabled);
+            const syncSelectAll = () => {
+                const selectable = selectAllModuleEls.filter((checkbox) => !checkbox.disabled);
                 const checkedcount = selectable.filter((checkbox) => checkbox.checked).length;
-                economySelectAllEl.checked = selectable.length > 0 && checkedcount === selectable.length;
-                economySelectAllEl.indeterminate = checkedcount > 0 && checkedcount < selectable.length;
+                selectAllEl.checked = selectable.length > 0 && checkedcount === selectable.length;
+                selectAllEl.indeterminate = checkedcount > 0 && checkedcount < selectable.length;
             };
 
-            economySelectAllEl.addEventListener('change', () => {
-                // Captured once: each dispatched change below re-enters syncEconomySelectAll(),
-                // which recomputes and overwrites economySelectAllEl.checked mid-loop — reading
-                // the live property on every iteration would corrupt later checkboxes with an
+            selectAllEl.addEventListener('change', () => {
+                // Captured once: each dispatched change below re-enters syncSelectAll(), which
+                // recomputes and overwrites selectAllEl.checked mid-loop — reading the live
+                // property on every iteration would corrupt later checkboxes with an
                 // intermediate (not the teacher's intended) value.
-                const shouldCheck = economySelectAllEl.checked;
-                economyModuleEls.forEach((checkbox) => {
+                const shouldCheck = selectAllEl.checked;
+                selectAllModuleEls.forEach((checkbox) => {
                     if (checkbox.disabled) {
                         return;
                     }
@@ -226,8 +232,8 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 });
             });
 
-            economyModuleEls.forEach((checkbox) => checkbox.addEventListener('change', syncEconomySelectAll));
-            syncEconomySelectAll();
+            selectAllModuleEls.forEach((checkbox) => checkbox.addEventListener('change', syncSelectAll));
+            syncSelectAll();
         }
 
         // Checked by default only when the instance is still at the edit form's defaults (100
