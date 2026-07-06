@@ -310,6 +310,27 @@ class utils {
     }
 
     /**
+     * Finds the course module ID of the course's own news/announcements forum, if one exists.
+     *
+     * @param int $courseid Course ID.
+     * @return int|null The forum's cmid, or null when the course has no news forum.
+     */
+    public static function find_news_forum_cmid(int $courseid): ?int {
+        global $DB;
+
+        $sql = "SELECT cm.id AS cmid
+                  FROM {forum} f
+                  JOIN {course_modules} cm ON cm.instance = f.id
+                  JOIN {modules} m ON m.id = cm.module
+                 WHERE m.name = 'forum'
+                   AND f.course = :courseid
+                   AND f.type = 'news'";
+        $cmid = $DB->get_field_sql($sql, ['courseid' => $courseid]);
+
+        return $cmid !== false ? (int) $cmid : null;
+    }
+
+    /**
      * Build the HTML that replaces the user picture when an avatar item is equipped.
      *
      * @param \stdClass $item The equipped item record.

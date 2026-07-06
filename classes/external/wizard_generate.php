@@ -918,28 +918,31 @@ class wizard_generate {
         return [$pillname, $bookname];
     }
 
-    /**
-     * Total secret drop instances to distribute across course activities. Deliberately small
-     * and fixed regardless of journey size — scarcity is the whole point of this mechanic, not
-     * scale, so a "Long" journey should not feel less rare than a "Short" one.
-     */
-    private const SECRET_DROP_COUNT = 3;
+    /** @var string Emoji used as the secret drop's own visible label (mode=text), never its name. */
+    private const SECRET_DROP_EMOJI = '💻';
 
     /**
-     * Creates a tone-specific secret collectible (`secret = 1`) and spreads a small, fixed
-     * number of one-time drops for it across the course's eligible activities.
+     * Creates a tone-specific secret collectible (`secret = 1`) and, if the course has a news
+     * forum, plants a single one-time drop for it there, disguised as a plain emoji blended into
+     * whatever the forum's own intro already says — rendered in mode=text (see
+     * insert_drop_shortcode's `mode`/`customtext` params) instead of a card, since a card would
+     * show a name and an icon and give the game away instantly.
+     *
+     * Deliberately just one instance, not several scattered across activities: once a student
+     * finds the first one, hunting for more loses its charm — scarcity is the whole point of
+     * this mechanic, not scale, so no journey-size scaling either.
      *
      * No quest or trade is attached: the reward here is the collection moment itself. While
      * uncollected, `tab_collection::export_for_template()` already renders any secret item as an
      * unrevealed "???" card (see its `$item->secret` branch) — this method only needs to create
-     * the item and its drops; the mystery/reveal UI is a pre-existing engine behaviour, not
+     * the item and its drop; the mystery/reveal UI is a pre-existing engine behaviour, not
      * something new built for this module.
      *
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      * @param string $tonekey Narrative tone key.
      * @param int $runid Wizard run ID.
-     * @param bool $distribute Whether to also spread the collectible's drops across activities.
+     * @param bool $distribute Whether to also plant the collectible's drop in the news forum.
      * @return string[] Names of the created items (empty if the item already existed).
      */
     public static function generate_secret_drops(
@@ -975,46 +978,35 @@ class wizard_generate {
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$itemid]);
 
         if ($distribute) {
-            $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
-            $quotas = \block_playerhud\local\drop_distribution::compute_activity_quotas(
-                self::SECRET_DROP_COUNT,
-                count($modules)
-            );
-
-            $dropids = [];
-            foreach ($quotas as $i => $quota) {
+            // No news forum yet (e.g. it was deleted): the item still exists, just with nowhere
+            // planted — same tolerance as generate_playercoin()'s own forum-not-found case.
+            $forumcmid = \block_playerhud\utils::find_news_forum_cmid($courseid);
+            if ($forumcmid !== null) {
                 $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
                     'blockinstanceid' => $instanceid,
                     'itemid' => $itemid,
                     'name' => $itemname,
-                    'maxusage' => $quota,
+                    'maxusage' => 1,
                     'respawntime' => 0,
                     'code' => \block_playerhud\utils::generate_drop_code($instanceid),
                     'timecreated' => $now,
                     'timemodified' => $now,
                 ]);
-                $dropids[] = $dropid;
+                \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', [$dropid]);
 
-                // Page modules never show their intro unless the teacher explicitly enabled
-                // "Display page description" — their content, in contrast, is always shown on
-                // the page's own view. Every other eligible module type shows its intro
-                // unconditionally on its own view page, regardless of the course-page "show
-                // description" setting.
-                $field = $modules[$i]['supports_content'] ? 'content' : 'intro';
                 $result = \block_playerhud\external\insert_drop_shortcode::execute(
                     $instanceid,
                     $courseid,
                     $dropid,
-                    $modules[$i]['cmid'],
-                    $field,
-                    'top'
+                    $forumcmid,
+                    'intro',
+                    'top',
+                    'text',
+                    self::SECRET_DROP_EMOJI
                 );
                 if ($result['success']) {
-                    \block_playerhud\local\wizard::record_shortcode($runid, $dropid, (int) $modules[$i]['cmid'], $field);
+                    \block_playerhud\local\wizard::record_shortcode($runid, $dropid, $forumcmid, 'intro');
                 }
-            }
-            if (!empty($dropids)) {
-                \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', $dropids);
             }
         }
 
