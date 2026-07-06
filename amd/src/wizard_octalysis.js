@@ -28,16 +28,28 @@
 define(['core/str'], function(Str) {
     'use strict';
 
-    /** @var {Object[]} The 8 Octalysis core drives, in wheel order starting at the top. */
+    /**
+     * The 8 Octalysis core drives, in wheel order starting at the top and going clockwise.
+     *
+     * This order is NOT 1-2-3-4-5-6-7-8: it reproduces Yu-Kai Chou's own octagon layout, where
+     * drive 1 (Meaning) and drive 8 (Avoidance) sit alone on the vertical axis (top/bottom),
+     * the White Hat drives (1-4) occupy the top half and the Black Hat drives (5-8) the bottom
+     * half, and the right side (3, 5, 7) is "Right Brain" (creative/social/emotional) while the
+     * left side (2, 4, 6) is "Left Brain" (logic/ownership/scarcity). Each drive's own `id`
+     * still matches Chou's canonical numbering (used to match a card's data-drives attribute);
+     * only the array's iteration order here controls where it is drawn.
+     *
+     * @var {Object[]}
+     */
     const DRIVES = [
         {id: 1, color: '#e8a020', labelkey: 'wizard_octalysis_drive1_label'},
-        {id: 2, color: '#d44e2a', labelkey: 'wizard_octalysis_drive2_label'},
         {id: 3, color: '#4a9eca', labelkey: 'wizard_octalysis_drive3_label'},
-        {id: 4, color: '#6bb86b', labelkey: 'wizard_octalysis_drive4_label'},
         {id: 5, color: '#9b5fc0', labelkey: 'wizard_octalysis_drive5_label'},
-        {id: 6, color: '#d44a8a', labelkey: 'wizard_octalysis_drive6_label'},
         {id: 7, color: '#3dbfb8', labelkey: 'wizard_octalysis_drive7_label'},
         {id: 8, color: '#c9a84c', labelkey: 'wizard_octalysis_drive8_label'},
+        {id: 6, color: '#d44a8a', labelkey: 'wizard_octalysis_drive6_label'},
+        {id: 4, color: '#6bb86b', labelkey: 'wizard_octalysis_drive4_label'},
+        {id: 2, color: '#d44e2a', labelkey: 'wizard_octalysis_drive2_label'},
     ];
 
     /**
@@ -141,6 +153,7 @@ define(['core/str'], function(Str) {
         const stringrequests = [
             {key: 'wizard_octalysis_center_label', component: 'block_playerhud'},
             {key: 'wizard_octalysis_invite', component: 'block_playerhud'},
+            {key: 'wizard_octalysis_drive8_unavailable', component: 'block_playerhud'},
         ];
         DRIVES.forEach((drive) => {
             stringrequests.push({key: drive.labelkey, component: 'block_playerhud'});
@@ -151,10 +164,11 @@ define(['core/str'], function(Str) {
         const strings = await Str.get_strings(stringrequests);
         const centerlabel = strings[0];
         const invitetext = strings[1];
+        const drive8unavailabletext = strings[2];
 
         DRIVES.forEach((drive, index) => {
-            drive.label = strings[2 + index];
-            drive.sub = strings[2 + DRIVES.length + index];
+            drive.label = strings[3 + index];
+            drive.sub = strings[3 + DRIVES.length + index];
         });
 
         buildSegments(svg, DRIVES, centerlabel);
@@ -177,6 +191,16 @@ define(['core/str'], function(Str) {
         const checkboxes = Array.from(document.querySelectorAll('#ph-wizard-form [data-drives]'));
         const scorepct = document.getElementById('ph-wizard-octalysis-score-pct');
         const scorebar = document.getElementById('ph-wizard-octalysis-score-bar');
+
+        // Drives with at least one checkbox in the current form that could ever cover them —
+        // regardless of whether it is checked. A drive missing from this set (currently only
+        // ever drive 8, Avoidance, when local_latepenalty is not installed and its card never
+        // renders) cannot be reached no matter what the teacher ticks, so it gets a different,
+        // more specific tooltip below instead of the generic "tick a module" invite.
+        const driveshasanycheckbox = new Set();
+        checkboxes.forEach((checkbox) => {
+            checkbox.dataset.drives.split(',').forEach((id) => driveshasanycheckbox.add(Number(id)));
+        });
 
         /**
          * Whether a mechanic checkbox is disabled specifically because it was already
@@ -218,13 +242,20 @@ define(['core/str'], function(Str) {
                 const segment = document.getElementById(`ph-oct-seg-${drive.id}`);
                 const label = document.getElementById(`ph-oct-lbl-${drive.id}`);
                 const isactive = active.has(drive.id);
+                const isunavailable = !isactive && !driveshasanycheckbox.has(drive.id);
                 segment.classList.toggle('ph-oct-active', isactive);
                 segment.classList.toggle('ph-oct-inactive', !isactive);
+                segment.classList.toggle('ph-oct-unavailable', isunavailable);
                 label.classList.toggle('ph-oct-inactive', !isactive);
 
-                const tooltiptext = isactive
-                    ? `✓ ${drive.label} — ${drive.sub}`
-                    : `${drive.label} — ${invitetext}`;
+                let tooltiptext;
+                if (isactive) {
+                    tooltiptext = `✓ ${drive.label} — ${drive.sub}`;
+                } else if (isunavailable && drive.id === 8) {
+                    tooltiptext = `${drive.label} — ${drive8unavailabletext}`;
+                } else {
+                    tooltiptext = `${drive.label} — ${invitetext}`;
+                }
                 segment.dataset.tooltipText = tooltiptext;
                 segment.setAttribute('aria-label', tooltiptext);
             });

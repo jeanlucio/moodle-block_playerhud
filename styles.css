@@ -2489,6 +2489,16 @@ div.modal-dialog .visually-hidden {
     opacity: 0.15;
     filter: none;
 }
+/*
+ * A drive with no checkbox able to reach it at all (only Avoidance today, when
+ * local_latepenalty is not installed) gets a dashed outline on top of the normal inactive
+ * dimming, to read as "not currently reachable" rather than "just not ticked yet".
+ */
+#ph-wizard-modal .ph-oct-segment.ph-oct-unavailable {
+    stroke: var(--body-color, #1d2125);
+    stroke-width: 1;
+    stroke-dasharray: 3 2;
+}
 #ph-wizard-modal .ph-oct-segment:focus-visible {
     outline: 2px solid var(--primary, #0d6efd);
     outline-offset: 2px;

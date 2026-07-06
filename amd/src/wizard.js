@@ -321,6 +321,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
             'wizard_huddy_tip1', 'wizard_huddy_tip2', 'wizard_huddy_tip3', 'wizard_huddy_tip4',
             'wizard_huddy_tip5', 'wizard_huddy_tip6', 'wizard_huddy_tip7', 'wizard_huddy_tip8',
             'wizard_huddy_tip9', 'wizard_huddy_tip10', 'wizard_huddy_tip11', 'wizard_huddy_tip12',
+            'wizard_huddy_tip13',
         ];
         const HUDDY_INTERVAL_MS = 7000;
         let huddyTimer = null;
