@@ -74,6 +74,15 @@ class setup_playercoin_drop extends external_api {
         self::validate_context($context);
         require_capability('block/playerhud:manage', $context);
 
+        $coursecontext = \context_course::instance($courseid);
+        require_capability('moodle/course:manageactivities', $coursecontext);
+
+        // Verify the block instance actually belongs to the supplied course.
+        $blockcoursectx = $context->get_course_context(false);
+        if (!$blockcoursectx || (int) $blockcoursectx->instanceid !== $courseid) {
+            throw new \moodle_exception('accessdenied', 'admin');
+        }
+
         $DB->get_record(
             'block_playerhud_items',
             ['id' => $itemid, 'blockinstanceid' => $instanceid],
