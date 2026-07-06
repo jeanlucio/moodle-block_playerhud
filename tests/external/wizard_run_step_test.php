@@ -1352,4 +1352,137 @@ final class wizard_run_step_test extends external_base_testcase {
         $reward = $DB->get_record('block_playerhud_trade_rewards', ['tradeid' => $trade->id], '*', MUST_EXIST);
         $this->assertSame((int) $item->id, (int) $reward->itemid);
     }
+
+    /**
+     * RPG Classes is mechanical (no AI/network): creates 3 classes, a fixed Chapter 1 with 6
+     * nodes and choices, and records everything into the run's manifest.
+     */
+    public function test_rpg_step_creates_classes_and_chapter_with_manifest(): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'rpg', '', '', 'fantasy');
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(3, $result['counts']['classes']);
+        $this->assertSame(1, $result['counts']['chapters']);
+
+        $classes = $DB->get_records('block_playerhud_classes', ['blockinstanceid' => $this->instanceid]);
+        $this->assertCount(3, $classes);
+
+        $chapters = $DB->get_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]);
+        $this->assertCount(1, $chapters);
+        $chapter = reset($chapters);
+
+        $nodes = $DB->get_records('block_playerhud_story_nodes', ['chapterid' => $chapter->id]);
+        $this->assertCount(6, $nodes);
+
+        $nodeids = array_keys($nodes);
+        [$insql, $inparams] = $DB->get_in_or_equal($nodeids, SQL_PARAMS_NAMED);
+        $choices = $DB->get_records_select('block_playerhud_choices', "nodeid $insql", $inparams);
+        $this->assertCount(6, $choices, '1 (continue) + 2 (help/direct) + 3 (class picks) = 6.');
+
+        $classchoices = array_filter($choices, static fn($choice): bool => (int) $choice->set_class_id > 0);
+        $this->assertCount(3, $classchoices, 'Exactly the 3 archetype-selection choices set a class.');
+        $assignedclassids = array_map(static fn($choice): int => (int) $choice->set_class_id, $classchoices);
+        sort($assignedclassids);
+        $expectedclassids = array_map('intval', array_keys($classes));
+        sort($expectedclassids);
+        $this->assertSame($expectedclassids, $assignedclassids, 'Each of the 3 classes is assignable.');
+
+        $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $runid]);
+        $this->assertCount(3 + 1 + 6 + 6, $manifest, 'classes + chapter + nodes + choices.');
+    }
+
+    /**
+     * Requesting RPG also ensures the block's own enable_rpg setting is on — a teacher who had
+     * the Classes/Chapters tabs turned off still sees what the wizard just generated there.
+     */
+    public function test_rpg_step_ensures_enable_rpg_is_on(): void {
+        \block_instance_by_id($this->instanceid)->instance_config_save((object) ['enable_rpg' => 0]);
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'rpg', '', '', 'fantasy');
+
+        $this->assertTrue($result['success']);
+        $blockinstance = \block_instance_by_id($this->instanceid);
+        $this->assertSame(1, (int) $blockinstance->config->enable_rpg);
+    }
+
+    /**
+     * Even on the idempotent skip path (Chapter 1 already exists for this tone, so nothing new
+     * is created), checking the RPG box is still the teacher's intent to see those tabs — reached
+     * directly since generate_rpg_classes() itself (not the step dispatch) owns this behavior.
+     */
+    public function test_rpg_ensures_enable_rpg_is_on_even_when_already_generated(): void {
+        wizard_generate::generate_rpg_classes($this->instanceid, 'fantasy', 0);
+        \block_instance_by_id($this->instanceid)->instance_config_save((object) ['enable_rpg' => 0]);
+
+        $result = wizard_generate::generate_rpg_classes($this->instanceid, 'fantasy', 0);
+
+        $this->assertSame('', $result['chapter_title'], 'Idempotent skip: nothing new created.');
+        $blockinstance = \block_instance_by_id($this->instanceid);
+        $this->assertSame(1, (int) $blockinstance->config->enable_rpg);
+    }
+
+    /**
+     * Running the "rpg" step twice, in two different runs, with the same tone must not
+     * duplicate anything.
+     */
+    public function test_rpg_step_is_idempotent_across_runs(): void {
+        global $DB;
+
+        $firstrunid = $this->start_empty_run();
+        $first = wizard_run_step::execute($this->instanceid, $this->course->id, $firstrunid, 'rpg', '', '', 'fantasy');
+        $this->assertSame(3, $first['counts']['classes']);
+        $this->assertSame(1, $first['counts']['chapters']);
+
+        $secondrunid = $this->start_empty_run();
+        $second = wizard_run_step::execute($this->instanceid, $this->course->id, $secondrunid, 'rpg', '', '', 'fantasy');
+        $this->assertSame(0, $second['counts']['classes']);
+        $this->assertSame(0, $second['counts']['chapters']);
+
+        $this->assertEquals(3, $DB->count_records('block_playerhud_classes', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(1, $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]));
+
+        $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $secondrunid]);
+        $this->assertCount(0, $manifest);
+    }
+
+    /**
+     * Rolling back an "rpg" run removes the classes, chapter, nodes and choices.
+     */
+    public function test_rpg_step_run_can_be_rolled_back(): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'rpg', '', '', 'fantasy');
+        $this->assertTrue($result['success']);
+
+        $deleted = \block_playerhud\local\wizard::rollback($runid, $this->instanceid, $this->course->id);
+
+        $this->assertGreaterThan(0, $deleted);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_classes', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_story_nodes', []));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_choices', []));
+    }
+
+    /**
+     * A different tone key produces a different chapter, coexisting with the first.
+     */
+    public function test_rpg_step_different_tone_produces_different_chapter(): void {
+        global $DB;
+
+        $firstrunid = $this->start_empty_run();
+        wizard_run_step::execute($this->instanceid, $this->course->id, $firstrunid, 'rpg', '', '', 'fantasy');
+
+        $secondrunid = $this->start_empty_run();
+        $scifi = wizard_run_step::execute($this->instanceid, $this->course->id, $secondrunid, 'rpg', '', '', 'scifi');
+
+        $this->assertSame(3, $scifi['counts']['classes'], 'Sci-Fi has different names, so nothing is skipped.');
+        $this->assertSame(1, $scifi['counts']['chapters']);
+        $this->assertEquals(2, $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(6, $DB->count_records('block_playerhud_classes', ['blockinstanceid' => $this->instanceid]));
+    }
 }
