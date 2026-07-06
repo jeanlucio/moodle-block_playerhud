@@ -594,6 +594,10 @@ class wizard_generate extends external_api {
     /**
      * Generates the Items & Trade module (AI items with drops) and records them in the run.
      *
+     * Also ensures the block's own `enable_items` setting is on (see
+     * `wizard::ensure_config_flag()`), so a teacher who had the Collection/Shop tabs turned off
+     * still sees what gets generated here instead of it landing in a hidden tab.
+     *
      * @param int $instanceid Block instance ID.
      * @param \stdClass $config Block configuration.
      * @param string $theme Subject theme.
@@ -616,6 +620,8 @@ class wizard_generate extends external_api {
         int $runid
     ): array {
         global $DB, $USER;
+
+        \block_playerhud\local\wizard::ensure_config_flag($instanceid, 'enable_items');
 
         [$xpperlevel, $maxlevels] = self::resolve_xp_settings($config);
         $amount = \block_playerhud\local\xp_budget::compute_item_count($size);
@@ -698,6 +704,9 @@ class wizard_generate extends external_api {
      * reward_xp is overridden to an even share of the XP room still left after any items this
      * run (or a previous one) already created — see `xp_budget`.
      *
+     * Also ensures the block's own `enable_quests` setting is on (see
+     * `wizard::ensure_config_flag()`), so the Missions tab is not hidden from what this creates.
+     *
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      * @param \stdClass $config Block configuration.
@@ -720,6 +729,8 @@ class wizard_generate extends external_api {
         int $runid
     ): array {
         global $DB;
+
+        \block_playerhud\local\wizard::ensure_config_flag($instanceid, 'enable_quests');
 
         $allowedtypes = [
             \block_playerhud\quest::TYPE_LEVEL,
@@ -939,6 +950,10 @@ class wizard_generate extends external_api {
      * too important to depend on AI output quality. Idempotent per tone: if a chapter with
      * this tone's title already exists for the instance, the whole module is skipped.
      *
+     * Also ensures the block's own `enable_rpg` setting is on (see
+     * `wizard::ensure_config_flag()`) before that idempotency check — even on the skip path,
+     * checking this box is the teacher's intent to see the Classes/Chapters tabs.
+     *
      * @param int $instanceid Block instance ID.
      * @param string $tonekey Narrative tone key.
      * @param int $runid Wizard run ID.
@@ -947,6 +962,8 @@ class wizard_generate extends external_api {
      */
     public static function generate_rpg_classes(int $instanceid, string $tonekey, int $runid): array {
         global $DB;
+
+        \block_playerhud\local\wizard::ensure_config_flag($instanceid, 'enable_rpg');
 
         $pack = \block_playerhud\local\rpg_archetypes::get_pack($tonekey);
 
@@ -1351,27 +1368,17 @@ class wizard_generate extends external_api {
     /**
      * Turns on the block's ranking setting, if it is not already on.
      *
-     * Deliberately one-directional: checking this module ensures ranking is on, but leaving it
-     * unchecked never turns it off — the wizard only ever adds gamification, it never disables a
-     * setting a teacher may have deliberately configured. Writes through the block's own
-     * `instance_config_save()` (merges into the existing config object rather than replacing it),
-     * same safe pattern as `wizard_apply_suggested_levels`. Unlike every other module, this is a
-     * settings change, not a generated row, so it is intentionally not recorded in the run's
-     * rollback manifest — undoing the run does not turn ranking back off.
+     * A thin wrapper over `wizard::ensure_config_flag()` — see its docblock for the
+     * one-directional reasoning shared with the same auto-enable done for Items, Missions and
+     * RPG. Unlike every other module, this is a settings change, not a generated row, so it is
+     * intentionally not recorded in the run's rollback manifest — undoing the run does not turn
+     * ranking back off.
      *
      * @param int $instanceid Block instance ID.
      * @return void
      */
     public static function generate_ranking(int $instanceid): void {
-        $blockinstance = \block_instance_by_id($instanceid);
-        $config = $blockinstance->config ?: new \stdClass();
-
-        if (!empty($config->enable_ranking)) {
-            return;
-        }
-
-        $config->enable_ranking = 1;
-        $blockinstance->instance_config_save($config);
+        \block_playerhud\local\wizard::ensure_config_flag($instanceid, 'enable_ranking');
     }
 
     /**

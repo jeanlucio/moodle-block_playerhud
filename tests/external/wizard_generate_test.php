@@ -85,6 +85,20 @@ final class wizard_generate_test extends external_base_testcase {
     }
 
     /**
+     * Requesting Missions also ensures the block's own enable_quests setting is on — a teacher
+     * who had the Missions tab turned off still sees what the wizard just generated there.
+     */
+    public function test_missions_ensures_enable_quests_is_on(): void {
+        \block_instance_by_id($this->instanceid)->instance_config_save((object) ['enable_quests' => 0]);
+
+        $result = wizard_generate::execute($this->instanceid, $this->course->id, '', '', 'short', false, true);
+
+        $this->assertTrue($result['success']);
+        $blockinstance = \block_instance_by_id($this->instanceid);
+        $this->assertSame(1, (int) $blockinstance->config->enable_quests);
+    }
+
+    /**
      * Rolling back a Missions-only run removes the created quests.
      */
     public function test_missions_only_run_can_be_rolled_back(): void {
@@ -1291,6 +1305,47 @@ final class wizard_generate_test extends external_base_testcase {
 
         $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $result['runid']]);
         $this->assertCount(3 + 1 + 6 + 6, $manifest, 'classes + chapter + nodes + choices.');
+    }
+
+    /**
+     * Requesting RPG also ensures the block's own enable_rpg setting is on — a teacher who had
+     * the Classes/Chapters tabs turned off still sees what the wizard just generated there.
+     */
+    public function test_rpg_ensures_enable_rpg_is_on(): void {
+        \block_instance_by_id($this->instanceid)->instance_config_save((object) ['enable_rpg' => 0]);
+
+        $result = wizard_generate::execute(
+            $this->instanceid,
+            $this->course->id,
+            '',
+            '',
+            'short',
+            false,
+            false,
+            false,
+            false,
+            true,
+            'fantasy'
+        );
+
+        $this->assertTrue($result['success']);
+        $blockinstance = \block_instance_by_id($this->instanceid);
+        $this->assertSame(1, (int) $blockinstance->config->enable_rpg);
+    }
+
+    /**
+     * Even on the idempotent skip path (Chapter 1 already exists for this tone, so nothing new
+     * is created), checking the RPG box is still the teacher's intent to see those tabs.
+     */
+    public function test_rpg_ensures_enable_rpg_is_on_even_when_already_generated(): void {
+        wizard_generate::generate_rpg_classes($this->instanceid, 'fantasy', 0);
+        \block_instance_by_id($this->instanceid)->instance_config_save((object) ['enable_rpg' => 0]);
+
+        $result = wizard_generate::generate_rpg_classes($this->instanceid, 'fantasy', 0);
+
+        $this->assertSame('', $result['chapter_title'], 'Idempotent skip: nothing new created.');
+        $blockinstance = \block_instance_by_id($this->instanceid);
+        $this->assertSame(1, (int) $blockinstance->config->enable_rpg);
     }
 
     /**

@@ -404,4 +404,41 @@ final class wizard_test extends advanced_testcase {
         $generated = wizard::get_generated_modules($freshinstance->id, (object) ['enable_ranking' => 1]);
         $this->assertTrue($generated['ranking']);
     }
+
+    /**
+     * ensure_config_flag() turns a flag on when it is off, without touching any other config
+     * property already stored — the shared one-directional helper generate_ranking() and the
+     * Items/Missions/RPG generators all rely on to auto-enable their own tab.
+     *
+     * @covers ::ensure_config_flag
+     */
+    public function test_ensure_config_flag_turns_on_without_touching_other_config(): void {
+        $blockinstance = \block_instance_by_id($this->instanceid);
+        $blockinstance->instance_config_save((object) ['xp_per_level' => 50]);
+
+        wizard::ensure_config_flag($this->instanceid, 'enable_items');
+
+        $reloaded = \block_instance_by_id($this->instanceid);
+        $this->assertSame(1, (int) $reloaded->config->enable_items);
+        $this->assertSame(50, (int) $reloaded->config->xp_per_level);
+    }
+
+    /**
+     * Already on: calling it again is a harmless no-op — the stored configdata comes out
+     * byte-identical, proving instance_config_save() was never even called.
+     *
+     * @covers ::ensure_config_flag
+     */
+    public function test_ensure_config_flag_noop_when_already_on(): void {
+        global $DB;
+
+        $blockinstance = \block_instance_by_id($this->instanceid);
+        $blockinstance->instance_config_save((object) ['enable_rpg' => 1]);
+        $before = $DB->get_field('block_instances', 'configdata', ['id' => $this->instanceid]);
+
+        wizard::ensure_config_flag($this->instanceid, 'enable_rpg');
+
+        $after = $DB->get_field('block_instances', 'configdata', ['id' => $this->instanceid]);
+        $this->assertSame($before, $after);
+    }
 }

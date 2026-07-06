@@ -295,6 +295,33 @@ class wizard {
     }
 
     /**
+     * Turns a boolean block-config flag on if it is currently off, otherwise a no-op.
+     *
+     * Deliberately one-directional, matching generate_ranking()'s own long-standing rule:
+     * a wizard mechanic checking the teacher's box is deliberate intent, so it is safe to
+     * ensure the setting that makes its content visible is on — but never to turn a setting
+     * back off, since that could undo a choice the teacher made for reasons unrelated to this
+     * run (the tab a flag gates can hold content from outside the wizard entirely). Writes
+     * through the block's own `instance_config_save()` (merges into the existing config object
+     * rather than replacing it), same safe pattern as `wizard_apply_suggested_levels`.
+     *
+     * @param int $blockinstanceid Block instance ID.
+     * @param string $flag Config property name, e.g. 'enable_items'.
+     * @return void
+     */
+    public static function ensure_config_flag(int $blockinstanceid, string $flag): void {
+        $blockinstance = \block_instance_by_id($blockinstanceid);
+        $config = $blockinstance->config ?: new \stdClass();
+
+        if (!empty($config->$flag)) {
+            return;
+        }
+
+        $config->$flag = 1;
+        $blockinstance->instance_config_save($config);
+    }
+
+    /**
      * Undoes a wizard run: deletes every object it created, wherever it lives.
      *
      * Scoped to the given block instance so a run ID from another instance can

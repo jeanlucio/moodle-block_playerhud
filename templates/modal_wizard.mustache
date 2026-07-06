@@ -203,32 +203,30 @@
                             <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
                         </small>
                         {{/gen_avatars}}
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="ph-wizard-mech-card bg-light border rounded p-3 h-100" id="ph-wizard-card-trade">
-                        <div class="form-check mb-0">
-                            <input type="checkbox" class="form-check-input ph-wizard-mech-module" id="ph-wizard-module-trade"
-                                   data-drives="3,5" disabled>
-                            <label class="form-check-label fw-bold" for="ph-wizard-module-trade">
-                                <i class="fa fa-shopping-cart ph-wizard-mech-icon me-1" aria-hidden="true"></i>
-                                {{#str}} wizard_module_trade, block_playerhud {{/str}}
-                            </label>
+                        <div class="mt-3 pt-2 border-top" id="ph-wizard-card-trade">
+                            <div class="form-check mb-0">
+                                <input type="checkbox" class="form-check-input" id="ph-wizard-module-trade"
+                                       data-drives="3,5" disabled>
+                                <label class="form-check-label fw-bold" for="ph-wizard-module-trade">
+                                    <i class="fa fa-shopping-cart ph-wizard-mech-icon me-1" aria-hidden="true"></i>
+                                    {{#str}} wizard_module_trade, block_playerhud {{/str}}
+                                </label>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                {{#str}} wizard_module_trade_desc, block_playerhud {{/str}}
+                            </small>
+                            {{^gen_trade}}
+                            <small class="d-block mt-2 fw-bold ph-wizard-trade-requirement"
+                                   id="ph-wizard-trade-requirement">
+                                {{#str}} wizard_module_trade_requirement_unmet, block_playerhud {{/str}}
+                            </small>
+                            {{/gen_trade}}
+                            {{#gen_trade}}
+                            <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
+                                <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
+                            </small>
+                            {{/gen_trade}}
                         </div>
-                        <small class="text-muted d-block mt-1">
-                            {{#str}} wizard_module_trade_desc, block_playerhud {{/str}}
-                        </small>
-                        {{^gen_trade}}
-                        <small class="d-block mt-2 fw-bold ph-wizard-trade-requirement"
-                               id="ph-wizard-trade-requirement">
-                            {{#str}} wizard_module_trade_requirement_unmet, block_playerhud {{/str}}
-                        </small>
-                        {{/gen_trade}}
-                        {{#gen_trade}}
-                        <small class="d-block mt-2 fw-bold ph-wizard-generated-note">
-                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}} wizard_module_generated, block_playerhud {{/str}}
-                        </small>
-                        {{/gen_trade}}
                     </div>
                 </div>
             </div>
