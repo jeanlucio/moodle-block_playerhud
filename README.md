@@ -34,7 +34,7 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
 - [🔐 Security & Compliance](#-security--compliance)
 - [🔎 Third-party Service Disclosure](#-third-party-service-disclosure)
   - [Is the AI feature required?](#is-the-ai-feature-required)
-  - [🔗 AI Provider Chain](#-ai-provider-chain)
+  - [AI Provider Chain](#ai-provider-chain)
   - [Supported Direct Providers](#supported-direct-providers)
   - [How to obtain an API key](#how-to-obtain-an-api-key)
   - [Where API keys are configured](#where-api-keys-are-configured)
@@ -61,7 +61,7 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
 * ⚖️ **Karma System:** Moral alignment mechanic that evolves the student’s class portrait over time.
 * 📊 **Analytics:** Audit logs and game economy tracking for teacher oversight.
 * 🪄 **Gamification Wizard:** A step-by-step assistant that builds a course's entire gamified structure in one run, with live progress, retry-on-failure and one-click undo per run from a history list. Eleven mechanics — Items, PlayerCoin, Avatar Pack, Trade, Ranking, Missions, Knowledge Collectible, Deadline Extension, Item RPG, RPG (classes + full story) and a hidden Secret Item — are grouped into **Basic / Intermediate / Advanced** tiers by how sophisticated the mechanic is, not by what it technically does. A shared XP budget keeps every generated mechanic inside the course's level ceiling, drops auto-distribute across existing activities (or insert into the course's own news forum for PlayerCoin/Secret Item), and a live **Octalysis coverage octagon** — faithful to Yu-Kai Chou's original 8 Core Drives, geometry included — shows which motivational drives the current setup actually covers.
-* 🤖 **AI Tools (Optional):** Two AI-powered features with a tiered provider ladder (see [AI Provider Chain](#-ai-provider-chain) below):
+* 🤖 **AI Tools (Optional):** Two AI-powered features with a tiered provider ladder (see [AI Provider Chain](#ai-provider-chain) below):
   * **Content Generator** — creates items, story chapters with branching nodes, and RPG class backstories on demand.
   * **Game Master Assistant** — a conversational chat tab for teachers. Ask questions about game design, get suggestions, and trigger actions (create item, create quest, generate chapter) with a confirmation step before anything is saved.
 * 📱 **Mobile-Ready:** Compatible with Moodle web services.
@@ -452,7 +452,7 @@ No. The plugin works fully without any external AI service.
 All content can be created manually inside Moodle.
 The AI features are productivity tools — the assistant also accepts confirmation before saving anything.
 
-### 🔗 AI Provider Chain
+### AI Provider Chain
 
 PlayerHUD resolves the AI provider **tier by tier**, following the shared PlayerGames
 ecosystem ladder. An explicitly configured key always wins over the institutional
@@ -558,7 +558,7 @@ Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo q
 - [🔐 Segurança e Conformidade](#-segurança-e-conformidade)
 - [🔎 Divulgação de Serviço de Terceiros](#-divulgação-de-serviço-de-terceiros)
   - [O recurso de IA é obrigatório?](#o-recurso-de-ia-é-obrigatório)
-  - [🔗 Cadeia de Provedores de IA](#-cadeia-de-provedores-de-ia)
+  - [Cadeia de Provedores de IA](#cadeia-de-provedores-de-ia)
   - [Provedores diretos suportados](#provedores-diretos-suportados)
   - [Como obter a chave de API](#como-obter-a-chave-de-api)
   - [Onde a chave é configurada](#onde-a-chave-é-configurada)
@@ -585,7 +585,7 @@ Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo q
 * ⚖️ **Sistema de Karma:** Mecânica de alinhamento moral que evolui o retrato da classe do aluno ao longo do tempo.
 * 📊 **Analytics:** Logs de auditoria e rastreamento da economia do jogo para controle do professor.
 * 🪄 **Assistente de Gamificação:** Um assistente passo a passo que monta a estrutura gamificada do curso inteiro numa única rodada, com progresso ao vivo, nova tentativa em caso de falha e desfazer com um clique por rodada a partir de uma lista de histórico. Onze mecânicas — Itens, PlayerCoin, Pacote de Avatares, Comércio, Ranking, Missões, Colecionável de Conhecimento, Item de Extensão de Prazo, Item RPG, RPG (classes + história completa) e um Item Secreto oculto — são agrupadas em três níveis, **Básico / Intermediário / Avançado**, pela sofisticação da mecânica, não pelo que ela tecnicamente faz. Um orçamento de XP compartilhado mantém toda mecânica gerada dentro do teto de níveis do curso, os drops se distribuem automaticamente pelas atividades existentes (ou se inserem no próprio fórum de avisos do curso, no caso de PlayerCoin/Item Secreto), e um octógono de cobertura **Octalysis** ao vivo — fiel às 8 Core Drives originais de Yu-Kai Chou, geometria inclusive — mostra quais motivações a configuração atual realmente cobre.
-* 🤖 **Ferramentas de IA (Opcional):** Dois recursos com cadeia de quatro níveis de provedores (veja [Cadeia de Provedores de IA](#-cadeia-de-provedores-de-ia) abaixo):
+* 🤖 **Ferramentas de IA (Opcional):** Dois recursos com cadeia de quatro níveis de provedores (veja [Cadeia de Provedores de IA](#cadeia-de-provedores-de-ia) abaixo):
   * **Gerador de Conteúdo** — cria itens, capítulos de história com nós ramificados e backstories de classes RPG sob demanda.
   * **Assistente Game Master** — aba de chat conversacional para professores. Tire dúvidas sobre design de jogo, receba sugestões e acione ações (criar item, missão, capítulo) com uma etapa de confirmação antes de salvar.
 * 📱 **Compatível com Mobile.**
@@ -976,7 +976,7 @@ Não. O plugin funciona de forma completa sem qualquer serviço externo.
 Todo o conteúdo pode ser criado manualmente dentro do Moodle.
 Os recursos de IA são ferramentas de produtividade — o assistente exige confirmação antes de salvar qualquer coisa.
 
-### 🔗 Cadeia de Provedores de IA
+### Cadeia de Provedores de IA
 
 O PlayerHUD seleciona o provedor de IA **nível por nível**, seguindo a escada compartilhada do ecossistema PlayerGames. Uma chave explicitamente configurada sempre prevalece sobre o padrão institucional; o `core_ai` fica na base.
 
