@@ -38,25 +38,45 @@ use core_external\external_api;
  */
 final class wizard_list_runs_test extends external_base_testcase {
     /**
+     * Starts a run and drives it through a single step, run to completion — reproducing what
+     * the browser does for a one-mechanic wizard call, without going through wizard_start.
+     *
+     * @param string $steptype The step type identifier.
+     * @param string $tonekey Narrative tone key.
+     * @return int The run ID, already finished (status 'done').
+     */
+    private function run_single_step_to_completion(string $steptype, string $tonekey = 'fantasy'): int {
+        $runid = \block_playerhud\local\wizard::start_run($this->instanceid, 2, [$steptype]);
+        $result = wizard_run_step::execute(
+            $this->instanceid,
+            $this->course->id,
+            $runid,
+            $steptype,
+            '',
+            '',
+            $tonekey,
+            'short',
+            [],
+            [],
+            [],
+            true
+        );
+        $this->assertTrue($result['success']);
+
+        return $runid;
+    }
+
+    /**
      * A completed run appears with a human-readable summary of what it created.
      */
     public function test_list_runs_returns_summary_for_active_run(): void {
-        $generated = wizard_generate::execute(
-            $this->instanceid,
-            $this->course->id,
-            '',
-            '',
-            'short',
-            false,
-            true
-        );
-        $this->assertTrue($generated['success']);
+        $runid = $this->run_single_step_to_completion('missions');
 
         $result = wizard_list_runs::execute($this->instanceid, $this->course->id);
 
         $cleaned = external_api::clean_returnvalue(wizard_list_runs::execute_returns(), $result);
         $this->assertCount(1, $cleaned['runs']);
-        $this->assertSame($generated['runid'], $cleaned['runs'][0]['runid']);
+        $this->assertSame($runid, $cleaned['runs'][0]['runid']);
         $this->assertStringContainsString(
             get_string('wizard_history_quests', 'block_playerhud'),
             $cleaned['runs'][0]['summary']
@@ -69,20 +89,7 @@ final class wizard_list_runs_test extends external_base_testcase {
      * covering the classes/chapters object tables specifically.
      */
     public function test_list_runs_summarises_rpg_run(): void {
-        $generated = wizard_generate::execute(
-            $this->instanceid,
-            $this->course->id,
-            '',
-            '',
-            'short',
-            false,
-            false,
-            false,
-            false,
-            true,
-            'fantasy'
-        );
-        $this->assertTrue($generated['success']);
+        $this->run_single_step_to_completion('rpg');
 
         $result = wizard_list_runs::execute($this->instanceid, $this->course->id);
 
@@ -97,8 +104,8 @@ final class wizard_list_runs_test extends external_base_testcase {
      * A rolled-back run no longer appears in the list.
      */
     public function test_list_runs_excludes_rolledback_runs(): void {
-        $generated = wizard_generate::execute($this->instanceid, $this->course->id, '', '', 'short', false, true);
-        \block_playerhud\local\wizard::rollback($generated['runid'], $this->instanceid, $this->course->id);
+        $runid = $this->run_single_step_to_completion('missions');
+        \block_playerhud\local\wizard::rollback($runid, $this->instanceid, $this->course->id);
 
         $result = wizard_list_runs::execute($this->instanceid, $this->course->id);
 
