@@ -375,4 +375,193 @@ final class wizard_run_step_test extends external_base_testcase {
         $this->assertSame(['Already generated item'], $result['names']);
         $this->assertSame([], $result['drop_ids']);
     }
+
+    /**
+     * Requesting only the Missions module creates quests and a rollback manifest, without
+     * touching the item/drop tables.
+     */
+    public function test_missions_step_creates_quests_and_manifest(): void {
+        global $DB;
+
+        $this->create_item($this->instanceid, 'Sword');
+        $this->create_item($this->instanceid, 'Shield');
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'missions', '');
+
+        $this->assertTrue($result['success']);
+        $this->assertGreaterThan(0, $result['counts']['quests']);
+        $this->assertSame(0, $result['counts']['items']);
+
+        $quests = $DB->get_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]);
+        $this->assertCount($result['counts']['quests'], $quests);
+
+        $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $runid]);
+        $this->assertCount(count($quests), $manifest);
+        foreach ($manifest as $entry) {
+            $this->assertSame('block_playerhud_quests', $entry->objecttable);
+        }
+    }
+
+    /**
+     * Requesting Missions also ensures the block's own enable_quests setting is on — a teacher
+     * who had the Missions tab turned off still sees what the wizard just generated there.
+     */
+    public function test_missions_step_ensures_enable_quests_is_on(): void {
+        \block_instance_by_id($this->instanceid)->instance_config_save((object) ['enable_quests' => 0]);
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'missions', '');
+
+        $this->assertTrue($result['success']);
+        $blockinstance = \block_instance_by_id($this->instanceid);
+        $this->assertSame(1, (int) $blockinstance->config->enable_quests);
+    }
+
+    /**
+     * Rolling back a Missions-only run removes the created quests.
+     */
+    public function test_missions_step_run_can_be_rolled_back(): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'missions', '');
+        $this->assertTrue($result['success']);
+
+        $deleted = \block_playerhud\local\wizard::rollback($runid, $this->instanceid, $this->course->id);
+
+        $this->assertGreaterThan(0, $deleted);
+        $this->assertEquals(0, $DB->count_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
+     * More candidate missions than the journey's mission count are trimmed down to the limit,
+     * drawing from more than one candidate type rather than exhausting the first.
+     */
+    public function test_missions_step_are_capped_by_journey_size_and_stay_mixed(): void {
+        global $DB;
+
+        for ($i = 1; $i <= 4; $i++) {
+            $this->create_item($this->instanceid, "Item $i");
+        }
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'missions', '');
+
+        $this->assertTrue($result['success']);
+        // Short size caps at 3 missions, even though level (5/10/15) and unique-item (2/4)
+        // milestones together offer 5 candidates.
+        $this->assertSame(3, $result['counts']['quests']);
+
+        $quests = array_values($DB->get_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid]));
+        $types = array_unique(array_map(static fn($q): int => (int) $q->type, $quests));
+        $this->assertGreaterThan(1, count($types), 'Selection must not be entirely one candidate type.');
+    }
+
+    /**
+     * Every selected mission's reward_xp is overridden to a deterministic share of the XP room
+     * (instead of each type's own hardcoded formula: level*20, items*30...), and the shares
+     * always sum to exactly the gap — the division's remainder lands as a +1 bonus on the first
+     * selected missions rather than being quietly lost. The shares themselves are computed once
+     * up front by wizard_start in production (compute_shared_xp_shares()); this test replicates
+     * that single call before driving the step, the same way the browser would forward it.
+     */
+    public function test_missions_step_reward_xp_is_an_even_share_of_the_gap(): void {
+        global $DB;
+
+        for ($i = 1; $i <= 4; $i++) {
+            $this->create_item($this->instanceid, "Item $i");
+        }
+
+        [, $missionxpshares] = wizard_generate::compute_shared_xp_shares($this->instanceid, new \stdClass(), [
+            'include_items' => false,
+            'include_missions' => true,
+            'include_pill' => false,
+            'include_latepenalty' => false,
+            'size' => 'short',
+        ]);
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            runid: $runid,
+            steptype: 'missions',
+            theme: '',
+            missionxpshares: $missionxpshares
+        );
+
+        $this->assertTrue($result['success']);
+        $quests = $DB->get_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid], 'id ASC');
+        $rewards = array_values(array_map(static fn($q): int => (int) $q->reward_xp, $quests));
+        // Empty economy: ceiling 100 * 20 = 2000, 3 missions selected -> base 666, remainder 2,
+        // so the first 2 missions get 667 and the last gets 666. Sum is exactly 2000.
+        $this->assertSame([667, 667, 666], $rewards);
+        $this->assertSame(2000, array_sum($rewards));
+    }
+
+    /**
+     * A level-milestone mission's name is re-flavoured for the chosen tone, replacing the
+     * generic "Reach Level N" wording.
+     */
+    public function test_missions_step_names_are_tone_flavoured(): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute(
+            $this->instanceid,
+            $this->course->id,
+            $runid,
+            'missions',
+            '',
+            '',
+            'scifi'
+        );
+
+        $this->assertTrue($result['success']);
+        $names = array_map(
+            static fn($q): string => $q->name,
+            $DB->get_records('block_playerhud_quests', ['blockinstanceid' => $this->instanceid])
+        );
+        $this->assertContains('Reach access level 5', $names);
+    }
+
+    /**
+     * Activity-completion suggestions, filtered out of the wizard before, are now included: a
+     * completion-enabled activity produces a tone-flavoured "complete this activity" mission.
+     */
+    public function test_missions_step_include_activity_completion(): void {
+        global $CFG, $DB;
+
+        $CFG->enablecompletion = 1;
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'name' => 'Intro Reading',
+            'completion' => COMPLETION_TRACKING_MANUAL,
+        ]);
+
+        $coursecontext = \context_course::instance($course->id);
+        $instanceid = (int) $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud',
+            'parentcontextid' => $coursecontext->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern' => 'course-view-*',
+            'defaultregion' => 'side-pre',
+            'defaultweight' => 0,
+            'configdata' => base64_encode(serialize((object) [])),
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ]);
+
+        $runid = \block_playerhud\local\wizard::start_run($instanceid, 2, []);
+        $result = wizard_run_step::execute($instanceid, $course->id, $runid, 'missions', '');
+
+        $this->assertTrue($result['success']);
+        $names = array_map(
+            static fn($q): string => $q->name,
+            $DB->get_records('block_playerhud_quests', ['blockinstanceid' => $instanceid])
+        );
+        $this->assertContains('Complete the trial: Intro Reading', $names);
+    }
 }
