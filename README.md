@@ -259,7 +259,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | Test file | Cases | What is covered |
 |-----------|------:|----------------|
 | `ai/generator_test.php` | 2 | `save_item()` (reached via reflection, no network): clamps an overlong AI-provided name; coerces non-string fields before persisting |
-| `backup_restore_test.php` | 3 | Backup/restore step definitions cover all RPG tables; round-trip preserves data |
+| `backup_restore_test.php` | 3 | Backup/restore step definitions cover all RPG tables; full course round-trip (incl. a real activity) preserves RPG class/chapter/story data, item powers (`action_type`/`action_value`), class emoji tiers, and a `TYPE_SPECIFIC_TRADE` quest's requirement remapped against the restored trade rather than the item mapping; a pinned `deadline_extension` cmid and a `TYPE_ACTIVITY` quest's requirement are both remapped to the restored course's own activity |
 | `collection_tab_test.php` | 6 | Collection tab: `filter_type` mapping (avatar/deadline/none), `power_hint_avatar` shown for unowned non-secret item and hidden for secret item, `is_equipped` flag |
 | `content_crud_test.php` | 13 | Item, chapter and trade CRUD: create persists all fields, update changes fields, delete removes record, listing scoped to instance |
 | `cross_instance_security_test.php` | 12 | Cross-instance isolation: item, quest, chapter and trade guards accept own-instance IDs and reject foreign ones without modifying the target record |
@@ -783,7 +783,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | Arquivo de teste | Casos | O que é coberto |
 |-----------------|------:|----------------|
 | `ai/generator_test.php` | 2 | `save_item()` (via reflection, sem rede): limita um nome gerado por IA acima do tamanho; converte campos não-string antes de persistir |
-| `backup_restore_test.php` | 3 | Definições de backup/restore cobrem todas as tabelas RPG; round-trip preserva os dados |
+| `backup_restore_test.php` | 3 | Definições de backup/restore cobrem todas as tabelas RPG; round-trip completo de curso (incl. uma atividade real) preserva dados de classe/capítulo/história RPG, poderes de item (`action_type`/`action_value`), tiers de emoji da classe, e o requisito de uma quest `TYPE_SPECIFIC_TRADE` remapeado contra a troca restaurada em vez do mapeamento de item; um cmid fixado no `deadline_extension` e o requisito de uma quest `TYPE_ACTIVITY` são ambos remapeados para a atividade do curso restaurado |
 | `collection_tab_test.php` | 6 | Aba Coleção: mapeamento de `filter_type` (avatar/prazo/nenhum), `power_hint_avatar` exibido para item não-secreto não possuído e oculto para secreto, flag `is_equipped` |
 | `content_crud_test.php` | 13 | CRUD de itens, capítulos e trocas: criação persiste todos os campos, atualização altera campos, exclusão remove registro, listagem escoped por instância |
 | `cross_instance_security_test.php` | 12 | Isolamento cross-instance: guardas de item, quest, capítulo e troca aceitam IDs da própria instância e rejeitam IDs alheios sem modificar o registro alvo |

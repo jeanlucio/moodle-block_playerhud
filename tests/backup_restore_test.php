@@ -108,9 +108,12 @@ final class backup_restore_test extends advanced_testcase {
 
         $admin = get_admin();
 
-        // 1. Create source course and block instance.
+        // 1. Create source course, a real activity (to exercise course_module remapping) and
+        // the block instance.
         $course = $this->getDataGenerator()->create_course();
         $coursecontext = \context_course::instance($course->id);
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $sourcecmid = $page->cmid;
 
         $bi = (object) [
             'blockname'         => 'playerhud',
@@ -132,6 +135,41 @@ final class backup_restore_test extends advanced_testcase {
             'name'            => 'Wizard',
             'description'     => '',
             'base_hp'         => 80,
+            'emoji_tier1'     => '🧙',
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'Scroll of Reprieve',
+            'action_type'     => 'deadline_extension',
+            'action_value'    => json_encode(['days' => 2, 'cmid' => $sourcecmid]),
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'O Artesão',
+            'timecreated'     => time(),
+        ]);
+
+        $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'Conquistar: Arquivo Mestre',
+            'type'            => \block_playerhud\quest::TYPE_SPECIFIC_TRADE,
+            'requirement'     => '1',
+            'req_itemid'      => $tradeid,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'Ler a Página Sagrada',
+            'type'            => \block_playerhud\quest::TYPE_ACTIVITY,
+            'requirement'     => (string) $sourcecmid,
             'timecreated'     => time(),
             'timemodified'    => time(),
         ]);
@@ -214,6 +252,60 @@ final class backup_restore_test extends advanced_testcase {
                 ['chapterid' => $restoredchapter->id, 'is_start' => 1]
             ),
             'Start story node must be restored under the correct chapter.'
+        );
+
+        $restoredclass = $DB->get_record(
+            'block_playerhud_classes',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'Wizard']
+        );
+        $this->assertSame('🧙', $restoredclass->emoji_tier1, 'Class emoji must be preserved.');
+
+        // The page module must have been remapped to a new cmid in the restored course.
+        $restoredpages = get_fast_modinfo($newcourse->id)->get_instances_of('page');
+        $this->assertCount(1, $restoredpages, 'Page activity must be restored.');
+        $restoredcmid = (int) reset($restoredpages)->id;
+        $this->assertNotSame($sourcecmid, $restoredcmid, 'Restored course module must get a new id.');
+
+        $restoreditem = $DB->get_record(
+            'block_playerhud_items',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'Scroll of Reprieve']
+        );
+        $this->assertNotFalse($restoreditem, 'Item power must be restored.');
+        $this->assertSame('deadline_extension', $restoreditem->action_type);
+        $restoredaction = json_decode($restoreditem->action_value, true);
+        $this->assertSame(2, $restoredaction['days'], 'Extension duration must be preserved.');
+        $this->assertSame(
+            $restoredcmid,
+            $restoredaction['cmid'],
+            'The pinned cmid must be remapped to the restored activity, not leak the old course id.'
+        );
+
+        $restoredtrade = $DB->get_record(
+            'block_playerhud_trades',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'O Artesão']
+        );
+        $this->assertNotFalse($restoredtrade, 'Trade must be restored.');
+
+        $restoredquest = $DB->get_record(
+            'block_playerhud_quests',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'Conquistar: Arquivo Mestre']
+        );
+        $this->assertNotFalse($restoredquest, 'Specific-trade quest must be restored.');
+        $this->assertSame(
+            (int) $restoredtrade->id,
+            (int) $restoredquest->req_itemid,
+            'Specific-trade quest must point at the remapped trade, not the item mapping.'
+        );
+
+        $restoredactivityquest = $DB->get_record(
+            'block_playerhud_quests',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'Ler a Página Sagrada']
+        );
+        $this->assertNotFalse($restoredactivityquest, 'Activity quest must be restored.');
+        $this->assertSame(
+            $restoredcmid,
+            (int) $restoredactivityquest->requirement,
+            'Activity quest requirement must be remapped to the restored course module.'
         );
     }
 }

@@ -36,7 +36,8 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $item = new backup_nested_element('item', ['id'], [
             'name', 'description', 'image', 'xp', 'enabled',
             'maxusage', 'respawntime', 'tradable', 'secret',
-            'required_class_id', 'timecreated', 'timemodified',
+            'required_class_id', 'action_type', 'action_value',
+            'timecreated', 'timemodified',
         ]);
 
         $drops = new backup_nested_element('drops');
@@ -59,37 +60,44 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         // Trades Structure.
         $trades = new backup_nested_element('trades');
         $trade = new backup_nested_element('trade', ['id'], [
-            'name', 'groupid', 'centralized', 'onetime', 'timecreated',
+            'name', 'groupid', 'centralized', 'onetime', 'timecreated', 'timemodified',
         ]);
 
         $tradereqs = new backup_nested_element('trade_reqs');
-        $tradereq = new backup_nested_element('trade_req', ['id'], ['tradeid', 'itemid', 'qty']);
+        $tradereq = new backup_nested_element('trade_req', ['id'], [
+            'tradeid', 'itemid', 'qty', 'timecreated', 'timemodified',
+        ]);
 
         $traderewards = new backup_nested_element('trade_rewards');
-        $tradereward = new backup_nested_element('trade_reward', ['id'], ['tradeid', 'itemid', 'qty']);
+        $tradereward = new backup_nested_element('trade_reward', ['id'], [
+            'tradeid', 'itemid', 'qty', 'timecreated', 'timemodified',
+        ]);
 
         // RPG Classes.
         $classes = new backup_nested_element('classes');
         $class = new backup_nested_element('class', ['id'], [
-            'name', 'description', 'base_hp', 'timecreated', 'timemodified',
+            'name', 'description', 'base_hp',
+            'emoji_tier1', 'emoji_tier2', 'emoji_tier3', 'emoji_tier4', 'emoji_tier5',
+            'timecreated', 'timemodified',
         ]);
 
         // Story Chapters with nested nodes and choices.
         $chapters = new backup_nested_element('chapters');
         $chapter = new backup_nested_element('chapter', ['id'], [
             'title', 'intro_text', 'unlock_date', 'required_level', 'sortorder',
+            'timecreated', 'timemodified',
         ]);
 
         $storynodes = new backup_nested_element('story_nodes');
         $storynode = new backup_nested_element('story_node', ['id'], [
-            'chapterid', 'content', 'is_start',
+            'chapterid', 'content', 'is_start', 'timecreated', 'timemodified',
         ]);
 
         $choices = new backup_nested_element('choices');
         $choice = new backup_nested_element('choice', ['id'], [
             'nodeid', 'text', 'next_nodeid', 'req_class_id',
             'req_karma_min', 'karma_delta', 'set_class_id',
-            'cost_itemid', 'cost_item_qty',
+            'cost_itemid', 'cost_item_qty', 'timecreated', 'timemodified',
         ]);
 
         // 3. User Data Structure.
@@ -97,7 +105,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $player = new backup_nested_element('player', ['id'], [
             'userid', 'currentxp', 'enable_gamification',
             'ranking_visibility', 'last_inventory_view',
-            'last_shop_view', 'timecreated', 'timemodified',
+            'last_shop_view', 'milestones', 'timecreated', 'timemodified',
         ]);
 
         $inventories = new backup_nested_element('inventories');
@@ -111,6 +119,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $rpgprogresses = new backup_nested_element('rpg_progresses');
         $rpgprogress = new backup_nested_element('rpg_progress', ['id'], [
             'userid', 'classid', 'karma', 'current_nodes', 'completed_chapters',
+            'timecreated', 'timemodified',
         ]);
 
         // 4. Hierarchy.

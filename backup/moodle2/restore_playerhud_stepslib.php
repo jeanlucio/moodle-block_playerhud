@@ -33,6 +33,33 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
     private array $deferredchoicenodes = [];
 
     /**
+     * Deferred req_itemid fixups for TYPE_SPECIFIC_TRADE quests: new quest ID → old trade ID.
+     * Trades are restored after quests (later sibling under /block/playerhud), so the
+     * 'playerhud_trade' mapping does not exist yet when the quest is processed.
+     *
+     * @var array<int,int>
+     */
+    private array $deferredtradequests = [];
+
+    /**
+     * Deferred course module fixups for TYPE_ACTIVITY quests: new quest ID → old cmid.
+     * Course modules belong to later tasks in the restore plan (course-level blocks are
+     * restored before sections/activities), so the 'course_module' mapping only exists once
+     * the whole restore finishes. Resolved in after_restore().
+     *
+     * @var array<int,int>
+     */
+    private array $deferredactivityquests = [];
+
+    /**
+     * Deferred course module fixups for the deadline_extension item power's optional pinned
+     * cmid in action_value. Same ordering constraint as $deferredactivityquests.
+     *
+     * @var array<int,int>
+     */
+    private array $deferreditemcmids = [];
+
+    /**
      * Define the structure of the restore step.
      *
      * @return array Array of restore_path_element.
@@ -104,7 +131,25 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         $data->blockinstanceid = $this->task->get_blockid();
         unset($data->id);
 
+        // The "deadline_extension" power may pin a specific course module in action_value
+        // ({"cmid":N,...}). Course modules belong to later tasks in the restore plan, so that
+        // old cmid cannot be remapped here yet. Default it to "any activity" (cmid=0) and
+        // queue the real fixup for after_restore(), once every course module is in place.
+        $oldcmid = 0;
+        if ($data->action_type === 'deadline_extension' && !empty($data->action_value)) {
+            $actionvalue = json_decode($data->action_value, true);
+            if (is_array($actionvalue) && !empty($actionvalue['cmid'])) {
+                $oldcmid = (int)$actionvalue['cmid'];
+                $actionvalue['cmid'] = 0;
+                $data->action_value = json_encode($actionvalue);
+            }
+        }
+
         $newitemid = $DB->insert_record('block_playerhud_items', $data);
+
+        if ($oldcmid > 0) {
+            $this->deferreditemcmids[$newitemid] = $oldcmid;
+        }
 
         // Namespaced mapping to prevent ID collision with Moodle Core during restore.
         $this->set_mapping('playerhud_item', $oldid, $newitemid, true);
@@ -219,6 +264,7 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         global $DB;
         $data = (object)$data;
         $oldid = $data->id;
+        $oldreqitemid = $data->req_itemid;
 
         $data->blockinstanceid = $this->task->get_blockid();
         unset($data->id);
@@ -229,14 +275,36 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
             $data->reward_itemid = $newrewardid ?: 0;
         }
 
-        // Remap req_itemid if present (used by TYPE_SPECIFIC_ITEM).
-        if (!empty($data->req_itemid)) {
+        // The req_itemid field is overloaded: it holds an item ID for TYPE_SPECIFIC_ITEM but a
+        // trade ID for TYPE_SPECIFIC_TRADE. Trades are restored after quests, so the trade case
+        // is resolved later in after_execute() once the 'playerhud_trade' mapping exists.
+        if ((int)$data->type === \block_playerhud\quest::TYPE_SPECIFIC_TRADE) {
+            $data->req_itemid = 0;
+        } else if (!empty($data->req_itemid)) {
             $newreqid = $this->get_mappingid('playerhud_item', $data->req_itemid);
             $data->req_itemid = $newreqid ?: 0;
         }
 
+        // TYPE_ACTIVITY stores a raw course module ID directly in requirement (not a foreign
+        // key column, so it is not covered by any mapping table yet). Course modules belong to
+        // later tasks in the restore plan, so blank it out here and resolve it in
+        // after_restore() once every course module of the target course is in place.
+        $oldactivitycmid = 0;
+        if ((int)$data->type === \block_playerhud\quest::TYPE_ACTIVITY) {
+            $oldactivitycmid = (int)$data->requirement;
+            $data->requirement = '0';
+        }
+
         $newid = $DB->insert_record('block_playerhud_quests', $data);
         $this->set_mapping('playerhud_quest', $oldid, $newid);
+
+        if ((int)$data->type === \block_playerhud\quest::TYPE_SPECIFIC_TRADE && !empty($oldreqitemid)) {
+            $this->deferredtradequests[$newid] = $oldreqitemid;
+        }
+
+        if ($oldactivitycmid > 0) {
+            $this->deferredactivityquests[$newid] = $oldactivitycmid;
+        }
     }
 
     /**
@@ -496,6 +564,51 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
             if ($newnodeid) {
                 $DB->set_field('block_playerhud_choices', 'next_nodeid', $newnodeid, ['id' => $choiceid]);
             }
+        }
+
+        foreach ($this->deferredtradequests as $questid => $oldtradeid) {
+            $newtradeid = $this->get_mappingid('playerhud_trade', $oldtradeid);
+            if ($newtradeid) {
+                $DB->set_field('block_playerhud_quests', 'req_itemid', $newtradeid, ['id' => $questid]);
+            }
+        }
+    }
+
+    /**
+     * Resolve deferred course module fixups once the whole restore has finished.
+     *
+     * Course-level blocks are restored before the course's sections/activities (see
+     * restore_plan_builder::build_course_plan()), so the 'course_module' mapping is not
+     * populated yet during process_item()/process_quest()/after_execute(). This method runs
+     * as one of the very last steps of the entire restore plan (via restore_final_task's
+     * restore_execute_after_restore step), by which point every activity has been restored
+     * and the mapping is complete.
+     */
+    protected function after_restore(): void {
+        global $DB;
+
+        foreach ($this->deferredactivityquests as $questid => $oldcmid) {
+            $newcmid = $this->get_mappingid('course_module', $oldcmid);
+            if ($newcmid) {
+                $DB->set_field('block_playerhud_quests', 'requirement', (string)$newcmid, ['id' => $questid]);
+            }
+        }
+
+        foreach ($this->deferreditemcmids as $itemid => $oldcmid) {
+            $newcmid = $this->get_mappingid('course_module', $oldcmid);
+            if (!$newcmid) {
+                continue;
+            }
+            $item = $DB->get_record('block_playerhud_items', ['id' => $itemid]);
+            if (!$item || empty($item->action_value)) {
+                continue;
+            }
+            $actionvalue = json_decode($item->action_value, true);
+            if (!is_array($actionvalue)) {
+                continue;
+            }
+            $actionvalue['cmid'] = $newcmid;
+            $DB->set_field('block_playerhud_items', 'action_value', json_encode($actionvalue), ['id' => $itemid]);
         }
     }
 }
