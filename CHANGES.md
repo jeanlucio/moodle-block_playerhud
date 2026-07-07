@@ -5,6 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.7.1] — 2026-07-07
+
+### Added
+- The scene list now shows a summary badge for each type of requirement or
+  consequence found among a scene's choices (required character, minimum
+  reputation, reputation impact, granted character, cost item), with the
+  actual values pulled from those choices — no need to open the scene editor
+  just to check what a scene does.
+
+### Fixed
+- Security: closed a cross-instance IDOR in the drop management controller
+  that let a teacher enumerate another course's item and drop configuration
+  by iterating item IDs.
+- Security: closed a check-then-act race in quest-reward claiming and item
+  collection that allowed self-XP inflation via concurrent requests; both
+  are now serialized behind a per-user lock.
+- Security: added the missing view capability check to the `use_item` web
+  service.
+- The story choice lock message now shows which item and how many are
+  needed, instead of a generic "you don't have the required item" message.
+
+---
+
 ## [v1.7.0] — 2026-07-07
 
 ### Added
