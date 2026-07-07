@@ -168,54 +168,69 @@ class game {
             throw new \moodle_exception('itemnotfound', 'block_playerhud');
         }
 
-        // 2. Check Limits & Cooldown.
-        $inventory = $DB->get_records('block_playerhud_inventory', [
-            'userid' => $userid,
-            'dropid' => $drop->id,
-        ], 'timecreated DESC');
+        // 2. Serialize concurrent collections of this drop by this user, mirroring the
+        // lock trade_manager::execute_trade() uses to prevent two simultaneous requests
+        // from both passing the maxusage/cooldown check before either one writes.
+        $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
+        $lockkey = 'collect_usr_' . $userid . '_drop_' . $drop->id;
+        $lock = $lockfactory->get_lock($lockkey, 10);
 
-        $count = count($inventory);
-        $lastcollected = reset($inventory);
-
-        if ($drop->maxusage > 0 && $count >= $drop->maxusage) {
-            throw new \moodle_exception('limitreached', 'block_playerhud');
+        if (!$lock) {
+            throw new \moodle_exception('error_collect_lock', 'block_playerhud');
         }
 
-        if ($lastcollected && $drop->respawntime > 0) {
-            $readytime = $lastcollected->timecreated + $drop->respawntime;
-            if (time() < $readytime) {
-                $minutesleft = ceil(($readytime - time()) / 60);
-                throw new \moodle_exception('waitmore', 'block_playerhud', '', $minutesleft);
-            }
-        }
-
-        // 3. Transaction.
-        $earnedxp = 0;
-        $transaction = $DB->start_delegated_transaction();
         try {
-            $newinv = new \stdClass();
-            $newinv->userid = $userid;
-            $newinv->itemid = $item->id;
-            $newinv->dropid = $drop->id;
-            $newinv->timecreated = time();
-            $newinv->source = 'map';
-            $DB->insert_record('block_playerhud_inventory', $newinv);
+            // 3. Check Limits & Cooldown.
+            $inventory = $DB->get_records('block_playerhud_inventory', [
+                'userid' => $userid,
+                'dropid' => $drop->id,
+            ], 'timecreated DESC');
 
-            // Infinite drops (0 maxusage) give 0 XP to prevent farming.
-            $isinfinitedrop = ((int)$drop->maxusage === 0);
+            $count = count($inventory);
+            $lastcollected = reset($inventory);
 
-            if ($item->xp > 0 && !$isinfinitedrop) {
-                $earnedxp = (int)$item->xp;
-                $player = self::get_player($instanceid, $userid);
-                self::change_xp($player, $earnedxp, $instanceid);
+            if ($drop->maxusage > 0 && $count >= $drop->maxusage) {
+                throw new \moodle_exception('limitreached', 'block_playerhud');
             }
-            $transaction->allow_commit();
-        } catch (\Exception $e) {
-            $transaction->rollback($e);
-            throw $e;
+
+            if ($lastcollected && $drop->respawntime > 0) {
+                $readytime = $lastcollected->timecreated + $drop->respawntime;
+                if (time() < $readytime) {
+                    $minutesleft = ceil(($readytime - time()) / 60);
+                    throw new \moodle_exception('waitmore', 'block_playerhud', '', $minutesleft);
+                }
+            }
+
+            // 4. Transaction.
+            $earnedxp = 0;
+            $transaction = $DB->start_delegated_transaction();
+            try {
+                $newinv = new \stdClass();
+                $newinv->userid = $userid;
+                $newinv->itemid = $item->id;
+                $newinv->dropid = $drop->id;
+                $newinv->timecreated = time();
+                $newinv->source = 'map';
+                $DB->insert_record('block_playerhud_inventory', $newinv);
+
+                // Infinite drops (0 maxusage) give 0 XP to prevent farming.
+                $isinfinitedrop = ((int)$drop->maxusage === 0);
+
+                if ($item->xp > 0 && !$isinfinitedrop) {
+                    $earnedxp = (int)$item->xp;
+                    $player = self::get_player($instanceid, $userid);
+                    self::change_xp($player, $earnedxp, $instanceid);
+                }
+                $transaction->allow_commit();
+            } catch (\Exception $e) {
+                $transaction->rollback($e);
+                throw $e;
+            }
+        } finally {
+            $lock->release();
         }
 
-        // 4. Prepare Response Data.
+        // 5. Prepare Response Data.
         $msgparams = new \stdClass();
         $msgparams->name = format_string($item->name);
         $msgparams->xp = ($earnedxp > 0) ? " (+{$earnedxp} XP)" : "";

@@ -294,103 +294,118 @@ class quest {
             throw new \moodle_exception('error_quest_invalid', 'block_playerhud');
         }
 
-        // 2. Check if already claimed.
-        if ($DB->record_exists('block_playerhud_quest_log', ['questid' => $questid, 'userid' => $userid])) {
-            throw new \moodle_exception('error_quest_already_claimed', 'block_playerhud');
+        // 2. Serialize concurrent claims for this user+quest, mirroring the lock
+        // trade_manager::execute_trade() uses to prevent two simultaneous requests
+        // from both passing the already-claimed check before either one writes.
+        $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
+        $lockkey = 'quest_usr_' . $userid . '_q_' . $questid;
+        $lock = $lockfactory->get_lock($lockkey, 10);
+
+        if (!$lock) {
+            throw new \moodle_exception('error_quest_lock', 'block_playerhud');
         }
 
-        // 3. Re-verify requirements (Anti-cheat mechanism).
-        $player = \block_playerhud\game::get_player($blockinstanceid, $userid);
-
-        $blockinstance = $DB->get_record('block_instances', ['id' => $blockinstanceid], '*', MUST_EXIST);
-        $rawconfig = base64_decode($blockinstance->configdata ?? '', true);
-        $config = ($rawconfig !== false && $rawconfig !== '') ? unserialize_object($rawconfig) : null;
-        if (!$config || !is_object($config)) {
-            $config = new \stdClass(); // Fallback to defaults.
-        }
-
-        $stats = \block_playerhud\game::get_game_stats($config, $blockinstanceid, $player->currentxp);
-
-        $check = self::check_status(
-            $quest,
-            $userid,
-            $courseid,
-            $player->currentxp,
-            $stats['level']
-        );
-
-        if (!$check->completed) {
-            throw new \moodle_exception('error_quest_requirements', 'block_playerhud');
-        }
-
-        // Snapshot before the reward is delivered, to detect celebrations afterwards.
-        $oldlevel = (int)$stats['level'];
-        $oldxp = (int)$player->currentxp;
-        $gametotal = (int)$stats['total_game_xp'];
-
-        // 4. Deliver Rewards (Transaction start).
-        $transaction = $DB->start_delegated_transaction();
         try {
-            // Log completion.
-            $log = new \stdClass();
-            $log->questid = $questid;
-            $log->userid = $userid;
-            $log->timecreated = time();
-            $DB->insert_record('block_playerhud_quest_log', $log);
-
-            $rewardstxt = [];
-
-            // XP Reward.
-            if ($quest->reward_xp > 0) {
-                \block_playerhud\game::change_xp($player, (int)$quest->reward_xp, $blockinstanceid);
-                $rewardstxt[] = "+{$quest->reward_xp} XP";
+            // 3. Check if already claimed.
+            if ($DB->record_exists('block_playerhud_quest_log', ['questid' => $questid, 'userid' => $userid])) {
+                throw new \moodle_exception('error_quest_already_claimed', 'block_playerhud');
             }
 
-            // Item Reward.
-            if ($quest->reward_itemid > 0) {
-                $item = $DB->get_record('block_playerhud_items', ['id' => $quest->reward_itemid]);
-                if ($item) {
-                    $inv = new \stdClass();
-                    $inv->userid = $userid;
-                    $inv->itemid = $item->id;
-                    $inv->dropid = 0; // 0 indicates reward from Quest.
-                    $inv->timecreated = time();
-                    $inv->source = 'quest';
-                    $DB->insert_record('block_playerhud_inventory', $inv);
-                    $rewardstxt[] = format_string($item->name);
-                }
+            // 4. Re-verify requirements (Anti-cheat mechanism).
+            $player = \block_playerhud\game::get_player($blockinstanceid, $userid);
+
+            $blockinstance = $DB->get_record('block_instances', ['id' => $blockinstanceid], '*', MUST_EXIST);
+            $rawconfig = base64_decode($blockinstance->configdata ?? '', true);
+            $config = ($rawconfig !== false && $rawconfig !== '') ? unserialize_object($rawconfig) : null;
+            if (!$config || !is_object($config)) {
+                $config = new \stdClass(); // Fallback to defaults.
             }
 
-            $transaction->allow_commit();
+            $stats = \block_playerhud\game::get_game_stats($config, $blockinstanceid, $player->currentxp);
 
-            // Pick a single celebration to flash on the page reloaded after the claim
-            // redirect, by priority: beating the game (100%) > level-up > first quest
-            // claimed. The first-quest milestone bit is only burned when it is the one
-            // actually shown, so a claim that is overshadowed still shows it next time.
-            $newxp = (int)$player->currentxp;
-            $won = ($gametotal > 0 && $newxp >= $gametotal && $oldxp < $gametotal);
-            $newlevel = \block_playerhud\game::xp_to_level(
-                $newxp,
-                (int)$stats['xp_per_level'],
-                (int)$stats['max_levels']
+            $check = self::check_status(
+                $quest,
+                $userid,
+                $courseid,
+                $player->currentxp,
+                $stats['level']
             );
 
-            $celebration = '';
-            if ($won) {
-                $celebration = 'win';
-            } else if ($newlevel > $oldlevel) {
-                $celebration = 'levelup:' . $newlevel;
+            if (!$check->completed) {
+                throw new \moodle_exception('error_quest_requirements', 'block_playerhud');
             }
 
-            if ($celebration !== '') {
-                set_user_preference('block_playerhud_celebration', $celebration, $userid);
-            }
+            // Snapshot before the reward is delivered, to detect celebrations afterwards.
+            $oldlevel = (int)$stats['level'];
+            $oldxp = (int)$player->currentxp;
+            $gametotal = (int)$stats['total_game_xp'];
 
-            $separator = get_string('connector_and', 'block_playerhud');
-            return implode($separator, $rewardstxt);
-        } catch (\Exception $e) {
-            $transaction->rollback($e);
-            throw $e;
+            // 5. Deliver Rewards (Transaction start).
+            $transaction = $DB->start_delegated_transaction();
+            try {
+                // Log completion.
+                $log = new \stdClass();
+                $log->questid = $questid;
+                $log->userid = $userid;
+                $log->timecreated = time();
+                $DB->insert_record('block_playerhud_quest_log', $log);
+
+                $rewardstxt = [];
+
+                // XP Reward.
+                if ($quest->reward_xp > 0) {
+                    \block_playerhud\game::change_xp($player, (int)$quest->reward_xp, $blockinstanceid);
+                    $rewardstxt[] = "+{$quest->reward_xp} XP";
+                }
+
+                // Item Reward.
+                if ($quest->reward_itemid > 0) {
+                    $item = $DB->get_record('block_playerhud_items', ['id' => $quest->reward_itemid]);
+                    if ($item) {
+                        $inv = new \stdClass();
+                        $inv->userid = $userid;
+                        $inv->itemid = $item->id;
+                        $inv->dropid = 0; // 0 indicates reward from Quest.
+                        $inv->timecreated = time();
+                        $inv->source = 'quest';
+                        $DB->insert_record('block_playerhud_inventory', $inv);
+                        $rewardstxt[] = format_string($item->name);
+                    }
+                }
+
+                $transaction->allow_commit();
+
+                // Pick a single celebration to flash on the page reloaded after the claim
+                // redirect, by priority: beating the game (100%) > level-up > first quest
+                // claimed. The first-quest milestone bit is only burned when it is the one
+                // actually shown, so a claim that is overshadowed still shows it next time.
+                $newxp = (int)$player->currentxp;
+                $won = ($gametotal > 0 && $newxp >= $gametotal && $oldxp < $gametotal);
+                $newlevel = \block_playerhud\game::xp_to_level(
+                    $newxp,
+                    (int)$stats['xp_per_level'],
+                    (int)$stats['max_levels']
+                );
+
+                $celebration = '';
+                if ($won) {
+                    $celebration = 'win';
+                } else if ($newlevel > $oldlevel) {
+                    $celebration = 'levelup:' . $newlevel;
+                }
+
+                if ($celebration !== '') {
+                    set_user_preference('block_playerhud_celebration', $celebration, $userid);
+                }
+
+                $separator = get_string('connector_and', 'block_playerhud');
+                return implode($separator, $rewardstxt);
+            } catch (\Exception $e) {
+                $transaction->rollback($e);
+                throw $e;
+            }
+        } finally {
+            $lock->release();
         }
     }
 

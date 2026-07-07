@@ -331,13 +331,13 @@ One test class per web service function, each validating the external API contra
 | `make_choice_test.php` | 3 | Advances story to destination node; invalid choice → exception; capability guard (`view`) |
 | `remove_drop_shortcode_test.php` | 5 | Existing shortcode stripped; `<br>`-separated shortcode stripped; shortcode carrying `mode=`/`text=` attributes stripped; absent shortcode is a no-op success; capability guard |
 | `setup_playercoin_drop_test.php` | 6 | Success path; no forum → `success=false`; item from another instance rejected; course not owning the instance rejected; shortcode prepended to existing intro; capability guard |
-| `use_item_test.php` | 5 | Not-owned item → exception; deadline power: no activity selected, no rule found, creates override and consumes item, updates existing override |
+| `use_item_test.php` | 6 | Capability guard (`view`); not-owned item → exception; deadline power: no activity selected, no rule found, creates override and consumes item, updates existing override |
 | `wizard_apply_suggested_levels_test.php` | 3 | Applies the suggestion when config is at defaults; still applies when config was already customised; preserves every other config field untouched |
 | `wizard_generate_helpers_test.php` | 9 | `build_step_types()` matches selected modules in order, skips `auto_distribute` when Items' own distribute flag is off, empty when nothing selected; `compute_shared_xp_shares()` empty without Items/Missions, Pill/Latepenalty use their own defaults alone, share the budget with Items when combined; `resolve_or_create_progress_item()` idempotent and creates a complete item when missing; `resolve_previous_chapter_context()` reads the latest chapter |
 | `wizard_list_runs_test.php` | 4 | Summary for an active run; RPG run summarised; rolled-back runs excluded; capability guard |
 | `wizard_run_step_test.php` | 56 | One live-progress step at a time, per mechanic (PlayerCoin, Avatars, Missions, Trade, Knowledge Pill, Secret Item, Ranking, Deadline Extension, RPG, Item RPG, auto-distribute): item/quest/trade creation with manifest recording, idempotent retries, rollback per mechanic, distribute-flag gating, tone/journey-size flavouring, and the news-forum-only placement for PlayerCoin and Secret Item (incl. no-op without a news forum); unknown step type, capability guard, cross-instance `runid` rejection, failed step does not finish the run, final step reports the economy only when requested |
 | `wizard_start_test.php` | 8 | One plan step per selected module; the "slow step" flag reflects whether Next Chapter was selected; XP shares split matches selected modules; Pill's bonus XP present when selected alone; the story-arc module expands into an outline + one step per chapter, step count grows with journey size, manifest keeps the logical module name; capability guard |
-| **Subtotal** | **144** | |
+| **Subtotal** | **145** | |
 
 #### Controller Tests (`tests/controller/`)
 
@@ -349,14 +349,14 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `chapters_test.php` | 13 | Chapter persistence and ordering: save (insert, update, defaults, isolation), delete cascading scenes/choices, reorder/move with full-list renumbering, edge no-op |
 | `classes_test.php` | 7 | RPG class persistence: insert (base HP, instance binding, emoji tiers), update preserves base HP, emoji trimming, isolation; delete removes record and tier portraits, isolation, siblings kept |
 | `collect_test.php` | 3 | Item collection transaction: finite drop awards XP, infinite drop awards 0 XP (golden rule), zero-XP item stored without XP change |
-| `drops_test.php` | 9 | Drop persistence: save (insert + code, unlimited, update preserves ownership, isolation, foreign item); delete single and foreign no-op; bulk deletes only owned with count, empty input |
+| `drops_test.php` | 11 | Drop persistence: save (insert + code, unlimited, update preserves ownership, isolation, foreign item); delete single and foreign no-op; bulk deletes only owned with count, empty input; `get_owned_item` returns for the owning instance and rejects a foreign one |
 | `export_test.php` | 7 | Grade export builder: row fields and derived level, XP ordering, level cap, teacher/manager exclusion, localized columns with no players, unenrolled exclusion, XP tie-break by last action |
 | `items_test.php` | 11 | Item lifecycle: enable toggle and foreign no-op; grant adds inventory + XP, zero-XP, foreign rejection; revoke deducts XP, infinite-drop preservation, foreign no-op; surviving-trade detection (trimmed trade, orphaned excluded, unrelated ignored) |
 | `quests_test.php` | 7 | Quest lifecycle: toggle and foreign no-op; delete reverts XP per completion, zero-reward, foreign no-op; bulk deletes only owned with aggregated XP revert and count, empty input |
 | `scenes_test.php` | 6 | Story scene/choice persistence: save choices, class assignment with string/int ID normalisation (`set_class_id` regression), required class, next node, item cost, follow-up node creation |
 | `suggestions_test.php` | 4 | Suggestion persistence: only ticked quest suggestions inserted (and none selected), only ticked trade suggestions created with reqs/rewards (and none selected) |
 | `trades_test.php` | 7 | Trade persistence: save (insert with reqs + rewards, update replaces, isolation, foreign item filtered); delete cascading reqs/rewards/log, isolation, siblings kept |
-| **Subtotal** | **78** | |
+| **Subtotal** | **80** | |
 
 #### Output / Renderer Tests (`tests/output/`)
 
@@ -366,7 +366,7 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `manage/tab_chapters_test.php` | 4 | Chapter-card visibility warnings: missing start-scene flag, required-level-above-maximum warning text and bounds |
 | **Subtotal** | **10** | |
 
-| **Grand Total** | **473** | |
+| **Grand Total** | **476** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -875,13 +875,13 @@ Uma classe de teste por função de web service, validando o contrato da API ext
 | `make_choice_test.php` | 3 | Avança a história até o nó de destino; escolha inválida → exceção; guarda de capability (`view`) |
 | `remove_drop_shortcode_test.php` | 5 | Shortcode existente removido; shortcode separado por `<br>` removido; shortcode com atributos `mode=`/`text=` removido; ausência de shortcode é noop sem erro; guarda de capability |
 | `setup_playercoin_drop_test.php` | 6 | Sucesso; sem fórum → `success=false`; item de outra instância rejeitado; curso que não é dono da instância rejeitado; shortcode anteposto ao intro existente; guarda de capability |
-| `use_item_test.php` | 5 | Item não possuído → exceção; poder de prazo: sem atividade, sem regra, cria override e consome item, atualiza override existente |
+| `use_item_test.php` | 6 | Guarda de capability (`view`); item não possuído → exceção; poder de prazo: sem atividade, sem regra, cria override e consome item, atualiza override existente |
 | `wizard_apply_suggested_levels_test.php` | 3 | Aplica a sugestão quando a config está nos padrões; ainda aplica quando a config já foi customizada; preserva todo outro campo de config intocado |
 | `wizard_generate_helpers_test.php` | 9 | `build_step_types()` bate com os módulos selecionados na ordem, pula `auto_distribute` quando o distribuir de Itens está desligado, vazio quando nada selecionado; `compute_shared_xp_shares()` vazio sem Itens/Missões, Pill/Extensão de Prazo usam seus próprios padrões sozinhos, dividem o orçamento com Itens quando combinados; `resolve_or_create_progress_item()` idempotente e cria um item completo quando falta; `resolve_previous_chapter_context()` lê o capítulo mais recente |
 | `wizard_list_runs_test.php` | 4 | Resumo de uma rodada ativa; rodada de RPG resumida; rodadas desfeitas excluídas; guarda de capability |
 | `wizard_run_step_test.php` | 56 | Um passo de progresso ao vivo por vez, por mecânica (PlayerCoin, Avatares, Missões, Comércio, Colecionável de Conhecimento, Item Secreto, Ranking, Extensão de Prazo, RPG, Item RPG, auto-distribuir): criação de item/quest/troca com registro no manifesto, retentativas idempotentes, desfazer por mecânica, controle pela flag de distribuir, tom/tamanho de jornada influenciando o conteúdo, e a inserção exclusiva no fórum de avisos pra PlayerCoin e Item Secreto (incl. no-op sem fórum de avisos); tipo de passo desconhecido, guarda de capability, rejeição de `runid` de outra instância, passo com falha não finaliza a rodada, passo final reporta a economia só quando solicitado |
 | `wizard_start_test.php` | 8 | Um passo de plano por módulo selecionado; a flag de "passo lento" reflete se Próximo Capítulo foi selecionado; a divisão de cotas de XP bate com os módulos selecionados; o XP bônus da Pill presente quando selecionada sozinha; o módulo de arco da história se expande num outline + um passo por capítulo, a quantidade de passos cresce com o tamanho da jornada, o manifesto mantém o nome lógico do módulo; guarda de capability |
-| **Subtotal** | **144** | |
+| **Subtotal** | **145** | |
 
 #### Testes de Controlador (`tests/controller/`)
 
@@ -893,14 +893,14 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `chapters_test.php` | 13 | Persistência e ordenação de capítulos: salvar (inserir, atualizar, padrões, isolamento), excluir em cascata cenas/escolhas, mover/reordenar com renumeração da lista completa, no-op na borda |
 | `classes_test.php` | 7 | Persistência de classe RPG: inserção (HP base, vínculo de instância, emojis por tier), atualização preserva HP base, trim de emoji, isolamento; exclusão remove registro e retratos por tier, isolamento, irmãos preservados |
 | `collect_test.php` | 3 | Transação de coleta de item: drop finito concede XP, drop infinito concede 0 XP (regra de ouro), item de 0 XP armazenado sem alterar XP |
-| `drops_test.php` | 9 | Persistência de drop: salvar (inserir + código, ilimitado, atualizar preserva propriedade, isolamento, item estrangeiro); excluir único e no-op estrangeiro; exclusão em massa só dos próprios com contagem, entrada vazia |
+| `drops_test.php` | 11 | Persistência de drop: salvar (inserir + código, ilimitado, atualizar preserva propriedade, isolamento, item estrangeiro); excluir único e no-op estrangeiro; exclusão em massa só dos próprios com contagem, entrada vazia; `get_owned_item` retorna para a instância dona e rejeita instância estrangeira |
 | `export_test.php` | 7 | Construtor da exportação de notas: campos da linha e nível derivado, ordenação por XP, teto de nível, exclusão de professores/gerentes, colunas localizadas sem jogadores, exclusão de não matriculados, desempate por última ação |
 | `items_test.php` | 11 | Ciclo de vida do item: toggle de ativação e no-op estrangeiro; conceder adiciona inventário + XP, 0 XP, rejeição estrangeira; revogar desconta XP, preserva drop infinito, no-op estrangeiro; detecção de trocas sobreviventes (troca aparada, órfã excluída, não relacionada ignorada) |
 | `quests_test.php` | 7 | Ciclo de vida da missão: toggle e no-op estrangeiro; excluir reverte XP por conclusão, sem recompensa, no-op estrangeiro; massa só dos próprios com reversão agregada de XP e contagem, entrada vazia |
 | `scenes_test.php` | 6 | Persistência de cena/escolha da história: salvar escolhas, atribuição de classe com normalização de ID string/int (regressão `set_class_id`), classe requerida, próximo nó, custo de item, criação de nó de continuação |
 | `suggestions_test.php` | 4 | Persistência de sugestões: só as missões marcadas são inseridas (e nenhuma selecionada), só as trocas marcadas são criadas com reqs/recompensas (e nenhuma selecionada) |
 | `trades_test.php` | 7 | Persistência de troca: salvar (inserir com reqs + recompensas, atualizar substitui, isolamento, item estrangeiro filtrado); excluir em cascata reqs/recompensas/log, isolamento, irmãos preservados |
-| **Subtotal** | **78** | |
+| **Subtotal** | **80** | |
 
 #### Testes de Saída / Renderer (`tests/output/`)
 
@@ -910,7 +910,7 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `manage/tab_chapters_test.php` | 4 | Avisos de visibilidade do card de capítulo: sinalização de cena inicial ausente, texto e limites do aviso de nível acima do máximo |
 | **Subtotal** | **10** | |
 
-| **Total geral** | **473** | |
+| **Total geral** | **476** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud

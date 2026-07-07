@@ -76,7 +76,7 @@ class use_item extends external_api {
 
         $context = \context_block::instance($instanceid);
         self::validate_context($context);
-        require_login();
+        require_capability('block/playerhud:view', $context);
 
         $item = $DB->get_record(
             'block_playerhud_items',

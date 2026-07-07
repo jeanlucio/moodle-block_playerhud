@@ -57,6 +57,20 @@ final class use_item_test extends external_base_testcase {
     }
 
     /**
+     * A user without block/playerhud:view must not be able to use an item.
+     */
+    public function test_use_item_requires_view_capability(): void {
+        $item = $this->create_deadline_item();
+
+        $student = $this->create_student_without_view();
+        $this->give_item_to_user((int) $student->id, $item->id);
+        $this->setUser($student);
+
+        $this->expectException(\required_capability_exception::class);
+        use_item::execute($this->instanceid, $this->course->id, $item->id, 0);
+    }
+
+    /**
      * A user who does not own the item receives itemnotfound exception.
      * The student is set as current user without any inventory record.
      */

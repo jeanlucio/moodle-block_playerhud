@@ -61,6 +61,27 @@ class drops {
     }
 
     /**
+     * Loads an item guaranteed to belong to the given block instance.
+     *
+     * Rejects a foreign itemid before any of its data (or its drops) is read,
+     * preventing cross-instance disclosure of another course's item/drop config.
+     *
+     * @param int $itemid Item ID.
+     * @param int $instanceid Owning block instance ID.
+     * @return \stdClass
+     */
+    public function get_owned_item(int $itemid, int $instanceid): \stdClass {
+        global $DB;
+
+        return $DB->get_record(
+            'block_playerhud_items',
+            ['id' => $itemid, 'blockinstanceid' => $instanceid],
+            '*',
+            MUST_EXIST
+        );
+    }
+
+    /**
      * Renders the main Drop management page (List view).
      *
      * @return string The HTML content.
@@ -122,7 +143,7 @@ class drops {
         }
 
         // 4. Data Preparation.
-        $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], '*', MUST_EXIST);
+        $item = $this->get_owned_item($itemid, $instanceid);
         $drops = $DB->get_records('block_playerhud_drops', ['itemid' => $itemid], "$sort $dir");
 
         $mediadata = \block_playerhud\utils::get_item_display_data($item, $context);
@@ -298,7 +319,7 @@ class drops {
         $PAGE->set_heading($COURSE->fullname);
         $PAGE->set_pagelayout('standard');
 
-        $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], '*', MUST_EXIST);
+        $item = $this->get_owned_item($itemid, $instanceid);
         $mform = new \block_playerhud\form\edit_drop_form(null, ['itemname' => $item->name]);
 
         if ($dropid && !$mform->is_submitted()) {

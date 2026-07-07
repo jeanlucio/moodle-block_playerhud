@@ -122,6 +122,37 @@ final class drops_test extends advanced_testcase {
     }
 
     /**
+     * The item is returned when it belongs to the given block instance.
+     *
+     * @covers ::get_owned_item
+     */
+    public function test_get_owned_item_returns_item_for_correct_instance(): void {
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid);
+
+        $item = (new drops())->get_owned_item($itemid, $instanceid);
+
+        $this->assertSame($itemid, (int) $item->id);
+    }
+
+    /**
+     * An item owned by another block instance is rejected, preventing the
+     * cross-instance disclosure of a foreign course's item/drop configuration.
+     *
+     * @covers ::get_owned_item
+     */
+    public function test_get_owned_item_rejects_foreign_instance(): void {
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $instanceb = $this->make_instance();
+        $itemid = $this->make_item($instancea);
+
+        $this->expectException(\dml_missing_record_exception::class);
+        (new drops())->get_owned_item($itemid, $instanceb);
+    }
+
+    /**
      * A new drop is inserted with a generated code and the submitted limits.
      *
      * @covers ::save_drop
