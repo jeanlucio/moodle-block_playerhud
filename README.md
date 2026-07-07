@@ -26,6 +26,7 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
 - [⚖️ Economy Health Panel](#-economy-health-panel)
 - [🎓 Educational Purpose](#-educational-purpose)
 - [🕹️ PlayerGames Ecosystem](#-playergames-ecosystem)
+- [🧩 Optional Integration: Late Penalty](#-optional-integration-late-penalty)
 - [📦 Requirements](#-requirements)
 - [🛠️ Installation](#-installation)
 - [📖 Usage](#-usage)
@@ -49,20 +50,27 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
 * 🏅 **Level Tiers:** Visual color-coded progression (every 5 levels).
 * 🎛 **Configurable Progression:** Teachers define the number of levels and XP required for each level.
 * 🎒 **Inventory System:** Collectible items with configurable **Cooldown (Recharge Time)** and usage limits.
+* 🎯 **Item Powers:** An item can carry a special effect beyond XP — become the student's profile avatar, grant a deadline extension on a chosen activity (requires the optional [Late Penalty](#-optional-integration-late-penalty) plugin), or act as the collectible PlayerCoin.
+* 📜 **Quest System:** Manual (level/XP), collection, activity-completion, trade, and chapter quests, with a built-in heuristic suggestion tool.
 * 📍 **Drop System:** Place collectible items across course sections via shortcodes.
+* 🎁 **Auto Drop Distribution:** Bulk-insert pending drops into the best-matching course activity in one click, with per-item undo.
 * 🏪 **NPC Shop:** Item-to-reward exchange with configurable trade rules.
 * 🏆 **Ranking System:** Leaderboard with tie-breaker logic and visibility controls.
 * 🔐 **Optional Participation:** Students may choose to opt in or opt out of the gamification system.
 * ⚡ **Real-Time Updates:** AJAX-based collection using Moodle’s `core/ajax`.
 * 🎉 **Mascot Celebration Popups:** Animated popups featuring the Huddy mascot mark key moments — Huddy **introduces himself** on the student's first visit to the dashboard, and then celebrates **leveling up** (showing the level reached), **beating the game** (reaching 100% of the course score), **completing your first quest** (a one-time nudge to go claim its reward), and **finding your first PlayerCoin**. Fully accessible (keyboard focus trap, focus restore, screen-reader labels). The introduction, first-quest and first-PlayerCoin popups are each shown only once. All mascot art ships as lightweight WebP. Teachers can disable all mascot animations via the block's configuration form (Mascot section).
   * *Customizing the PlayerCoin:* you may freely change the PlayerCoin item's image or emoji — the popup is unaffected and always shows the mascot. The popup text, however, is fixed to the name **”PlayerCoin”**, so if you rename the item, keep that name or the popup wording will no longer match.
-* 🧙 **RPG Classes:** Define character classes with portraits, karma alignment, and multi-tier evolution images.
-* 📖 **Story & Chapters:** Branching narrative system with choice nodes and per-class story paths.
-* ⚖️ **Karma System:** Moral alignment mechanic that evolves the student’s class portrait over time.
-* 📊 **Analytics:** Audit logs and game economy tracking for teacher oversight.
-* 🪄 **Gamification Wizard:** A step-by-step assistant that builds a course's entire gamified structure in one run, with live progress, retry-on-failure and one-click undo per run from a history list. Eleven mechanics — Items, PlayerCoin, Avatar Pack, Trade, Ranking, Missions, Knowledge Collectible, Deadline Extension, Item RPG, RPG (classes + full story) and a hidden Secret Item — are grouped into **Basic / Intermediate / Advanced** tiers by how sophisticated the mechanic is, not by what it technically does. A shared XP budget keeps every generated mechanic inside the course's level ceiling, drops auto-distribute across existing activities (or insert into the course's own news forum for PlayerCoin/Secret Item), and a live **Octalysis coverage octagon** — faithful to Yu-Kai Chou's original 8 Core Drives, geometry included — shows which motivational drives the current setup actually covers.
+* 🧙 **RPG Characters:** Define characters with portraits, reputation alignment, and multi-tier evolution images.
+* 📖 **Story & Chapters:** Branching narrative system with choice nodes and per-character story paths.
+* ⚖️ **Reputation System:** Moral alignment mechanic that evolves the student’s character portrait over time.
+* 📊 **Analytics:** Audit logs, game economy tracking, a level-distribution histogram and a quest-completion chart, plus an Economy Health panel that flags an unbalanced XP budget.
+* 🪄 **Gamification Wizard:** A step-by-step assistant that builds a course's entire gamified structure in one run, with live progress, retry-on-failure and one-click undo per run from a history list.
+  * **Eleven mechanics in three tiers** — Items, PlayerCoin, Avatar Pack, Trade, Ranking, Missions, Knowledge Collectible, Deadline Extension, Item RPG, RPG (characters + full story) and a hidden Secret Item, grouped into **Basic / Intermediate / Advanced** by how sophisticated the mechanic is, not by what it technically does.
+  * **Shared XP budget** — keeps every generated mechanic inside the course's level ceiling.
+  * **Automatic drop distribution** — inserts generated items across existing course activities (or into the course's own news forum for PlayerCoin/Secret Item).
+  * **Live Octalysis coverage octagon** — faithful to Yu-Kai Chou's original 8 Core Drives, geometry included, shows which motivational drives the current setup actually covers.
 * 🤖 **AI Tools (Optional):** Two AI-powered features with a tiered provider ladder (see [AI Provider Chain](#ai-provider-chain) below):
-  * **Content Generator** — creates items, story chapters with branching nodes, and RPG class backstories on demand.
+  * **Content Generator** — creates items, story chapters with branching nodes, and RPG character backstories on demand.
   * **Game Master Assistant** — a conversational chat tab for teachers. Ask questions about game design, get suggestions, and trigger actions (create item, create quest, generate chapter) with a confirmation step before anything is saved.
 * 📱 **Mobile-Ready:** Compatible with Moodle web services.
 
@@ -153,6 +161,16 @@ PlayerHUD is part of the **PlayerGames** gamification ecosystem. Together, these
 
 ---
 
+### 🧩 Optional Integration: Late Penalty
+
+The **Deadline Extension** item power (see [Features](#-features)) does not work on its own — it requires the separate **Late Penalty** plugin (`local_latepenalty`, by the same author, but **not** part of the PlayerGames family). When installed, redeeming a Deadline Extension item pushes back the activity's effective deadline for that student and triggers Late Penalty's automatic recalculation, waiving or reducing any late-submission grade penalty already applied. Without Late Penalty installed, the item power fails gracefully with a "not installed" message instead of granting the extension.
+
+👉 https://github.com/jeanlucio/moodle-local_latepenalty
+
+[⬆️ Back to index](#toc-en)
+
+---
+
 ### 📦 Requirements
 
 | Component | Version |
@@ -183,14 +201,16 @@ PlayerHUD is part of the **PlayerGames** gamification ecosystem. Together, these
 
 1. Add the **PlayerHUD Block** to your course.
 2. Access the **Management Panel** (Teacher role required).
-3. Configure:
-   * Items
-   * XP values
-   * Number of levels
-   * XP thresholds
-   * Drop placements
-   * Recharge time (Cooldown)
-   * Collection limits
+3. Choose how to set it up:
+   * **Quick start:** run the **Gamification Wizard** to auto-generate items, quests, ranking, and other mechanics in one pass (see [Features](#-features) above).
+   * **Manual setup:** configure each mechanic yourself:
+     * Items
+     * XP values
+     * Number of levels
+     * XP thresholds
+     * Drop placements
+     * Recharge time (Cooldown)
+     * Collection limits
 4. Students collect items directly within course sections.
 5. XP, levels, and ranking update automatically.
 
@@ -215,7 +235,7 @@ The plugin includes two CLI seed scripts that create a fully configured demo cou
 * 5 items with different XP values, cooldowns and collection limits
 * 5 drops embedded in course activities via shortcodes (card, image and text render modes)
 * 7 quests covering all completion types (level, XP, items, trades)
-* 2 story chapters with branching choices and karma effects
+* 2 story chapters with branching choices and reputation effects
 * 2 trade offers (NPC shop)
 * Pre-seeded inventory, quest logs and activity completions — ranking is ready to browse immediately
 
@@ -550,6 +570,7 @@ Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo q
 - [⚖️ Painel de Saúde da Economia](#-painel-de-saúde-da-economia)
 - [🎓 Finalidade Educacional](#-finalidade-educacional)
 - [🕹️ Ecossistema PlayerGames](#-ecossistema-playergames)
+- [🧩 Integração Opcional: Late Penalty](#-integração-opcional-late-penalty)
 - [📦 Requisitos](#-requisitos)
 - [🛠️ Instalação](#-instalação)
 - [📖 Como Usar](#-como-usar)
@@ -573,20 +594,27 @@ Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo q
 * 🏅 **Tiers de Nível:** Sistema visual de progressão com código de cores a cada 5 níveis.
 * 🎛 **Progressão Configurável:** O professor define a quantidade de níveis e o XP necessário para cada nível.
 * 🎒 **Sistema de Inventário:** Itens colecionáveis com **Tempo de Recarga (intervalo mínimo entre coletas)** e limite configurável.
+* 🎯 **Poderes de Item:** Um item pode carregar um efeito especial além do XP — virar o avatar de perfil do aluno, conceder uma extensão de prazo numa atividade escolhida (requer o plugin opcional [Late Penalty](#-integração-opcional-late-penalty)), ou funcionar como a PlayerCoin colecionável.
+* 📜 **Sistema de Missões:** Missões manuais (nível/XP), de coleção, de conclusão de atividade, de comércio e de capítulo, com uma ferramenta de sugestão heurística.
 * 📍 **Sistema de Drops:** Posicione itens nas seções do curso via shortcodes.
+* 🎁 **Distribuição Automática de Drops:** Insira em lote os drops pendentes na atividade do curso com melhor correspondência de nome, com um clique — com desfazer por item.
 * 🏪 **Loja NPC:** Sistema de trocas configurável — itens por recompensas.
 * 🏆 **Ranking:** Classificação com critério de desempate e controle de visibilidade.
 * 🔐 **Participação Opcional:** O aluno pode escolher participar ou não da gamificação.
 * ⚡ **Atualização em Tempo Real:** Coleta via `core/ajax`.
 * 🎉 **Pop-ups Comemorativos com o Mascote:** Pop-ups animados com o mascote Huddy marcam momentos-chave — o Huddy **se apresenta** na primeira visita do aluno ao painel, e depois comemora **subir de nível** (mostrando o nível alcançado), **zerar o jogo** (alcançar 100% da pontuação do curso), **concluir a primeira missão** (um aviso único para ir resgatar a recompensa) e **encontrar a primeira PlayerCoin**. Totalmente acessível (foco preso no teclado, devolução de foco, rótulos para leitor de tela). Os pop-ups de apresentação, primeira missão e primeira PlayerCoin aparecem uma única vez cada. Toda a arte do mascote é distribuída em WebP leve. O professor pode desativar todas as animações do mascote nas configurações do bloco (seção Mascote).
   * *Personalizando a PlayerCoin:* você pode trocar a imagem ou o emoji do item PlayerCoin à vontade — o pop-up não é afetado e sempre mostra o mascote. Já o texto do pop-up é fixo no nome **”PlayerCoin”**; portanto, se renomear o item, mantenha esse nome ou o texto do pop-up deixará de corresponder.
-* 🧙 **Classes RPG:** Defina classes de personagem com retratos, alinhamento de karma e imagens de evolução por tier.
-* 📖 **História e Capítulos:** Sistema narrativo ramificado com nós de escolha e caminhos por classe.
-* ⚖️ **Sistema de Karma:** Mecânica de alinhamento moral que evolui o retrato da classe do aluno ao longo do tempo.
-* 📊 **Analytics:** Logs de auditoria e rastreamento da economia do jogo para controle do professor.
-* 🪄 **Assistente de Gamificação:** Um assistente passo a passo que monta a estrutura gamificada do curso inteiro numa única rodada, com progresso ao vivo, nova tentativa em caso de falha e desfazer com um clique por rodada a partir de uma lista de histórico. Onze mecânicas — Itens, PlayerCoin, Pacote de Avatares, Comércio, Ranking, Missões, Colecionável de Conhecimento, Item de Extensão de Prazo, Item RPG, RPG (classes + história completa) e um Item Secreto oculto — são agrupadas em três níveis, **Básico / Intermediário / Avançado**, pela sofisticação da mecânica, não pelo que ela tecnicamente faz. Um orçamento de XP compartilhado mantém toda mecânica gerada dentro do teto de níveis do curso, os drops se distribuem automaticamente pelas atividades existentes (ou se inserem no próprio fórum de avisos do curso, no caso de PlayerCoin/Item Secreto), e um octógono de cobertura **Octalysis** ao vivo — fiel às 8 Core Drives originais de Yu-Kai Chou, geometria inclusive — mostra quais motivações a configuração atual realmente cobre.
+* 🧙 **Personagens RPG:** Defina personagens com retratos, alinhamento de reputação e imagens de evolução por tier.
+* 📖 **História e Capítulos:** Sistema narrativo ramificado com nós de escolha e caminhos por personagem.
+* ⚖️ **Sistema de Reputação:** Mecânica de alinhamento moral que evolui o retrato do personagem do aluno ao longo do tempo.
+* 📊 **Analytics:** Logs de auditoria, rastreamento da economia do jogo, um histograma de distribuição de níveis e um gráfico de conclusão de missões, além de um painel de Saúde da Economia que sinaliza um orçamento de XP desequilibrado.
+* 🪄 **Assistente de Gamificação:** Um assistente passo a passo que monta a estrutura gamificada do curso inteiro numa única rodada, com progresso ao vivo, nova tentativa em caso de falha e desfazer com um clique por rodada a partir de uma lista de histórico.
+  * **Onze mecânicas em três níveis** — Itens, PlayerCoin, Pacote de Avatares, Comércio, Ranking, Missões, Colecionável de Conhecimento, Item de Extensão de Prazo, Item RPG, RPG (personagens + história completa) e um Item Secreto oculto, agrupados em **Básico / Intermediário / Avançado** pela sofisticação da mecânica, não pelo que ela tecnicamente faz.
+  * **Orçamento de XP compartilhado** — mantém toda mecânica gerada dentro do teto de níveis do curso.
+  * **Distribuição automática de drops** — insere os itens gerados nas atividades existentes do curso (ou no próprio fórum de avisos, no caso de PlayerCoin/Item Secreto).
+  * **Octógono de cobertura Octalysis ao vivo** — fiel às 8 Core Drives originais de Yu-Kai Chou, geometria inclusive, mostra quais motivações a configuração atual realmente cobre.
 * 🤖 **Ferramentas de IA (Opcional):** Dois recursos com cadeia de quatro níveis de provedores (veja [Cadeia de Provedores de IA](#cadeia-de-provedores-de-ia) abaixo):
-  * **Gerador de Conteúdo** — cria itens, capítulos de história com nós ramificados e backstories de classes RPG sob demanda.
+  * **Gerador de Conteúdo** — cria itens, capítulos de história com nós ramificados e backstories de personagens RPG sob demanda.
   * **Assistente Game Master** — aba de chat conversacional para professores. Tire dúvidas sobre design de jogo, receba sugestões e acione ações (criar item, missão, capítulo) com uma etapa de confirmação antes de salvar.
 * 📱 **Compatível com Mobile.**
 
@@ -677,6 +705,16 @@ O PlayerHUD faz parte do ecossistema de gamificação **PlayerGames**. Juntos, e
 
 ---
 
+### 🧩 Integração Opcional: Late Penalty
+
+O poder de item **Extensão de Prazo** (veja [Funcionalidades](#-funcionalidades)) não funciona sozinho — ele depende do plugin separado **Late Penalty** (`local_latepenalty`, do mesmo autor, mas que **não** faz parte da família PlayerGames). Quando instalado, resgatar um item de Extensão de Prazo adia o prazo efetivo da atividade para aquele estudante e aciona o recálculo automático do Late Penalty, dispensando ou reduzindo qualquer penalidade de nota por atraso já aplicada. Sem o Late Penalty instalado, o poder do item falha de forma controlada, mostrando uma mensagem de "não instalado" em vez de conceder a extensão.
+
+👉 https://github.com/jeanlucio/moodle-local_latepenalty
+
+[⬆️ Voltar ao índice](#toc-pt)
+
+---
+
 ### 📦 Requisitos
 
 | Componente | Versão |
@@ -707,14 +745,16 @@ O PlayerHUD faz parte do ecossistema de gamificação **PlayerGames**. Juntos, e
 
 1. Adicione o **Bloco PlayerHUD** ao seu curso.
 2. Acesse o **Painel de Gerenciamento** (necessário perfil de Professor).
-3. Configure:
-   - Itens
-   - Valores de XP
-   - Quantidade de níveis
-   - Limiares de XP para progressão
-   - Posicionamento de drops
-   - Tempo de Recarga (intervalo entre coletas)
-   - Limites de coleta
+3. Escolha como configurar:
+   - **Início rápido:** rode o **Assistente de Gamificação** para gerar automaticamente itens, missões, ranking e outras mecânicas em uma única rodada (veja [Funcionalidades](#-funcionalidades) acima).
+   - **Configuração manual:** configure cada mecânica você mesmo:
+     - Itens
+     - Valores de XP
+     - Quantidade de níveis
+     - Limiares de XP para progressão
+     - Posicionamento de drops
+     - Tempo de Recarga (intervalo entre coletas)
+     - Limites de coleta
 4. Os alunos coletam itens diretamente nas seções do curso.
 5. O sistema atualiza automaticamente XP, níveis e ranking.
 
@@ -739,7 +779,7 @@ O plugin inclui dois scripts CLI de seed que criam um curso de demonstração co
 * 5 itens com diferentes valores de XP, cooldowns e limites de coleta
 * 5 drops inseridos em atividades do curso via shortcodes (modos de exibição: card, imagem e texto)
 * 7 quests cobrindo todos os tipos de conclusão (nível, XP, itens, trocas)
-* 2 capítulos de história com escolhas ramificadas e efeitos de karma
+* 2 capítulos de história com escolhas ramificadas e efeitos de reputação
 * 2 ofertas de troca (loja NPC)
 * Inventário, log de quests e conclusão de atividades pré-populados — o ranking já está pronto para navegar imediatamente
 
