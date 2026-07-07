@@ -5,6 +5,60 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.7.0] — 2026-07-07
+
+### Added
+- **Gamification Wizard**: a step-by-step assistant that builds a course's
+  entire gamified structure in one run. Eleven mechanics — Items, PlayerCoin,
+  Avatar Pack, Trade, Ranking, Missions, Knowledge Collectible, Deadline
+  Extension, Item RPG, RPG (classes + full story) and a hidden Secret Item —
+  are grouped into Basic/Intermediate/Advanced tiers by sophistication, not
+  by what they technically do. A shared XP budget keeps every generated
+  mechanic inside the course's level ceiling; drops auto-distribute across
+  existing activities (or land in the course's own news forum for
+  PlayerCoin/Secret Item). A live Octalysis coverage octagon, faithful to
+  Yu-Kai Chou's original 8 Core Drives, shows which motivational drives the
+  current setup covers. Each mechanic is one-shot per course, with live
+  step-by-step progress, retry-on-failure, and one-click undo (reverting XP,
+  drops and generated content) from a run history list.
+- Narrative tone selector for the individual AI item generator, matching
+  the tone control already available in the wizard's bulk generation.
+- New `xp_changed` event, emitted on every XP gain or loss (collection,
+  quest reward, teacher grant/revoke), for sites that want to observe or
+  log player progress externally.
+- AI key resolution now reports hub-borrowed key usage back to
+  `local_aihub`'s site usage log, keeping cross-plugin key-usage
+  accounting consistent.
+
+### Changed
+- Remaining internal "karma"/"class" terminology replaced with the
+  player-facing "reputation"/"character" throughout the UI and lang strings.
+
+### Fixed
+- **Backup and restore losing RPG/item configuration**: item powers
+  (avatar, deadline extension), RPG class emoji tiers, and a "specific
+  trade" quest's linked trade were never carried over by a course
+  backup/restore — they silently reverted to empty on the restored course.
+  A pinned target activity inside a deadline-extension power, and an
+  activity-completion quest's target activity, are now correctly remapped
+  to the restored course's own activities.
+- **Deleting a block instance now cleans up all of its own data.**
+  Previously only the block instance row itself was removed; the other 19
+  tables the plugin owns (items, quests, trades, RPG classes, story
+  chapters, inventories, logs…) were left behind as orphaned rows.
+- Crash fixed when a backpack (inventory) item has no image set.
+- `TypeError` fixed when a teacher opens a student's audit log in the
+  Reports tab.
+- `setup_playercoin_drop` now verifies the supplied course actually
+  owns the given block instance before creating the PlayerCoin drop.
+- AI-provided item name and description are now sanitized before being
+  persisted.
+- `remove_drop_shortcode` now also matches and strips shortcodes
+  carrying `mode=`/`text=` attributes, not just the bare `code=X` form —
+  previously these were silently left behind after manual removal.
+
+---
+
 ## [v1.6.2] — 2026-06-30
 
 ### Added
