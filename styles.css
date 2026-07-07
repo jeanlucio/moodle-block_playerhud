@@ -2114,6 +2114,13 @@ div.modal-dialog .visually-hidden {
 .path-blocks-playerhud .ph-choice-field-number {
     width: 80px;
 }
+.block_playerhud .ph-scene-flag,
+.path-blocks-playerhud .ph-scene-flag {
+    font-weight: 400;
+}
+.badge.ph-scene-flag-warning {
+    color: var(--bs-dark, #000);
+}
 
 .ph-story-modal-content {
     border: none;

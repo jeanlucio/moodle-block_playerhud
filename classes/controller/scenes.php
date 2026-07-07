@@ -96,46 +96,49 @@ class scenes {
 
         $scenes = $DB->get_records('block_playerhud_story_nodes', ['chapterid' => $chapterid], 'id ASC');
 
-        $choicecounts = [];
+        $choicesbynode = [];
         if ($scenes) {
             $nodeids = array_keys($scenes);
             [$insql, $inparams] = $DB->get_in_or_equal($nodeids);
-            $sql = "SELECT nodeid, COUNT(id) AS cnt
-                      FROM {block_playerhud_choices}
-                     WHERE nodeid $insql
-                  GROUP BY nodeid";
-            foreach ($DB->get_records_sql($sql, $inparams) as $row) {
-                $choicecounts[(int) $row->nodeid] = (int) $row->cnt;
+            $allchoices = $DB->get_records_select('block_playerhud_choices', "nodeid $insql", $inparams);
+            foreach ($allchoices as $choice) {
+                $choicesbynode[(int) $choice->nodeid][] = $choice;
             }
         }
 
+        $itemnames  = $DB->get_records_menu('block_playerhud_items', ['blockinstanceid' => $instanceid], '', 'id, name');
+        $classnames = $DB->get_records_menu('block_playerhud_classes', ['blockinstanceid' => $instanceid], '', 'id, name');
+
         $scenesdata = [];
         foreach ($scenes as $scene) {
-            $choicecount = $choicecounts[$scene->id] ?? 0;
-            $editurl     = new moodle_url('/blocks/playerhud/edit_scene.php', [
+            $choices    = $choicesbynode[$scene->id] ?? [];
+            $flagbadges = $this->build_flag_badges($choices, $itemnames, $classnames);
+            $editurl    = new moodle_url('/blocks/playerhud/edit_scene.php', [
                 'courseid'   => $courseid,
                 'instanceid' => $instanceid,
                 'chapterid'  => $chapterid,
                 'nodeid'     => $scene->id,
             ]);
-            $deleteurl   = new moodle_url($baseurl, [
+            $deleteurl  = new moodle_url($baseurl, [
                 'action'  => 'delete_scene',
                 'nodeid'  => $scene->id,
                 'sesskey' => sesskey(),
             ]);
 
             $scenesdata[] = [
-                'id_label'              => get_string('scene_number', 'block_playerhud', (int) $scene->id),
-                'is_start'              => (bool) $scene->is_start,
-                'str_start_badge'       => get_string('scene_start_badge', 'block_playerhud'),
-                'snippet'               => s(substr(strip_tags($scene->content), 0, 100)),
-                'choice_count'          => $choicecount,
-                'str_choices'           => get_string('choices_hdr', 'block_playerhud'),
-                'url_edit'              => $editurl->out(false),
-                'str_edit'              => get_string('edit'),
-                'url_delete'            => $deleteurl->out(false),
-                'str_delete'            => get_string('delete'),
-                'confirm_msg'           => s(get_string('scene_delete_confirm', 'block_playerhud')),
+                'id_label'        => get_string('scene_number', 'block_playerhud', (int) $scene->id),
+                'is_start'        => (bool) $scene->is_start,
+                'str_start_badge' => get_string('scene_start_badge', 'block_playerhud'),
+                'snippet'         => s(substr(strip_tags($scene->content), 0, 100)),
+                'choice_count'    => count($choices),
+                'str_choices'     => get_string('choices_hdr', 'block_playerhud'),
+                'flag_badges'     => $flagbadges,
+                'has_any_flags'   => !empty($flagbadges),
+                'url_edit'        => $editurl->out(false),
+                'str_edit'        => get_string('edit'),
+                'url_delete'      => $deleteurl->out(false),
+                'str_delete'      => get_string('delete'),
+                'confirm_msg'     => s(get_string('scene_delete_confirm', 'block_playerhud')),
             ];
         }
 
@@ -444,5 +447,85 @@ class scenes {
         $node->is_start  = 0;
 
         return (int) $DB->insert_record('block_playerhud_story_nodes', $node);
+    }
+
+    /**
+     * Builds the summary badges (with actual values) for a scene's choices.
+     *
+     * Purely in-memory: takes the choice records already fetched in bulk for
+     * the whole chapter, so it does not issue any DB call itself.
+     *
+     * @param array $choices Raw choice records belonging to the scene.
+     * @param array $itemnames Map of itemid => name for the block instance.
+     * @param array $classnames Map of classid => name for the block instance.
+     * @return array[] List of badges, each with css, icon and label keys.
+     */
+    private function build_flag_badges(array $choices, array $itemnames, array $classnames): array {
+        $costvalues        = [];
+        $reqclassvalues    = [];
+        $reqkarmavalues    = [];
+        $karmaimpactvalues = [];
+        $setclassvalues    = [];
+
+        foreach ($choices as $choice) {
+            $costitemid = (int) $choice->cost_itemid;
+            if ($costitemid > 0 && isset($itemnames[$costitemid])) {
+                $qty = max(1, (int) $choice->cost_item_qty);
+                $costvalues[$qty . 'x ' . format_string($itemnames[$costitemid])] = true;
+            }
+
+            $reqclassid = (int) $choice->req_class_id;
+            if ($reqclassid > 0 && isset($classnames[$reqclassid])) {
+                $reqclassvalues[format_string($classnames[$reqclassid])] = true;
+            }
+
+            $reqkarmamin = (int) $choice->req_karma_min;
+            if ($reqkarmamin !== 0) {
+                $reqkarmavalues[(string) $reqkarmamin] = true;
+            }
+
+            $karmadelta = (int) $choice->karma_delta;
+            if ($karmadelta !== 0) {
+                $karmaimpactvalues[sprintf('%+d', $karmadelta)] = true;
+            }
+
+            $setclassid = (int) $choice->set_class_id;
+            if ($setclassid > 0 && isset($classnames[$setclassid])) {
+                $setclassvalues[format_string($classnames[$setclassid])] = true;
+            }
+        }
+
+        $badges = [];
+        $this->append_type_badge($badges, $costvalues, 'bg-primary', 'fa-cube', 'scene_flag_cost_item');
+        $this->append_type_badge($badges, $reqclassvalues, 'bg-info', 'fa-user-secret', 'scene_flag_req_class');
+        $this->append_type_badge(
+            $badges,
+            $reqkarmavalues,
+            'bg-warning ph-scene-flag-warning',
+            'fa-balance-scale',
+            'scene_flag_req_karma'
+        );
+        $this->append_type_badge($badges, $karmaimpactvalues, 'bg-dark', 'fa-balance-scale', 'scene_flag_karma_impact');
+        $this->append_type_badge($badges, $setclassvalues, 'bg-success', 'fa-user-secret', 'scene_flag_set_class');
+
+        return $badges;
+    }
+
+    /**
+     * Appends one badge summarising all distinct values seen for a flag type.
+     *
+     * @param array $badges Badge list, passed by reference.
+     * @param array $values Set of distinct value strings for this type, keyed by value.
+     * @param string $css Bootstrap badge background class(es).
+     * @param string $icon Font Awesome icon class suffix.
+     * @param string $stringkey Lang string key, expecting a single {$a} placeholder.
+     * @return void
+     */
+    private function append_type_badge(array &$badges, array $values, string $css, string $icon, string $stringkey): void {
+        if (empty($values)) {
+            return;
+        }
+        $label    = get_string($stringkey, 'block_playerhud', implode(', ', array_keys($values)));
+        $badges[] = ['css' => $css, 'icon' => $icon, 'label' => $label];
     }
 }
