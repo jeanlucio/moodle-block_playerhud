@@ -664,7 +664,10 @@ class story_manager {
                     ? get_string('cost_item_label', 'block_playerhud', $costitemqty . 'x ' . $costitemname)
                     : '',
                 'str_missing_item' => ($costitemname !== '' && !$costitemmet)
-                    ? get_string('missing_item', 'block_playerhud', $costitemqty . 'x ' . $costitemname)
+                    ? get_string('missing_item', 'block_playerhud', (object) [
+                        'qty'  => $costitemqty,
+                        'name' => $costitemname,
+                    ])
                     : '',
                 'is_preview'      => $ispreview,
             ];
