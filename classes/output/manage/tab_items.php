@@ -494,7 +494,14 @@ class tab_items implements renderable {
             'str_avatar_pack_create' => get_string('avatar_pack_create', 'block_playerhud'),
 
             // Modals.
-            'modal_ai_html' => $OUTPUT->render_from_template('block_playerhud/modal_ai', []),
+            'modal_ai_html' => $OUTPUT->render_from_template('block_playerhud/modal_ai', [
+                'tone_options' => [
+                    ['value' => 'scifi', 'label' => get_string('ai_tone_scifi', 'block_playerhud')],
+                    ['value' => 'fantasy', 'label' => get_string('ai_tone_fantasy', 'block_playerhud')],
+                    ['value' => 'mystery', 'label' => get_string('ai_tone_mystery', 'block_playerhud')],
+                    ['value' => 'academic', 'label' => get_string('ai_tone_academic', 'block_playerhud')],
+                ],
+            ]),
             'modal_preview_html' => $OUTPUT->render_from_template('block_playerhud/modal_item', []),
         ];
 

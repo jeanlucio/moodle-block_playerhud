@@ -49,6 +49,7 @@ class generate_ai_content extends external_api {
             'instanceid' => new external_value(PARAM_INT, 'Block instance ID'),
             'courseid' => new external_value(PARAM_INT, 'Course ID'),
             'theme' => new external_value(PARAM_TEXT, 'Theme for generation'),
+            'tone' => new external_value(PARAM_TEXT, 'Narrative tone hint', VALUE_DEFAULT, ''),
             'xp' => new external_value(PARAM_INT, 'XP value', VALUE_DEFAULT, -1),
             'amount' => new external_value(PARAM_INT, 'Amount of items', VALUE_DEFAULT, 1),
             'create_drop' => new external_value(PARAM_BOOL, 'Create drop location?', VALUE_DEFAULT, false),
@@ -64,6 +65,7 @@ class generate_ai_content extends external_api {
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      * @param string $theme Theme text.
+     * @param string $tone Narrative tone hint.
      * @param int $xp XP value.
      * @param int $amount Amount of items.
      * @param bool $createdrop Create drop flag.
@@ -76,6 +78,7 @@ class generate_ai_content extends external_api {
         $instanceid,
         $courseid,
         $theme,
+        $tone = '',
         $xp = -1,
         $amount = 1,
         $createdrop = false,
@@ -90,6 +93,7 @@ class generate_ai_content extends external_api {
             'instanceid' => $instanceid,
             'courseid' => $courseid,
             'theme' => $theme,
+            'tone' => $tone,
             'xp' => $xp,
             'amount' => $amount,
             'create_drop' => $createdrop,
@@ -120,6 +124,7 @@ class generate_ai_content extends external_api {
         );
 
         $extraoptions = [
+            'tone' => $params['tone'],
             'drop_location' => $params['drop_location'],
             'drop_max' => $params['drop_max'],
             'drop_time' => $params['drop_time'],

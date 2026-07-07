@@ -243,6 +243,7 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                     instanceid: config.instanceid,
                     courseid: config.courseid,
                     theme: theme,
+                    tone: $('#ai-tone option:selected').text(),
                     xp: isNaN(xpToSend) ? -1 : xpToSend,
                     amount: parseInt($('#ai-amount').val()) || 1,
                     // eslint-disable-next-line camelcase

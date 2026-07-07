@@ -28,6 +28,7 @@
                 "close": "Close",
                 "ai_prompt_theme_item": "Theme",
                 "ai_theme_placeholder": "E.g., Magic Items",
+                "ai_tone_label": "Narrative tone",
                 "xp": "XP",
                 "ai_rnd_xp": "100",
                 "qty": "Quantity",
@@ -42,11 +43,15 @@
                 "cancel": "Cancel",
                 "ai_btn_conjure": "Generate"
             }
+        ],
+        "tone_options": [
+            {"value": "fantasy", "label": "Medieval fantasy"},
+            {"value": "scifi", "label": "Science fiction"}
         ]
     }
 }}
 <div class="modal fade" id="ph-ai-modal" tabindex="-1" aria-labelledby="phAiModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="phAiModalLabel">{{#str}} ai_btn_create, block_playerhud {{/str}}</h5>
@@ -56,9 +61,19 @@
       </div>
       <div class="modal-body">
         <form id="ph-ai-form">
-            <div class="mb-3">
-                <label for="ai-theme" class="form-label fw-bold">{{#str}} ai_prompt_theme_item, block_playerhud {{/str}}</label>
-                <input type="text" class="form-control" id="ai-theme" placeholder="{{#str}} ai_theme_placeholder, block_playerhud {{/str}}">
+            <div class="row mb-3">
+                <div class="col-12 col-md-7">
+                    <label for="ai-theme" class="form-label fw-bold">{{#str}} ai_prompt_theme_item, block_playerhud {{/str}}</label>
+                    <input type="text" class="form-control" id="ai-theme" placeholder="{{#str}} ai_theme_placeholder, block_playerhud {{/str}}">
+                </div>
+                <div class="col-12 col-md-5 mt-3 mt-md-0">
+                    <label for="ai-tone" class="form-label fw-bold">{{#str}} ai_tone_label, block_playerhud {{/str}}</label>
+                    <select class="form-control form-select" id="ai-tone">
+                        {{#tone_options}}
+                        <option value="{{value}}">{{label}}</option>
+                        {{/tone_options}}
+                    </select>
+                </div>
             </div>
 
             <div class="row mb-3">
