@@ -151,19 +151,19 @@ final class analytics_test extends advanced_testcase {
 
     /**
      * An item without any drop contributes nothing (its own XP is never actually paid out
-     * through a quest/trade reward or a teacher's manual grant); an infinite drop is marked
-     * but also adds nothing to the total.
+     * through a quest/trade reward or a teacher's manual grant), and neither does an item only
+     * reachable through an infinite drop (anti-farm rule). Both are left out of the breakdown
+     * entirely: a teacher has nothing to tune on a row that will always read "+0 XP".
      *
      * @covers ::economy_health
      */
-    public function test_economy_health_no_drop_and_infinite(): void {
+    public function test_economy_health_no_drop_and_pure_infinite_excluded(): void {
         $loose = $this->create_item('Loose', 70);
         $infinite = $this->create_item('Spring', 40);
         $this->create_drop($infinite, 0);
 
         $health = analytics::economy_health($this->instanceid, 100, 10);
 
-        // Neither the drop-less item nor the infinite drop contributes to the total.
         $this->assertEquals(0, $health->total_items_xp);
 
         $byname = [];
@@ -171,8 +171,32 @@ final class analytics_test extends advanced_testcase {
             $byname[$row['name']] = $row;
         }
         $this->assertArrayNotHasKey('Loose', $byname);
-        $this->assertTrue($byname['Spring']['infinite']);
-        $this->assertEquals('∞', $byname['Spring']['total_uses']);
+        $this->assertArrayNotHasKey('Spring', $byname);
+    }
+
+    /**
+     * An item with both a finite and an infinite drop still shows up in the breakdown (it does
+     * earn real XP through the finite drop), and is correctly marked as also having an infinite
+     * source.
+     *
+     * @covers ::economy_health
+     */
+    public function test_economy_health_infinite_drop_marked_when_item_also_earns_xp(): void {
+        $item = $this->create_item('Mixed', 40);
+        $this->create_drop($item, 2);
+        $this->create_drop($item, 0);
+
+        $health = analytics::economy_health($this->instanceid, 100, 10);
+
+        // Only the finite drop (2 uses x 40) counts; the infinite drop adds nothing.
+        $this->assertEquals(80, $health->total_items_xp);
+
+        $byname = [];
+        foreach ($health->breakdown as $row) {
+            $byname[$row['name']] = $row;
+        }
+        $this->assertTrue($byname['Mixed']['infinite']);
+        $this->assertEquals(80, $byname['Mixed']['xp_total']);
     }
 
     /**

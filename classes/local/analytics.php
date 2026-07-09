@@ -48,6 +48,10 @@ class analytics {
      * correction tool, not a designed acquisition channel, so it must not inflate this ceiling
      * either (see block_playerhud\controller\items::grant_item()).
      *
+     * The breakdown only lists items and quests that actually contribute XP (xp_total > 0):
+     * a zero-XP item, or one only reachable through an infinite drop (anti-farm rule), has
+     * nothing for a teacher to tune here, so it is left out rather than shown as a "+0 XP" row.
+     *
      * @param int $instanceid The block instance ID.
      * @return array {total_xp: int, breakdown: array}.
      */
@@ -87,6 +91,12 @@ class analytics {
                     } else {
                         $hasinfinite = true;
                     }
+                }
+
+                if ($itemxp == 0) {
+                    // Zero-XP item (own xp = 0, or only reachable through an infinite drop):
+                    // it never contributes real XP, so it has nothing for a teacher to tune here.
+                    continue;
                 }
 
                 $totalxp += $itemxp;
