@@ -276,6 +276,53 @@ final class item_delete_cascade_test extends advanced_testcase {
         $this->assertFalse($DB->record_exists('block_playerhud_trades', ['id' => $tradeid]));
     }
 
+    // Tests for delete_item()/bulk_delete_items() — XP reversal uses recorded xpawarded.
+
+    /**
+     * A student holding one copy earned via a finite drop (xpawarded = 100) and one via an
+     * infinite drop (xpawarded = 0) only loses the 100 they actually earned when the item is
+     * deleted, not item->xp x 2 copies.
+     */
+    public function test_delete_item_mixed_finite_infinite_drops_reverts_only_earned_xp(): void {
+        global $DB;
+
+        $item = $this->make_item_with_xp('Relic', 100);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player((int) $user->id, 500);
+        $this->grant_copy((int) $user->id, $item->id, 100);
+        $this->grant_copy((int) $user->id, $item->id, 0);
+
+        items::delete_item($item, $this->instanceid, $this->context);
+
+        $this->assertSame(400, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $this->instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
+     * Same scenario as above, through bulk_delete_items() with a second, unrelated item mixed
+     * in — only the recorded xpawarded of the deleted items' copies is reverted.
+     */
+    public function test_bulk_delete_items_mixed_finite_infinite_reverts_only_earned_xp(): void {
+        global $DB;
+
+        $item = $this->make_item_with_xp('Relic', 100);
+        $other = $this->make_item_with_xp('Trinket', 50);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player((int) $user->id, 500);
+        $this->grant_copy((int) $user->id, $item->id, 100);
+        $this->grant_copy((int) $user->id, $item->id, 0);
+
+        $items = [$item->id => $item, $other->id => $other];
+        items::bulk_delete_items($items, $this->instanceid, $this->context);
+
+        $this->assertSame(400, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $this->instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
     // Helper methods.
 
     /**
@@ -363,5 +410,71 @@ final class item_delete_cascade_test extends advanced_testcase {
             ]);
         }
         return $tradeid;
+    }
+
+    /**
+     * Inserts an item with a specific XP value (make_item() always uses 0).
+     *
+     * @param string $name Item name.
+     * @param int $xp XP value.
+     * @return \stdClass Inserted record.
+     */
+    private function make_item_with_xp(string $name, int $xp): \stdClass {
+        global $DB;
+        $item = (object) [
+            'blockinstanceid'   => $this->instanceid,
+            'name'              => $name,
+            'image'             => '',
+            'description'       => '',
+            'xp'                => $xp,
+            'enabled'           => 1,
+            'tradable'          => 1,
+            'secret'            => 0,
+            'required_class_id' => '0',
+            'action_type'       => '',
+            'action_value'      => '',
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ];
+        $item->id = $DB->insert_record('block_playerhud_items', $item);
+        return $item;
+    }
+
+    /**
+     * Seeds a player record with a starting XP balance.
+     *
+     * @param int $userid Player user ID.
+     * @param int $xp Starting XP.
+     * @return void
+     */
+    private function seed_player(int $userid, int $xp): void {
+        global $DB;
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'userid'          => $userid,
+            'currentxp'       => $xp,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+    }
+
+    /**
+     * Grants a copy of an item to a user with a specific recorded xpawarded.
+     *
+     * @param int $userid Holder user ID.
+     * @param int $itemid Item held.
+     * @param int $xpawarded XP actually paid out for this copy.
+     * @return void
+     */
+    private function grant_copy(int $userid, int $itemid, int $xpawarded): void {
+        global $DB;
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid'      => $userid,
+            'itemid'      => $itemid,
+            'dropid'      => 0,
+            'source'      => 'map',
+            'timecreated' => time(),
+            'xpawarded'   => $xpawarded,
+        ]);
     }
 }

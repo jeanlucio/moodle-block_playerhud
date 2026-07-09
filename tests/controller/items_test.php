@@ -132,9 +132,16 @@ final class items_test extends advanced_testcase {
      * @param int $itemid Item held.
      * @param int $dropid Originating drop (0 = none).
      * @param string $source Inventory source tag.
+     * @param int $xpawarded XP actually paid out for this copy.
      * @return int The new inventory row ID.
      */
-    protected function seed_inventory(int $userid, int $itemid, int $dropid, string $source): int {
+    protected function seed_inventory(
+        int $userid,
+        int $itemid,
+        int $dropid,
+        string $source,
+        int $xpawarded = 0
+    ): int {
         global $DB;
 
         return (int) $DB->insert_record('block_playerhud_inventory', (object) [
@@ -143,6 +150,7 @@ final class items_test extends advanced_testcase {
             'dropid'      => $dropid,
             'source'      => $source,
             'timecreated' => time(),
+            'xpawarded'   => $xpawarded,
         ]);
     }
 
@@ -290,7 +298,7 @@ final class items_test extends advanced_testcase {
         $dropid = $this->make_drop($instanceid, $itemid, 5);
         $user = $this->getDataGenerator()->create_user();
         $this->seed_player($instanceid, (int) $user->id, 100);
-        $invid = $this->seed_inventory((int) $user->id, $itemid, $dropid, 'map');
+        $invid = $this->seed_inventory((int) $user->id, $itemid, $dropid, 'map', 30);
 
         items::revoke_item($invid, $instanceid);
 
@@ -302,7 +310,9 @@ final class items_test extends advanced_testcase {
     }
 
     /**
-     * Revoking an infinite-drop item marks it revoked but keeps the XP intact.
+     * Revoking a copy with xpawarded = 0 (e.g. an infinite drop) marks it revoked but keeps the
+     * XP intact — revoke_item() no longer inspects the drop at all, it only reads what was
+     * actually recorded for this copy.
      *
      * @covers ::revoke_item
      */
@@ -314,12 +324,39 @@ final class items_test extends advanced_testcase {
         $dropid = $this->make_drop($instanceid, $itemid, 0);
         $user = $this->getDataGenerator()->create_user();
         $this->seed_player($instanceid, (int) $user->id, 100);
-        $invid = $this->seed_inventory((int) $user->id, $itemid, $dropid, 'map');
+        $invid = $this->seed_inventory((int) $user->id, $itemid, $dropid, 'map', 0);
 
         items::revoke_item($invid, $instanceid);
 
         $this->assertSame('revoked', $DB->get_field('block_playerhud_inventory', 'source', ['id' => $invid]));
         $this->assertSame(100, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
+     * Revoking a copy deducts what was actually recorded at grant time, not the item's
+     * current xp — so editing the item afterwards never changes what a revoke deducts.
+     *
+     * @covers ::revoke_item
+     */
+    public function test_revoke_item_deducts_recorded_xp_not_current_item_xp(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 100);
+        $dropid = $this->make_drop($instanceid, $itemid, 5);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 150);
+        $invid = $this->seed_inventory((int) $user->id, $itemid, $dropid, 'map', 100);
+
+        // Item is edited after the grant: revoke must still deduct the original 100, not 30.
+        $DB->set_field('block_playerhud_items', 'xp', 30, ['id' => $itemid]);
+
+        items::revoke_item($invid, $instanceid);
+
+        $this->assertSame(50, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
             'blockinstanceid' => $instanceid,
             'userid'          => $user->id,
         ]));

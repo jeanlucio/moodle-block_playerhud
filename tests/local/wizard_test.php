@@ -185,7 +185,7 @@ final class wizard_test extends advanced_testcase {
         $itemid = $this->create_item();
         $DB->insert_record('block_playerhud_inventory', (object) [
             'userid' => $student->id, 'itemid' => $itemid, 'dropid' => 0,
-            'source' => 'map', 'timecreated' => time(),
+            'source' => 'map', 'timecreated' => time(), 'xpawarded' => 10,
         ]);
 
         // A quest worth 15 XP the student has already claimed.

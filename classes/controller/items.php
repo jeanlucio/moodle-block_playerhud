@@ -88,12 +88,12 @@ class items {
     }
 
     /**
-     * Soft-revokes a granted item, marking the inventory row as 'revoked' and
-     * deducting its XP when appropriate.
+     * Soft-revokes a granted item, marking the inventory row as 'revoked' and deducting the
+     * XP actually recorded for that copy at grant time.
      *
-     * XP is only deducted when the originating drop was finite: infinite drops
-     * (maxusage = 0) deliberately grant 0 XP on collection, so reverting them
-     * must not deduct. A foreign inventory row is a no-op.
+     * Deducting the recorded xpawarded (rather than the item's current xp) means an infinite
+     * drop's copy (xpawarded = 0) is naturally a no-op, with no separate drop lookup needed.
+     * A foreign inventory row is a no-op.
      *
      * @param int $invid The inventory row to revoke.
      * @param int $instanceid The owning block instance ID.
@@ -113,21 +113,9 @@ class items {
             return;
         }
 
-        $item = $DB->get_record('block_playerhud_items', ['id' => $inv->itemid, 'blockinstanceid' => $instanceid]);
-        if (!$item) {
-            return;
-        }
-
         $player = $DB->get_record('block_playerhud_user', ['blockinstanceid' => $instanceid, 'userid' => $inv->userid]);
-        if ($player) {
-            $isinfinite = false;
-            if ($inv->dropid > 0) {
-                $drop = $DB->get_record('block_playerhud_drops', ['id' => $inv->dropid]);
-                $isinfinite = $drop && (int) $drop->maxusage === 0;
-            }
-            if (!$isinfinite && $item->xp > 0) {
-                \block_playerhud\game::change_xp($player, -(int)$item->xp, $instanceid);
-            }
+        if ($player && (int)$inv->xpawarded > 0) {
+            \block_playerhud\game::change_xp($player, -(int)$inv->xpawarded, $instanceid);
         }
 
         // Soft revoke: mark the inventory record as revoked instead of deleting.
@@ -249,7 +237,7 @@ class items {
      * Caller is responsible for capability checks and for finding $tradeids
      * via find_orphaned_trades() before calling this method.
      *
-     * @param \stdClass $item Item record (must include id and xp).
+     * @param \stdClass $item Item record (must include id).
      * @param int $instanceid Block instance ID.
      * @param context_block $context Block context (for file deletion).
      * @param int[] $tradeids Orphaned trade IDs to cascade-delete.
@@ -262,13 +250,16 @@ class items {
 
         self::delete_orphaned_trades($tradeids);
 
-        // Remove XP from students holding this item.
+        // Remove each holder's recorded XP for this item.
         $holders = $DB->get_records_sql(
-            "SELECT userid, COUNT(id) as qtd FROM {block_playerhud_inventory} WHERE itemid = ? GROUP BY userid",
+            "SELECT userid, SUM(xpawarded) AS totalxp
+               FROM {block_playerhud_inventory}
+              WHERE itemid = ?
+           GROUP BY userid",
             [$itemid]
         );
         if ($holders) {
-            self::remove_xp_from_holders($holders, $instanceid, $item->xp);
+            self::remove_xp_from_holders($holders, $instanceid);
         }
 
         $DB->delete_records('block_playerhud_inventory', ['itemid' => $itemid]);
@@ -311,15 +302,14 @@ class items {
         self::delete_orphaned_trades($tradeids);
 
         $holders = $DB->get_records_sql(
-            "SELECT inv.userid, SUM(it.xp) as totalxptoremove
-               FROM {block_playerhud_inventory} inv
-               JOIN {block_playerhud_items} it ON inv.itemid = it.id
-              WHERE inv.itemid $iteminsql
-           GROUP BY inv.userid",
+            "SELECT userid, SUM(xpawarded) AS totalxp
+               FROM {block_playerhud_inventory}
+              WHERE itemid $iteminsql
+           GROUP BY userid",
             $iteminparams
         );
         if ($holders) {
-            self::remove_bulk_xp_from_holders($holders, $instanceid);
+            self::remove_xp_from_holders($holders, $instanceid);
         }
 
         $DB->delete_records_select('block_playerhud_inventory', "itemid $iteminsql", $iteminparams);
@@ -355,13 +345,18 @@ class items {
     }
 
     /**
-     * Subtracts item XP from each player holding the deleted item.
+     * Subtracts each player's recorded XP (SUM of xpawarded) for the deleted item(s).
      *
-     * @param \stdClass[] $holders Records with userid and qtd (item count).
+     * Deducting the recorded value instead of the item's current xp means a holder whose
+     * copies came from a mix of finite and infinite drops only loses what they actually
+     * earned. The two former call sites (single-item and bulk delete) collapsed into this one
+     * helper once both started reading the same recorded total instead of recomputing it two
+     * different (and differently buggy) ways.
+     *
+     * @param \stdClass[] $holders Records with userid and totalxp (SUM of xpawarded).
      * @param int $instanceid Block instance ID.
-     * @param int $xpperitem XP value of the item being deleted.
      */
-    private static function remove_xp_from_holders(array $holders, int $instanceid, int $xpperitem): void {
+    private static function remove_xp_from_holders(array $holders, int $instanceid): void {
         global $DB;
 
         $userids = array_keys($holders);
@@ -377,38 +372,9 @@ class items {
         );
 
         foreach ($holders as $holder) {
-            if (isset($players[$holder->userid])) {
+            if (isset($players[$holder->userid]) && (int)$holder->totalxp > 0) {
                 $player = $players[$holder->userid];
-                \block_playerhud\game::change_xp($player, -($xpperitem * (int)$holder->qtd), $instanceid);
-            }
-        }
-    }
-
-    /**
-     * Subtracts aggregated XP from each player holding any of the bulk-deleted items.
-     *
-     * @param \stdClass[] $holders Records with userid and totalxptoremove.
-     * @param int $instanceid Block instance ID.
-     */
-    private static function remove_bulk_xp_from_holders(array $holders, int $instanceid): void {
-        global $DB;
-
-        $userids = array_keys($holders);
-        [$usql, $uparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'usr');
-        $uparams['instanceid'] = $instanceid;
-
-        $players = $DB->get_records_select(
-            'block_playerhud_user',
-            "blockinstanceid = :instanceid AND userid $usql",
-            $uparams,
-            '',
-            'userid, id, currentxp, timemodified, enable_gamification'
-        );
-
-        foreach ($holders as $holder) {
-            if (isset($players[$holder->userid])) {
-                $player = $players[$holder->userid];
-                \block_playerhud\game::change_xp($player, -(int)$holder->totalxptoremove, $instanceid);
+                \block_playerhud\game::change_xp($player, -(int)$holder->totalxp, $instanceid);
             }
         }
     }
