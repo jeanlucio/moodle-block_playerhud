@@ -133,6 +133,25 @@ class analytics {
             ];
         }
 
+        // Add XP potentially granted by external game plugins (e.g. mod_playerwords), each
+        // discovered automatically via the playerhud_grant_potential callback — same
+        // get_plugins_with_function() discovery pattern already used for navigation callbacks.
+        // A plugin implements <frankenstyle>_playerhud_grant_potential(int $blockinstanceid):
+        // array in its own lib.php, returning zero or more rows already shaped exactly like the
+        // item/quest breakdown entries above ({name, xp_each, drop_count, total_uses, xp_total,
+        // is_quest, infinite}), so no template change is needed here to display them. The
+        // plugin's own implementation is responsible for validating that any item it references
+        // actually belongs to $blockinstanceid (see \block_playerhud\local\external_items) —
+        // this method only sums whatever rows it is handed back.
+        foreach (get_plugins_with_function('playerhud_grant_potential', 'lib.php') as $plugins) {
+            foreach ($plugins as $pluginfunction) {
+                foreach ($pluginfunction($instanceid) as $row) {
+                    $totalxp += (int)($row['xp_total'] ?? 0);
+                    $breakdown[] = $row;
+                }
+            }
+        }
+
         return ['total_xp' => $totalxp, 'breakdown' => $breakdown];
     }
 
