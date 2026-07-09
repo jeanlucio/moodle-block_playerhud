@@ -77,6 +77,7 @@ class tab_trades implements renderable, templatable {
             foreach ($trades as $trade) {
                 // 2. Process Requirements.
                 $reqsdata = [];
+                $disablednames = [];
                 foreach ($trade->requirements as $req) {
                     $media = $allmedia[$req->itemid];
 
@@ -90,6 +91,9 @@ class tab_trades implements renderable, templatable {
                         'popover_title' => $req->qty . 'x ' . $reqname,
                         'popover_label' => $req->qty . 'x ' . $reqname,
                     ];
+                    if (!$req->enabled) {
+                        $disablednames[] = $reqname;
+                    }
                 }
 
                 // 3. Process Rewards.
@@ -107,6 +111,9 @@ class tab_trades implements renderable, templatable {
                         'popover_title' => $rew->qty . 'x ' . $rewname,
                         'popover_label' => $rew->qty . 'x ' . $rewname,
                     ];
+                    if (!$rew->enabled) {
+                        $disablednames[] = $rewname;
+                    }
                 }
 
                 // 4. URLs and Actions.
@@ -142,6 +149,10 @@ class tab_trades implements renderable, templatable {
                     'rewards' => $rewsdata,
                     'compact_reqs' => count($reqsdata) > 3,
                     'compact_rews' => count($rewsdata) > 3,
+                    'is_unavailable' => $trade->unavailable,
+                    'unavailable_warning' => $trade->unavailable
+                        ? get_string('trade_unavailable_warning', 'block_playerhud', implode(', ', $disablednames))
+                        : '',
                 ];
             }
         }
@@ -194,6 +205,7 @@ class tab_trades implements renderable, templatable {
             'str_add' => get_string('add_trade', 'block_playerhud'),
             'str_shop' => get_string('tab_shop', 'block_playerhud'),
             'str_hidden' => get_string('hidden', 'block_playerhud'),
+            'str_unavailable' => get_string('trade_unavailable_badge', 'block_playerhud'),
             'str_onetime' => $stronetime,
             'str_unlimited' => get_string('unlimited', 'block_playerhud'),
             'str_pay' => get_string('shop_pay', 'block_playerhud'),

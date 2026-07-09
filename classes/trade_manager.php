@@ -143,6 +143,14 @@ class trade_manager {
             $itemsmap = $DB->get_records_select('block_playerhud_items', "id $itminsql", $itminparams);
         }
 
+        // A trade with any disabled requirement/reward item is unavailable, even if reached
+        // directly (not just hidden from the shop listing) — mirrors game::get_full_trades().
+        foreach ($itemsmap as $tradeitem) {
+            if (!$tradeitem->enabled) {
+                throw new \moodle_exception('error_trade_invalid', 'block_playerhud');
+            }
+        }
+
         $myclassid = 0;
         if ($DB->get_manager()->table_exists('block_playerhud_rpg_progress')) {
             $rpgprog = $DB->get_record('block_playerhud_rpg_progress', [

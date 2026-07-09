@@ -187,6 +187,43 @@ final class trade_test extends advanced_testcase {
     }
 
     /**
+     * A trade referencing a disabled reward item is rejected outright, even with enough funds
+     * — disabling an item must stop it from changing hands via trade too, not just via map
+     * collection.
+     */
+    public function test_execute_trade_rejects_disabled_reward_item(): void {
+        global $DB;
+        $user = $this->getDataGenerator()->create_user();
+        $coin = $this->create_dummy_item('Coin');
+        $potion = $this->create_dummy_item('Health Potion');
+
+        $this->give_item_to_user($user->id, $coin->id, 5);
+
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object)[
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'Buy Potion',
+            'groupid'         => 0,
+            'onetime'         => 0,
+            'timecreated'     => time(),
+        ]);
+        $DB->insert_record('block_playerhud_trade_reqs', (object)[
+            'tradeid' => $tradeid, 'itemid' => $coin->id, 'qty' => 5,
+        ]);
+        $DB->insert_record('block_playerhud_trade_rewards', (object)[
+            'tradeid' => $tradeid, 'itemid' => $potion->id, 'qty' => 1,
+        ]);
+
+        $DB->set_field('block_playerhud_items', 'enabled', 0, ['id' => $potion->id]);
+
+        try {
+            trade_manager::execute_trade($tradeid, $user->id, $this->instanceid, $this->course->id);
+            $this->fail('Expected moodle_exception due to a disabled reward item.');
+        } catch (\moodle_exception $e) {
+            $this->assertEquals('error_trade_invalid', $e->errorcode);
+        }
+    }
+
+    /**
      * Test 2: Atomic transaction success.
      */
     public function test_trade_success_atomic(): void {

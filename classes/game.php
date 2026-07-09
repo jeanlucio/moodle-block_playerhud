@@ -900,7 +900,7 @@ class game {
 
         // 2. Fetch all requirements in a single optimized query.
         $sqlreq = "SELECT req.id, req.tradeid, req.itemid, req.qty,
-                          i.name, i.image, i.required_class_id
+                          i.name, i.image, i.required_class_id, i.enabled
                      FROM {block_playerhud_trade_reqs} req
                      JOIN {block_playerhud_items} i ON req.itemid = i.id
                     WHERE req.tradeid $insql
@@ -918,7 +918,7 @@ class game {
 
         // 3. Fetch all rewards in a single optimized query.
         $sqlrew = "SELECT rew.id, rew.tradeid, rew.itemid, rew.qty,
-                          i.name, i.image, i.required_class_id
+                          i.name, i.image, i.required_class_id, i.enabled
                      FROM {block_playerhud_trade_rewards} rew
                      JOIN {block_playerhud_items} i ON rew.itemid = i.id
                     WHERE rew.tradeid $insql
@@ -930,6 +930,18 @@ class game {
             foreach ($rewards as $rew) {
                 if (isset($trades[$rew->tradeid])) {
                     $trades[$rew->tradeid]->rewards[] = $rew;
+                }
+            }
+        }
+
+        // 4. A trade is unavailable (cannot be traded, though still shown to teachers for
+        // management) when any requirement or reward item is disabled.
+        foreach ($trades as $trade) {
+            $trade->unavailable = false;
+            foreach (array_merge($trade->requirements, $trade->rewards) as $tradeitem) {
+                if (!$tradeitem->enabled) {
+                    $trade->unavailable = true;
+                    break;
                 }
             }
         }

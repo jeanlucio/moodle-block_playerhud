@@ -941,6 +941,81 @@ final class game_test extends advanced_testcase {
     }
 
     /**
+     * A trade with all enabled requirement/reward items is not flagged unavailable.
+     *
+     * @covers ::get_full_trades
+     */
+    public function test_get_full_trades_available_when_all_items_enabled(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $cost = $this->create_dummy_item('Coin', 0);
+        $prize = $this->create_dummy_item('Trophy', 0);
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Trophy Trade',
+            'groupid' => 0, 'centralized' => 1, 'onetime' => 0, 'timecreated' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_trade_reqs', (object) ['tradeid' => $tradeid, 'itemid' => $cost->id, 'qty' => 3]);
+        $DB->insert_record('block_playerhud_trade_rewards', (object) ['tradeid' => $tradeid, 'itemid' => $prize->id, 'qty' => 1]);
+
+        $trades = game::get_full_trades($this->instanceid);
+
+        $this->assertFalse($trades[$tradeid]->unavailable);
+    }
+
+    /**
+     * A trade with a disabled requirement item is flagged unavailable, even though the reward
+     * item is enabled.
+     *
+     * @covers ::get_full_trades
+     */
+    public function test_get_full_trades_unavailable_when_requirement_item_disabled(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $cost = $this->create_dummy_item('Coin', 0);
+        $prize = $this->create_dummy_item('Trophy', 0);
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Trophy Trade',
+            'groupid' => 0, 'centralized' => 1, 'onetime' => 0, 'timecreated' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_trade_reqs', (object) ['tradeid' => $tradeid, 'itemid' => $cost->id, 'qty' => 3]);
+        $DB->insert_record('block_playerhud_trade_rewards', (object) ['tradeid' => $tradeid, 'itemid' => $prize->id, 'qty' => 1]);
+        $DB->set_field('block_playerhud_items', 'enabled', 0, ['id' => $cost->id]);
+
+        $trades = game::get_full_trades($this->instanceid);
+
+        $this->assertTrue($trades[$tradeid]->unavailable);
+    }
+
+    /**
+     * A trade with a disabled reward item is flagged unavailable too, not just requirements.
+     *
+     * @covers ::get_full_trades
+     */
+    public function test_get_full_trades_unavailable_when_reward_item_disabled(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $cost = $this->create_dummy_item('Coin', 0);
+        $prize = $this->create_dummy_item('Trophy', 0);
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Trophy Trade',
+            'groupid' => 0, 'centralized' => 1, 'onetime' => 0, 'timecreated' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_trade_reqs', (object) ['tradeid' => $tradeid, 'itemid' => $cost->id, 'qty' => 3]);
+        $DB->insert_record('block_playerhud_trade_rewards', (object) ['tradeid' => $tradeid, 'itemid' => $prize->id, 'qty' => 1]);
+        $DB->set_field('block_playerhud_items', 'enabled', 0, ['id' => $prize->id]);
+
+        $trades = game::get_full_trades($this->instanceid);
+
+        $this->assertTrue($trades[$tradeid]->unavailable);
+    }
+
+    /**
      * build_trade_suggestions yields one suggestion per uncovered avatar plus a bundle,
      * with discounted cost for robot/alien avatars.
      *

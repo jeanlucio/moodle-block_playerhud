@@ -116,6 +116,10 @@ class tab_shop implements renderable, templatable {
                     continue; // Skip hidden/map-only trades.
                 }
 
+                if ($trade->unavailable) {
+                    continue; // Skip trades referencing a disabled item.
+                }
+
                 // 4. Check class restrictions on rewards.
                 $visibleforme = true;
                 foreach ($trade->rewards as $rew) {

@@ -77,7 +77,7 @@
     {{#has_trades}}
         {{#trades}}
         <div class="col-lg-6 col-12 mb-4 d-flex justify-content-center">
-            <div class="card ph-trade-widget-card shadow-sm h-100 w-100" role="group" aria-label="{{name}}">
+            <div class="card ph-trade-widget-card shadow-sm h-100 w-100 {{#is_unavailable}}ph-trade-unavailable{{/is_unavailable}}" role="group" aria-label="{{name}}">
 
                 {{! TRADE HEADER }}
                 <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center border-bottom py-2">
@@ -94,6 +94,11 @@
                         {{^is_onetime}}
                             <span class="badge bg-success text-white shadow-sm ms-1"><i class="fa fa-refresh" aria-hidden="true"></i> {{str_unlimited}}</span>
                         {{/is_onetime}}
+                        {{#is_unavailable}}
+                            <span class="badge bg-warning text-dark shadow-sm ms-1" title="{{unavailable_warning}}">
+                                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{str_unavailable}}
+                            </span>
+                        {{/is_unavailable}}
                         <span class="fw-bold ms-2 text-dark">{{name}}</span>
                     </div>
                     <div class="d-flex">

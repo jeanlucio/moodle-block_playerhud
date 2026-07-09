@@ -58,6 +58,10 @@
 .path-blocks-playerhud .ph-icon-game {
     color: var(--ph-icon-game, #6f42c1);
 }
+.block_playerhud .ph-trade-unavailable,
+.path-blocks-playerhud .ph-trade-unavailable {
+    opacity: 0.5;
+}
 .block_playerhud .ph-text-xs,
 .path-blocks-playerhud .ph-text-xs {
     font-size: 0.7rem;
