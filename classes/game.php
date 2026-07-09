@@ -16,6 +16,8 @@
 
 namespace block_playerhud;
 
+use block_playerhud\local\analytics;
+
 /**
  * Game logic class for PlayerHUD block.
  *
@@ -357,57 +359,11 @@ class game {
      * @return array Stats array.
      */
     public static function get_game_stats($config, $blockinstanceid, $currentxp) {
-        global $DB;
-
         // Settings from block configuration.
         $xpperlevel = isset($config->xp_per_level) ? (int)$config->xp_per_level : 100;
         $maxlevels = isset($config->max_levels) ? (int)$config->max_levels : 20;
 
-        // Calculate Game Goal (Sum of finite items).
-        // 1. Get all enabled items.
-        $allitems = $DB->get_records('block_playerhud_items', [
-            'blockinstanceid' => $blockinstanceid,
-            'enabled' => 1,
-        ]);
-
-        $totalgamexp = 0;
-
-        if ($allitems) {
-            // 2. Optimization: Get ALL drops for this instance in ONE query.
-            // Joining to ensure we only get drops for enabled items.
-            $sql = "SELECT d.*, d.itemid
-                      FROM {block_playerhud_drops} d
-                      JOIN {block_playerhud_items} i ON d.itemid = i.id
-                     WHERE i.blockinstanceid = :instanceid
-                       AND i.enabled = 1";
-
-            $alldrops = $DB->get_records_sql($sql, ['instanceid' => $blockinstanceid]);
-
-            // 3. Group drops by itemid in memory.
-            $dropsbyitem = [];
-            foreach ($alldrops as $d) {
-                $dropsbyitem[$d->itemid][] = $d;
-            }
-
-            // 4. Calculate total.
-            foreach ($allitems as $item) {
-                if (isset($dropsbyitem[$item->id])) {
-                    foreach ($dropsbyitem[$item->id] as $drop) {
-                        if ($drop->maxusage > 0) {
-                            $totalgamexp += ($item->xp * $drop->maxusage);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Add XP available from enabled quest rewards to the game total.
-        $questxp = $DB->get_field_sql(
-            "SELECT COALESCE(SUM(reward_xp), 0) FROM {block_playerhud_quests}
-              WHERE blockinstanceid = :instanceid AND enabled = 1",
-            ['instanceid' => $blockinstanceid]
-        );
-        $totalgamexp += (int)$questxp;
+        $totalgamexp = analytics::game_xp_totals($blockinstanceid)['total_xp'];
 
         $level = self::xp_to_level((int)$currentxp, $xpperlevel, $maxlevels);
 

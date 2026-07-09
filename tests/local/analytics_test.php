@@ -150,7 +150,9 @@ final class analytics_test extends advanced_testcase {
     }
 
     /**
-     * An item without a drop contributes one copy; an infinite drop is marked.
+     * An item without any drop contributes nothing (its own XP is never actually paid out
+     * through a quest/trade reward or a teacher's manual grant); an infinite drop is marked
+     * but also adds nothing to the total.
      *
      * @covers ::economy_health
      */
@@ -161,14 +163,14 @@ final class analytics_test extends advanced_testcase {
 
         $health = analytics::economy_health($this->instanceid, 100, 10);
 
-        // Loose item counts once (70); the infinite drop adds nothing to the total.
-        $this->assertEquals(70, $health->total_items_xp);
+        // Neither the drop-less item nor the infinite drop contributes to the total.
+        $this->assertEquals(0, $health->total_items_xp);
 
         $byname = [];
         foreach ($health->breakdown as $row) {
             $byname[$row['name']] = $row;
         }
-        $this->assertEquals(1, $byname['Loose']['total_uses']);
+        $this->assertArrayNotHasKey('Loose', $byname);
         $this->assertTrue($byname['Spring']['infinite']);
         $this->assertEquals('∞', $byname['Spring']['total_uses']);
     }
@@ -187,6 +189,33 @@ final class analytics_test extends advanced_testcase {
         $this->assertEquals(0, $health->ratio);
         // Ratio is forced to 0 to avoid division by zero, so a non-empty economy reads as "hard".
         $this->assertEquals('hard', $health->status);
+    }
+
+    /**
+     * balance_context's current_xp always matches economy_health's total_items_xp for the
+     * same instance, since both are backed by the same game_xp_totals() source of truth.
+     *
+     * @covers ::balance_context
+     * @covers ::game_xp_totals
+     */
+    public function test_balance_context_matches_economy_health_total(): void {
+        $finite = $this->create_item('Relic', 600);
+        $this->create_drop($finite, 1);
+        $loose = $this->create_item('Loose', 70);
+        global $DB;
+        $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Bonus', 'description' => '', 'type' => 1,
+            'requirement' => '1', 'req_itemid' => 0, 'reward_xp' => 400, 'reward_itemid' => 0,
+            'required_class_id' => '0', 'image_todo' => '', 'image_done' => '', 'enabled' => 1,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        $health = analytics::economy_health($this->instanceid, 100, 10);
+        $balance = analytics::balance_context($this->instanceid, 100, 10, 5);
+
+        $this->assertEquals($health->total_items_xp, $balance['current_xp']);
+        // Drop-less "Loose" item confirms both exclude it the same way (600 + 400, not 670 + 400).
+        $this->assertEquals(1000, $balance['current_xp']);
     }
 
     /**

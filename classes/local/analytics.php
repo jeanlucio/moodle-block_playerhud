@@ -37,22 +37,24 @@ namespace block_playerhud\local;
  */
 class analytics {
     /**
-     * Compute the economy health of a block instance.
+     * Sum the XP a student can actually earn from this instance's own items and quests.
      *
-     * Sums the XP a student can earn (enabled items times their drop usage,
-     * plus enabled quest rewards) and compares it against the XP ceiling
-     * (XP per level times the number of levels).
+     * Only counts XP that is genuinely paid out through a designed acquisition channel: a
+     * finite drop's maxusage (paid on map collection), or a quest's own reward_xp (paid on
+     * claim). An item with no drop contributes nothing here even if it has its own XP value
+     * configured, because none of its other delivery paths actually pay that value — a quest's
+     * item reward and a trade's item reward both hand over the item as a plain collectible
+     * without touching the student's XP balance, and a teacher's manual grant is a deliberate
+     * correction tool, not a designed acquisition channel, so it must not inflate this ceiling
+     * either (see block_playerhud\controller\items::grant_item()).
      *
      * @param int $instanceid The block instance ID.
-     * @param int $xpperlevel XP required for each level.
-     * @param int $maxlevels Number of levels configured.
-     * @return \stdClass {total_items_xp, xp_ceiling, ratio, status, breakdown}.
+     * @return array {total_xp: int, breakdown: array}.
      */
-    public static function economy_health(int $instanceid, int $xpperlevel, int $maxlevels): \stdClass {
+    public static function game_xp_totals(int $instanceid): array {
         global $DB;
 
-        $xpceiling = $xpperlevel * $maxlevels;
-        $totalitemsxp = 0;
+        $totalxp = 0;
         $breakdown = [];
 
         $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $instanceid, 'enabled' => 1]);
@@ -70,33 +72,28 @@ class analytics {
             }
 
             foreach ($items as $item) {
+                if (empty($dropsbyitem[$item->id])) {
+                    continue;
+                }
+
                 $itemxp = 0;
-                $dropcount = 0;
                 $totaldropuses = 0;
                 $hasinfinite = false;
 
-                if (!empty($dropsbyitem[$item->id])) {
-                    $dropcount = count($dropsbyitem[$item->id]);
-                    foreach ($dropsbyitem[$item->id] as $drop) {
-                        if ($drop->maxusage > 0) {
-                            $itemxp += ($item->xp * $drop->maxusage);
-                            $totaldropuses += $drop->maxusage;
-                        } else {
-                            $hasinfinite = true;
-                        }
+                foreach ($dropsbyitem[$item->id] as $drop) {
+                    if ($drop->maxusage > 0) {
+                        $itemxp += ($item->xp * $drop->maxusage);
+                        $totaldropuses += $drop->maxusage;
+                    } else {
+                        $hasinfinite = true;
                     }
-                } else {
-                    // Item without a drop still contributes 1x its XP (available in library).
-                    $itemxp = $item->xp;
-                    $dropcount = 0;
-                    $totaldropuses = 1;
                 }
 
-                $totalitemsxp += $itemxp;
+                $totalxp += $itemxp;
                 $breakdown[] = [
                     'name' => $item->name,
                     'xp_each' => $item->xp,
-                    'drop_count' => $dropcount,
+                    'drop_count' => count($dropsbyitem[$item->id]),
                     'total_uses' => $hasinfinite ? '∞' : $totaldropuses,
                     'xp_total' => $itemxp,
                     'is_quest' => false,
@@ -114,7 +111,7 @@ class analytics {
             'id, name, reward_xp'
         );
         foreach ($quests as $quest) {
-            $totalitemsxp += (int)$quest->reward_xp;
+            $totalxp += (int)$quest->reward_xp;
             $breakdown[] = [
                 'name' => $quest->name,
                 'xp_each' => $quest->reward_xp,
@@ -125,6 +122,26 @@ class analytics {
                 'infinite' => false,
             ];
         }
+
+        return ['total_xp' => $totalxp, 'breakdown' => $breakdown];
+    }
+
+    /**
+     * Compute the economy health of a block instance.
+     *
+     * Compares the XP a student can earn (see game_xp_totals()) against the XP ceiling
+     * (XP per level times the number of levels).
+     *
+     * @param int $instanceid The block instance ID.
+     * @param int $xpperlevel XP required for each level.
+     * @param int $maxlevels Number of levels configured.
+     * @return \stdClass {total_items_xp, xp_ceiling, ratio, status, breakdown}.
+     */
+    public static function economy_health(int $instanceid, int $xpperlevel, int $maxlevels): \stdClass {
+        $xpceiling = $xpperlevel * $maxlevels;
+        $totals = self::game_xp_totals($instanceid);
+        $totalitemsxp = $totals['total_xp'];
+        $breakdown = $totals['breakdown'];
 
         $ratio = ($xpceiling > 0) ? ($totalitemsxp / $xpceiling) * 100 : 0;
 
@@ -161,38 +178,8 @@ class analytics {
      * @return array {current_xp, target_xp, gap, qty}.
      */
     public static function balance_context(int $instanceid, int $xpperlevel, int $maxlevels, int $qty): array {
-        global $DB;
-
         $xpceiling = $xpperlevel * $maxlevels;
-        $currenttotalxp = 0;
-
-        $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $instanceid, 'enabled' => 1]);
-        if ($items) {
-            // Preload all drops for this instance to avoid an N+1 query problem.
-            $sql = "SELECT d.id, d.itemid, d.maxusage
-                      FROM {block_playerhud_drops} d
-                      JOIN {block_playerhud_items} i ON d.itemid = i.id
-                     WHERE i.blockinstanceid = :instanceid AND i.enabled = 1";
-            $alldrops = $DB->get_records_sql($sql, ['instanceid' => $instanceid]);
-
-            $dropsbyitem = [];
-            foreach ($alldrops as $drop) {
-                $dropsbyitem[$drop->itemid][] = $drop;
-            }
-
-            foreach ($items as $item) {
-                if (!empty($dropsbyitem[$item->id])) {
-                    foreach ($dropsbyitem[$item->id] as $drop) {
-                        if ($drop->maxusage > 0) {
-                            $currenttotalxp += ($item->xp * $drop->maxusage);
-                        }
-                    }
-                } else {
-                    // Item without a drop still contributes 1x its XP (available in library).
-                    $currenttotalxp += $item->xp;
-                }
-            }
-        }
+        $currenttotalxp = self::game_xp_totals($instanceid)['total_xp'];
 
         return [
             'current_xp' => $currenttotalxp,

@@ -229,6 +229,54 @@ final class game_test extends advanced_testcase {
     }
 
     /**
+     * get_game_stats()'s total_game_xp must always match economy_health()'s total_items_xp
+     * for the same instance, since both are now backed by the same shared calculation
+     * (analytics::game_xp_totals()) instead of two independent implementations.
+     *
+     * @covers ::get_game_stats
+     */
+    public function test_get_game_stats_matches_economy_health_total(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $config = new \stdClass();
+        $config->xp_per_level = 100;
+        $config->max_levels   = 10;
+
+        // Finite drop (counts), infinite drop (marked but adds 0), drop-less item (adds 0).
+        $finite = $this->create_dummy_item('Gem', 50);
+        $this->create_dummy_drop($finite->id, 3);
+        $infinite = $this->create_dummy_item('Spring', 40);
+        $this->create_dummy_drop($infinite->id, 0);
+        $this->create_dummy_item('Loose', 999);
+
+        $DB->insert_record('block_playerhud_quests', (object)[
+            'blockinstanceid'  => $this->instanceid,
+            'name'             => 'Bonus',
+            'description'      => '',
+            'type'             => 1,
+            'requirement'      => '1',
+            'req_itemid'       => 0,
+            'reward_xp'        => 25,
+            'reward_itemid'    => 0,
+            'required_class_id' => '0',
+            'image_todo'       => '📋',
+            'image_done'       => '🏅',
+            'enabled'          => 1,
+            'timecreated'      => time(),
+            'timemodified'     => time(),
+        ]);
+
+        $stats = game::get_game_stats($config, $this->instanceid, 0);
+        $health = \block_playerhud\local\analytics::economy_health($this->instanceid, 100, 10);
+
+        $this->assertEquals($health->total_items_xp, $stats['total_game_xp']);
+        $this->assertEquals(175, $stats['total_game_xp']);
+    }
+
+    /**
      * Test the Anti-Farm rule: Infinite drops (maxusage = 0) must yield 0 XP.
      *
      * @covers ::process_collection
