@@ -348,6 +348,7 @@ class quest {
                 $log->questid = $questid;
                 $log->userid = $userid;
                 $log->timecreated = time();
+                $log->xpawarded = (int)$quest->reward_xp;
                 $DB->insert_record('block_playerhud_quest_log', $log);
 
                 $rewardstxt = [];

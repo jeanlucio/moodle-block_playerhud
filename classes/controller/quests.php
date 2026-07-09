@@ -74,21 +74,19 @@ class quests {
             return false;
         }
 
-        if ($quest->reward_xp > 0) {
-            $userscompleted = $DB->get_records_sql(
-                "SELECT userid, COUNT(id) AS completions
-                   FROM {block_playerhud_quest_log}
-                  WHERE questid = :qid
-               GROUP BY userid",
-                ['qid' => $questid]
-            );
+        $userscompleted = $DB->get_records_sql(
+            "SELECT userid, SUM(xpawarded) AS totalxp
+               FROM {block_playerhud_quest_log}
+              WHERE questid = :qid
+           GROUP BY userid",
+            ['qid' => $questid]
+        );
 
-            $deductions = [];
-            foreach ($userscompleted as $uc) {
-                $deductions[$uc->userid] = $quest->reward_xp * $uc->completions;
-            }
-            self::revert_xp($deductions, $instanceid);
+        $deductions = [];
+        foreach ($userscompleted as $uc) {
+            $deductions[$uc->userid] = $uc->totalxp;
         }
+        self::revert_xp($deductions, $instanceid);
 
         $DB->delete_records('block_playerhud_quest_log', ['questid' => $questid]);
         $DB->delete_records('block_playerhud_quests', ['id' => $questid]);
@@ -124,17 +122,16 @@ class quests {
         [$qinsql, $qinparams] = $DB->get_in_or_equal($validids);
 
         $holders = $DB->get_records_sql(
-            "SELECT ql.userid, SUM(q.reward_xp) AS totalxptoremove
-               FROM {block_playerhud_quest_log} ql
-               JOIN {block_playerhud_quests} q ON ql.questid = q.id
-              WHERE ql.questid $qinsql
-           GROUP BY ql.userid",
+            "SELECT userid, SUM(xpawarded) AS totalxp
+               FROM {block_playerhud_quest_log}
+              WHERE questid $qinsql
+           GROUP BY userid",
             $qinparams
         );
 
         $deductions = [];
         foreach ($holders as $holder) {
-            $deductions[$holder->userid] = $holder->totalxptoremove;
+            $deductions[$holder->userid] = $holder->totalxp;
         }
         self::revert_xp($deductions, $instanceid);
 

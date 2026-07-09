@@ -110,15 +110,17 @@ final class quests_test extends advanced_testcase {
      *
      * @param int $questid Quest ID.
      * @param int $userid User ID.
+     * @param int $xpawarded XP actually paid out for this completion.
      * @return void
      */
-    protected function seed_log(int $questid, int $userid): void {
+    protected function seed_log(int $questid, int $userid, int $xpawarded = 0): void {
         global $DB;
 
         $DB->insert_record('block_playerhud_quest_log', (object) [
             'questid'     => $questid,
             'userid'      => $userid,
             'timecreated' => time(),
+            'xpawarded'   => $xpawarded,
         ]);
     }
 
@@ -170,8 +172,8 @@ final class quests_test extends advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->seed_player($instanceid, (int) $user->id, 100);
         // Two completions => deduct 2 * 40.
-        $this->seed_log($questid, (int) $user->id);
-        $this->seed_log($questid, (int) $user->id);
+        $this->seed_log($questid, (int) $user->id, 40);
+        $this->seed_log($questid, (int) $user->id, 40);
 
         $result = quests::delete_quest($questid, $instanceid);
 
@@ -201,6 +203,33 @@ final class quests_test extends advanced_testcase {
         quests::delete_quest($questid, $instanceid);
 
         $this->assertSame(100, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
+     * Deleting a quest reverts the XP actually recorded per completion, not the quest's
+     * current reward_xp — so editing the reward afterwards never changes what a deletion
+     * reverts.
+     *
+     * @covers ::delete_quest
+     */
+    public function test_delete_quest_reverts_recorded_xp_not_current_reward(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $questid = $this->seed_quest($instanceid, 200);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 500);
+        $this->seed_log($questid, (int) $user->id, 200);
+
+        // Reward is edited after the claim: deletion must still deduct the original 200, not 50.
+        $DB->set_field('block_playerhud_quests', 'reward_xp', 50, ['id' => $questid]);
+
+        quests::delete_quest($questid, $instanceid);
+
+        $this->assertSame(300, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
             'blockinstanceid' => $instanceid,
             'userid'          => $user->id,
         ]));
@@ -239,8 +268,8 @@ final class quests_test extends advanced_testcase {
         $questb = $this->seed_quest($instanceb, 70);
         $user = $this->getDataGenerator()->create_user();
         $this->seed_player($instancea, (int) $user->id, 100);
-        $this->seed_log($questa1, (int) $user->id);
-        $this->seed_log($questa2, (int) $user->id);
+        $this->seed_log($questa1, (int) $user->id, 30);
+        $this->seed_log($questa2, (int) $user->id, 50);
 
         $count = quests::bulk_delete_quests([$questa1, $questa2, $questb], $instancea);
 
@@ -251,6 +280,35 @@ final class quests_test extends advanced_testcase {
         // 100 - (30 + 50) = 20.
         $this->assertSame(20, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
             'blockinstanceid' => $instancea,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
+     * Bulk delete reverts the XP actually recorded per completion, not the quests' current
+     * reward_xp.
+     *
+     * @covers ::bulk_delete_quests
+     */
+    public function test_bulk_delete_quests_reverts_recorded_xp_not_current_reward(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $questa = $this->seed_quest($instanceid, 200);
+        $questb = $this->seed_quest($instanceid, 100);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 500);
+        $this->seed_log($questa, (int) $user->id, 200);
+        $this->seed_log($questb, (int) $user->id, 100);
+
+        // Both rewards are edited after the claims: must still deduct the original 300, not 20.
+        $DB->set_field('block_playerhud_quests', 'reward_xp', 10, ['id' => $questa]);
+        $DB->set_field('block_playerhud_quests', 'reward_xp', 10, ['id' => $questb]);
+
+        quests::bulk_delete_quests([$questa, $questb], $instanceid);
+
+        $this->assertSame(200, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
             'userid'          => $user->id,
         ]));
     }

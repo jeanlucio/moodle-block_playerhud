@@ -188,4 +188,33 @@ final class audit_log_test extends advanced_testcase {
         $this->assertEquals(-100, $logs[0]->xp_gained);
         $this->assertEquals('item_revoked', $logs[0]->event_type);
     }
+
+    /**
+     * A quest claim's xp_gained comes from the recorded xpawarded value, not the quest's
+     * current reward_xp — so editing the quest afterwards never changes what the log shows.
+     *
+     * @covers ::get_logs
+     */
+    public function test_quest_xp_gained_uses_recorded_value_not_current_reward_xp(): void {
+        global $DB;
+
+        $questid = $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Bonus', 'description' => '',
+            'type' => 1, 'requirement' => '1', 'req_itemid' => 0, 'reward_xp' => 200,
+            'reward_itemid' => 0, 'required_class_id' => '0', 'image_todo' => '', 'image_done' => '',
+            'enabled' => 1, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_quest_log', (object) [
+            'questid' => $questid, 'userid' => $this->user->id, 'timecreated' => time(),
+            'xpawarded' => 200,
+        ]);
+
+        // Quest is edited after the claim: the log must still show what was actually paid.
+        $DB->set_field('block_playerhud_quests', 'reward_xp', 50, ['id' => $questid]);
+
+        $logs = array_values($this->get_logs()['logs']);
+        $this->assertCount(1, $logs);
+        $this->assertEquals(200, $logs[0]->xp_gained);
+        $this->assertEquals('quest', $logs[0]->event_type);
+    }
 }

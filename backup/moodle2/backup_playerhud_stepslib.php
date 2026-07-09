@@ -55,7 +55,11 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         ]);
 
         $questlogs = new backup_nested_element('quest_logs');
-        $questlog = new backup_nested_element('quest_log', ['id'], ['userid', 'questid', 'timecreated']);
+        $questlog = new backup_nested_element(
+            'quest_log',
+            ['id'],
+            ['userid', 'questid', 'timecreated', 'xpawarded']
+        );
 
         // Trades Structure.
         $trades = new backup_nested_element('trades');

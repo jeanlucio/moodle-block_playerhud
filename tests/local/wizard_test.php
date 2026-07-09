@@ -197,6 +197,7 @@ final class wizard_test extends advanced_testcase {
         ]);
         $DB->insert_record('block_playerhud_quest_log', (object) [
             'questid' => $questid, 'userid' => $student->id, 'timecreated' => time(),
+            'xpawarded' => 15,
         ]);
 
         $runid = wizard::start_run($this->instanceid, (int) $USER->id, ['items', 'missions']);

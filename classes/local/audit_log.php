@@ -97,7 +97,7 @@ class audit_log {
              WHERE tl.userid = :u2 AND t.blockinstanceid = :p2
             UNION ALL
             SELECT {$concatquest} AS uniqueid, 'quest' AS event_type, q.name AS object_name, ql.timecreated,
-                   'quest_claim' AS details, q.image_done AS icon, q.reward_xp AS xp_gained,
+                   'quest_claim' AS details, q.image_done AS icon, ql.xpawarded AS xp_gained,
                    0 AS itemid, 0 AS inventory_id, 0 AS trade_id
               FROM {block_playerhud_quest_log} ql
               JOIN {block_playerhud_quests} q ON ql.questid = q.id

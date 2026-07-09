@@ -311,5 +311,42 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026070902, 'playerhud');
     }
 
+    if ($oldversion < 2026070903) {
+        // Add xpawarded to block_playerhud_quest_log: records the actual reward_xp paid out at
+        // claim time, independent of the quest's current (possibly since-edited) reward_xp
+        // value. Mirrors the same column already added to block_playerhud_inventory.
+        $table = new \xmldb_table('block_playerhud_quest_log');
+        $field = new \xmldb_field(
+            'xpawarded',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'timecreated'
+        );
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Backfill rows that already existed when this column was added, using the quest's
+        // current reward_xp — the same value the audit log used to read on the fly. This runs
+        // in the same atomic step as add_field(), before any request can reach the new
+        // xpawarded-aware code, so (unlike the inventory backfill above) no site could already
+        // hold a row written by that new code: this is the first time this column exists
+        // anywhere, so every row seen here safely predates it.
+        $DB->execute(
+            "UPDATE {block_playerhud_quest_log}
+                SET xpawarded = (
+                    SELECT q.reward_xp FROM {block_playerhud_quests} q WHERE q.id = questid
+                )
+              WHERE questid IN (SELECT id FROM {block_playerhud_quests})"
+        );
+
+        upgrade_block_savepoint(true, 2026070903, 'playerhud');
+    }
+
     return true;
 }

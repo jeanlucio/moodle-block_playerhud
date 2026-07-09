@@ -614,6 +614,10 @@ final class quest_test extends advanced_testcase {
             'userid'  => $user->id,
         ]);
         $this->assertTrue($logged);
+        $this->assertSame(100, (int) $DB->get_field('block_playerhud_quest_log', 'xpawarded', [
+            'questid' => $quest->id,
+            'userid'  => $user->id,
+        ]));
     }
 
     /**
