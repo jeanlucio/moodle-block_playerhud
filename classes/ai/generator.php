@@ -230,7 +230,7 @@ class generator {
         $item->blockinstanceid = $this->instanceid;
         $item->name = \core_text::substr((string) $data['name'], 0, 255);
         $item->description = (string) $data['description'];
-        $item->image = $data['emoji'];
+        $item->image = clean_param((string) $data['emoji'], PARAM_TEXT);
         $item->xp = $targetxp;
 
         $item->enabled = 1;

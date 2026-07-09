@@ -78,6 +78,13 @@ class use_item extends external_api {
         self::validate_context($context);
         require_capability('block/playerhud:view', $context);
 
+        // Verify the block instance actually belongs to the supplied course, so an item
+        // bound to this block's economy cannot be spent against an unrelated course.
+        $blockcoursectx = $context->get_course_context(false);
+        if (!$blockcoursectx || (int) $blockcoursectx->instanceid !== $courseid) {
+            throw new \moodle_exception('accessdenied', 'admin');
+        }
+
         $item = $DB->get_record(
             'block_playerhud_items',
             ['id' => $itemid, 'blockinstanceid' => $instanceid, 'enabled' => 1],

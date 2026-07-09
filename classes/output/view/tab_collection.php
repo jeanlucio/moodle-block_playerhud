@@ -173,7 +173,7 @@ class tab_collection implements renderable, templatable {
                         $itemobj['description'] = format_text($item->description, FORMAT_HTML, ['context' => $context]);
                         $itemobj['is_image'] = $media['is_image'];
                         $itemobj['image_url'] = $media['is_image'] ? $media['url'] : '';
-                        $itemobj['image_content'] = $media['is_image'] ? '' : $media['content'];
+                        $itemobj['image_content'] = $media['is_image'] ? '' : strip_tags($media['content']);
                         $itemobj['data_image_payload'] = $jspayload;
                     }
                 } else {
@@ -185,7 +185,7 @@ class tab_collection implements renderable, templatable {
                         'description' => format_text($item->description, FORMAT_HTML, ['context' => $context]),
                         'is_image' => $media['is_image'],
                         'image_url' => $media['is_image'] ? $media['url'] : '',
-                        'image_content' => $media['is_image'] ? '' : $media['content'],
+                        'image_content' => $media['is_image'] ? '' : strip_tags($media['content']),
                         'data_image_payload' => $jspayload,
                     ];
 
