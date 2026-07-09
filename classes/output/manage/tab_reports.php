@@ -666,89 +666,22 @@ class tab_reports implements renderable, templatable {
         moodle_url $baseurl,
         $output
     ): array {
-        global $DB;
-
-        $concatitem  = $DB->sql_concat("'item_'", "inv.id");
-        $concattrade = $DB->sql_concat("'trade_'", "tl.id");
-        $concatquest = $DB->sql_concat("'quest_'", "ql.id");
-
-        $innersql = "
-            SELECT {$concatitem} AS uniqueid,
-                   CASE WHEN inv.source = 'revoked' THEN 'item_revoked'
-                        WHEN inv.source = 'consumed' THEN 'item_consumed'
-                        ELSE 'item' END AS event_type,
-                   i.name AS object_name, inv.timecreated,
-                   inv.source AS details, i.image AS icon,
-                   CASE
-                       WHEN inv.source = 'revoked' AND COALESCE(d.maxusage, 1) > 0 THEN -i.xp
-                       WHEN inv.source IN ('map', 'teacher') AND COALESCE(d.maxusage, 1) > 0 THEN i.xp
-                       ELSE 0
-                   END AS xp_gained,
-                   i.id AS itemid, inv.id AS inventory_id, 0 AS trade_id
-              FROM {block_playerhud_inventory} inv
-              JOIN {block_playerhud_items} i ON inv.itemid = i.id
-         LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
-             WHERE inv.userid = :u1 AND i.blockinstanceid = :p1
-            UNION ALL
-            SELECT {$concattrade} AS uniqueid, 'trade' AS event_type, t.name AS object_name, tl.timecreated,
-                   'trade_completed' AS details, '⚖️' AS icon, 0 AS xp_gained, 0 AS itemid,
-                   0 AS inventory_id, t.id AS trade_id
-              FROM {block_playerhud_trade_log} tl
-              JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
-             WHERE tl.userid = :u2 AND t.blockinstanceid = :p2
-            UNION ALL
-            SELECT {$concatquest} AS uniqueid, 'quest' AS event_type, q.name AS object_name, ql.timecreated,
-                   'quest_claim' AS details, q.image_done AS icon, q.reward_xp AS xp_gained,
-                   0 AS itemid, 0 AS inventory_id, 0 AS trade_id
-              FROM {block_playerhud_quest_log} ql
-              JOIN {block_playerhud_quests} q ON ql.questid = q.id
-             WHERE ql.userid = :u3 AND q.blockinstanceid = :p3";
-
-        $params = [
-            'u1' => $userid,
-            'p1' => $this->instanceid,
-            'u2' => $userid,
-            'p2' => $this->instanceid,
-            'u3' => $userid,
-            'p3' => $this->instanceid,
-        ];
-
-        $where = "1=1";
-        if (!empty($filtertype)) {
-            $where .= " AND event_type = :ftype";
-            $params['ftype'] = $filtertype;
-        }
-        if (!empty($filtertext)) {
-            $likeobj = $DB->sql_like('object_name', ':ftext1', false, false);
-            $likedet = $DB->sql_like('details', ':ftext2', false, false);
-            $where .= " AND ({$likeobj} OR {$likedet})";
-            $params['ftext1'] = '%' . $DB->sql_like_escape($filtertext) . '%';
-            $params['ftext2'] = '%' . $DB->sql_like_escape($filtertext) . '%';
-        }
-
-        $allowedsorts = ['timecreated', 'event_type', 'object_name', 'xp_gained', 'details'];
-        if (!in_array($sort, $allowedsorts)) {
-            $sort = 'timecreated';
-        }
-        $dir = (strtoupper($dir) === 'ASC') ? 'ASC' : 'DESC';
-
-        $sqlcount = "SELECT COUNT(1) FROM ($innersql) combined_log WHERE $where";
-        $totalrecords = $DB->count_records_sql($sqlcount, $params);
-
-        $perpage = 30;
-        if ($showall) {
-            $limitfrom = 0;
-            $limitnum = 0;
-            $perpage = ($totalrecords > 0) ? $totalrecords : 30;
-        } else {
-            $limitfrom = $page * $perpage;
-            $limitnum = $perpage;
-        }
-
-        $sql = "SELECT * FROM ($innersql) combined_log WHERE $where ORDER BY {$sort} {$dir}";
-        $logs = $DB->get_records_sql($sql, $params, $limitfrom, $limitnum);
-
-        $pagingbar = $output->paging_bar($totalrecords, $page, $perpage, $baseurl);
+        $logdata = \block_playerhud\local\audit_log::get_logs(
+            $this->instanceid,
+            $userid,
+            $page,
+            $sort,
+            $dir,
+            $filtertype,
+            $filtertext,
+            $showall,
+            $baseurl,
+            $output
+        );
+        $logs = $logdata['logs'];
+        $totalrecords = $logdata['total'];
+        $pagingbar = $logdata['paging_bar'];
+        $limitfrom = $logdata['limitfrom'];
 
         $results = [];
         if ($logs) {

@@ -110,7 +110,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
 
         $inventories = new backup_nested_element('inventories');
         $inventory = new backup_nested_element('inventory', ['id'], [
-            'userid', 'itemid', 'dropid', 'source', 'timecreated',
+            'userid', 'itemid', 'dropid', 'source', 'timecreated', 'xpawarded',
         ]);
 
         $tradelogs = new backup_nested_element('trade_logs');

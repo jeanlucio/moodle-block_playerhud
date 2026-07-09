@@ -358,7 +358,8 @@ class quest {
                     $rewardstxt[] = "+{$quest->reward_xp} XP";
                 }
 
-                // Item Reward.
+                // Item Reward. The item's own xp value is never paid here — only reward_xp
+                // above pays real XP — so xpawarded is always 0 for a quest-granted item.
                 if ($quest->reward_itemid > 0) {
                     $item = $DB->get_record('block_playerhud_items', ['id' => $quest->reward_itemid]);
                     if ($item) {
@@ -368,6 +369,7 @@ class quest {
                         $inv->dropid = 0; // 0 indicates reward from Quest.
                         $inv->timecreated = time();
                         $inv->source = 'quest';
+                        $inv->xpawarded = 0;
                         $DB->insert_record('block_playerhud_inventory', $inv);
                         $rewardstxt[] = format_string($item->name);
                     }

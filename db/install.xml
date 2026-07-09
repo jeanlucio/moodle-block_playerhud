@@ -76,6 +76,8 @@
         <FIELD NAME="dropid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="map" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="xpawarded" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"
+               COMMENT="XP actually paid out for this copy at grant time, independent of the item's current xp value"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>

@@ -471,6 +471,9 @@ final class game_test extends advanced_testcase {
 
         $player = game::get_player($this->instanceid, $user->id);
         $this->assertEquals(150, $player->currentxp, 'Collecting a finite drop must award the full item XP.');
+
+        global $DB;
+        $this->assertSame(150, (int) $DB->get_field('block_playerhud_inventory', 'xpawarded', ['userid' => $user->id]));
     }
 
     /**

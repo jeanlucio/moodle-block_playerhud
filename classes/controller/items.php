@@ -71,6 +71,7 @@ class items {
             MUST_EXIST
         );
         $player = \block_playerhud\game::get_player($instanceid, $userid);
+        $xpgain = ($item->xp > 0) ? (int)$item->xp : 0;
 
         $newinv              = new \stdClass();
         $newinv->userid      = $userid;
@@ -78,10 +79,11 @@ class items {
         $newinv->dropid      = 0;
         $newinv->source      = 'teacher';
         $newinv->timecreated = time();
+        $newinv->xpawarded   = $xpgain;
         $DB->insert_record('block_playerhud_inventory', $newinv);
 
-        if ($item->xp > 0) {
-            \block_playerhud\game::change_xp($player, (int)$item->xp, $instanceid);
+        if ($xpgain > 0) {
+            \block_playerhud\game::change_xp($player, $xpgain, $instanceid);
         }
     }
 

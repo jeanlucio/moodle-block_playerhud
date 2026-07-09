@@ -641,6 +641,32 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
+     * A quest's item reward records xpawarded = 0 even when the item itself has a real XP
+     * value configured, since that value is never actually paid through this path (only
+     * reward_xp is) — see analytics::game_xp_totals() for the same rule applied to totals.
+     *
+     * @covers ::claim_reward
+     */
+    public function test_claim_reward_item_records_zero_xpawarded_even_with_item_xp(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $reward = $this->create_dummy_item('Golden Crown');
+        $DB->set_field('block_playerhud_items', 'xp', 500, ['id' => $reward->id]);
+        $quest = $this->create_quest(quest::TYPE_XP_TOTAL, '50', 0, $reward->id);
+
+        $this->set_player_xp($user->id, 50);
+
+        quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+
+        $xpawarded = $DB->get_field('block_playerhud_inventory', 'xpawarded', [
+            'userid' => $user->id,
+            'itemid' => $reward->id,
+        ]);
+        $this->assertSame(0, (int) $xpawarded);
+    }
+
+    /**
      * Claiming the same quest twice must throw error_quest_already_claimed.
      *
      * @covers ::claim_reward

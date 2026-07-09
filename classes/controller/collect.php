@@ -181,26 +181,24 @@ class collect {
         $transaction = $DB->start_delegated_transaction();
 
         try {
+            // Golden Rule: If drop is infinite (maxusage == 0), XP gain is FORCED to 0.
+            // This allows the item to have 100 XP (for finite drops/quests),
+            // but not break the game on infinite drops.
+            $isinfinitedrop = ((int)$drop->maxusage === 0);
+            $xpgain = ($item->xp > 0 && !$isinfinitedrop) ? (int)$item->xp : 0;
+
             $newinv = new \stdClass();
             $newinv->userid = $userid;
             $newinv->itemid = $item->id;
             $newinv->dropid = $drop->id;
             $newinv->timecreated = time();
             $newinv->source = 'map';
+            $newinv->xpawarded = $xpgain;
             $DB->insert_record('block_playerhud_inventory', $newinv);
 
-            // XP Logic Protected.
-            $xpgain = 0;
-
-            // Golden Rule: If drop is infinite (maxusage == 0), XP gain is FORCED to 0.
-            // This allows the item to have 100 XP (for finite drops/quests),
-            // but not break the game on infinite drops.
-            $isinfinitedrop = ((int)$drop->maxusage === 0);
-
-            if ($item->xp > 0 && !$isinfinitedrop) {
-                $xpgain = $item->xp;
+            if ($xpgain > 0) {
                 $player = \block_playerhud\game::get_player($instanceid, $userid);
-                \block_playerhud\game::change_xp($player, (int)$xpgain, $instanceid);
+                \block_playerhud\game::change_xp($player, $xpgain, $instanceid);
             }
 
             $transaction->allow_commit();

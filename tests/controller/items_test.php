@@ -226,6 +226,7 @@ final class items_test extends advanced_testcase {
         $this->assertSame($itemid, (int) $inv->itemid);
         $this->assertSame(0, (int) $inv->dropid);
         $this->assertSame('teacher', $inv->source);
+        $this->assertSame(30, (int) $inv->xpawarded);
         $this->assertSame(80, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
             'blockinstanceid' => $instanceid,
             'userid'          => $user->id,
@@ -248,6 +249,7 @@ final class items_test extends advanced_testcase {
         items::grant_item($itemid, (int) $user->id, $instanceid);
 
         $this->assertSame(1, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_inventory', 'xpawarded', ['userid' => $user->id]));
         $this->assertSame(50, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
             'blockinstanceid' => $instanceid,
             'userid'          => $user->id,

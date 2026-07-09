@@ -204,7 +204,10 @@ class game {
             }
 
             // 4. Transaction.
-            $earnedxp = 0;
+            // Infinite drops (0 maxusage) give 0 XP to prevent farming.
+            $isinfinitedrop = ((int)$drop->maxusage === 0);
+            $earnedxp = ($item->xp > 0 && !$isinfinitedrop) ? (int)$item->xp : 0;
+
             $transaction = $DB->start_delegated_transaction();
             try {
                 $newinv = new \stdClass();
@@ -213,13 +216,10 @@ class game {
                 $newinv->dropid = $drop->id;
                 $newinv->timecreated = time();
                 $newinv->source = 'map';
+                $newinv->xpawarded = $earnedxp;
                 $DB->insert_record('block_playerhud_inventory', $newinv);
 
-                // Infinite drops (0 maxusage) give 0 XP to prevent farming.
-                $isinfinitedrop = ((int)$drop->maxusage === 0);
-
-                if ($item->xp > 0 && !$isinfinitedrop) {
-                    $earnedxp = (int)$item->xp;
+                if ($earnedxp > 0) {
                     $player = self::get_player($instanceid, $userid);
                     self::change_xp($player, $earnedxp, $instanceid);
                 }

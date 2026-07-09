@@ -154,6 +154,7 @@ final class collect_test extends advanced_testcase {
         $this->assertSame((int) $item->id, (int) $inv->itemid);
         $this->assertSame((int) $drop->id, (int) $inv->dropid);
         $this->assertSame('map', $inv->source);
+        $this->assertSame(100, (int) $inv->xpawarded);
     }
 
     /**
@@ -179,6 +180,7 @@ final class collect_test extends advanced_testcase {
         ]);
         $this->assertSame(50, (int) $currentxp);
         $this->assertSame(1, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_inventory', 'xpawarded', ['userid' => $user->id]));
     }
 
     /**

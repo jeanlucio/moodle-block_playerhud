@@ -232,5 +232,29 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026070201, 'playerhud');
     }
 
+    if ($oldversion < 2026070901) {
+        // Add xpawarded to block_playerhud_inventory: records the actual XP paid out for this
+        // copy at grant time (0 for infinite drops, quest/trade item rewards, or a zero-XP
+        // item), instead of always recomputing it later from the item's current (possibly
+        // since-edited) xp value.
+        $table = new \xmldb_table('block_playerhud_inventory');
+        $field = new \xmldb_field(
+            'xpawarded',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'timecreated'
+        );
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_block_savepoint(true, 2026070901, 'playerhud');
+    }
+
     return true;
 }
