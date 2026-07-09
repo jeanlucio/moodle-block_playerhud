@@ -94,6 +94,7 @@ class tab_quests implements renderable {
         $this->mform = new edit_quest_form($actionurl->out(false), [
             'instanceid' => $this->instanceid,
             'courseid'   => $this->courseid,
+            'questid'    => $questid,
         ]);
 
         if ($this->mform->is_cancelled()) {

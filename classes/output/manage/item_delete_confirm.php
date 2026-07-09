@@ -42,9 +42,10 @@ class item_delete_confirm {
      * @param string $heading Pre-formatted heading (item name, or a label for bulk).
      * @param \stdClass[] $orphanedtrades Trades that would be deleted (each with ->name).
      * @param \stdClass[] $survivingtrades Trades that lose the item but remain (each with ->name).
+     * @param \stdClass $xpimpact {studentcount, totalxp} from items::find_xp_impact().
      * @param bool $isbulk Whether this confirms a bulk deletion.
      * @param int[] $ids The item IDs involved (one for single, many for bulk).
-     * @param array $urls URL strings keyed 'form', 'cancel' and 'edit'.
+     * @param array $urls URL strings keyed 'form', 'cancel', 'edit' and (single only) 'toggle'.
      * @param string $sort Current sort column, carried through the form.
      * @param string $dir Current sort direction, carried through the form.
      * @return array The template context.
@@ -53,6 +54,7 @@ class item_delete_confirm {
         string $heading,
         array $orphanedtrades,
         array $survivingtrades,
+        \stdClass $xpimpact,
         bool $isbulk,
         array $ids,
         array $urls,
@@ -88,27 +90,42 @@ class item_delete_confirm {
         }
         $warningkey = $orphanedcount === 1 ? 'item_delete_trade_impact_single' : 'item_delete_trade_impact';
 
+        $hasxpimpact = $xpimpact->studentcount > 0;
+        $xpwarning = $hasxpimpact
+            ? get_string('item_delete_xp_impact', 'block_playerhud', (object) [
+                'students' => $xpimpact->studentcount,
+                'xp'       => $xpimpact->totalxp,
+            ])
+            : '';
+        $hasdisablelink = $hasxpimpact && !$isbulk && !empty($urls['toggle']);
+
         return [
-            'heading'          => $heading,
-            'has_orphaned'     => $hasorphaned,
-            'orphaned_warning' => get_string($warningkey, 'block_playerhud'),
-            'orphaned_trades'  => $orphaned,
-            'has_surviving'    => !empty($surviving),
-            'surviving_notice' => get_string('item_delete_trade_kept', 'block_playerhud'),
-            'surviving_trades' => $surviving,
-            'form_action'      => $urls['form'],
-            'sesskey'          => sesskey(),
-            'action'           => $isbulk ? 'bulk_delete_force' : 'delete_force',
-            'is_bulk'          => $isbulk,
-            'item_id'          => $isbulk ? 0 : ($ids[0] ?? 0),
-            'bulk_ids'         => $bulkids,
-            'sort'             => $sort,
-            'dir'              => $dir,
-            'cancel_url'       => $urls['cancel'],
-            'str_cancel'       => get_string('cancel'),
-            'confirm_label'    => $confirmlabel,
-            'edit_url'         => $urls['edit'],
-            'str_edit_trades'  => get_string('item_delete_edit_trades', 'block_playerhud'),
+            'heading'                => $heading,
+            'has_orphaned'           => $hasorphaned,
+            'orphaned_warning'       => get_string($warningkey, 'block_playerhud'),
+            'orphaned_trades'        => $orphaned,
+            'has_surviving'          => !empty($surviving),
+            'surviving_notice'       => get_string('item_delete_trade_kept', 'block_playerhud'),
+            'surviving_trades'       => $surviving,
+            'has_xp_impact'          => $hasxpimpact,
+            'xp_impact_warning'      => $xpwarning,
+            'has_disable_link'       => $hasdisablelink,
+            'disable_url'            => $urls['toggle'] ?? '',
+            'str_disable_suggestion' => get_string('item_delete_disable_suggestion', 'block_playerhud'),
+            'str_disable_instead'    => get_string('item_delete_disable_instead', 'block_playerhud'),
+            'form_action'            => $urls['form'],
+            'sesskey'                => sesskey(),
+            'action'                 => $isbulk ? 'bulk_delete_force' : 'delete_force',
+            'is_bulk'                => $isbulk,
+            'item_id'                => $isbulk ? 0 : ($ids[0] ?? 0),
+            'bulk_ids'               => $bulkids,
+            'sort'                   => $sort,
+            'dir'                    => $dir,
+            'cancel_url'             => $urls['cancel'],
+            'str_cancel'             => get_string('cancel'),
+            'confirm_label'          => $confirmlabel,
+            'edit_url'               => $urls['edit'],
+            'str_edit_trades'        => get_string('item_delete_edit_trades', 'block_playerhud'),
         ];
     }
 }

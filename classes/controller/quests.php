@@ -60,6 +60,38 @@ class quests {
     }
 
     /**
+     * Summarises the recorded XP impact of deleting the given quests.
+     *
+     * Aggregate only (student count and total XP), never a per-student breakdown, mirroring
+     * items::find_xp_impact(). Only counts completions that actually earned XP
+     * (xpawarded > 0).
+     *
+     * @param int[] $questids Quest IDs being deleted.
+     * @return \stdClass {studentcount: int, totalxp: int}.
+     */
+    public static function find_xp_impact(array $questids): \stdClass {
+        global $DB;
+
+        $impact = (object) ['studentcount' => 0, 'totalxp' => 0];
+        if (empty($questids)) {
+            return $impact;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($questids);
+        $row = $DB->get_record_sql(
+            "SELECT COUNT(DISTINCT userid) AS studentcount, COALESCE(SUM(xpawarded), 0) AS totalxp
+               FROM {block_playerhud_quest_log}
+              WHERE questid $insql AND xpawarded > 0",
+            $inparams
+        );
+
+        $impact->studentcount = (int) $row->studentcount;
+        $impact->totalxp = (int) $row->totalxp;
+
+        return $impact;
+    }
+
+    /**
      * Deletes a quest, its completion log and the reward XP it had granted.
      *
      * @param int $questid The quest to delete.

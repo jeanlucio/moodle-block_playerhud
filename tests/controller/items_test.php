@@ -441,4 +441,58 @@ final class items_test extends advanced_testcase {
 
         $this->assertEmpty($surviving);
     }
+
+    /**
+     * The XP impact aggregates only copies that actually earned XP, across all holders of
+     * any of the given items — a copy from an infinite drop (xpawarded = 0) does not count.
+     *
+     * @covers ::find_xp_impact
+     */
+    public function test_find_xp_impact_aggregates_earned_copies_only(): void {
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itema = $this->make_item($instanceid, 100);
+        $itemb = $this->make_item($instanceid, 50);
+        $usera = $this->getDataGenerator()->create_user();
+        $userb = $this->getDataGenerator()->create_user();
+
+        $this->seed_inventory((int) $usera->id, $itema, 0, 'map', 100);
+        $this->seed_inventory((int) $usera->id, $itemb, 0, 'map', 0);
+        $this->seed_inventory((int) $userb->id, $itemb, 0, 'map', 50);
+
+        $impact = items::find_xp_impact([$itema, $itemb]);
+
+        $this->assertSame(2, $impact->studentcount);
+        $this->assertSame(150, $impact->totalxp);
+    }
+
+    /**
+     * No matching inventory rows produce a zero-impact summary.
+     *
+     * @covers ::find_xp_impact
+     */
+    public function test_find_xp_impact_empty_for_unheld_item(): void {
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 100);
+
+        $impact = items::find_xp_impact([$itemid]);
+
+        $this->assertSame(0, $impact->studentcount);
+        $this->assertSame(0, $impact->totalxp);
+    }
+
+    /**
+     * An empty item list is a no-op, not a DB error.
+     *
+     * @covers ::find_xp_impact
+     */
+    public function test_find_xp_impact_empty_ids_returns_zero(): void {
+        $this->resetAfterTest();
+
+        $impact = items::find_xp_impact([]);
+
+        $this->assertSame(0, $impact->studentcount);
+        $this->assertSame(0, $impact->totalxp);
+    }
 }

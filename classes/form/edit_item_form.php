@@ -59,6 +59,22 @@ class edit_item_form extends \moodleform {
         $mform->setDefault('xp', 100);
         $mform->addHelpButton('xp', 'xp', 'block_playerhud');
 
+        $itemid = (int) ($this->_customdata['itemid'] ?? 0);
+        if ($itemid > 0) {
+            $holdercount = $DB->count_records_sql(
+                'SELECT COUNT(DISTINCT userid) FROM {block_playerhud_inventory} WHERE itemid = ?',
+                [$itemid]
+            );
+            if ($holdercount > 0) {
+                $xpeditwarning = \html_writer::tag(
+                    'div',
+                    get_string('item_xp_edit_warning', 'block_playerhud', $holdercount),
+                    ['class' => 'alert alert-info mb-0 mt-2']
+                );
+                $mform->addElement('static', 'xp_edit_warning', '', $xpeditwarning);
+            }
+        }
+
         // 3. Description.
         $mform->addElement('editor', 'description', get_string('item_desc', 'block_playerhud'));
         $mform->setType('description', PARAM_RAW);

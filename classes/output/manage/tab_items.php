@@ -92,6 +92,7 @@ class tab_items implements renderable {
             $this->mform = new edit_item_form($actionurl->out(false), [
                 'instanceid' => $this->instanceid,
                 'lp_activities' => $lpactivities,
+                'itemid' => $editid,
             ]);
 
             if ($this->mform->is_cancelled()) {

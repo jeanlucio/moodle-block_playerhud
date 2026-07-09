@@ -231,6 +231,39 @@ class items {
     }
 
     /**
+     * Summarises the recorded XP impact of deleting the given items.
+     *
+     * Aggregate only (student count and total XP), never a per-student breakdown, so the
+     * confirmation screen stays short even on a large course. Only counts copies that actually
+     * earned XP (xpawarded > 0); a copy from an infinite drop or a zero-XP item never shows up
+     * here, since deleting it never touches anyone's balance.
+     *
+     * @param int[] $itemids Item IDs being deleted.
+     * @return \stdClass {studentcount: int, totalxp: int}.
+     */
+    public static function find_xp_impact(array $itemids): \stdClass {
+        global $DB;
+
+        $impact = (object) ['studentcount' => 0, 'totalxp' => 0];
+        if (empty($itemids)) {
+            return $impact;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($itemids);
+        $row = $DB->get_record_sql(
+            "SELECT COUNT(DISTINCT userid) AS studentcount, COALESCE(SUM(xpawarded), 0) AS totalxp
+               FROM {block_playerhud_inventory}
+              WHERE itemid $insql AND xpawarded > 0",
+            $inparams
+        );
+
+        $impact->studentcount = (int) $row->studentcount;
+        $impact->totalxp = (int) $row->totalxp;
+
+        return $impact;
+    }
+
+    /**
      * Deletes an item record, its inventory/drop dependencies, and any orphaned
      * trades in a single delegated transaction.
      *

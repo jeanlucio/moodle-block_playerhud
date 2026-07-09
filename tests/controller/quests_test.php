@@ -329,4 +329,58 @@ final class quests_test extends advanced_testcase {
         $this->assertSame(0, $count);
         $this->assertTrue($DB->record_exists('block_playerhud_quests', ['id' => $questid]));
     }
+
+    /**
+     * The XP impact aggregates only completions that actually earned XP, across all claimants
+     * of any of the given quests.
+     *
+     * @covers ::find_xp_impact
+     */
+    public function test_find_xp_impact_aggregates_earned_completions_only(): void {
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $questa = $this->seed_quest($instanceid, 200);
+        $questb = $this->seed_quest($instanceid, 0);
+        $usera = $this->getDataGenerator()->create_user();
+        $userb = $this->getDataGenerator()->create_user();
+
+        $this->seed_log($questa, (int) $usera->id, 200);
+        $this->seed_log($questb, (int) $usera->id, 0);
+        $this->seed_log($questb, (int) $userb->id, 0);
+
+        $impact = quests::find_xp_impact([$questa, $questb]);
+
+        $this->assertSame(1, $impact->studentcount);
+        $this->assertSame(200, $impact->totalxp);
+    }
+
+    /**
+     * No matching completions produce a zero-impact summary.
+     *
+     * @covers ::find_xp_impact
+     */
+    public function test_find_xp_impact_empty_for_unclaimed_quest(): void {
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $questid = $this->seed_quest($instanceid, 200);
+
+        $impact = quests::find_xp_impact([$questid]);
+
+        $this->assertSame(0, $impact->studentcount);
+        $this->assertSame(0, $impact->totalxp);
+    }
+
+    /**
+     * An empty quest list is a no-op, not a DB error.
+     *
+     * @covers ::find_xp_impact
+     */
+    public function test_find_xp_impact_empty_ids_returns_zero(): void {
+        $this->resetAfterTest();
+
+        $impact = quests::find_xp_impact([]);
+
+        $this->assertSame(0, $impact->studentcount);
+        $this->assertSame(0, $impact->totalxp);
+    }
 }

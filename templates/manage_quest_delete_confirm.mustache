@@ -15,86 +15,55 @@
     along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 }}
 {{!
-    @template block_playerhud/manage_item_delete_confirm
+    @template block_playerhud/manage_quest_delete_confirm
 
-    Confirmation screen shown before deleting items that would orphan a trade.
+    Confirmation screen shown before deleting quests that students already claimed, warning
+    about the XP that would be reverted.
 
     Context variables required for this template:
     * heading - Pre-formatted, safe heading text.
-    * has_orphaned - Whether any trade will be deleted.
-    * orphaned_warning - Impact warning message for deleted trades.
-    * orphaned_trades - Array of trades that will be deleted, each with a name.
-    * has_surviving - Whether any trade keeps existing without the item.
-    * surviving_notice - Informational message for surviving trades.
-    * surviving_trades - Array of trades that remain, each with a name.
     * has_xp_impact - Whether any student would lose recorded XP.
     * xp_impact_warning - Aggregate XP impact message (student count + total XP).
-    * has_disable_link - Whether to show the "disable instead" link (single item only).
+    * has_disable_link - Whether to show the "disable instead" link (single quest only).
     * disable_url - URL of the disable-instead link.
     * str_disable_suggestion - Suggestion text pointing at disabling instead of deleting.
     * str_disable_instead - Disable-instead link label.
     * form_action - URL the confirmation form posts to.
     * sesskey - Session key.
-    * action - Form action value (delete_force or bulk_delete_force).
+    * action - Form action value (delete_quest_force or bulk_delete_quests_force).
     * is_bulk - Whether this confirms a bulk deletion.
-    * item_id - The single item ID (when not bulk).
-    * bulk_ids - Array of item IDs (when bulk), each with an id.
+    * quest_id - The single quest ID (when not bulk).
+    * bulk_ids - Array of quest IDs (when bulk), each with an id.
     * sort - Current sort column carried through the form.
     * dir - Current sort direction carried through the form.
     * cancel_url - URL of the cancel button.
     * str_cancel - Cancel button label.
     * confirm_label - Submit button label.
-    * edit_url - URL of the edit-trades link.
-    * str_edit_trades - Edit-trades link label.
 
     Example context (json):
     {
-        "heading": "Bronze Key",
-        "has_orphaned": true,
-        "orphaned_warning": "Deleting this item will also remove the trades below.",
-        "orphaned_trades": [{"name": "Keys for Scroll"}],
-        "has_surviving": true,
-        "surviving_notice": "This item will also be removed from the trades below, which will remain.",
-        "surviving_trades": [{"name": "Avatar pack"}],
+        "heading": "Bonus Quest",
         "has_xp_impact": true,
-        "xp_impact_warning": "This item has already been earned by 3 student(s), totalling 300 XP. Deleting it will permanently take that XP back.",
+        "xp_impact_warning": "This quest has already been claimed by 2 student(s), totalling 400 XP. Deleting it will permanently take that XP back.",
         "has_disable_link": true,
-        "disable_url": "https://example.com/manage.php?action=toggle&itemid=5",
-        "str_disable_suggestion": "If you don't want to affect these students' XP, disable the item instead of deleting it.",
+        "disable_url": "https://example.com/manage.php?action=toggle_quest&questid=5",
+        "str_disable_suggestion": "If you don't want to affect these students' XP, disable the quest instead of deleting it.",
         "str_disable_instead": "Disable instead",
         "form_action": "https://example.com/manage.php",
         "sesskey": "abc123",
-        "action": "delete_force",
+        "action": "delete_quest_force",
         "is_bulk": false,
-        "item_id": 5,
+        "quest_id": 5,
         "bulk_ids": [],
         "sort": "id",
         "dir": "DESC",
-        "cancel_url": "https://example.com/manage.php?tab=items",
+        "cancel_url": "https://example.com/manage.php?tab=quests",
         "str_cancel": "Cancel",
-        "confirm_label": "Delete item and 1 trade",
-        "edit_url": "https://example.com/manage.php?tab=trades",
-        "str_edit_trades": "Edit trades instead"
+        "confirm_label": "Delete quest"
     }
 }}
 <div class="block-playerhud-delete-confirm">
     <h3 class="h3">{{{heading}}}</h3>
-    {{#has_orphaned}}
-        <div class="alert alert-warning" role="alert">{{orphaned_warning}}</div>
-        <ul class="mb-3">
-            {{#orphaned_trades}}
-                <li>{{name}}</li>
-            {{/orphaned_trades}}
-        </ul>
-    {{/has_orphaned}}
-    {{#has_surviving}}
-        <div class="alert alert-info" role="alert">{{surviving_notice}}</div>
-        <ul class="mb-3">
-            {{#surviving_trades}}
-                <li>{{name}}</li>
-            {{/surviving_trades}}
-        </ul>
-    {{/has_surviving}}
     {{#has_xp_impact}}
         <div class="alert alert-warning" role="alert">
             {{xp_impact_warning}}
@@ -109,11 +78,11 @@
     <form method="post" action="{{form_action}}">
         <input type="hidden" name="sesskey" value="{{sesskey}}">
         <input type="hidden" name="action" value="{{action}}">
-        <input type="hidden" name="tab" value="items">
+        <input type="hidden" name="tab" value="quests">
         <input type="hidden" name="sort" value="{{sort}}">
         <input type="hidden" name="dir" value="{{dir}}">
         {{^is_bulk}}
-            <input type="hidden" name="itemid" value="{{item_id}}">
+            <input type="hidden" name="questid" value="{{quest_id}}">
         {{/is_bulk}}
         {{#bulk_ids}}
             <input type="hidden" name="bulk_ids[]" value="{{id}}">
@@ -121,7 +90,4 @@
         <a href="{{cancel_url}}" class="btn btn-secondary me-2">{{str_cancel}}</a>
         <button type="submit" class="btn btn-danger">{{confirm_label}}</button>
     </form>
-    <div>
-        <a href="{{edit_url}}" class="btn btn-outline-secondary mt-3">{{str_edit_trades}}</a>
-    </div>
 </div>

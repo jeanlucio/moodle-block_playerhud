@@ -152,6 +152,22 @@ class edit_quest_form extends \moodleform {
         $mform->setType('reward_xp', PARAM_INT);
         $mform->setDefault('reward_xp', 0);
 
+        $questid = (int) ($this->_customdata['questid'] ?? 0);
+        if ($questid > 0) {
+            $claimantcount = $DB->count_records_sql(
+                'SELECT COUNT(DISTINCT userid) FROM {block_playerhud_quest_log} WHERE questid = ?',
+                [$questid]
+            );
+            if ($claimantcount > 0) {
+                $xpeditwarning = \html_writer::tag(
+                    'div',
+                    get_string('quest_xp_edit_warning', 'block_playerhud', $claimantcount),
+                    ['class' => 'alert alert-info mb-0 mt-2']
+                );
+                $mform->addElement('static', 'reward_xp_edit_warning', '', $xpeditwarning);
+            }
+        }
+
         $mform->addElement('select', 'reward_itemid', get_string('quest_reward_item', 'block_playerhud'), $itemoptions);
         $mform->setType('reward_itemid', PARAM_INT);
         $mform->setDefault('reward_itemid', 0);

@@ -121,14 +121,15 @@ if ($action == 'toggle_quest' && $questid && confirm_sesskey()) {
     }
 }
 
-// Action: Delete Item (Single) — show confirmation if trades would become empty.
+// Action: Delete Item (Single) — show confirmation if trades would become empty or XP is at stake.
 if ($action === 'delete' && $itemid && confirm_sesskey()) {
     $item = $DB->get_record('block_playerhud_items', ['id' => $itemid, 'blockinstanceid' => $instanceid]);
     if ($item) {
         $orphanedtrades  = \block_playerhud\controller\items::find_orphaned_trades($instanceid, [$itemid]);
         $survivingtrades = \block_playerhud\controller\items::find_affected_surviving_trades($instanceid, [$itemid]);
+        $xpimpact        = \block_playerhud\controller\items::find_xp_impact([$itemid]);
 
-        if (!empty($orphanedtrades) || !empty($survivingtrades)) {
+        if (!empty($orphanedtrades) || !empty($survivingtrades) || $xpimpact->studentcount > 0) {
             $itemsurl = new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]);
             $PAGE->set_url($itemsurl);
 
@@ -136,12 +137,20 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
                 format_string($item->name),
                 $orphanedtrades,
                 $survivingtrades,
+                $xpimpact,
                 false,
                 [$itemid],
                 [
                     'form'   => $baseurl->out(false),
                     'cancel' => $itemsurl->out(false),
                     'edit'   => (new moodle_url($baseurl, ['tab' => 'trades']))->out(false),
+                    'toggle' => (new moodle_url($baseurl, [
+                        'action' => 'toggle',
+                        'itemid' => $itemid,
+                        'sort'   => $sort,
+                        'dir'    => $dir,
+                        'sesskey' => sesskey(),
+                    ]))->out(false),
                 ],
                 $sort,
                 $dir
@@ -191,8 +200,9 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
             $itemids = array_keys($items);
             $orphanedtrades  = \block_playerhud\controller\items::find_orphaned_trades($instanceid, $itemids);
             $survivingtrades = \block_playerhud\controller\items::find_affected_surviving_trades($instanceid, $itemids);
+            $xpimpact        = \block_playerhud\controller\items::find_xp_impact($itemids);
 
-            if (!empty($orphanedtrades) || !empty($survivingtrades)) {
+            if (!empty($orphanedtrades) || !empty($survivingtrades) || $xpimpact->studentcount > 0) {
                 $itemsurl = new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]);
                 $PAGE->set_url($itemsurl);
 
@@ -200,6 +210,7 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
                     get_string('delete_selected', 'block_playerhud'),
                     $orphanedtrades,
                     $survivingtrades,
+                    $xpimpact,
                     true,
                     $itemids,
                     [
@@ -261,9 +272,43 @@ if ($action === 'bulk_delete_force' && confirm_sesskey()) {
     }
 }
 
-// Action: Delete Quest.
+// Action: Delete Quest (Single) — show confirmation if any student already claimed it.
 if ($action == 'delete_quest' && $questid && confirm_sesskey()) {
-    if (\block_playerhud\controller\quests::delete_quest($questid, $instanceid)) {
+    $quest = $DB->get_record('block_playerhud_quests', ['id' => $questid, 'blockinstanceid' => $instanceid]);
+    if ($quest) {
+        $xpimpact = \block_playerhud\controller\quests::find_xp_impact([$questid]);
+
+        if ($xpimpact->studentcount > 0) {
+            $questsurl = new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]);
+            $PAGE->set_url($questsurl);
+
+            $confirmctx = \block_playerhud\output\manage\quest_delete_confirm::build_context(
+                format_string($quest->name),
+                $xpimpact,
+                false,
+                [$questid],
+                [
+                    'form'   => $baseurl->out(false),
+                    'cancel' => $questsurl->out(false),
+                    'toggle' => (new moodle_url($baseurl, [
+                        'action' => 'toggle_quest',
+                        'questid' => $questid,
+                        'sort'   => $sort,
+                        'dir'    => $dir,
+                        'sesskey' => sesskey(),
+                    ]))->out(false),
+                ],
+                $sort,
+                $dir
+            );
+
+            echo $OUTPUT->header();
+            echo $OUTPUT->render_from_template('block_playerhud/manage_quest_delete_confirm', $confirmctx);
+            echo $OUTPUT->footer();
+            exit;
+        }
+
+        \block_playerhud\controller\quests::delete_quest($questid, $instanceid);
         redirect(
             new moodle_url($baseurl, ['tab' => 'quests']),
             get_string('quest_deleted', 'block_playerhud'),
@@ -272,10 +317,45 @@ if ($action == 'delete_quest' && $questid && confirm_sesskey()) {
     }
 }
 
-// Action: Bulk Delete Quests (Multiple).
+// Action: Delete Quest (confirmed).
+if ($action === 'delete_quest_force' && $questid && confirm_sesskey()) {
+    \block_playerhud\controller\quests::delete_quest($questid, $instanceid);
+    redirect(
+        new moodle_url($baseurl, ['tab' => 'quests']),
+        get_string('quest_deleted', 'block_playerhud'),
+        \core\output\notification::NOTIFY_SUCCESS
+    );
+}
+
+// Action: Bulk Delete Quests — show confirmation if any student already claimed one.
 if ($action === 'bulk_delete_quests' && confirm_sesskey()) {
     $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
     if (!empty($bulkids)) {
+        $xpimpact = \block_playerhud\controller\quests::find_xp_impact($bulkids);
+
+        if ($xpimpact->studentcount > 0) {
+            $questsurl = new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]);
+            $PAGE->set_url($questsurl);
+
+            $confirmctx = \block_playerhud\output\manage\quest_delete_confirm::build_context(
+                get_string('delete_selected', 'block_playerhud'),
+                $xpimpact,
+                true,
+                $bulkids,
+                [
+                    'form'   => $baseurl->out(false),
+                    'cancel' => $questsurl->out(false),
+                ],
+                $sort,
+                $dir
+            );
+
+            echo $OUTPUT->header();
+            echo $OUTPUT->render_from_template('block_playerhud/manage_quest_delete_confirm', $confirmctx);
+            echo $OUTPUT->footer();
+            exit;
+        }
+
         $deletedcount = \block_playerhud\controller\quests::bulk_delete_quests($bulkids, $instanceid);
 
         redirect(
@@ -288,6 +368,20 @@ if ($action === 'bulk_delete_quests' && confirm_sesskey()) {
             new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]),
             get_string('no_items_selected', 'block_playerhud'),
             \core\output\notification::NOTIFY_WARNING
+        );
+    }
+}
+
+// Action: Bulk Delete Quests (confirmed).
+if ($action === 'bulk_delete_quests_force' && confirm_sesskey()) {
+    $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
+    if (!empty($bulkids)) {
+        $deletedcount = \block_playerhud\controller\quests::bulk_delete_quests($bulkids, $instanceid);
+
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]),
+            get_string('deleted_bulk', 'block_playerhud', $deletedcount),
+            \core\output\notification::NOTIFY_SUCCESS
         );
     }
 }
