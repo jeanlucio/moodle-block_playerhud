@@ -148,6 +148,39 @@ final class collection_tab_test extends advanced_testcase {
     }
 
     /**
+     * An inventory row whose source is outside PlayerHUD's own 4 (map/shop/quest/teacher) is
+     * classified as origin_game, so external game plugins (e.g. mod_playerwords) are labelled
+     * as such instead of falling into an unexplained "Others" bucket.
+     */
+    public function test_origin_game_for_unrecognized_source(): void {
+        $item = $this->create_item('Gold Key', '');
+        $this->grant_copy($item->id, 'playerwords');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame(1, $found['origin_game']);
+        $this->assertArrayNotHasKey('origin_legacy', $found);
+    }
+
+    /**
+     * Regression guard: a source PlayerHUD itself recognises (map) still classifies under its
+     * own bucket, not under origin_game.
+     */
+    public function test_origin_map_still_classified_correctly(): void {
+        $item = $this->create_item('Silver Key', '');
+        $this->grant_copy($item->id, 'map');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame(1, $found['origin_map']);
+        $this->assertSame(0, $found['origin_game']);
+    }
+
+    /**
      * Build the export array for the given user with a minimal player object.
      *
      * @param int $userid User ID to build collection for.
@@ -228,5 +261,23 @@ final class collection_tab_test extends advanced_testcase {
         ];
         $item->id = $DB->insert_record('block_playerhud_items', $item);
         return $item;
+    }
+
+    /**
+     * Grant the current test user a copy of an item from the given source.
+     *
+     * @param int $itemid Item ID to grant.
+     * @param string $source Inventory source value (e.g. 'map', 'playerwords').
+     * @return void
+     */
+    private function grant_copy(int $itemid, string $source): void {
+        global $DB;
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid'      => $this->user->id,
+            'itemid'      => $itemid,
+            'dropid'      => 0,
+            'source'      => $source,
+            'timecreated' => time(),
+        ]);
     }
 }

@@ -194,7 +194,7 @@ class tab_collection implements renderable, templatable {
                     $itemobj['origin_shop'] = 0;
                     $itemobj['origin_quest'] = 0;
                     $itemobj['origin_teacher'] = 0;
-                    $itemobj['origin_legacy'] = 0;
+                    $itemobj['origin_game'] = 0;
                     foreach ($usercopies as $copy) {
                         $src = $copy->source ?? '';
                         if ($src == 'map') {
@@ -206,7 +206,9 @@ class tab_collection implements renderable, templatable {
                         } else if ($src == 'teacher') {
                             $itemobj['origin_teacher']++;
                         } else {
-                            $itemobj['origin_legacy']++;
+                            // Any source outside PlayerHUD's own 4 (map/shop/quest/teacher) is an
+                            // external game plugin (e.g. mod_playerwords) granting the item.
+                            $itemobj['origin_game']++;
                         }
                     }
                     if (
@@ -214,7 +216,7 @@ class tab_collection implements renderable, templatable {
                         $itemobj['origin_shop'] ||
                         $itemobj['origin_quest'] ||
                         $itemobj['origin_teacher'] ||
-                        $itemobj['origin_legacy']
+                        $itemobj['origin_game']
                     ) {
                         $itemobj['has_origins'] = true;
                     }

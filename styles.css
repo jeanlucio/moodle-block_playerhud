@@ -54,6 +54,10 @@
 .path-blocks-playerhud .ph-cursor-help {
     cursor: help;
 }
+.block_playerhud .ph-icon-game,
+.path-blocks-playerhud .ph-icon-game {
+    color: var(--ph-icon-game, #6f42c1);
+}
 .block_playerhud .ph-text-xs,
 .path-blocks-playerhud .ph-text-xs {
     font-size: 0.7rem;
