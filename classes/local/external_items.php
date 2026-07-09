@@ -199,6 +199,27 @@ class external_items {
     }
 
     /**
+     * Returns the item's own XP value, or zero if it does not belong to $blockinstanceid.
+     *
+     * Lets an external plugin compute a potential-XP estimate (e.g. for
+     * playerhud_grant_potential) without reading block_playerhud_items directly.
+     *
+     * @param int $blockinstanceid Block instance ID the item must belong to.
+     * @param int $itemid PlayerHUD item ID.
+     * @return int
+     */
+    public static function get_xp(int $blockinstanceid, int $itemid): int {
+        global $DB;
+
+        if (!self::belongs_to_instance($itemid, $blockinstanceid)) {
+            return 0;
+        }
+
+        $xp = $DB->get_field('block_playerhud_items', 'xp', ['id' => $itemid]);
+        return ($xp !== false) ? (int)$xp : 0;
+    }
+
+    /**
      * Returns how many available (not consumed or revoked) units of an item a user currently
      * holds, using the same eligibility filter as consume(). Zero if the item does not belong
      * to $blockinstanceid.

@@ -360,6 +360,33 @@ final class external_items_test extends advanced_testcase {
     }
 
     /**
+     * get_xp() returns the item's own XP value for an item belonging to the given instance.
+     *
+     * @covers ::get_xp
+     * @return void
+     */
+    public function test_get_xp_returns_value_for_own_item(): void {
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item_with_xp($instanceid, 30);
+
+        $this->assertSame(30, external_items::get_xp($instanceid, $itemid));
+    }
+
+    /**
+     * get_xp() returns zero for an item belonging to a different instance.
+     *
+     * @covers ::get_xp
+     * @return void
+     */
+    public function test_get_xp_returns_zero_for_other_instance_item(): void {
+        $instanceid = $this->make_instance();
+        $otherinstanceid = $this->make_instance();
+        $itemid = $this->make_item_with_xp($otherinstanceid, 30);
+
+        $this->assertSame(0, external_items::get_xp($instanceid, $itemid));
+    }
+
+    /**
      * get_available_quantity() counts only rows not revoked or consumed, for an item
      * belonging to the given instance.
      *
