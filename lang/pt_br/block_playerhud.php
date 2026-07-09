@@ -621,6 +621,7 @@ $string['quest_requirement'] = 'O que fazer';
 $string['quest_requirement_help'] = 'Descreva claramente o que o estudante precisa fazer para resgatar esta recompensa.';
 $string['quest_requirements_hdr'] = 'Requisitos (Gatilho)';
 $string['quest_reward_item'] = 'Recompensa em Item';
+$string['quest_reward_item_help'] = 'Este item é entregue ao estudante como colecionável, mas o XP próprio dele (configurado em Itens) não é pago aqui — só o campo Recompensa em XP acima soma ao saldo do estudante. Se quiser que esta missão dê XP, use o campo Recompensa em XP.';
 $string['quest_reward_xp'] = 'Recompensa em XP';
 $string['quest_rewards_hdr'] = 'Recompensas';
 $string['quest_status_completed'] = 'Concluído';

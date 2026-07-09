@@ -621,6 +621,7 @@ $string['quest_requirement'] = 'What to do';
 $string['quest_requirement_help'] = 'Describe clearly what the student needs to do to claim this reward.';
 $string['quest_requirements_hdr'] = 'Requirements (Trigger)';
 $string['quest_reward_item'] = 'Item Reward';
+$string['quest_reward_item_help'] = 'This item is granted to the student as a collectible, but its own XP value (configured in Items) is not paid out here — only the XP Reward field above adds to the student\'s balance. If you want this quest to award XP, use the XP Reward field.';
 $string['quest_reward_xp'] = 'XP Reward';
 $string['quest_rewards_hdr'] = 'Rewards';
 $string['quest_status_completed'] = 'Completed';

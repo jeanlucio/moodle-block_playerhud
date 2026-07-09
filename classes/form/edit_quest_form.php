@@ -155,6 +155,7 @@ class edit_quest_form extends \moodleform {
         $mform->addElement('select', 'reward_itemid', get_string('quest_reward_item', 'block_playerhud'), $itemoptions);
         $mform->setType('reward_itemid', PARAM_INT);
         $mform->setDefault('reward_itemid', 0);
+        $mform->addHelpButton('reward_itemid', 'quest_reward_item', 'block_playerhud');
 
         // Visual identity header.
         $mform->addElement('header', 'visual_hdr', get_string('visualrules', 'block_playerhud'));
