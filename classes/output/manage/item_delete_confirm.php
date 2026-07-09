@@ -99,14 +99,17 @@ class item_delete_confirm {
             : '';
         $hasdisablelink = $hasxpimpact && !$isbulk && !empty($urls['toggle']);
 
+        $hassurviving = !empty($surviving);
+
         return [
             'heading'                => $heading,
             'has_orphaned'           => $hasorphaned,
             'orphaned_warning'       => get_string($warningkey, 'block_playerhud'),
             'orphaned_trades'        => $orphaned,
-            'has_surviving'          => !empty($surviving),
+            'has_surviving'          => $hassurviving,
             'surviving_notice'       => get_string('item_delete_trade_kept', 'block_playerhud'),
             'surviving_trades'       => $surviving,
+            'has_trade_impact'       => $hasorphaned || $hassurviving,
             'has_xp_impact'          => $hasxpimpact,
             'xp_impact_warning'      => $xpwarning,
             'has_disable_link'       => $hasdisablelink,

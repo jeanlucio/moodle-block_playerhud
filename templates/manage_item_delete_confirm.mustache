@@ -27,6 +27,7 @@
     * has_surviving - Whether any trade keeps existing without the item.
     * surviving_notice - Informational message for surviving trades.
     * surviving_trades - Array of trades that remain, each with a name.
+    * has_trade_impact - Whether has_orphaned or has_surviving is true (gates the edit-trades link).
     * has_xp_impact - Whether any student would lose recorded XP.
     * xp_impact_warning - Aggregate XP impact message (student count + total XP).
     * has_disable_link - Whether to show the "disable instead" link (single item only).
@@ -56,6 +57,7 @@
         "has_surviving": true,
         "surviving_notice": "This item will also be removed from the trades below, which will remain.",
         "surviving_trades": [{"name": "Avatar pack"}],
+        "has_trade_impact": true,
         "has_xp_impact": true,
         "xp_impact_warning": "This item has already been earned by 3 student(s), totalling 300 XP. Deleting it will permanently take that XP back.",
         "has_disable_link": true,
@@ -121,7 +123,9 @@
         <a href="{{cancel_url}}" class="btn btn-secondary me-2">{{str_cancel}}</a>
         <button type="submit" class="btn btn-danger">{{confirm_label}}</button>
     </form>
-    <div>
-        <a href="{{edit_url}}" class="btn btn-outline-secondary mt-3">{{str_edit_trades}}</a>
-    </div>
+    {{#has_trade_impact}}
+        <div>
+            <a href="{{edit_url}}" class="btn btn-outline-secondary mt-3">{{str_edit_trades}}</a>
+        </div>
+    {{/has_trade_impact}}
 </div>

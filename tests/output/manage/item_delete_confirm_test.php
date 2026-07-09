@@ -91,6 +91,7 @@ final class item_delete_confirm_test extends advanced_testcase {
         $this->assertTrue($ctx['has_orphaned']);
         $this->assertSame([['name' => 'Keys for Scroll']], $ctx['orphaned_trades']);
         $this->assertFalse($ctx['has_surviving']);
+        $this->assertTrue($ctx['has_trade_impact']);
         $this->assertSame('Bronze Key', $ctx['heading']);
         $this->assertSame('id', $ctx['sort']);
         $this->assertSame('DESC', $ctx['dir']);
@@ -261,6 +262,9 @@ final class item_delete_confirm_test extends advanced_testcase {
         );
         $this->assertTrue($ctx['has_disable_link']);
         $this->assertSame($this->urls(true)['toggle'], $ctx['disable_url']);
+        // No trades were passed in: the "edit trades instead" link must not be misleadingly
+        // shown just because the screen appeared for an unrelated (XP) reason.
+        $this->assertFalse($ctx['has_trade_impact']);
     }
 
     /**
@@ -312,5 +316,6 @@ final class item_delete_confirm_test extends advanced_testcase {
         $this->assertFalse($ctx['has_xp_impact']);
         $this->assertSame('', $ctx['xp_impact_warning']);
         $this->assertFalse($ctx['has_disable_link']);
+        $this->assertFalse($ctx['has_trade_impact']);
     }
 }
