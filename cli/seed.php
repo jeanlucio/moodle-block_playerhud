@@ -722,6 +722,17 @@ function seed_give_item(int $userid, int $itemid, int $dropid, string $source = 
         return;
     }
 
+    // A quest's item reward never pays the item's own XP (only reward_xp does); a map drop
+    // pays it unless the drop is infinite (maxusage = 0).
+    $xpawarded = 0;
+    if ($source === 'map') {
+        $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], 'xp');
+        $drop = $dropid > 0 ? $DB->get_record('block_playerhud_drops', ['id' => $dropid], 'maxusage') : null;
+        if ($item && (!$drop || (int) $drop->maxusage > 0)) {
+            $xpawarded = (int) $item->xp;
+        }
+    }
+
     // Set timecreated 2 hours in the past so no pre-seeded item starts in cooldown.
     $DB->insert_record('block_playerhud_inventory', (object) [
         'userid'      => $userid,
@@ -729,6 +740,7 @@ function seed_give_item(int $userid, int $itemid, int $dropid, string $source = 
         'dropid'      => $dropid,
         'source'      => $source,
         'timecreated' => $now - 7200,
+        'xpawarded'   => $xpawarded,
     ]);
 }
 

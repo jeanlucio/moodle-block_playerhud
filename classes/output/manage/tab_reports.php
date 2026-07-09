@@ -666,6 +666,8 @@ class tab_reports implements renderable, templatable {
         moodle_url $baseurl,
         $output
     ): array {
+        global $DB;
+
         $logdata = \block_playerhud\local\audit_log::get_logs(
             $this->instanceid,
             $userid,

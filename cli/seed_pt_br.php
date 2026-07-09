@@ -723,6 +723,17 @@ function seed_give_item(int $userid, int $itemid, int $dropid, string $source = 
         return;
     }
 
+    // Recompensa em item de missão nunca paga o XP do próprio item (só reward_xp paga); um
+    // drop no mapa paga, exceto quando o drop é infinito (maxusage = 0).
+    $xpawarded = 0;
+    if ($source === 'map') {
+        $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], 'xp');
+        $drop = $dropid > 0 ? $DB->get_record('block_playerhud_drops', ['id' => $dropid], 'maxusage') : null;
+        if ($item && (!$drop || (int) $drop->maxusage > 0)) {
+            $xpawarded = (int) $item->xp;
+        }
+    }
+
     // Define timecreated 2 horas no passado para nenhum item pré-inserido iniciar em cooldown.
     $DB->insert_record('block_playerhud_inventory', (object) [
         'userid'      => $userid,
@@ -730,6 +741,7 @@ function seed_give_item(int $userid, int $itemid, int $dropid, string $source = 
         'dropid'      => $dropid,
         'source'      => $source,
         'timecreated' => $now - 7200,
+        'xpawarded'   => $xpawarded,
     ]);
 }
 

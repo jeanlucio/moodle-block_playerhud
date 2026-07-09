@@ -241,6 +241,8 @@ class tab_history implements renderable, templatable {
         moodle_url $baseurl,
         \core\output\core_renderer $output
     ): array {
+        global $DB;
+
         $logdata = \block_playerhud\local\audit_log::get_logs(
             $this->instanceid,
             $userid,

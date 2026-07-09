@@ -253,7 +253,62 @@ function xmldb_block_playerhud_upgrade($oldversion) {
             $dbman->add_field($table, $field);
         }
 
+        // Backfill rows that already existed when this column was added, using the same
+        // formula the audit log used to recompute on the fly (current item xp, only when the
+        // drop was finite or missing). This runs in the same atomic step as add_field(), before
+        // any request can reach the new xpawarded-aware code, so every row seen here predates
+        // the column and is safe to backfill unconditionally. This does not recover a row where
+        // the item was edited after the historical grant — that number is unrecoverable without
+        // forensic log reconstruction — but it preserves whatever accuracy already existed
+        // instead of collapsing every pre-existing row to 0.
+        $sql = "SELECT inv.id, i.xp
+                  FROM {block_playerhud_inventory} inv
+                  JOIN {block_playerhud_items} i ON i.id = inv.itemid
+             LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
+                 WHERE inv.source IN ('map', 'teacher', 'revoked')
+                   AND i.xp > 0
+                   AND COALESCE(d.maxusage, 1) > 0";
+        $rows = $DB->get_records_sql($sql);
+        foreach ($rows as $row) {
+            $DB->set_field('block_playerhud_inventory', 'xpawarded', $row->xp, ['id' => $row->id]);
+        }
+
         upgrade_block_savepoint(true, 2026070901, 'playerhud');
+    }
+
+    if ($oldversion < 2026070902) {
+        // Catch-up for sites that already passed 2026070901 before the backfill above existed
+        // (this dev environment's own three containers). Unlike the block above, real requests
+        // may already have written correct rows through the new xpawarded-aware code by the
+        // time this runs — including legitimately-zero ones (an infinite drop, a zero-XP item).
+        // Blindly reusing the "xpawarded = 0" condition here could overwrite those with a wrong
+        // non-zero value if the item/drop was edited afterwards. So this step only touches rows
+        // strictly older than the moment this site reached 2026070901, read from its own
+        // upgrade_log — anything created at or after that moment was already written correctly
+        // and must never be touched.
+        $cutoff = $DB->get_field_sql(
+            "SELECT MIN(timemodified) FROM {upgrade_log}
+              WHERE plugin = 'block_playerhud' AND version = '2026070901'
+                AND info = 'Upgrade savepoint reached'"
+        );
+
+        if ($cutoff) {
+            $sql = "SELECT inv.id, i.xp
+                      FROM {block_playerhud_inventory} inv
+                      JOIN {block_playerhud_items} i ON i.id = inv.itemid
+                 LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
+                     WHERE inv.source IN ('map', 'teacher', 'revoked')
+                       AND inv.xpawarded = 0
+                       AND inv.timecreated < :cutoff
+                       AND i.xp > 0
+                       AND COALESCE(d.maxusage, 1) > 0";
+            $rows = $DB->get_records_sql($sql, ['cutoff' => $cutoff]);
+            foreach ($rows as $row) {
+                $DB->set_field('block_playerhud_inventory', 'xpawarded', $row->xp, ['id' => $row->id]);
+            }
+        }
+
+        upgrade_block_savepoint(true, 2026070902, 'playerhud');
     }
 
     return true;
