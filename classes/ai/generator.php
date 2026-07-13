@@ -56,6 +56,9 @@ class generator {
     /** @var \stdClass The block configuration. */
     protected $config;
 
+    /** @var \context The context of the page the block instance is added to. */
+    protected \context $context;
+
     /**
      * Constructor.
      *
@@ -69,6 +72,11 @@ class generator {
         if (!$this->config) {
             $this->config = new \stdClass();
         }
+        // The block's own context (CONTEXT_BLOCK) is not one of the levels core_ai's
+        // per-course toggle checks — use the context of the page it is added to instead
+        // (course, course category, or course module), exactly what is_action_enabled_in_context()
+        // expects.
+        $this->context = \context::instance_by_id((int) $bi->parentcontextid);
     }
 
     /**
@@ -601,7 +609,8 @@ class generator {
     }
 
     /**
-     * Returns true when Moodle core_ai has at least one provider configured for text generation.
+     * Returns true when Moodle core_ai has at least one provider configured for text generation
+     * and, on Moodle versions that support it, AI tools are not disabled for this block's page.
      *
      * Compatible with Moodle 4.5+ — the manager is retrieved via the dependency
      * container, which injects the dependencies for the running version.
@@ -619,10 +628,34 @@ class generator {
             $actionclass = \core_ai\aiactions\generate_text::class;
             $manager = \core\di::get(\core_ai\manager::class);
             $providers = $manager->get_providers_for_actions([$actionclass], true);
-            return !empty($providers[$actionclass]);
+            if (empty($providers[$actionclass])) {
+                return false;
+            }
+            return $this->action_enabled_in_context($manager, $actionclass);
         } catch (\Throwable $e) {
             return false;
         }
+    }
+
+    /**
+     * Checks the per-course/per-module "Enable AI tools" override, when the running Moodle
+     * version supports it.
+     *
+     * core_ai\manager::is_action_enabled_in_context() was added to Moodle core after 4.5
+     * (course.enableaitools / course_modules.enableaitools do not exist on 4.5, so the method
+     * itself is undefined there). This plugin supports 4.5+5.x, so the check is skipped —
+     * never blocking — on versions where the method does not exist, exactly like every other
+     * class_exists()/method_exists() guarded integration in this codebase.
+     *
+     * @param \core_ai\manager $manager The AI manager instance.
+     * @param string $actionclass Fully qualified AI action class name.
+     * @return bool
+     */
+    protected function action_enabled_in_context(\core_ai\manager $manager, string $actionclass): bool {
+        if (!method_exists($manager, 'is_action_enabled_in_context')) {
+            return true;
+        }
+        return $manager->is_action_enabled_in_context($this->context, $actionclass);
     }
 
     /**
@@ -641,11 +674,11 @@ class generator {
             $actionclass = \core_ai\aiactions\generate_text::class;
             $manager = \core\di::get(\core_ai\manager::class);
             $providers = $manager->get_providers_for_actions([$actionclass], true);
-            if (empty($providers[$actionclass])) {
+            if (empty($providers[$actionclass]) || !$this->action_enabled_in_context($manager, $actionclass)) {
                 return ['success' => false, 'message' => ''];
             }
             $action = new \core_ai\aiactions\generate_text(
-                contextid: \context_system::instance()->id,
+                contextid: $this->context->id,
                 userid: (int) $USER->id,
                 prompttext: $fullprompt,
             );
