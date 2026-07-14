@@ -231,22 +231,24 @@ The plugin includes two CLI seed scripts that create a fully configured demo cou
 
 * 1 course (`playerhud-demo`) with 3 sections and completion tracking
 * 1 teacher (`seed_teacher`) + 5 students (`seed_alice` … `seed_eve`)
-* 3 RPG classes: Warrior, Mage, Rogue
+* 3 RPG classes with 5-stage evolving portraits: Warrior, Mage, Rogue
 * 5 items with different XP values, cooldowns and collection limits
 * 5 drops embedded in course activities via shortcodes (card, image and text render modes)
-* 7 quests covering all completion types (level, XP, items, trades)
+* 9 quests covering every completion type (level, total XP, unique/specific items, trades)
 * 2 story chapters with branching choices and reputation effects
-* 2 trade offers (NPC shop)
+* 2 trade offers (NPC shop), one of them already completed by a student
+* A group ranking squad (3 of the 5 students grouped, 2 left ungrouped on purpose)
+* A "Deadline Extension" item wired to a real, already-applied [Late Penalty](#-optional-integration-late-penalty) deduction — only seeded if `local_latepenalty` is installed
 * Pre-seeded inventory, quest logs and activity completions — ranking is ready to browse immediately
 
 **Resulting ranking after seed:**
 
 | Rank | Username | Name | XP |
 |-----:|----------|------|----|
-| 1 | `seed_carol` | Carol Staff | 155 |
+| 1 | `seed_carol` | Carol Staff | 195 |
 | 2 | `seed_bob` | Bob Bow | 150 |
 | 3 | `seed_alice` | Alice Sword | 65 |
-| 4 | `seed_dave` | Dave Shield | 10 |
+| 4 | `seed_dave` | Dave Shield | 60 |
 | 5 | `seed_eve` | Eve Dagger | 10 |
 
 **Usage:**
@@ -775,22 +777,24 @@ O plugin inclui dois scripts CLI de seed que criam um curso de demonstração co
 
 * 1 curso (`playerhud-demo`) com 3 seções e acompanhamento de conclusão
 * 1 professor (`seed_teacher`) + 5 alunos (`seed_alice` … `seed_eve`)
-* 3 classes RPG: Warrior, Mage, Rogue
+* 3 classes RPG com retratos evolutivos de 5 etapas: Guerreiro, Mago, Ladino
 * 5 itens com diferentes valores de XP, cooldowns e limites de coleta
 * 5 drops inseridos em atividades do curso via shortcodes (modos de exibição: card, imagem e texto)
-* 7 quests cobrindo todos os tipos de conclusão (nível, XP, itens, trocas)
+* 9 quests cobrindo todos os tipos de conclusão (nível, XP total, itens únicos/específicos, trocas)
 * 2 capítulos de história com escolhas ramificadas e efeitos de reputação
-* 2 ofertas de troca (loja NPC)
+* 2 ofertas de troca (loja NPC), uma delas já concluída por um aluno
+* Um esquadrão de ranking de grupos (3 dos 5 alunos agrupados, 2 deixados sem grupo de propósito)
+* Um item "Extensão de Prazo" ligado a uma penalidade real já aplicada pelo [Late Penalty](#-integração-opcional-late-penalty) — só é semeado se `local_latepenalty` estiver instalado
 * Inventário, log de quests e conclusão de atividades pré-populados — o ranking já está pronto para navegar imediatamente
 
 **Ranking resultante após o seed:**
 
 | Pos. | Usuário | Nome | XP |
 |-----:|---------|------|----|
-| 1 | `seed_carol` | Carol Staff | 155 |
+| 1 | `seed_carol` | Carol Staff | 195 |
 | 2 | `seed_bob` | Bob Bow | 150 |
 | 3 | `seed_alice` | Alice Sword | 65 |
-| 4 | `seed_dave` | Dave Shield | 10 |
+| 4 | `seed_dave` | Dave Shield | 60 |
 | 5 | `seed_eve` | Eve Dagger | 10 |
 
 **Uso:**

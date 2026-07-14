@@ -202,13 +202,14 @@ $blockinstance = $DB->get_record('block_instances', [
 
 if (!$blockinstance) {
     $config = (object) [
-        'xp_per_level'   => 100,
-        'max_levels'     => 10,
-        'enable_rpg'     => 1,
-        'enable_ranking' => 1,
-        'enable_items'   => 1,
-        'enable_quests'  => 1,
-        'help_content'   => ['text' => '', 'format' => FORMAT_HTML],
+        'xp_per_level'         => 100,
+        'max_levels'           => 10,
+        'enable_rpg'           => 1,
+        'enable_ranking'       => 1,
+        'enable_items'         => 1,
+        'enable_quests'        => 1,
+        'enable_group_ranking' => 1,
+        'help_content'         => ['text' => '', 'format' => FORMAT_HTML],
     ];
 
     $bi = (object) [
@@ -244,9 +245,11 @@ $now = time();
  * @param string $name Class name.
  * @param string $description Class description.
  * @param int $basehp Base HP value.
+ * @param string[] $tiers Five evolution-stage emoji, from Tier 1 (no chapters completed) to
+ *        Tier 5 (highest reputation evolution).
  * @return stdClass Class record.
  */
-function seed_upsert_class(int $instanceid, string $name, string $description, int $basehp): stdClass {
+function seed_upsert_class(int $instanceid, string $name, string $description, int $basehp, array $tiers): stdClass {
     global $DB, $now;
 
     $existing = $DB->get_record('block_playerhud_classes', [
@@ -262,6 +265,11 @@ function seed_upsert_class(int $instanceid, string $name, string $description, i
         'name'            => $name,
         'description'     => $description,
         'base_hp'         => $basehp,
+        'emoji_tier1'     => $tiers[0],
+        'emoji_tier2'     => $tiers[1],
+        'emoji_tier3'     => $tiers[2],
+        'emoji_tier4'     => $tiers[3],
+        'emoji_tier5'     => $tiers[4],
         'timecreated'     => $now,
         'timemodified'    => $now,
     ];
@@ -269,10 +277,28 @@ function seed_upsert_class(int $instanceid, string $name, string $description, i
     return $record;
 }
 
-$classwarrior = seed_upsert_class($instanceid, 'Warrior', 'A specialist in close-range combat.', 150);
-$classmage    = seed_upsert_class($instanceid, 'Mage', 'Master of the arcane arts.', 80);
-$classrogue   = seed_upsert_class($instanceid, 'Rogue', 'Swift and stealthy.', 100);
-cli_writeln("RPG classes ready: Warrior, Mage, Rogue.");
+$classwarrior = seed_upsert_class(
+    $instanceid,
+    'Warrior',
+    'A specialist in close-range combat.',
+    150,
+    ['🥾', '⚔️', '🛡️', '🐉', '👑']
+);
+$classmage = seed_upsert_class(
+    $instanceid,
+    'Mage',
+    'Master of the arcane arts.',
+    80,
+    ['✨', '📖', '🔮', '🌟', '🧙']
+);
+$classrogue = seed_upsert_class(
+    $instanceid,
+    'Rogue',
+    'Swift and stealthy.',
+    100,
+    ['🗝️', '🏹', '🥷', '🌙', '🃏']
+);
+cli_writeln("RPG classes ready: Warrior, Mage, Rogue (with evolving portraits).");
 
 // 7. Items.
 
@@ -448,9 +474,14 @@ seed_upsert_quest($instanceid, 'Level 3', 'Reach level 3.', 1, '3', 0, 30);
 seed_upsert_quest($instanceid, 'Level 5', 'Reach level 5.', 1, '5', 0, 60);
 // TYPE_LEVEL=1: reached level 7.
 seed_upsert_quest($instanceid, 'Level 7', 'Reach level 7.', 1, '7', 0, 100);
-// TYPE_LEVEL=1: reached maximum level.
-seed_upsert_quest($instanceid, 'Level 10', 'Reach the maximum level.', 1, '10', 0, 160);
-cli_writeln("Quests ready: 7 quests created.");
+// TYPE_LEVEL=1: reached maximum level. Reward reduced from 160 to 80 to make room in the XP
+// budget for the 2 new quests below, keeping the Economy Health panel at exactly 100%.
+seed_upsert_quest($instanceid, 'Level 10', 'Reach the maximum level.', 1, '10', 0, 80);
+// TYPE_XP_TOTAL=2: accumulated 150 XP in total.
+seed_upsert_quest($instanceid, 'XP Collector', 'Accumulate 150 XP in total.', 2, '150', 0, 40);
+// TYPE_TRADES=7: completed at least 1 trade at the NPC Shop.
+seed_upsert_quest($instanceid, 'Trader', 'Complete at least 1 trade at the NPC Shop.', 7, '1', 0, 40);
+cli_writeln("Quests ready: 9 quests created.");
 
 // 10. Story (chapters, nodes, choices).
 
@@ -765,6 +796,101 @@ seed_give_item($students[4]->id, $itemkey->id, $dropcave->id);
 
 cli_writeln("Inventories created for all students.");
 
+// 13b. Trade execution (demo for the TYPE_TRADES quest).
+
+/**
+ * Grants an extra copy of an item, bypassing seed_give_item()'s per-item dedupe guard.
+ * Needed to stock up multiple copies of the same item (e.g. 2 keys for a trade cost).
+ *
+ * @param int $userid User ID.
+ * @param int $itemid Item ID.
+ * @param int $dropid Drop source ID.
+ * @return void
+ */
+function seed_give_extra_item(int $userid, int $itemid, int $dropid): void {
+    global $DB, $now;
+
+    $xp = (int) $DB->get_field('block_playerhud_items', 'xp', ['id' => $itemid]);
+    $DB->insert_record('block_playerhud_inventory', (object) [
+        'userid'      => $userid,
+        'itemid'      => $itemid,
+        'dropid'      => $dropid,
+        'source'      => 'map',
+        'timecreated' => $now - 7200,
+        'xpawarded'   => $xp,
+    ]);
+}
+
+/**
+ * Replicates trade_manager::execute_trade() (classes/trade_manager.php) without going through
+ * its locking/transaction machinery, which is unnecessary for a single-threaded seed script.
+ * Consumes the required items FIFO, grants the reward items (dropid=0, source='shop', no XP —
+ * trade rewards never pay XP, mirroring the real implementation) and logs the transaction.
+ *
+ * @param int $userid User ID.
+ * @param stdClass $trade Trade record.
+ * @param array $reqs Array of ['itemid' => int, 'qty' => int], same shape passed to
+ *        seed_upsert_trade().
+ * @param array $rewards Array of ['itemid' => int, 'qty' => int].
+ * @return void
+ */
+function seed_execute_trade(int $userid, stdClass $trade, array $reqs, array $rewards): void {
+    global $DB, $now;
+
+    if ($DB->record_exists('block_playerhud_trade_log', ['tradeid' => $trade->id, 'userid' => $userid])) {
+        return;
+    }
+
+    foreach ($reqs as $req) {
+        $owned = $DB->get_records(
+            'block_playerhud_inventory',
+            ['userid' => $userid, 'itemid' => $req['itemid']],
+            'timecreated ASC',
+            'id',
+            0,
+            $req['qty']
+        );
+        $ids = array_keys($owned);
+        [$insql, $inparams] = $DB->get_in_or_equal($ids, SQL_PARAMS_NAMED, 'tc');
+        $DB->set_field_select('block_playerhud_inventory', 'source', 'consumed', "id $insql", $inparams);
+    }
+
+    foreach ($rewards as $reward) {
+        for ($i = 0; $i < $reward['qty']; $i++) {
+            $DB->insert_record('block_playerhud_inventory', (object) [
+                'userid'      => $userid,
+                'itemid'      => $reward['itemid'],
+                'dropid'      => 0,
+                'source'      => 'shop',
+                'timecreated' => $now,
+                'xpawarded'   => 0,
+            ]);
+        }
+    }
+
+    $DB->insert_record('block_playerhud_trade_log', (object) [
+        'tradeid'     => $trade->id,
+        'userid'      => $userid,
+        'timecreated' => $now,
+    ]);
+}
+
+// Dave needs a 2nd key to pay for the "Keys for Scroll" trade (cost: 2 keys).
+seed_give_extra_item($students[3]->id, $itemkey->id, $dropcave->id);
+$tradekeys = $DB->get_record('block_playerhud_trades', [
+    'blockinstanceid' => $instanceid,
+    'name'            => 'Trade: Keys for Scroll',
+]);
+if ($tradekeys) {
+    seed_execute_trade(
+        $students[3]->id,
+        $tradekeys,
+        [['itemid' => $itemkey->id, 'qty' => 2]],
+        [['itemid' => $itemscroll->id, 'qty' => 1]]
+    );
+    cli_writeln("Dave completed the 'Keys for Scroll' trade.");
+}
+
 // 14. Quest completions.
 
 /**
@@ -802,6 +928,14 @@ $questscholar = $DB->get_record('block_playerhud_quests', [
     'blockinstanceid' => $instanceid,
     'name'            => 'Scholar',
 ]);
+$questxptotal = $DB->get_record('block_playerhud_quests', [
+    'blockinstanceid' => $instanceid,
+    'name'            => 'XP Collector',
+]);
+$questtrades  = $DB->get_record('block_playerhud_quests', [
+    'blockinstanceid' => $instanceid,
+    'name'            => 'Trader',
+]);
 
 // Alice: First Step (+25 XP). Items(40) + quest(25) = 65 XP.
 if ($questfirst) {
@@ -809,6 +943,8 @@ if ($questfirst) {
 }
 
 // Bob: First Step (+25) + Scholar (+75, reward=key). scroll(50)+q1(25)+q2(75) = 150 XP.
+// Already meets the "XP Collector" target (150) but is left unclaimed on purpose, to show the
+// "ready to claim" state on the quests screen.
 if ($questfirst) {
     seed_claim_quest($instanceid, $questfirst, $students[1]->id);
 }
@@ -816,12 +952,21 @@ if ($questscholar) {
     seed_claim_quest($instanceid, $questscholar, $students[1]->id);
 }
 
-// Carol: First Step (+25). sword(30)+gem(100)+quest(25) = 155 XP.
+// Carol: First Step (+25) + XP Collector (+40, already had 155 XP accumulated).
+// sword(30)+gem(100)+quest(25)+quest(40) = 195 XP.
 if ($questfirst) {
     seed_claim_quest($instanceid, $questfirst, $students[2]->id);
 }
+if ($questxptotal) {
+    seed_claim_quest($instanceid, $questxptotal, $students[2]->id);
+}
 
-// Dave and Eve: no quests. Dave=10 XP, Eve=10 XP.
+// Dave: Trader (+40, after trading keys for a scroll). key×2(20)+quest(40) = 60 XP.
+if ($questtrades) {
+    seed_claim_quest($instanceid, $questtrades, $students[3]->id);
+}
+
+// Eve: no quests. Eve=10 XP.
 
 cli_writeln("Completed quests recorded.");
 
@@ -1083,6 +1228,149 @@ if ($cmassignsecret) {
     cli_writeln("Activity 'Dragon\'s Vault' created — Carol marked as complete.");
 } else {
     cli_writeln("Module 'assign' unavailable — secret challenge activity skipped.");
+}
+
+// 16b. Late Penalty integration (demo for the "Deadline Extension" item power).
+//
+// Only the "before" state is seeded here: Eve's real late submission, graded, with a real
+// penalty applied by local_latepenalty's own event observer. Redeeming the item to waive the
+// penalty happens live, as Eve, during the actual screenshot session — that shows a genuine
+// before/after grade change instead of a pre-baked one.
+if ($cmassign && class_exists('\local_latepenalty\recalculator')) {
+    $eve = $students[4];
+    $duedate = time() - (3 * DAYSECS);
+
+    $DB->set_field('assign', 'duedate', $duedate, ['id' => $cmassign->instance]);
+
+    // Upsert, never skip-if-exists: a stale rule can already sit here for this cmid, left behind
+    // by an unrelated course module deleted in the past — local_latepenalty does not clean up
+    // local_latepenalty_rules on course/module deletion, and course_modules.id is a site-wide
+    // sequence, so an old disabled rule can silently "occupy" a freshly created cmid.
+    $rulerecord = (object) [
+        'cmid'               => $cmassign->id,
+        'enabled'            => 1,
+        'daily_penalty'      => 5.00,
+        'max_penalty'        => 30.00,
+        'recalc_on_deadline' => 1,
+        'recalc_on_rate'     => 1,
+        'last_deadline'      => $duedate,
+    ];
+    $existingrule = $DB->get_record('local_latepenalty_rules', ['cmid' => $cmassign->id]);
+    if ($existingrule) {
+        $rulerecord->id = $existingrule->id;
+        $DB->update_record('local_latepenalty_rules', $rulerecord);
+    } else {
+        $DB->insert_record('local_latepenalty_rules', $rulerecord);
+    }
+
+    if (!$DB->record_exists('assign_submission', ['assignment' => $cmassign->instance, 'userid' => $eve->id])) {
+        // Submitted 2 days after the due date.
+        $DB->insert_record('assign_submission', (object) [
+            'assignment'    => $cmassign->instance,
+            'userid'        => $eve->id,
+            'timecreated'   => $duedate + (2 * DAYSECS),
+            'timemodified'  => $duedate + (2 * DAYSECS),
+            'status'        => 'submitted',
+            'groupid'       => 0,
+            'attemptnumber' => 0,
+            'latest'        => 1,
+        ]);
+    }
+
+    require_once($CFG->libdir . '/gradelib.php');
+    // Full marks before grading — local_latepenalty's own observer applies the real percentage
+    // penalty in reaction to this grade_update() call, exactly like a teacher grading the
+    // submission through the normal assign UI would trigger it. Safe to call on every run
+    // (idempotent): it always (re)writes the same rawgrade to the gradebook's own grade_grades,
+    // which is not the same table as mod_assign's assign_grades.
+    grade_update(
+        'mod/assign',
+        $course->id,
+        'mod',
+        'assign',
+        $cmassign->instance,
+        0,
+        (object) ['userid' => $eve->id, 'rawgrade' => 100]
+    );
+
+    $itemextension = seed_upsert_item(
+        $instanceid,
+        'Deadline Extension',
+        0,
+        'Postpones the deadline of the Adventure Report assignment and waives the late penalty.',
+        0,
+        '⏳'
+    );
+    $DB->set_field('block_playerhud_items', 'action_type', 'deadline_extension', ['id' => $itemextension->id]);
+    $DB->set_field(
+        'block_playerhud_items',
+        'action_value',
+        json_encode(['days' => 2, 'cmid' => $cmassign->id]),
+        ['id' => $itemextension->id]
+    );
+
+    $dropextension = seed_upsert_drop($instanceid, $itemextension->id, "Headmaster's Reward", 1, 0);
+    seed_give_item($eve->id, $itemextension->id, $dropextension->id);
+
+    cli_writeln("Late Penalty configured — Eve submitted the 'Adventure Report' late and received");
+    cli_writeln("the 'Deadline Extension' item to redeem during the screenshot session.");
+} else if ($cmassign) {
+    cli_writeln("local_latepenalty is not installed — Deadline Extension integration skipped.");
+}
+
+// 16c. PlayerGroup integration (demo for group ranking + HUD header group badge).
+if (class_exists('\mod_playergroup\api\group_info')) {
+    require_once($CFG->dirroot . '/group/lib.php');
+
+    \core\session\manager::set_user(get_admin());
+    $cmplayergroup = seed_create_module($course, 'playergroup', [
+        'name'               => 'Squad Formation',
+        'intro'              => 'Form your squad to show up on the group ranking.',
+        'section'            => 1,
+        'groupingmode'       => 'new',
+        'groupingname'       => 'Squads',
+        'minmembers'         => 2,
+        'maxmembers'         => 5,
+        'canleave'           => 1,
+        'deleteemptygroups'  => 1,
+        'deletegroups'       => 0,
+        'grade'              => 0,
+    ]);
+    \core\session\manager::set_user($origuser);
+
+    if ($cmplayergroup && !$DB->record_exists('groups', ['courseid' => $course->id, 'name' => 'Squad Alpha'])) {
+        $squadmembers = [$students[0], $students[1], $students[2]]; // Alice, Bob, Carol.
+
+        $groupid = groups_create_group((object) [
+            'courseid'    => $course->id,
+            'name'        => 'Squad Alpha',
+            'description' => '',
+        ]);
+
+        $playergroupinstance = $DB->get_record('playergroup', ['id' => $cmplayergroup->instance], '*', MUST_EXIST);
+        if (!empty($playergroupinstance->groupingid)) {
+            groups_assign_grouping($playergroupinstance->groupingid, $groupid);
+        }
+
+        foreach ($squadmembers as $member) {
+            groups_add_member($groupid, $member->id);
+        }
+
+        $DB->insert_record('playergroup_meta', (object) [
+            'groupid'       => $groupid,
+            'playergroupid' => $cmplayergroup->instance,
+            'creatorid'     => $squadmembers[0]->id,
+            'badge'         => '🛡️',
+            'privacy'       => 0,
+            'password'      => '',
+            'timecreated'   => $now,
+            'timemodified'  => $now,
+        ]);
+
+        cli_writeln("Squad Alpha created — Alice, Bob and Carol grouped (Dave and Eve stay ungrouped).");
+    }
+} else {
+    cli_writeln("mod_playergroup is not installed — group ranking integration skipped.");
 }
 
 // 17. Summary.
