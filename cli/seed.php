@@ -155,6 +155,7 @@ function seed_create_user(string $username, string $firstname, string $lastname,
         'email'        => $username . '@playerhud.test',
         'lang'         => 'en',
         'timezone'     => '99',
+        'picture'      => 0,
         'timecreated'  => time(),
         'timemodified' => time(),
     ];
@@ -163,17 +164,70 @@ function seed_create_user(string $username, string $firstname, string $lastname,
     return $user;
 }
 
+/**
+ * Generates a simple colour+initial PNG avatar and sets it as the user's profile picture, via
+ * the same process_new_icon() API Moodle's own profile picture upload uses.
+ *
+ * Purely cosmetic: without this, every seed account renders as a plain grey initials circle in
+ * screenshots, which is harder to tell apart at a glance in the training material.
+ *
+ * @param int $userid User ID.
+ * @param string $initial Single letter to draw (only the first character is used).
+ * @param string $hexcolor Background colour, e.g. '#e57373'.
+ * @return void
+ */
+function seed_set_avatar(int $userid, string $initial, string $hexcolor): void {
+    global $DB, $CFG;
+
+    require_once($CFG->libdir . '/gdlib.php');
+
+    $size = 256;
+    $image = imagecreatetruecolor($size, $size);
+
+    [$red, $green, $blue] = sscanf($hexcolor, '#%02x%02x%02x');
+    $bg = imagecolorallocate($image, $red, $green, $blue);
+    imagefill($image, 0, 0, $bg);
+
+    $white = imagecolorallocate($image, 255, 255, 255);
+    $font = $CFG->libdir . '/default.ttf';
+    $fontsize = 120;
+    $letter = strtoupper(substr($initial, 0, 1));
+
+    $bbox = imagettfbbox($fontsize, 0, $font, $letter);
+    $textwidth = abs($bbox[4] - $bbox[0]);
+    $textheight = abs($bbox[5] - $bbox[1]);
+    $x = (int) (($size - $textwidth) / 2);
+    $y = (int) (($size + $textheight) / 2);
+    imagettftext($image, $fontsize, 0, $x, $y, $white, $font, $letter);
+
+    $tmpfile = $CFG->tempdir . '/seed_avatar_' . $userid . '.png';
+    imagepng($image, $tmpfile);
+    imagedestroy($image);
+
+    $newpicture = (int) process_new_icon(context_user::instance($userid), 'user', 'icon', 0, $tmpfile);
+    $DB->set_field('user', 'picture', $newpicture, ['id' => $userid]);
+
+    unlink($tmpfile);
+}
+
 $teacher = seed_create_user('seed_teacher', 'Dungeon', 'Master', SEED_PASSWORD);
 $students = [];
 $studentnames = [
-    ['seed_alice', 'Alice', 'Sword'],
-    ['seed_bob', 'Bob', 'Bow'],
-    ['seed_carol', 'Carol', 'Staff'],
-    ['seed_dave', 'Dave', 'Shield'],
-    ['seed_eve', 'Eve', 'Dagger'],
+    ['seed_alice', 'Alice', 'Sword', '#e57373'],
+    ['seed_bob', 'Bob', 'Bow', '#64b5f6'],
+    ['seed_carol', 'Carol', 'Staff', '#ba68c8'],
+    ['seed_dave', 'Dave', 'Shield', '#81c784'],
+    ['seed_eve', 'Eve', 'Dagger', '#ffb74d'],
 ];
-foreach ($studentnames as [$uname, $fname, $lname]) {
-    $students[] = seed_create_user($uname, $fname, $lname, SEED_PASSWORD);
+foreach ($studentnames as [$uname, $fname, $lname, $avatarcolor]) {
+    $student = seed_create_user($uname, $fname, $lname, SEED_PASSWORD);
+    if ((int) $student->picture === 0) {
+        seed_set_avatar($student->id, $fname, $avatarcolor);
+    }
+    $students[] = $student;
+}
+if ((int) $teacher->picture === 0) {
+    seed_set_avatar($teacher->id, $teacher->firstname, '#546e7a');
 }
 cli_writeln("Users created/found: 1 teacher + " . count($students) . " students.");
 
