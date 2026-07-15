@@ -143,11 +143,30 @@ class analytics {
         // plugin's own implementation is responsible for validating that any item it references
         // actually belongs to $blockinstanceid (see \block_playerhud\local\external_items) —
         // this method only sums whatever rows it is handed back.
-        foreach (get_plugins_with_function('playerhud_grant_potential', 'lib.php') as $plugins) {
-            foreach ($plugins as $pluginfunction) {
-                foreach ($pluginfunction($instanceid) as $row) {
-                    $totalxp += (int)($row['xp_total'] ?? 0);
-                    $breakdown[] = $row;
+        //
+        // Both the discovery scan and each plugin's own callback run third-party code this
+        // class does not control, so both are guarded: a broken lib.php or a buggy callback in
+        // one external plugin must not take down this instance's own XP report, and must not be
+        // mistaken for a bug in this plugin.
+        try {
+            $granters = get_plugins_with_function('playerhud_grant_potential', 'lib.php');
+        } catch (\Throwable $e) {
+            debugging('block_playerhud: playerhud_grant_potential discovery failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            $granters = [];
+        }
+
+        foreach ($granters as $plugins) {
+            foreach ($plugins as $component => $pluginfunction) {
+                try {
+                    foreach ($pluginfunction($instanceid) as $row) {
+                        $totalxp += (int)($row['xp_total'] ?? 0);
+                        $breakdown[] = $row;
+                    }
+                } catch (\Throwable $e) {
+                    debugging(
+                        'block_playerhud: playerhud_grant_potential in ' . $component . ' failed: ' . $e->getMessage(),
+                        DEBUG_DEVELOPER
+                    );
                 }
             }
         }

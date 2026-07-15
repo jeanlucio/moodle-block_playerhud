@@ -125,6 +125,13 @@ function xmldb_block_playerhud_upgrade($oldversion) {
     }
 
     if ($oldversion < 2026070101) {
+        // The code-generation loop below is O(n) over every drop still missing a code, one
+        // DB round-trip per row. A dev site with a handful of drops finishes instantly; a
+        // production site with years of accumulated drops can take long enough to hit the
+        // web server's max_execution_time mid-step, leaving this savepoint unreached. Extend
+        // both the PHP time limit and the upgrade-page stall watchdog before starting.
+        upgrade_set_timeout();
+
         // 1. Backfill any missing drop codes before enforcing NOTNULL + UNIQUE.
         // Sites installed before the code field existed may still hold NULL/empty values.
         $drops = $DB->get_records_select(
