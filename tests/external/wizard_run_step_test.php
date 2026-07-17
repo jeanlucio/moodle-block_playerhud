@@ -31,12 +31,20 @@ use core_external\external_api;
 /**
  * Tests for the wizard_run_step web service — running one module at a time from a plan built by
  * wizard_start, no network involved (AI-backed steps like "items"/"next_chapter" are exercised
- * manually, same exclusion as wizard_generate_test.php).
+ * manually, same exclusion as wizard_generate_helpers_test.php).
+ *
+ * Declares both classes in the coverage annotation below: every step type dispatches straight
+ * into a wizard_generate::generate_*() method (static cross-class call), so without also naming
+ * wizard_generate there, php-code-coverage would attribute these genuinely-executed lines only to
+ * the call site in this class, never to wizard_generate's own file — the same per-test
+ * coverage-annotation filtering behind the class-level-annotation fix already applied to
+ * mod_playerwords/format_smartcards, just crossing a class boundary instead of staying inside one.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\external\wizard_run_step
+ * @covers     \block_playerhud\external\wizard_generate
  */
 final class wizard_run_step_test extends external_base_testcase {
     /**

@@ -409,7 +409,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `external\setup_playercoin_drop` | 90% |
 | `external\use_item` | 75% |
 | `external\wizard_apply_suggested_levels` | 83% |
-| `external\wizard_generate` | 18%¹ |
+| `external\wizard_generate` | 85% |
 | `external\wizard_list_runs` | 100% |
 | `external\wizard_run_step` | 86% |
 | `external\wizard_start` | 99% |
@@ -428,8 +428,6 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `trade_manager` | 90% |
 | `utils` | 35% |
 | **Overall** | **37%** |
-
-¹ Undercounted by the coverage tool: `wizard_generate`'s `generate_*()` methods are only ever called statically from `wizard_run_step`, which the line-coverage instrumentation attributes to the *caller's* line, not the callee's — `wizard_run_step_test.php`'s 56 cases exercise every one of them directly.
 
 #### Behat — Acceptance Tests
 
@@ -955,7 +953,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `external\setup_playercoin_drop` | 90% |
 | `external\use_item` | 75% |
 | `external\wizard_apply_suggested_levels` | 83% |
-| `external\wizard_generate` | 18%¹ |
+| `external\wizard_generate` | 85% |
 | `external\wizard_list_runs` | 100% |
 | `external\wizard_run_step` | 86% |
 | `external\wizard_start` | 99% |
@@ -974,8 +972,6 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `trade_manager` | 90% |
 | `utils` | 35% |
 | **Total** | **37%** |
-
-¹ Subestimado pela ferramenta de cobertura: os métodos `generate_*()` de `wizard_generate` só são chamados estaticamente a partir de `wizard_run_step`, e a instrumentação de linha atribui a chamada à linha de quem CHAMA, não de quem é chamado — os 56 casos de `wizard_run_step_test.php` exercitam cada um deles diretamente.
 
 #### Behat — Testes de Aceitação
 
