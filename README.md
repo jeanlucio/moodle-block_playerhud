@@ -18,7 +18,7 @@ The **PlayerHUD Block** is a modular gamification system for Moodle that introdu
 
 It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing students to track their progress in real time while teachers configure engagement mechanics aligned with pedagogical objectives.
 
-📚 **[Full documentation](https://jeanlucio.github.io/moodle-block_playerhud/)** — features, group ranking, the Economy Health panel, the PlayerGames ecosystem, the gamification wizard, AI tools, the demo environment, the full 476-case test suite, and security details.
+📚 **[Full documentation](https://jeanlucio.github.io/moodle-block_playerhud/)** — features, group ranking, the Economy Health panel, the PlayerGames ecosystem, the gamification wizard, AI tools, the demo environment, the full 527-case test suite, and security details.
 
 ### 🔎 Third-party Service Disclosure
 
@@ -71,7 +71,7 @@ O **Bloco PlayerHUD** é um sistema modular de gamificação para o Moodle que i
 
 Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo que os alunos acompanhem seu progresso em tempo real, enquanto o professor configura as mecânicas de engajamento de acordo com seus objetivos pedagógicos.
 
-📚 **[Documentação completa](https://jeanlucio.github.io/moodle-block_playerhud/pt.html)** — funcionalidades, ranking de grupos, o painel de Saúde da Economia, o ecossistema PlayerGames, o assistente de gamificação, ferramentas de IA, o ambiente de demonstração, a suíte completa de 476 testes, e detalhes de segurança.
+📚 **[Documentação completa](https://jeanlucio.github.io/moodle-block_playerhud/pt.html)** — funcionalidades, ranking de grupos, o painel de Saúde da Economia, o ecossistema PlayerGames, o assistente de gamificação, ferramentas de IA, o ambiente de demonstração, a suíte completa de 527 testes, e detalhes de segurança.
 
 ### 🔎 Divulgação de Serviço de Terceiros
 
