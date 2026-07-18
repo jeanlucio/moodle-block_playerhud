@@ -109,11 +109,11 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `controller\chapters` | 40% |
 | `controller\classes` | 41% |
 | `controller\collect` | 13% |
-| `controller\drops` | 18% |
+| `controller\drops` | 20% |
 | `controller\export` | 90% |
-| `controller\items` | 79% |
-| `controller\quests` | 71% |
-| `controller\scenes` | 15% |
+| `controller\items` | 99% |
+| `controller\quests` | 76% |
+| `controller\scenes` | 13% |
 | `controller\suggestions` | 100% |
 | `controller\trades` | 39% |
 | `drop_guard` | 100% |
@@ -124,7 +124,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `external\create_class_pack` | 79% |
 | `external\create_playercoin` | 91% |
 | `external\execute_chat_action` | 27% |
-| `external\generate_ai_content` | 76% |
+| `external\generate_ai_content` | 77% |
 | `external\generate_class_oracle` | 67% |
 | `external\generate_story` | 75% |
 | `external\insert_drop_shortcode` | 87% |
@@ -141,11 +141,14 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `external\wizard_start` | 99% |
 | `game` | 84% |
 | `instance_cleanup` | 100% |
-| `local\analytics` | 81% |
+| `local\analytics` | 90% |
+| `local\audit_log` | 78% |
 | `local\drop_distribution` | 97% |
+| `local\external_items` | 97% |
 | `local\wizard` | 76% |
 | `local\xp_budget` | 98% |
 | `output\manage\item_delete_confirm` | 100% |
+| `output\manage\quest_delete_confirm` | 100% |
 | `output\manage\tab_chapters` | 7% |
 | `output\view\tab_collection` | 68% |
 | `privacy\provider` | 96% |
@@ -153,7 +156,11 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `story_manager` | 37% |
 | `trade_manager` | 90% |
 | `utils` | 35% |
-| **Overall** | **37%** |
+| **Overall** | **42%** |
+
+49 of the plugin's 82 classes are listed above — the rest (mostly exception classes, event
+subscribers and thin output wrappers never `require`'d during this suite's run) carry no
+coverage data at all and are omitted rather than shown as a misleading 0%.
 
 ### Behat — Acceptance Tests
 
