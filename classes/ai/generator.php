@@ -376,7 +376,7 @@ class generator {
     protected function call_groq(array $parts, string $key): array {
         $url = "https://api.groq.com/openai/v1/chat/completions";
         $data = [
-            "model" => "llama-3.3-70b-versatile",
+            "model" => "openai/gpt-oss-120b",
             "messages" => [
                 ["role" => "system", "content" => $parts['system']],
                 ["role" => "user", "content" => $parts['user']],
