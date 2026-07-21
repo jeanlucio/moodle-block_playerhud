@@ -85,3 +85,8 @@ The plugin:
 - Only stores the game objects created inside Moodle (items, quests, chapters)
 
 No external communication occurs unless an AI feature is explicitly used.
+
+### Demo Credentials
+
+Not applicable — PlayerHUD requires no credentials to install or use. Every AI feature is
+entirely opt-in and the block works fully without any key configured.

@@ -76,3 +76,8 @@ O plugin:
 - Apenas salva os objetos do jogo criados dentro do Moodle (itens, missões, capítulos)
 
 Nenhuma comunicação externa ocorre sem ativação explícita de um recurso de IA.
+
+### Credenciais de Demonstração
+
+Não aplicável — o PlayerHUD não exige nenhuma credencial para instalar ou usar. Todo recurso
+de IA é totalmente opcional e o bloco funciona plenamente sem nenhuma chave configurada.
