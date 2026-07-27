@@ -45,12 +45,16 @@ Feature: PlayerHUD management screens beyond the item library
   # item library actually links through to the drops screen.
   # -----------------------------------------------------------------
 
+  # The drop code is never rendered as visible text — it only reaches the page as the
+  # shortcode-generator button's data-dropcode attribute and the copy-to-clipboard hidden
+  # input — so the row is identified by that attribute rather than by "I should see".
+
   Scenario: Teacher reaches the drops screen for an item and sees its existing drop
     Given a PlayerHUD item "Golden Key" with drop code "GOLD01" exists in course "C1"
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I click on "a[aria-label='Manage Drops for: Golden Key']" "css_element"
     Then I should see "Golden Key"
-    And I should see "GOLD01"
+    And "[data-dropcode='GOLD01']" "css_element" should exist
 
   Scenario: Teacher creates a drop through the real form and sees it in the listing
     Given a PlayerHUD item "Golden Key" with drop code "GOLD01" exists in course "C1"
@@ -60,7 +64,7 @@ Feature: PlayerHUD management screens beyond the item library
     And I set the field "Location / Name" to "Library Corner"
     And I press "Save Location"
     Then I should see "Library Corner"
-    And I should see "GOLD01"
+    And "[data-dropcode='GOLD01']" "css_element" should exist
 
   # -----------------------------------------------------------------
   # Characters — a real form round trip, including the file manager
