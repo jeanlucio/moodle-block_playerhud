@@ -168,45 +168,21 @@ vendor/bin/phpunit --testsuite block_playerhud
 
 54 of the plugin's 82 classes are listed above — the rest (mostly exception classes, event
 subscribers and thin output wrappers never `require`'d during this suite's run) carry no
-coverage data at all and are omitted rather than shown as a misleading 0%. Several classes
-(`controller\quests`, `local\wizard`, `story_manager`, `controller\chapters`) jumped noticeably
-after a suite-wide fix that replaced per-test `@covers ::method` annotations with a single
-class-level `@covers` line — the old per-method scoping was silently discarding coverage credit
-for every other method/class a test exercised as a side effect. A follow-up pass then found the
-same cross-class discard hiding real coverage in five more places: three web-service wrapper
-tests (`load_scene_test.php`, `make_choice_test.php`, `load_recap_test.php`) genuinely exercise
-`story_manager` but only declared their own wrapper class, `create_class_pack_test.php` was the
-only test touching `local\rpg_archetypes` at all (previously invisible, now 92%), and
-`game_test.php`/`setup_playercoin_drop_test.php`/`drop_distribution_test.php` each exercise real
-`utils` helper methods without declaring it. Adding the missing class-level `@covers` line to
-each raised `story_manager` 54%→61%, `utils` 40%→49%, and surfaced `local\rpg_archetypes`
-entirely. A third pass then closed the largest remaining gap. The `execute()`/
-`view_manage_page()`/`handle_edit_form()` entry points had been written off as "Behat territory"
-because they read `$_POST` and render a whole page — that turned out to be wrong. PHPUnit's
-bootstrap always defines `CLI_SCRIPT`, and Moodle's own `redirect()` raises
-`redirecterrordetected` under it, so a save-then-redirect action is assertable by catching that
-exception (the mutation always lands first); the render path works too, returning the page HTML
-for direct inspection. `manage_entry_points_test.php` uses both, lifting `controller\drops`
-20%→79%, `controller\trades` 39%→71%, `controller\classes` 41%→67%, `controller\collect`
-13%→56% and `controller\scenes` 15%→26%. What genuinely stays outside PHPUnit is narrower than
-first claimed: the AJAX half of `collect::execute()` (it ends in `die()`), real `moodleform`
-submissions through a browser, and anything driven by JavaScript — all of which the Behat suite
-covers instead. `ai\generator` (6%) and the AI branches of `chat_message`/`execute_chat_action`
-remain structural: they call real external providers over curl with no HTTP mock layer. The two
-items flagged in a first pass were
-resolved in a follow-up: `utils::get_class_evolution_image()` was confirmed dead (grepped the
-whole plugin, zero callers) and removed, and `wizard_rollback_test.php` was added, taking
-`external\wizard_rollback` straight to 100%. That same follow-up also added `db_upgrade_test.php`
-for the upgrade steps that carry real data-migration logic (PlayerCoin backfill, `xpawarded`
-backfills) — `db/upgrade.php` itself stays outside `moodle-coverage`'s own instrumentation scope
-(`classes/` + `lib.php`/`locallib.php`/`renderer.php`/`externallib.php` only) and PHPUnit's test
-environment always installs a fresh schema from `install.xml`, never runs an upgrade step's body,
-so these tests call `xmldb_block_playerhud_upgrade()` directly instead. Writing them surfaced a
-real idempotency bug: the `2026070101` step's `change_field_notnull()` call on the drops `code`
-field had no guard, and PostgreSQL refuses to alter a column's `NOT NULL` constraint while a
-unique index still depends on it — harmless on every real site (a passed savepoint never re-runs),
-but it made the step unsafe to call twice, now fixed by guarding it behind the same index-existence
-check that already guarded the index creation itself.
+coverage data at all and are omitted rather than shown as a misleading 0%.
+
+The lowest figures in the table reflect structural limits rather than untested logic:
+
+- `ai\generator` (6%) and the AI branches of `chat_message`/`execute_chat_action` call real
+  external providers over curl, with no HTTP mock layer.
+- The AJAX half of `collect::execute()` ends in `die()`, real `moodleform` submissions depend
+  on a browser, and JavaScript-driven behaviour has no server-side existence — all of which the
+  Behat suite below covers instead.
+
+`db/upgrade.php` is absent from the table because it falls outside `moodle-coverage`'s
+instrumentation scope (which covers `classes/` plus `lib.php`/`locallib.php`/`renderer.php`/
+`externallib.php`), and PHPUnit's test environment always installs a fresh schema from
+`install.xml` without running upgrade steps. The steps that carry real data-migration logic are
+tested directly in `db_upgrade_test.php`, which calls `xmldb_block_playerhud_upgrade()`.
 
 ### Behat — Acceptance Tests
 

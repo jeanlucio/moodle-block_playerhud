@@ -169,49 +169,22 @@ vendor/bin/phpunit --testsuite block_playerhud
 54 das 82 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
 observadores de evento e wrappers finos de output nunca carregados via `require` durante a
 execução desta suíte) não têm nenhum dado de cobertura e são omitidas em vez de aparecerem
-como um 0% enganoso. Algumas classes (`controller\quests`, `local\wizard`, `story_manager`,
-`controller\chapters`) subiram de forma expressiva depois de uma correção em toda a suíte que
-substituiu anotações `@covers ::method` por teste por uma única linha `@covers` no nível da
-classe — o escopo por método antigo descartava silenciosamente o crédito de cobertura para
-qualquer outro método/classe que o teste exercitasse como efeito colateral. Uma segunda
-passada encontrou o mesmo descarte entre classes escondendo cobertura real em mais cinco
-lugares: três testes de web service (`load_scene_test.php`, `make_choice_test.php`,
-`load_recap_test.php`) já exercitam de fato o `story_manager`, mas só declaravam sua própria
-classe wrapper; `create_class_pack_test.php` era o único teste que sequer tocava
-`local\rpg_archetypes` (antes invisível, agora 92%); e `game_test.php`/
-`setup_playercoin_drop_test.php`/`drop_distribution_test.php` exercitam métodos reais de
-`utils` sem declará-la. Adicionar a linha `@covers` de classe que faltava em cada um elevou
-`story_manager` de 54%→61%, `utils` de 40%→49%, e revelou `local\rpg_archetypes` por inteiro.
-Uma terceira passada fechou a maior lacuna restante. Os pontos de entrada `execute()`/
-`view_manage_page()`/`handle_edit_form()` tinham sido descartados como "território do Behat"
-por lerem `$_POST` e renderizarem uma página inteira — o que se mostrou errado. O bootstrap do
-PHPUnit sempre define `CLI_SCRIPT`, e o próprio `redirect()` do Moodle lança
-`redirecterrordetected` sob ele, então uma ação do tipo grava-e-redireciona é assegurável
-capturando essa exceção (a mutação sempre acontece antes); o caminho de render também funciona,
-devolvendo o HTML da página para inspeção direta. O `manage_entry_points_test.php` usa as duas
-coisas, elevando `controller\drops` de 20%→79%, `controller\trades` de 39%→71%,
-`controller\classes` de 41%→67%, `controller\collect` de 13%→56% e `controller\scenes` de
-15%→26%. O que de fato fica fora do PHPUnit é mais estreito do que se afirmou no início: a
-metade AJAX do `collect::execute()` (que termina em `die()`), submissões reais de `moodleform`
-por navegador, e tudo que é movido por JavaScript — cobertos pela suíte Behat. `ai\generator`
-(6%) e os ramos de IA de `chat_message`/`execute_chat_action` seguem estruturais: chamam
-provedores externos reais via curl, sem camada de mock HTTP. Os dois itens sinalizados
-numa primeira passada foram resolvidos numa passada seguinte: `utils::
-get_class_evolution_image()` foi confirmado como morto (grep no plugin inteiro, zero
-chamadores) e removido, e `wizard_rollback_test.php` foi adicionado, levando
-`external\wizard_rollback` direto a 100%. Essa mesma passada também adicionou
-`db_upgrade_test.php` para os passos de upgrade com lógica real de migração de dados
-(retroalimentação de PlayerCoin, retroalimentações de `xpawarded`) — o próprio
-`db/upgrade.php` continua fora do escopo de instrumentação do `moodle-coverage` (só
-`classes/` + `lib.php`/`locallib.php`/`renderer.php`/`externallib.php`) e o ambiente de teste
-do PHPUnit sempre instala um schema fresco a partir do `install.xml`, nunca executa o corpo de
-um passo de upgrade — por isso esses testes chamam `xmldb_block_playerhud_upgrade()`
-diretamente. Escrevê-los revelou um bug real de idempotência: a chamada
-`change_field_notnull()` do passo `2026070101` no campo `code` de drops não tinha guarda, e o
-PostgreSQL recusa alterar a restrição `NOT NULL` de uma coluna enquanto um índice único ainda
-depende dela — inofensivo em qualquer site real (um savepoint já passado nunca roda de novo),
-mas deixava o passo inseguro para ser chamado duas vezes, agora corrigido protegendo-o atrás
-da mesma checagem de existência do índice que já protegia a criação do próprio índice.
+como um 0% enganoso.
+
+Os percentuais mais baixos da tabela refletem limites estruturais, não lacunas de teste:
+
+- `ai\generator` (6%) e os ramos de IA de `chat_message`/`execute_chat_action` chamam
+  provedores externos reais via curl, sem camada de mock HTTP.
+- A metade AJAX de `collect::execute()` termina em `die()`, submissões reais de `moodleform`
+  dependem do navegador, e o comportamento movido por JavaScript não existe no lado do
+  servidor — tudo isso é coberto pela suíte Behat abaixo.
+
+O `db/upgrade.php` não aparece na tabela porque fica fora do escopo de instrumentação do
+`moodle-coverage` (que cobre `classes/` mais `lib.php`/`locallib.php`/`renderer.php`/
+`externallib.php`), e o ambiente de teste do PHPUnit sempre instala um schema novo a partir do
+`install.xml`, sem executar passos de upgrade. Os passos que carregam lógica real de migração
+de dados são testados diretamente em `db_upgrade_test.php`, que chama
+`xmldb_block_playerhud_upgrade()`.
 
 ### Behat — Testes de Aceitação
 
