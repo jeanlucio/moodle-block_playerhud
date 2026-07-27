@@ -148,6 +148,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `local\audit_log` | 78% |
 | `local\drop_distribution` | 97% |
 | `local\external_items` | 97% |
+| `local\rpg_archetypes` | 92% |
 | `local\wizard` | 93% |
 | `local\xp_budget` | 98% |
 | `output\manage\item_delete_confirm` | 100% |
@@ -156,18 +157,34 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `output\view\tab_collection` | 68% |
 | `privacy\provider` | 96% |
 | `quest` | 90% |
-| `story_manager` | 54% |
+| `story_manager` | 61% |
 | `trade_manager` | 90% |
-| `utils` | 40% |
-| **Overall** | **43%** |
+| `utils` | 49% |
+| **Overall** | **44%** |
 
-52 of the plugin's 82 classes are listed above — the rest (mostly exception classes, event
+53 of the plugin's 82 classes are listed above — the rest (mostly exception classes, event
 subscribers and thin output wrappers never `require`'d during this suite's run) carry no
 coverage data at all and are omitted rather than shown as a misleading 0%. Several classes
 (`controller\quests`, `local\wizard`, `story_manager`, `controller\chapters`) jumped noticeably
 after a suite-wide fix that replaced per-test `@covers ::method` annotations with a single
 class-level `@covers` line — the old per-method scoping was silently discarding coverage credit
-for every other method/class a test exercised as a side effect.
+for every other method/class a test exercised as a side effect. A follow-up pass then found the
+same cross-class discard hiding real coverage in five more places: three web-service wrapper
+tests (`load_scene_test.php`, `make_choice_test.php`, `load_recap_test.php`) genuinely exercise
+`story_manager` but only declared their own wrapper class, `create_class_pack_test.php` was the
+only test touching `local\rpg_archetypes` at all (previously invisible, now 92%), and
+`game_test.php`/`setup_playercoin_drop_test.php`/`drop_distribution_test.php` each exercise real
+`utils` helper methods without declaring it. Adding the missing class-level `@covers` line to
+each raised `story_manager` 54%→61%, `utils` 40%→49%, and surfaced `local\rpg_archetypes`
+entirely. The remaining low scores are structural, not neglect: `ai\generator` (6%) and the AI
+branches of `chat_message`/`execute_chat_action` call real external providers over curl and
+aren't mocked; `controller\collect`/`scenes`/`drops`/`classes`/`trades` and
+`output\manage\tab_chapters` are dragged down by their `execute()`/`view_manage_page()`/
+`handle_edit_form()`/`display()` methods, which read `$_POST` and orchestrate a full page
+render — Behat territory, not PHPUnit; their actual business-logic methods (`save_drop`,
+`delete_trade`, etc.) are already well covered. `utils::get_class_evolution_image()` appears to
+be dead code (never called anywhere in the plugin) and `wizard_rollback` has no test file at
+all — both flagged for a follow-up, not fixed here.
 
 ### Behat — Acceptance Tests
 

@@ -35,6 +35,7 @@ use core_external\external_api;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\external\load_recap
+ * @covers     \block_playerhud\story_manager
  */
 final class load_recap_test extends external_base_testcase {
     /**

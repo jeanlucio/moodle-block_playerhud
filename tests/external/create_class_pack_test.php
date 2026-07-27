@@ -34,6 +34,7 @@ use block_playerhud\tests\external\external_base_testcase;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\external\create_class_pack
+ * @covers     \block_playerhud\local\rpg_archetypes
  */
 final class create_class_pack_test extends external_base_testcase {
     /**

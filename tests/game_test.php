@@ -28,6 +28,7 @@ use block_playerhud\game;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\game
  * @covers     \block_playerhud\event\xp_changed
+ * @covers     \block_playerhud\utils
  */
 final class game_test extends advanced_testcase {
     /** @var int Dummy block instance ID for testing. */

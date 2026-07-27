@@ -148,6 +148,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `local\audit_log` | 78% |
 | `local\drop_distribution` | 97% |
 | `local\external_items` | 97% |
+| `local\rpg_archetypes` | 92% |
 | `local\wizard` | 93% |
 | `local\xp_budget` | 98% |
 | `output\manage\item_delete_confirm` | 100% |
@@ -156,19 +157,37 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `output\view\tab_collection` | 68% |
 | `privacy\provider` | 96% |
 | `quest` | 90% |
-| `story_manager` | 54% |
+| `story_manager` | 61% |
 | `trade_manager` | 90% |
-| `utils` | 40% |
-| **Total** | **43%** |
+| `utils` | 49% |
+| **Total** | **44%** |
 
-52 das 82 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
+53 das 82 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
 observadores de evento e wrappers finos de output nunca carregados via `require` durante a
 execução desta suíte) não têm nenhum dado de cobertura e são omitidas em vez de aparecerem
 como um 0% enganoso. Algumas classes (`controller\quests`, `local\wizard`, `story_manager`,
 `controller\chapters`) subiram de forma expressiva depois de uma correção em toda a suíte que
 substituiu anotações `@covers ::method` por teste por uma única linha `@covers` no nível da
 classe — o escopo por método antigo descartava silenciosamente o crédito de cobertura para
-qualquer outro método/classe que o teste exercitasse como efeito colateral.
+qualquer outro método/classe que o teste exercitasse como efeito colateral. Uma segunda
+passada encontrou o mesmo descarte entre classes escondendo cobertura real em mais cinco
+lugares: três testes de web service (`load_scene_test.php`, `make_choice_test.php`,
+`load_recap_test.php`) já exercitam de fato o `story_manager`, mas só declaravam sua própria
+classe wrapper; `create_class_pack_test.php` era o único teste que sequer tocava
+`local\rpg_archetypes` (antes invisível, agora 92%); e `game_test.php`/
+`setup_playercoin_drop_test.php`/`drop_distribution_test.php` exercitam métodos reais de
+`utils` sem declará-la. Adicionar a linha `@covers` de classe que faltava em cada um elevou
+`story_manager` de 54%→61%, `utils` de 40%→49%, e revelou `local\rpg_archetypes` por inteiro.
+As notas baixas restantes são estruturais, não negligência: `ai\generator` (6%) e os ramos de
+IA de `chat_message`/`execute_chat_action` chamam provedores externos reais via curl e não são
+mockados; `controller\collect`/`scenes`/`drops`/`classes`/`trades` e
+`output\manage\tab_chapters` são puxados para baixo pelos seus métodos `execute()`/
+`view_manage_page()`/`handle_edit_form()`/`display()`, que leem `$_POST` e orquestram uma
+página inteira — território do Behat, não do PHPUnit; a lógica de negócio real desses
+controllers (`save_drop`, `delete_trade` etc.) já está bem coberta. `utils::
+get_class_evolution_image()` parece ser código morto (nunca chamado em lugar nenhum do
+plugin) e `wizard_rollback` não tem nenhum arquivo de teste — ambos sinalizados para um
+acompanhamento futuro, não corrigidos aqui.
 
 ### Behat — Testes de Aceitação
 

@@ -35,6 +35,7 @@ use core_external\external_api;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\external\make_choice
+ * @covers     \block_playerhud\story_manager
  */
 final class make_choice_test extends external_base_testcase {
     /**

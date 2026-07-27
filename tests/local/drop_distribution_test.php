@@ -34,6 +34,7 @@ use advanced_testcase;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\local\drop_distribution
+ * @covers     \block_playerhud\utils
  */
 final class drop_distribution_test extends advanced_testcase {
     /** @var \stdClass Course used by every test. */

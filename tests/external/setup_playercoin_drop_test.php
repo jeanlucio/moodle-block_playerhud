@@ -34,6 +34,7 @@ use block_playerhud\tests\external\external_base_testcase;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\external\setup_playercoin_drop
+ * @covers     \block_playerhud\utils
  */
 final class setup_playercoin_drop_test extends external_base_testcase {
     /**
