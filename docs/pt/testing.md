@@ -11,6 +11,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `collection_tab_test.php` | 8 | Aba Coleção: mapeamento de `filter_type` (avatar/prazo/nenhum), `power_hint_avatar` exibido para item não-secreto não possuído e oculto para secreto, flag `is_equipped`; classificação de origem para a fonte de uma linha de inventário (map é reconhecida como própria do PlayerHUD; qualquer coisa fora das 4 fontes conhecidas cai para uma origem genérica "game") |
 | `content_crud_test.php` | 13 | CRUD de itens, capítulos e trocas: criação persiste todos os campos, atualização altera campos, exclusão remove registro, listagem escoped por instância |
 | `cross_instance_security_test.php` | 12 | Isolamento cross-instance: guardas de item, quest, capítulo e troca aceitam IDs da própria instância e rejeitam IDs alheios sem modificar o registro alvo |
+| `db_upgrade_test.php` | 6 | Passos de upgrade com lógica real de migração de dados (diferente de DDL de schema puro): marca um item pré-existente literalmente chamado 'PlayerCoin' com `action_type=playercoin`, deixa intocados itens não relacionados/já marcados; retroalimenta `xpawarded` numa linha de inventário pré-existente de uma origem que paga XP de verdade (map/teacher/revoked) usando o XP atual do item, mas não para uma linha de origem `drop` nem uma linha coletada de um drop infinito (`maxusage=0`); retroalimenta o `xpawarded` de uma reivindicação de quest pré-existente a partir do `reward_xp` atual da quest |
 | `drop_guard_test.php` | 7 | Limites de coleta, itens consumidos por troca, aplicação de cooldown |
 | `game_test.php` | 36 | `get_game_stats()` totaliza XP/nível mais a inclusão de XP de quests (e exclusão quando a quest está desabilitada), verificado contra o próprio total de `analytics::economy_health()`; anti-farm de coleta e cooldown; `get_avatar_item` (habilitado, desabilitado, instância estrangeira, não encontrado); XP concedido ao coletar drop com uso finito; exclusão de gerentes do ranking; flags de milestone de level-up, vitória no jogo e primeira PlayerCoin na coleta; `xp_to_level`; criação automática de jogador, alternância de gamificação e visibilidade no ranking, inventário (exclui revogados/consumidos), `has_item`; `get_user_rank` ordem por XP, desempate por chegada, exclusão de gerentes e de não matriculados; hidratação de requisitos/recompensas em `get_full_trades`, caso vazio, e bloqueio de disponibilidade quando o item de qualquer um dos lados está desabilitado; heurística de sugestões de troca (avatares com desconto, pulo de avatar já coberto, pré-requisitos) e persistência; `change_xp` emite o evento `xp_changed` ao conceder, ao deduzir (piso em zero) e fica em silêncio num no-op de verdade |
 | `gamemaster_test.php` | 6 | Conceder/revogar/excluir item e quest preservando timestamps do ranking; XP mínimo em zero |
@@ -24,7 +25,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `suggest_trades_state_test.php` | 4 | Botão Sugerir Trocas: desabilitado sem pré-requisitos, desabilitado só com moeda, desabilitado quando todos os avatares cobertos, habilitado com cobertura parcial |
 | `trade_test.php` | 8 | Montagem de trocas, fundos insuficientes, sucesso atômico, limite único, restrição por grupo; uma troca que referencia um item de recompensa desabilitado é rejeitada de imediato mesmo com saldo suficiente |
 | `utils_test.php` | 4 | `get_avatar_html`: emoji gera div `ph-avatar-emoji` com span aria-hidden; URL HTTP gera tag img `ph-avatar-img`; imagem nula não lança exceção em `get_avatar_html` nem em `get_items_display_data` |
-| **Subtotal** | **198** | |
+| **Subtotal** | **204** | |
 
 ### Testes de Lógica de Negócio Compartilhada (`tests/local/`)
 
@@ -65,9 +66,10 @@ Uma classe de teste por função de web service, validando o contrato da API ext
 | `wizard_apply_suggested_levels_test.php` | 3 | Aplica a sugestão quando a config está nos padrões; ainda aplica quando a config já foi customizada; preserva todo outro campo de config intocado |
 | `wizard_generate_helpers_test.php` | 10 | `build_step_types()` bate com os módulos selecionados na ordem, pula `auto_distribute` quando o distribuir de Itens está desligado, vazio quando nada selecionado; `compute_shared_xp_shares()` vazio sem Itens/Missões, Pill/Extensão de Prazo usam seus próprios padrões sozinhos, dividem o orçamento com Itens quando combinados; `resolve_or_create_progress_item()` idempotente e cria um item completo quando falta; `resolve_previous_chapter_context()` lê o capítulo mais recente; `distribute_drops()` limita cada atividade à sua cota calculada em vez de deixar só a correspondência de nome empilhar todo drop numa única atividade |
 | `wizard_list_runs_test.php` | 4 | Resumo de uma rodada ativa; rodada de RPG resumida; rodadas desfeitas excluídas; guarda de capability |
+| `wizard_rollback_test.php` | 3 | Exclui os objetos gerados pela rodada, contagem reportada bate com o que foi registrado; rejeita instância incompatível; guarda de capability |
 | `wizard_run_step_test.php` | 56 | Um passo de progresso ao vivo por vez, por mecânica (PlayerCoin, Avatares, Missões, Comércio, Colecionável de Conhecimento, Item Secreto, Ranking, Extensão de Prazo, RPG, Item RPG, auto-distribuir): criação de item/quest/troca com registro no manifesto, retentativas idempotentes, desfazer por mecânica, controle pela flag de distribuir, tom/tamanho de jornada influenciando o conteúdo, e a inserção exclusiva no fórum de avisos pra PlayerCoin e Item Secreto (incl. no-op sem fórum de avisos); tipo de passo desconhecido, guarda de capability, rejeição de `runid` de outra instância, passo com falha não finaliza a rodada, passo final reporta a economia só quando solicitado |
 | `wizard_start_test.php` | 8 | Um passo de plano por módulo selecionado; a flag de "passo lento" reflete se Próximo Capítulo foi selecionado; a divisão de cotas de XP bate com os módulos selecionados; o XP bônus da Pill presente quando selecionada sozinha; o módulo de arco da história se expande num outline + um passo por capítulo, a quantidade de passos cresce com o tamanho da jornada, o manifesto mantém o nome lógico do módulo; guarda de capability |
-| **Subtotal** | **146** | |
+| **Subtotal** | **149** | |
 
 ### Testes de Controlador (`tests/controller/`)
 
@@ -97,7 +99,7 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `manage/tab_chapters_test.php` | 4 | Avisos de visibilidade do card de capítulo: sinalização de cena inicial ausente, texto e limites do aviso de nível acima do máximo |
 | **Subtotal** | **16** | |
 
-| **Total geral** | **527** | |
+| **Total geral** | **536** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -140,6 +142,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `external\wizard_apply_suggested_levels` | 83% |
 | `external\wizard_generate` | 85% |
 | `external\wizard_list_runs` | 100% |
+| `external\wizard_rollback` | 100% |
 | `external\wizard_run_step` | 86% |
 | `external\wizard_start` | 99% |
 | `game` | 84% |
@@ -159,10 +162,10 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `quest` | 90% |
 | `story_manager` | 61% |
 | `trade_manager` | 90% |
-| `utils` | 49% |
+| `utils` | 53% |
 | **Total** | **44%** |
 
-53 das 82 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
+54 das 82 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
 observadores de evento e wrappers finos de output nunca carregados via `require` durante a
 execução desta suíte) não têm nenhum dado de cobertura e são omitidas em vez de aparecerem
 como um 0% enganoso. Algumas classes (`controller\quests`, `local\wizard`, `story_manager`,
@@ -184,10 +187,23 @@ mockados; `controller\collect`/`scenes`/`drops`/`classes`/`trades` e
 `output\manage\tab_chapters` são puxados para baixo pelos seus métodos `execute()`/
 `view_manage_page()`/`handle_edit_form()`/`display()`, que leem `$_POST` e orquestram uma
 página inteira — território do Behat, não do PHPUnit; a lógica de negócio real desses
-controllers (`save_drop`, `delete_trade` etc.) já está bem coberta. `utils::
-get_class_evolution_image()` parece ser código morto (nunca chamado em lugar nenhum do
-plugin) e `wizard_rollback` não tem nenhum arquivo de teste — ambos sinalizados para um
-acompanhamento futuro, não corrigidos aqui.
+controllers (`save_drop`, `delete_trade` etc.) já está bem coberta. Os dois itens sinalizados
+numa primeira passada foram resolvidos numa passada seguinte: `utils::
+get_class_evolution_image()` foi confirmado como morto (grep no plugin inteiro, zero
+chamadores) e removido, e `wizard_rollback_test.php` foi adicionado, levando
+`external\wizard_rollback` direto a 100%. Essa mesma passada também adicionou
+`db_upgrade_test.php` para os passos de upgrade com lógica real de migração de dados
+(retroalimentação de PlayerCoin, retroalimentações de `xpawarded`) — o próprio
+`db/upgrade.php` continua fora do escopo de instrumentação do `moodle-coverage` (só
+`classes/` + `lib.php`/`locallib.php`/`renderer.php`/`externallib.php`) e o ambiente de teste
+do PHPUnit sempre instala um schema fresco a partir do `install.xml`, nunca executa o corpo de
+um passo de upgrade — por isso esses testes chamam `xmldb_block_playerhud_upgrade()`
+diretamente. Escrevê-los revelou um bug real de idempotência: a chamada
+`change_field_notnull()` do passo `2026070101` no campo `code` de drops não tinha guarda, e o
+PostgreSQL recusa alterar a restrição `NOT NULL` de uma coluna enquanto um índice único ainda
+depende dela — inofensivo em qualquer site real (um savepoint já passado nunca roda de novo),
+mas deixava o passo inseguro para ser chamado duas vezes, agora corrigido protegendo-o atrás
+da mesma checagem de existência do índice que já protegia a criação do próprio índice.
 
 ### Behat — Testes de Aceitação
 

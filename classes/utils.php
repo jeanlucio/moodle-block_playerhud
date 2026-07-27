@@ -120,37 +120,6 @@ class utils {
     }
 
     /**
-     * Returns the class evolution image URL based on current level.
-     *
-     * Calculates the proportional tier (1-5) from the XP level and delegates
-     * to get_class_evolution_image_by_tier().
-     *
-     * @param \stdClass $class The class object.
-     * @param int $level Current user level.
-     * @param \context $context The block context.
-     * @return string|null The image URL or null.
-     */
-    public static function get_class_evolution_image($class, $level, $context) {
-        global $DB;
-
-        $maxlevels = 20;
-
-        if (!empty($class->blockinstanceid)) {
-            $blockinstance = $DB->get_record('block_instances', ['id' => $class->blockinstanceid]);
-            if ($blockinstance && !empty($blockinstance->configdata)) {
-                $config = unserialize_object(base64_decode($blockinstance->configdata));
-                if (isset($config->max_levels) && $config->max_levels > 0) {
-                    $maxlevels = $config->max_levels;
-                }
-            }
-        }
-
-        $tier = max(1, min(5, (int) ceil(($level / $maxlevels) * 5)));
-
-        return self::get_class_evolution_image_by_tier($class, $tier, $context);
-    }
-
-    /**
      * Returns the class evolution image URL for a pre-calculated tier (1-5).
      *
      * Performs a cascade fallback: if no image is configured for the requested

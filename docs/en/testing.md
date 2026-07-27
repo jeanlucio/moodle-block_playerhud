@@ -11,6 +11,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `collection_tab_test.php` | 8 | Collection tab: `filter_type` mapping (avatar/deadline/none), `power_hint_avatar` shown for unowned non-secret item and hidden for secret item, `is_equipped` flag; origin classification for an inventory row's source (map is recognised as PlayerHUD's own; anything outside the 4 known sources falls back to a generic "game" origin) |
 | `content_crud_test.php` | 13 | Item, chapter and trade CRUD: create persists all fields, update changes fields, delete removes record, listing scoped to instance |
 | `cross_instance_security_test.php` | 12 | Cross-instance isolation: item, quest, chapter and trade guards accept own-instance IDs and reject foreign ones without modifying the target record |
+| `db_upgrade_test.php` | 6 | Upgrade steps that carry real data-migration logic (as opposed to plain schema DDL): tags a pre-existing item literally named 'PlayerCoin' with `action_type=playercoin`, leaves unrelated/already-tagged items untouched; backfills `xpawarded` on a pre-existing inventory row from a paid source (map/teacher/revoked) using the item's current XP, but not for a `drop`-sourced row nor a row collected from an infinite drop (`maxusage=0`); backfills a pre-existing quest-log claim's `xpawarded` from the quest's current `reward_xp` |
 | `drop_guard_test.php` | 7 | Collection limits, trade-consumed items, cooldown enforcement |
 | `game_test.php` | 36 | `get_game_stats()` totals XP/level plus quest XP inclusion (and exclusion when the quest is disabled), cross-checked against `analytics::economy_health()`'s own total; collection anti-farm and cooldown; `get_avatar_item` (enabled, disabled, foreign instance, not found); XP award on finite drop; leaderboard manager exclusion; level-up, beat-the-game and first-PlayerCoin milestone flags on collection; `xp_to_level`; player auto-creation, gamification and ranking-visibility toggles, inventory (revoked/consumed excluded), `has_item`; `get_user_rank` XP order, tie-break by arrival, manager and enrolment exclusion; `get_full_trades` requirement/reward hydration, empty case, and availability gating when either side's item is disabled; trade-suggestion heuristics (discounted avatars, covered-avatar skip, prerequisites) and persistence; `change_xp` emits the `xp_changed` event on award, on deduction (floored at zero) and stays silent on a true no-op |
 | `gamemaster_test.php` | 6 | Grant/revoke/delete item and quest while preserving leaderboard timestamps; XP floor at zero |
@@ -24,7 +25,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `suggest_trades_state_test.php` | 4 | Suggest Trades button: disabled without prereqs, disabled with coin only, disabled when all avatars covered, enabled on partial coverage |
 | `trade_test.php` | 8 | Trade assembly, insufficient funds, atomic success, one-time limit, group restriction; a trade referencing a disabled reward item is rejected outright even with sufficient funds |
 | `utils_test.php` | 4 | `get_avatar_html`: emoji produces `ph-avatar-emoji` div with aria-hidden span; HTTP URL produces `ph-avatar-img` img tag; a null image does not throw for `get_avatar_html` nor `get_items_display_data` |
-| **Subtotal** | **198** | |
+| **Subtotal** | **204** | |
 
 ### Local Business-Logic Tests (`tests/local/`)
 
@@ -65,9 +66,10 @@ One test class per web service function, each validating the external API contra
 | `wizard_apply_suggested_levels_test.php` | 3 | Applies the suggestion when config is at defaults; still applies when config was already customised; preserves every other config field untouched |
 | `wizard_generate_helpers_test.php` | 10 | `build_step_types()` matches selected modules in order, skips `auto_distribute` when Items' own distribute flag is off, empty when nothing selected; `compute_shared_xp_shares()` empty without Items/Missions, Pill/Latepenalty use their own defaults alone, share the budget with Items when combined; `resolve_or_create_progress_item()` idempotent and creates a complete item when missing; `resolve_previous_chapter_context()` reads the latest chapter; `distribute_drops()` caps each activity to its computed quota instead of letting name-matching alone stack every drop onto one activity |
 | `wizard_list_runs_test.php` | 4 | Summary for an active run; RPG run summarised; rolled-back runs excluded; capability guard |
+| `wizard_rollback_test.php` | 3 | Deletes the run's generated objects, reported count matches what was recorded; rejects a mismatched instance; capability guard |
 | `wizard_run_step_test.php` | 56 | One live-progress step at a time, per mechanic (PlayerCoin, Avatars, Missions, Trade, Knowledge Pill, Secret Item, Ranking, Deadline Extension, RPG, Item RPG, auto-distribute): item/quest/trade creation with manifest recording, idempotent retries, rollback per mechanic, distribute-flag gating, tone/journey-size flavouring, and the news-forum-only placement for PlayerCoin and Secret Item (incl. no-op without a news forum); unknown step type, capability guard, cross-instance `runid` rejection, failed step does not finish the run, final step reports the economy only when requested |
 | `wizard_start_test.php` | 8 | One plan step per selected module; the "slow step" flag reflects whether Next Chapter was selected; XP shares split matches selected modules; Pill's bonus XP present when selected alone; the story-arc module expands into an outline + one step per chapter, step count grows with journey size, manifest keeps the logical module name; capability guard |
-| **Subtotal** | **146** | |
+| **Subtotal** | **149** | |
 
 ### Controller Tests (`tests/controller/`)
 
@@ -97,7 +99,7 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `manage/tab_chapters_test.php` | 4 | Chapter-card visibility warnings: missing start-scene flag, required-level-above-maximum warning text and bounds |
 | **Subtotal** | **16** | |
 
-| **Grand Total** | **527** | |
+| **Grand Total** | **536** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -140,6 +142,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `external\wizard_apply_suggested_levels` | 83% |
 | `external\wizard_generate` | 85% |
 | `external\wizard_list_runs` | 100% |
+| `external\wizard_rollback` | 100% |
 | `external\wizard_run_step` | 86% |
 | `external\wizard_start` | 99% |
 | `game` | 84% |
@@ -159,10 +162,10 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `quest` | 90% |
 | `story_manager` | 61% |
 | `trade_manager` | 90% |
-| `utils` | 49% |
+| `utils` | 53% |
 | **Overall** | **44%** |
 
-53 of the plugin's 82 classes are listed above — the rest (mostly exception classes, event
+54 of the plugin's 82 classes are listed above — the rest (mostly exception classes, event
 subscribers and thin output wrappers never `require`'d during this suite's run) carry no
 coverage data at all and are omitted rather than shown as a misleading 0%. Several classes
 (`controller\quests`, `local\wizard`, `story_manager`, `controller\chapters`) jumped noticeably
@@ -182,9 +185,20 @@ aren't mocked; `controller\collect`/`scenes`/`drops`/`classes`/`trades` and
 `output\manage\tab_chapters` are dragged down by their `execute()`/`view_manage_page()`/
 `handle_edit_form()`/`display()` methods, which read `$_POST` and orchestrate a full page
 render — Behat territory, not PHPUnit; their actual business-logic methods (`save_drop`,
-`delete_trade`, etc.) are already well covered. `utils::get_class_evolution_image()` appears to
-be dead code (never called anywhere in the plugin) and `wizard_rollback` has no test file at
-all — both flagged for a follow-up, not fixed here.
+`delete_trade`, etc.) are already well covered. The two items flagged in a first pass were
+resolved in a follow-up: `utils::get_class_evolution_image()` was confirmed dead (grepped the
+whole plugin, zero callers) and removed, and `wizard_rollback_test.php` was added, taking
+`external\wizard_rollback` straight to 100%. That same follow-up also added `db_upgrade_test.php`
+for the upgrade steps that carry real data-migration logic (PlayerCoin backfill, `xpawarded`
+backfills) — `db/upgrade.php` itself stays outside `moodle-coverage`'s own instrumentation scope
+(`classes/` + `lib.php`/`locallib.php`/`renderer.php`/`externallib.php` only) and PHPUnit's test
+environment always installs a fresh schema from `install.xml`, never runs an upgrade step's body,
+so these tests call `xmldb_block_playerhud_upgrade()` directly instead. Writing them surfaced a
+real idempotency bug: the `2026070101` step's `change_field_notnull()` call on the drops `code`
+field had no guard, and PostgreSQL refuses to alter a column's `NOT NULL` constraint while a
+unique index still depends on it — harmless on every real site (a passed savepoint never re-runs),
+but it made the step unsafe to call twice, now fixed by guarding it behind the same index-existence
+check that already guarded the index creation itself.
 
 ### Behat — Acceptance Tests
 

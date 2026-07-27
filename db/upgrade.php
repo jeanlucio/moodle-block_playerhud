@@ -152,13 +152,16 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         }
 
         // Drops.code becomes mandatory and unique per block instance, so the shortcode
-        // lookup in filter_playerhud can never be ambiguous.
+        // lookup in filter_playerhud can never be ambiguous. Both changes always land
+        // together, so the index's presence alone guards the pair: a database (e.g.
+        // PostgreSQL) refuses to alter a column's NOT NULL constraint while a unique index
+        // still depends on it, which change_field_notnull() would hit if this step ever ran
+        // again against a site whose schema already reached this state.
         $dropstable = new \xmldb_table('block_playerhud_drops');
-        $codefield = new \xmldb_field('code', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
-        $dbman->change_field_notnull($dropstable, $codefield);
-
         $codeindex = new \xmldb_index('blockinstance_code', XMLDB_INDEX_UNIQUE, ['blockinstanceid', 'code']);
         if (!$dbman->index_exists($dropstable, $codeindex)) {
+            $codefield = new \xmldb_field('code', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+            $dbman->change_field_notnull($dropstable, $codefield);
             $dbman->add_index($dropstable, $codeindex);
         }
 
