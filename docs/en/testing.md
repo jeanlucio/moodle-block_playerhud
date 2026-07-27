@@ -109,14 +109,14 @@ vendor/bin/phpunit --testsuite block_playerhud
 |-------|:-------------:|
 | `ai\generator` | 6% |
 | `controller\aikeys` | 100% |
-| `controller\chapters` | 40% |
+| `controller\chapters` | 51% |
 | `controller\classes` | 41% |
 | `controller\collect` | 13% |
 | `controller\drops` | 20% |
 | `controller\export` | 90% |
 | `controller\items` | 99% |
-| `controller\quests` | 76% |
-| `controller\scenes` | 13% |
+| `controller\quests` | 97% |
+| `controller\scenes` | 15% |
 | `controller\suggestions` | 100% |
 | `controller\trades` | 39% |
 | `drop_guard` | 100% |
@@ -144,11 +144,11 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `external\wizard_start` | 99% |
 | `game` | 84% |
 | `instance_cleanup` | 100% |
-| `local\analytics` | 90% |
+| `local\analytics` | 92% |
 | `local\audit_log` | 78% |
 | `local\drop_distribution` | 97% |
 | `local\external_items` | 97% |
-| `local\wizard` | 76% |
+| `local\wizard` | 93% |
 | `local\xp_budget` | 98% |
 | `output\manage\item_delete_confirm` | 100% |
 | `output\manage\quest_delete_confirm` | 100% |
@@ -156,14 +156,18 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `output\view\tab_collection` | 68% |
 | `privacy\provider` | 96% |
 | `quest` | 90% |
-| `story_manager` | 37% |
+| `story_manager` | 54% |
 | `trade_manager` | 90% |
-| `utils` | 35% |
-| **Overall** | **42%** |
+| `utils` | 40% |
+| **Overall** | **43%** |
 
-49 of the plugin's 82 classes are listed above — the rest (mostly exception classes, event
+52 of the plugin's 82 classes are listed above — the rest (mostly exception classes, event
 subscribers and thin output wrappers never `require`'d during this suite's run) carry no
-coverage data at all and are omitted rather than shown as a misleading 0%.
+coverage data at all and are omitted rather than shown as a misleading 0%. Several classes
+(`controller\quests`, `local\wizard`, `story_manager`, `controller\chapters`) jumped noticeably
+after a suite-wide fix that replaced per-test `@covers ::method` annotations with a single
+class-level `@covers` line — the old per-method scoping was silently discarding coverage credit
+for every other method/class a test exercised as a side effect.
 
 ### Behat — Acceptance Tests
 

@@ -109,14 +109,14 @@ vendor/bin/phpunit --testsuite block_playerhud
 |--------|:-------------------:|
 | `ai\generator` | 6% |
 | `controller\aikeys` | 100% |
-| `controller\chapters` | 40% |
+| `controller\chapters` | 51% |
 | `controller\classes` | 41% |
 | `controller\collect` | 13% |
 | `controller\drops` | 20% |
 | `controller\export` | 90% |
 | `controller\items` | 99% |
-| `controller\quests` | 76% |
-| `controller\scenes` | 13% |
+| `controller\quests` | 97% |
+| `controller\scenes` | 15% |
 | `controller\suggestions` | 100% |
 | `controller\trades` | 39% |
 | `drop_guard` | 100% |
@@ -144,11 +144,11 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `external\wizard_start` | 99% |
 | `game` | 84% |
 | `instance_cleanup` | 100% |
-| `local\analytics` | 90% |
+| `local\analytics` | 92% |
 | `local\audit_log` | 78% |
 | `local\drop_distribution` | 97% |
 | `local\external_items` | 97% |
-| `local\wizard` | 76% |
+| `local\wizard` | 93% |
 | `local\xp_budget` | 98% |
 | `output\manage\item_delete_confirm` | 100% |
 | `output\manage\quest_delete_confirm` | 100% |
@@ -156,15 +156,19 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `output\view\tab_collection` | 68% |
 | `privacy\provider` | 96% |
 | `quest` | 90% |
-| `story_manager` | 37% |
+| `story_manager` | 54% |
 | `trade_manager` | 90% |
-| `utils` | 35% |
-| **Total** | **42%** |
+| `utils` | 40% |
+| **Total** | **43%** |
 
-49 das 82 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
+52 das 82 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
 observadores de evento e wrappers finos de output nunca carregados via `require` durante a
 execução desta suíte) não têm nenhum dado de cobertura e são omitidas em vez de aparecerem
-como um 0% enganoso.
+como um 0% enganoso. Algumas classes (`controller\quests`, `local\wizard`, `story_manager`,
+`controller\chapters`) subiram de forma expressiva depois de uma correção em toda a suíte que
+substituiu anotações `@covers ::method` por teste por uma única linha `@covers` no nível da
+classe — o escopo por método antigo descartava silenciosamente o crédito de cobertura para
+qualquer outro método/classe que o teste exercitasse como efeito colateral.
 
 ### Behat — Testes de Aceitação
 
