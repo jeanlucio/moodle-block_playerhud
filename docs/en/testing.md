@@ -84,11 +84,12 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `drops_test.php` | 11 | Drop persistence: save (insert + code, unlimited, update preserves ownership, isolation, foreign item); delete single and foreign no-op; bulk deletes only owned with count, empty input; `get_owned_item` returns for the owning instance and rejects a foreign one |
 | `export_test.php` | 7 | Grade export builder: row fields and derived level, XP ordering, level cap, teacher/manager exclusion, localized columns with no players, unenrolled exclusion, XP tie-break by last action |
 | `items_test.php` | 15 | Item lifecycle: enable toggle and foreign no-op; grant adds inventory + XP, zero-XP, foreign rejection; revoke deducts XP, infinite-drop preservation, foreign no-op; revoke deducts the XP actually recorded at grant time, not the item's current XP; surviving-trade detection (trimmed trade, orphaned excluded, unrelated ignored); `find_xp_impact` aggregates only copies that actually earned XP across all holders, empty for an unheld item, and a no-op for an empty id list |
+| `manage_entry_points_test.php` | 20 | The controllers' HTTP-facing halves, driven through the real request lifecycle (superglobals populated as a browser would, `redirect()` caught as `redirecterrordetected` under CLI): drops delete and bulk-delete actually remove the rows, a foreign-instance drop id is never deleted, a wrong sesskey deletes nothing, the listing renders the instance's own drops only and falls back to a safe sort column for a crafted `sort` parameter; scene deletion cascades to its choices, a node from another chapter is left alone, a chapter from another instance is rejected; collect awards the item and its XP, pays no XP on an infinite drop, rejects a foreign drop, a disabled item and a bad sesskey without writing anything; the class and trade editors reject a record from another instance, and every one of these screens is closed to a user without `block/playerhud:manage` (or `:view` for collect) |
 | `quests_test.php` | 12 | Quest lifecycle: toggle and foreign no-op; delete reverts XP per completion, zero-reward, foreign no-op; delete and bulk-delete revert the XP actually recorded per completion, not the quest's current reward; bulk deletes only owned with aggregated XP revert and count, empty input; `find_xp_impact` aggregates only completions that actually earned XP across all claimants, empty for an unclaimed quest, and a no-op for an empty id list |
 | `scenes_test.php` | 6 | Story scene/choice persistence: save choices, class assignment with string/int ID normalisation (`set_class_id` regression), required class, next node, item cost, follow-up node creation |
 | `suggestions_test.php` | 4 | Suggestion persistence: only ticked quest suggestions inserted (and none selected), only ticked trade suggestions created with reqs/rewards (and none selected) |
 | `trades_test.php` | 7 | Trade persistence: save (insert with reqs + rewards, update replaces, isolation, foreign item filtered); delete cascading reqs/rewards/log, isolation, siblings kept |
-| **Subtotal** | **89** | |
+| **Subtotal** | **109** | |
 
 ### Output / Renderer Tests (`tests/output/`)
 
@@ -99,7 +100,7 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `manage/tab_chapters_test.php` | 4 | Chapter-card visibility warnings: missing start-scene flag, required-level-above-maximum warning text and bounds |
 | **Subtotal** | **16** | |
 
-| **Grand Total** | **536** | |
+| **Grand Total** | **556** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -112,15 +113,15 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `ai\generator` | 6% |
 | `controller\aikeys` | 100% |
 | `controller\chapters` | 51% |
-| `controller\classes` | 41% |
-| `controller\collect` | 13% |
-| `controller\drops` | 20% |
+| `controller\classes` | 67% |
+| `controller\collect` | 56% |
+| `controller\drops` | 79% |
 | `controller\export` | 90% |
 | `controller\items` | 99% |
 | `controller\quests` | 97% |
-| `controller\scenes` | 15% |
+| `controller\scenes` | 26% |
 | `controller\suggestions` | 100% |
-| `controller\trades` | 39% |
+| `controller\trades` | 71% |
 | `drop_guard` | 100% |
 | `event\xp_changed` | 43% |
 | `external\chat_message` | 67% |
@@ -163,7 +164,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `story_manager` | 61% |
 | `trade_manager` | 90% |
 | `utils` | 53% |
-| **Overall** | **44%** |
+| **Overall** | **47%** |
 
 54 of the plugin's 82 classes are listed above — the rest (mostly exception classes, event
 subscribers and thin output wrappers never `require`'d during this suite's run) carry no
@@ -179,13 +180,20 @@ only test touching `local\rpg_archetypes` at all (previously invisible, now 92%)
 `game_test.php`/`setup_playercoin_drop_test.php`/`drop_distribution_test.php` each exercise real
 `utils` helper methods without declaring it. Adding the missing class-level `@covers` line to
 each raised `story_manager` 54%→61%, `utils` 40%→49%, and surfaced `local\rpg_archetypes`
-entirely. The remaining low scores are structural, not neglect: `ai\generator` (6%) and the AI
-branches of `chat_message`/`execute_chat_action` call real external providers over curl and
-aren't mocked; `controller\collect`/`scenes`/`drops`/`classes`/`trades` and
-`output\manage\tab_chapters` are dragged down by their `execute()`/`view_manage_page()`/
-`handle_edit_form()`/`display()` methods, which read `$_POST` and orchestrate a full page
-render — Behat territory, not PHPUnit; their actual business-logic methods (`save_drop`,
-`delete_trade`, etc.) are already well covered. The two items flagged in a first pass were
+entirely. A third pass then closed the largest remaining gap. The `execute()`/
+`view_manage_page()`/`handle_edit_form()` entry points had been written off as "Behat territory"
+because they read `$_POST` and render a whole page — that turned out to be wrong. PHPUnit's
+bootstrap always defines `CLI_SCRIPT`, and Moodle's own `redirect()` raises
+`redirecterrordetected` under it, so a save-then-redirect action is assertable by catching that
+exception (the mutation always lands first); the render path works too, returning the page HTML
+for direct inspection. `manage_entry_points_test.php` uses both, lifting `controller\drops`
+20%→79%, `controller\trades` 39%→71%, `controller\classes` 41%→67%, `controller\collect`
+13%→56% and `controller\scenes` 15%→26%. What genuinely stays outside PHPUnit is narrower than
+first claimed: the AJAX half of `collect::execute()` (it ends in `die()`), real `moodleform`
+submissions through a browser, and anything driven by JavaScript — all of which the Behat suite
+covers instead. `ai\generator` (6%) and the AI branches of `chat_message`/`execute_chat_action`
+remain structural: they call real external providers over curl with no HTTP mock layer. The two
+items flagged in a first pass were
 resolved in a follow-up: `utils::get_class_evolution_image()` was confirmed dead (grepped the
 whole plugin, zero callers) and removed, and `wizard_rollback_test.php` was added, taking
 `external\wizard_rollback` straight to 100%. That same follow-up also added `db_upgrade_test.php`
@@ -210,7 +218,8 @@ check that already guarded the index creation itself.
 | `block_playerhud_modals.feature` | 5 | Item detail modal open/close, duplicate-open guard, AJAX collect without redirect, no raw placeholders |
 | `block_playerhud_celebrations.feature` | 2 | Huddy introduction shown once on the dashboard; first-quest nudge shown once when a reward is claimable |
 | `block_playerhud_wizard.feature` | 6 | Wizard opens showing the generation form; Help and External recommendations side views; generating PlayerCoin end-to-end shows the success report; the PlayerCoin card locks after being generated; undoing a run from the History view unlocks it again |
-| **Total** | **27** | |
+| `block_playerhud_manage_crud.feature` | 7 | The management screens the PHP-level tests reach only in isolation: the Trades, Characters and Story tabs render on a real request; the item library links through to the drops screen; a drop is created through the real `moodleform` and appears in the listing; a character is created through the real form (file-manager fields included); the bulk-selection master checkbox checks and clears every row (JavaScript) |
+| **Total** | **34** | |
 
 ```bash
 php admin/tool/behat/cli/init.php

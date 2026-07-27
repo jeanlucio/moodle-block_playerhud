@@ -11,6 +11,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `collection_tab_test.php` | 8 |
 | `content_crud_test.php` | 13 |
 | `cross_instance_security_test.php` | 12 |
+| `db_upgrade_test.php` | 6 |
 | `drop_guard_test.php` | 7 |
 | `game_test.php` | 36 |
 | `gamemaster_test.php` | 6 |
@@ -24,7 +25,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `suggest_trades_state_test.php` | 4 |
 | `trade_test.php` | 8 |
 | `utils_test.php` | 4 |
-| **Subtotal** | **198** |
+| **Subtotal** | **204** |
 
 ### Testes de Lógica de Negócio Compartilhada (`tests/local/`)
 
@@ -61,9 +62,10 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `wizard_apply_suggested_levels_test.php` | 3 |
 | `wizard_generate_helpers_test.php` | 10 |
 | `wizard_list_runs_test.php` | 4 |
+| `wizard_rollback_test.php` | 3 |
 | `wizard_run_step_test.php` | 56 |
 | `wizard_start_test.php` | 8 |
-| **Subtotal** | **146** |
+| **Subtotal** | **149** |
 
 ### Testes de Controlador (`tests/controller/`)
 
@@ -76,11 +78,12 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `drops_test.php` | 11 |
 | `export_test.php` | 7 |
 | `items_test.php` | 15 |
+| `manage_entry_points_test.php` | 20 |
 | `quests_test.php` | 12 |
 | `scenes_test.php` | 6 |
 | `suggestions_test.php` | 4 |
 | `trades_test.php` | 7 |
-| **Subtotal** | **89** |
+| **Subtotal** | **109** |
 
 ### Testes de Saída / Renderer (`tests/output/`)
 
@@ -91,12 +94,12 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `manage/tab_chapters_test.php` | 4 |
 | **Subtotal** | **16** |
 
-| **Total geral** | **527** |
+| **Total geral** | **556** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
 ```
 
-**Cobertura de linhas geral** (`moodle-coverage`, PHPUnit + Xdebug): **44%**.
+**Cobertura de linhas geral** (`moodle-coverage`, PHPUnit + Xdebug): **47%**.
 
 [Ver o detalhamento completo de cada teste e a tabela de cobertura →]({{ '/testing-pt.html' | relative_url }})

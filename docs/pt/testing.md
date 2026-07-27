@@ -84,11 +84,12 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `drops_test.php` | 11 | Persistência de drop: salvar (inserir + código, ilimitado, atualizar preserva propriedade, isolamento, item estrangeiro); excluir único e no-op estrangeiro; exclusão em massa só dos próprios com contagem, entrada vazia; `get_owned_item` retorna para a instância dona e rejeita instância estrangeira |
 | `export_test.php` | 7 | Construtor da exportação de notas: campos da linha e nível derivado, ordenação por XP, teto de nível, exclusão de professores/gerentes, colunas localizadas sem jogadores, exclusão de não matriculados, desempate por última ação |
 | `items_test.php` | 15 | Ciclo de vida do item: toggle de ativação e no-op estrangeiro; conceder adiciona inventário + XP, 0 XP, rejeição estrangeira; revogar desconta XP, preserva drop infinito, no-op estrangeiro; revogar desconta o XP realmente registrado no momento da concessão, não o XP atual do item; detecção de trocas sobreviventes (troca aparada, órfã excluída, não relacionada ignorada); `find_xp_impact` soma só as cópias que realmente ganharam XP entre todos os detentores, vazio para item nunca possuído, e no-op para lista de ids vazia |
+| `manage_entry_points_test.php` | 20 | A metade HTTP dos controladores, exercitada pelo ciclo real de requisição (superglobais preenchidas como um navegador faria, `redirect()` capturado como `redirecterrordetected` sob CLI): as ações de excluir e excluir em lote de drops realmente removem as linhas, um id de drop de outra instância nunca é excluído, uma sesskey errada não exclui nada, a listagem renderiza só os drops da própria instância e cai num campo de ordenação seguro diante de um parâmetro `sort` forjado; excluir uma cena cascateia para suas escolhas, um nó de outro capítulo fica intacto, um capítulo de outra instância é rejeitado; coletar concede o item e seu XP, não paga XP em drop infinito, rejeita drop de outra instância, item desabilitado e sesskey inválida sem gravar nada; os editores de classe e troca rejeitam um registro de outra instância, e todas essas telas ficam fechadas para quem não tem `block/playerhud:manage` (ou `:view` no coletar) |
 | `quests_test.php` | 12 | Ciclo de vida da missão: toggle e no-op estrangeiro; excluir reverte XP por conclusão, sem recompensa, no-op estrangeiro; excluir e excluir em lote revertem o XP realmente registrado por conclusão, não a recompensa atual da quest; massa só dos próprios com reversão agregada de XP e contagem, entrada vazia; `find_xp_impact` soma só as conclusões que realmente ganharam XP entre todos os reivindicantes, vazio para quest nunca reivindicada, e no-op para lista de ids vazia |
 | `scenes_test.php` | 6 | Persistência de cena/escolha da história: salvar escolhas, atribuição de classe com normalização de ID string/int (regressão `set_class_id`), classe requerida, próximo nó, custo de item, criação de nó de continuação |
 | `suggestions_test.php` | 4 | Persistência de sugestões: só as missões marcadas são inseridas (e nenhuma selecionada), só as trocas marcadas são criadas com reqs/recompensas (e nenhuma selecionada) |
 | `trades_test.php` | 7 | Persistência de troca: salvar (inserir com reqs + recompensas, atualizar substitui, isolamento, item estrangeiro filtrado); excluir em cascata reqs/recompensas/log, isolamento, irmãos preservados |
-| **Subtotal** | **89** | |
+| **Subtotal** | **109** | |
 
 ### Testes de Saída / Renderer (`tests/output/`)
 
@@ -99,7 +100,7 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `manage/tab_chapters_test.php` | 4 | Avisos de visibilidade do card de capítulo: sinalização de cena inicial ausente, texto e limites do aviso de nível acima do máximo |
 | **Subtotal** | **16** | |
 
-| **Total geral** | **536** | |
+| **Total geral** | **556** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -112,15 +113,15 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `ai\generator` | 6% |
 | `controller\aikeys` | 100% |
 | `controller\chapters` | 51% |
-| `controller\classes` | 41% |
-| `controller\collect` | 13% |
-| `controller\drops` | 20% |
+| `controller\classes` | 67% |
+| `controller\collect` | 56% |
+| `controller\drops` | 79% |
 | `controller\export` | 90% |
 | `controller\items` | 99% |
 | `controller\quests` | 97% |
-| `controller\scenes` | 15% |
+| `controller\scenes` | 26% |
 | `controller\suggestions` | 100% |
-| `controller\trades` | 39% |
+| `controller\trades` | 71% |
 | `drop_guard` | 100% |
 | `event\xp_changed` | 43% |
 | `external\chat_message` | 67% |
@@ -163,7 +164,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `story_manager` | 61% |
 | `trade_manager` | 90% |
 | `utils` | 53% |
-| **Total** | **44%** |
+| **Total** | **47%** |
 
 54 das 82 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
 observadores de evento e wrappers finos de output nunca carregados via `require` durante a
@@ -181,13 +182,20 @@ classe wrapper; `create_class_pack_test.php` era o único teste que sequer tocav
 `setup_playercoin_drop_test.php`/`drop_distribution_test.php` exercitam métodos reais de
 `utils` sem declará-la. Adicionar a linha `@covers` de classe que faltava em cada um elevou
 `story_manager` de 54%→61%, `utils` de 40%→49%, e revelou `local\rpg_archetypes` por inteiro.
-As notas baixas restantes são estruturais, não negligência: `ai\generator` (6%) e os ramos de
-IA de `chat_message`/`execute_chat_action` chamam provedores externos reais via curl e não são
-mockados; `controller\collect`/`scenes`/`drops`/`classes`/`trades` e
-`output\manage\tab_chapters` são puxados para baixo pelos seus métodos `execute()`/
-`view_manage_page()`/`handle_edit_form()`/`display()`, que leem `$_POST` e orquestram uma
-página inteira — território do Behat, não do PHPUnit; a lógica de negócio real desses
-controllers (`save_drop`, `delete_trade` etc.) já está bem coberta. Os dois itens sinalizados
+Uma terceira passada fechou a maior lacuna restante. Os pontos de entrada `execute()`/
+`view_manage_page()`/`handle_edit_form()` tinham sido descartados como "território do Behat"
+por lerem `$_POST` e renderizarem uma página inteira — o que se mostrou errado. O bootstrap do
+PHPUnit sempre define `CLI_SCRIPT`, e o próprio `redirect()` do Moodle lança
+`redirecterrordetected` sob ele, então uma ação do tipo grava-e-redireciona é assegurável
+capturando essa exceção (a mutação sempre acontece antes); o caminho de render também funciona,
+devolvendo o HTML da página para inspeção direta. O `manage_entry_points_test.php` usa as duas
+coisas, elevando `controller\drops` de 20%→79%, `controller\trades` de 39%→71%,
+`controller\classes` de 41%→67%, `controller\collect` de 13%→56% e `controller\scenes` de
+15%→26%. O que de fato fica fora do PHPUnit é mais estreito do que se afirmou no início: a
+metade AJAX do `collect::execute()` (que termina em `die()`), submissões reais de `moodleform`
+por navegador, e tudo que é movido por JavaScript — cobertos pela suíte Behat. `ai\generator`
+(6%) e os ramos de IA de `chat_message`/`execute_chat_action` seguem estruturais: chamam
+provedores externos reais via curl, sem camada de mock HTTP. Os dois itens sinalizados
 numa primeira passada foram resolvidos numa passada seguinte: `utils::
 get_class_evolution_image()` foi confirmado como morto (grep no plugin inteiro, zero
 chamadores) e removido, e `wizard_rollback_test.php` foi adicionado, levando
@@ -215,7 +223,8 @@ da mesma checagem de existência do índice que já protegia a criação do pró
 | `block_playerhud_modals.feature` | 5 | Abrir/fechar modal de detalhes do item, proteção contra abertura duplicada, coleta AJAX sem redirecionamento, sem placeholders brutos |
 | `block_playerhud_celebrations.feature` | 2 | Introdução do Huddy exibida uma única vez no painel; aviso de primeira quest exibido uma única vez quando há recompensa a reivindicar |
 | `block_playerhud_wizard.feature` | 6 | Assistente abre mostrando o formulário de geração; abas laterais de Ajuda e Recomendações externas; gerar PlayerCoin de ponta a ponta mostra o relatório de sucesso; o card do PlayerCoin trava depois de gerado; desfazer uma rodada pelo Histórico destrava de novo |
-| **Total** | **27** | |
+| `block_playerhud_manage_crud.feature` | 7 | As telas de gestão que os testes em PHP só alcançam isoladamente: as abas Trocas, Personagens e História renderizam numa requisição real; a biblioteca de itens leva até a tela de drops; um drop é criado pelo `moodleform` real e aparece na listagem; um personagem é criado pelo formulário real (incluindo os campos de gerenciador de arquivos); o checkbox mestre de seleção em lote marca e desmarca todas as linhas (JavaScript) |
+| **Total** | **34** | |
 
 ```bash
 php admin/tool/behat/cli/init.php

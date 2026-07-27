@@ -678,4 +678,47 @@ class behat_block_playerhud extends behat_base {
             return $node && $node->isVisible();
         }, false, 30);
     }
+
+    /**
+     * Asserts every bulk-selection checkbox in the drops listing is checked.
+     *
+     * The master checkbox drives these purely in JavaScript, so the resulting state exists
+     * only in the browser — no server-side assertion can observe it.
+     *
+     * @Then all PlayerHUD bulk checkboxes are checked
+     */
+    public function all_playerhud_bulk_checkboxes_are_checked(): void {
+        $this->assert_bulk_checkboxes_state(true);
+    }
+
+    /**
+     * Asserts every bulk-selection checkbox in the drops listing is cleared.
+     *
+     * @Then all PlayerHUD bulk checkboxes are unchecked
+     */
+    public function all_playerhud_bulk_checkboxes_are_unchecked(): void {
+        $this->assert_bulk_checkboxes_state(false);
+    }
+
+    /**
+     * Shared assertion for the bulk-selection checkboxes' expected state.
+     *
+     * @param bool $expected Whether every row checkbox should be checked.
+     * @throws \Exception If no checkbox is present or any one is in the wrong state.
+     */
+    protected function assert_bulk_checkboxes_state(bool $expected): void {
+        $this->spin(function () use ($expected) {
+            $boxes = $this->getSession()->getPage()->findAll('css', 'input[name="bulk_ids[]"]');
+            if (empty($boxes)) {
+                return false;
+            }
+            foreach ($boxes as $box) {
+                if ($box->isChecked() !== $expected) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }
 }
