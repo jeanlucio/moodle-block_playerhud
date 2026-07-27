@@ -35,7 +35,7 @@ use stdClass;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\controller\classes
+ * @covers     \block_playerhud\controller\classes
  */
 final class classes_test extends advanced_testcase {
     /** @var int Block instance ID shared across test methods. */
@@ -126,8 +126,6 @@ final class classes_test extends advanced_testcase {
 
     /**
      * A new class is inserted with base HP, instance binding and emoji tiers.
-     *
-     * @covers ::save_class
      */
     public function test_save_class_inserts_new_record(): void {
         global $DB;
@@ -149,8 +147,6 @@ final class classes_test extends advanced_testcase {
 
     /**
      * Saving with a class ID updates that record without touching its base HP.
-     *
-     * @covers ::save_class
      */
     public function test_save_class_updates_existing_record(): void {
         global $DB;
@@ -171,8 +167,6 @@ final class classes_test extends advanced_testcase {
 
     /**
      * Emoji tiers are trimmed before being stored.
-     *
-     * @covers ::save_class
      */
     public function test_save_class_trims_emoji_tiers(): void {
         global $DB;
@@ -187,8 +181,6 @@ final class classes_test extends advanced_testcase {
 
     /**
      * A class cannot be updated under a different block instance.
-     *
-     * @covers ::save_class
      */
     public function test_save_class_rejects_foreign_instance(): void {
         $record = $this->seed_class('Owned by A', 100);
@@ -203,8 +195,6 @@ final class classes_test extends advanced_testcase {
 
     /**
      * Deleting a class removes its record and every tier portrait file.
-     *
-     * @covers ::delete_class
      */
     public function test_delete_class_removes_record_and_portraits(): void {
         global $DB;
@@ -244,8 +234,6 @@ final class classes_test extends advanced_testcase {
 
     /**
      * A class owned by another instance cannot be deleted.
-     *
-     * @covers ::delete_class
      */
     public function test_delete_class_rejects_foreign_instance(): void {
         global $DB;
@@ -263,8 +251,6 @@ final class classes_test extends advanced_testcase {
 
     /**
      * Deleting a class leaves sibling classes of the same instance untouched.
-     *
-     * @covers ::delete_class
      */
     public function test_delete_class_keeps_sibling_classes(): void {
         global $DB;

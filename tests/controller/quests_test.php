@@ -34,7 +34,7 @@ use stdClass;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\controller\quests
+ * @covers     \block_playerhud\controller\quests
  */
 final class quests_test extends advanced_testcase {
     /**
@@ -126,8 +126,6 @@ final class quests_test extends advanced_testcase {
 
     /**
      * Toggling a quest flips its enabled flag and reports success.
-     *
-     * @covers ::toggle_quest
      */
     public function test_toggle_quest_flips_enabled(): void {
         global $DB;
@@ -143,8 +141,6 @@ final class quests_test extends advanced_testcase {
 
     /**
      * Toggling a quest of another instance changes nothing and reports failure.
-     *
-     * @covers ::toggle_quest
      */
     public function test_toggle_quest_foreign_instance_is_noop(): void {
         global $DB;
@@ -161,8 +157,6 @@ final class quests_test extends advanced_testcase {
 
     /**
      * Deleting a quest removes it, its log and reverts XP per completion.
-     *
-     * @covers ::delete_quest
      */
     public function test_delete_quest_removes_and_reverts_xp(): void {
         global $DB;
@@ -188,8 +182,6 @@ final class quests_test extends advanced_testcase {
 
     /**
      * Deleting a zero-XP quest removes it without touching player XP.
-     *
-     * @covers ::delete_quest
      */
     public function test_delete_quest_zero_reward_keeps_xp(): void {
         global $DB;
@@ -212,8 +204,6 @@ final class quests_test extends advanced_testcase {
      * Deleting a quest reverts the XP actually recorded per completion, not the quest's
      * current reward_xp — so editing the reward afterwards never changes what a deletion
      * reverts.
-     *
-     * @covers ::delete_quest
      */
     public function test_delete_quest_reverts_recorded_xp_not_current_reward(): void {
         global $DB;
@@ -237,8 +227,6 @@ final class quests_test extends advanced_testcase {
 
     /**
      * A quest owned by another instance is not deleted.
-     *
-     * @covers ::delete_quest
      */
     public function test_delete_quest_foreign_instance_is_noop(): void {
         global $DB;
@@ -255,8 +243,6 @@ final class quests_test extends advanced_testcase {
 
     /**
      * Bulk delete removes only owned quests, counts them and reverts their XP.
-     *
-     * @covers ::bulk_delete_quests
      */
     public function test_bulk_delete_quests_removes_only_owned_and_reverts_xp(): void {
         global $DB;
@@ -287,8 +273,6 @@ final class quests_test extends advanced_testcase {
     /**
      * Bulk delete reverts the XP actually recorded per completion, not the quests' current
      * reward_xp.
-     *
-     * @covers ::bulk_delete_quests
      */
     public function test_bulk_delete_quests_reverts_recorded_xp_not_current_reward(): void {
         global $DB;
@@ -315,8 +299,6 @@ final class quests_test extends advanced_testcase {
 
     /**
      * Bulk delete with no ids deletes nothing and returns zero.
-     *
-     * @covers ::bulk_delete_quests
      */
     public function test_bulk_delete_quests_empty_returns_zero(): void {
         global $DB;
@@ -333,8 +315,6 @@ final class quests_test extends advanced_testcase {
     /**
      * The XP impact aggregates only completions that actually earned XP, across all claimants
      * of any of the given quests.
-     *
-     * @covers ::find_xp_impact
      */
     public function test_find_xp_impact_aggregates_earned_completions_only(): void {
         $this->resetAfterTest();
@@ -356,8 +336,6 @@ final class quests_test extends advanced_testcase {
 
     /**
      * No matching completions produce a zero-impact summary.
-     *
-     * @covers ::find_xp_impact
      */
     public function test_find_xp_impact_empty_for_unclaimed_quest(): void {
         $this->resetAfterTest();
@@ -372,8 +350,6 @@ final class quests_test extends advanced_testcase {
 
     /**
      * An empty quest list is a no-op, not a DB error.
-     *
-     * @covers ::find_xp_impact
      */
     public function test_find_xp_impact_empty_ids_returns_zero(): void {
         $this->resetAfterTest();

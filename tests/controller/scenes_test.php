@@ -34,7 +34,7 @@ use stdClass;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\controller\scenes
+ * @covers     \block_playerhud\controller\scenes
  */
 final class scenes_test extends advanced_testcase {
     /**
@@ -143,8 +143,6 @@ final class scenes_test extends advanced_testcase {
 
     /**
      * Regression: a choice that grants a class keeps its set_class_id on save.
-     *
-     * @covers ::save_choices
      */
     public function test_save_choices_persists_a_granted_class(): void {
         global $DB;
@@ -162,8 +160,6 @@ final class scenes_test extends advanced_testcase {
 
     /**
      * A granted class belonging to another instance is rejected (stored as zero).
-     *
-     * @covers ::save_choices
      */
     public function test_save_choices_zeroes_a_foreign_class(): void {
         global $DB;
@@ -181,8 +177,6 @@ final class scenes_test extends advanced_testcase {
 
     /**
      * A valid next node and item cost are persisted.
-     *
-     * @covers ::save_choices
      */
     public function test_save_choices_persists_next_node_and_item_cost(): void {
         global $DB;
@@ -203,8 +197,6 @@ final class scenes_test extends advanced_testcase {
 
     /**
      * Choices with empty text are skipped.
-     *
-     * @covers ::save_choices
      */
     public function test_save_choices_skips_empty_text(): void {
         global $DB;
@@ -221,8 +213,6 @@ final class scenes_test extends advanced_testcase {
 
     /**
      * A next-node value of -1 creates a fresh follow-up node and links to it.
-     *
-     * @covers ::save_choices
      */
     public function test_save_choices_auto_creates_next_node(): void {
         global $DB;
@@ -244,8 +234,6 @@ final class scenes_test extends advanced_testcase {
 
     /**
      * The auto-created node stores the choice text raw, not HTML-escaped.
-     *
-     * @covers ::save_choices
      */
     public function test_save_choices_auto_created_node_keeps_raw_choice_text(): void {
         global $DB;

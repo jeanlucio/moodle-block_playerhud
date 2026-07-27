@@ -27,7 +27,7 @@ use block_playerhud\utils;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\game
+ * @covers     \block_playerhud\game
  * @covers     \block_playerhud\utils
  */
 final class rpg_classes_test extends advanced_testcase {
@@ -80,8 +80,6 @@ final class rpg_classes_test extends advanced_testcase {
 
     /**
      * get_player_class returns false when no progress record exists yet.
-     *
-     * @covers ::get_player_class
      */
     public function test_get_player_class_returns_false_for_new_user(): void {
         $this->resetAfterTest(true);
@@ -96,9 +94,6 @@ final class rpg_classes_test extends advanced_testcase {
 
     /**
      * assign_class creates a progress record with the correct classid.
-     *
-     * @covers ::assign_class
-     * @covers ::get_player_class
      */
     public function test_assign_class_creates_progress_record(): void {
         $this->resetAfterTest(true);
@@ -117,8 +112,6 @@ final class rpg_classes_test extends advanced_testcase {
 
     /**
      * assign_class updates the classid when a progress record already exists.
-     *
-     * @covers ::assign_class
      */
     public function test_assign_class_updates_existing_class(): void {
         $this->resetAfterTest(true);
@@ -140,8 +133,6 @@ final class rpg_classes_test extends advanced_testcase {
 
     /**
      * assign_class does not create duplicate records on repeated calls.
-     *
-     * @covers ::assign_class
      */
     public function test_assign_class_does_not_duplicate_records(): void {
         global $DB;
@@ -165,8 +156,6 @@ final class rpg_classes_test extends advanced_testcase {
 
     /**
      * assign_class initialises karma at 0 for new records.
-     *
-     * @covers ::assign_class
      */
     public function test_assign_class_initialises_karma_at_zero(): void {
         $this->resetAfterTest(true);
@@ -184,8 +173,6 @@ final class rpg_classes_test extends advanced_testcase {
 
     /**
      * get_class_portrait_tier returns 1 when no progress record exists.
-     *
-     * @covers \block_playerhud\utils::get_class_portrait_tier
      */
     public function test_get_class_portrait_tier_returns_1_when_no_progress(): void {
         $this->resetAfterTest(true);
@@ -202,8 +189,6 @@ final class rpg_classes_test extends advanced_testcase {
      * get_class_portrait_tier returns the correct tier at every boundary.
      *
      * One star per completed chapter, capped at five: 0–1→1, 2→2, 3→3, 4→4, 5+→5.
-     *
-     * @covers \block_playerhud\utils::get_class_portrait_tier
      */
     public function test_get_class_portrait_tier_boundaries(): void {
         global $DB;

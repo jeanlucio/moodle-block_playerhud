@@ -26,7 +26,7 @@ use block_playerhud\utils;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\utils
+ * @covers     \block_playerhud\utils
  */
 final class utils_test extends advanced_testcase {
     /** @var int Block instance ID. */
@@ -44,8 +44,6 @@ final class utils_test extends advanced_testcase {
     /**
      * An emoji item (no HTTP URL, no file) produces a <div class="ph-avatar-emoji">
      * wrapping an aria-hidden span with the emoji content.
-     *
-     * @covers ::get_avatar_html
      */
     public function test_get_avatar_html_emoji_generates_div_with_span(): void {
         $item = $this->create_item('🧛');
@@ -63,8 +61,6 @@ final class utils_test extends advanced_testcase {
     /**
      * An item whose image field is an HTTP URL produces an <img> tag with
      * aria-hidden and the URL as src.
-     *
-     * @covers ::get_avatar_html
      */
     public function test_get_avatar_html_http_url_generates_img_tag(): void {
         $url = 'https://example.com/avatar.png';
@@ -84,8 +80,6 @@ final class utils_test extends advanced_testcase {
     /**
      * An item with a null image (no file uploaded, no emoji/URL set) must not
      * crash get_items_display_data() with a TypeError/deprecation on strpos().
-     *
-     * @covers ::get_items_display_data
      */
     public function test_get_items_display_data_with_null_image_does_not_throw(): void {
         $item = $this->create_item_with_null_image();
@@ -101,8 +95,6 @@ final class utils_test extends advanced_testcase {
     /**
      * The same null-image item must also survive get_avatar_html(), which
      * calls strip_tags() on the returned content.
-     *
-     * @covers ::get_avatar_html
      */
     public function test_get_avatar_html_with_null_image_does_not_throw(): void {
         $item = $this->create_item_with_null_image();

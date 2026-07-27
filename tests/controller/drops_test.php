@@ -34,7 +34,7 @@ use stdClass;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\controller\drops
+ * @covers     \block_playerhud\controller\drops
  */
 final class drops_test extends advanced_testcase {
     /**
@@ -123,8 +123,6 @@ final class drops_test extends advanced_testcase {
 
     /**
      * The item is returned when it belongs to the given block instance.
-     *
-     * @covers ::get_owned_item
      */
     public function test_get_owned_item_returns_item_for_correct_instance(): void {
         $this->resetAfterTest();
@@ -139,8 +137,6 @@ final class drops_test extends advanced_testcase {
     /**
      * An item owned by another block instance is rejected, preventing the
      * cross-instance disclosure of a foreign course's item/drop configuration.
-     *
-     * @covers ::get_owned_item
      */
     public function test_get_owned_item_rejects_foreign_instance(): void {
         $this->resetAfterTest();
@@ -154,8 +150,6 @@ final class drops_test extends advanced_testcase {
 
     /**
      * A new drop is inserted with a generated code and the submitted limits.
-     *
-     * @covers ::save_drop
      */
     public function test_save_drop_inserts_with_code(): void {
         global $DB;
@@ -182,8 +176,6 @@ final class drops_test extends advanced_testcase {
 
     /**
      * The unlimited flag forces a max usage of zero (infinite).
-     *
-     * @covers ::save_drop
      */
     public function test_save_drop_unlimited_sets_maxusage_zero(): void {
         global $DB;
@@ -201,8 +193,6 @@ final class drops_test extends advanced_testcase {
 
     /**
      * On update the ownership fields come from the DB, not the submitted form.
-     *
-     * @covers ::save_drop
      */
     public function test_save_drop_update_preserves_ownership(): void {
         global $DB;
@@ -225,8 +215,6 @@ final class drops_test extends advanced_testcase {
 
     /**
      * Updating a drop under a different instance is rejected.
-     *
-     * @covers ::save_drop
      */
     public function test_save_drop_rejects_foreign_instance_on_update(): void {
         $this->resetAfterTest();
@@ -243,8 +231,6 @@ final class drops_test extends advanced_testcase {
 
     /**
      * Creating a drop for an item from another instance is rejected.
-     *
-     * @covers ::save_drop
      */
     public function test_save_drop_rejects_foreign_item_on_insert(): void {
         $this->resetAfterTest();
@@ -259,8 +245,6 @@ final class drops_test extends advanced_testcase {
 
     /**
      * Deleting a drop removes it from its block instance.
-     *
-     * @covers ::delete_drop
      */
     public function test_delete_drop_removes_drop(): void {
         global $DB;
@@ -276,8 +260,6 @@ final class drops_test extends advanced_testcase {
 
     /**
      * A drop owned by another instance is not deleted.
-     *
-     * @covers ::delete_drop
      */
     public function test_delete_drop_foreign_instance_is_noop(): void {
         global $DB;
@@ -294,8 +276,6 @@ final class drops_test extends advanced_testcase {
 
     /**
      * Bulk delete removes only the drops owned by the instance and counts them.
-     *
-     * @covers ::bulk_delete_drops
      */
     public function test_bulk_delete_drops_removes_only_owned(): void {
         global $DB;
@@ -318,8 +298,6 @@ final class drops_test extends advanced_testcase {
 
     /**
      * Bulk delete with no ids deletes nothing and returns zero.
-     *
-     * @covers ::bulk_delete_drops
      */
     public function test_bulk_delete_drops_empty_returns_zero(): void {
         global $DB;

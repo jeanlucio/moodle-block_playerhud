@@ -34,7 +34,7 @@ use stdClass;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\controller\chapters
+ * @covers     \block_playerhud\controller\chapters
  */
 final class chapters_test extends advanced_testcase {
     /**
@@ -103,8 +103,6 @@ final class chapters_test extends advanced_testcase {
 
     /**
      * A new chapter is inserted with its fields bound to the block instance.
-     *
-     * @covers ::save_chapter
      */
     public function test_save_chapter_inserts_new_record(): void {
         global $DB;
@@ -133,8 +131,6 @@ final class chapters_test extends advanced_testcase {
 
     /**
      * New chapters are appended to the end of the instance's order.
-     *
-     * @covers ::save_chapter
      */
     public function test_save_chapter_appends_to_end(): void {
         global $DB;
@@ -150,8 +146,6 @@ final class chapters_test extends advanced_testcase {
 
     /**
      * Saving with a chapterid updates that chapter in place.
-     *
-     * @covers ::save_chapter
      */
     public function test_save_chapter_updates_existing_record(): void {
         global $DB;
@@ -174,8 +168,6 @@ final class chapters_test extends advanced_testcase {
 
     /**
      * Optional fields fall back to their defaults when absent.
-     *
-     * @covers ::save_chapter
      */
     public function test_save_chapter_applies_defaults(): void {
         global $DB;
@@ -195,8 +187,6 @@ final class chapters_test extends advanced_testcase {
 
     /**
      * A chapter belonging to another instance cannot be updated.
-     *
-     * @covers ::save_chapter
      */
     public function test_save_chapter_rejects_foreign_instance(): void {
         $this->resetAfterTest();
@@ -212,8 +202,6 @@ final class chapters_test extends advanced_testcase {
 
     /**
      * Deleting a chapter removes it along with its scenes and choices.
-     *
-     * @covers ::delete_chapter
      */
     public function test_delete_chapter_removes_chapter_scenes_and_choices(): void {
         global $DB;
@@ -231,8 +219,6 @@ final class chapters_test extends advanced_testcase {
 
     /**
      * A chapter from another instance cannot be deleted.
-     *
-     * @covers ::delete_chapter
      */
     public function test_delete_chapter_rejects_foreign_instance(): void {
         $this->resetAfterTest();
@@ -245,8 +231,6 @@ final class chapters_test extends advanced_testcase {
 
     /**
      * Moving a chapter up swaps its sort order with the previous one.
-     *
-     * @covers ::move_chapter
      */
     public function test_move_chapter_up_swaps_with_previous(): void {
         global $DB;
@@ -263,8 +247,6 @@ final class chapters_test extends advanced_testcase {
 
     /**
      * Moving a chapter down swaps its sort order with the next one.
-     *
-     * @covers ::move_chapter
      */
     public function test_move_chapter_down_swaps_with_next(): void {
         global $DB;
@@ -281,8 +263,6 @@ final class chapters_test extends advanced_testcase {
 
     /**
      * Moving the first chapter up is a no-op (it has no previous neighbour).
-     *
-     * @covers ::move_chapter
      */
     public function test_move_chapter_at_edge_is_noop(): void {
         global $DB;
@@ -300,8 +280,6 @@ final class chapters_test extends advanced_testcase {
     /**
      * The move works even when chapters share a sort order (legacy data),
      * renumbering them into a distinct sequence.
-     *
-     * @covers ::move_chapter
      */
     public function test_move_chapter_reorders_equal_sortorders(): void {
         global $DB;
@@ -318,8 +296,6 @@ final class chapters_test extends advanced_testcase {
 
     /**
      * A new chapter can be inserted at a requested position, shifting the rest.
-     *
-     * @covers ::save_chapter
      */
     public function test_save_chapter_inserts_at_requested_position(): void {
         global $DB;
@@ -342,8 +318,6 @@ final class chapters_test extends advanced_testcase {
 
     /**
      * Editing a chapter with a new position moves it and renumbers the list.
-     *
-     * @covers ::save_chapter
      */
     public function test_save_chapter_update_repositions(): void {
         global $DB;

@@ -33,13 +33,11 @@ use advanced_testcase;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\output\manage\tab_chapters
+ * @covers     \block_playerhud\output\manage\tab_chapters
  */
 final class tab_chapters_test extends advanced_testcase {
     /**
      * A chapter without a start scene is flagged as not visible.
-     *
-     * @covers ::chapter_warnings
      */
     public function test_chapter_warnings_flags_missing_start_scene(): void {
         $warnings = tab_chapters::chapter_warnings(0, false, 20);
@@ -49,8 +47,6 @@ final class tab_chapters_test extends advanced_testcase {
 
     /**
      * A chapter with a start scene raises no start warning.
-     *
-     * @covers ::chapter_warnings
      */
     public function test_chapter_warnings_no_start_when_scene_present(): void {
         $warnings = tab_chapters::chapter_warnings(0, true, 20);
@@ -60,8 +56,6 @@ final class tab_chapters_test extends advanced_testcase {
 
     /**
      * A required level above the block maximum is flagged with a text message.
-     *
-     * @covers ::chapter_warnings
      */
     public function test_chapter_warnings_flags_level_above_maximum(): void {
         $warnings = tab_chapters::chapter_warnings(50, true, 20);
@@ -76,8 +70,6 @@ final class tab_chapters_test extends advanced_testcase {
 
     /**
      * A required level within the block maximum raises no level warning.
-     *
-     * @covers ::chapter_warnings
      */
     public function test_chapter_warnings_no_level_warning_within_maximum(): void {
         $warnings = tab_chapters::chapter_warnings(10, true, 20);

@@ -34,7 +34,7 @@ use stdClass;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\controller\export
+ * @covers     \block_playerhud\controller\export
  */
 final class export_test extends advanced_testcase {
     /** @var stdClass Course holding the block instance under test. */
@@ -130,8 +130,6 @@ final class export_test extends advanced_testcase {
     /**
      * A student row carries the name, email, derived level, XP, live item count
      * and the formatted last-action date.
-     *
-     * @covers ::build_export
      */
     public function test_build_export_row_fields_and_level(): void {
         $this->resetAfterTest();
@@ -163,8 +161,6 @@ final class export_test extends advanced_testcase {
 
     /**
      * Rows are ordered by XP descending.
-     *
-     * @covers ::build_export
      */
     public function test_build_export_orders_by_xp_descending(): void {
         $this->resetAfterTest();
@@ -184,8 +180,6 @@ final class export_test extends advanced_testcase {
 
     /**
      * The derived level never exceeds the configured maximum.
-     *
-     * @covers ::build_export
      */
     public function test_build_export_caps_level_at_max(): void {
         $this->resetAfterTest();
@@ -201,8 +195,6 @@ final class export_test extends advanced_testcase {
 
     /**
      * Teachers and managers are excluded from the export.
-     *
-     * @covers ::build_export
      */
     public function test_build_export_excludes_managers(): void {
         $this->resetAfterTest();
@@ -222,8 +214,6 @@ final class export_test extends advanced_testcase {
 
     /**
      * With no players the rows are empty and the localized columns are returned.
-     *
-     * @covers ::build_export
      */
     public function test_build_export_without_players_returns_localized_columns(): void {
         $this->resetAfterTest();
@@ -239,8 +229,6 @@ final class export_test extends advanced_testcase {
 
     /**
      * Players who are no longer enrolled in the course are excluded.
-     *
-     * @covers ::build_export
      */
     public function test_build_export_excludes_unenrolled_players(): void {
         $this->resetAfterTest();
@@ -260,8 +248,6 @@ final class export_test extends advanced_testcase {
 
     /**
      * Players tied on XP are ordered by their last-action time, oldest first.
-     *
-     * @covers ::build_export
      */
     public function test_build_export_breaks_xp_ties_by_timemodified(): void {
         $this->resetAfterTest();

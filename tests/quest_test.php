@@ -26,7 +26,7 @@ use block_playerhud\quest;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\quest
+ * @covers     \block_playerhud\quest
  */
 final class quest_test extends advanced_testcase {
     /** @var int Block instance ID. */
@@ -198,8 +198,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_LEVEL: player not yet at required level.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_level_not_met(): void {
         $quest = $this->create_quest(quest::TYPE_LEVEL, '5');
@@ -213,8 +211,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_LEVEL: player exactly at required level.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_level_met(): void {
         $quest = $this->create_quest(quest::TYPE_LEVEL, '5');
@@ -226,8 +222,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_LEVEL: player above required level still completes.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_level_exceeded(): void {
         $quest = $this->create_quest(quest::TYPE_LEVEL, '3');
@@ -239,8 +233,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_XP_TOTAL: player has insufficient XP.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_xp_total_not_met(): void {
         $quest = $this->create_quest(quest::TYPE_XP_TOTAL, '200');
@@ -252,8 +244,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_XP_TOTAL: player meets XP requirement.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_xp_total_met(): void {
         $quest = $this->create_quest(quest::TYPE_XP_TOTAL, '200');
@@ -265,8 +255,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_UNIQUE_ITEMS: player has fewer unique items than required.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_unique_items_not_met(): void {
         $user  = $this->getDataGenerator()->create_user();
@@ -284,8 +272,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_UNIQUE_ITEMS: player reaches the unique item count.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_unique_items_met(): void {
         $user  = $this->getDataGenerator()->create_user();
@@ -306,8 +292,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_UNIQUE_ITEMS: items from another block instance must not count.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_unique_items_scoped_to_instance(): void {
         global $DB;
@@ -356,8 +340,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_SPECIFIC_ITEM: player has fewer copies than required.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_specific_item_not_met(): void {
         $user = $this->getDataGenerator()->create_user();
@@ -374,8 +356,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_SPECIFIC_ITEM: player has exactly the required number of copies.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_specific_item_met(): void {
         $user = $this->getDataGenerator()->create_user();
@@ -392,8 +372,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_TOTAL_ITEMS: counts all non-revoked items (including duplicates).
-     *
-     * @covers ::check_status
      */
     public function test_check_status_total_items_met(): void {
         $user  = $this->getDataGenerator()->create_user();
@@ -409,8 +387,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_TOTAL_ITEMS: revoked items must not count toward the total.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_total_items_excludes_revoked(): void {
         global $DB;
@@ -437,8 +413,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_TRADES: player has not completed enough trades.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_trades_not_met(): void {
         global $DB;
@@ -462,8 +436,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_TRADES: player meets the trade count.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_trades_met(): void {
         global $DB;
@@ -486,8 +458,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * TYPE_SPECIFIC_TRADE: counts only a specific trade, not others.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_specific_trade_isolation(): void {
         global $DB;
@@ -524,8 +494,6 @@ final class quest_test extends advanced_testcase {
     /**
      * TYPE_ACTIVITY: quest is incomplete before the activity is finished,
      * and completed immediately after the user marks it as done.
-     *
-     * @covers ::check_status
      */
     public function test_check_status_activity_completion(): void {
         global $CFG, $DB;
@@ -591,8 +559,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * Successful claim: XP is credited to the player and log entry is written.
-     *
-     * @covers ::claim_reward
      */
     public function test_claim_reward_grants_xp(): void {
         global $DB;
@@ -622,8 +588,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * Successful claim: item is added to inventory and log entry is written.
-     *
-     * @covers ::claim_reward
      */
     public function test_claim_reward_grants_item(): void {
         global $DB;
@@ -648,8 +612,6 @@ final class quest_test extends advanced_testcase {
      * A quest's item reward records xpawarded = 0 even when the item itself has a real XP
      * value configured, since that value is never actually paid through this path (only
      * reward_xp is) — see analytics::game_xp_totals() for the same rule applied to totals.
-     *
-     * @covers ::claim_reward
      */
     public function test_claim_reward_item_records_zero_xpawarded_even_with_item_xp(): void {
         global $DB;
@@ -672,8 +634,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * Claiming the same quest twice must throw error_quest_already_claimed.
-     *
-     * @covers ::claim_reward
      */
     public function test_claim_reward_already_claimed(): void {
         $user  = $this->getDataGenerator()->create_user();
@@ -693,8 +653,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * Claiming a disabled quest must throw error_quest_invalid.
-     *
-     * @covers ::claim_reward
      */
     public function test_claim_reward_disabled_quest(): void {
         global $DB;
@@ -714,8 +672,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * Claiming a quest whose requirements are not yet met must throw error_quest_requirements.
-     *
-     * @covers ::claim_reward
      */
     public function test_claim_reward_requirements_not_met(): void {
         $user  = $this->getDataGenerator()->create_user();
@@ -733,8 +689,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * Claim must not modify XP when reward_xp is zero.
-     *
-     * @covers ::claim_reward
      */
     public function test_claim_reward_zero_xp_no_change(): void {
         $user  = $this->getDataGenerator()->create_user();
@@ -750,8 +704,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * A claim that crosses a level flashes the level-up celebration.
-     *
-     * @covers ::claim_reward
      */
     public function test_claim_reward_flashes_levelup(): void {
         $user = $this->getDataGenerator()->create_user();
@@ -769,8 +721,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * Reaching 100% on a claim flashes the win, which outranks the level-up.
-     *
-     * @covers ::claim_reward
      */
     public function test_claim_reward_win_outranks_levelup(): void {
         $user = $this->getDataGenerator()->create_user();
@@ -789,8 +739,6 @@ final class quest_test extends advanced_testcase {
     /**
      * A claim that neither levels up nor wins flashes nothing, and never sets the
      * first-quest milestone (that is driven by the sidebar render, not by claiming).
-     *
-     * @covers ::claim_reward
      */
     public function test_claim_reward_no_celebration(): void {
         $user = $this->getDataGenerator()->create_user();
@@ -814,8 +762,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * has_claimable_quests is true once a completed quest remains unclaimed.
-     *
-     * @covers ::has_claimable_quests
      */
     public function test_has_claimable_quests_detects_completed_unclaimed(): void {
         $user = $this->getDataGenerator()->create_user();
@@ -843,8 +789,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * has_claimable_quests is false when the instance has no enabled quests.
-     *
-     * @covers ::has_claimable_quests
      */
     public function test_has_claimable_quests_no_quests(): void {
         $user = $this->getDataGenerator()->create_user();
@@ -855,8 +799,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * has_claimable_quests resolves item, trade and chapter requirements.
-     *
-     * @covers ::has_claimable_quests
      */
     public function test_has_claimable_quests_item_trade_chapter(): void {
         global $DB;
@@ -882,8 +824,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * build_record_from_suggestion maps a descriptor onto a quest record.
-     *
-     * @covers ::build_record_from_suggestion
      */
     public function test_build_record_from_suggestion(): void {
         $sug = [
@@ -912,8 +852,6 @@ final class quest_test extends advanced_testcase {
      * req_itemid and reward_itemid default to 0 when absent from the descriptor, and are
      * carried through when a bespoke suggestion (built directly by a wizard module rather than
      * by get_heuristic_suggestions()) supplies them.
-     *
-     * @covers ::build_record_from_suggestion
      */
     public function test_build_record_from_suggestion_carries_item_ids(): void {
         $sug = [
@@ -945,8 +883,6 @@ final class quest_test extends advanced_testcase {
     /**
      * get_heuristic_suggestions proposes level, collection and economy milestones
      * and skips milestones that already exist as quests.
-     *
-     * @covers ::get_heuristic_suggestions
      */
     public function test_get_heuristic_suggestions(): void {
         $config = (object) ['max_levels' => 20, 'xp_per_level' => 100];
@@ -984,8 +920,6 @@ final class quest_test extends advanced_testcase {
 
     /**
      * has_claimable_quests evaluates every count-based requirement type without error.
-     *
-     * @covers ::has_claimable_quests
      */
     public function test_has_claimable_quests_all_requirement_types(): void {
         $user = $this->getDataGenerator()->create_user();
@@ -1013,9 +947,6 @@ final class quest_test extends advanced_testcase {
     /**
      * A completion-tracked activity is offered as a heuristic quest and drives the
      * activity branch of the claimable check.
-     *
-     * @covers ::has_claimable_quests
-     * @covers ::get_heuristic_suggestions
      */
     public function test_activity_completion_quests(): void {
         global $DB, $CFG;

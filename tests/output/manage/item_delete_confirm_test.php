@@ -33,7 +33,7 @@ use advanced_testcase;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\output\manage\item_delete_confirm
+ * @covers     \block_playerhud\output\manage\item_delete_confirm
  */
 final class item_delete_confirm_test extends advanced_testcase {
     /**
@@ -65,8 +65,6 @@ final class item_delete_confirm_test extends advanced_testcase {
 
     /**
      * A single deletion produces the delete_force action and a single item id.
-     *
-     * @covers ::build_context
      */
     public function test_build_context_single(): void {
         $this->resetAfterTest();
@@ -99,8 +97,6 @@ final class item_delete_confirm_test extends advanced_testcase {
 
     /**
      * A bulk deletion produces the bulk_delete_force action and the id list.
-     *
-     * @covers ::build_context
      */
     public function test_build_context_bulk(): void {
         $this->resetAfterTest();
@@ -126,8 +122,6 @@ final class item_delete_confirm_test extends advanced_testcase {
 
     /**
      * One orphaned trade selects the singular confirm label and warning.
-     *
-     * @covers ::build_context
      */
     public function test_build_context_singular_label(): void {
         $this->resetAfterTest();
@@ -151,8 +145,6 @@ final class item_delete_confirm_test extends advanced_testcase {
 
     /**
      * Several orphaned trades select the plural confirm label and warning.
-     *
-     * @covers ::build_context
      */
     public function test_build_context_plural_label(): void {
         $this->resetAfterTest();
@@ -177,8 +169,6 @@ final class item_delete_confirm_test extends advanced_testcase {
     /**
      * Surviving trades are listed and, with no orphaned trade, the simple
      * confirm label is used.
-     *
-     * @covers ::build_context
      */
     public function test_build_context_only_surviving(): void {
         $this->resetAfterTest();
@@ -206,8 +196,6 @@ final class item_delete_confirm_test extends advanced_testcase {
     /**
      * Both sections are populated when a deletion orphans one trade and trims
      * another.
-     *
-     * @covers ::build_context
      */
     public function test_build_context_orphaned_and_surviving(): void {
         $this->resetAfterTest();
@@ -236,8 +224,6 @@ final class item_delete_confirm_test extends advanced_testcase {
     /**
      * XP impact populates the warning and, for a single item, includes the disable-instead
      * link when a toggle URL was supplied.
-     *
-     * @covers ::build_context
      */
     public function test_build_context_xp_impact_single(): void {
         $this->resetAfterTest();
@@ -270,8 +256,6 @@ final class item_delete_confirm_test extends advanced_testcase {
     /**
      * A bulk deletion never shows the disable-instead link, even with XP impact and a toggle
      * URL supplied by mistake — there is no single item to disable.
-     *
-     * @covers ::build_context
      */
     public function test_build_context_xp_impact_bulk_has_no_disable_link(): void {
         $this->resetAfterTest();
@@ -295,8 +279,6 @@ final class item_delete_confirm_test extends advanced_testcase {
 
     /**
      * No XP impact omits the warning and the disable link entirely.
-     *
-     * @covers ::build_context
      */
     public function test_build_context_no_xp_impact(): void {
         $this->resetAfterTest();

@@ -34,7 +34,7 @@ use stdClass;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\controller\items
+ * @covers     \block_playerhud\controller\items
  */
 final class items_test extends advanced_testcase {
     /**
@@ -182,8 +182,6 @@ final class items_test extends advanced_testcase {
 
     /**
      * Toggling an item flips its enabled flag and reports success.
-     *
-     * @covers ::toggle_item
      */
     public function test_toggle_item_flips_enabled(): void {
         global $DB;
@@ -199,8 +197,6 @@ final class items_test extends advanced_testcase {
 
     /**
      * Toggling an item of another instance changes nothing and reports failure.
-     *
-     * @covers ::toggle_item
      */
     public function test_toggle_item_foreign_instance_is_noop(): void {
         global $DB;
@@ -217,8 +213,6 @@ final class items_test extends advanced_testcase {
 
     /**
      * Granting an item stores a teacher-sourced inventory row and awards its XP.
-     *
-     * @covers ::grant_item
      */
     public function test_grant_item_adds_inventory_and_xp(): void {
         global $DB;
@@ -243,8 +237,6 @@ final class items_test extends advanced_testcase {
 
     /**
      * Granting a zero-XP item stores the row without changing player XP.
-     *
-     * @covers ::grant_item
      */
     public function test_grant_item_zero_xp_keeps_xp(): void {
         global $DB;
@@ -266,8 +258,6 @@ final class items_test extends advanced_testcase {
 
     /**
      * Granting an item of another instance is rejected before any side effect.
-     *
-     * @covers ::grant_item
      */
     public function test_grant_item_rejects_foreign_instance(): void {
         global $DB;
@@ -287,8 +277,6 @@ final class items_test extends advanced_testcase {
 
     /**
      * Revoking a finite-drop item marks it revoked and deducts its XP.
-     *
-     * @covers ::revoke_item
      */
     public function test_revoke_item_marks_revoked_and_deducts_xp(): void {
         global $DB;
@@ -313,8 +301,6 @@ final class items_test extends advanced_testcase {
      * Revoking a copy with xpawarded = 0 (e.g. an infinite drop) marks it revoked but keeps the
      * XP intact — revoke_item() no longer inspects the drop at all, it only reads what was
      * actually recorded for this copy.
-     *
-     * @covers ::revoke_item
      */
     public function test_revoke_item_infinite_drop_keeps_xp(): void {
         global $DB;
@@ -338,8 +324,6 @@ final class items_test extends advanced_testcase {
     /**
      * Revoking a copy deducts what was actually recorded at grant time, not the item's
      * current xp — so editing the item afterwards never changes what a revoke deducts.
-     *
-     * @covers ::revoke_item
      */
     public function test_revoke_item_deducts_recorded_xp_not_current_item_xp(): void {
         global $DB;
@@ -364,8 +348,6 @@ final class items_test extends advanced_testcase {
 
     /**
      * Revoking an inventory row of another instance changes nothing.
-     *
-     * @covers ::revoke_item
      */
     public function test_revoke_item_foreign_instance_is_noop(): void {
         global $DB;
@@ -389,8 +371,6 @@ final class items_test extends advanced_testcase {
 
     /**
      * A trade keeping other items after the removal is reported as surviving.
-     *
-     * @covers ::find_affected_surviving_trades
      */
     public function test_find_affected_surviving_trades_returns_trimmed_trade(): void {
         $this->resetAfterTest();
@@ -407,8 +387,6 @@ final class items_test extends advanced_testcase {
 
     /**
      * A trade that would be orphaned is excluded from the surviving list.
-     *
-     * @covers ::find_affected_surviving_trades
      */
     public function test_find_affected_surviving_trades_excludes_orphaned(): void {
         $this->resetAfterTest();
@@ -427,8 +405,6 @@ final class items_test extends advanced_testcase {
 
     /**
      * A trade not referencing the deleted item is not reported as affected.
-     *
-     * @covers ::find_affected_surviving_trades
      */
     public function test_find_affected_surviving_trades_ignores_unrelated(): void {
         $this->resetAfterTest();
@@ -445,8 +421,6 @@ final class items_test extends advanced_testcase {
     /**
      * The XP impact aggregates only copies that actually earned XP, across all holders of
      * any of the given items — a copy from an infinite drop (xpawarded = 0) does not count.
-     *
-     * @covers ::find_xp_impact
      */
     public function test_find_xp_impact_aggregates_earned_copies_only(): void {
         $this->resetAfterTest();
@@ -468,8 +442,6 @@ final class items_test extends advanced_testcase {
 
     /**
      * No matching inventory rows produce a zero-impact summary.
-     *
-     * @covers ::find_xp_impact
      */
     public function test_find_xp_impact_empty_for_unheld_item(): void {
         $this->resetAfterTest();
@@ -484,8 +456,6 @@ final class items_test extends advanced_testcase {
 
     /**
      * An empty item list is a no-op, not a DB error.
-     *
-     * @covers ::find_xp_impact
      */
     public function test_find_xp_impact_empty_ids_returns_zero(): void {
         $this->resetAfterTest();

@@ -33,7 +33,7 @@ use advanced_testcase;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\output\manage\quest_delete_confirm
+ * @covers     \block_playerhud\output\manage\quest_delete_confirm
  */
 final class quest_delete_confirm_test extends advanced_testcase {
     /**
@@ -55,8 +55,6 @@ final class quest_delete_confirm_test extends advanced_testcase {
 
     /**
      * A single deletion produces the delete_quest_force action and a single quest id.
-     *
-     * @covers ::build_context
      */
     public function test_build_context_single(): void {
         $this->resetAfterTest();
@@ -84,8 +82,6 @@ final class quest_delete_confirm_test extends advanced_testcase {
     /**
      * A bulk deletion produces the bulk_delete_quests_force action and the id list, and never
      * shows the disable-instead link even with a toggle URL supplied by mistake.
-     *
-     * @covers ::build_context
      */
     public function test_build_context_bulk(): void {
         $this->resetAfterTest();
@@ -111,8 +107,6 @@ final class quest_delete_confirm_test extends advanced_testcase {
 
     /**
      * No XP impact omits the warning and the disable link entirely.
-     *
-     * @covers ::build_context
      */
     public function test_build_context_no_xp_impact(): void {
         $this->resetAfterTest();

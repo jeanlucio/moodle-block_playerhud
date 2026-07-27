@@ -31,7 +31,7 @@ use block_playerhud\privacy\provider;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\privacy\provider
+ * @covers     \block_playerhud\privacy\provider
  */
 final class privacy_provider_test extends advanced_testcase {
     /** @var int Dummy block instance ID. */
@@ -200,9 +200,6 @@ final class privacy_provider_test extends advanced_testcase {
     /**
      * Test deletion of user data.
      * Ensures GDPR compliance by removing profile, inventory, and AI logs.
-     *
-     * @covers ::delete_data_for_user
-     * @covers ::delete_data_for_user_list_in_context
      */
     public function test_delete_data_for_user(): void {
         global $DB;
@@ -317,8 +314,6 @@ final class privacy_provider_test extends advanced_testcase {
     /**
      * Test that user preferences (API keys and equipped avatar) are deleted correctly.
      * Ensure GDPR compliance by removing preference traces upon user deletion.
-     *
-     * @covers ::delete_user_preferences
      */
     public function test_delete_user_preferences(): void {
         $this->resetAfterTest(true);
@@ -352,8 +347,6 @@ final class privacy_provider_test extends advanced_testcase {
 
     /**
      * Test that user preferences (API keys and equipped avatar) are exported correctly.
-     *
-     * @covers ::export_user_preferences
      */
     public function test_export_user_preferences(): void {
         $this->resetAfterTest(true);
@@ -379,8 +372,6 @@ final class privacy_provider_test extends advanced_testcase {
 
     /**
      * Test that the metadata declares every stored item, including the avatar preference.
-     *
-     * @covers ::get_metadata
      */
     public function test_get_metadata(): void {
         $collection = provider::get_metadata(new collection('block_playerhud'));
@@ -406,8 +397,6 @@ final class privacy_provider_test extends advanced_testcase {
 
     /**
      * Test that the context where a user stored data is discovered.
-     *
-     * @covers ::get_contexts_for_userid
      */
     public function test_get_contexts_for_userid(): void {
         $user = $this->getDataGenerator()->create_user();
@@ -426,8 +415,6 @@ final class privacy_provider_test extends advanced_testcase {
 
     /**
      * Test that every user with data in the block context is discovered.
-     *
-     * @covers ::get_users_in_context
      */
     public function test_get_users_in_context(): void {
         global $DB;
@@ -460,8 +447,6 @@ final class privacy_provider_test extends advanced_testcase {
 
     /**
      * Test that all stored personal data is exported under the correct subtrees.
-     *
-     * @covers ::export_user_data
      */
     public function test_export_user_data(): void {
         $user = $this->getDataGenerator()->create_user();
@@ -507,8 +492,6 @@ final class privacy_provider_test extends advanced_testcase {
 
     /**
      * Test that deleting a whole context removes every user's data within it.
-     *
-     * @covers ::delete_data_for_all_users_in_context
      */
     public function test_delete_data_for_all_users_in_context(): void {
         $usera = $this->getDataGenerator()->create_user();
@@ -527,9 +510,6 @@ final class privacy_provider_test extends advanced_testcase {
 
     /**
      * Test that deleting a subset of users leaves other users in the context untouched.
-     *
-     * @covers ::delete_data_for_users
-     * @covers ::delete_data_for_user_list_in_context
      */
     public function test_delete_data_for_users(): void {
         $usera = $this->getDataGenerator()->create_user();
@@ -549,11 +529,6 @@ final class privacy_provider_test extends advanced_testcase {
 
     /**
      * Test that every entry point safely ignores non-block contexts without touching data.
-     *
-     * @covers ::export_user_data
-     * @covers ::delete_data_for_all_users_in_context
-     * @covers ::delete_data_for_user
-     * @covers ::delete_data_for_users
      */
     public function test_guards_ignore_non_block_contexts(): void {
         $user = $this->getDataGenerator()->create_user();

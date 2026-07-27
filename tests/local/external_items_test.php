@@ -32,7 +32,7 @@ use stdClass;
  * Tests for external_items — requires database.
  *
  * @package block_playerhud
- * @coversDefaultClass \block_playerhud\local\external_items
+ * @covers     \block_playerhud\local\external_items
  */
 final class external_items_test extends advanced_testcase {
     #[\Override]
@@ -89,7 +89,6 @@ final class external_items_test extends advanced_testcase {
     /**
      * An item belonging to the given block instance is recognised as such.
      *
-     * @covers ::belongs_to_instance
      * @return void
      */
     public function test_belongs_to_instance_true_for_own_item(): void {
@@ -104,7 +103,6 @@ final class external_items_test extends advanced_testcase {
      * ownership, not the enabled flag (callers that care about enabled, e.g. grant(), check
      * that separately).
      *
-     * @covers ::belongs_to_instance
      * @return void
      */
     public function test_belongs_to_instance_true_for_disabled_item(): void {
@@ -118,7 +116,6 @@ final class external_items_test extends advanced_testcase {
      * An item belonging to a different block instance is rejected — the exact cross-course
      * leak scenario this class exists to prevent.
      *
-     * @covers ::belongs_to_instance
      * @return void
      */
     public function test_belongs_to_instance_false_for_other_instance_item(): void {
@@ -132,7 +129,6 @@ final class external_items_test extends advanced_testcase {
     /**
      * A nonexistent item ID is rejected.
      *
-     * @covers ::belongs_to_instance
      * @return void
      */
     public function test_belongs_to_instance_false_for_nonexistent_item(): void {
@@ -144,7 +140,6 @@ final class external_items_test extends advanced_testcase {
     /**
      * Zero or negative IDs are rejected without querying the database.
      *
-     * @covers ::belongs_to_instance
      * @return void
      */
     public function test_belongs_to_instance_false_for_zero_ids(): void {
@@ -177,7 +172,6 @@ final class external_items_test extends advanced_testcase {
      * Granting a valid, enabled item inserts one row per unit, each carrying its own
      * xpawarded, and credits the total XP once.
      *
-     * @covers ::grant
      * @return void
      */
     public function test_grant_inserts_rows_and_awards_xp_for_own_enabled_item(): void {
@@ -207,7 +201,6 @@ final class external_items_test extends advanced_testcase {
      * Granting with $suppressxp still creates the inventory rows, but withholds XP — the
      * anti-farming rule an external plugin applies for its own unbounded sources.
      *
-     * @covers ::grant
      * @return void
      */
     public function test_grant_withholds_xp_when_suppressxp(): void {
@@ -233,7 +226,6 @@ final class external_items_test extends advanced_testcase {
      * Granting an item belonging to a different block instance is a no-op — the exact
      * cross-course leak this class exists to prevent.
      *
-     * @covers ::grant
      * @return void
      */
     public function test_grant_noop_for_other_instance_item(): void {
@@ -254,7 +246,6 @@ final class external_items_test extends advanced_testcase {
      * Granting a disabled item is a no-op — disabling stops new acquisition through every
      * channel, including external grants.
      *
-     * @covers ::grant
      * @return void
      */
     public function test_grant_noop_for_disabled_item(): void {
@@ -273,7 +264,6 @@ final class external_items_test extends advanced_testcase {
     /**
      * Consuming a valid item with enough balance marks the oldest rows as consumed.
      *
-     * @covers ::consume
      * @return void
      */
     public function test_consume_success_marks_rows_consumed(): void {
@@ -297,7 +287,6 @@ final class external_items_test extends advanced_testcase {
     /**
      * Consuming more than the user holds returns false and leaves the inventory untouched.
      *
-     * @covers ::consume
      * @return void
      */
     public function test_consume_returns_false_when_insufficient(): void {
@@ -318,7 +307,6 @@ final class external_items_test extends advanced_testcase {
      * from false — the caller waives the cost instead of blocking the user forever on an item
      * that can never be restocked.
      *
-     * @covers ::consume
      * @return void
      */
     public function test_consume_returns_null_for_other_instance_item(): void {
@@ -335,7 +323,6 @@ final class external_items_test extends advanced_testcase {
     /**
      * get_name() returns the formatted name for an item belonging to the given instance.
      *
-     * @covers ::get_name
      * @return void
      */
     public function test_get_name_returns_name_for_own_item(): void {
@@ -348,7 +335,6 @@ final class external_items_test extends advanced_testcase {
     /**
      * get_name() returns an empty string for an item belonging to a different instance.
      *
-     * @covers ::get_name
      * @return void
      */
     public function test_get_name_returns_empty_for_other_instance_item(): void {
@@ -362,7 +348,6 @@ final class external_items_test extends advanced_testcase {
     /**
      * get_xp() returns the item's own XP value for an item belonging to the given instance.
      *
-     * @covers ::get_xp
      * @return void
      */
     public function test_get_xp_returns_value_for_own_item(): void {
@@ -375,7 +360,6 @@ final class external_items_test extends advanced_testcase {
     /**
      * get_xp() returns zero for an item belonging to a different instance.
      *
-     * @covers ::get_xp
      * @return void
      */
     public function test_get_xp_returns_zero_for_other_instance_item(): void {
@@ -390,7 +374,6 @@ final class external_items_test extends advanced_testcase {
      * get_available_quantity() counts only rows not revoked or consumed, for an item
      * belonging to the given instance.
      *
-     * @covers ::get_available_quantity
      * @return void
      */
     public function test_get_available_quantity_counts_only_active_rows(): void {
@@ -407,7 +390,6 @@ final class external_items_test extends advanced_testcase {
      * get_available_quantity() returns zero for an item belonging to a different instance,
      * even if the user happens to hold units of it.
      *
-     * @covers ::get_available_quantity
      * @return void
      */
     public function test_get_available_quantity_zero_for_other_instance_item(): void {

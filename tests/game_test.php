@@ -26,8 +26,8 @@ use block_playerhud\game;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\game
- * @covers \block_playerhud\event\xp_changed
+ * @covers     \block_playerhud\game
+ * @covers     \block_playerhud\event\xp_changed
  */
 final class game_test extends advanced_testcase {
     /** @var int Dummy block instance ID for testing. */
@@ -111,8 +111,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * Test game statistics math (Levels, Max Levels, and Total XP).
-     *
-     * @covers ::get_game_stats
      */
     public function test_get_game_stats(): void {
         $this->resetAfterTest(true);
@@ -147,8 +145,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * Test that enabled quest reward_xp is included in total_game_xp.
-     *
-     * @covers ::get_game_stats
      */
     public function test_get_game_stats_includes_quest_xp(): void {
         global $DB;
@@ -189,8 +185,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * Test that disabled quests do not contribute to total_game_xp.
-     *
-     * @covers ::get_game_stats
      */
     public function test_get_game_stats_disabled_quest_excluded(): void {
         global $DB;
@@ -232,8 +226,6 @@ final class game_test extends advanced_testcase {
      * get_game_stats()'s total_game_xp must always match economy_health()'s total_items_xp
      * for the same instance, since both are now backed by the same shared calculation
      * (analytics::game_xp_totals()) instead of two independent implementations.
-     *
-     * @covers ::get_game_stats
      */
     public function test_get_game_stats_matches_economy_health_total(): void {
         global $DB;
@@ -278,8 +270,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * Test the Anti-Farm rule: Infinite drops (maxusage = 0) must yield 0 XP.
-     *
-     * @covers ::process_collection
      */
     public function test_process_collection_infinite_drop_anti_farm(): void {
         $this->resetAfterTest(true);
@@ -306,8 +296,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * Test strict limit enforcement (maxusage).
-     *
-     * @covers ::process_collection
      */
     public function test_process_collection_maxusage_limit(): void {
         $this->resetAfterTest(true);
@@ -334,8 +322,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * Test cooldown enforcement (respawntime).
-     *
-     * @covers ::process_collection
      */
     public function test_process_collection_cooldown(): void {
         $this->resetAfterTest(true);
@@ -361,8 +347,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * get_avatar_item returns the record when the item is enabled and belongs to the instance.
-     *
-     * @covers ::get_avatar_item
      */
     public function test_get_avatar_item_returns_record_for_enabled_item(): void {
         $this->resetAfterTest(true);
@@ -379,8 +363,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * get_avatar_item returns null when the item is disabled (enabled = 0).
-     *
-     * @covers ::get_avatar_item
      */
     public function test_get_avatar_item_returns_null_for_disabled_item(): void {
         global $DB;
@@ -398,8 +380,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * get_avatar_item returns null when the item belongs to a different block instance.
-     *
-     * @covers ::get_avatar_item
      */
     public function test_get_avatar_item_returns_null_for_foreign_instance(): void {
         global $DB;
@@ -439,8 +419,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * get_avatar_item returns null when no item with the given ID exists.
-     *
-     * @covers ::get_avatar_item
      */
     public function test_get_avatar_item_returns_null_for_nonexistent_id(): void {
         $this->resetAfterTest(true);
@@ -453,8 +431,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * Test that collecting a finite drop with XP > 0 awards the correct XP to the player.
-     *
-     * @covers ::process_collection
      */
     public function test_process_collection_awards_xp_on_finite_drop(): void {
         $this->resetAfterTest(true);
@@ -478,8 +454,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * change_xp awards a positive delta and fires xp_changed with that delta.
-     *
-     * @covers ::change_xp
      */
     public function test_change_xp_awards_and_fires_event(): void {
         $this->resetAfterTest(true);
@@ -504,8 +478,6 @@ final class game_test extends advanced_testcase {
     /**
      * change_xp deducts a negative delta and floors the total at zero; the event
      * carries the delta actually applied (clamped), not the requested one.
-     *
-     * @covers ::change_xp
      */
     public function test_change_xp_deducts_and_floors_at_zero(): void {
         $this->resetAfterTest(true);
@@ -529,8 +501,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * change_xp is a no-op (no write, no event) when the applied delta is zero.
-     *
-     * @covers ::change_xp
      */
     public function test_change_xp_noop_fires_nothing(): void {
         $this->resetAfterTest(true);
@@ -549,8 +519,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * Test that get_leaderboard excludes users with the block/playerhud:manage capability.
-     *
-     * @covers ::get_leaderboard
      */
     public function test_get_leaderboard_excludes_managers(): void {
         global $DB;
@@ -603,8 +571,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * xp_to_level maps XP to the configured level, clamped to the cap.
-     *
-     * @covers ::xp_to_level
      */
     public function test_xp_to_level(): void {
         $this->assertEquals(1, game::xp_to_level(0, 100, 10));
@@ -617,8 +583,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * process_collection flags leveled_up only on the collection that crosses a level.
-     *
-     * @covers ::process_collection
      */
     public function test_process_collection_leveled_up(): void {
         $this->resetAfterTest(true);
@@ -638,8 +602,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * process_collection flags won only on the collection that reaches 100% of the game XP.
-     *
-     * @covers ::process_collection
      */
     public function test_process_collection_won_transition(): void {
         $this->resetAfterTest(true);
@@ -659,8 +621,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * The first PlayerCoin collection signals the coin milestone exactly once.
-     *
-     * @covers ::process_collection
      */
     public function test_process_collection_first_coin_milestone(): void {
         global $DB;
@@ -707,8 +667,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * get_player auto-creates a default profile when none exists and reuses it afterwards.
-     *
-     * @covers ::get_player
      */
     public function test_get_player_creates_default_record(): void {
         global $DB;
@@ -733,8 +691,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * toggle_gamification flips the enable_gamification flag both ways.
-     *
-     * @covers ::toggle_gamification
      */
     public function test_toggle_gamification(): void {
         $this->resetAfterTest(true);
@@ -750,8 +706,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * toggle_ranking_visibility flips the ranking_visibility flag both ways.
-     *
-     * @covers ::toggle_ranking_visibility
      */
     public function test_toggle_ranking_visibility(): void {
         $this->resetAfterTest(true);
@@ -767,8 +721,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * get_inventory returns owned items and hides revoked or consumed entries.
-     *
-     * @covers ::get_inventory
      */
     public function test_get_inventory_excludes_revoked_and_consumed(): void {
         global $DB;
@@ -799,8 +751,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * has_item reflects whether the user owns a given item.
-     *
-     * @covers ::has_item
      */
     public function test_has_item(): void {
         global $DB;
@@ -820,8 +770,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * get_user_rank orders by XP, breaks ties by earlier arrival and excludes managers.
-     *
-     * @covers ::get_user_rank
      */
     public function test_get_user_rank_tiebreak_and_manager_exclusion(): void {
         global $DB;
@@ -867,8 +815,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * get_user_rank only counts users still enrolled in the course.
-     *
-     * @covers ::get_user_rank
      */
     public function test_get_user_rank_respects_enrolment(): void {
         global $DB;
@@ -902,8 +848,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * get_full_trades populates each trade with its requirement and reward items.
-     *
-     * @covers ::get_full_trades
      */
     public function test_get_full_trades_populates_requirements_and_rewards(): void {
         global $DB;
@@ -931,8 +875,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * get_full_trades returns an empty array when the instance has no trades.
-     *
-     * @covers ::get_full_trades
      */
     public function test_get_full_trades_empty(): void {
         $this->resetAfterTest(true);
@@ -942,8 +884,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * A trade with all enabled requirement/reward items is not flagged unavailable.
-     *
-     * @covers ::get_full_trades
      */
     public function test_get_full_trades_available_when_all_items_enabled(): void {
         global $DB;
@@ -967,8 +907,6 @@ final class game_test extends advanced_testcase {
     /**
      * A trade with a disabled requirement item is flagged unavailable, even though the reward
      * item is enabled.
-     *
-     * @covers ::get_full_trades
      */
     public function test_get_full_trades_unavailable_when_requirement_item_disabled(): void {
         global $DB;
@@ -992,8 +930,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * A trade with a disabled reward item is flagged unavailable too, not just requirements.
-     *
-     * @covers ::get_full_trades
      */
     public function test_get_full_trades_unavailable_when_reward_item_disabled(): void {
         global $DB;
@@ -1018,8 +954,6 @@ final class game_test extends advanced_testcase {
     /**
      * build_trade_suggestions yields one suggestion per uncovered avatar plus a bundle,
      * with discounted cost for robot/alien avatars.
-     *
-     * @covers ::build_trade_suggestions
      */
     public function test_build_trade_suggestions(): void {
         $this->resetAfterTest(true);
@@ -1050,8 +984,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * build_trade_suggestions skips an avatar that is already the sole reward of a trade.
-     *
-     * @covers ::build_trade_suggestions
      */
     public function test_build_trade_suggestions_skips_covered_avatar(): void {
         global $DB;
@@ -1074,8 +1006,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * build_trade_suggestions returns nothing without a PlayerCoin or avatars.
-     *
-     * @covers ::build_trade_suggestions
      */
     public function test_build_trade_suggestions_requires_prerequisites(): void {
         $this->resetAfterTest(true);
@@ -1088,8 +1018,6 @@ final class game_test extends advanced_testcase {
 
     /**
      * create_trade_from_suggestion persists a one-time trade with its cost and rewards.
-     *
-     * @covers ::create_trade_from_suggestion
      */
     public function test_create_trade_from_suggestion(): void {
         global $DB;

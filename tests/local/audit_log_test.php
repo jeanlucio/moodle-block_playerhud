@@ -35,7 +35,7 @@ use stdClass;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\local\audit_log
+ * @covers     \block_playerhud\local\audit_log
  */
 final class audit_log_test extends advanced_testcase {
     /** @var int Block instance ID. */
@@ -120,8 +120,6 @@ final class audit_log_test extends advanced_testcase {
     /**
      * An item collection's xp_gained comes from the recorded xpawarded value, not the item's
      * current xp — so editing the item afterwards never changes what the log shows.
-     *
-     * @covers ::get_logs
      */
     public function test_item_xp_gained_uses_recorded_value_not_current_item_xp(): void {
         global $DB;
@@ -139,8 +137,6 @@ final class audit_log_test extends advanced_testcase {
 
     /**
      * Regression guard: an item never edited after the grant reports the same value either way.
-     *
-     * @covers ::get_logs
      */
     public function test_item_xp_gained_matches_when_item_never_edited(): void {
         $itemid = $this->create_item(75);
@@ -154,8 +150,6 @@ final class audit_log_test extends advanced_testcase {
     /**
      * A quest-granted item (source = quest) reports 0 xp_gained, since the item's own XP is
      * never paid through that path — matching xpawarded as recorded at grant time.
-     *
-     * @covers ::get_logs
      */
     public function test_quest_granted_item_reports_zero_xp_gained(): void {
         $itemid = $this->create_item(500);
@@ -171,8 +165,6 @@ final class audit_log_test extends advanced_testcase {
      * A revoked row reports the negative of the originally recorded xpawarded, not the item's
      * current xp — mirroring the soft-revoke pattern where source is overwritten to 'revoked'
      * but xpawarded is left untouched.
-     *
-     * @covers ::get_logs
      */
     public function test_revoked_item_reports_negative_recorded_value(): void {
         global $DB;
@@ -192,8 +184,6 @@ final class audit_log_test extends advanced_testcase {
     /**
      * A quest claim's xp_gained comes from the recorded xpawarded value, not the quest's
      * current reward_xp — so editing the quest afterwards never changes what the log shows.
-     *
-     * @covers ::get_logs
      */
     public function test_quest_xp_gained_uses_recorded_value_not_current_reward_xp(): void {
         global $DB;

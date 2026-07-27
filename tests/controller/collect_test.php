@@ -34,7 +34,7 @@ use stdClass;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\controller\collect
+ * @covers     \block_playerhud\controller\collect
  */
 final class collect_test extends advanced_testcase {
     /**
@@ -129,8 +129,6 @@ final class collect_test extends advanced_testcase {
 
     /**
      * A finite drop awards the item XP and stores the collected item.
-     *
-     * @covers ::process_transaction
      */
     public function test_process_transaction_awards_xp_for_finite_drop(): void {
         global $DB;
@@ -159,8 +157,6 @@ final class collect_test extends advanced_testcase {
 
     /**
      * An infinite drop (maxusage 0) stores the item but awards no XP.
-     *
-     * @covers ::process_transaction
      */
     public function test_process_transaction_infinite_drop_awards_no_xp(): void {
         global $DB;
@@ -185,8 +181,6 @@ final class collect_test extends advanced_testcase {
 
     /**
      * A zero-XP item stores the collection without changing the player XP.
-     *
-     * @covers ::process_transaction
      */
     public function test_process_transaction_zero_xp_item_awards_nothing(): void {
         global $DB;

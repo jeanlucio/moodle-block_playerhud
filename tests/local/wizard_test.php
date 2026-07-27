@@ -25,7 +25,7 @@ use advanced_testcase;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\local\wizard
+ * @covers     \block_playerhud\local\wizard
  */
 final class wizard_test extends advanced_testcase {
     /** @var int Block instance ID. */
@@ -70,8 +70,6 @@ final class wizard_test extends advanced_testcase {
 
     /**
      * A new run starts with a running status and stores the selected modules as JSON.
-     *
-     * @covers ::start_run
      */
     public function test_start_run_creates_row_with_running_status(): void {
         global $DB, $USER;
@@ -86,8 +84,6 @@ final class wizard_test extends advanced_testcase {
 
     /**
      * finish_run updates the status and timemodified.
-     *
-     * @covers ::finish_run
      */
     public function test_finish_run_updates_status(): void {
         global $DB, $USER;
@@ -102,9 +98,6 @@ final class wizard_test extends advanced_testcase {
     /**
      * Rollback deletes every recorded object across its own table, regardless of
      * how many different tables the run touched, and marks the run rolledback.
-     *
-     * @covers ::record_objects
-     * @covers ::rollback
      */
     public function test_rollback_deletes_objects_across_tables(): void {
         global $DB, $USER;
@@ -134,9 +127,6 @@ final class wizard_test extends advanced_testcase {
     /**
      * Rollback strips a recorded shortcode back out of the course content it was
      * inserted into, in addition to deleting the drop row.
-     *
-     * @covers ::record_shortcode
-     * @covers ::rollback
      */
     public function test_rollback_strips_recorded_shortcode(): void {
         global $DB, $USER;
@@ -171,8 +161,6 @@ final class wizard_test extends advanced_testcase {
     /**
      * Rollback reverts the XP students earned from the objects it removes and clears
      * their play history, matching a manual delete rather than a raw wipe.
-     *
-     * @covers ::rollback
      */
     public function test_rollback_reverts_xp_and_clears_play_history(): void {
         global $DB, $USER;
@@ -220,8 +208,6 @@ final class wizard_test extends advanced_testcase {
     /**
      * Rollback is scoped to the caller's own instance: a run ID that belongs to
      * a different block instance must never be rolled back.
-     *
-     * @covers ::rollback
      */
     public function test_rollback_rejects_mismatched_instance(): void {
         global $USER;
@@ -234,8 +220,6 @@ final class wizard_test extends advanced_testcase {
 
     /**
      * Only 'done' runs are returned, newest first, with per-table object counts.
-     *
-     * @covers ::get_active_runs
      */
     public function test_get_active_runs_returns_only_done_runs_with_counts(): void {
         global $USER;
@@ -259,8 +243,6 @@ final class wizard_test extends advanced_testcase {
 
     /**
      * The limit parameter caps the number of runs returned, newest first.
-     *
-     * @covers ::get_active_runs
      */
     public function test_get_active_runs_respects_limit(): void {
         global $USER;
@@ -280,8 +262,6 @@ final class wizard_test extends advanced_testcase {
     /**
      * A fresh instance has nothing generated: every mechanic reports false, so every wizard
      * card starts enabled.
-     *
-     * @covers ::get_generated_modules
      */
     public function test_get_generated_modules_all_false_on_fresh_instance(): void {
         $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
@@ -308,8 +288,6 @@ final class wizard_test extends advanced_testcase {
      * Mechanics included in a completed run report generated only when that run's own manifest
      * still points at real content; a rolled-back run does not count (undoing a run re-enables
      * its cards).
-     *
-     * @covers ::get_generated_modules
      */
     public function test_get_generated_modules_counts_done_runs_only(): void {
         $donerun = wizard::start_run($this->instanceid, 2, ['items', 'missions']);
@@ -334,8 +312,6 @@ final class wizard_test extends advanced_testcase {
      * the wizard, despite two 'done' runs long done rolling back — and a second real course
      * where Items itself stayed disabled after its run's manifest was recorded but the AI-created
      * items vanished before the run even finished.
-     *
-     * @covers ::get_generated_modules
      */
     public function test_get_generated_modules_ignores_stale_done_run_without_content(): void {
         $donerun = wizard::start_run(
@@ -369,8 +345,6 @@ final class wizard_test extends advanced_testcase {
      * The exact regression this exists for: a 'done' run recorded NO manifest entries for Items
      * even though the AI genuinely created named items (proven by ai_logs in the real incident)
      * — the run's manifest is the source of truth, not the module having been requested.
-     *
-     * @covers ::get_generated_modules
      */
     public function test_get_generated_modules_items_false_when_run_manifest_is_empty_but_ai_logged(): void {
         global $DB;
@@ -390,8 +364,6 @@ final class wizard_test extends advanced_testcase {
     /**
      * Items reports generated once its run's manifest points at an item that still exists —
      * the positive counterpart of the empty-manifest tests above.
-     *
-     * @covers ::get_generated_modules
      */
     public function test_get_generated_modules_items_true_when_manifest_item_exists(): void {
         $donerun = wizard::start_run($this->instanceid, 2, ['items']);
@@ -407,8 +379,6 @@ final class wizard_test extends advanced_testcase {
      * Content that already exists in the instance counts as generated even without any wizard
      * run — created before this rule existed, or through the manual management screens, the
      * wizard's own generators would skip it anyway.
-     *
-     * @covers ::get_generated_modules
      */
     public function test_get_generated_modules_detects_existing_content(): void {
         global $DB;
@@ -448,8 +418,6 @@ final class wizard_test extends advanced_testcase {
      * checking its box any number of times across any number of completed runs must never make
      * it report generated while the setting itself is off, and must always report generated the
      * instant the setting is on, with zero wizard runs at all.
-     *
-     * @covers ::get_generated_modules
      */
     public function test_get_generated_modules_ranking_ignores_run_count(): void {
         for ($i = 0; $i < 3; $i++) {
@@ -474,8 +442,6 @@ final class wizard_test extends advanced_testcase {
      * ensure_config_flag() turns a flag on when it is off, without touching any other config
      * property already stored — the shared one-directional helper generate_ranking() and the
      * Items/Missions/RPG generators all rely on to auto-enable their own tab.
-     *
-     * @covers ::ensure_config_flag
      */
     public function test_ensure_config_flag_turns_on_without_touching_other_config(): void {
         $blockinstance = \block_instance_by_id($this->instanceid);
@@ -491,8 +457,6 @@ final class wizard_test extends advanced_testcase {
     /**
      * Already on: calling it again is a harmless no-op — the stored configdata comes out
      * byte-identical, proving instance_config_save() was never even called.
-     *
-     * @covers ::ensure_config_flag
      */
     public function test_ensure_config_flag_noop_when_already_on(): void {
         global $DB;

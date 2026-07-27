@@ -34,7 +34,7 @@ use stdClass;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\controller\trades
+ * @covers     \block_playerhud\controller\trades
  */
 final class trades_test extends advanced_testcase {
     /**
@@ -116,8 +116,6 @@ final class trades_test extends advanced_testcase {
 
     /**
      * A new trade is inserted together with its requirements and rewards.
-     *
-     * @covers ::save_trade
      */
     public function test_save_trade_inserts_with_reqs_and_rewards(): void {
         global $DB;
@@ -151,8 +149,6 @@ final class trades_test extends advanced_testcase {
 
     /**
      * Saving with a trade ID updates the trade and replaces its requirements.
-     *
-     * @covers ::save_trade
      */
     public function test_save_trade_updates_and_replaces_reqs(): void {
         global $DB;
@@ -189,8 +185,6 @@ final class trades_test extends advanced_testcase {
 
     /**
      * A trade belonging to another instance cannot be updated.
-     *
-     * @covers ::save_trade
      */
     public function test_save_trade_rejects_foreign_instance(): void {
         $this->resetAfterTest();
@@ -206,8 +200,6 @@ final class trades_test extends advanced_testcase {
 
     /**
      * Requirement items from another instance are rejected and not stored.
-     *
-     * @covers ::save_trade
      */
     public function test_save_trade_skips_foreign_items(): void {
         global $DB;
@@ -233,8 +225,6 @@ final class trades_test extends advanced_testcase {
 
     /**
      * Deleting a trade removes it together with its requirements, rewards and log.
-     *
-     * @covers ::delete_trade
      */
     public function test_delete_trade_removes_trade_and_children(): void {
         global $DB;
@@ -262,8 +252,6 @@ final class trades_test extends advanced_testcase {
 
     /**
      * A trade owned by another instance cannot be deleted.
-     *
-     * @covers ::delete_trade
      */
     public function test_delete_trade_rejects_foreign_instance(): void {
         global $DB;
@@ -282,8 +270,6 @@ final class trades_test extends advanced_testcase {
 
     /**
      * Deleting a trade leaves sibling trades of the same instance untouched.
-     *
-     * @covers ::delete_trade
      */
     public function test_delete_trade_keeps_sibling_trades(): void {
         global $DB;

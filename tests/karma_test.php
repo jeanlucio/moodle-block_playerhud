@@ -26,7 +26,7 @@ use block_playerhud\game;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\game
+ * @covers     \block_playerhud\game
  */
 final class karma_test extends advanced_testcase {
     /** @var int Block instance ID shared across test methods. */
@@ -78,8 +78,6 @@ final class karma_test extends advanced_testcase {
 
     /**
      * get_player_karma returns 0 when no progress record exists.
-     *
-     * @covers ::get_player_karma
      */
     public function test_get_player_karma_returns_zero_when_no_record(): void {
         $this->resetAfterTest(true);
@@ -92,8 +90,6 @@ final class karma_test extends advanced_testcase {
 
     /**
      * get_player_karma returns the stored value when a progress record exists.
-     *
-     * @covers ::get_player_karma
      */
     public function test_get_player_karma_returns_stored_value(): void {
         $this->resetAfterTest(true);
@@ -107,8 +103,6 @@ final class karma_test extends advanced_testcase {
 
     /**
      * get_player_karma returns negative stored values correctly.
-     *
-     * @covers ::get_player_karma
      */
     public function test_get_player_karma_returns_negative_value(): void {
         $this->resetAfterTest(true);
@@ -122,8 +116,6 @@ final class karma_test extends advanced_testcase {
 
     /**
      * adjust_karma returns 0 and does nothing when no progress record exists.
-     *
-     * @covers ::adjust_karma
      */
     public function test_adjust_karma_returns_zero_when_no_record(): void {
         $this->resetAfterTest(true);
@@ -138,8 +130,6 @@ final class karma_test extends advanced_testcase {
 
     /**
      * adjust_karma increases karma by a positive delta.
-     *
-     * @covers ::adjust_karma
      */
     public function test_adjust_karma_positive_delta(): void {
         $this->resetAfterTest(true);
@@ -156,8 +146,6 @@ final class karma_test extends advanced_testcase {
 
     /**
      * adjust_karma decreases karma by a negative delta.
-     *
-     * @covers ::adjust_karma
      */
     public function test_adjust_karma_negative_delta(): void {
         $this->resetAfterTest(true);
@@ -174,8 +162,6 @@ final class karma_test extends advanced_testcase {
 
     /**
      * adjust_karma clamps the result to the maximum of 999.
-     *
-     * @covers ::adjust_karma
      */
     public function test_adjust_karma_clamped_at_maximum(): void {
         $this->resetAfterTest(true);
@@ -191,8 +177,6 @@ final class karma_test extends advanced_testcase {
 
     /**
      * adjust_karma clamps the result to the minimum of -999.
-     *
-     * @covers ::adjust_karma
      */
     public function test_adjust_karma_clamped_at_minimum(): void {
         $this->resetAfterTest(true);
@@ -208,8 +192,6 @@ final class karma_test extends advanced_testcase {
 
     /**
      * adjust_karma clamped exactly at boundary 999 stays at 999.
-     *
-     * @covers ::adjust_karma
      */
     public function test_adjust_karma_does_not_exceed_boundary_999(): void {
         $this->resetAfterTest(true);
@@ -225,8 +207,6 @@ final class karma_test extends advanced_testcase {
 
     /**
      * adjust_karma clamped exactly at boundary -999 stays at -999.
-     *
-     * @covers ::adjust_karma
      */
     public function test_adjust_karma_does_not_fall_below_boundary_minus999(): void {
         $this->resetAfterTest(true);
@@ -242,8 +222,6 @@ final class karma_test extends advanced_testcase {
 
     /**
      * Successive adjust_karma calls accumulate correctly.
-     *
-     * @covers ::adjust_karma
      */
     public function test_adjust_karma_successive_calls_accumulate(): void {
         $this->resetAfterTest(true);

@@ -34,7 +34,7 @@ use stdClass;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\controller\aikeys
+ * @covers     \block_playerhud\controller\aikeys
  */
 final class aikeys_test extends advanced_testcase {
     /**
@@ -68,8 +68,6 @@ final class aikeys_test extends advanced_testcase {
 
     /**
      * Submitted keys are trimmed and stored as that user's preferences.
-     *
-     * @covers ::save
      */
     public function test_save_stores_trimmed_preferences(): void {
         $this->resetAfterTest();
@@ -93,8 +91,6 @@ final class aikeys_test extends advanced_testcase {
 
     /**
      * A missing field is stored as an empty preference.
-     *
-     * @covers ::save
      */
     public function test_save_stores_empty_for_missing_field(): void {
         $this->resetAfterTest();
@@ -109,8 +105,6 @@ final class aikeys_test extends advanced_testcase {
 
     /**
      * Legacy keys in block config are stripped while other config survives.
-     *
-     * @covers ::save
      */
     public function test_save_strips_legacy_keys_from_config(): void {
         global $DB;
@@ -133,8 +127,6 @@ final class aikeys_test extends advanced_testcase {
 
     /**
      * A config without legacy keys is left byte-for-byte untouched.
-     *
-     * @covers ::save
      */
     public function test_save_leaves_clean_config_untouched(): void {
         global $DB;

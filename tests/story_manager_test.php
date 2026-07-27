@@ -27,7 +27,7 @@ use block_playerhud\story_manager;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\story_manager
+ * @covers     \block_playerhud\story_manager
  */
 final class story_manager_test extends advanced_testcase {
     /** @var int Block instance ID shared across test methods. */
@@ -135,8 +135,6 @@ final class story_manager_test extends advanced_testcase {
 
     /**
      * get_or_create_progress creates a zero-state record on first call.
-     *
-     * @covers ::get_or_create_progress
      */
     public function test_get_or_create_progress_creates_new_record(): void {
         global $DB;
@@ -162,8 +160,6 @@ final class story_manager_test extends advanced_testcase {
 
     /**
      * get_or_create_progress returns the existing record on repeated calls.
-     *
-     * @covers ::get_or_create_progress
      */
     public function test_get_or_create_progress_does_not_duplicate(): void {
         global $DB;
@@ -185,8 +181,6 @@ final class story_manager_test extends advanced_testcase {
 
     /**
      * load_scene throws a moodle_exception when the chapter does not belong to the instance.
-     *
-     * @covers ::load_scene
      */
     public function test_load_scene_throws_for_invalid_chapter(): void {
         $this->resetAfterTest(true);
@@ -205,8 +199,6 @@ final class story_manager_test extends advanced_testcase {
 
     /**
      * load_scene throws when the chapter has no start node.
-     *
-     * @covers ::load_scene
      */
     public function test_load_scene_throws_when_no_start_node(): void {
         $this->resetAfterTest(true);
@@ -225,8 +217,6 @@ final class story_manager_test extends advanced_testcase {
 
     /**
      * load_scene returns the start node when the player has no saved progress.
-     *
-     * @covers ::load_scene
      */
     public function test_load_scene_returns_start_node(): void {
         $this->resetAfterTest(true);
@@ -244,8 +234,6 @@ final class story_manager_test extends advanced_testcase {
 
     /**
      * load_scene saves the start-node ID to current_nodes on first visit.
-     *
-     * @covers ::load_scene
      */
     public function test_load_scene_saves_start_node_to_current_nodes(): void {
         global $DB;
@@ -272,8 +260,6 @@ final class story_manager_test extends advanced_testcase {
 
     /**
      * load_scene resumes from the node stored in current_nodes.
-     *
-     * @covers ::load_scene
      */
     public function test_load_scene_resumes_from_saved_node(): void {
         global $DB;
@@ -302,8 +288,6 @@ final class story_manager_test extends advanced_testcase {
 
     /**
      * load_scene includes the finished flag when the chapter is already completed.
-     *
-     * @covers ::load_scene
      */
     public function test_load_scene_shows_finished_flag_for_completed_chapter(): void {
         global $DB;
@@ -332,8 +316,6 @@ final class story_manager_test extends advanced_testcase {
     /**
      * make_choice advances to the next node when next_nodeid > 0 and the next
      * node has outgoing choices (non-terminal).
-     *
-     * @covers ::make_choice
      */
     public function test_make_choice_advances_to_next_node(): void {
         $this->resetAfterTest(true);
@@ -360,8 +342,6 @@ final class story_manager_test extends advanced_testcase {
 
     /**
      * make_choice marks the chapter as complete when the next node has no choices.
-     *
-     * @covers ::make_choice
      */
     public function test_make_choice_marks_chapter_complete_at_terminal_node(): void {
         global $DB;
@@ -393,8 +373,6 @@ final class story_manager_test extends advanced_testcase {
 
     /**
      * make_choice marks the chapter complete when next_nodeid is 0 (no next scene).
-     *
-     * @covers ::make_choice
      */
     public function test_make_choice_marks_chapter_complete_when_next_nodeid_is_zero(): void {
         global $DB;
@@ -422,8 +400,6 @@ final class story_manager_test extends advanced_testcase {
 
     /**
      * make_choice applies the karma_delta from the chosen choice.
-     *
-     * @covers ::make_choice
      */
     public function test_make_choice_applies_karma_delta(): void {
         $this->resetAfterTest(true);
@@ -446,8 +422,6 @@ final class story_manager_test extends advanced_testcase {
 
     /**
      * make_choice adds the chapter to completed_chapters exactly once on the first call.
-     *
-     * @covers ::make_choice
      */
     public function test_make_choice_records_chapter_completion_once(): void {
         global $DB;
@@ -476,8 +450,6 @@ final class story_manager_test extends advanced_testcase {
     /**
      * make_choice throws story_error_invalid_choice when the chapter is already completed,
      * preventing karma/class/reward re-farming.
-     *
-     * @covers ::make_choice
      */
     public function test_make_choice_throws_for_completed_chapter(): void {
         $this->resetAfterTest(true);
@@ -504,8 +476,6 @@ final class story_manager_test extends advanced_testcase {
     /**
      * make_choice throws story_error_invalid_choice when the choice does not belong
      * to the player's current node (intra-instance story bypass attempt).
-     *
-     * @covers ::make_choice
      */
     public function test_make_choice_throws_for_out_of_sequence_choice(): void {
         $this->resetAfterTest(true);

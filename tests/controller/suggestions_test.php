@@ -34,7 +34,7 @@ use stdClass;
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\controller\suggestions
+ * @covers     \block_playerhud\controller\suggestions
  */
 final class suggestions_test extends advanced_testcase {
     /**
@@ -119,8 +119,6 @@ final class suggestions_test extends advanced_testcase {
 
     /**
      * Only the ticked quest suggestions are inserted, and the count is returned.
-     *
-     * @covers ::save_quest_suggestions
      */
     public function test_save_quest_suggestions_inserts_only_selected(): void {
         global $DB;
@@ -145,8 +143,6 @@ final class suggestions_test extends advanced_testcase {
 
     /**
      * No ticked quest suggestion inserts nothing and returns zero.
-     *
-     * @covers ::save_quest_suggestions
      */
     public function test_save_quest_suggestions_none_selected(): void {
         global $DB;
@@ -163,8 +159,6 @@ final class suggestions_test extends advanced_testcase {
 
     /**
      * Only the ticked trade suggestions are created with their reqs and rewards.
-     *
-     * @covers ::save_trade_suggestions
      */
     public function test_save_trade_suggestions_creates_only_selected(): void {
         global $DB;
@@ -195,8 +189,6 @@ final class suggestions_test extends advanced_testcase {
 
     /**
      * No ticked trade suggestion creates nothing and returns zero.
-     *
-     * @covers ::save_trade_suggestions
      */
     public function test_save_trade_suggestions_none_selected(): void {
         global $DB;

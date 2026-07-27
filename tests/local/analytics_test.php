@@ -25,7 +25,7 @@ use advanced_testcase;
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \block_playerhud\local\analytics
+ * @covers     \block_playerhud\local\analytics
  */
 final class analytics_test extends advanced_testcase {
     /** @var int Block instance ID. */
@@ -82,8 +82,6 @@ final class analytics_test extends advanced_testcase {
 
     /**
      * An instance with no items or quests reports an empty economy.
-     *
-     * @covers ::economy_health
      */
     public function test_economy_health_empty(): void {
         $health = analytics::economy_health($this->instanceid, 100, 10);
@@ -95,8 +93,6 @@ final class analytics_test extends advanced_testcase {
 
     /**
      * Total earnable XP below the ceiling is flagged as too hard.
-     *
-     * @covers ::economy_health
      */
     public function test_economy_health_hard(): void {
         // 1 item x 5 uses x 50 XP = 250, ceiling 1000 -> 25% -> hard.
@@ -113,8 +109,6 @@ final class analytics_test extends advanced_testcase {
 
     /**
      * Matching the ceiling exactly is a perfect balance; quest rewards count too.
-     *
-     * @covers ::economy_health
      */
     public function test_economy_health_perfect_includes_quests(): void {
         // Item: 1 use x 600 = 600. Quest reward: 400. Total 1000 = ceiling -> perfect.
@@ -136,8 +130,6 @@ final class analytics_test extends advanced_testcase {
 
     /**
      * Earnable XP above the ceiling is flagged as too easy.
-     *
-     * @covers ::economy_health
      */
     public function test_economy_health_easy(): void {
         // 1 item x 3 uses x 1000 = 3000, ceiling 1000 -> 300% -> easy.
@@ -154,8 +146,6 @@ final class analytics_test extends advanced_testcase {
      * through a quest/trade reward or a teacher's manual grant), and neither does an item only
      * reachable through an infinite drop (anti-farm rule). Both are left out of the breakdown
      * entirely: a teacher has nothing to tune on a row that will always read "+0 XP".
-     *
-     * @covers ::economy_health
      */
     public function test_economy_health_no_drop_and_pure_infinite_excluded(): void {
         $loose = $this->create_item('Loose', 70);
@@ -178,8 +168,6 @@ final class analytics_test extends advanced_testcase {
      * An item with both a finite and an infinite drop still shows up in the breakdown (it does
      * earn real XP through the finite drop), and is correctly marked as also having an infinite
      * source.
-     *
-     * @covers ::economy_health
      */
     public function test_economy_health_infinite_drop_marked_when_item_also_earns_xp(): void {
         $item = $this->create_item('Mixed', 40);
@@ -201,8 +189,6 @@ final class analytics_test extends advanced_testcase {
 
     /**
      * A zero ceiling never divides by zero and yields a zero ratio.
-     *
-     * @covers ::economy_health
      */
     public function test_economy_health_zero_ceiling(): void {
         $item = $this->create_item('Coin', 50);
@@ -218,9 +204,6 @@ final class analytics_test extends advanced_testcase {
     /**
      * balance_context's current_xp always matches economy_health's total_items_xp for the
      * same instance, since both are backed by the same game_xp_totals() source of truth.
-     *
-     * @covers ::balance_context
-     * @covers ::game_xp_totals
      */
     public function test_balance_context_matches_economy_health_total(): void {
         $finite = $this->create_item('Relic', 600);
@@ -244,8 +227,6 @@ final class analytics_test extends advanced_testcase {
 
     /**
      * level_distribution buckets players by level and caps overflow into one bucket.
-     *
-     * @covers ::level_distribution
      */
     public function test_level_distribution_buckets_and_overflow(): void {
         // With 100 XP per level and a cap of 5, the players land on levels 1, 1, 2, 5 and 10.
@@ -272,8 +253,6 @@ final class analytics_test extends advanced_testcase {
 
     /**
      * An empty player set produces no distribution rows.
-     *
-     * @covers ::level_distribution
      */
     public function test_level_distribution_empty(): void {
         $this->assertSame([], analytics::level_distribution([], 100, 10));
@@ -281,8 +260,6 @@ final class analytics_test extends advanced_testcase {
 
     /**
      * A non-positive XP-per-level never divides by zero; everyone lands on level 1.
-     *
-     * @covers ::level_distribution
      */
     public function test_level_distribution_guards_zero_xpperlevel(): void {
         $dist = analytics::level_distribution([0, 500, 9000], 0, 5);
