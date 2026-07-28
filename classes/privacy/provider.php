@@ -83,7 +83,11 @@ class provider implements
         ], 'privacy:metadata:trade_log');
 
         $collection->add_database_table('block_playerhud_ai_logs', [
+            'blockinstanceid' => 'privacy:metadata:ai_logs:blockinstanceid',
+            'userid' => 'privacy:metadata:ai_logs:userid',
             'action_type' => 'privacy:metadata:ai_logs:action',
+            'object_name' => 'privacy:metadata:ai_logs:object_name',
+            'ai_provider' => 'privacy:metadata:ai_logs:provider',
             'timecreated' => 'privacy:metadata:timecreated',
         ], 'privacy:metadata:ai_logs');
 
@@ -243,7 +247,7 @@ class provider implements
         }
 
         // 6. Bulk fetch AI Oracle Logs.
-        $sqlai = "SELECT id, blockinstanceid, action_type, ai_provider, timecreated
+        $sqlai = "SELECT id, blockinstanceid, action_type, object_name, ai_provider, timecreated
                     FROM {block_playerhud_ai_logs}
                    WHERE userid = :userid AND blockinstanceid $insql
                 ORDER BY timecreated DESC";
@@ -254,6 +258,7 @@ class provider implements
             foreach ($ailogrecords as $log) {
                 $ailogsbyinstance[$log->blockinstanceid][] = [
                     'action' => $log->action_type,
+                    'object_name' => $log->object_name,
                     'provider' => $log->ai_provider,
                     'date' => transform::datetime($log->timecreated),
                 ];

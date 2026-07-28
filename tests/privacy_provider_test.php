@@ -396,6 +396,37 @@ final class privacy_provider_test extends advanced_testcase {
     }
 
     /**
+     * Test that every column of block_playerhud_ai_logs is declared in the privacy metadata.
+     * A per-key assertion would not catch a column added later without a matching declaration,
+     * so this compares the declared fields against the table's real columns instead.
+     */
+    public function test_get_metadata_declares_all_ai_logs_columns(): void {
+        global $DB;
+
+        $collection = provider::get_metadata(new collection('block_playerhud'));
+
+        $tableitem = null;
+        foreach ($collection->get_collection() as $item) {
+            if ($item->get_name() === 'block_playerhud_ai_logs') {
+                $tableitem = $item;
+                break;
+            }
+        }
+        $this->assertNotNull($tableitem, 'block_playerhud_ai_logs must be declared in the privacy metadata.');
+
+        $declaredfields = array_keys($tableitem->get_privacy_fields());
+        $realcolumns = array_diff(array_keys($DB->get_columns('block_playerhud_ai_logs')), ['id']);
+
+        sort($declaredfields);
+        sort($realcolumns);
+        $this->assertEquals(
+            $realcolumns,
+            $declaredfields,
+            'Every column of block_playerhud_ai_logs, except id, must be declared in the privacy metadata.'
+        );
+    }
+
+    /**
      * Test that the context where a user stored data is discovered.
      */
     public function test_get_contexts_for_userid(): void {
@@ -488,6 +519,7 @@ final class privacy_provider_test extends advanced_testcase {
         $ailogs = $writer->get_data([$pluginname, get_string('privacy_export_ai_logs', 'block_playerhud')]);
         $this->assertCount(1, $ailogs->logs);
         $this->assertEquals('generate_item', $ailogs->logs[0]['action']);
+        $this->assertEquals('Sword', $ailogs->logs[0]['object_name']);
     }
 
     /**
