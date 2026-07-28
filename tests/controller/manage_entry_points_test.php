@@ -526,7 +526,7 @@ final class manage_entry_points_test extends advanced_testcase {
 
     /**
      * An infinite drop still hands over the item but pays no XP — the anti-farm rule, asserted
-     * here through the real request path rather than against process_transaction() directly.
+     * here through the real request path rather than against game::process_collection() directly.
      */
     public function test_collect_from_an_infinite_drop_pays_no_xp(): void {
         global $DB;

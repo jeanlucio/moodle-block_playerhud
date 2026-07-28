@@ -151,7 +151,10 @@ class game {
     }
 
     /**
-     * Process item collection logic (Shared between Controller and External API).
+     * Process item collection logic. Single source of truth for the collection rules
+     * (limit/cooldown, XP grant, response shape), called by both the AJAX web service
+     * and the page-request fallback (controller\collect), so the two entry points
+     * cannot drift out of sync.
      *
      * @param int $instanceid Block instance ID.
      * @param int $dropid Drop location ID.
@@ -183,25 +186,8 @@ class game {
 
         try {
             // 3. Check Limits & Cooldown.
-            $inventory = $DB->get_records('block_playerhud_inventory', [
-                'userid' => $userid,
-                'dropid' => $drop->id,
-            ], 'timecreated DESC');
-
-            $count = count($inventory);
-            $lastcollected = reset($inventory);
-
-            if ($drop->maxusage > 0 && $count >= $drop->maxusage) {
-                throw new \moodle_exception('limitreached', 'block_playerhud');
-            }
-
-            if ($lastcollected && $drop->respawntime > 0) {
-                $readytime = $lastcollected->timecreated + $drop->respawntime;
-                if (time() < $readytime) {
-                    $minutesleft = ceil(($readytime - time()) / 60);
-                    throw new \moodle_exception('waitmore', 'block_playerhud', '', $minutesleft);
-                }
-            }
+            drop_guard::check_pickup_allowed($drop->id, $userid, (int)$drop->maxusage, (int)$drop->respawntime);
+            $count = $DB->count_records('block_playerhud_inventory', ['userid' => $userid, 'dropid' => $drop->id]);
 
             // 4. Transaction.
             // Infinite drops (0 maxusage) give 0 XP to prevent farming.

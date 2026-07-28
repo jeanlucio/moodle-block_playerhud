@@ -454,6 +454,29 @@ final class game_test extends advanced_testcase {
     }
 
     /**
+     * An item configured with 0 XP is still collected but naturally awards nothing —
+     * distinct from the infinite-drop anti-farm rule, which forces XP to 0 regardless
+     * of the item's own value.
+     */
+    public function test_process_collection_zero_xp_item_awards_nothing(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Plain Pebble', 0);
+        $drop = $this->create_dummy_drop($item->id, 5);
+
+        $result = game::process_collection($this->instanceid, $drop->id, $user->id);
+
+        $this->assertTrue($result['success']);
+        $this->assertTrue(game::has_item($user->id, $item->id));
+        $this->assertSame(0, (int) game::get_player($this->instanceid, $user->id)->currentxp);
+
+        global $DB;
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_inventory', 'xpawarded', ['userid' => $user->id]));
+    }
+
+    /**
      * change_xp awards a positive delta and fires xp_changed with that delta.
      */
     public function test_change_xp_awards_and_fires_event(): void {
