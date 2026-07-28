@@ -712,40 +712,32 @@ class generator {
      * @throws \moodle_exception If all providers fail or no keys are configured.
      */
     protected function call_with_fallback(array $parts, string $description = ''): array {
-        global $USER;
-
         [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $keysource] = $this->load_api_keys();
 
         $nokeys = empty($geminikey) && empty($groqkey) && empty($openaikey);
         $result = ['success' => false, 'message' => ''];
+        $attempts = [];
 
         if (!empty($geminikey)) {
             $result = $this->call_gemini($parts, $geminikey);
+            $attempts[] = $result;
         }
 
         if (!$result['success'] && !empty($groqkey)) {
             $result = $this->call_groq($parts, $groqkey);
+            $attempts[] = $result;
         }
 
         if (!$result['success'] && !empty($openaikey) && !empty($openaiurl)) {
             $result = $this->call_openai_compatible($parts, $openaikey, $openaiurl, $openaimodel);
+            $attempts[] = $result;
         }
 
-        // A hub-borrowed key served the request: this class calls providers directly
-        // instead of going through local_aihub\ai::generate_text(), so the hub never
-        // sees the request on its own. Report it after the fact so the site usage
-        // report still reflects it.
-        $hubtiers = ['hub_personal', 'hub_site'];
-        if ($result['success'] && in_array($keysource, $hubtiers, true) && class_exists(\local_aihub\ai::class)) {
-            \local_aihub\ai::report_usage(
-                (int) $USER->id,
-                'block_playerhud',
-                $description,
-                (string) ($result['provider'] ?? ''),
-                '',
-                $keysource === 'hub_personal' ? 'personal' : 'site'
-            );
-        }
+        // This class calls providers directly instead of going through
+        // local_aihub\ai::generate_text(), so the hub never sees the requests on its
+        // own. Report every attempt after the fact so a hub-borrowed key that keeps
+        // failing is visible in the site usage report, not just the one that answered.
+        $this->report_hub_attempts($attempts, $keysource, $description);
 
         // Bottom of the ladder: Moodle core_ai, only when no key is configured.
         if (!$result['success'] && $nokeys && $this->has_core_ai_provider()) {
@@ -763,6 +755,45 @@ class generator {
         }
 
         return $result;
+    }
+
+    /**
+     * Reports every provider attempt to the AI Hub's usage log, when the attempts were
+     * made with a hub-borrowed key.
+     *
+     * One row per attempt, not one per request: a hub key that fails on every provider
+     * it is tried against would otherwise leave no trace, since call_with_fallback() and
+     * chat::send() call providers directly instead of local_aihub\ai::generate_text(),
+     * which is what logs automatically. Requests made with a plugin-owned key
+     * (own_personal, own_site) are never reported, matching local_aihub\ai::report_usage()
+     * being reserved for hub-borrowed keys only.
+     *
+     * @param array $attempts List of curl_request()-shaped results, one per provider tried.
+     * @param string $keysource Tier that supplied the keys, as returned by load_api_keys().
+     * @param string $description Short label of what was being generated, for the usage log.
+     * @return void
+     */
+    protected function report_hub_attempts(array $attempts, string $keysource, string $description): void {
+        global $USER;
+
+        $hubtiers = ['hub_personal', 'hub_site'];
+        if (!in_array($keysource, $hubtiers, true) || !class_exists(\local_aihub\ai::class)) {
+            return;
+        }
+
+        $tier = $keysource === 'hub_personal' ? 'personal' : 'site';
+        foreach ($attempts as $attempt) {
+            \local_aihub\ai::report_usage(
+                (int) $USER->id,
+                'block_playerhud',
+                $description,
+                (string) ($attempt['provider'] ?? ''),
+                '',
+                $tier,
+                (bool) ($attempt['success'] ?? false),
+                (string) ($attempt['message'] ?? '')
+            );
+        }
     }
 
     /**
@@ -1057,7 +1088,8 @@ class generator {
      * @param string $payload The POST data.
      * @param array $headers Request headers.
      * @param string $source The source identifier.
-     * @return array Result array with success status and data.
+     * @return array Result array with success status, data and provider — provider is set
+     *               on both outcomes, so a caller can attribute a failed attempt.
      */
     protected function curl_request($url, $payload, $headers, $source) {
         global $CFG;
@@ -1082,7 +1114,7 @@ class generator {
         if ($curlerror) {
             // 1.1 $curl->error contains the error message.
             $msg = get_string('error_connection', 'block_playerhud') . ' (' . $curl->error . ')';
-            return ['success' => false, 'message' => $msg];
+            return ['success' => false, 'message' => $msg, 'provider' => $source];
         }
 
         // 2. Check for HTTP level errors (e.g., 401, 500).
@@ -1101,7 +1133,7 @@ class generator {
                 'block_playerhud',
                 ['service' => $source, 'code' => $code . $errormsg]
             );
-            return ['success' => false, 'message' => $msg];
+            return ['success' => false, 'message' => $msg, 'provider' => $source];
         }
 
         // 3. Process Success.

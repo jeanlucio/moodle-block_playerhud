@@ -43,20 +43,21 @@ class chat extends generator {
      * @throws \moodle_exception If no key is available or all providers fail.
      */
     public function send(string $systemprompt, array $messages): array {
-        global $USER;
-
         [$geminikey, $groqkey, $openaikey, $openaiurl, $openaimodel, $keysource] = $this->load_api_keys();
 
         $nokeys = empty($geminikey) && empty($groqkey) && empty($openaikey);
         $result = ['success' => false, 'message' => ''];
+        $attempts = [];
 
         // Configured key level first, with native multi-turn support.
         if (!empty($geminikey)) {
             $result = $this->call_gemini_chat($systemprompt, $messages, $geminikey);
+            $attempts[] = $result;
         }
 
         if (!$result['success'] && !empty($groqkey)) {
             $result = $this->call_groq_chat($systemprompt, $messages, $groqkey);
+            $attempts[] = $result;
         }
 
         if (!$result['success'] && !empty($openaikey) && !empty($openaiurl)) {
@@ -67,21 +68,13 @@ class chat extends generator {
                 $openaiurl,
                 $openaimodel
             );
+            $attempts[] = $result;
         }
 
-        // A hub-borrowed key served the request: report it so the hub's usage report
-        // reflects requests it never saw directly (see generator::call_with_fallback).
-        $hubtiers = ['hub_personal', 'hub_site'];
-        if ($result['success'] && in_array($keysource, $hubtiers, true) && class_exists(\local_aihub\ai::class)) {
-            \local_aihub\ai::report_usage(
-                (int) $USER->id,
-                'block_playerhud',
-                'chat',
-                (string) ($result['provider'] ?? ''),
-                '',
-                $keysource === 'hub_personal' ? 'personal' : 'site'
-            );
-        }
+        // See generator::report_hub_attempts() — reports every attempt made with a
+        // hub-borrowed key, so the hub's usage report reflects requests it never saw
+        // directly, including ones that failed.
+        $this->report_hub_attempts($attempts, $keysource, 'chat');
 
         // Bottom of the ladder: Moodle core_ai, only when no key is configured.
         // core_ai has no native multi-turn API, so the history is flattened.
