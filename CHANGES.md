@@ -5,6 +5,87 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.8.0] — 2026-07-28
+
+### Added
+- **External Item API** (`local\external_items`): lets other Player-family plugins
+  (e.g. `mod_playerwords`) safely grant, consume, and query PlayerHUD items without
+  touching the plugin's own tables directly. Every operation validates that the
+  item actually belongs to the caller's own block instance first, closing a gap
+  where a copied activity (backup, restore or import) could silently keep
+  operating on another course's item.
+- Economy Health panel now discovers potential XP from other installed plugins via
+  an optional `<frankenstyle>_playerhud_grant_potential()` callback, using the same
+  discovery pattern already used for navigation callbacks. No plugin implements it
+  yet.
+- Deleting an item or quest that students already earned XP from now shows the
+  aggregate impact (how many students, how much XP) before confirming, and
+  suggests disabling instead — mirroring the existing trade-impact screen for
+  items. Editing an item's or quest's XP value after students have already earned
+  it now shows a non-blocking note that the change is not retroactive.
+- Inventory items granted by an external plugin (not one of PlayerHUD's own four
+  origins) now get their own "earned in games" badge and legend entry, instead of
+  falling into an unexplained generic bucket.
+- A help button next to a quest's item-reward field now clarifies that only the
+  XP Reward field pays real XP — the item itself is handed over as a plain
+  collectible.
+- `aria-label` added to the collection origin badges, carrying both the count and
+  the origin description for screen readers that don't reliably announce `title`.
+
+### Changed
+- Groq model updated to `openai/gpt-oss-120b`; the previous model
+  (`llama-3.3-70b-versatile`) is being decommissioned by Groq on 2026-08-16.
+- README restructured into a short overview plus a full documentation site
+  (mirrors the pattern already used by `mod_playerwords`); every section from the
+  previous README is preserved, now organised into individual pages in English
+  and Portuguese, with an expanded Third-party Service disclosure covering cost
+  and where to obtain provider keys.
+
+### Fixed
+- **XP audit log and item/quest deletion now use the XP actually paid out, not the
+  item or quest's current configuration.** Previously the audit log (teacher
+  Reports tab, student History tab) recomputed each past collection's XP from the
+  item's *current* value, so editing an item retroactively rewrote history for
+  every student who ever collected it — and deleting or revoking that item removed
+  `xp × count`, which could take more XP than a student ever actually earned when
+  some of their copies came from an infinite drop or never paid XP to begin with.
+  The same problem existed for quest rewards. Items and quest claims now record
+  the XP genuinely paid at the moment of collection/claim, and every reader (audit
+  log, deletion, revocation) uses that recorded value instead of recomputing it.
+- The "total achievable XP" shown in the Economy Health panel, the student's own
+  progress bar, and the AI item generator's difficulty balancing could disagree,
+  since the same calculation was implemented three times independently and had
+  drifted. All three now share one calculation; items that contribute 0 XP no
+  longer clutter the Economy Health breakdown table.
+- Disabling an item no longer leaves it tradeable: a trade requiring or rewarding
+  a disabled item is now hidden from the student shop and rejected outright if
+  reached directly, while the teacher's own Trades tab still shows it, visibly
+  muted with a warning naming the disabled item(s).
+- The `core_ai` fallback now respects a course or activity's own "Enable AI tools"
+  toggle, not just whether the site has a provider configured at all (skipped,
+  never blocking, on Moodle 4.5, which does not have this per-course setting).
+- The schema upgrade step that backfills drop codes now reports progress to avoid
+  hitting the web server's execution time limit on a site with a large number of
+  accumulated drops. Discovering other plugins' potential XP no longer takes down
+  the Economy Health report if an unrelated plugin's own callback is broken.
+- Declared the missing `blockinstanceid`, `userid`, `object_name` and
+  `ai_provider` columns of the AI action log in the Privacy Provider, and included
+  the last one in the user's own data export — previously a teacher could see
+  their own AI chat prompt in the manage report but not in their GDPR export of
+  the same data.
+- A hub-borrowed AI key that failed on every provider in its tier was invisible in
+  the AI Hub's usage report, since only a successful final attempt was ever
+  reported. Every attempt is now reported with its real outcome.
+
+### Security
+- AI-generated emoji is now sanitised on write and escaped on every render path,
+  closing the one view that still used it unescaped.
+- A `deadline_extension` item's course scope is now verified before use, closing a
+  gap that let an item bought in one course's economy extend a deadline on an
+  unrelated course.
+
+---
+
 ## [v1.7.1] — 2026-07-07
 
 ### Added
