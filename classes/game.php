@@ -203,7 +203,14 @@ class game {
                 $newinv->timecreated = time();
                 $newinv->source = 'map';
                 $newinv->xpawarded = $earnedxp;
-                $DB->insert_record('block_playerhud_inventory', $newinv);
+                $newinv->id = $DB->insert_record('block_playerhud_inventory', $newinv);
+
+                event\item_collected::create([
+                    'context' => \context_block::instance($instanceid),
+                    'objectid' => (int)$newinv->id,
+                    'relateduserid' => (int)$userid,
+                    'other' => ['itemid' => (int)$item->id, 'dropid' => (int)$drop->id, 'xp' => $earnedxp],
+                ])->trigger();
 
                 if ($earnedxp > 0) {
                     $player = self::get_player($instanceid, $userid);
@@ -802,8 +809,15 @@ class game {
             $progress->karma = 0;
             $progress->current_nodes = null;
             $progress->completed_chapters = null;
-            $DB->insert_record('block_playerhud_rpg_progress', $progress);
+            $progress->id = $DB->insert_record('block_playerhud_rpg_progress', $progress);
         }
+
+        event\character_selected::create([
+            'context' => \context_block::instance($blockinstanceid),
+            'objectid' => (int)$progress->id,
+            'relateduserid' => (int)$userid,
+            'other' => ['classid' => (int)$classid],
+        ])->trigger();
     }
 
     /**

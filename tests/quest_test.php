@@ -27,6 +27,7 @@ use block_playerhud\quest;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\quest
+ * @covers     \block_playerhud\event\quest_collected
  */
 final class quest_test extends advanced_testcase {
     /** @var int Block instance ID. */
@@ -584,6 +585,39 @@ final class quest_test extends advanced_testcase {
             'questid' => $quest->id,
             'userid'  => $user->id,
         ]));
+    }
+
+    /**
+     * A successful claim fires quest_collected with the new quest_log row as objectid
+     * and the questid/xp actually awarded in the other payload.
+     */
+    public function test_claim_reward_fires_quest_collected_event(): void {
+        global $DB;
+
+        $user  = $this->getDataGenerator()->create_user();
+        $quest = $this->create_quest(quest::TYPE_XP_TOTAL, '50', 100);
+
+        $this->set_player_xp($user->id, 50);
+
+        // A non-zero reward_xp also triggers change_xp(), which fires its own xp_changed
+        // event — filter to the one under test instead of assuming a single event overall.
+        $sink = $this->redirectEvents();
+        quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+        $events = array_values(array_filter(
+            $sink->get_events(),
+            static fn($event) => $event instanceof \block_playerhud\event\quest_collected
+        ));
+
+        $this->assertCount(1, $events);
+        $this->assertSame((int) $user->id, $events[0]->relateduserid);
+        $this->assertSame((int) $quest->id, $events[0]->other['questid']);
+        $this->assertSame(100, $events[0]->other['xp']);
+
+        $logid = (int) $DB->get_field('block_playerhud_quest_log', 'id', [
+            'questid' => $quest->id,
+            'userid'  => $user->id,
+        ]);
+        $this->assertSame($logid, (int) $events[0]->objectid);
     }
 
     /**

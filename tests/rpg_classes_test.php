@@ -28,6 +28,7 @@ use block_playerhud\utils;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\game
+ * @covers     \block_playerhud\event\character_selected
  * @covers     \block_playerhud\utils
  */
 final class rpg_classes_test extends advanced_testcase {
@@ -108,6 +109,41 @@ final class rpg_classes_test extends advanced_testcase {
 
         $this->assertNotFalse($progress);
         $this->assertEquals($class->id, (int) $progress->classid);
+    }
+
+    /**
+     * assign_class fires character_selected with the progress row as objectid and the
+     * assigned classid in the other payload, whether creating or updating the record.
+     */
+    public function test_assign_class_fires_character_selected_event(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $mage = $this->create_dummy_class('Mage');
+        $warrior = $this->create_dummy_class('Warrior');
+
+        // First assignment: creates the progress record.
+        $sink = $this->redirectEvents();
+        game::assign_class($this->instanceid, $user->id, $mage->id);
+        $events = array_values($sink->get_events());
+
+        $this->assertCount(1, $events);
+        $this->assertInstanceOf(\block_playerhud\event\character_selected::class, $events[0]);
+        $this->assertSame((int) $user->id, $events[0]->relateduserid);
+        $this->assertSame((int) $mage->id, $events[0]->other['classid']);
+
+        $progress = game::get_player_class($this->instanceid, $user->id);
+        $this->assertSame((int) $progress->id, (int) $events[0]->objectid);
+
+        // Second assignment (class switch): updates the same progress record.
+        $sink->clear();
+        game::assign_class($this->instanceid, $user->id, $warrior->id);
+        $events = array_values($sink->get_events());
+
+        $this->assertCount(1, $events);
+        $this->assertSame((int) $warrior->id, $events[0]->other['classid']);
+        $this->assertSame((int) $progress->id, (int) $events[0]->objectid);
     }
 
     /**

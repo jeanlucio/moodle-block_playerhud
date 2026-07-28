@@ -27,6 +27,7 @@ use block_playerhud\trade_manager;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\trade_manager
+ * @covers     \block_playerhud\event\trade_completed
  */
 final class trade_test extends advanced_testcase {
     /** @var int Dummy block instance ID for testing. */
@@ -275,6 +276,51 @@ final class trade_test extends advanced_testcase {
 
         $potionsowned = $DB->count_records('block_playerhud_inventory', ['userid' => $user->id, 'itemid' => $potion->id]);
         $this->assertEquals(1, $potionsowned, 'Potion should be awarded.');
+    }
+
+    /**
+     * A successful trade fires trade_completed with the new trade_log row as objectid
+     * and the tradeid in the other payload.
+     */
+    public function test_execute_trade_fires_trade_completed_event(): void {
+        global $DB;
+        $user = $this->getDataGenerator()->create_user();
+        $coin = $this->create_dummy_item('Coin');
+        $potion = $this->create_dummy_item('Health Potion');
+
+        $this->give_item_to_user($user->id, $coin->id, 5);
+
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object)[
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'Buy Potion',
+            'groupid'         => 0,
+            'onetime'         => 0,
+            'timecreated'     => time(),
+        ]);
+
+        $DB->insert_record('block_playerhud_trade_reqs', (object)[
+            'tradeid' => $tradeid,
+            'itemid'  => $coin->id,
+            'qty'     => 5,
+        ]);
+
+        $DB->insert_record('block_playerhud_trade_rewards', (object)[
+            'tradeid' => $tradeid,
+            'itemid'  => $potion->id,
+            'qty'     => 1,
+        ]);
+
+        $sink = $this->redirectEvents();
+        trade_manager::execute_trade($tradeid, $user->id, $this->instanceid, $this->course->id);
+        $events = array_values($sink->get_events());
+
+        $this->assertCount(1, $events);
+        $this->assertInstanceOf(\block_playerhud\event\trade_completed::class, $events[0]);
+        $this->assertSame((int) $user->id, $events[0]->relateduserid);
+        $this->assertSame((int) $tradeid, $events[0]->other['tradeid']);
+
+        $logid = (int) $DB->get_field('block_playerhud_trade_log', 'id', ['tradeid' => $tradeid, 'userid' => $user->id]);
+        $this->assertSame($logid, (int) $events[0]->objectid);
     }
 
     /**

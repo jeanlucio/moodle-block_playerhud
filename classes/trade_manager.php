@@ -276,7 +276,14 @@ class trade_manager {
             $log->tradeid = $trade->id;
             $log->userid = $userid;
             $log->timecreated = time();
-            $DB->insert_record('block_playerhud_trade_log', $log);
+            $log->id = $DB->insert_record('block_playerhud_trade_log', $log);
+
+            event\trade_completed::create([
+                'context' => \context_block::instance($instanceid),
+                'objectid' => (int)$log->id,
+                'relateduserid' => $userid,
+                'other' => ['tradeid' => (int)$trade->id],
+            ])->trigger();
 
             $transaction->allow_commit();
 

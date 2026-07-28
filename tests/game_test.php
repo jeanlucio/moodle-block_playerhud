@@ -28,6 +28,7 @@ use block_playerhud\game;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\game
  * @covers     \block_playerhud\event\xp_changed
+ * @covers     \block_playerhud\event\item_collected
  * @covers     \block_playerhud\utils
  */
 final class game_test extends advanced_testcase {
@@ -474,6 +475,39 @@ final class game_test extends advanced_testcase {
 
         global $DB;
         $this->assertSame(0, (int) $DB->get_field('block_playerhud_inventory', 'xpawarded', ['userid' => $user->id]));
+    }
+
+    /**
+     * process_collection fires item_collected with the new inventory row as objectid and
+     * the item/drop/xp actually awarded in the other payload.
+     */
+    public function test_process_collection_fires_item_collected_event(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Silver Coin', 40);
+        $drop = $this->create_dummy_drop($item->id, 3);
+
+        $sink = $this->redirectEvents();
+        game::process_collection($this->instanceid, $drop->id, $user->id);
+        $events = $sink->get_events();
+
+        $itemevents = array_values(array_filter(
+            $events,
+            static fn($event) => $event instanceof \block_playerhud\event\item_collected
+        ));
+        $this->assertCount(1, $itemevents);
+
+        $event = $itemevents[0];
+        $this->assertSame((int) $user->id, $event->relateduserid);
+        $this->assertSame((int) $item->id, $event->other['itemid']);
+        $this->assertSame((int) $drop->id, $event->other['dropid']);
+        $this->assertSame(40, $event->other['xp']);
+
+        global $DB;
+        $invid = (int) $DB->get_field('block_playerhud_inventory', 'id', ['userid' => $user->id]);
+        $this->assertSame($invid, (int) $event->objectid);
     }
 
     /**

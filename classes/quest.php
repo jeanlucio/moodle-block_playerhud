@@ -349,7 +349,14 @@ class quest {
                 $log->userid = $userid;
                 $log->timecreated = time();
                 $log->xpawarded = (int)$quest->reward_xp;
-                $DB->insert_record('block_playerhud_quest_log', $log);
+                $log->id = $DB->insert_record('block_playerhud_quest_log', $log);
+
+                event\quest_collected::create([
+                    'context' => \context_block::instance($blockinstanceid),
+                    'objectid' => (int)$log->id,
+                    'relateduserid' => (int)$userid,
+                    'other' => ['questid' => (int)$questid, 'xp' => (int)$quest->reward_xp],
+                ])->trigger();
 
                 $rewardstxt = [];
 
