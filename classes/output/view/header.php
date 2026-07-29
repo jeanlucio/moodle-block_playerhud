@@ -18,6 +18,7 @@ namespace block_playerhud\output\view;
 
 use renderable;
 use templatable;
+use renderer_base;
 
 /**
  * Header view for PlayerHUD.
@@ -47,7 +48,7 @@ class header implements renderable, templatable {
      * @param \stdClass $user User object.
      * @param int $courseid Course ID.
      */
-    public function __construct($config, $player, $user, int $courseid = 0) {
+    public function __construct(\stdClass $config, \stdClass $player, \stdClass $user, int $courseid = 0) {
         $this->config   = $config;
         $this->player   = $player;
         $this->user     = $user;
@@ -60,7 +61,7 @@ class header implements renderable, templatable {
      * @param \core\output\core_renderer $output The renderer.
      * @return array Data for the template.
      */
-    public function export_for_template($output) {
+    public function export_for_template(renderer_base $output): array {
         // 1. Calculate Stats.
         $stats = \block_playerhud\game::get_game_stats(
             $this->config,
