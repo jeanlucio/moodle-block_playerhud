@@ -47,12 +47,12 @@ class tab_class_select implements renderable {
     /**
      * Constructor.
      *
-     * @param object $config Block configuration.
-     * @param object $player Player record.
+     * @param \stdClass $config Block configuration.
+     * @param \stdClass $player Player record.
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      */
-    public function __construct($config, $player, $instanceid, $courseid) {
+    public function __construct(\stdClass $config, \stdClass $player, int $instanceid, int $courseid) {
         $this->config     = $config;
         $this->player     = $player;
         $this->instanceid = $instanceid;
