@@ -60,7 +60,7 @@ class tab_quests implements renderable {
      * @param string $sort Sort column.
      * @param string $dir Sort direction.
      */
-    public function __construct($instanceid, $courseid, $sort = 'name', $dir = 'ASC') {
+    public function __construct(int $instanceid, int $courseid, string $sort = 'name', string $dir = 'ASC') {
         $this->instanceid = $instanceid;
         $this->courseid   = $courseid;
         $this->sort       = $sort ?: 'name';
@@ -69,8 +69,10 @@ class tab_quests implements renderable {
 
     /**
      * Handle form submission (add/edit quest).
+     *
+     * @return void
      */
-    public function process() {
+    public function process(): void {
         global $DB;
 
         $action  = optional_param('action', '', PARAM_ALPHA);
@@ -219,7 +221,7 @@ class tab_quests implements renderable {
      *
      * @return string HTML content.
      */
-    public function display() {
+    public function display(): string {
         if ($this->mform !== null) {
             return $this->render_form();
         }
@@ -231,7 +233,7 @@ class tab_quests implements renderable {
      *
      * @return string HTML.
      */
-    protected function render_form() {
+    protected function render_form(): string {
         global $OUTPUT;
         $questid = optional_param('questid', 0, PARAM_INT);
         $title   = $questid
@@ -274,7 +276,7 @@ class tab_quests implements renderable {
      *
      * @return string HTML.
      */
-    protected function render_list() {
+    protected function render_list(): string {
         global $DB, $OUTPUT, $PAGE;
 
         $baseurl = new moodle_url('/blocks/playerhud/manage.php', [
