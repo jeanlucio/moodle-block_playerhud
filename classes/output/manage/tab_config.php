@@ -45,10 +45,10 @@ class tab_config implements renderable, templatable {
     /**
      * Constructor.
      *
-     * @param int $instanceid
-     * @param int $courseid
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
      */
-    public function __construct($instanceid, $courseid) {
+    public function __construct(int $instanceid, int $courseid) {
         $this->instanceid = $instanceid;
         $this->courseid = $courseid;
     }
@@ -59,7 +59,7 @@ class tab_config implements renderable, templatable {
      * @param \renderer_base $output The renderer instance.
      * @return array Data for template.
      */
-    public function export_for_template($output) {
+    public function export_for_template($output): array {
         global $DB;
 
         // 1. Load Configuration.
