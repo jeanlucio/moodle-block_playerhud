@@ -47,7 +47,7 @@ class tab_classes implements renderable {
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      */
-    public function __construct($instanceid, $courseid) {
+    public function __construct(int $instanceid, int $courseid) {
         $this->instanceid = $instanceid;
         $this->courseid   = $courseid;
     }
