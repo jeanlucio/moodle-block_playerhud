@@ -45,7 +45,7 @@ class tab_collection implements renderable, templatable {
      * @param \stdClass $player Player object.
      * @param int $instanceid Block instance ID.
      */
-    public function __construct($config, $player, $instanceid) {
+    public function __construct(\stdClass $config, \stdClass $player, int $instanceid) {
         $this->config = $config;
         $this->player = $player;
         $this->instanceid = $instanceid;
@@ -57,7 +57,7 @@ class tab_collection implements renderable, templatable {
      * @param renderer_base $output The renderer.
      * @return array Data for the template.
      */
-    public function export_for_template(renderer_base $output) {
+    public function export_for_template(renderer_base $output): array {
         global $DB, $CFG, $PAGE;
 
         // 1. Capture sort parameter (Default: recent).
