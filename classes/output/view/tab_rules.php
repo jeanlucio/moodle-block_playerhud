@@ -44,7 +44,7 @@ class tab_rules implements renderable, templatable {
      * @param stdClass $config Block configuration object.
      * @param int $instanceid Block instance ID.
      */
-    public function __construct($config, int $instanceid = 0) {
+    public function __construct(stdClass $config, int $instanceid = 0) {
         $this->config     = $config;
         $this->instanceid = $instanceid;
     }
