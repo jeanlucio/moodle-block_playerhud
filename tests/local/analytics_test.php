@@ -17,6 +17,7 @@
 namespace block_playerhud\local;
 
 use advanced_testcase;
+use block_playerhud\utils;
 
 /**
  * Tests for the reporting and balance analytics helper.
@@ -26,6 +27,7 @@ use advanced_testcase;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\local\analytics
+ * @covers     \block_playerhud\utils
  */
 final class analytics_test extends advanced_testcase {
     /** @var int Block instance ID. */
@@ -75,7 +77,7 @@ final class analytics_test extends advanced_testcase {
         global $DB;
         $DB->insert_record('block_playerhud_drops', (object) [
             'blockinstanceid' => $this->instanceid, 'itemid' => $itemid, 'name' => 'Loc',
-            'maxusage' => $maxusage, 'respawntime' => 0, 'code' => 'C' . rand(1000, 9999),
+            'maxusage' => $maxusage, 'respawntime' => 0, 'code' => utils::generate_drop_code($this->instanceid),
             'timecreated' => time(), 'timemodified' => time(),
         ]);
     }

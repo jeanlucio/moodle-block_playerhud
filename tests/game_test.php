@@ -18,6 +18,7 @@ namespace block_playerhud;
 
 use advanced_testcase;
 use block_playerhud\game;
+use block_playerhud\utils;
 
 /**
  * Tests for the game logic class.
@@ -104,7 +105,7 @@ final class game_test extends advanced_testcase {
         $drop->name = 'Test Location';
         $drop->maxusage = $maxusage;
         $drop->respawntime = $respawntime;
-        $drop->code = 'TEST' . rand(100, 999);
+        $drop->code = utils::generate_drop_code($this->instanceid);
         $drop->timecreated = time();
         $drop->timemodified = time();
         $drop->id = $DB->insert_record('block_playerhud_drops', $drop);
