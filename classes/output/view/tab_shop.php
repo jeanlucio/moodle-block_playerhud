@@ -49,7 +49,7 @@ class tab_shop implements renderable, templatable {
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      */
-    public function __construct($config, $player, $instanceid, $courseid) {
+    public function __construct(\stdClass $config, \stdClass $player, int $instanceid, int $courseid) {
         $this->config = $config;
         $this->player = $player;
         $this->instanceid = $instanceid;
@@ -62,7 +62,7 @@ class tab_shop implements renderable, templatable {
      * @param renderer_base $output The renderer.
      * @return array Data for the template.
      */
-    public function export_for_template($output) {
+    public function export_for_template(renderer_base $output): array {
         global $DB, $CFG;
 
         $context = \context_block::instance($this->instanceid);
@@ -232,7 +232,7 @@ class tab_shop implements renderable, templatable {
      *
      * @return string HTML content.
      */
-    public function display() {
+    public function display(): string {
         global $OUTPUT;
         return $OUTPUT->render_from_template('block_playerhud/tab_shop', $this->export_for_template($OUTPUT));
     }
