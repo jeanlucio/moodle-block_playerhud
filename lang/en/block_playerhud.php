@@ -674,6 +674,7 @@ $string['quests_summary_hint'] = 'When the student reaches the objective, the re
 $string['rank_groups'] = 'Groups (Avg XP)';
 $string['rank_individual'] = 'Individual';
 $string['ranking_disable'] = 'Disable Ranking';
+$string['ranking_disabled'] = 'Ranking is disabled for this course.';
 $string['ranking_filter_hide'] = 'Hide Inactive (Student View)';
 $string['ranking_filter_show'] = 'Show Hidden/Paused';
 $string['ranking_hdr'] = 'Ranking (Individual and Group)';

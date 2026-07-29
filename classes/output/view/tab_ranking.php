@@ -19,6 +19,7 @@ namespace block_playerhud\output\view;
 use renderable;
 use templatable;
 use moodle_url;
+use renderer_base;
 
 /**
  * Ranking tab output renderer.
@@ -52,7 +53,7 @@ class tab_ranking implements renderable, templatable {
      * @param int $courseid Course ID.
      * @param bool $isteacher Is user teacher?
      */
-    public function __construct($config, $player, $instanceid, $courseid, $isteacher) {
+    public function __construct(\stdClass $config, \stdClass $player, int $instanceid, int $courseid, bool $isteacher) {
         $this->config = $config;
         $this->player = $player;
         $this->instanceid = $instanceid;
@@ -66,7 +67,7 @@ class tab_ranking implements renderable, templatable {
      *
      * @return string HTML content.
      */
-    public function display() {
+    public function display(): string {
         global $OUTPUT;
         return $OUTPUT->render_from_template('block_playerhud/view_ranking', $this->export_for_template($OUTPUT));
     }
@@ -77,7 +78,7 @@ class tab_ranking implements renderable, templatable {
      * @param \core\output\core_renderer $output The renderer.
      * @return array Data for the template.
      */
-    public function export_for_template($output) {
+    public function export_for_template(renderer_base $output): array {
         // 1. Global Configuration Checks.
         if (empty($this->config->enable_ranking)) {
             return ['is_disabled' => true, 'str_disabled' => get_string('ranking_disabled', 'block_playerhud')];

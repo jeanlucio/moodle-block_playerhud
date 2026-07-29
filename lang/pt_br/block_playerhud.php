@@ -674,6 +674,7 @@ $string['quests_summary_hint'] = 'Quando o estudante cumpre o objetivo, a recomp
 $string['rank_groups'] = 'Grupos (Média XP)';
 $string['rank_individual'] = 'Individual';
 $string['ranking_disable'] = 'Desativar Ranking';
+$string['ranking_disabled'] = 'O ranking está desativado neste curso.';
 $string['ranking_filter_hide'] = 'Ocultar Inativos (Visão do Estudante)';
 $string['ranking_filter_show'] = 'Mostrar Ocultos/Pausados';
 $string['ranking_hdr'] = 'Ranking (individual e de grupo)';
