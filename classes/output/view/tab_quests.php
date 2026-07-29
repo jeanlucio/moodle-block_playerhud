@@ -57,7 +57,7 @@ class tab_quests implements renderable {
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      */
-    public function __construct($config, $player, $instanceid, $courseid) {
+    public function __construct(\stdClass $config, \stdClass $player, int $instanceid, int $courseid) {
         $this->config     = $config;
         $this->player     = $player;
         $this->instanceid = $instanceid;
@@ -69,7 +69,7 @@ class tab_quests implements renderable {
      *
      * @return string HTML content.
      */
-    public function display() {
+    public function display(): string {
         global $DB, $OUTPUT, $USER;
 
         $currentsort = optional_param('sort', 'name_asc', PARAM_ALPHANUMEXT);
@@ -305,7 +305,7 @@ class tab_quests implements renderable {
      * @param int $type Quest type constant.
      * @return string Localised label.
      */
-    protected function get_type_label($type) {
+    protected function get_type_label(int $type): string {
         $map = [
             quest::TYPE_LEVEL          => get_string('quest_type_level', 'block_playerhud'),
             quest::TYPE_XP_TOTAL       => get_string('quest_type_xp_total', 'block_playerhud'),
