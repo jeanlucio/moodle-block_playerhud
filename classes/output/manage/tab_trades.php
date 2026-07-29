@@ -38,10 +38,10 @@ class tab_trades implements renderable, templatable {
     /**
      * Constructor.
      *
-     * @param int $instanceid
-     * @param int $courseid
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
      */
-    public function __construct($instanceid, $courseid) {
+    public function __construct(int $instanceid, int $courseid) {
         $this->instanceid = $instanceid;
         $this->courseid = $courseid;
     }
@@ -52,7 +52,7 @@ class tab_trades implements renderable, templatable {
      * @param renderer_base $output The renderer.
      * @return array Data for the template.
      */
-    public function export_for_template($output) {
+    public function export_for_template($output): array {
         global $CFG, $PAGE;
 
         $context = \context_block::instance($this->instanceid);
@@ -226,7 +226,7 @@ class tab_trades implements renderable, templatable {
      *
      * @return string HTML content.
      */
-    public function display() {
+    public function display(): string {
         global $OUTPUT;
         return $OUTPUT->render_from_template('block_playerhud/tab_trades', $this->export_for_template($OUTPUT));
     }
