@@ -56,13 +56,19 @@ try {
     redirect(
         $returnurl,
         get_string('trade_success_msg', 'block_playerhud', $rewardstext),
+        null,
         \core\output\notification::NOTIFY_SUCCESS
     );
 } catch (\moodle_exception $me) {
     $notifylevel = ($me->errorcode === 'error_trade_onetime') ?
         \core\output\notification::NOTIFY_WARNING : \core\output\notification::NOTIFY_ERROR;
 
-    redirect($returnurl, $me->getMessage(), $notifylevel);
+    redirect($returnurl, $me->getMessage(), null, $notifylevel);
 } catch (\Exception $e) {
-    redirect($returnurl, get_string('error_msg', 'block_playerhud', $e->getMessage()), \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        $returnurl,
+        get_string('error_msg', 'block_playerhud', $e->getMessage()),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }

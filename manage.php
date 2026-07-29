@@ -105,6 +105,7 @@ if ($action == 'toggle' && $itemid && confirm_sesskey()) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
             get_string('changessaved', 'block_playerhud'),
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     }
@@ -116,6 +117,7 @@ if ($action == 'toggle_quest' && $questid && confirm_sesskey()) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]),
             get_string('changessaved', 'block_playerhud'),
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     }
@@ -166,6 +168,7 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
             get_string('deleted', 'block_playerhud'),
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     }
@@ -183,6 +186,7 @@ if ($action === 'delete_force' && $itemid && confirm_sesskey()) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
             $msg,
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     }
@@ -232,6 +236,7 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
             redirect(
                 new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
                 get_string('deleted_bulk', 'block_playerhud', count($itemids)),
+                null,
                 \core\output\notification::NOTIFY_SUCCESS
             );
         }
@@ -239,6 +244,7 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
             get_string('no_items_selected', 'block_playerhud'),
+            null,
             \core\output\notification::NOTIFY_WARNING
         );
     }
@@ -266,6 +272,7 @@ if ($action === 'bulk_delete_force' && confirm_sesskey()) {
             redirect(
                 new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
                 $msg,
+                null,
                 \core\output\notification::NOTIFY_SUCCESS
             );
         }
@@ -312,6 +319,7 @@ if ($action == 'delete_quest' && $questid && confirm_sesskey()) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'quests']),
             get_string('quest_deleted', 'block_playerhud'),
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     }
@@ -323,6 +331,7 @@ if ($action === 'delete_quest_force' && $questid && confirm_sesskey()) {
     redirect(
         new moodle_url($baseurl, ['tab' => 'quests']),
         get_string('quest_deleted', 'block_playerhud'),
+        null,
         \core\output\notification::NOTIFY_SUCCESS
     );
 }
@@ -361,12 +370,14 @@ if ($action === 'bulk_delete_quests' && confirm_sesskey()) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]),
             get_string('deleted_bulk', 'block_playerhud', $deletedcount),
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     } else {
         redirect(
             new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]),
             get_string('no_items_selected', 'block_playerhud'),
+            null,
             \core\output\notification::NOTIFY_WARNING
         );
     }
@@ -381,6 +392,7 @@ if ($action === 'bulk_delete_quests_force' && confirm_sesskey()) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]),
             get_string('deleted_bulk', 'block_playerhud', $deletedcount),
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     }
@@ -393,12 +405,14 @@ if ($action == 'delete_trade' && $tradeid && confirm_sesskey()) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'trades']),
             get_string('changessaved', 'block_playerhud'),
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     } catch (Exception $e) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'trades']),
             get_string('error_msg', 'block_playerhud', $e->getMessage()),
+            null,
             \core\output\notification::NOTIFY_ERROR
         );
     }
@@ -412,6 +426,7 @@ if ($action == 'delete_class') {
         redirect(
             new moodle_url($baseurl, ['tab' => 'classes']),
             get_string('class_deleted', 'block_playerhud'),
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     }
@@ -425,6 +440,7 @@ if ($action == 'delete_chapter') {
         redirect(
             new moodle_url($baseurl, ['tab' => 'chapters']),
             get_string('chapter_deleted', 'block_playerhud'),
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     }
@@ -438,6 +454,7 @@ if ($action === 'move_chapter_up' && confirm_sesskey()) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'chapters']),
             null,
+            null,
             \core\output\notification::NOTIFY_INFO
         );
     }
@@ -450,6 +467,7 @@ if ($action === 'move_chapter_down' && confirm_sesskey()) {
         (new \block_playerhud\controller\chapters())->move_chapter($chapterid, $instanceid, 'down');
         redirect(
             new moodle_url($baseurl, ['tab' => 'chapters']),
+            null,
             null,
             \core\output\notification::NOTIFY_INFO
         );
@@ -469,6 +487,7 @@ if ($action === 'save_keys' && confirm_sesskey()) {
     redirect(
         new moodle_url($baseurl, ['tab' => 'config']),
         get_string('changessaved', 'block_playerhud'),
+        null,
         \core\output\notification::NOTIFY_SUCCESS
     );
 }
@@ -481,7 +500,7 @@ if ($action === 'revoke_item' && confirm_sesskey()) {
     \block_playerhud\controller\items::revoke_item($invid, $instanceid);
 
     $url = new moodle_url($baseurl, ['tab' => 'reports', 'r_userid' => $ruserid]);
-    redirect($url, get_string('item_revoked', 'block_playerhud'), \core\output\notification::NOTIFY_SUCCESS);
+    redirect($url, get_string('item_revoked', 'block_playerhud'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
 
 // Action: Grant Item (Teacher manually gives item).
@@ -492,7 +511,7 @@ if ($action === 'grant_item' && confirm_sesskey()) {
     \block_playerhud\controller\items::grant_item($itemid, $ruserid, $instanceid);
 
     $url = new moodle_url($baseurl, ['tab' => 'reports', 'r_userid' => $ruserid]);
-    redirect($url, get_string('item_granted', 'block_playerhud'), \core\output\notification::NOTIFY_SUCCESS);
+    redirect($url, get_string('item_granted', 'block_playerhud'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
 
 // Action: Auto Suggest Quests (Heuristic).
@@ -526,6 +545,7 @@ if ($action === 'suggest_quests' || $action === 'save_suggestions') {
         redirect(
             new moodle_url($baseurl, ['tab' => 'quests']),
             get_string('quest_sug_created', 'block_playerhud', $count),
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     }
@@ -556,6 +576,7 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
         redirect(
             new moodle_url($baseurl, ['tab' => 'trades']),
             get_string('trade_sug_none_available', 'block_playerhud'),
+            null,
             \core\output\notification::NOTIFY_INFO
         );
     }
@@ -578,6 +599,7 @@ if ($action === 'suggest_trades' || $action === 'save_suggest_trades') {
         redirect(
             new moodle_url($baseurl, ['tab' => 'trades']),
             get_string('trade_sug_created', 'block_playerhud', $count),
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     }

@@ -88,6 +88,7 @@ class classes {
             redirect(
                 $returnurl,
                 get_string('class_saved', 'block_playerhud'),
+                null,
                 \core\output\notification::NOTIFY_SUCCESS
             );
         }

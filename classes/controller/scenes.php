@@ -78,6 +78,7 @@ class scenes {
             redirect(
                 $baseurl,
                 get_string('scene_deleted', 'block_playerhud'),
+                null,
                 \core\output\notification::NOTIFY_SUCCESS
             );
         }
@@ -340,6 +341,7 @@ class scenes {
             redirect(
                 $scenesurl,
                 get_string('scene_saved', 'block_playerhud'),
+                null,
                 \core\output\notification::NOTIFY_SUCCESS
             );
         }

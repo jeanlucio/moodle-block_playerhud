@@ -127,6 +127,7 @@ class drops {
             redirect(
                 $baseurl,
                 get_string('deleted', 'block_playerhud'),
+                null,
                 \core\output\notification::NOTIFY_SUCCESS
             );
         }
@@ -137,6 +138,7 @@ class drops {
                 redirect(
                     $baseurl,
                     get_string('deleted_bulk', 'block_playerhud', $count),
+                    null,
                     \core\output\notification::NOTIFY_SUCCESS
                 );
             }
@@ -355,6 +357,7 @@ class drops {
                     'itemid' => $itemid,
                 ]),
                 get_string('drop_configured_msg', 'block_playerhud'),
+                null,
                 \core\output\notification::NOTIFY_SUCCESS
             );
         }

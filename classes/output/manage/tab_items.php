@@ -157,7 +157,7 @@ class tab_items implements renderable {
                     ['subdirs' => 0]
                 );
 
-                redirect($baseurl, get_string('changessaved'), \core\output\notification::NOTIFY_SUCCESS);
+                redirect($baseurl, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
             }
 
             if ($editid && !$this->mform->is_submitted()) {

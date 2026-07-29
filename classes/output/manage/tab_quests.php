@@ -170,6 +170,7 @@ class tab_quests implements renderable {
             redirect(
                 $baseurl,
                 get_string('changessaved', 'block_playerhud'),
+                null,
                 \core\output\notification::NOTIFY_SUCCESS
             );
         }

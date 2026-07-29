@@ -96,6 +96,7 @@ class chapters {
             redirect(
                 $returnurl,
                 get_string('chapter_saved', 'block_playerhud'),
+                null,
                 \core\output\notification::NOTIFY_SUCCESS
             );
         }

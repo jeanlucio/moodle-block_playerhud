@@ -147,6 +147,7 @@ class trades {
             redirect(
                 $returnurl,
                 get_string('trade_saved', 'block_playerhud'),
+                null,
                 \core\output\notification::NOTIFY_SUCCESS
             );
         }

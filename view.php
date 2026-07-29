@@ -111,6 +111,7 @@ if ($tab == 'toggle_ranking_pref' && confirm_sesskey()) {
             'tab' => 'ranking',
         ]),
         get_string('privacy_updated', 'block_playerhud'),
+        null,
         \core\output\notification::NOTIFY_SUCCESS
     );
 }
@@ -123,6 +124,7 @@ if ($action === 'select_class' && confirm_sesskey()) {
     redirect(
         new moodle_url($PAGE->url, ['tab' => 'class_select']),
         get_string('class_selected_success', 'block_playerhud'),
+        null,
         \core\output\notification::NOTIFY_SUCCESS
     );
 }
@@ -136,10 +138,11 @@ if ($action === 'claim_quest' && !empty($config->enable_quests) && confirm_sessk
         redirect(
             $questurl,
             get_string('quest_claimed_success', 'block_playerhud', $rewardstr),
+            null,
             \core\output\notification::NOTIFY_SUCCESS
         );
     } catch (\moodle_exception $e) {
-        redirect($questurl, $e->getMessage(), \core\output\notification::NOTIFY_ERROR);
+        redirect($questurl, $e->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
     }
 }
 
