@@ -19,7 +19,6 @@ namespace block_playerhud\output\view;
 use renderable;
 use templatable;
 use moodle_url;
-use renderer_base;
 
 /**
  * Ranking tab output renderer.
@@ -78,7 +77,7 @@ class tab_ranking implements renderable, templatable {
      * @param \core\output\core_renderer $output The renderer.
      * @return array Data for the template.
      */
-    public function export_for_template(renderer_base $output): array {
+    public function export_for_template($output): array {
         // 1. Global Configuration Checks.
         if (empty($this->config->enable_ranking)) {
             return ['is_disabled' => true, 'str_disabled' => get_string('ranking_disabled', 'block_playerhud')];
