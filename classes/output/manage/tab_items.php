@@ -57,7 +57,7 @@ class tab_items implements renderable {
      * @param string $sort The column to sort by.
      * @param string $dir The sort direction.
      */
-    public function __construct($instanceid, $courseid, $sort = 'xp', $dir = 'ASC') {
+    public function __construct(int $instanceid, int $courseid, string $sort = 'xp', string $dir = 'ASC') {
         $this->instanceid = $instanceid;
         $this->courseid = $courseid;
         $this->sort = $sort ?: 'xp';
@@ -66,8 +66,10 @@ class tab_items implements renderable {
 
     /**
      * Process form logic and redirects.
+     *
+     * @return void
      */
-    public function process() {
+    public function process(): void {
         global $DB;
 
         $action = optional_param('action', '', PARAM_ALPHA);
@@ -196,7 +198,7 @@ class tab_items implements renderable {
      *
      * @return string HTML content.
      */
-    public function display() {
+    public function display(): string {
         $baseurl = new moodle_url('/blocks/playerhud/manage.php', [
             'id' => $this->courseid,
             'instanceid' => $this->instanceid,
@@ -222,7 +224,7 @@ class tab_items implements renderable {
      *
      * @return string HTML content.
      */
-    protected function render_form() {
+    protected function render_form(): string {
         global $OUTPUT;
         $editid = optional_param('itemid', 0, PARAM_INT);
         $title = $editid ? (get_string('edit') . ' ' . get_string('item', 'block_playerhud'))
@@ -236,7 +238,7 @@ class tab_items implements renderable {
      * @param moodle_url $baseurl The base URL for the page.
      * @return string HTML content.
      */
-    protected function render_list_view($baseurl) {
+    protected function render_list_view(moodle_url $baseurl): string {
         global $DB, $PAGE, $OUTPUT;
 
         // 1. Template Strings.
@@ -624,7 +626,7 @@ class tab_items implements renderable {
      * @param moodle_url $baseurl Base URL for the items tab.
      * @return string HTML content.
      */
-    protected function render_distribute_view($baseurl) {
+    protected function render_distribute_view(moodle_url $baseurl): string {
         global $DB, $PAGE, $OUTPUT;
 
         // 1. Load all drops with their item info (including image) for this block instance.
@@ -784,7 +786,7 @@ class tab_items implements renderable {
      * @param moodle_url $baseurl Base URL.
      * @return array Sort data.
      */
-    private function get_sort_data($colname, $label, $baseurl) {
+    private function get_sort_data(string $colname, string $label, moodle_url $baseurl): array {
         // Default icon class.
         $icon = 'fa-sort text-muted opacity-25';
         $nextdir = 'ASC';
