@@ -256,6 +256,51 @@ class behat_block_playerhud extends behat_base {
     }
 
     /**
+     * Creates an avatar-power item and adds one unit of it to a user's inventory, so it
+     * appears as equippable on the Collection tab.
+     *
+     * @param string $itemname Display name for the item.
+     * @param string $username Moodle username to receive the item.
+     * @param string $shortname Course shortname.
+     * @Given an equippable PlayerHUD avatar item :itemname is in :username's inventory in course :shortname
+     */
+    public function equippable_avatar_item_in_inventory(string $itemname, string $username, string $shortname): void {
+        global $DB;
+
+        $user    = $DB->get_record('user', ['username' => $username], '*', MUST_EXIST);
+        $course  = $DB->get_record('course', ['shortname' => $shortname], '*', MUST_EXIST);
+        $context = context_course::instance($course->id);
+
+        $instance = $DB->get_record(
+            'block_instances',
+            ['blockname' => 'playerhud', 'parentcontextid' => $context->id],
+            '*',
+            MUST_EXIST
+        );
+
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instance->id,
+            'name'            => $itemname,
+            'description'     => '',
+            'image'           => '🧙',
+            'xp'              => 0,
+            'secret'          => 0,
+            'enabled'         => 1,
+            'action_type'     => 'avatar_profile',
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid'      => $user->id,
+            'itemid'      => $itemid,
+            'dropid'      => 0,
+            'source'      => 'test',
+            'timecreated' => time(),
+        ]);
+    }
+
+    /**
      * Creates a Moodle label (mod_label) in the current course containing the given shortcode text.
      *
      * Used to embed a [PLAYERHUD_DROP] shortcode in course content without

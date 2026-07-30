@@ -63,3 +63,19 @@ Feature: PlayerHUD student gamification controls
     And I am on "Course 1" course homepage
     And I click on "a[aria-label='Log']" "css_element"
     Then I should see "No records found in your journey yet."
+
+  # Only a real AJAX round-trip proves this: use_item::execute() passed the
+  # global $OUTPUT straight into a \renderer_base-typed parameter, and
+  # lib/ajax/service.php never resolves $OUTPUT before dispatching execute() —
+  # a PHPUnit call passes because PHPUnit's own setup already resolves $OUTPUT
+  # earlier in the run, masking the exact failure a real "Equip" click hits.
+  Scenario: Student equips an avatar item without error
+    Given an equippable PlayerHUD avatar item "Test Avatar" is in "student1"'s inventory in course "C1"
+    When I log in as "student1"
+    And I open the PlayerHUD dashboard for course "C1"
+    # First visit shows the one-time "Hi, I'm Huddy!" overlay, which blocks clicks
+    # underneath it — reload once so it is dismissed before interacting with the tab.
+    And I reload the page
+    And I click on ".ph-item-equip-btn" "css_element"
+    Then I should not see "generalexceptionmessage"
+    And I should see "Unequip"
