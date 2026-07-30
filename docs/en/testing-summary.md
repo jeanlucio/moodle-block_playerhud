@@ -59,14 +59,14 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `make_choice_test.php` | 3 |
 | `remove_drop_shortcode_test.php` | 5 |
 | `setup_playercoin_drop_test.php` | 6 |
-| `use_item_test.php` | 6 |
+| `use_item_test.php` | 8 |
 | `wizard_apply_suggested_levels_test.php` | 3 |
 | `wizard_generate_helpers_test.php` | 10 |
 | `wizard_list_runs_test.php` | 4 |
 | `wizard_rollback_test.php` | 3 |
 | `wizard_run_step_test.php` | 56 |
 | `wizard_start_test.php` | 8 |
-| **Subtotal** | **149** |
+| **Subtotal** | **151** |
 
 ### Controller Tests (`tests/controller/`)
 
@@ -104,7 +104,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `view/tab_shop_test.php` | 4 |
 | **Subtotal** | **44** |
 
-| **Grand Total** | **592** |
+| **Grand Total** | **594** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud

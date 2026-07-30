@@ -63,14 +63,14 @@ Uma classe de teste por função de web service, validando o contrato da API ext
 | `make_choice_test.php` | 3 | Avança a história até o nó de destino; escolha inválida → exceção; guarda de capability (`view`) |
 | `remove_drop_shortcode_test.php` | 5 | Shortcode existente removido; shortcode separado por `<br>` removido; shortcode com atributos `mode=`/`text=` removido; ausência de shortcode é noop sem erro; guarda de capability |
 | `setup_playercoin_drop_test.php` | 6 | Sucesso; sem fórum → `success=false`; item de outra instância rejeitado; curso que não é dono da instância rejeitado; shortcode anteposto ao intro existente; guarda de capability |
-| `use_item_test.php` | 6 | Guarda de capability (`view`); item não possuído → exceção; poder de prazo: sem atividade, sem regra, cria override e consome item, atualiza override existente |
+| `use_item_test.php` | 8 | Guarda de capability (`view`); item não possuído → exceção; poder de prazo: sem atividade, sem regra, cria override e consome item, atualiza override existente; poder de avatar: equipar e desequipar funcionam mesmo com `$OUTPUT` resetado pro placeholder `bootstrap_renderer` ainda não resolvido, reproduzindo a mesma condição de uma requisição AJAX real |
 | `wizard_apply_suggested_levels_test.php` | 3 | Aplica a sugestão quando a config está nos padrões; ainda aplica quando a config já foi customizada; preserva todo outro campo de config intocado |
 | `wizard_generate_helpers_test.php` | 10 | `build_step_types()` bate com os módulos selecionados na ordem, pula `auto_distribute` quando o distribuir de Itens está desligado, vazio quando nada selecionado; `compute_shared_xp_shares()` vazio sem Itens/Missões, Pill/Extensão de Prazo usam seus próprios padrões sozinhos, dividem o orçamento com Itens quando combinados; `resolve_or_create_progress_item()` idempotente e cria um item completo quando falta; `resolve_previous_chapter_context()` lê o capítulo mais recente; `distribute_drops()` limita cada atividade à sua cota calculada em vez de deixar só a correspondência de nome empilhar todo drop numa única atividade |
 | `wizard_list_runs_test.php` | 4 | Resumo de uma rodada ativa; rodada de RPG resumida; rodadas desfeitas excluídas; guarda de capability |
 | `wizard_rollback_test.php` | 3 | Exclui os objetos gerados pela rodada, contagem reportada bate com o que foi registrado; rejeita instância incompatível; guarda de capability |
 | `wizard_run_step_test.php` | 56 | Um passo de progresso ao vivo por vez, por mecânica (PlayerCoin, Avatares, Missões, Comércio, Colecionável de Conhecimento, Item Secreto, Ranking, Extensão de Prazo, RPG, Item RPG, auto-distribuir): criação de item/quest/troca com registro no manifesto, retentativas idempotentes, desfazer por mecânica, controle pela flag de distribuir, tom/tamanho de jornada influenciando o conteúdo, e a inserção exclusiva no fórum de avisos pra PlayerCoin e Item Secreto (incl. no-op sem fórum de avisos); tipo de passo desconhecido, guarda de capability, rejeição de `runid` de outra instância, passo com falha não finaliza a rodada, passo final reporta a economia só quando solicitado |
 | `wizard_start_test.php` | 8 | Um passo de plano por módulo selecionado; a flag de "passo lento" reflete se Próximo Capítulo foi selecionado; a divisão de cotas de XP bate com os módulos selecionados; o XP bônus da Pill presente quando selecionada sozinha; o módulo de arco da história se expande num outline + um passo por capítulo, a quantidade de passos cresce com o tamanho da jornada, o manifesto mantém o nome lógico do módulo; guarda de capability |
-| **Subtotal** | **149** | |
+| **Subtotal** | **151** | |
 
 ### Testes de Controlador (`tests/controller/`)
 
@@ -110,7 +110,7 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `view/tab_shop_test.php` | 4 | Aba Loja: sem trocas renderiza o estado vazio em vez de quebrar; um estudante com o item exigido em quantidade suficiente pode pagar a troca; um estudante sem o item exigido não pode pagar; uma troca de uso único já concluída é marcada como tal |
 | **Subtotal** | **44** | |
 
-| **Total geral** | **592** | |
+| **Total geral** | **594** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -153,7 +153,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `external\make_choice` | 79% |
 | `external\remove_drop_shortcode` | 84% |
 | `external\setup_playercoin_drop` | 90% |
-| `external\use_item` | 75% |
+| `external\use_item` | 88% |
 | `external\wizard_apply_suggested_levels` | 83% |
 | `external\wizard_generate` | 85% |
 | `external\wizard_list_runs` | 100% |
@@ -215,13 +215,13 @@ de dados são testados diretamente em `db_upgrade_test.php`, que chama
 | Arquivo de feature | Cenários | O que é coberto |
 |-------------------|--------:|----------------|
 | `block_playerhud_access.feature` | 3 | Visibilidade do bloco por perfil (professor adiciona bloco, aluno vê HUD, não matriculado não vê) |
-| `block_playerhud_student.feature` | 5 | HUD ativo na primeira visita, desativar/reativar gamificação, dispensar confirmação; abrir a aba Log não dá erro |
+| `block_playerhud_student.feature` | 6 | HUD ativo na primeira visita, desativar/reativar gamificação, dispensar confirmação; abrir a aba Log não dá erro; equipar um item de avatar pelo round-trip AJAX real não dá erro |
 | `block_playerhud_teacher.feature` | 7 | Botão do Painel do Mestre, acesso ao painel de gerenciamento, navegação entre abas, retorno ao curso; abrir o log de auditoria de um aluno em Relatórios não dá erro |
 | `block_playerhud_modals.feature` | 5 | Abrir/fechar modal de detalhes do item, proteção contra abertura duplicada, coleta AJAX sem redirecionamento, sem placeholders brutos |
 | `block_playerhud_celebrations.feature` | 2 | Introdução do Huddy exibida uma única vez no painel; aviso de primeira quest exibido uma única vez quando há recompensa a reivindicar |
 | `block_playerhud_wizard.feature` | 6 | Assistente abre mostrando o formulário de geração; abas laterais de Ajuda e Recomendações externas; gerar PlayerCoin de ponta a ponta mostra o relatório de sucesso; o card do PlayerCoin trava depois de gerado; desfazer uma rodada pelo Histórico destrava de novo |
 | `block_playerhud_manage_crud.feature` | 7 | As telas de gestão que os testes em PHP só alcançam isoladamente: as abas Trocas, Personagens e História renderizam numa requisição real; a biblioteca de itens leva até a tela de drops; um drop é criado pelo `moodleform` real, aparece na listagem e mostra a notificação de sucesso (travando a regressão do tipo de notificação do `redirect()`); um personagem é criado pelo formulário real (incluindo os campos de gerenciador de arquivos); o checkbox mestre de seleção em lote marca e desmarca todas as linhas (JavaScript) |
-| **Total** | **35** | |
+| **Total** | **36** | |
 
 ```bash
 php admin/tool/behat/cli/init.php

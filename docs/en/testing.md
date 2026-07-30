@@ -63,14 +63,14 @@ One test class per web service function, each validating the external API contra
 | `make_choice_test.php` | 3 | Advances story to destination node; invalid choice → exception; capability guard (`view`) |
 | `remove_drop_shortcode_test.php` | 5 | Existing shortcode stripped; `<br>`-separated shortcode stripped; shortcode carrying `mode=`/`text=` attributes stripped; absent shortcode is a no-op success; capability guard |
 | `setup_playercoin_drop_test.php` | 6 | Success path; no forum → `success=false`; item from another instance rejected; course not owning the instance rejected; shortcode prepended to existing intro; capability guard |
-| `use_item_test.php` | 6 | Capability guard (`view`); not-owned item → exception; deadline power: no activity selected, no rule found, creates override and consumes item, updates existing override |
+| `use_item_test.php` | 8 | Capability guard (`view`); not-owned item → exception; deadline power: no activity selected, no rule found, creates override and consumes item, updates existing override; avatar power: equip and unequip both succeed with `$OUTPUT` reset to the still-unresolved `bootstrap_renderer` placeholder, reproducing the exact precondition of a real AJAX dispatch |
 | `wizard_apply_suggested_levels_test.php` | 3 | Applies the suggestion when config is at defaults; still applies when config was already customised; preserves every other config field untouched |
 | `wizard_generate_helpers_test.php` | 10 | `build_step_types()` matches selected modules in order, skips `auto_distribute` when Items' own distribute flag is off, empty when nothing selected; `compute_shared_xp_shares()` empty without Items/Missions, Pill/Latepenalty use their own defaults alone, share the budget with Items when combined; `resolve_or_create_progress_item()` idempotent and creates a complete item when missing; `resolve_previous_chapter_context()` reads the latest chapter; `distribute_drops()` caps each activity to its computed quota instead of letting name-matching alone stack every drop onto one activity |
 | `wizard_list_runs_test.php` | 4 | Summary for an active run; RPG run summarised; rolled-back runs excluded; capability guard |
 | `wizard_rollback_test.php` | 3 | Deletes the run's generated objects, reported count matches what was recorded; rejects a mismatched instance; capability guard |
 | `wizard_run_step_test.php` | 56 | One live-progress step at a time, per mechanic (PlayerCoin, Avatars, Missions, Trade, Knowledge Pill, Secret Item, Ranking, Deadline Extension, RPG, Item RPG, auto-distribute): item/quest/trade creation with manifest recording, idempotent retries, rollback per mechanic, distribute-flag gating, tone/journey-size flavouring, and the news-forum-only placement for PlayerCoin and Secret Item (incl. no-op without a news forum); unknown step type, capability guard, cross-instance `runid` rejection, failed step does not finish the run, final step reports the economy only when requested |
 | `wizard_start_test.php` | 8 | One plan step per selected module; the "slow step" flag reflects whether Next Chapter was selected; XP shares split matches selected modules; Pill's bonus XP present when selected alone; the story-arc module expands into an outline + one step per chapter, step count grows with journey size, manifest keeps the logical module name; capability guard |
-| **Subtotal** | **149** | |
+| **Subtotal** | **151** | |
 
 ### Controller Tests (`tests/controller/`)
 
@@ -110,7 +110,7 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `view/tab_shop_test.php` | 4 | Shop tab: no trades renders the empty state instead of crashing; a student holding enough of the required item can afford the trade; a student with none of the required item cannot afford it; a one-time trade already completed is marked as such |
 | **Subtotal** | **44** | |
 
-| **Grand Total** | **592** | |
+| **Grand Total** | **594** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -153,7 +153,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `external\make_choice` | 79% |
 | `external\remove_drop_shortcode` | 84% |
 | `external\setup_playercoin_drop` | 90% |
-| `external\use_item` | 75% |
+| `external\use_item` | 88% |
 | `external\wizard_apply_suggested_levels` | 83% |
 | `external\wizard_generate` | 85% |
 | `external\wizard_list_runs` | 100% |
@@ -213,13 +213,13 @@ tested directly in `db_upgrade_test.php`, which calls `xmldb_block_playerhud_upg
 | Feature file | Scenarios | What is covered |
 |--------------|----------:|----------------|
 | `block_playerhud_access.feature` | 3 | Role-based block visibility (teacher adds block, student sees HUD, non-enrolled user cannot) |
-| `block_playerhud_student.feature` | 5 | HUD active on first visit, disable/re-enable gamification, dismiss confirmation; opening the Log tab does not error |
+| `block_playerhud_student.feature` | 6 | HUD active on first visit, disable/re-enable gamification, dismiss confirmation; opening the Log tab does not error; equipping an avatar item over the real AJAX round-trip does not error |
 | `block_playerhud_teacher.feature` | 7 | Game Master Panel button, management panel access, tab navigation, return to course; opening a student's audit log in Reports does not error |
 | `block_playerhud_modals.feature` | 5 | Item detail modal open/close, duplicate-open guard, AJAX collect without redirect, no raw placeholders |
 | `block_playerhud_celebrations.feature` | 2 | Huddy introduction shown once on the dashboard; first-quest nudge shown once when a reward is claimable |
 | `block_playerhud_wizard.feature` | 6 | Wizard opens showing the generation form; Help and External recommendations side views; generating PlayerCoin end-to-end shows the success report; the PlayerCoin card locks after being generated; undoing a run from the History view unlocks it again |
 | `block_playerhud_manage_crud.feature` | 7 | The management screens the PHP-level tests reach only in isolation: the Trades, Characters and Story tabs render on a real request; the item library links through to the drops screen; a drop is created through the real `moodleform`, appears in the listing and shows a success notification (locking the `redirect()` notification-type regression); a character is created through the real form (file-manager fields included); the bulk-selection master checkbox checks and clears every row (JavaScript) |
-| **Total** | **35** | |
+| **Total** | **36** | |
 
 ```bash
 php admin/tool/behat/cli/init.php
