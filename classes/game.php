@@ -42,7 +42,7 @@ class game {
      * @param int $userid The user ID.
      * @return \stdClass The player object.
      */
-    public static function get_player($blockinstanceid, $userid) {
+    public static function get_player(int $blockinstanceid, int $userid): \stdClass {
         global $DB;
         $player = $DB->get_record('block_playerhud_user', [
             'blockinstanceid' => $blockinstanceid,
@@ -71,7 +71,7 @@ class game {
      * @param int $userid The user ID.
      * @param bool $status True to enable, false to disable.
      */
-    public static function toggle_gamification($blockinstanceid, $userid, $status) {
+    public static function toggle_gamification(int $blockinstanceid, int $userid, bool $status): void {
         global $DB;
         $player = self::get_player($blockinstanceid, $userid);
         $player->enable_gamification = ($status) ? 1 : 0;
@@ -85,7 +85,7 @@ class game {
      * @param int $blockinstanceid The block instance ID.
      * @return array List of items.
      */
-    public static function get_inventory($userid, $blockinstanceid) {
+    public static function get_inventory(int $userid, int $blockinstanceid): array {
         global $DB;
         $sql = "SELECT inv.id as unique_inventory_id, i.*, inv.timecreated as collecteddate
                   FROM {block_playerhud_items} i
@@ -102,7 +102,7 @@ class game {
      * @param int $itemid Item ID.
      * @return bool True if exists.
      */
-    public static function has_item($userid, $itemid) {
+    public static function has_item(int $userid, int $itemid): bool {
         global $DB;
         return $DB->record_exists('block_playerhud_inventory', [
             'userid' => $userid,
@@ -162,7 +162,7 @@ class game {
      * @return array Result data and game stats.
      * @throws \moodle_exception
      */
-    public static function process_collection($instanceid, $dropid, $userid) {
+    public static function process_collection(int $instanceid, int $dropid, int $userid): array {
         global $DB;
 
         // 1. Validation.
@@ -346,12 +346,12 @@ class game {
     /**
      * Calculate game statistics based on block settings.
      *
-     * @param object $config The block instance configuration.
+     * @param \stdClass $config The block instance configuration.
      * @param int $blockinstanceid The block instance ID.
      * @param int $currentxp Current user XP.
      * @return array Stats array.
      */
-    public static function get_game_stats($config, $blockinstanceid, $currentxp) {
+    public static function get_game_stats(\stdClass $config, int $blockinstanceid, int $currentxp): array {
         // Settings from block configuration.
         $xpperlevel = isset($config->xp_per_level) ? (int)$config->xp_per_level : 100;
         $maxlevels = isset($config->max_levels) ? (int)$config->max_levels : 20;
@@ -398,7 +398,7 @@ class game {
      * @param int $userid The user ID.
      * @param bool $visible True or false.
      */
-    public static function toggle_ranking_visibility($blockinstanceid, $userid, $visible) {
+    public static function toggle_ranking_visibility(int $blockinstanceid, int $userid, bool $visible): void {
         global $DB;
         $player = self::get_player($blockinstanceid, $userid);
         $player->ranking_visibility = ($visible) ? 1 : 0;
@@ -416,7 +416,7 @@ class game {
      * @param int $courseid Course ID for SEPARATEGROUPS support (0 = disabled).
      * @return int The rank.
      */
-    public static function get_user_rank($blockinstanceid, $userid, $currentxp, $courseid = 0) {
+    public static function get_user_rank(int $blockinstanceid, int $userid, int $currentxp, int $courseid = 0): int {
         global $DB;
 
         // Search for 'timemodified' of current user for tie-breaking.
@@ -538,7 +538,13 @@ class game {
      * @param int $filtergroup Group ID to filter individual ranking (teacher only, 0 = no filter).
      * @return array
      */
-    public static function get_leaderboard($blockinstanceid, $courseid, $currentuserid, $isteacher, $filtergroup = 0) {
+    public static function get_leaderboard(
+        int $blockinstanceid,
+        int $courseid,
+        int $currentuserid,
+        bool $isteacher,
+        int $filtergroup = 0
+    ): array {
         global $DB;
 
         // 1. Groups Map.
@@ -780,7 +786,7 @@ class game {
      * @param int $userid The user ID.
      * @return \stdClass|false The rpg_progress record or false if not found.
      */
-    public static function get_player_class($blockinstanceid, $userid) {
+    public static function get_player_class(int $blockinstanceid, int $userid): \stdClass|false {
         global $DB;
         return $DB->get_record('block_playerhud_rpg_progress', [
             'blockinstanceid' => $blockinstanceid,
@@ -795,7 +801,7 @@ class game {
      * @param int $userid The user ID.
      * @param int $classid The class ID to assign.
      */
-    public static function assign_class($blockinstanceid, $userid, $classid) {
+    public static function assign_class(int $blockinstanceid, int $userid, int $classid): void {
         global $DB;
         $progress = self::get_player_class($blockinstanceid, $userid);
         if ($progress) {
@@ -826,7 +832,7 @@ class game {
      * @param int $blockinstanceid The block instance ID.
      * @return array Array of class objects keyed by ID.
      */
-    public static function get_all_classes($blockinstanceid) {
+    public static function get_all_classes(int $blockinstanceid): array {
         global $DB;
         return $DB->get_records('block_playerhud_classes', ['blockinstanceid' => $blockinstanceid], 'name ASC');
     }
@@ -878,7 +884,7 @@ class game {
      * @param int $blockinstanceid The block instance ID.
      * @return array Array of trade objects populated with requirements and rewards.
      */
-    public static function get_full_trades($blockinstanceid) {
+    public static function get_full_trades(int $blockinstanceid): array {
         global $DB;
 
         // 1. Fetch all base trades for this instance.
