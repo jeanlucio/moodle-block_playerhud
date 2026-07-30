@@ -334,4 +334,74 @@ final class drops_test extends advanced_testcase {
         $this->assertStringContainsString('fa-sort-desc', $descending['icon_class']);
         $this->assertStringContainsString('dir=ASC', $descending['url']);
     }
+
+    /**
+     * view_manage_page() renders the drop list end to end for a teacher with the
+     * manage capability, going through the real global $OUTPUT/$PAGE.
+     */
+    public function test_view_manage_page_renders_html(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname'         => 'playerhud',
+            'parentcontextid'   => $coursecontext->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern'   => 'course-view-*',
+            'defaultregion'     => 'side-pre',
+            'defaultweight'     => 0,
+            'configdata'        => base64_encode(serialize(new stdClass())),
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ]);
+        $itemid = $this->make_item($instanceid);
+        $this->seed_drop($instanceid, $itemid);
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        $this->setUser($teacher);
+
+        $_GET['instanceid'] = $instanceid;
+        $_GET['id'] = $course->id;
+        $_GET['itemid'] = $itemid;
+
+        $html = (new drops())->view_manage_page();
+
+        $this->assertIsString($html);
+        $this->assertStringContainsString('Old spot', $html);
+    }
+
+    /**
+     * handle_edit_form() renders the (empty, unsubmitted) new-drop form end to end.
+     */
+    public function test_handle_edit_form_renders_new_form(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname'         => 'playerhud',
+            'parentcontextid'   => $coursecontext->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern'   => 'course-view-*',
+            'defaultregion'     => 'side-pre',
+            'defaultweight'     => 0,
+            'configdata'        => base64_encode(serialize(new stdClass())),
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ]);
+        $itemid = $this->make_item($instanceid);
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        $this->setUser($teacher);
+
+        $_GET['instanceid'] = $instanceid;
+        $_GET['courseid'] = $course->id;
+        $_GET['itemid'] = $itemid;
+
+        $html = (new drops())->handle_edit_form();
+
+        $this->assertIsString($html);
+        $this->assertNotSame('', $html);
+    }
 }

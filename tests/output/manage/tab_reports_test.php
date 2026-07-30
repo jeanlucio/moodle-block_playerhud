@@ -17,10 +17,12 @@
 /**
  * Tests for the reports tab renderer (KPIs, charts, quest stats, audit drill-down).
  *
- * Had no test coverage of any kind before ITEM 3's type-hint sweep. Dispatched by
- * manage.php's generic tab controller before $OUTPUT->header() runs, so
- * export_for_template()'s $output parameter must stay untyped — see the
- * bootstrap_renderer case log in moodle-lessons.md.
+ * Had no test coverage of any kind before ITEM 3's type-hint sweep.
+ * export_for_template()'s $output parameter stays untyped on purpose — see the
+ * bootstrap_renderer case log in moodle-lessons.md — which is precisely why
+ * display() (unlike display() on files where $output IS typed renderer_base) can
+ * be exercised directly here: with no native type hint to violate, passing the
+ * still-bootstrap_renderer global $OUTPUT through does not throw a TypeError.
  *
  * @package    block_playerhud
  * @category   test
@@ -96,5 +98,16 @@ final class tab_reports_test extends advanced_testcase {
         $this->assertArrayHasKey('charts', $data);
         $this->assertArrayHasKey('quest_stats', $data);
         $this->assertArrayHasKey('user_selector', $data);
+    }
+
+    /**
+     * display() renders real HTML end to end, going through the global $OUTPUT.
+     */
+    public function test_display_renders_html(): void {
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $html = $tab->display();
+
+        $this->assertIsString($html);
+        $this->assertNotSame('', $html);
     }
 }
