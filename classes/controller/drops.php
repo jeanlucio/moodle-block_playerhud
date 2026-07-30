@@ -39,7 +39,13 @@ class drops {
      * @param moodle_url $baseurl Base URL.
      * @return array Sort data structure.
      */
-    private function get_sort_data($colname, $label, $currentsort, $currentdir, $baseurl) {
+    private function get_sort_data(
+        string $colname,
+        string $label,
+        string $currentsort,
+        string $currentdir,
+        moodle_url $baseurl
+    ): array {
         $icon = 'fa-sort text-muted opacity-25'; // Default inactive icon class.
         $nextdir = 'ASC';
 
@@ -86,7 +92,7 @@ class drops {
      *
      * @return string The HTML content.
      */
-    public function view_manage_page() {
+    public function view_manage_page(): string {
         global $DB, $PAGE, $OUTPUT, $COURSE, $CFG;
 
         // 1. Parameters.
@@ -299,7 +305,7 @@ class drops {
      *
      * @return string The HTML output.
      */
-    public function handle_edit_form() {
+    public function handle_edit_form(): string {
         global $DB, $PAGE, $OUTPUT, $COURSE, $CFG;
 
         $instanceid = required_param('instanceid', PARAM_INT);

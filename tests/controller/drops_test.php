@@ -311,4 +311,27 @@ final class drops_test extends advanced_testcase {
         $this->assertSame(0, $count);
         $this->assertTrue($DB->record_exists('block_playerhud_drops', ['id' => $dropid]));
     }
+
+    /**
+     * get_sort_data() flips the icon/direction when already sorted by the given column,
+     * and defaults to an inactive ascending icon otherwise.
+     */
+    public function test_get_sort_data_toggles_direction_on_active_column(): void {
+        $baseurl = new \moodle_url('/blocks/playerhud/manage_drops.php', ['instanceid' => 1]);
+        $method = new \ReflectionMethod(drops::class, 'get_sort_data');
+        $method->setAccessible(true);
+        $controller = new drops();
+
+        $inactive = $method->invoke($controller, 'name', 'Name', 'time', 'ASC', $baseurl);
+        $this->assertStringContainsString('fa-sort ', $inactive['icon_class']);
+        $this->assertStringContainsString('dir=ASC', $inactive['url']);
+
+        $ascending = $method->invoke($controller, 'name', 'Name', 'name', 'ASC', $baseurl);
+        $this->assertStringContainsString('fa-sort-asc', $ascending['icon_class']);
+        $this->assertStringContainsString('dir=DESC', $ascending['url']);
+
+        $descending = $method->invoke($controller, 'name', 'Name', 'name', 'DESC', $baseurl);
+        $this->assertStringContainsString('fa-sort-desc', $descending['icon_class']);
+        $this->assertStringContainsString('dir=ASC', $descending['url']);
+    }
 }
