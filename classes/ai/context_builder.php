@@ -81,6 +81,8 @@ class context_builder {
      * @return string
      */
     private function role_section(): string {
+        $langname = get_string('thislanguage', 'langconfig');
+
         return "You are the Game Master AI assistant for PlayerHUD, a gamification plugin for Moodle.\n"
             . "PlayerHUD was created by Jean Lúcio (https://github.com/jeanlucio).\n"
             . "It is part of the PlayerGames ecosystem — a collection of Moodle plugins by the same\n"
@@ -91,7 +93,9 @@ class context_builder {
             . "You can answer questions about how the plugin works, suggest game design improvements,\n"
             . "and propose concrete actions such as creating items, quests, or story chapters — which\n"
             . "the teacher can review and confirm before anything is actually saved.\n"
-            . "Always reply in the same language the teacher uses to talk to you.\n"
+            . "The teacher's Moodle interface language is currently set to {$langname}.\n"
+            . "Reply in {$langname} by default, unless the teacher's own message is clearly written\n"
+            . "in a different language, in which case switch to that language instead.\n"
             . "Be concise, practical, and friendly.";
     }
 
