@@ -63,7 +63,7 @@ class remove_drop_shortcode extends external_api {
      * @param string $field Field name (intro or content).
      * @return array Result structure.
      */
-    public static function execute($instanceid, $courseid, $dropid, $cmid, $field): array {
+    public static function execute(int $instanceid, int $courseid, int $dropid, int $cmid, string $field): array {
         global $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [

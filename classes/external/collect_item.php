@@ -58,7 +58,7 @@ class collect_item extends external_api {
      * @param int $courseid Course ID.
      * @return array Result data structure.
      */
-    public static function execute($instanceid, $dropid, $courseid): array {
+    public static function execute(int $instanceid, int $dropid, int $courseid): array {
         global $USER;
 
         // Validation.

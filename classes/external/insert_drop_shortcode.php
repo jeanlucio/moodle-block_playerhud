@@ -80,14 +80,14 @@ class insert_drop_shortcode extends external_api {
      * @return array Result structure.
      */
     public static function execute(
-        $instanceid,
-        $courseid,
-        $dropid,
-        $cmid,
-        $field,
-        $position,
-        $mode = 'card',
-        $customtext = ''
+        int $instanceid,
+        int $courseid,
+        int $dropid,
+        int $cmid,
+        string $field,
+        string $position,
+        string $mode = 'card',
+        string $customtext = ''
     ): array {
         global $DB;
 

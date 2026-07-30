@@ -75,16 +75,16 @@ class generate_ai_content extends external_api {
      * @return array Result structure.
      */
     public static function execute(
-        $instanceid,
-        $courseid,
-        $theme,
-        $tone = '',
-        $xp = -1,
-        $amount = 1,
-        $createdrop = false,
-        $droplocation = '',
-        $dropmax = 0,
-        $droptime = 0
+        int $instanceid,
+        int $courseid,
+        string $theme,
+        string $tone = '',
+        int $xp = -1,
+        int $amount = 1,
+        bool $createdrop = false,
+        string $droplocation = '',
+        int $dropmax = 0,
+        int $droptime = 0
     ): array {
         global $DB, $USER;
 

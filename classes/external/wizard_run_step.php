@@ -422,10 +422,10 @@ class wizard_run_step extends external_api {
      * which resumes the whole failed step from scratch after a click).
      *
      * @param callable $callable Callable with no arguments, returning the generation result.
-     * @return mixed The callable's return value.
+     * @return array The callable's return value.
      * @throws \Exception The second attempt's exception, if both attempts fail.
      */
-    protected static function generate_with_retry(callable $callable) {
+    protected static function generate_with_retry(callable $callable): array {
         try {
             return $callable();
         } catch (\Exception $e) {
