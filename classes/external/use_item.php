@@ -61,7 +61,7 @@ class use_item extends external_api {
      * @return array
      */
     public static function execute(int $instanceid, int $courseid, int $itemid, int $targetcmid = 0): array {
-        global $DB, $USER, $OUTPUT;
+        global $DB, $USER, $PAGE;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'instanceid' => $instanceid,
@@ -105,13 +105,14 @@ class use_item extends external_api {
             $prefkey  = 'block_playerhud_avatar_' . $instanceid;
             $current  = (int) get_user_preferences($prefkey, 0);
             $equipped = ($current !== $itemid);
+            $output   = $PAGE->get_renderer('core');
 
             if ($equipped) {
                 set_user_preference($prefkey, $itemid);
-                $avatarhtml = \block_playerhud\utils::get_avatar_html($item, $context, $OUTPUT);
+                $avatarhtml = \block_playerhud\utils::get_avatar_html($item, $context, $output);
             } else {
                 unset_user_preference($prefkey);
-                $avatarhtml = $OUTPUT->user_picture($USER, ['size' => 100, 'class' => 'rounded-circle shadow-sm']);
+                $avatarhtml = $output->user_picture($USER, ['size' => 100, 'class' => 'rounded-circle shadow-sm']);
             }
 
             return [

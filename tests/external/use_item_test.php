@@ -85,6 +85,51 @@ final class use_item_test extends external_base_testcase {
     }
 
     /**
+     * Equipping an avatar item must succeed even when $OUTPUT has not yet been resolved
+     * to a real renderer — the exact state at the start of every AJAX web service
+     * dispatch, since lib/ajax/service.php never calls
+     * $PAGE->initialise_theme_and_output() before execute() runs. Regression test for a
+     * TypeError where get_avatar_html()'s \renderer_base type hint rejected the raw
+     * \core\output\bootstrap_renderer placeholder that $OUTPUT still holds at that point.
+     */
+    public function test_use_item_equips_avatar_before_output_is_initialised(): void {
+        global $OUTPUT, $USER;
+
+        $item = $this->create_item($this->instanceid, 'Test Avatar', ['action_type' => 'avatar_profile']);
+        $this->give_item_to_user((int) $USER->id, $item->id);
+
+        $OUTPUT = new \core\output\bootstrap_renderer();
+
+        $result = use_item::execute($this->instanceid, $this->course->id, $item->id, 0);
+
+        $this->assertTrue($result['success'], 'use_item failed: ' . $result['message']);
+        $this->assertEquals('avatar_profile', $result['action']);
+        $this->assertTrue($result['equipped']);
+        $this->assertNotEmpty($result['avatar_html']);
+    }
+
+    /**
+     * Unequipping an avatar item (the $OUTPUT->user_picture() branch) must equally
+     * survive an unresolved $OUTPUT at call time. Same precondition and rationale as
+     * {@see test_use_item_equips_avatar_before_output_is_initialised()}.
+     */
+    public function test_use_item_unequips_avatar_before_output_is_initialised(): void {
+        global $OUTPUT, $USER;
+
+        $item = $this->create_item($this->instanceid, 'Test Avatar', ['action_type' => 'avatar_profile']);
+        $this->give_item_to_user((int) $USER->id, $item->id);
+        set_user_preference('block_playerhud_avatar_' . $this->instanceid, $item->id);
+
+        $OUTPUT = new \core\output\bootstrap_renderer();
+
+        $result = use_item::execute($this->instanceid, $this->course->id, $item->id, 0);
+
+        $this->assertTrue($result['success'], 'use_item failed: ' . $result['message']);
+        $this->assertFalse($result['equipped']);
+        $this->assertNotEmpty($result['avatar_html']);
+    }
+
+    /**
      * When no cmid is resolvable use_item returns pick_activity message.
      * Runs as admin (the default after setUp::setAdminUser).
      */
