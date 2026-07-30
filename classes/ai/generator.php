@@ -64,7 +64,7 @@ class generator {
      *
      * @param int $instanceid The block instance ID.
      */
-    public function __construct($instanceid) {
+    public function __construct(int $instanceid) {
         global $DB;
         $this->instanceid = $instanceid;
         $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
@@ -91,7 +91,14 @@ class generator {
      * @return array Result array with success status and data.
      * @throws \moodle_exception If API keys are missing or parsing fails.
      */
-    public function generate($mode, $theme, $xp, $createdrop, $extraoptions = [], $amount = 1) {
+    public function generate(
+        string $mode,
+        string $theme,
+        int $xp,
+        bool $createdrop,
+        array $extraoptions = [],
+        int $amount = 1
+    ): array {
 
         // 2. Infinite Rule.
         $isinfinitedrop = $createdrop &&
@@ -228,7 +235,13 @@ class generator {
      * @param array $options Additional options.
      * @return array Result with item name, item id, drop code and drop id.
      */
-    protected function save_item($data, $targetxp, $createdrop, $provider, $options = []) {
+    protected function save_item(
+        array $data,
+        int $targetxp,
+        bool $createdrop,
+        string $provider,
+        array $options = []
+    ): array {
         global $DB;
 
         // The AI's JSON is untrusted input: coerce to string defensively (a malformed response
@@ -298,7 +311,14 @@ class generator {
      * @param string $tone Optional narrative tone hint (e.g. 'Fantasia Medieval').
      * @return array Associative array with 'system' and 'user' string keys.
      */
-    protected function build_prompt($mode, $theme, $xp, $balance = null, $amount = 1, string $tone = ''): array {
+    protected function build_prompt(
+        string $mode,
+        string $theme,
+        int $xp,
+        ?array $balance = null,
+        int $amount = 1,
+        string $tone = ''
+    ): array {
         if ($mode === 'item') {
             $contextstr = '';
             if ($balance) {
@@ -1091,7 +1111,7 @@ class generator {
      * @return array Result array with success status, data and provider — provider is set
      *               on both outcomes, so a caller can attribute a failed attempt.
      */
-    protected function curl_request($url, $payload, $headers, $source) {
+    protected function curl_request(string $url, string $payload, array $headers, string $source): array {
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
 
