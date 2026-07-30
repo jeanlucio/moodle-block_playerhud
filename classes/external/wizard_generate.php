@@ -154,9 +154,9 @@ class wizard_generate {
      *
      * A single shared XP distribution, snapshotted once from the economy as it stands before any
      * of them runs, and split across every element this call will generate — so the batch's total
-     * always lands on exactly the remaining gap (the "Item Épico"/"Missão Final"
-     * leftover-absorption from the original plan), instead of each element getting a flat floor
-     * share that quietly leaves a remainder unused. Computing this separately inside each module
+     * always lands on exactly the remaining gap (e.g. an "Epic Item"/"Final Mission" absorbing
+     * the leftover), instead of each element getting a flat floor share that quietly leaves a
+     * remainder unused. Computing this separately inside each module
      * (each calling economy_health() only when it runs) would also let whichever module runs
      * first silently consume the entire remaining gap for itself, leaving the others with a
      * shrunken or zeroed-out gap despite xp_budget's per-module math looking correct in
@@ -295,7 +295,7 @@ class wizard_generate {
         // Generate() applies a single XP value identically to every item in the batch (the AI
         // itself never decides XP, only name/description/emoji), so the distributed shares are
         // reassigned individually here — this is the only way to give each item its own share of
-        // the "Item Épico" leftover bonus without one AI call per item.
+        // the leftover bonus without one AI call per item.
         if (!empty($result['created_item_ids'])) {
             $itemidsbyshare = [];
             foreach ($result['created_item_ids'] as $index => $itemid) {
@@ -1332,7 +1332,7 @@ class wizard_generate {
     /**
      * Ensures the tone's progress item exists (creating it if this is the first module in this
      * instance to need it) and returns its ID — a story chapter with no cost item defeats the
-     * point of it. Shared by {@see generate_next_chapter()} and the § 5.9 story-arc chapter step.
+     * point of it. Shared by {@see generate_next_chapter()} and the story-arc chapter step.
      *
      * @param int $instanceid Block instance ID.
      * @param string $tonekey Narrative tone key.
@@ -1361,7 +1361,7 @@ class wizard_generate {
 
     /**
      * Builds a short recap of the instance's most recently created story chapter — its title,
-     * one-line summary and opening scene text — for the § 5.9 story-arc chapter step to keep the
+     * one-line summary and opening scene text — for the story-arc chapter step to keep the
      * next AI chapter consistent with. Deliberately reads from the database rather than accepting
      * this from the caller: the previous chapter was just written by an earlier step in the same
      * run, so the server always has the real, final text, never a client-held draft.

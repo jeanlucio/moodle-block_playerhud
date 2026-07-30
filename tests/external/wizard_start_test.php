@@ -139,7 +139,7 @@ final class wizard_start_test extends external_base_testcase {
     }
 
     /**
-     * § 5.9 Fatia 2: selecting the story arc module expands into one "story_outline" step
+     * Selecting the story arc module expands into one "story_outline" step
      * followed by one "story_chapter_N" step per AI-generated chapter — chapter count minus 1
      * (Chapter 1 is the fixed RPG chapter, never part of this expansion) — sized to the journey.
      * This is pure plan-building: wizard_start never calls the AI generator itself.

@@ -326,7 +326,7 @@ final class wizard_test extends advanced_testcase {
 
         $generated = wizard::get_generated_modules($this->instanceid, new \stdClass());
 
-        // Items/Missions/Comércio now also require their own run's manifest to still point at
+        // Items/Missions/Trade now also require their own run's manifest to still point at
         // real content — an empty manifest must not keep the card disabled either.
         $this->assertFalse($generated['items']);
         $this->assertFalse($generated['missions']);

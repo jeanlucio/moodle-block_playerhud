@@ -207,7 +207,7 @@ class wizard {
      * the teacher re-run it and hit an unexplained "nothing new was generated" no-op.
      *
      * The wizard is deliberately one-shot per mechanic per course: the dedicated management
-     * screens ("Criar Item Mágico", "Sugerir Missões", "Sugerir Trocas", "Distribuir Drops")
+     * screens ("Create Magic Item", "Suggest Missions", "Suggest Trades", "Distribute Drops")
      * are the intended path for adding more of anything later.
      *
      * Three different signals decide this, and they are NOT interchangeable:
@@ -217,7 +217,7 @@ class wizard {
      *   enough on its own: content deleted through some other route (e.g. the Items management
      *   screen) leaves the run's status untouched, and trusting that stale history would disable
      *   the card forever with no way back short of editing the database directly.
-     * - Items, Missions and Comércio have no fixed-name fingerprint of their own (their content
+     * - Items, Missions and Trade have no fixed-name fingerprint of their own (their content
      *   is arbitrary AI-generated names or heuristic trades), so existence cannot be checked the
      *   same way. Instead, a completed ('done') run having included the module only counts when
      *   at least one object that SAME run recorded in its own manifest still exists — the
@@ -303,7 +303,7 @@ class wizard {
     /**
      * Whether at least one object recorded in the manifest of any of the given runs, for the
      * given table, still exists — used by get_generated_modules() for the mechanics with no
-     * fixed-name fingerprint of their own (Items, Missions, Comércio), so a 'done' run whose
+     * fixed-name fingerprint of their own (Items, Missions, Trade), so a 'done' run whose
      * output was entirely deleted through some other route no longer counts as generated.
      *
      * @param int[] $runids Wizard run IDs to check the manifest of.

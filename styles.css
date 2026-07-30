@@ -2602,9 +2602,9 @@ div.modal-dialog .visually-hidden {
 }
 /*
  * Scoped to .ph-wizard-mech-module specifically (not "any input"): each card's own
- * "Distribuir nas atividades" checkbox is legitimately disabled whenever its module is simply
- * left unchecked (not "already generated"), and a bare input:disabled selector would dim the
- * whole card for that alone.
+ * "Create drops and distribute into activities" checkbox is legitimately disabled whenever its
+ * module is simply left unchecked (not "already generated"), and a bare input:disabled
+ * selector would dim the whole card for that alone.
  */
 #ph-wizard-modal .ph-wizard-mech-card:has(input.ph-wizard-mech-module:disabled) {
     opacity: 0.6;
@@ -2635,17 +2635,17 @@ div.modal-dialog .visually-hidden {
 }
 
 /*
- * § 5.9 Fatia 1: live step-by-step progress bar. progress-bar-striped/animated (Bootstrap
- * utilities, added in the template) already keep the bar visibly "alive" during a slow AI step
- * where the width itself does not move for several seconds.
+ * Live step-by-step progress bar. progress-bar-striped/animated (Bootstrap utilities, added in
+ * the template) already keep the bar visibly "alive" during a slow AI step where the width
+ * itself does not move for several seconds.
  */
 #ph-wizard-modal .ph-wizard-progress-bar-wrap {
     height: 10px;
 }
 
 /*
- * § 5.9 Fatia 3: Huddy carousel, the wizard's own "game loading screen" — the activity indicator
- * for the whole progress view, not decoration (see wizard.js's startHuddyCarousel()).
+ * Huddy carousel, the wizard's own "game loading screen" — the activity indicator for the
+ * whole progress view, not decoration (see wizard.js's startHuddyCarousel()).
  */
 #ph-wizard-modal .ph-wizard-huddy-frame {
     position: relative;

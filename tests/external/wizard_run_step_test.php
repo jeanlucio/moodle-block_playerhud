@@ -260,7 +260,7 @@ final class wizard_run_step_test extends external_base_testcase {
     }
 
     /**
-     * § 5.9 Fatia 2: the "story_outline" step is AI-backed and exercised manually with a real
+     * The "story_outline" step is AI-backed and exercised manually with a real
      * key (like "items"/"next_chapter" in wizard_generate_test.php); this only proves that with
      * no key configured it fails gracefully (success: false, no exception) and writes nothing —
      * the internal 1x retry (see generate_with_retry()) still ends in failure when both attempts
@@ -1680,7 +1680,7 @@ final class wizard_run_step_test extends external_base_testcase {
 
     /**
      * Auto-distributing a drop must rename it to the activity it actually landed in — otherwise
-     * the drops management table's "Localização/Nome" column keeps showing the item's own name,
+     * the drops management table's "Location / Name" column keeps showing the item's own name,
      * useless for finding where a drop physically is. Uses a page name deliberately different
      * from the item's own name so a pass can only mean a real rename, not a coincidence.
      */

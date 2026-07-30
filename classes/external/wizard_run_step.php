@@ -37,7 +37,7 @@ use context_block;
  *
  * Deliberately does not roll back on failure — the browser-driven loop stops instead, showing
  * the teacher a retry (re-call this same step) or undo (existing `wizard_rollback`, which works
- * against the run's manifest regardless of its `status`) choice. See § 5.9 of the project plan.
+ * against the run's manifest regardless of its `status`) choice.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
@@ -417,9 +417,9 @@ class wizard_run_step extends external_api {
     /**
      * Runs a single AI-backed callable, retrying it exactly once on failure — AI generation
      * fails more often than the deterministic modules, and a chapter/outline step never writes
-     * anything before this succeeds, so retrying in place is safe (see § 5.9 of the project plan:
-     * this is a per-step, in-request retry, distinct from the browser's own "try again" button,
-     * which resumes the whole failed step from scratch after a click).
+     * anything before this succeeds, so retrying in place is safe. This is a per-step,
+     * in-request retry, distinct from the browser's own "try again" button, which resumes the
+     * whole failed step from scratch after a click.
      *
      * @param callable $callable Callable with no arguments, returning the generation result.
      * @return array The callable's return value.
@@ -435,14 +435,14 @@ class wizard_run_step extends external_api {
 
     /**
      * Runs one story-arc chapter step: reads the previous chapter's real text from the database
-     * (never from the client — see § 5.9's "contexto vem do servidor, não do cliente"), generates
-     * the next chapter against the full arc + this chapter's own beat + that previous text, and
-     * records the new chapter/nodes/choices in the run's manifest.
+     * (never from the client, so the context always comes from the server), generates the next
+     * chapter against the full arc + this chapter's own beat + that previous text, and records
+     * the new chapter/nodes/choices in the run's manifest.
      *
      * Every chapter also gets reputation stakes (`karma_gain`/`karma_loss`), unlike the legacy
      * single-chapter `generate_next_chapter()` (never extended to pass these): an arc chapter's
      * choices carry moral weight the same way the fixed Chapter 1 skeleton's "call to adventure"
-     * choice already does (see § 5.6's `karma_delta` note), instead of only ever costing an item.
+     * choice already does, instead of only ever costing an item.
      *
      * @param int $chapterindex 1-based AI chapter number within the arc (chapter 1 is the fixed
      *     RPG chapter, so AI chapter 1 here is the story's chapter 2 overall).

@@ -137,7 +137,7 @@ final class insert_drop_shortcode_test extends external_base_testcase {
 
     /**
      * A successful insert renames the drop to the activity it just landed in — this is what
-     * makes the drops management table's "Localização/Nome" column useful for finding a drop
+     * makes the drops management table's "Location / Name" column useful for finding a drop
      * later, instead of just repeating the item's own name. Shared by both callers (the wizard's
      * auto-distribute step and this manual screen), so it only needs proving once, here.
      */

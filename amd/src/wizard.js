@@ -204,7 +204,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
 
         // Course-wide activity count never changes during the modal's lifetime, so this is
         // computed once: a caption under each mechanic that actually auto-distributes into
-        // course activities (Items, Item de Progresso, Colecionável de Conhecimento — PlayerCoin
+        // course activities (Items, RPG item, Knowledge collectible — PlayerCoin
         // and the Secret Item target the news forum instead, unrelated to this count), plus the
         // pre-generate confirmation view's own title/description. Zero and 1-2 activities are
         // worded differently on purpose: with zero, distribution is skipped entirely and needs a
@@ -243,7 +243,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
 
         // "Select all" (sits in the Economy section header, but controls every mechanic
         // checkbox in the whole form) checks/unchecks every enabled one at once, including
-        // Comércio — appended explicitly since it has no ph-wizard-mech-module class of its own
+        // Trade — appended explicitly since it has no ph-wizard-mech-module class of its own
         // (its own requirement-gating decides whether it can be checked at all) and pushed to
         // the END of the list so it is always processed after PlayerCoin/Avatar Pack: by then
         // syncTradeRequirement() has already re-evaluated (and, when checking, cleared) its
@@ -375,7 +375,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
         // Huddy carousel: the wizard's own "game loading screen" — 5 mascot images (reused
         // across more tips than images, cycling independently) alternating with pedagogical
         // tips, masking the ~10-40s an AI story-arc step spends without moving the progress
-        // bar. It is the activity indicator, not decoration (see § 5.9 Fatia 3): it runs for
+        // bar. It is the activity indicator, not decoration: it runs for
         // the whole progress view, not only during story steps, so there is never a separate
         // spinner to keep in sync with it. It also stays up (manually navigable) once the
         // final report shows, so the tips remain browsable after generation finishes.
@@ -394,7 +394,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
 
         huddyImgEl.addEventListener('error', () => {
             // The art failing to load must never leave the UI looking frozen — falls back to an
-            // indeterminate pulsing placeholder instead, per § 5.9 Fatia 3's decision.
+            // indeterminate pulsing placeholder instead.
             huddyImgEl.classList.add('ph-display-none');
             huddyPulseEl.classList.remove('ph-display-none');
         });
@@ -887,7 +887,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
                 return;
             }
 
-            // Items, Item de Progresso and Colecionável de Conhecimento are the only mechanics
+            // Items, RPG item and Knowledge collectible are the only mechanics
             // whose drops need an actual course activity to land in (PlayerCoin/Secret Item
             // insert into the news forum instead, and everything else has no drop at all) — so
             // only their own distribute flag matters here.

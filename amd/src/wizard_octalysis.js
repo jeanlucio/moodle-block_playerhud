@@ -206,10 +206,11 @@ define(['core/str'], function(Str) {
          * Whether a mechanic checkbox is disabled specifically because it was already
          * generated (or, for Ranking, is already active) — as opposed to disabled for some
          * other reason, e.g. Trade's own unmet-requirement gate, which must NOT count towards
-         * coverage since nothing has actually happened for it yet. Detected via the "✓ Já
-         * gerado"/"✓ Já ativo" note rendered as a direct sibling of the checkbox's own
-         * form-check wrapper — scoped with :scope > so Trade's nested card (inside Avatar
-         * Pack's own card) never matches on Avatar Pack's own note, or vice versa.
+         * coverage since nothing has actually happened for it yet. Detected via the
+         * `.ph-wizard-generated-note` (wizard_module_generated/wizard_module_active) rendered
+         * as a direct sibling of the checkbox's own form-check wrapper — scoped with :scope >
+         * so Trade's nested card (inside Avatar Pack's own card) never matches on Avatar
+         * Pack's own note, or vice versa.
          *
          * @param {HTMLInputElement} checkbox
          * @return {boolean}
@@ -224,9 +225,7 @@ define(['core/str'], function(Str) {
         // A drive is active when its checkbox is either checked (about to be generated) or
         // already generated — an untouched, empty course still honestly reads 0% (nothing
         // checked, nothing generated yet), but a course that already has content keeps
-        // crediting it instead of the octagon zeroing out the moment that card locks itself
-        // (see the wizard's plan doc, § 10.2 Item E, for the original all-or-nothing baseline
-        // this refines).
+        // crediting it instead of the octagon zeroing out the moment that card locks itself.
         const recompute = () => {
             const active = new Set();
             checkboxes.forEach((checkbox) => {

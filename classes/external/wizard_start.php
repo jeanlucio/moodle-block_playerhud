@@ -37,8 +37,7 @@ use context_block;
  * Instead of running every selected module in one request, this only creates the run and
  * computes the ordered plan of steps — one per module, plus one for auto-distribute when
  * selected. The browser then drives {@see wizard_run_step} once per step, updating a single
- * progress bar live, ending in a quantity report instead of a name list. See § 5.9 of the
- * project plan for the full design.
+ * progress bar live, ending in a quantity report instead of a name list.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
