@@ -75,7 +75,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `chapters_test.php` | 13 |
 | `classes_test.php` | 7 |
 | `collect_test.php` | 3 |
-| `drops_test.php` | 11 |
+| `drops_test.php` | 14 |
 | `export_test.php` | 7 |
 | `items_test.php` | 15 |
 | `manage_entry_points_test.php` | 20 |
@@ -83,7 +83,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `scenes_test.php` | 6 |
 | `suggestions_test.php` | 4 |
 | `trades_test.php` | 7 |
-| **Subtotal** | **109** |
+| **Subtotal** | **112** |
 
 ### Output / Renderer Tests (`tests/output/`)
 
@@ -92,14 +92,16 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `manage/item_delete_confirm_test.php` | 9 |
 | `manage/quest_delete_confirm_test.php` | 3 |
 | `manage/tab_chapters_test.php` | 4 |
-| **Subtotal** | **16** |
+| `manage/tab_reports_test.php` | 2 |
+| `view/tab_history_test.php` | 1 |
+| **Subtotal** | **19** |
 
-| **Grand Total** | **556** |
+| **Grand Total** | **562** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
 ```
 
-**Overall line coverage** (`moodle-coverage`, PHPUnit + Xdebug): **47%**.
+**Overall line coverage** (`moodle-coverage`, PHPUnit + Xdebug): **56%**.
 
 [Full test-by-test breakdown and coverage table →]({{ '/testing.html' | relative_url }})

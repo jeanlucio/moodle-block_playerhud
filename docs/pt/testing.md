@@ -81,7 +81,7 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `chapters_test.php` | 13 | Persistência e ordenação de capítulos: salvar (inserir, atualizar, padrões, isolamento), excluir em cascata cenas/escolhas, mover/reordenar com renumeração da lista completa, no-op na borda |
 | `classes_test.php` | 7 | Persistência de classe RPG: inserção (HP base, vínculo de instância, emojis por tier), atualização preserva HP base, trim de emoji, isolamento; exclusão remove registro e retratos por tier, isolamento, irmãos preservados |
 | `collect_test.php` | 3 | Transação de coleta de item: drop finito concede XP, drop infinito concede 0 XP (regra de ouro), item de 0 XP armazenado sem alterar XP |
-| `drops_test.php` | 11 | Persistência de drop: salvar (inserir + código, ilimitado, atualizar preserva propriedade, isolamento, item estrangeiro); excluir único e no-op estrangeiro; exclusão em massa só dos próprios com contagem, entrada vazia; `get_owned_item` retorna para a instância dona e rejeita instância estrangeira |
+| `drops_test.php` | 14 | Persistência de drop: salvar (inserir + código, ilimitado, atualizar preserva propriedade, isolamento, item estrangeiro); excluir único e no-op estrangeiro; exclusão em massa só dos próprios com contagem, entrada vazia; `get_owned_item` retorna para a instância dona e rejeita instância estrangeira; `get_sort_data` alterna ícone/direção da coluna de ordenação ativa; `view_manage_page`/`handle_edit_form` renderizam de ponta a ponta pelo `$OUTPUT`/`$PAGE` globais reais para um professor com a capability de gerenciamento |
 | `export_test.php` | 7 | Construtor da exportação de notas: campos da linha e nível derivado, ordenação por XP, teto de nível, exclusão de professores/gerentes, colunas localizadas sem jogadores, exclusão de não matriculados, desempate por última ação |
 | `items_test.php` | 15 | Ciclo de vida do item: toggle de ativação e no-op estrangeiro; conceder adiciona inventário + XP, 0 XP, rejeição estrangeira; revogar desconta XP, preserva drop infinito, no-op estrangeiro; revogar desconta o XP realmente registrado no momento da concessão, não o XP atual do item; detecção de trocas sobreviventes (troca aparada, órfã excluída, não relacionada ignorada); `find_xp_impact` soma só as cópias que realmente ganharam XP entre todos os detentores, vazio para item nunca possuído, e no-op para lista de ids vazia |
 | `manage_entry_points_test.php` | 20 | A metade HTTP dos controladores, exercitada pelo ciclo real de requisição (superglobais preenchidas como um navegador faria, `redirect()` capturado como `redirecterrordetected` sob CLI): as ações de excluir e excluir em lote de drops realmente removem as linhas, um id de drop de outra instância nunca é excluído, uma sesskey errada não exclui nada, a listagem renderiza só os drops da própria instância e cai num campo de ordenação seguro diante de um parâmetro `sort` forjado; excluir uma cena cascateia para suas escolhas, um nó de outro capítulo fica intacto, um capítulo de outra instância é rejeitado; coletar concede o item e seu XP, não paga XP em drop infinito, rejeita drop de outra instância, item desabilitado e sesskey inválida sem gravar nada; os editores de classe e troca rejeitam um registro de outra instância, e todas essas telas ficam fechadas para quem não tem `block/playerhud:manage` (ou `:view` no coletar) |
@@ -89,7 +89,7 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `scenes_test.php` | 6 | Persistência de cena/escolha da história: salvar escolhas, atribuição de classe com normalização de ID string/int (regressão `set_class_id`), classe requerida, próximo nó, custo de item, criação de nó de continuação |
 | `suggestions_test.php` | 4 | Persistência de sugestões: só as missões marcadas são inseridas (e nenhuma selecionada), só as trocas marcadas são criadas com reqs/recompensas (e nenhuma selecionada) |
 | `trades_test.php` | 7 | Persistência de troca: salvar (inserir com reqs + recompensas, atualizar substitui, isolamento, item estrangeiro filtrado); excluir em cascata reqs/recompensas/log, isolamento, irmãos preservados |
-| **Subtotal** | **109** | |
+| **Subtotal** | **112** | |
 
 ### Testes de Saída / Renderer (`tests/output/`)
 
@@ -98,9 +98,11 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `manage/item_delete_confirm_test.php` | 9 | Contexto da confirmação de exclusão de item: ação única vs massa e payload de IDs, rótulos de confirmação singular/plural/simples, seções só-sobreviventes e órfãs+sobreviventes; aviso de impacto de XP exibido numa exclusão única com link de desabilitar-em-vez-de, nunca exibido numa exclusão em lote mesmo com URL de alternância fornecida, e omitido por completo quando não há impacto de XP |
 | `manage/quest_delete_confirm_test.php` | 3 | Contexto de confirmação de exclusão de quest: exclusão única produz a ação `delete_quest_force` com o aviso de impacto de XP e o link de desabilitar-em-vez-de; exclusão em lote produz `bulk_delete_quests_force` com a lista de ids e nunca mostra o link de desabilitar mesmo com uma URL de alternância fornecida; sem impacto de XP omite tanto o aviso quanto o link |
 | `manage/tab_chapters_test.php` | 4 | Avisos de visibilidade do card de capítulo: sinalização de cena inicial ausente, texto e limites do aviso de nível acima do máximo |
-| **Subtotal** | **16** | |
+| `manage/tab_reports_test.php` | 2 | Aba Relatórios: uma instância sem jogadores/itens/quests ainda exporta um resumo bem formado com o drill-down de auditoria inativo; `display()` renderiza HTML real de ponta a ponta pelo `$OUTPUT` global |
+| `view/tab_history_test.php` | 1 | Aba Log: um jogador sem eventos registrados ainda exporta um estado vazio bem formado, com os 5 cabeçalhos de coluna ordenável presentes |
+| **Subtotal** | **19** | |
 
-| **Total geral** | **556** | |
+| **Total geral** | **562** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -110,12 +112,12 @@ vendor/bin/phpunit --testsuite block_playerhud
 
 | Classe | Cobertura de linhas |
 |--------|:-------------------:|
-| `ai\generator` | 6% |
+| `ai\generator` | 12% |
 | `controller\aikeys` | 100% |
-| `controller\chapters` | 51% |
+| `controller\chapters` | 50% |
 | `controller\classes` | 67% |
-| `controller\collect` | 56% |
-| `controller\drops` | 79% |
+| `controller\collect` | 100% |
+| `controller\drops` | 91% |
 | `controller\export` | 90% |
 | `controller\items` | 99% |
 | `controller\quests` | 97% |
@@ -123,6 +125,10 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `controller\suggestions` | 100% |
 | `controller\trades` | 71% |
 | `drop_guard` | 100% |
+| `event\character_selected` | 43% |
+| `event\item_collected` | 43% |
+| `event\quest_collected` | 43% |
+| `event\trade_completed` | 43% |
 | `event\xp_changed` | 43% |
 | `external\chat_message` | 67% |
 | `external\collect_item` | 100% |
@@ -158,15 +164,25 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `output\manage\item_delete_confirm` | 100% |
 | `output\manage\quest_delete_confirm` | 100% |
 | `output\manage\tab_chapters` | 7% |
+| `output\manage\tab_config` | 81% |
+| `output\manage\tab_reports` | 37% |
+| `output\view\header` | 95% |
+| `output\view\tab_chapters` | 100% |
+| `output\view\tab_class_select` | 79% |
 | `output\view\tab_collection` | 68% |
+| `output\view\tab_history` | 60% |
+| `output\view\tab_quests` | 79% |
+| `output\view\tab_ranking` | 64% |
+| `output\view\tab_rules` | 78% |
+| `output\view\tab_shop` | 92% |
 | `privacy\provider` | 96% |
 | `quest` | 90% |
 | `story_manager` | 61% |
-| `trade_manager` | 90% |
+| `trade_manager` | 91% |
 | `utils` | 53% |
-| **Total** | **47%** |
+| **Total** | **56%** |
 
-54 das 82 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
+68 das 86 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
 observadores de evento e wrappers finos de output nunca carregados via `require` durante a
 execução desta suíte) não têm nenhum dado de cobertura e são omitidas em vez de aparecerem
 como um 0% enganoso.
@@ -191,13 +207,13 @@ de dados são testados diretamente em `db_upgrade_test.php`, que chama
 | Arquivo de feature | Cenários | O que é coberto |
 |-------------------|--------:|----------------|
 | `block_playerhud_access.feature` | 3 | Visibilidade do bloco por perfil (professor adiciona bloco, aluno vê HUD, não matriculado não vê) |
-| `block_playerhud_student.feature` | 4 | HUD ativo na primeira visita, desativar/reativar gamificação, dispensar confirmação |
+| `block_playerhud_student.feature` | 5 | HUD ativo na primeira visita, desativar/reativar gamificação, dispensar confirmação; abrir a aba Log não dá erro |
 | `block_playerhud_teacher.feature` | 7 | Botão do Painel do Mestre, acesso ao painel de gerenciamento, navegação entre abas, retorno ao curso; abrir o log de auditoria de um aluno em Relatórios não dá erro |
 | `block_playerhud_modals.feature` | 5 | Abrir/fechar modal de detalhes do item, proteção contra abertura duplicada, coleta AJAX sem redirecionamento, sem placeholders brutos |
 | `block_playerhud_celebrations.feature` | 2 | Introdução do Huddy exibida uma única vez no painel; aviso de primeira quest exibido uma única vez quando há recompensa a reivindicar |
 | `block_playerhud_wizard.feature` | 6 | Assistente abre mostrando o formulário de geração; abas laterais de Ajuda e Recomendações externas; gerar PlayerCoin de ponta a ponta mostra o relatório de sucesso; o card do PlayerCoin trava depois de gerado; desfazer uma rodada pelo Histórico destrava de novo |
-| `block_playerhud_manage_crud.feature` | 7 | As telas de gestão que os testes em PHP só alcançam isoladamente: as abas Trocas, Personagens e História renderizam numa requisição real; a biblioteca de itens leva até a tela de drops; um drop é criado pelo `moodleform` real e aparece na listagem; um personagem é criado pelo formulário real (incluindo os campos de gerenciador de arquivos); o checkbox mestre de seleção em lote marca e desmarca todas as linhas (JavaScript) |
-| **Total** | **34** | |
+| `block_playerhud_manage_crud.feature` | 7 | As telas de gestão que os testes em PHP só alcançam isoladamente: as abas Trocas, Personagens e História renderizam numa requisição real; a biblioteca de itens leva até a tela de drops; um drop é criado pelo `moodleform` real, aparece na listagem e mostra a notificação de sucesso (travando a regressão do tipo de notificação do `redirect()`); um personagem é criado pelo formulário real (incluindo os campos de gerenciador de arquivos); o checkbox mestre de seleção em lote marca e desmarca todas as linhas (JavaScript) |
+| **Total** | **35** | |
 
 ```bash
 php admin/tool/behat/cli/init.php

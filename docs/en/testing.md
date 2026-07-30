@@ -81,7 +81,7 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `chapters_test.php` | 13 | Chapter persistence and ordering: save (insert, update, defaults, isolation), delete cascading scenes/choices, reorder/move with full-list renumbering, edge no-op |
 | `classes_test.php` | 7 | RPG class persistence: insert (base HP, instance binding, emoji tiers), update preserves base HP, emoji trimming, isolation; delete removes record and tier portraits, isolation, siblings kept |
 | `collect_test.php` | 3 | Item collection transaction: finite drop awards XP, infinite drop awards 0 XP (golden rule), zero-XP item stored without XP change |
-| `drops_test.php` | 11 | Drop persistence: save (insert + code, unlimited, update preserves ownership, isolation, foreign item); delete single and foreign no-op; bulk deletes only owned with count, empty input; `get_owned_item` returns for the owning instance and rejects a foreign one |
+| `drops_test.php` | 14 | Drop persistence: save (insert + code, unlimited, update preserves ownership, isolation, foreign item); delete single and foreign no-op; bulk deletes only owned with count, empty input; `get_owned_item` returns for the owning instance and rejects a foreign one; `get_sort_data` toggles the icon/direction for the active sort column; `view_manage_page`/`handle_edit_form` render end to end through the real global `$OUTPUT`/`$PAGE` for a teacher with the manage capability |
 | `export_test.php` | 7 | Grade export builder: row fields and derived level, XP ordering, level cap, teacher/manager exclusion, localized columns with no players, unenrolled exclusion, XP tie-break by last action |
 | `items_test.php` | 15 | Item lifecycle: enable toggle and foreign no-op; grant adds inventory + XP, zero-XP, foreign rejection; revoke deducts XP, infinite-drop preservation, foreign no-op; revoke deducts the XP actually recorded at grant time, not the item's current XP; surviving-trade detection (trimmed trade, orphaned excluded, unrelated ignored); `find_xp_impact` aggregates only copies that actually earned XP across all holders, empty for an unheld item, and a no-op for an empty id list |
 | `manage_entry_points_test.php` | 20 | The controllers' HTTP-facing halves, driven through the real request lifecycle (superglobals populated as a browser would, `redirect()` caught as `redirecterrordetected` under CLI): drops delete and bulk-delete actually remove the rows, a foreign-instance drop id is never deleted, a wrong sesskey deletes nothing, the listing renders the instance's own drops only and falls back to a safe sort column for a crafted `sort` parameter; scene deletion cascades to its choices, a node from another chapter is left alone, a chapter from another instance is rejected; collect awards the item and its XP, pays no XP on an infinite drop, rejects a foreign drop, a disabled item and a bad sesskey without writing anything; the class and trade editors reject a record from another instance, and every one of these screens is closed to a user without `block/playerhud:manage` (or `:view` for collect) |
@@ -89,7 +89,7 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `scenes_test.php` | 6 | Story scene/choice persistence: save choices, class assignment with string/int ID normalisation (`set_class_id` regression), required class, next node, item cost, follow-up node creation |
 | `suggestions_test.php` | 4 | Suggestion persistence: only ticked quest suggestions inserted (and none selected), only ticked trade suggestions created with reqs/rewards (and none selected) |
 | `trades_test.php` | 7 | Trade persistence: save (insert with reqs + rewards, update replaces, isolation, foreign item filtered); delete cascading reqs/rewards/log, isolation, siblings kept |
-| **Subtotal** | **109** | |
+| **Subtotal** | **112** | |
 
 ### Output / Renderer Tests (`tests/output/`)
 
@@ -98,9 +98,11 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `manage/item_delete_confirm_test.php` | 9 | Item-deletion confirmation context: single vs bulk action and id payload, singular/plural/simple confirm labels, surviving-only and orphaned+surviving sections; XP-impact warning shown for a single deletion with a disable-instead link, never shown for a bulk deletion even with a toggle URL supplied, and omitted entirely when there is no XP impact |
 | `manage/quest_delete_confirm_test.php` | 3 | Quest-deletion confirmation context: single deletion produces the `delete_quest_force` action with the XP-impact warning and disable-instead link; bulk deletion produces `bulk_delete_quests_force` with the id list and never shows the disable-instead link even with a toggle URL supplied; no XP impact omits both the warning and the disable link |
 | `manage/tab_chapters_test.php` | 4 | Chapter-card visibility warnings: missing start-scene flag, required-level-above-maximum warning text and bounds |
-| **Subtotal** | **16** | |
+| `manage/tab_reports_test.php` | 2 | Reports tab: an instance with no players/items/quests still exports a well-formed summary with the audit drill-down inactive; `display()` renders real HTML end to end through the global `$OUTPUT` |
+| `view/tab_history_test.php` | 1 | Log tab: a player with no logged events still exports a well-formed empty state, with all 5 sortable column headers present |
+| **Subtotal** | **19** | |
 
-| **Grand Total** | **556** | |
+| **Grand Total** | **562** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -110,12 +112,12 @@ vendor/bin/phpunit --testsuite block_playerhud
 
 | Class | Line coverage |
 |-------|:-------------:|
-| `ai\generator` | 6% |
+| `ai\generator` | 12% |
 | `controller\aikeys` | 100% |
-| `controller\chapters` | 51% |
+| `controller\chapters` | 50% |
 | `controller\classes` | 67% |
-| `controller\collect` | 56% |
-| `controller\drops` | 79% |
+| `controller\collect` | 100% |
+| `controller\drops` | 91% |
 | `controller\export` | 90% |
 | `controller\items` | 99% |
 | `controller\quests` | 97% |
@@ -123,6 +125,10 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `controller\suggestions` | 100% |
 | `controller\trades` | 71% |
 | `drop_guard` | 100% |
+| `event\character_selected` | 43% |
+| `event\item_collected` | 43% |
+| `event\quest_collected` | 43% |
+| `event\trade_completed` | 43% |
 | `event\xp_changed` | 43% |
 | `external\chat_message` | 67% |
 | `external\collect_item` | 100% |
@@ -158,15 +164,25 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `output\manage\item_delete_confirm` | 100% |
 | `output\manage\quest_delete_confirm` | 100% |
 | `output\manage\tab_chapters` | 7% |
+| `output\manage\tab_config` | 81% |
+| `output\manage\tab_reports` | 37% |
+| `output\view\header` | 95% |
+| `output\view\tab_chapters` | 100% |
+| `output\view\tab_class_select` | 79% |
 | `output\view\tab_collection` | 68% |
+| `output\view\tab_history` | 60% |
+| `output\view\tab_quests` | 79% |
+| `output\view\tab_ranking` | 64% |
+| `output\view\tab_rules` | 78% |
+| `output\view\tab_shop` | 92% |
 | `privacy\provider` | 96% |
 | `quest` | 90% |
 | `story_manager` | 61% |
-| `trade_manager` | 90% |
+| `trade_manager` | 91% |
 | `utils` | 53% |
-| **Overall** | **47%** |
+| **Overall** | **56%** |
 
-54 of the plugin's 82 classes are listed above — the rest (mostly exception classes, event
+68 of the plugin's 86 classes are listed above — the rest (mostly exception classes, event
 subscribers and thin output wrappers never `require`'d during this suite's run) carry no
 coverage data at all and are omitted rather than shown as a misleading 0%.
 
@@ -189,13 +205,13 @@ tested directly in `db_upgrade_test.php`, which calls `xmldb_block_playerhud_upg
 | Feature file | Scenarios | What is covered |
 |--------------|----------:|----------------|
 | `block_playerhud_access.feature` | 3 | Role-based block visibility (teacher adds block, student sees HUD, non-enrolled user cannot) |
-| `block_playerhud_student.feature` | 4 | HUD active on first visit, disable/re-enable gamification, dismiss confirmation |
+| `block_playerhud_student.feature` | 5 | HUD active on first visit, disable/re-enable gamification, dismiss confirmation; opening the Log tab does not error |
 | `block_playerhud_teacher.feature` | 7 | Game Master Panel button, management panel access, tab navigation, return to course; opening a student's audit log in Reports does not error |
 | `block_playerhud_modals.feature` | 5 | Item detail modal open/close, duplicate-open guard, AJAX collect without redirect, no raw placeholders |
 | `block_playerhud_celebrations.feature` | 2 | Huddy introduction shown once on the dashboard; first-quest nudge shown once when a reward is claimable |
 | `block_playerhud_wizard.feature` | 6 | Wizard opens showing the generation form; Help and External recommendations side views; generating PlayerCoin end-to-end shows the success report; the PlayerCoin card locks after being generated; undoing a run from the History view unlocks it again |
-| `block_playerhud_manage_crud.feature` | 7 | The management screens the PHP-level tests reach only in isolation: the Trades, Characters and Story tabs render on a real request; the item library links through to the drops screen; a drop is created through the real `moodleform` and appears in the listing; a character is created through the real form (file-manager fields included); the bulk-selection master checkbox checks and clears every row (JavaScript) |
-| **Total** | **34** | |
+| `block_playerhud_manage_crud.feature` | 7 | The management screens the PHP-level tests reach only in isolation: the Trades, Characters and Story tabs render on a real request; the item library links through to the drops screen; a drop is created through the real `moodleform`, appears in the listing and shows a success notification (locking the `redirect()` notification-type regression); a character is created through the real form (file-manager fields included); the bulk-selection master checkbox checks and clears every row (JavaScript) |
+| **Total** | **35** | |
 
 ```bash
 php admin/tool/behat/cli/init.php

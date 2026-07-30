@@ -75,7 +75,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `chapters_test.php` | 13 |
 | `classes_test.php` | 7 |
 | `collect_test.php` | 3 |
-| `drops_test.php` | 11 |
+| `drops_test.php` | 14 |
 | `export_test.php` | 7 |
 | `items_test.php` | 15 |
 | `manage_entry_points_test.php` | 20 |
@@ -83,7 +83,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `scenes_test.php` | 6 |
 | `suggestions_test.php` | 4 |
 | `trades_test.php` | 7 |
-| **Subtotal** | **109** |
+| **Subtotal** | **112** |
 
 ### Testes de Saída / Renderer (`tests/output/`)
 
@@ -92,14 +92,16 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `manage/item_delete_confirm_test.php` | 9 |
 | `manage/quest_delete_confirm_test.php` | 3 |
 | `manage/tab_chapters_test.php` | 4 |
-| **Subtotal** | **16** |
+| `manage/tab_reports_test.php` | 2 |
+| `view/tab_history_test.php` | 1 |
+| **Subtotal** | **19** |
 
-| **Total geral** | **556** |
+| **Total geral** | **562** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
 ```
 
-**Cobertura de linhas geral** (`moodle-coverage`, PHPUnit + Xdebug): **47%**.
+**Cobertura de linhas geral** (`moodle-coverage`, PHPUnit + Xdebug): **56%**.
 
 [Ver o detalhamento completo de cada teste e a tabela de cobertura →]({{ '/testing-pt.html' | relative_url }})
