@@ -41,6 +41,9 @@ Código-fonte: [github.com/jeanlucio/moodle-block_playerhud](https://github.com/
 <span id="ecosystem"></span>
 {% include_relative pt/ecosystem.md %}
 
+<span id="aihub"></span>
+{% include_relative pt/aihub.md %}
+
 <span id="latepenalty"></span>
 {% include_relative pt/latepenalty.md %}
 

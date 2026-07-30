@@ -40,6 +40,9 @@ Source code: [github.com/jeanlucio/moodle-block_playerhud](https://github.com/je
 <span id="ecosystem"></span>
 {% include_relative en/ecosystem.md %}
 
+<span id="aihub"></span>
+{% include_relative en/aihub.md %}
+
 <span id="latepenalty"></span>
 {% include_relative en/latepenalty.md %}
 
