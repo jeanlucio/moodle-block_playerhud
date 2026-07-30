@@ -99,14 +99,20 @@ class quest {
     /**
      * Checks the status of a quest for a specific user.
      *
-     * @param object $quest The quest object.
+     * @param \stdClass $quest The quest object.
      * @param int $userid The user ID.
      * @param int $courseid The course ID.
      * @param int $currentxp The user's current XP.
      * @param int $currentlevel The user's current level.
      * @return \stdClass Status object {completed, progress, label, action_url, is_activity}.
      */
-    public static function check_status($quest, $userid, $courseid, $currentxp, $currentlevel) {
+    public static function check_status(
+        \stdClass $quest,
+        int $userid,
+        int $courseid,
+        int $currentxp,
+        int $currentlevel
+    ): \stdClass {
         global $DB, $CFG;
         require_once($CFG->libdir . '/completionlib.php');
 
@@ -285,7 +291,7 @@ class quest {
      * @return string A description of the rewards claimed.
      * @throws \moodle_exception
      */
-    public static function claim_reward($questid, $userid, $blockinstanceid, $courseid) {
+    public static function claim_reward(int $questid, int $userid, int $blockinstanceid, int $courseid): string {
         global $DB;
 
         // 1. Basic Validation.
