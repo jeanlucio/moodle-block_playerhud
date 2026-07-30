@@ -54,7 +54,7 @@ Full disclosure:
 3. Rename the folder to `playerhud` (if necessary).
    Final path:
    `your-moodle/blocks/playerhud/`
-4. Install the required **PlayerHUD Filter** plugin.
+4. Install the recommended **PlayerHUD Filter** plugin (needed to place item drops via shortcodes in course content).
 5. Visit **Site administration > Notifications** to complete installation.
 6. Add the block to a course.
 
@@ -129,7 +129,7 @@ Divulgação completa:
 3. Renomeie para `playerhud` (se necessário).
    Caminho final:
    `seu-moodle/blocks/playerhud/`
-4. Instale o plugin obrigatório **Filtro PlayerHUD**.
+4. Instale o plugin recomendado **Filtro PlayerHUD** (necessário para posicionar drops de itens via shortcodes no conteúdo do curso).
 5. Acesse **Administração do site > Notificações** para concluir a instalação.
 6. Adicione o bloco ao curso.
 
