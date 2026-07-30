@@ -38,26 +38,6 @@ define(['jquery', 'core/notification'], function($, Notification) {
                 });
             });
 
-            // Toggle for showing/hiding old AI logs.
-            $('#btn-ai-toggle').on('click', function(e) {
-                e.preventDefault();
-                const rows = $('.ph-ai-hidden');
-
-                if (!rows.length) {
-                    return;
-                }
-
-                const isHidden = rows.first().is(':hidden');
-
-                if (isHidden) {
-                    rows.show();
-                    $(this).html('<i class="fa fa-chevron-up me-1" aria-hidden="true"></i> ' + config.strLess);
-                } else {
-                    rows.hide();
-                    $(this).html('<i class="fa fa-chevron-down me-1" aria-hidden="true"></i> ' + config.strMore);
-                }
-            });
-
             // Default Moodle confirmation for deleting items.
             $('.js-delete-report-btn').on('click', function(e) {
                 e.preventDefault();

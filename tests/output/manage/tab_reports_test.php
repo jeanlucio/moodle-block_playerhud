@@ -86,12 +86,43 @@ final class tab_reports_test extends advanced_testcase {
     }
 
     /**
+     * A mocked core_renderer, satisfying both the outer renderer_base type check and
+     * get_ai_logs()/get_audit_logs()'s own core_renderer|bootstrap_renderer union for
+     * paging_bar().
+     *
+     * @return \core_renderer
+     */
+    private function mock_output(): \core_renderer {
+        $output = $this->createMock(\core_renderer::class);
+        $output->method('paging_bar')->willReturn('');
+        return $output;
+    }
+
+    /**
+     * Inserts an AI log row directly and returns its id.
+     *
+     * @param int $timecreated Creation timestamp, to control ordering.
+     * @return int The new log row id.
+     */
+    private function create_ai_log(int $timecreated): int {
+        global $DB;
+        return $DB->insert_record('block_playerhud_ai_logs', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'userid'          => 2,
+            'action_type'     => 'item',
+            'object_name'     => 'Widget',
+            'ai_provider'     => 'Gemini',
+            'timecreated'     => $timecreated,
+        ]);
+    }
+
+    /**
      * An instance with no players/items/quests still exports a well-formed summary
      * with the audit drill-down inactive, instead of crashing.
      */
     public function test_export_for_template_empty_instance(): void {
         $tab = new tab_reports($this->instanceid, $this->course->id);
-        $data = $tab->export_for_template($this->createMock(\renderer_base::class));
+        $data = $tab->export_for_template($this->mock_output());
 
         $this->assertFalse($data['is_audit']);
         $this->assertArrayHasKey('kpis', $data);
@@ -109,5 +140,40 @@ final class tab_reports_test extends advanced_testcase {
 
         $this->assertIsString($html);
         $this->assertNotSame('', $html);
+    }
+
+    /**
+     * More than 30 AI log rows only export the first page (30) by default, newest first.
+     */
+    public function test_export_for_template_ai_logs_paginate_at_30(): void {
+        $now = time();
+        for ($i = 0; $i < 35; $i++) {
+            $this->create_ai_log($now + $i);
+        }
+
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+
+        $this->assertTrue($data['has_ai_logs']);
+        $this->assertCount(30, $data['ai_logs']);
+        $this->assertSame(0, $data['ai_showall']);
+    }
+
+    /**
+     * ai_showall=1 returns every AI log row instead of the default 30-row page.
+     */
+    public function test_export_for_template_ai_logs_showall_returns_everything(): void {
+        $now = time();
+        for ($i = 0; $i < 35; $i++) {
+            $this->create_ai_log($now + $i);
+        }
+
+        $_GET['ai_showall'] = 1;
+
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+
+        $this->assertSame(1, $data['ai_showall']);
+        $this->assertCount(35, $data['ai_logs']);
     }
 }

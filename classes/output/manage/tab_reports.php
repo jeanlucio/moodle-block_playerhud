@@ -245,8 +245,26 @@ class tab_reports implements renderable, templatable {
             ]))->out(false);
         }
 
-        $contextdata['ai_logs']     = $this->get_ai_logs();
-        $contextdata['has_ai_logs'] = !empty($contextdata['ai_logs']);
+        $aipage = optional_param('ai_page', 0, PARAM_INT);
+        $aishowall = optional_param('ai_showall', 0, PARAM_INT);
+
+        $aibaseurl = new moodle_url($baseurl);
+        if ($this->selecteduserid > 0) {
+            $aibaseurl->param('r_userid', $this->selecteduserid);
+        }
+
+        $aitoggleurl = new moodle_url($aibaseurl, [
+            'ai_showall' => $aishowall ? 0 : 1,
+            'ai_page'    => 0,
+        ]);
+
+        $aidata = $this->get_ai_logs($aipage, $aishowall, $aibaseurl, $output);
+
+        $contextdata['ai_logs']            = $aidata['logs'];
+        $contextdata['has_ai_logs']        = !empty($aidata['logs']);
+        $contextdata['ai_paging_bar']      = $aidata['paging_bar'];
+        $contextdata['ai_showall']         = $aishowall;
+        $contextdata['url_toggle_ai_showall'] = $aitoggleurl->out(false);
 
         $contextdata['str'] = [
             'leaderboard'       => get_string('leaderboard_title', 'block_playerhud'),
@@ -270,11 +288,11 @@ class tab_reports implements renderable, templatable {
             'confirm_revoke'    => get_string('confirm_revoke', 'block_playerhud'),
             'delete'            => get_string('delete'),
             'view'              => get_string('view'),
-            'btn_more'          => get_string('report_show_more', 'block_playerhud'),
             'filter_btn'        => get_string('filter'),
             'filter_clr'        => get_string('clear'),
             'btn_showall'       => get_string('showall', 'moodle', isset($logdata) ? $logdata['total'] : 0),
             'btn_showpaged'     => get_string('showperpage', 'moodle', 30),
+            'ai_btn_showall'    => get_string('showall', 'moodle', $aidata['total']),
             'search_any'        => get_string('search_any_term', 'block_playerhud'),
             'col_num'           => get_string('col_number', 'block_playerhud'),
             'export_csv'        => get_string('export_csv', 'block_playerhud'),
@@ -283,8 +301,6 @@ class tab_reports implements renderable, templatable {
 
         $jsconfig = [
             'baseUrl'         => $baseurl->out(false),
-            'strMore'         => get_string('report_show_more', 'block_playerhud'),
-            'strLess'         => get_string('report_show_less', 'block_playerhud'),
             'strConfirmTitle' => get_string('confirmation', 'admin'),
             'strYes'          => get_string('yes'),
             'strCancel'       => get_string('cancel'),
@@ -816,25 +832,51 @@ class tab_reports implements renderable, templatable {
     }
 
     /**
-     * Get AI audit logs.
+     * Get AI audit logs, paginated the same way as the drops/items audit log above.
      *
-     * @return array
+     * @param int $page Current page (ignored when $showall is set).
+     * @param int $showall Whether to return every record instead of paginating.
+     * @param moodle_url $baseurl Base URL for the paging bar.
+     * @param \core\output\core_renderer|\core\output\bootstrap_renderer $output The renderer used
+     *        to build the paging bar. May still be the bootstrap_renderer stand-in when called
+     *        from the teacher's Reports tab, since manage.php builds tab content before calling
+     *        $OUTPUT->header().
+     * @return array {logs: array, paging_bar: string, total: int}.
      */
-    private function get_ai_logs(): array {
+    private function get_ai_logs(
+        int $page,
+        int $showall,
+        moodle_url $baseurl,
+        \core\output\core_renderer|\core\output\bootstrap_renderer $output
+    ): array {
         global $DB;
+
+        $totalrecords = $DB->count_records('block_playerhud_ai_logs', ['blockinstanceid' => $this->instanceid]);
+
+        $perpage = 30;
+        if ($showall) {
+            $limitfrom = 0;
+            $limitnum = 0;
+            $perpage = ($totalrecords > 0) ? $totalrecords : 30;
+        } else {
+            $limitfrom = $page * $perpage;
+            $limitnum = $perpage;
+        }
 
         $logs = $DB->get_records(
             'block_playerhud_ai_logs',
             ['blockinstanceid' => $this->instanceid],
             'timecreated DESC',
             '*',
-            0,
-            50
+            $limitfrom,
+            $limitnum
         );
+
+        $pagingbar = $output->paging_bar($totalrecords, $page, $perpage, $baseurl);
 
         $results = [];
         if (!$logs) {
-            return $results;
+            return ['logs' => $results, 'paging_bar' => $pagingbar, 'total' => $totalrecords];
         }
 
         // Collect unique item names from item-type logs to bulk-load their icons.
@@ -869,9 +911,7 @@ class tab_reports implements renderable, templatable {
             }
         }
 
-        $counter = 0;
         foreach ($logs as $log) {
-            $counter++;
             $logdate = userdate($log->timecreated, get_string('strftimedatetime', 'langconfig'));
             $aiclass = ($log->ai_provider === 'Gemini') ? 'bg-primary text-white' : 'bg-info text-white';
 
@@ -891,7 +931,6 @@ class tab_reports implements renderable, templatable {
             }
 
             $results[] = [
-                'is_hidden'     => ($counter > 5),
                 'date'          => $logdate,
                 'action_badge'  => $log->action_type,
                 'is_image_icon' => $isimageicon,
@@ -902,7 +941,7 @@ class tab_reports implements renderable, templatable {
                 'ai_provider'   => $log->ai_provider,
             ];
         }
-        return $results;
+        return ['logs' => $results, 'paging_bar' => $pagingbar, 'total' => $totalrecords];
     }
 
     /**
