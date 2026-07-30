@@ -110,6 +110,6 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 vendor/bin/phpunit --testsuite block_playerhud
 ```
 
-**Overall line coverage** (`moodle-coverage`, PHPUnit + Xdebug): **56%**.
+**Overall line coverage** (`moodle-coverage`, PHPUnit + Xdebug): **57%**.
 
 [Full test-by-test breakdown and coverage table →]({{ '/testing.html' | relative_url }})

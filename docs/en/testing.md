@@ -188,7 +188,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `story_manager` | 61% |
 | `trade_manager` | 91% |
 | `utils` | 53% |
-| **Overall** | **56%** |
+| **Overall** | **57%** |
 
 68 of the plugin's 86 classes are listed above — the rest (mostly exception classes, event
 subscribers and thin output wrappers never `require`'d during this suite's run) carry no
@@ -202,11 +202,13 @@ The lowest figures in the table reflect structural limits rather than untested l
   on a browser, and JavaScript-driven behaviour has no server-side existence — all of which the
   Behat suite below covers instead.
 
-`db/upgrade.php` is absent from the table because it falls outside `moodle-coverage`'s
-instrumentation scope (which covers `classes/` plus `lib.php`/`locallib.php`/`renderer.php`/
-`externallib.php`), and PHPUnit's test environment always installs a fresh schema from
-`install.xml` without running upgrade steps. The steps that carry real data-migration logic are
-tested directly in `db_upgrade_test.php`, which calls `xmldb_block_playerhud_upgrade()`.
+`db/upgrade.php` has no row of its own above because it defines a single global function
+(`xmldb_block_playerhud_upgrade()`), not a class — `moodle-coverage`'s per-class breakdown has
+nothing to attribute it to. It is instrumented and folded into the **Overall** figure above: even
+though PHPUnit's test environment always installs a fresh schema from `install.xml` and never
+runs the automatic upgrade path, `db_upgrade_test.php` calls `xmldb_block_playerhud_upgrade()`
+directly, which is enough for Xdebug to measure it like any other function call. Its 6 tests
+(the ones carrying real data-migration logic) cover 66% of its lines (120 of 181).
 
 ### Behat — Acceptance Tests
 

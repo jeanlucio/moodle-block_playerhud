@@ -188,7 +188,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `story_manager` | 61% |
 | `trade_manager` | 91% |
 | `utils` | 53% |
-| **Total** | **56%** |
+| **Total** | **57%** |
 
 68 das 86 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
 observadores de evento e wrappers finos de output nunca carregados via `require` durante a
@@ -203,12 +203,14 @@ Os percentuais mais baixos da tabela refletem limites estruturais, não lacunas 
   dependem do navegador, e o comportamento movido por JavaScript não existe no lado do
   servidor — tudo isso é coberto pela suíte Behat abaixo.
 
-O `db/upgrade.php` não aparece na tabela porque fica fora do escopo de instrumentação do
-`moodle-coverage` (que cobre `classes/` mais `lib.php`/`locallib.php`/`renderer.php`/
-`externallib.php`), e o ambiente de teste do PHPUnit sempre instala um schema novo a partir do
-`install.xml`, sem executar passos de upgrade. Os passos que carregam lógica real de migração
-de dados são testados diretamente em `db_upgrade_test.php`, que chama
-`xmldb_block_playerhud_upgrade()`.
+O `db/upgrade.php` não tem uma linha própria acima porque define uma única função global
+(`xmldb_block_playerhud_upgrade()`), não uma classe — o detalhamento por classe do
+`moodle-coverage` não tem a quem atribuí-lo. Ele é instrumentado e entra no percentual do
+**Total** acima: mesmo o ambiente de teste do PHPUnit sempre instalando um schema novo a partir
+do `install.xml` e nunca executando o caminho automático de upgrade, o `db_upgrade_test.php`
+chama `xmldb_block_playerhud_upgrade()` diretamente, o que já basta pro Xdebug medir como
+qualquer outra chamada de função. Seus 6 testes (os que carregam lógica real de migração de
+dados) cobrem 66% das linhas (120 de 181).
 
 ### Behat — Testes de Aceitação
 

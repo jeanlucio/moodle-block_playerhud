@@ -110,6 +110,6 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 vendor/bin/phpunit --testsuite block_playerhud
 ```
 
-**Cobertura de linhas geral** (`moodle-coverage`, PHPUnit + Xdebug): **56%**.
+**Cobertura de linhas geral** (`moodle-coverage`, PHPUnit + Xdebug): **57%**.
 
 [Ver o detalhamento completo de cada teste e a tabela de cobertura →]({{ '/testing-pt.html' | relative_url }})
