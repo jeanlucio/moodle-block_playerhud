@@ -41,7 +41,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {moodle-branch: 'MOODLE_502_STABLE', php: '8.3', database: 'pgsql', runchecks: 'all'}
+          - {moodle-branch: 'MOODLE_502_STABLE', php: '8.3', database: 'pgsql', runchecks: 'all', skip-latepenalty: true}
           - {moodle-branch: 'MOODLE_502_STABLE', php: '8.4', database: 'mariadb'}
           - {moodle-branch: 'MOODLE_501_STABLE', php: '8.3', database: 'pgsql'}
           - {moodle-branch: 'MOODLE_501_STABLE', php: '8.2', database: 'mariadb'}
@@ -76,6 +76,7 @@ jobs:
         run: moodle-plugin-ci add-plugin jeanlucio/moodle-filter_playerhud
 
       - name: Add local_latepenalty plugin
+        if: ${{ !matrix.skip-latepenalty }}
         run: moodle-plugin-ci add-plugin jeanlucio/moodle-local_latepenalty
 
       - name: Add local_aihub plugin
