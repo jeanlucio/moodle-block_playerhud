@@ -1,0 +1,22 @@
+{
+    "customSyntax": "postcss-scss",
+    "plugins": ["stylelint-csstree-validator"],
+    "rules": {
+        "csstree/validator": { "syntaxExtensions": ["sass"] },
+        "at-rule-no-unknown": null,
+        "block-closing-brace-newline-before": "always",
+        "block-no-empty": true,
+        "block-opening-brace-newline-after": "always",
+        "block-opening-brace-space-before": "always",
+        "color-no-invalid-hex": true,
+        "declaration-block-no-duplicate-properties": true,
+        "declaration-block-semicolon-space-after": "always-single-line",
+        "declaration-block-single-line-max-declarations": 1,
+        "declaration-no-important": true,
+        "indentation": 4,
+        "max-empty-lines": 2,
+        "no-eol-whitespace": true,
+        "property-no-unknown": true,
+        "unit-no-unknown": true
+    }
+}
