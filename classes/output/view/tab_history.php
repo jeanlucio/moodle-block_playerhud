@@ -50,7 +50,7 @@ class tab_history implements renderable, templatable {
      * @param \stdClass $player Player object.
      * @param int $instanceid Block instance ID.
      */
-    public function __construct($config, $player, $instanceid) {
+    public function __construct(\stdClass $config, \stdClass $player, int $instanceid) {
         $this->config = $config;
         $this->player = $player;
         $this->instanceid = $instanceid;
@@ -94,7 +94,7 @@ class tab_history implements renderable, templatable {
      * @param \core\output\core_renderer $output The renderer.
      * @return array Data for the template.
      */
-    public function export_for_template($output) {
+    public function export_for_template($output): array {
         $page = optional_param('page', 0, PARAM_INT);
         $sort = optional_param('sort', 'timecreated', PARAM_ALPHAEXT);
         $dir  = optional_param('dir', 'DESC', PARAM_ALPHA);
@@ -381,7 +381,7 @@ class tab_history implements renderable, templatable {
      *
      * @return string HTML content.
      */
-    public function display() {
+    public function display(): string {
         global $OUTPUT;
         return $OUTPUT->render_from_template(
             'block_playerhud/tab_history',

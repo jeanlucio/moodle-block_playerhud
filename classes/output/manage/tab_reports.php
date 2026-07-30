@@ -71,7 +71,7 @@ class tab_reports implements renderable, templatable {
      * @param \core\output\core_renderer $output
      * @return array
      */
-    public function export_for_template($output) {
+    public function export_for_template($output): array {
         global $DB, $PAGE;
 
         $baseurl = new moodle_url('/blocks/playerhud/manage.php', [
@@ -910,7 +910,7 @@ class tab_reports implements renderable, templatable {
      *
      * @return string
      */
-    public function display() {
+    public function display(): string {
         global $OUTPUT;
         return $OUTPUT->render_from_template('block_playerhud/tab_reports', $this->export_for_template($OUTPUT));
     }
