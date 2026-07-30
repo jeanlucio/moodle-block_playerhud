@@ -7,25 +7,26 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | Test file | Cases |
 |-----------|------:|
 | `ai/generator_test.php` | 2 |
+| `ai/hub_usage_reporting_test.php` | 2 |
 | `backup_restore_test.php` | 3 |
 | `collection_tab_test.php` | 8 |
 | `content_crud_test.php` | 13 |
 | `cross_instance_security_test.php` | 12 |
 | `db_upgrade_test.php` | 6 |
 | `drop_guard_test.php` | 7 |
-| `game_test.php` | 36 |
+| `game_test.php` | 38 |
 | `gamemaster_test.php` | 6 |
 | `instance_delete_test.php` | 1 |
 | `item_delete_cascade_test.php` | 17 |
 | `karma_test.php` | 11 |
-| `privacy_provider_test.php` | 10 |
-| `quest_test.php` | 34 |
-| `rpg_classes_test.php` | 7 |
+| `privacy_provider_test.php` | 11 |
+| `quest_test.php` | 35 |
+| `rpg_classes_test.php` | 8 |
 | `story_manager_test.php` | 15 |
 | `suggest_trades_state_test.php` | 4 |
-| `trade_test.php` | 8 |
+| `trade_test.php` | 9 |
 | `utils_test.php` | 4 |
-| **Subtotal** | **204** |
+| **Subtotal** | **212** |
 
 ### Local Business-Logic Tests (`tests/local/`)
 
@@ -74,7 +75,6 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `aikeys_test.php` | 4 |
 | `chapters_test.php` | 13 |
 | `classes_test.php` | 7 |
-| `collect_test.php` | 3 |
 | `drops_test.php` | 14 |
 | `export_test.php` | 7 |
 | `items_test.php` | 15 |
@@ -83,7 +83,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `scenes_test.php` | 6 |
 | `suggestions_test.php` | 4 |
 | `trades_test.php` | 7 |
-| **Subtotal** | **112** |
+| **Subtotal** | **109** |
 
 ### Output / Renderer Tests (`tests/output/`)
 
@@ -92,11 +92,19 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `manage/item_delete_confirm_test.php` | 9 |
 | `manage/quest_delete_confirm_test.php` | 3 |
 | `manage/tab_chapters_test.php` | 4 |
+| `manage/tab_config_test.php` | 2 |
 | `manage/tab_reports_test.php` | 2 |
+| `view/header_test.php` | 2 |
+| `view/tab_chapters_test.php` | 4 |
+| `view/tab_class_select_test.php` | 3 |
 | `view/tab_history_test.php` | 1 |
-| **Subtotal** | **19** |
+| `view/tab_quests_test.php` | 4 |
+| `view/tab_ranking_test.php` | 4 |
+| `view/tab_rules_test.php` | 2 |
+| `view/tab_shop_test.php` | 4 |
+| **Subtotal** | **44** |
 
-| **Grand Total** | **562** |
+| **Grand Total** | **592** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
