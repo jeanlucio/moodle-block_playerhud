@@ -203,14 +203,17 @@ Os percentuais mais baixos da tabela refletem limites estruturais, não lacunas 
   dependem do navegador, e o comportamento movido por JavaScript não existe no lado do
   servidor — tudo isso é coberto pela suíte Behat abaixo.
 
-O `db/upgrade.php` não tem uma linha própria acima porque define uma única função global
-(`xmldb_block_playerhud_upgrade()`), não uma classe — o detalhamento por classe do
-`moodle-coverage` não tem a quem atribuí-lo. Ele é instrumentado e entra no percentual do
-**Total** acima: mesmo o ambiente de teste do PHPUnit sempre instalando um schema novo a partir
-do `install.xml` e nunca executando o caminho automático de upgrade, o `db_upgrade_test.php`
-chama `xmldb_block_playerhud_upgrade()` diretamente, o que já basta pro Xdebug medir como
-qualquer outra chamada de função. Seus 6 testes (os que carregam lógica real de migração de
-dados) cobrem 66% das linhas (120 de 181).
+O `db/upgrade.php` e o `lib.php` não têm linha própria acima porque só definem funções globais,
+não classes — o detalhamento por classe do `moodle-coverage` não tem a quem atribuí-los. Os dois
+são instrumentados e entram no percentual do **Total**, mas com resultados bem diferentes: o
+`db/upgrade.php` chega a 66% (120 de 181 linhas), já que o `db_upgrade_test.php` chama
+`xmldb_block_playerhud_upgrade()` diretamente — o que já basta pro Xdebug medir como qualquer
+outra chamada de função, mesmo o ambiente de teste do PHPUnit sempre instalando um schema novo a
+partir do `install.xml` e nunca executando o caminho automático de upgrade. Já o `lib.php` fica
+num 0% de verdade (0 de 70 linhas): nenhum teste chama nenhuma de suas quatro funções
+(`block_playerhud_pluginfile`, `block_playerhud_myprofile_navigation`,
+`block_playerhud_get_drop_details_by_code`, `block_playerhud_is_visible_for_class`). A ausência
+dele na tabela é só um detalhe de formato do relatório; o 0% é uma lacuna real de teste.
 
 ### Behat — Testes de Aceitação
 

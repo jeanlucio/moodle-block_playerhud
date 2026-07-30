@@ -202,13 +202,17 @@ The lowest figures in the table reflect structural limits rather than untested l
   on a browser, and JavaScript-driven behaviour has no server-side existence — all of which the
   Behat suite below covers instead.
 
-`db/upgrade.php` has no row of its own above because it defines a single global function
-(`xmldb_block_playerhud_upgrade()`), not a class — `moodle-coverage`'s per-class breakdown has
-nothing to attribute it to. It is instrumented and folded into the **Overall** figure above: even
-though PHPUnit's test environment always installs a fresh schema from `install.xml` and never
-runs the automatic upgrade path, `db_upgrade_test.php` calls `xmldb_block_playerhud_upgrade()`
-directly, which is enough for Xdebug to measure it like any other function call. Its 6 tests
-(the ones carrying real data-migration logic) cover 66% of its lines (120 of 181).
+`db/upgrade.php` and `lib.php` have no row of their own above because they define only global
+functions, not classes — `moodle-coverage`'s per-class breakdown has nothing to attribute them
+to. Both are still instrumented and folded into the **Overall** figure, with very different
+results: `db/upgrade.php` reaches 66% (120 of 181 lines), since `db_upgrade_test.php` calls
+`xmldb_block_playerhud_upgrade()` directly — enough for Xdebug to measure it like any other
+function call, even though PHPUnit's test environment always installs a fresh schema from
+`install.xml` and never runs the automatic upgrade path itself. `lib.php`, by contrast, sits at
+a genuine 0% (0 of 70 lines): no test calls any of its four functions
+(`block_playerhud_pluginfile`, `block_playerhud_myprofile_navigation`,
+`block_playerhud_get_drop_details_by_code`, `block_playerhud_is_visible_for_class`) at all. Its
+absence from the table is a reporting quirk; its 0% is a real, untested gap.
 
 ### Behat — Acceptance Tests
 
