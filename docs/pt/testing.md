@@ -19,6 +19,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `instance_delete_test.php` | 1 | Excluir uma instância do bloco limpa todas as tabelas próprias do plugin (`instance_cleanup`) |
 | `item_delete_cascade_test.php` | 17 | Detecção de trocas órfãs ao excluir item (único req, um de dois, único reward, combinado req+reward); verificações em lote; isolamento cross-instance; exclusão remove o item e cascateia trocas órfãs sem afetar as não-órfãs; excluir um item (único ou em lote) reverte XP só das cópias que realmente ganharam XP, deixando intactas as cópias de drop infinito (XP zero) |
 | `karma_test.php` | 11 | Leitura/escrita de karma, deltas positivos/negativos, clamping nos limites ±999, acumulação sucessiva |
+| `lib_test.php` | 18 | `block_playerhud_myprofile_navigation`: todo ramo de no-op (sem curso, curso do site, sem instância do bloco, sem registro de jogador, gamificação desabilitada) e um jogador ativo com item coletado recebe a seção de perfil; `block_playerhud_get_drop_details_by_code`: correspondência, código desconhecido, rejeição de instância estrangeira, exclusão de item desabilitado; `block_playerhud_is_visible_for_class`: público (vazio/'0'), classe correspondente/não correspondente, '0' dentro de uma lista; `block_playerhud_pluginfile`: contexto não-bloco, área de arquivo desconhecida, nenhum arquivo armazenado encontrado |
 | `privacy_provider_test.php` | 11 | LGPD com cobertura completa: descoberta de contexto/usuário (`get_contexts_for_userid`, `get_users_in_context`); `export_user_data` nas seis subárvores (perfil, RPG, inventário, missões, trocas, logs de IA); exclusão por usuário, multiusuário e de contexto inteiro com garantia de isolamento; exportação/exclusão de toda chave de API e preferência de avatar; declaração de metadados; guardas de contexto não-bloco como no-ops |
 | `quest_test.php` | 35 | Verificações de conclusão (nível, XP, itens, trocas, conclusão de atividade); reivindicar recompensas; quest desabilitada; idempotência; flags de comemoração de level-up e vitória no jogo ao reivindicar recompensa; `has_claimable_quests` em todos os tipos de requisito incl. conclusão de atividade, com curto-circuito de reivindicadas/não reivindicadas; mapeamento de `build_record_from_suggestion`, transporte de item-ids e piso do override de XP; `get_heuristic_suggestions` milestones de nível/coleção/economia/atividade com pulo de duplicatas; uma atividade com acompanhamento de conclusão oferecida como missão heurística é detectada como cumprida assim que a atividade é realmente concluída |
 | `rpg_classes_test.php` | 8 | Atribuição de classe, proteção contra duplicatas, inicialização de karma, limites de tier de retrato |
@@ -26,7 +27,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `suggest_trades_state_test.php` | 4 | Botão Sugerir Trocas: desabilitado sem pré-requisitos, desabilitado só com moeda, desabilitado quando todos os avatares cobertos, habilitado com cobertura parcial |
 | `trade_test.php` | 9 | Montagem de trocas, fundos insuficientes, sucesso atômico, limite único, restrição por grupo; uma troca que referencia um item de recompensa desabilitado é rejeitada de imediato mesmo com saldo suficiente |
 | `utils_test.php` | 4 | `get_avatar_html`: emoji gera div `ph-avatar-emoji` com span aria-hidden; URL HTTP gera tag img `ph-avatar-img`; imagem nula não lança exceção em `get_avatar_html` nem em `get_items_display_data` |
-| **Subtotal** | **212** | |
+| **Subtotal** | **230** | |
 
 ### Testes de Lógica de Negócio Compartilhada (`tests/local/`)
 
@@ -110,7 +111,7 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `view/tab_shop_test.php` | 4 | Aba Loja: sem trocas renderiza o estado vazio em vez de quebrar; um estudante com o item exigido em quantidade suficiente pode pagar a troca; um estudante sem o item exigido não pode pagar; uma troca de uso único já concluída é marcada como tal |
 | **Subtotal** | **44** | |
 
-| **Total geral** | **594** | |
+| **Total geral** | **612** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -188,7 +189,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `story_manager` | 61% |
 | `trade_manager` | 91% |
 | `utils` | 53% |
-| **Total** | **57%** |
+| **Total** | **58%** |
 
 68 das 86 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
 observadores de evento e wrappers finos de output nunca carregados via `require` durante a
@@ -203,17 +204,31 @@ Os percentuais mais baixos da tabela refletem limites estruturais, não lacunas 
   dependem do navegador, e o comportamento movido por JavaScript não existe no lado do
   servidor — tudo isso é coberto pela suíte Behat abaixo.
 
-O `db/upgrade.php` e o `lib.php` não têm linha própria acima porque só definem funções globais,
-não classes — o detalhamento por classe do `moodle-coverage` não tem a quem atribuí-los. Os dois
-são instrumentados e entram no percentual do **Total**, mas com resultados bem diferentes: o
-`db/upgrade.php` chega a 66% (120 de 181 linhas), já que o `db_upgrade_test.php` chama
-`xmldb_block_playerhud_upgrade()` diretamente — o que já basta pro Xdebug medir como qualquer
-outra chamada de função, mesmo o ambiente de teste do PHPUnit sempre instalando um schema novo a
-partir do `install.xml` e nunca executando o caminho automático de upgrade. Já o `lib.php` fica
-num 0% de verdade (0 de 70 linhas): nenhum teste chama nenhuma de suas quatro funções
-(`block_playerhud_pluginfile`, `block_playerhud_myprofile_navigation`,
-`block_playerhud_get_drop_details_by_code`, `block_playerhud_is_visible_for_class`). A ausência
-dele na tabela é só um detalhe de formato do relatório; o 0% é uma lacuna real de teste.
+### Arquivos de Função Solta
+
+O `db/upgrade.php` e o `lib.php` só definem funções globais, não classes, então o detalhamento
+por classe do `moodle-coverage` acima não tem a quem atribuí-los. Os dois são instrumentados e
+entram no percentual do **Total**; medidos isoladamente:
+
+| Arquivo | Casos | Cobertura de linhas |
+|---------|------:|:--------------------:|
+| `lib.php` | 18 | 94% |
+| `db/upgrade.php` | 6 | 66% |
+
+- `lib.php` (`tests/lib_test.php`): as quatro funções são testadas diretamente —
+  `block_playerhud_myprofile_navigation()` em todo ramo (sem curso, curso do site, sem instância
+  do bloco, sem registro de jogador, gamificação desabilitada, jogador ativo com item recebe a
+  seção de perfil), `block_playerhud_get_drop_details_by_code()` (correspondência, código
+  desconhecido, instância estrangeira, item desabilitado) e `block_playerhud_is_visible_for_class()`
+  (público, classe correspondente/não correspondente, '0' dentro de uma lista).
+  `block_playerhud_pluginfile()` é coberta até o ponto em que um arquivo correspondente é
+  encontrado de verdade — o único ramo que fica de fora chama `send_stored_file()`, que encerra
+  o script, a mesma limitação estrutural já registrada pra metade AJAX do `collect::execute()`
+  abaixo.
+- `db/upgrade.php` (`db_upgrade_test.php`): os 6 testes que carregam lógica real de migração de
+  dados chamam `xmldb_block_playerhud_upgrade()` diretamente, o que já basta pro Xdebug medir
+  como qualquer outra chamada de função, mesmo o ambiente de teste do PHPUnit sempre instalando
+  um schema novo a partir do `install.xml` e nunca executando o caminho automático de upgrade.
 
 ### Behat — Testes de Aceitação
 

@@ -19,6 +19,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `instance_delete_test.php` | 1 | Deleting a block instance cleans every one of this plugin's own tables (`instance_cleanup`) |
 | `item_delete_cascade_test.php` | 17 | Trade orphan detection when item deleted (sole req, one-of-two, sole reward, combined req+reward); bulk orphan checks; cross-instance isolation; delete removes item record and cascades orphaned trades without touching non-orphaned ones; deleting an item (single or bulk) reverts XP only for copies that actually earned it, leaving infinite-drop (zero-XP) copies untouched |
 | `karma_test.php` | 11 | Karma read/write, positive/negative deltas, clamping at ±999 boundaries, successive accumulation |
+| `lib_test.php` | 18 | `block_playerhud_myprofile_navigation`: every no-op branch (no course, site course, no block instance, no player record, gamification disabled) and an active player with a collected item gets the profile section added; `block_playerhud_get_drop_details_by_code`: match, unknown code, foreign-instance rejection, disabled-item exclusion; `block_playerhud_is_visible_for_class`: public (empty/'0'), matching/non-matching class id, '0' inside a list; `block_playerhud_pluginfile`: non-block context, unknown file area, no stored file found |
 | `privacy_provider_test.php` | 11 | GDPR full coverage: context/user discovery (`get_contexts_for_userid`, `get_users_in_context`); `export_user_data` across all six subtrees (profile, RPG, inventory, quests, trades, AI logs); per-user, multi-user and whole-context deletion with isolation guarantees; export/delete of every API-key and avatar preference; metadata declaration; non-block context guards are no-ops |
 | `quest_test.php` | 35 | Completion checks (level, XP, items, trades, activity completion); claim rewards; disabled quest; idempotency; level-up and beat-the-game celebration flags on reward claim; `has_claimable_quests` across every requirement type incl. activity completion, with claimed/unclaimed short-circuit; `build_record_from_suggestion` mapping, item-id carrying and XP override floor; `get_heuristic_suggestions` level/collection/economy/activity milestones with duplicate skipping; a completion-tracked activity offered as a heuristic quest is detected as fulfilled once the activity is actually completed |
 | `rpg_classes_test.php` | 8 | Class assignment, duplicate guard, karma initialisation, portrait tier boundaries |
@@ -26,7 +27,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `suggest_trades_state_test.php` | 4 | Suggest Trades button: disabled without prereqs, disabled with coin only, disabled when all avatars covered, enabled on partial coverage |
 | `trade_test.php` | 9 | Trade assembly, insufficient funds, atomic success, one-time limit, group restriction; a trade referencing a disabled reward item is rejected outright even with sufficient funds |
 | `utils_test.php` | 4 | `get_avatar_html`: emoji produces `ph-avatar-emoji` div with aria-hidden span; HTTP URL produces `ph-avatar-img` img tag; a null image does not throw for `get_avatar_html` nor `get_items_display_data` |
-| **Subtotal** | **212** | |
+| **Subtotal** | **230** | |
 
 ### Local Business-Logic Tests (`tests/local/`)
 
@@ -110,7 +111,7 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `view/tab_shop_test.php` | 4 | Shop tab: no trades renders the empty state instead of crashing; a student holding enough of the required item can afford the trade; a student with none of the required item cannot afford it; a one-time trade already completed is marked as such |
 | **Subtotal** | **44** | |
 
-| **Grand Total** | **594** | |
+| **Grand Total** | **612** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -188,7 +189,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `story_manager` | 61% |
 | `trade_manager` | 91% |
 | `utils` | 53% |
-| **Overall** | **57%** |
+| **Overall** | **58%** |
 
 68 of the plugin's 86 classes are listed above — the rest (mostly exception classes, event
 subscribers and thin output wrappers never `require`'d during this suite's run) carry no
@@ -202,17 +203,30 @@ The lowest figures in the table reflect structural limits rather than untested l
   on a browser, and JavaScript-driven behaviour has no server-side existence — all of which the
   Behat suite below covers instead.
 
-`db/upgrade.php` and `lib.php` have no row of their own above because they define only global
-functions, not classes — `moodle-coverage`'s per-class breakdown has nothing to attribute them
-to. Both are still instrumented and folded into the **Overall** figure, with very different
-results: `db/upgrade.php` reaches 66% (120 of 181 lines), since `db_upgrade_test.php` calls
-`xmldb_block_playerhud_upgrade()` directly — enough for Xdebug to measure it like any other
-function call, even though PHPUnit's test environment always installs a fresh schema from
-`install.xml` and never runs the automatic upgrade path itself. `lib.php`, by contrast, sits at
-a genuine 0% (0 of 70 lines): no test calls any of its four functions
-(`block_playerhud_pluginfile`, `block_playerhud_myprofile_navigation`,
-`block_playerhud_get_drop_details_by_code`, `block_playerhud_is_visible_for_class`) at all. Its
-absence from the table is a reporting quirk; its 0% is a real, untested gap.
+### Global-Function Files
+
+`db/upgrade.php` and `lib.php` define only global functions, not classes, so
+`moodle-coverage`'s per-class breakdown above has nothing to attribute them to. Both are still
+instrumented and folded into the **Overall** figure; measured on their own instead:
+
+| File | Cases | Lines coverage |
+|------|------:|:--------------:|
+| `lib.php` | 18 | 94% |
+| `db/upgrade.php` | 6 | 66% |
+
+- `lib.php` (`tests/lib_test.php`): all four functions are tested directly —
+  `block_playerhud_myprofile_navigation()`'s every branch (no course, site course, no block
+  instance, no player record, gamification disabled, active player with items),
+  `block_playerhud_get_drop_details_by_code()` (match, unknown code, foreign instance, disabled
+  item) and `block_playerhud_is_visible_for_class()` (public, matching/non-matching class,
+  `'0'` inside a list). `block_playerhud_pluginfile()` is covered up to the point where a
+  matching file is actually found — the one branch left out calls `send_stored_file()`, which
+  ends the script, the same structural limit already noted for `collect::execute()`'s AJAX half
+  below.
+- `db/upgrade.php` (`db_upgrade_test.php`): the 6 tests carrying real data-migration logic call
+  `xmldb_block_playerhud_upgrade()` directly, which is enough for Xdebug to measure it like any
+  other function call, even though PHPUnit's test environment always installs a fresh schema
+  from `install.xml` and never runs the automatic upgrade path itself.
 
 ### Behat — Acceptance Tests
 

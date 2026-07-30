@@ -19,6 +19,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `instance_delete_test.php` | 1 |
 | `item_delete_cascade_test.php` | 17 |
 | `karma_test.php` | 11 |
+| `lib_test.php` | 18 |
 | `privacy_provider_test.php` | 11 |
 | `quest_test.php` | 35 |
 | `rpg_classes_test.php` | 8 |
@@ -26,7 +27,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `suggest_trades_state_test.php` | 4 |
 | `trade_test.php` | 9 |
 | `utils_test.php` | 4 |
-| **Subtotal** | **212** |
+| **Subtotal** | **230** |
 
 ### Testes de Lógica de Negócio Compartilhada (`tests/local/`)
 
@@ -104,12 +105,12 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `view/tab_shop_test.php` | 4 |
 | **Subtotal** | **44** |
 
-| **Total geral** | **594** |
+| **Total geral** | **612** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
 ```
 
-**Cobertura de linhas geral** (`moodle-coverage`, PHPUnit + Xdebug): **57%**.
+**Cobertura de linhas geral** (`moodle-coverage`, PHPUnit + Xdebug): **58%**.
 
 [Ver o detalhamento completo de cada teste e a tabela de cobertura →]({{ '/testing-pt.html' | relative_url }})

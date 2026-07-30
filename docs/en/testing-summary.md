@@ -19,6 +19,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `instance_delete_test.php` | 1 |
 | `item_delete_cascade_test.php` | 17 |
 | `karma_test.php` | 11 |
+| `lib_test.php` | 18 |
 | `privacy_provider_test.php` | 11 |
 | `quest_test.php` | 35 |
 | `rpg_classes_test.php` | 8 |
@@ -26,7 +27,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `suggest_trades_state_test.php` | 4 |
 | `trade_test.php` | 9 |
 | `utils_test.php` | 4 |
-| **Subtotal** | **212** |
+| **Subtotal** | **230** |
 
 ### Local Business-Logic Tests (`tests/local/`)
 
@@ -104,12 +105,12 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `view/tab_shop_test.php` | 4 |
 | **Subtotal** | **44** |
 
-| **Grand Total** | **594** |
+| **Grand Total** | **612** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
 ```
 
-**Overall line coverage** (`moodle-coverage`, PHPUnit + Xdebug): **57%**.
+**Overall line coverage** (`moodle-coverage`, PHPUnit + Xdebug): **58%**.
 
 [Full test-by-test breakdown and coverage table →]({{ '/testing.html' | relative_url }})
