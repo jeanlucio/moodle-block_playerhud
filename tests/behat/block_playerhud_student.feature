@@ -52,3 +52,14 @@ Feature: PlayerHUD student gamification controls
     And I am on "Course 1" course homepage
     Then I should see the PlayerHUD XP bar
     And I should not see the PlayerHUD paused state
+
+  # Only a real page request proves this: tab_history::export_for_template()
+  # forwards $output into get_audit_logs(), which requires the concrete
+  # core_renderer type — a PHPUnit call to display() fails with a TypeError
+  # before header() has run for real, but by the time view.php dispatches this
+  # tab it already has.
+  Scenario: Student opens the log tab without error
+    When I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I click on "a[aria-label='Log']" "css_element"
+    Then I should see "No records found in your journey yet."

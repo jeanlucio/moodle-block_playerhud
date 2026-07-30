@@ -65,6 +65,11 @@ Feature: PlayerHUD management screens beyond the item library
     And I press "Save Location"
     Then I should see "Library Corner"
     And "[data-dropcode='GOLD01']" "css_element" should exist
+    # Locks the redirect() notification type: a regression that puts the
+    # notification type back into the $delay argument (see the 40-site fix in
+    # the redirect() notification bug) would silently render this as
+    # alert-info instead, without any visible text changing.
+    And ".alert-success" "css_element" should exist
 
   # -----------------------------------------------------------------
   # Characters — a real form round trip, including the file manager
