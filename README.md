@@ -14,7 +14,7 @@
 
 ## English
 
-The **PlayerHUD Block** is a modular gamification system for Moodle that introduces structured progression mechanics based on **XP, Levels, Inventory, and Ranking**.
+The **PlayerHUD Block** is a modular gamification system for Moodle that introduces structured progression mechanics based on **XP, Levels, Inventory, Quests, Trade, and RPG progression**.
 
 It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing students to track their progress in real time while teachers configure engagement mechanics aligned with pedagogical objectives.
 
@@ -86,7 +86,7 @@ Maintained by [Jean Lúcio](https://github.com/jeanlucio).
 
 ## Português
 
-O **Bloco PlayerHUD** é um sistema modular de gamificação para o Moodle que introduz mecânicas estruturadas de progressão baseadas em **XP, Níveis, Inventário e Ranking**.
+O **Bloco PlayerHUD** é um sistema modular de gamificação para o Moodle que introduz mecânicas estruturadas de progressão baseadas em **XP, Níveis, Inventário, Missões, Trocas e progressão RPG**.
 
 Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo que os alunos acompanhem seu progresso em tempo real, enquanto o professor configura as mecânicas de engajamento de acordo com seus objetivos pedagógicos.
 

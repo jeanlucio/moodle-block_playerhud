@@ -13,7 +13,7 @@ lang: en
 ![Core Component](https://img.shields.io/badge/Role-Core_Component-198754?style=flat-square)
 
 The **PlayerHUD Block** is a modular gamification system for Moodle that introduces structured
-progression mechanics based on **XP, Levels, Inventory, and Ranking**.
+progression mechanics based on **XP, Levels, Inventory, Quests, Trade, and RPG progression**.
 
 It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing students to track their
 progress in real time while teachers configure engagement mechanics aligned with pedagogical

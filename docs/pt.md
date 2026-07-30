@@ -13,7 +13,8 @@ lang: pt
 ![Core Component](https://img.shields.io/badge/Role-Core_Component-198754?style=flat-square)
 
 O **Bloco PlayerHUD** é um sistema modular de gamificação para Moodle que introduz mecânicas
-estruturadas de progressão baseadas em **XP, Níveis, Inventário e Ranking**.
+estruturadas de progressão baseadas em **XP, Níveis, Inventário, Missões, Trocas e progressão
+RPG**.
 
 Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo que os alunos
 acompanhem seu progresso em tempo real, enquanto o professor configura as mecânicas de
