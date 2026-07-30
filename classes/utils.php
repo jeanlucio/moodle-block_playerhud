@@ -114,7 +114,7 @@ class utils {
      * @param \context $context The block context.
      * @return array Data array ['url', 'is_image', 'content'].
      */
-    public static function get_item_display_data($item, $context) {
+    public static function get_item_display_data(\stdClass $item, \context $context): array {
         $results = self::get_items_display_data([$item->id => $item], $context);
         return $results[$item->id];
     }
@@ -307,7 +307,7 @@ class utils {
      * @param \renderer_base $output Renderer.
      * @return string HTML string.
      */
-    public static function get_avatar_html(\stdClass $item, \context $context, $output): string {
+    public static function get_avatar_html(\stdClass $item, \context $context, \renderer_base $output): string {
         $media = self::get_item_display_data($item, $context);
 
         if ($media['is_image']) {

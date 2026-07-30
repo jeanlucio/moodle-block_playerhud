@@ -49,7 +49,7 @@ final class utils_test extends advanced_testcase {
         $item = $this->create_item('🧛');
         $context = \context_block::instance($this->instanceid);
 
-        $html = utils::get_avatar_html($item, $context, null);
+        $html = utils::get_avatar_html($item, $context, $this->createMock(\renderer_base::class));
 
         $this->assertStringContainsString('ph-avatar-emoji', $html);
         $this->assertStringContainsString('rounded-circle', $html);
@@ -67,7 +67,7 @@ final class utils_test extends advanced_testcase {
         $item = $this->create_item($url);
         $context = \context_block::instance($this->instanceid);
 
-        $html = utils::get_avatar_html($item, $context, null);
+        $html = utils::get_avatar_html($item, $context, $this->createMock(\renderer_base::class));
 
         $this->assertStringContainsString('<img', $html);
         $this->assertStringContainsString('ph-avatar-img', $html);
@@ -100,7 +100,7 @@ final class utils_test extends advanced_testcase {
         $item = $this->create_item_with_null_image();
         $context = \context_block::instance($this->instanceid);
 
-        $html = utils::get_avatar_html($item, $context, null);
+        $html = utils::get_avatar_html($item, $context, $this->createMock(\renderer_base::class));
 
         $this->assertStringContainsString('ph-avatar-emoji', $html);
         $this->assertStringNotContainsString('<img', $html);
