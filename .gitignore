@@ -1,24 +1,20 @@
-# Dependências do Node (Grunt)
-node_modules/
-.grunt/
-
-# Arquivos de sistema
+# OS-generated files.
 .DS_Store
 Thumbs.db
 
-# IDEs
+# Editor/IDE-specific settings and workspace files.
 .vscode/
 .idea/
-
 playerhud.code-workspace
 
-# Ignorar configurações locais de linting (Evita conflito com o Grunt do Moodle CI)
+# Local ESLint configs are intentionally excluded from version control. This
+# plugin is linted through the shared Moodle core config, run via
+# moodle-plugin-ci's Grunt task in CI. A local config here would silently
+# override it and hide lint failures that only show up in CI.
 .eslintrc
 .eslintrc.json
 .eslintignore
 
-.roo
+# AI assistant session/workspace directories, not part of the plugin.
 .claude
 .plans
-
-# Mascote Huddy — todas as poses agora em uso pelos pop-ups de comemoração.
