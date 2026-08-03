@@ -5,6 +5,9 @@
   --text-muted: #57606a;
   --border: #d0d7de;
   --code-bg: #f6f8fa;
+  --header-red: #bb0000;
+  --header-red-dark: #8a0000;
+  --header-black: #0d0000;
 }
 
 * {
@@ -39,7 +42,7 @@ body {
 .project-name {
   margin: 0 0 0.3rem;
   font-size: 2.25rem;
-  color: var(--accent-dark);
+  color: var(--header-black);
 }
 
 .project-tagline {
@@ -54,7 +57,7 @@ body {
 }
 
 .lang-switch a {
-  color: var(--accent-dark);
+  color: var(--header-red-dark);
 }
 
 .btn {
@@ -62,15 +65,15 @@ body {
   margin: 0 0.4rem;
   padding: 0.5rem 1.2rem;
   color: #fff;
-  background-color: var(--accent-dark);
-  border: 1px solid var(--accent-dark);
+  background-color: var(--header-red);
+  border: 1px solid var(--header-black);
   border-radius: 0.3rem;
   text-decoration: none;
 }
 
 .btn:hover {
-  background-color: var(--accent);
-  border-color: var(--accent);
+  background-color: var(--header-red-dark);
+  border-color: var(--header-black);
 }
 
 .layout {
