@@ -165,6 +165,44 @@ class behat_block_playerhud extends behat_base {
      * @Given a PlayerHUD item :itemname with drop code :dropcode exists in course :shortname
      */
     public function playerhud_item_with_drop_exists(string $itemname, string $dropcode, string $shortname): void {
+        $this->create_playerhud_item_with_drop($itemname, $dropcode, $shortname, '');
+    }
+
+    /**
+     * Creates a PlayerHUD item (with an explicit description) and associated drop with the
+     * given code in the given course.
+     *
+     * @param string $itemname Display name for the item.
+     * @param string $dropcode Short alphanumeric code used in the [PLAYERHUD_DROP] shortcode.
+     * @param string $description Raw item description, stored exactly as given (used to feed
+     *                            fixtures such as an XSS payload straight into the database,
+     *                            bypassing any form-level cleaning).
+     * @param string $shortname Course shortname.
+     * @Given a PlayerHUD item :itemname with drop code :dropcode and description :description exists in course :shortname
+     */
+    public function playerhud_item_with_drop_and_description_exists(
+        string $itemname,
+        string $dropcode,
+        string $description,
+        string $shortname
+    ): void {
+        $this->create_playerhud_item_with_drop($itemname, $dropcode, $shortname, $description);
+    }
+
+    /**
+     * Shared insert logic for the two "PlayerHUD item with drop" Given steps above.
+     *
+     * @param string $itemname Display name for the item.
+     * @param string $dropcode Short alphanumeric code used in the [PLAYERHUD_DROP] shortcode.
+     * @param string $shortname Course shortname.
+     * @param string $description Raw item description.
+     */
+    private function create_playerhud_item_with_drop(
+        string $itemname,
+        string $dropcode,
+        string $shortname,
+        string $description
+    ): void {
         global $DB;
 
         $course  = $DB->get_record('course', ['shortname' => $shortname], '*', MUST_EXIST);
@@ -180,7 +218,7 @@ class behat_block_playerhud extends behat_base {
         $itemid = $DB->insert_record('block_playerhud_items', (object) [
             'blockinstanceid' => $instance->id,
             'name'            => $itemname,
-            'description'     => '',
+            'description'     => $description,
             'image'           => '🏆',
             'xp'              => 10,
             'secret'          => 0,
