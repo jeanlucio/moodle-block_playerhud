@@ -404,4 +404,44 @@ final class drops_test extends advanced_testcase {
         $this->assertIsString($html);
         $this->assertNotSame('', $html);
     }
+
+    /**
+     * manage_drops_table.mustache must escape media_content: it is an item's emoji field,
+     * stored user/AI-sourced content, only stripped of tags at write time
+     * (controller\drops::view_manage_page(), strip_tags($mediadata['content'])). The template
+     * is the second, independent layer of defence and must not trust that call alone.
+     */
+    public function test_manage_drops_table_template_escapes_media_content(): void {
+        global $OUTPUT;
+        $this->resetAfterTest(true);
+
+        $payload = '<script>x</script>';
+        $html = $OUTPUT->render_from_template('block_playerhud/manage_drops_table', [
+            'url_course' => '#',
+            'str_back_course' => 'Back',
+            'is_image' => false,
+            'media_content' => $payload,
+            'str_managing' => 'Managing:',
+            'item_name' => 'Test item',
+            'url_library' => '#',
+            'str_back_lib' => 'Back to library',
+            'url_new_drop' => '#',
+            'str_new_drop' => 'New drop',
+            'summary_text' => 'You have 0 drops configured.',
+            'base_url' => '#',
+            'sesskey' => sesskey(),
+            'str_select_all' => 'Select all',
+            'headers' => [],
+            'str_col_gen' => 'Code generator',
+            'str_actions' => 'Actions',
+            'drops' => [],
+            'str_empty_drops' => 'No drops found',
+            'str_delete_selected' => 'Delete selected',
+            'str_help_code' => 'Help text',
+            'modal_gen_html' => '',
+        ]);
+
+        $this->assertStringNotContainsString($payload, $html);
+        $this->assertStringContainsString('&lt;script&gt;', $html);
+    }
 }
