@@ -167,6 +167,15 @@ final class privacy_provider_test extends advanced_testcase {
             'timecreated' => time(),
         ]);
 
+        $DB->insert_record('block_playerhud_wizard_runs', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'userid' => $userid,
+            'modules' => '["items","quests"]',
+            'status' => 'done',
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ]);
+
         $DB->insert_record('block_playerhud_quest_log', (object) [
             'questid' => $this->questid,
             'userid' => $userid,
@@ -193,6 +202,7 @@ final class privacy_provider_test extends advanced_testcase {
             + $DB->count_records('block_playerhud_rpg_progress', ['userid' => $userid])
             + $DB->count_records('block_playerhud_inventory', ['userid' => $userid])
             + $DB->count_records('block_playerhud_ai_logs', ['userid' => $userid])
+            + $DB->count_records('block_playerhud_wizard_runs', ['userid' => $userid])
             + $DB->count_records('block_playerhud_quest_log', ['userid' => $userid])
             + $DB->count_records('block_playerhud_trade_log', ['userid' => $userid]);
     }
@@ -246,6 +256,16 @@ final class privacy_provider_test extends advanced_testcase {
         $ailog->timecreated = time();
         $DB->insert_record('block_playerhud_ai_logs', $ailog);
 
+        // 4b. Create a fake gamification wizard run for this user.
+        $wizardrun = new \stdClass();
+        $wizardrun->blockinstanceid = $this->instanceid;
+        $wizardrun->userid = $user->id;
+        $wizardrun->modules = '["items"]';
+        $wizardrun->status = 'done';
+        $wizardrun->timecreated = time();
+        $wizardrun->timemodified = time();
+        $DB->insert_record('block_playerhud_wizard_runs', $wizardrun);
+
         // 5. Create a quest and a quest_log entry for this user.
         $questid = $DB->insert_record('block_playerhud_quests', (object)[
             'blockinstanceid'  => $this->instanceid,
@@ -273,6 +293,7 @@ final class privacy_provider_test extends advanced_testcase {
         $this->assertEquals(1, $DB->count_records('block_playerhud_user', ['userid' => $user->id]));
         $this->assertEquals(1, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
         $this->assertEquals(1, $DB->count_records('block_playerhud_ai_logs', ['userid' => $user->id]));
+        $this->assertEquals(1, $DB->count_records('block_playerhud_wizard_runs', ['userid' => $user->id]));
         $this->assertEquals(
             1,
             $DB->count_records('block_playerhud_quest_log', ['userid' => $user->id]),
@@ -302,6 +323,12 @@ final class privacy_provider_test extends advanced_testcase {
             0,
             $DB->count_records('block_playerhud_ai_logs', ['userid' => $user->id]),
             'AI logs should be deleted.'
+        );
+
+        $this->assertEquals(
+            0,
+            $DB->count_records('block_playerhud_wizard_runs', ['userid' => $user->id]),
+            'Wizard runs should be deleted.'
         );
 
         $this->assertEquals(
@@ -427,6 +454,37 @@ final class privacy_provider_test extends advanced_testcase {
     }
 
     /**
+     * Test that every column of block_playerhud_wizard_runs is declared in the privacy metadata.
+     * A per-key assertion would not catch a column added later without a matching declaration,
+     * so this compares the declared fields against the table's real columns instead.
+     */
+    public function test_get_metadata_declares_all_wizard_runs_columns(): void {
+        global $DB;
+
+        $collection = provider::get_metadata(new collection('block_playerhud'));
+
+        $tableitem = null;
+        foreach ($collection->get_collection() as $item) {
+            if ($item->get_name() === 'block_playerhud_wizard_runs') {
+                $tableitem = $item;
+                break;
+            }
+        }
+        $this->assertNotNull($tableitem, 'block_playerhud_wizard_runs must be declared in the privacy metadata.');
+
+        $declaredfields = array_keys($tableitem->get_privacy_fields());
+        $realcolumns = array_diff(array_keys($DB->get_columns('block_playerhud_wizard_runs')), ['id']);
+
+        sort($declaredfields);
+        sort($realcolumns);
+        $this->assertEquals(
+            $realcolumns,
+            $declaredfields,
+            'Every column of block_playerhud_wizard_runs, except id, must be declared in the privacy metadata.'
+        );
+    }
+
+    /**
      * Test that the context where a user stored data is discovered.
      */
     public function test_get_contexts_for_userid(): void {
@@ -520,6 +578,11 @@ final class privacy_provider_test extends advanced_testcase {
         $this->assertCount(1, $ailogs->logs);
         $this->assertEquals('generate_item', $ailogs->logs[0]['action']);
         $this->assertEquals('Sword', $ailogs->logs[0]['object_name']);
+
+        // G. Gamification wizard runs.
+        $wizardruns = $writer->get_data([$pluginname, get_string('privacy_export_wizard_runs', 'block_playerhud')]);
+        $this->assertCount(1, $wizardruns->runs);
+        $this->assertEquals('done', $wizardruns->runs[0]['status']);
     }
 
     /**
@@ -531,8 +594,8 @@ final class privacy_provider_test extends advanced_testcase {
         $this->seed_user($usera->id);
         $this->seed_user($userb->id);
 
-        $this->assertEquals(6, $this->total_user_rows($usera->id));
-        $this->assertEquals(6, $this->total_user_rows($userb->id));
+        $this->assertEquals(7, $this->total_user_rows($usera->id));
+        $this->assertEquals(7, $this->total_user_rows($userb->id));
 
         provider::delete_data_for_all_users_in_context($this->context);
 
@@ -556,7 +619,7 @@ final class privacy_provider_test extends advanced_testcase {
 
         $this->assertEquals(0, $this->total_user_rows($usera->id));
         $this->assertEquals(0, $this->total_user_rows($userb->id));
-        $this->assertEquals(6, $this->total_user_rows($survivor->id), 'Untargeted user must keep all data.');
+        $this->assertEquals(7, $this->total_user_rows($survivor->id), 'Untargeted user must keep all data.');
     }
 
     /**
@@ -577,6 +640,6 @@ final class privacy_provider_test extends advanced_testcase {
         provider::delete_data_for_user($exportlist);
         provider::delete_data_for_users(new approved_userlist($coursecontext, 'block_playerhud', [$user->id]));
 
-        $this->assertEquals(6, $this->total_user_rows($user->id), 'Non-block contexts must never delete data.');
+        $this->assertEquals(7, $this->total_user_rows($user->id), 'Non-block contexts must never delete data.');
     }
 }

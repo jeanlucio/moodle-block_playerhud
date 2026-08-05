@@ -91,6 +91,15 @@ class provider implements
             'timecreated' => 'privacy:metadata:timecreated',
         ], 'privacy:metadata:ai_logs');
 
+        $collection->add_database_table('block_playerhud_wizard_runs', [
+            'blockinstanceid' => 'privacy:metadata:wizard_runs:blockinstanceid',
+            'userid' => 'privacy:metadata:wizard_runs:userid',
+            'modules' => 'privacy:metadata:wizard_runs:modules',
+            'status' => 'privacy:metadata:wizard_runs:status',
+            'timecreated' => 'privacy:metadata:timecreated',
+            'timemodified' => 'privacy:metadata:timemodified',
+        ], 'privacy:metadata:wizard_runs');
+
         // Declaration for Moodle Privacy Subsystem (External APIs).
         $collection->add_external_location_link('google_gemini', [
             'prompt' => 'privacy:metadata:external:prompt',
@@ -152,6 +161,10 @@ class provider implements
         // Users with AI logs.
         $sqlai = "SELECT userid FROM {block_playerhud_ai_logs} WHERE blockinstanceid = :instanceid";
         $userlist->add_from_sql('userid', $sqlai, $params);
+
+        // Users with wizard runs.
+        $sqlwizard = "SELECT userid FROM {block_playerhud_wizard_runs} WHERE blockinstanceid = :instanceid";
+        $userlist->add_from_sql('userid', $sqlwizard, $params);
 
         // Users with quest logs.
         $sqlql = "SELECT ql.userid
@@ -284,6 +297,25 @@ class provider implements
             }
         }
 
+        // 7b. Bulk fetch Wizard Runs.
+        $sqlwizard = "SELECT id, blockinstanceid, modules, status, timecreated, timemodified
+                        FROM {block_playerhud_wizard_runs}
+                       WHERE userid = :userid AND blockinstanceid $insql
+                    ORDER BY timecreated DESC";
+        $wizardrecords = $DB->get_records_sql($sqlwizard, $params);
+        $wizardrunsbyinstance = [];
+
+        if ($wizardrecords) {
+            foreach ($wizardrecords as $run) {
+                $wizardrunsbyinstance[$run->blockinstanceid][] = [
+                    'modules' => $run->modules,
+                    'status' => $run->status,
+                    'created' => transform::datetime($run->timecreated),
+                    'modified' => transform::datetime($run->timemodified),
+                ];
+            }
+        }
+
         // 8. Export data using the in-memory arrays.
         foreach ($validcontexts as $context) {
             $instid = $context->instanceid;
@@ -348,6 +380,15 @@ class provider implements
                     (object) ['logs' => $ailogsbyinstance[$instid]]
                 );
             }
+
+            // G. Gamification Wizard Runs.
+            if (!empty($wizardrunsbyinstance[$instid])) {
+                writer::with_context($context)->export_data(
+                    [get_string('pluginname', 'block_playerhud'),
+                        get_string('privacy_export_wizard_runs', 'block_playerhud')],
+                    (object) ['runs' => $wizardrunsbyinstance[$instid]]
+                );
+            }
         }
     }
 
@@ -368,6 +409,7 @@ class provider implements
         $DB->delete_records('block_playerhud_user', ['blockinstanceid' => $instanceid]);
         $DB->delete_records('block_playerhud_rpg_progress', ['blockinstanceid' => $instanceid]);
         $DB->delete_records('block_playerhud_ai_logs', ['blockinstanceid' => $instanceid]);
+        $DB->delete_records('block_playerhud_wizard_runs', ['blockinstanceid' => $instanceid]);
 
         // Delete inventory (Fetch block items).
         $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $instanceid], '', 'id');
@@ -455,6 +497,12 @@ class provider implements
 
         $DB->delete_records_select(
             'block_playerhud_ai_logs',
+            "blockinstanceid = :instanceid AND userid $usql",
+            $params
+        );
+
+        $DB->delete_records_select(
+            'block_playerhud_wizard_runs',
             "blockinstanceid = :instanceid AND userid $usql",
             $params
         );
