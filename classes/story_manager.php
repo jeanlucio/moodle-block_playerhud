@@ -202,6 +202,36 @@ class story_manager {
     public static function make_choice(int $instanceid, int $userid, int $choiceid): array {
         global $DB;
 
+        // Serialize concurrent choices for this user's story progress in this instance,
+        // mirroring the lock trade_manager::execute_trade() uses to prevent two simultaneous
+        // requests from both passing the item-cost/already-completed checks before either one
+        // writes (a double-spend of the cost item, or the completion effects applied twice).
+        $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
+        $lockkey = 'story_usr_' . $userid . '_inst_' . $instanceid;
+        $lock = $lockfactory->get_lock($lockkey, 10);
+
+        if (!$lock) {
+            throw new \moodle_exception('error_story_lock', 'block_playerhud');
+        }
+
+        try {
+            return self::make_choice_locked($instanceid, $userid, $choiceid);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * The actual choice-processing logic, run while make_choice() holds the per-user lock.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $userid User ID.
+     * @param int $choiceid Choice ID.
+     * @return array Response data for the web service.
+     */
+    protected static function make_choice_locked(int $instanceid, int $userid, int $choiceid): array {
+        global $DB;
+
         $choice = $DB->get_record_sql(
             "SELECT c.*
                FROM {block_playerhud_choices} c

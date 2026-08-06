@@ -344,6 +344,7 @@ $string['error_quest_invalid'] = 'Missão inválida.';
 $string['error_quest_lock'] = 'Resgate em andamento. Aguarde um momento e tente novamente.';
 $string['error_quest_requirements'] = 'Requisitos não atendidos.';
 $string['error_service_code'] = 'Erro no serviço {$a->service}: {$a->code}';
+$string['error_story_lock'] = 'Escolha em andamento. Aguarde um momento e tente novamente.';
 $string['error_trade_class'] = 'Seu personagem não pode realizar esta troca.';
 $string['error_trade_group'] = 'Esta troca está restrita a outro grupo.';
 $string['error_trade_insufficient'] = 'Itens insuficientes. Você está faltando {$a->missing}x {$a->name}.';

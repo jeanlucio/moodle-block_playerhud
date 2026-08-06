@@ -344,6 +344,7 @@ $string['error_quest_invalid'] = 'Invalid quest.';
 $string['error_quest_lock'] = 'Claim in progress. Please wait a moment and try again.';
 $string['error_quest_requirements'] = 'Requirements not met.';
 $string['error_service_code'] = '{$a->service} error {$a->code}';
+$string['error_story_lock'] = 'Choice in progress. Please wait a moment and try again.';
 $string['error_trade_class'] = 'Your character cannot perform this trade.';
 $string['error_trade_group'] = 'This trade is restricted to a different group.';
 $string['error_trade_insufficient'] = 'Insufficient items. You are missing {$a->missing}x {$a->name}.';

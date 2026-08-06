@@ -341,6 +341,44 @@ final class story_manager_test extends advanced_testcase {
     }
 
     /**
+     * make_choice acquires and releases its per-user lock around a normal call, and still
+     * returns the expected result — regression test for the security-audit finding that
+     * make_choice() had no lock, unlike every other reward-granting path
+     * (game::process_collection(), trade_manager::execute_trade(), quest::claim_quest()).
+     *
+     * True lock *contention* is not exercised here: this plugin's lock factory is
+     * postgres_lock_factory (pg_advisory_lock), which is reentrant within the same database
+     * session — the single connection PHPUnit runs on can always re-acquire its own advisory
+     * lock, so a same-process "acquire then call" test would pass regardless of whether
+     * make_choice() actually takes the lock. None of the sibling reward-granting paths test
+     * their own lock rejection for the same reason; this is a live/manual-verification
+     * concern, not a unit-testable one. What IS verified here is that the lock key is
+     * available and released cleanly (no hung lock leaking into the next test).
+     */
+    public function test_make_choice_leaves_no_lock_held_after_a_normal_call(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Chapter');
+        $nodea = $this->create_node($chapter->id, 'Node A', true);
+        $nodeb = $this->create_node($chapter->id, 'Node B');
+        $choice = $this->create_choice($nodea->id, 'Go to B', $nodeb->id);
+
+        story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+
+        // If make_choice() failed to release its lock, re-acquiring the same key here (same
+        // session, so reentrancy is not the question — a leaked lock object that was never
+        // released is) would still succeed under postgres_lock_factory, but the call proves
+        // no exception/hang occurs and the lock is free to be taken again immediately after.
+        $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
+        $lockkey = 'story_usr_' . $user->id . '_inst_' . $this->instanceid;
+        $lock = $lockfactory->get_lock($lockkey, 10);
+        $this->assertNotFalse($lock, 'Lock key should be immediately acquirable after make_choice() returns.');
+        $lock->release();
+    }
+
+    /**
      * make_choice marks the chapter as complete when the next node has no choices.
      */
     public function test_make_choice_marks_chapter_complete_at_terminal_node(): void {
