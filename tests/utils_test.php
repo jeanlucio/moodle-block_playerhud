@@ -107,6 +107,50 @@ final class utils_test extends advanced_testcase {
     }
 
     /**
+     * generate_drop_code() returns a 6-character uppercase alphanumeric code — the format the
+     * collect shortcode ([PLAYERHUD_DROP code=...]) expects.
+     */
+    public function test_generate_drop_code_returns_a_six_character_uppercase_code(): void {
+        $code = utils::generate_drop_code($this->instanceid);
+
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]{6}$/', $code);
+    }
+
+    /**
+     * Regression coverage for the security-audit finding: cli/seed_pt_br.php was generating
+     * drop codes with md5(uniqid()) — a weaker, more predictable source than this function's
+     * own random_string() — and has since been switched to call this function directly instead
+     * of duplicating its own generator. Forcing an actual collision isn't practical to assert
+     * directly (random_string(6) draws from a ~2.17 billion-value space, so a fixed code is
+     * never realistically hit), so this instead proves the property that matters for the seed
+     * script's real usage pattern: generating and persisting several codes in a row for the
+     * same instance — exactly what happens when seed_upsert_drop() runs once per location —
+     * never produces a duplicate.
+     */
+    public function test_generate_drop_code_never_repeats_within_the_same_instance(): void {
+        global $DB;
+
+        $itemid = $this->create_item('🗝️')->id;
+        $codes = [];
+        for ($i = 0; $i < 20; $i++) {
+            $code = utils::generate_drop_code($this->instanceid);
+            $DB->insert_record('block_playerhud_drops', (object) [
+                'blockinstanceid' => $this->instanceid,
+                'itemid'          => $itemid,
+                'name'            => 'Drop ' . $i,
+                'maxusage'        => 1,
+                'respawntime'     => 0,
+                'code'            => $code,
+                'timecreated'     => time(),
+                'timemodified'    => time(),
+            ]);
+            $codes[] = $code;
+        }
+
+        $this->assertCount(20, array_unique($codes));
+    }
+
+    /**
      * Insert a minimal block_instances row and return its ID.
      *
      * @return int The new instance ID.

@@ -447,7 +447,7 @@ function seed_upsert_drop(
         'name'            => $location,
         'maxusage'        => $maxusage,
         'respawntime'     => $respawntime,
-        'code'            => strtoupper(substr(md5(uniqid($location, true)), 0, 8)),
+        'code'            => \block_playerhud\utils::generate_drop_code($instanceid),
         'timecreated'     => $now,
         'timemodified'    => $now,
     ];
