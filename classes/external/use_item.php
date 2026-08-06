@@ -24,6 +24,7 @@
 
 namespace block_playerhud\external;
 
+use block_playerhud\local\external_items;
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_value;
@@ -174,6 +175,25 @@ class use_item extends external_api {
             $modinfo = get_fast_modinfo($courseid);
             $cm      = $modinfo->get_cm($cmid);
 
+            // Atomically consume the item before touching the override. Two concurrent
+            // requests both pass the record_exists_select() ownership check above (it is
+            // read-only and not locked), so without this gate both could compute and apply
+            // their own deadline extension while only one inventory row ever gets marked
+            // consumed. consume() takes a per-user-per-item lock internally and only one
+            // caller can ever win it for the single available unit, so the loser is turned
+            // away here instead of racing the override read-modify-write below.
+            $consumed = external_items::consume($instanceid, $itemid, $USER->id, 1);
+            if ($consumed !== true) {
+                return [
+                    'action'       => 'deadline_extension',
+                    'equipped'     => false,
+                    'avatar_html'  => '',
+                    'success'      => false,
+                    'message'      => get_string('itemnotfound', 'block_playerhud'),
+                    'new_deadline' => '',
+                ];
+            }
+
             $override = $DB->get_record('local_latepenalty_overrides', ['cmid' => $cmid, 'userid' => $USER->id]);
             if ($override && $override->deadline !== null) {
                 $base = (int)$override->deadline;
@@ -207,19 +227,6 @@ class use_item extends external_api {
                 (float)$rule->daily_penalty,
                 (float)$rule->max_penalty
             );
-
-            $consumable = $DB->get_records_select(
-                'block_playerhud_inventory',
-                "userid = :uid AND itemid = :iid AND source NOT IN ('revoked','consumed')",
-                ['uid' => $USER->id, 'iid' => $itemid],
-                'id ASC',
-                'id',
-                0,
-                1
-            );
-            if ($consumable) {
-                $DB->set_field('block_playerhud_inventory', 'source', 'consumed', ['id' => reset($consumable)->id]);
-            }
 
             $formatted = userdate($newdeadline, get_string('strftimedatetime', 'langconfig'));
             return [

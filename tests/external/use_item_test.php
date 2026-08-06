@@ -251,6 +251,58 @@ final class use_item_test extends external_base_testcase {
     }
 
     /**
+     * Regression test for the security-audit race-condition finding: the deadline_extension
+     * branch now consumes the item atomically via external_items::consume() before writing the
+     * override, instead of a non-atomic read-modify-write. This test cannot reproduce the
+     * original race itself (a single-process PHPUnit test shares one DB session, and the
+     * plugin's postgres advisory locks are reentrant within a session, so two same-process
+     * calls never actually contend for the lock the way two real concurrent requests do — the
+     * same structural limitation already documented for story_manager::make_choice()). What it
+     * does prove: two genuinely legitimate sequential uses, each backed by its own inventory
+     * unit, still work correctly under the new atomic gate — each call consumes a distinct row
+     * and the deadline accumulates by exactly one day-block per call, with no double-extension
+     * from either call individually. The actual race closure is verified live via real
+     * concurrent HTTP requests, not here.
+     */
+    public function test_use_item_deadline_two_sequential_uses_each_consume_a_distinct_unit(): void {
+        global $DB, $USER;
+
+        if (!class_exists('\local_latepenalty\recalculator')) {
+            $this->markTestSkipped('Requires local_latepenalty.');
+        }
+
+        $duedate = time() + DAYSECS;
+        $assign  = $this->getDataGenerator()->create_module('assign', [
+            'course'  => $this->course->id,
+            'duedate' => $duedate,
+        ]);
+        $this->create_lp_rule($assign->cmid);
+        $item   = $this->create_deadline_item(2, 0);
+        $invid1 = $this->give_item_to_user((int) $USER->id, $item->id);
+        $invid2 = $this->give_item_to_user((int) $USER->id, $item->id);
+
+        $result1 = use_item::execute($this->instanceid, $this->course->id, $item->id, $assign->cmid);
+        $this->assertTrue($result1['success'], 'First use_item call failed: ' . $result1['message']);
+
+        $result2 = use_item::execute($this->instanceid, $this->course->id, $item->id, $assign->cmid);
+        $this->assertTrue($result2['success'], 'Second use_item call failed: ' . $result2['message']);
+
+        $override = $DB->get_record('local_latepenalty_overrides', [
+            'cmid'   => $assign->cmid,
+            'userid' => (int) $USER->id,
+        ]);
+        $this->assertEquals(
+            $duedate + (2 * 2 * DAYSECS),
+            (int) $override->deadline,
+            'Two calls with two separate items must extend by exactly 2 days each, not stack unevenly.'
+        );
+
+        // Both distinct inventory rows must be consumed — never the same row twice.
+        $this->assertEquals('consumed', $DB->get_field('block_playerhud_inventory', 'source', ['id' => $invid1]));
+        $this->assertEquals('consumed', $DB->get_field('block_playerhud_inventory', 'source', ['id' => $invid2]));
+    }
+
+    /**
      * Regression test for the security-audit finding: a targetcmid outside this block's own
      * course must be rejected even when an override already exists for that cmid+userid pair
      * (e.g. set up through a deadline-extension item in a different course). Before the fix,
