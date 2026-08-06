@@ -198,6 +198,47 @@ final class external_items_test extends advanced_testcase {
     }
 
     /**
+     * Regression test for the security-audit N+1 finding: grant() used to insert one row per
+     * unit inside a for loop. Granting a larger quantity must not scale the query count
+     * linearly with $qty — the batch insert should cost roughly the same regardless of how
+     * many units are granted.
+     *
+     * @return void
+     */
+    public function test_grant_does_not_scale_queries_with_quantity(): void {
+        global $DB;
+
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item_with_xp($instanceid, 5);
+        $usersmall = $this->getDataGenerator()->create_user();
+        $userlarge = $this->getDataGenerator()->create_user();
+
+        // Warm up caches (capability checks, config, context) shared by every call below, so
+        // the two measurements that follow are not skewed by first-call-only overhead — that
+        // asymmetry is exactly what made this comparison flaky before this warmup was added.
+        $warmupuser = $this->getDataGenerator()->create_user();
+        external_items::grant($instanceid, $itemid, $warmupuser->id, 1, 'playerwords', false);
+
+        $before = $DB->perf_get_queries();
+        external_items::grant($instanceid, $itemid, $usersmall->id, 2, 'playerwords', false);
+        $smallqty = $DB->perf_get_queries() - $before;
+
+        $before = $DB->perf_get_queries();
+        external_items::grant($instanceid, $itemid, $userlarge->id, 20, 'playerwords', false);
+        $largeqty = $DB->perf_get_queries() - $before;
+
+        $this->assertSame(
+            20,
+            $DB->count_records('block_playerhud_inventory', ['userid' => $userlarge->id, 'itemid' => $itemid])
+        );
+        $this->assertSame(
+            $smallqty,
+            $largeqty,
+            'Granting 10x more units must not cost more queries — the insert is batched, not looped.'
+        );
+    }
+
+    /**
      * Granting with $suppressxp still creates the inventory rows, but withholds XP — the
      * anti-farming rule an external plugin applies for its own unbounded sources.
      *

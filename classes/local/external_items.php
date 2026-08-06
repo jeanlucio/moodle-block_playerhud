@@ -104,16 +104,19 @@ class external_items {
 
         $xpperunit = (!$suppressxp && (int)$item->xp > 0) ? (int)$item->xp : 0;
 
+        $now = time();
+        $rows = [];
         for ($i = 0; $i < $qty; $i++) {
-            $DB->insert_record('block_playerhud_inventory', (object)[
+            $rows[] = (object)[
                 'userid'      => $userid,
                 'itemid'      => $itemid,
                 'dropid'      => 0,
                 'source'      => $source,
-                'timecreated' => time(),
+                'timecreated' => $now,
                 'xpawarded'   => $xpperunit,
-            ]);
+            ];
         }
+        $DB->insert_records('block_playerhud_inventory', $rows);
 
         if ($xpperunit > 0) {
             $player = \block_playerhud\game::get_player($blockinstanceid, $userid);
