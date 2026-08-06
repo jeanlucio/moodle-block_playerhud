@@ -85,6 +85,47 @@ class story_manager {
     }
 
     /**
+     * Enforce that a chapter's unlock_date and required_level are satisfied, throwing a
+     * moodle_exception otherwise.
+     *
+     * Mirrors the same availability rule has_unread_chapters() and the student-facing chapter
+     * list already compute for display purposes — those only gate the UI (a locked card is
+     * rendered non-clickable, but its ID is still present in the page/service response), so a
+     * direct web service call could otherwise read and complete a chapter ahead of schedule.
+     * This is the actual server-side enforcement. Preview mode (already restricted to
+     * block/playerhud:manage) intentionally never calls this.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $userid User ID.
+     * @param \stdClass $chapter Chapter record (needs unlock_date and required_level).
+     * @return void
+     */
+    protected static function require_chapter_available(int $instanceid, int $userid, \stdClass $chapter): void {
+        global $DB;
+
+        if ((int) $chapter->unlock_date > 0 && (int) $chapter->unlock_date > time()) {
+            throw new \moodle_exception('story_error_chapter_locked', 'block_playerhud');
+        }
+
+        if ((int) $chapter->required_level > 0) {
+            $player = game::get_player($instanceid, $userid);
+
+            $blockinstance = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
+            $rawconfig = base64_decode($blockinstance->configdata ?? '', true);
+            $config = ($rawconfig !== false && $rawconfig !== '') ? unserialize_object($rawconfig) : null;
+            if (!$config || !is_object($config)) {
+                $config = new \stdClass();
+            }
+
+            $stats = game::get_game_stats($config, $instanceid, $player->currentxp);
+
+            if ((int) $stats['level'] < (int) $chapter->required_level) {
+                throw new \moodle_exception('story_error_chapter_locked', 'block_playerhud');
+            }
+        }
+    }
+
+    /**
      * Return the RPG progress record, creating one if it does not exist yet.
      *
      * @param int $instanceid Block instance ID.
@@ -136,12 +177,13 @@ class story_manager {
     public static function load_scene(int $instanceid, int $userid, int $chapterid): array {
         global $DB;
 
-        $DB->get_record(
+        $chapter = $DB->get_record(
             'block_playerhud_chapters',
             ['id' => $chapterid, 'blockinstanceid' => $instanceid],
             '*',
             MUST_EXIST
         );
+        self::require_chapter_available($instanceid, $userid, $chapter);
 
         $progress = self::get_or_create_progress($instanceid, $userid);
         $savednodesmap = json_decode($progress->current_nodes, true) ?: [];
@@ -252,6 +294,17 @@ class story_manager {
             MUST_EXIST
         );
         $chapterid = (int) $choicenode->chapterid;
+
+        // The choice's own chapter must still be available — unlock_date/required_level are
+        // otherwise only enforced client-side, letting a direct web service call advance a
+        // chapter the player was never meant to reach yet.
+        $chapter = $DB->get_record(
+            'block_playerhud_chapters',
+            ['id' => $chapterid, 'blockinstanceid' => $instanceid],
+            '*',
+            MUST_EXIST
+        );
+        self::require_chapter_available($instanceid, $userid, $chapter);
 
         // Reject choices from already-completed chapters to prevent reward re-farming.
         $completedarr = json_decode($progress->completed_chapters, true) ?: [];
@@ -424,12 +477,20 @@ class story_manager {
         $progress = self::get_or_create_progress($instanceid, $userid);
 
         // Verify the chapter belongs to this block instance to prevent cross-instance data leakage.
-        $DB->get_record(
+        $chapter = $DB->get_record(
             'block_playerhud_chapters',
             ['id' => $chapterid, 'blockinstanceid' => $instanceid],
             '*',
             MUST_EXIST
         );
+
+        // Only enforce unlock_date/required_level for a chapter the player has not finished
+        // yet — re-reading the recap of an already-completed chapter must never re-lock, even
+        // if a teacher later moves the unlock date forward or raises the required level.
+        $completedarr = array_map('intval', json_decode($progress->completed_chapters, true) ?: []);
+        if (!in_array($chapterid, $completedarr, true)) {
+            self::require_chapter_available($instanceid, $userid, $chapter);
+        }
 
         $savednodesmap = json_decode($progress->current_nodes, true) ?: [];
 

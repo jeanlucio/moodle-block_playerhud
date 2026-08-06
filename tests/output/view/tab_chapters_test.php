@@ -83,16 +83,17 @@ final class tab_chapters_test extends advanced_testcase {
      *
      * @param string $title Chapter title.
      * @param int $unlockdate Unix timestamp the chapter unlocks at (0 = always unlocked).
+     * @param int $requiredlevel Minimum player level required (0 = no requirement).
      * @return int The new chapter ID.
      */
-    private function create_chapter_with_start(string $title, int $unlockdate = 0): int {
+    private function create_chapter_with_start(string $title, int $unlockdate = 0, int $requiredlevel = 0): int {
         global $DB;
         $chapterid = $DB->insert_record('block_playerhud_chapters', (object) [
             'blockinstanceid' => $this->instanceid,
             'title'           => $title,
             'intro_text'      => '',
             'unlock_date'     => $unlockdate,
-            'required_level'  => 0,
+            'required_level'  => $requiredlevel,
             'sortorder'       => 1,
             'timecreated'     => time(),
             'timemodified'    => time(),
@@ -111,7 +112,7 @@ final class tab_chapters_test extends advanced_testcase {
      * No chapters at all renders the empty state instead of crashing.
      */
     public function test_display_with_no_chapters(): void {
-        $player = (object) ['blockinstanceid' => $this->instanceid, 'userid' => $this->user->id];
+        $player = (object) ['blockinstanceid' => $this->instanceid, 'userid' => $this->user->id, 'currentxp' => 0];
         $tab = new tab_chapters(new \stdClass(), $player, $this->instanceid, $this->course->id);
 
         $html = $tab->display();
@@ -124,7 +125,7 @@ final class tab_chapters_test extends advanced_testcase {
      */
     public function test_display_lists_available_chapter(): void {
         $this->create_chapter_with_start('The Awakening');
-        $player = (object) ['blockinstanceid' => $this->instanceid, 'userid' => $this->user->id];
+        $player = (object) ['blockinstanceid' => $this->instanceid, 'userid' => $this->user->id, 'currentxp' => 0];
         $tab = new tab_chapters(new \stdClass(), $player, $this->instanceid, $this->course->id);
 
         $html = $tab->display();
@@ -148,7 +149,7 @@ final class tab_chapters_test extends advanced_testcase {
             'completed_chapters'   => json_encode([$chapterid]),
         ]);
 
-        $player = (object) ['blockinstanceid' => $this->instanceid, 'userid' => $this->user->id];
+        $player = (object) ['blockinstanceid' => $this->instanceid, 'userid' => $this->user->id, 'currentxp' => 0];
         $tab = new tab_chapters(new \stdClass(), $player, $this->instanceid, $this->course->id);
 
         $html = $tab->display();
@@ -162,12 +163,30 @@ final class tab_chapters_test extends advanced_testcase {
      */
     public function test_display_marks_locked_chapter(): void {
         $this->create_chapter_with_start('Future Saga', time() + DAYSECS);
-        $player = (object) ['blockinstanceid' => $this->instanceid, 'userid' => $this->user->id];
+        $player = (object) ['blockinstanceid' => $this->instanceid, 'userid' => $this->user->id, 'currentxp' => 0];
         $tab = new tab_chapters(new \stdClass(), $player, $this->instanceid, $this->course->id);
 
         $html = $tab->display();
 
         $this->assertStringContainsString('Future Saga', $html);
+        $this->assertStringContainsString('ph-chapter-item--locked', $html);
+    }
+
+    /**
+     * Regression test for the security-audit finding: the view only ever gated on
+     * unlock_date, so a required_level-gated chapter rendered as available and clickable,
+     * even though the server now rejects opening it (story_manager::require_chapter_available).
+     * A chapter above the player's level must render as locked too.
+     */
+    public function test_display_marks_level_locked_chapter(): void {
+        $this->create_chapter_with_start('Elite Saga', 0, 2);
+        // Player is a fresh level 1 (0 XP), the chapter requires level 2.
+        $player = (object) ['blockinstanceid' => $this->instanceid, 'userid' => $this->user->id, 'currentxp' => 0];
+        $tab = new tab_chapters(new \stdClass(), $player, $this->instanceid, $this->course->id);
+
+        $html = $tab->display();
+
+        $this->assertStringContainsString('Elite Saga', $html);
         $this->assertStringContainsString('ph-chapter-item--locked', $html);
     }
 }

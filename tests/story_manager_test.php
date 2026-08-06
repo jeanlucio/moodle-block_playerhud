@@ -64,19 +64,21 @@ final class story_manager_test extends advanced_testcase {
      * Inserts a chapter row for this block instance.
      *
      * @param string $title Chapter title.
+     * @param array $overrides Field overrides merged on top of sane defaults (e.g. unlock_date,
+     *     required_level).
      * @return \stdClass The created chapter record.
      */
-    protected function create_chapter(string $title): \stdClass {
+    protected function create_chapter(string $title, array $overrides = []): \stdClass {
         global $DB;
 
-        $chapter = (object) [
+        $chapter = (object) array_merge([
             'blockinstanceid' => $this->instanceid,
             'title'           => $title,
             'intro_text'      => '',
             'unlock_date'     => 0,
             'required_level'  => 0,
             'sortorder'       => 1,
-        ];
+        ], $overrides);
         $chapter->id = $DB->insert_record('block_playerhud_chapters', $chapter);
         return $chapter;
     }
@@ -657,5 +659,170 @@ final class story_manager_test extends advanced_testcase {
         $result = story_manager::load_scene($this->instanceid, $user->id, $chapter->id);
 
         $this->assertTrue($result['node']['choices'][0]['disabled']);
+    }
+
+    /**
+     * Regression test for the security-audit finding: load_scene() previously only checked
+     * that the chapter belonged to the instance, never its unlock_date/required_level — a
+     * direct web service call could read (and via make_choice(), complete) a chapter the UI
+     * still shows as locked. A future unlock_date must now be rejected server-side too.
+     */
+    public function test_load_scene_throws_for_chapter_locked_by_date(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Future Chapter', ['unlock_date' => time() + DAYSECS]);
+        $this->create_node($chapter->id, 'Not yet.', true);
+
+        try {
+            story_manager::load_scene($this->instanceid, $user->id, $chapter->id);
+            $this->fail('Expected story_error_chapter_locked exception not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertEquals('story_error_chapter_locked', $e->errorcode);
+        }
+    }
+
+    /**
+     * Same regression as above, for required_level — the audit report singled this out as
+     * the more fragile of the two gates, since it was previously enforced nowhere at all
+     * outside has_unread_chapters()'s own notification-dot indicator.
+     */
+    public function test_load_scene_throws_for_chapter_locked_by_level(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        // A fresh player starts at level 1 (0 XP); require level 2.
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Elite Chapter', ['required_level' => 2]);
+        $this->create_node($chapter->id, 'Too advanced for you.', true);
+
+        try {
+            story_manager::load_scene($this->instanceid, $user->id, $chapter->id);
+            $this->fail('Expected story_error_chapter_locked exception not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertEquals('story_error_chapter_locked', $e->errorcode);
+        }
+    }
+
+    /**
+     * A chapter with a past unlock_date and a required_level the player's XP already meets
+     * must load normally — the new guard must not accidentally block the common case.
+     */
+    public function test_load_scene_succeeds_for_an_unlocked_chapter(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        // 200 XP at the default 100 XP/level puts the player at level 3.
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid' => $this->instanceid, 'userid' => $user->id, 'currentxp' => 200,
+            'enable_gamification' => 1, 'ranking_visibility' => 1,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $chapter = $this->create_chapter('Past Chapter', [
+            'unlock_date' => time() - DAYSECS,
+            'required_level' => 2,
+        ]);
+        $this->create_node($chapter->id, 'Welcome back.', true);
+
+        $result = story_manager::load_scene($this->instanceid, $user->id, $chapter->id);
+
+        $this->assertStringContainsString('Welcome back', $result['node']['content']);
+    }
+
+    /**
+     * Regression test for the security-audit finding: make_choice_locked() validated the
+     * choice's node position and requirements, but never the chapter's own availability — a
+     * student could advance and complete a locked chapter's story graph one choice at a time
+     * via direct web service calls, collecting the completion reward ahead of schedule.
+     */
+    public function test_make_choice_throws_for_locked_chapter(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Locked Chapter', ['unlock_date' => time() + DAYSECS]);
+        $nodea = $this->create_node($chapter->id, 'Start', true);
+        $choice = $this->create_choice($nodea->id, 'End', 0, 50);
+
+        try {
+            story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+            $this->fail('Expected story_error_chapter_locked exception not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertEquals('story_error_chapter_locked', $e->errorcode);
+        }
+    }
+
+    /**
+     * load_recap() must also reject a chapter the player has not yet completed and that is
+     * not currently available — it is not exempt from the same server-side gate just because
+     * it happens to share a code path with the legitimate "read again" feature.
+     */
+    public function test_load_recap_throws_for_locked_chapter_not_yet_completed(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Locked Chapter', ['unlock_date' => time() + DAYSECS]);
+        $startnode = $this->create_node($chapter->id, 'Start', true);
+
+        // Simulate some in-progress history without completing the chapter.
+        $progress = story_manager::get_or_create_progress($this->instanceid, $user->id);
+        $DB->set_field(
+            'block_playerhud_rpg_progress',
+            'current_nodes',
+            json_encode([$chapter->id => [$startnode->id]]),
+            ['id' => $progress->id]
+        );
+
+        try {
+            story_manager::load_recap($this->instanceid, $user->id, $chapter->id);
+            $this->fail('Expected story_error_chapter_locked exception not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertEquals('story_error_chapter_locked', $e->errorcode);
+        }
+    }
+
+    /**
+     * A chapter the player already completed must remain readable via load_recap() even if a
+     * teacher later pushes its unlock_date into the future or raises its required_level —
+     * re-reading something the player legitimately finished must never re-lock retroactively.
+     */
+    public function test_load_recap_does_not_relock_an_already_completed_chapter(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Finished Chapter');
+        $startnode = $this->create_node($chapter->id, 'The tale begins.', true);
+
+        $progress = story_manager::get_or_create_progress($this->instanceid, $user->id);
+        $DB->set_field(
+            'block_playerhud_rpg_progress',
+            'current_nodes',
+            json_encode([$chapter->id => [$startnode->id]]),
+            ['id' => $progress->id]
+        );
+        $DB->set_field(
+            'block_playerhud_rpg_progress',
+            'completed_chapters',
+            json_encode([$chapter->id]),
+            ['id' => $progress->id]
+        );
+
+        // The teacher tightens the chapter's gates after the fact.
+        $DB->set_field('block_playerhud_chapters', 'unlock_date', time() + DAYSECS, ['id' => $chapter->id]);
+        $DB->set_field('block_playerhud_chapters', 'required_level', 99, ['id' => $chapter->id]);
+
+        $html = story_manager::load_recap($this->instanceid, $user->id, $chapter->id);
+
+        $this->assertStringContainsString('tale begins', $html);
     }
 }

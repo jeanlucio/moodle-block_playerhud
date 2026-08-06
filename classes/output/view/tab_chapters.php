@@ -24,6 +24,7 @@
 
 namespace block_playerhud\output\view;
 
+use block_playerhud\game;
 use renderable;
 
 /**
@@ -87,21 +88,33 @@ class tab_chapters implements renderable {
             $completedids = array_map('intval', json_decode($progress->completed_chapters, true) ?: []);
         }
 
+        // Needed to evaluate required_level below, mirroring the same check the server now
+        // enforces in story_manager::require_chapter_available() — the UI must be coherent
+        // with that rule instead of only ever gating on unlock_date.
+        $stats = game::get_game_stats($this->config, $this->instanceid, $this->player->currentxp);
+        $playerlevel = (int) $stats['level'];
+
         $now          = time();
         $chaptersdata = [];
 
         foreach ($chapters as $chap) {
-            $iscompleted = in_array((int) $chap->id, $completedids);
-            $islocked    = ($chap->unlock_date > 0 && $chap->unlock_date > $now);
+            $iscompleted     = in_array((int) $chap->id, $completedids);
+            $islockedbydate  = ($chap->unlock_date > 0 && $chap->unlock_date > $now);
+            $islockedbylevel = (!$islockedbydate && $chap->required_level > 0 && $chap->required_level > $playerlevel);
+            $islocked        = $islockedbydate || $islockedbylevel;
 
             if ($iscompleted) {
                 $statusicon  = 'fa-check-circle text-success';
                 $itemclasses = 'ph-chapter-item ph-chapter-item--completed';
                 $statustext  = get_string('completed', 'block_playerhud');
-            } else if ($islocked) {
+            } else if ($islockedbydate) {
                 $statusicon  = 'fa-lock text-danger';
                 $itemclasses = 'ph-chapter-item ph-chapter-item--locked';
                 $statustext  = get_string('available', 'block_playerhud') . ': ' . userdate($chap->unlock_date);
+            } else if ($islockedbylevel) {
+                $statusicon  = 'fa-lock text-danger';
+                $itemclasses = 'ph-chapter-item ph-chapter-item--locked';
+                $statustext  = get_string('story_locked_requires_level', 'block_playerhud', (int) $chap->required_level);
             } else {
                 $statusicon  = 'fa-book text-primary';
                 $itemclasses = 'ph-chapter-item ph-chapter-item--available';
