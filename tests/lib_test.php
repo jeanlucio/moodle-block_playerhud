@@ -361,6 +361,91 @@ final class lib_test extends advanced_testcase {
         $this->assertEmpty($tree->categories);
     }
 
+    /**
+     * Regression test for the security-audit finding: a student who opted out of the public
+     * leaderboard (ranking_visibility = 0) must not still have their XP, level and inventory
+     * exposed to other course participants through the profile page — the same opt-out
+     * game::get_leaderboard() already respects.
+     */
+    public function test_myprofile_navigation_noop_when_ranking_visibility_hidden_from_other_student(): void {
+        global $DB;
+
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid'     => $this->instanceid,
+            'userid'              => 2,
+            'currentxp'           => 30,
+            'enable_gamification' => 1,
+            'ranking_visibility'  => 0,
+            'timecreated'         => time(),
+            'timemodified'        => time(),
+        ]);
+
+        $viewer = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($viewer->id, $this->course->id, 'student');
+        $this->setUser($viewer);
+
+        $tree = new tree();
+        block_playerhud_myprofile_navigation($tree, (object) ['id' => 2], false, $this->course);
+
+        $this->assertEmpty($tree->categories);
+    }
+
+    /**
+     * The owner viewing their own profile always sees their section, even after opting out of
+     * the public leaderboard — the opt-out hides data from other participants, not from
+     * themselves.
+     */
+    public function test_myprofile_navigation_shows_own_hidden_profile_to_owner(): void {
+        global $DB;
+
+        $owner = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($owner->id, $this->course->id, 'student');
+        $this->resolve_real_renderer();
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid'     => $this->instanceid,
+            'userid'              => $owner->id,
+            'currentxp'           => 30,
+            'enable_gamification' => 1,
+            'ranking_visibility'  => 0,
+            'timecreated'         => time(),
+            'timemodified'        => time(),
+        ]);
+        $this->setUser($owner);
+
+        $tree = new tree();
+        block_playerhud_myprofile_navigation($tree, (object) ['id' => $owner->id], true, $this->course);
+
+        $this->assertArrayHasKey('playerhud', $tree->categories);
+    }
+
+    /**
+     * A viewer with block/playerhud:manage (a teacher) still sees a hidden profile — teachers
+     * are exempt from the opt-out, matching get_leaderboard()'s own $isteacher exemption.
+     */
+    public function test_myprofile_navigation_shows_hidden_profile_to_manager(): void {
+        global $DB;
+
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid'     => $this->instanceid,
+            'userid'              => 2,
+            'currentxp'           => 30,
+            'enable_gamification' => 1,
+            'ranking_visibility'  => 0,
+            'timecreated'         => time(),
+            'timemodified'        => time(),
+        ]);
+
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $this->course->id, 'editingteacher');
+        $this->resolve_real_renderer();
+        $this->setUser($teacher);
+
+        $tree = new tree();
+        block_playerhud_myprofile_navigation($tree, (object) ['id' => 2], false, $this->course);
+
+        $this->assertArrayHasKey('playerhud', $tree->categories);
+    }
+
     // Tests for block_playerhud_get_drop_details_by_code().
 
     /**

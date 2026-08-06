@@ -137,6 +137,16 @@ function block_playerhud_myprofile_navigation(
         return;
     }
 
+    // Respect the same leaderboard opt-out (ranking_visibility) here: a student who hid
+    // themselves from game::get_leaderboard() must not still have their XP, level and
+    // inventory exposed to every other course participant through the profile page. The
+    // owner viewing their own profile and a manager (teacher) are exempt, mirroring
+    // get_leaderboard()'s own $iscompetitor || $isteacher || $isme rule exactly.
+    $ismanager = has_capability('block/playerhud:manage', $blockcontext);
+    if (!$iscurrentuser && !$ismanager && !$player->ranking_visibility) {
+        return;
+    }
+
     $content = new \block_playerhud\output\profile_content((int)$instance->id, (int)$user->id);
     $data = $content->export_for_template($OUTPUT);
     $html = $OUTPUT->render_from_template('block_playerhud/profile_content', $data);
