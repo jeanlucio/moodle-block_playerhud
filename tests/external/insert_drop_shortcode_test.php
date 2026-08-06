@@ -87,6 +87,62 @@ final class insert_drop_shortcode_test extends external_base_testcase {
     }
 
     /**
+     * Regression test for the N+1 performance finding: execute_batch() must insert
+     * shortcodes for several drops in one call, each into its own target activity, with the
+     * same per-item success/failure semantics as calling execute() once per drop.
+     */
+    public function test_execute_batch_inserts_shortcodes_for_several_drops(): void {
+        global $DB;
+
+        $page1 = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'content' => '']);
+        $page2 = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'content' => '']);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid1, $code1] = $this->create_drop($item->id);
+        [$dropid2, $code2] = $this->create_drop($item->id);
+
+        $results = insert_drop_shortcode::execute_batch($this->instanceid, $this->course->id, [
+            ['dropid' => $dropid1, 'cmid' => $page1->cmid, 'field' => 'content', 'position' => 'top'],
+            ['dropid' => $dropid2, 'cmid' => $page2->cmid, 'field' => 'content', 'position' => 'top'],
+        ]);
+
+        $this->assertTrue($results[0]['success']);
+        $this->assertTrue($results[1]['success']);
+
+        $content1 = $DB->get_field('page', 'content', ['id' => $page1->id]);
+        $content2 = $DB->get_field('page', 'content', ['id' => $page2->id]);
+        $this->assertStringContainsString('code=' . $code1, $content1);
+        $this->assertStringContainsString('code=' . $code2, $content2);
+
+        // Same rename-to-activity-name side effect as execute().
+        $drop1name = $DB->get_field('block_playerhud_drops', 'name', ['id' => $dropid1]);
+        $this->assertEquals($page1->name, $drop1name);
+    }
+
+    /**
+     * A batch entry targeting an invalid field fails on its own without aborting the rest
+     * of the batch.
+     */
+    public function test_execute_batch_one_failure_does_not_block_the_rest(): void {
+        global $DB;
+
+        $page1 = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'content' => '']);
+        $page2 = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'content' => '']);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid1] = $this->create_drop($item->id);
+        [$dropid2, $code2] = $this->create_drop($item->id);
+
+        $results = insert_drop_shortcode::execute_batch($this->instanceid, $this->course->id, [
+            ['dropid' => $dropid1, 'cmid' => $page1->cmid, 'field' => 'not_a_real_field', 'position' => 'top'],
+            ['dropid' => $dropid2, 'cmid' => $page2->cmid, 'field' => 'content', 'position' => 'top'],
+        ]);
+
+        $this->assertFalse($results[0]['success']);
+        $this->assertTrue($results[1]['success']);
+        $content2 = $DB->get_field('page', 'content', ['id' => $page2->id]);
+        $this->assertStringContainsString('code=' . $code2, $content2);
+    }
+
+    /**
      * Inserting the same drop twice is rejected the second time.
      */
     public function test_insert_duplicate_is_rejected(): void {

@@ -879,6 +879,7 @@ class wizard_generate {
             );
 
             $dropids = [];
+            $items = [];
             foreach ($quotas as $i => $quota) {
                 $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
                     'blockinstanceid' => $instanceid,
@@ -898,18 +899,28 @@ class wizard_generate {
                 // unconditionally on its own view page, regardless of the course-page "show
                 // description" setting.
                 $field = $modules[$i]['supports_content'] ? 'content' : 'intro';
-                $result = \block_playerhud\external\insert_drop_shortcode::execute(
-                    $instanceid,
-                    $courseid,
-                    $dropid,
-                    $modules[$i]['cmid'],
-                    $field,
-                    'top'
-                );
+                $items[] = [
+                    'dropid' => $dropid,
+                    'cmid' => (int) $modules[$i]['cmid'],
+                    'field' => $field,
+                    'position' => 'top',
+                ];
+            }
+
+            // One call for the whole batch instead of one insert_drop_shortcode::execute()
+            // (and one rebuild_course_cache()) per drop.
+            $results = \block_playerhud\external\insert_drop_shortcode::execute_batch($instanceid, $courseid, $items);
+            foreach ($results as $key => $result) {
                 if ($result['success']) {
-                    \block_playerhud\local\wizard::record_shortcode($runid, $dropid, (int) $modules[$i]['cmid'], $field);
+                    \block_playerhud\local\wizard::record_shortcode(
+                        $runid,
+                        $items[$key]['dropid'],
+                        $items[$key]['cmid'],
+                        $items[$key]['field']
+                    );
                 }
             }
+
             if (!empty($dropids)) {
                 \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', $dropids);
             }
@@ -1490,11 +1501,16 @@ class wizard_generate {
             $remaining[$mod['cmid']] = $quotas[$index] ?? 0;
         }
 
+        // Decide which activity each drop goes to first — this stays a per-drop loop since
+        // $remaining/$available depend on the previous drop's assignment — but defer the
+        // actual DB writes to a single execute_batch() call below instead of one
+        // insert_drop_shortcode::execute() (and one rebuild_course_cache()) per drop.
+        $items = [];
         foreach ($drops as $drop) {
             $available = array_values(array_filter($modules, fn($mod) => $remaining[$mod['cmid']] > 0));
             if (empty($available)) {
                 // Every activity's quota is already spent — quotas sum to count($drops), so
-                // this only happens if a prior insert_drop_shortcode call failed silently.
+                // this only happens if a prior batch entry failed silently.
                 continue;
             }
             $haystack = $drop->drop_name . ' ' . $drop->item_name;
@@ -1507,20 +1523,27 @@ class wizard_generate {
             // page's own view. Every other eligible module type shows its intro unconditionally
             // on its own view page, regardless of the course-page "show description" setting.
             $field = $suggested['supports_content'] ? 'content' : 'intro';
-            $result = \block_playerhud\external\insert_drop_shortcode::execute(
-                $instanceid,
-                $courseid,
-                $drop->id,
-                $suggested['cmid'],
-                $field,
-                'top'
-            );
+            $remaining[$suggested['cmid']]--;
+            $items[] = [
+                'dropid' => (int) $drop->id,
+                'cmid' => (int) $suggested['cmid'],
+                'field' => $field,
+                'position' => 'top',
+            ];
+        }
+
+        $results = \block_playerhud\external\insert_drop_shortcode::execute_batch($instanceid, $courseid, $items);
+        foreach ($results as $key => $result) {
             if ($result['success']) {
-                $remaining[$suggested['cmid']]--;
                 // The rename to the activity's name already happened inside
-                // insert_drop_shortcode::execute(), shared with the manual "Distribuir Drops"
-                // screen, so it applies here too.
-                \block_playerhud\local\wizard::record_shortcode($runid, (int) $drop->id, (int) $suggested['cmid'], $field);
+                // insert_drop_shortcode::execute_batch(), shared with the manual "Distribuir
+                // Drops" screen, so it applies here too.
+                \block_playerhud\local\wizard::record_shortcode(
+                    $runid,
+                    $items[$key]['dropid'],
+                    $items[$key]['cmid'],
+                    $items[$key]['field']
+                );
             }
         }
 
