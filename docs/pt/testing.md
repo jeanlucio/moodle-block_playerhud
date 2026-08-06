@@ -8,26 +8,27 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 |-----------------|------:|----------------|
 | `ai/generator_test.php` | 2 | `save_item()` (via reflection, sem rede): limita um nome gerado por IA acima do tamanho; converte campos não-string antes de persistir |
 | `ai/hub_usage_reporting_test.php` | 2 | Reporta toda tentativa de IA que falhou quando uma chave do hub é usada, não só a última; nunca reporta uso de uma chave própria do plugin (fora do hub) |
-| `backup_restore_test.php` | 3 | Definições de backup/restore cobrem todas as tabelas RPG; round-trip completo de curso (incl. uma atividade real) preserva dados de classe/capítulo/história RPG, poderes de item (`action_type`/`action_value`), tiers de emoji da classe, e o requisito de uma quest `TYPE_SPECIFIC_TRADE` remapeado contra a troca restaurada em vez do mapeamento de item; um cmid fixado no `deadline_extension` e o requisito de uma quest `TYPE_ACTIVITY` são ambos remapeados para a atividade do curso restaurado |
-| `collection_tab_test.php` | 8 | Aba Coleção: mapeamento de `filter_type` (avatar/prazo/nenhum), `power_hint_avatar` exibido para item não-secreto não possuído e oculto para secreto, flag `is_equipped`; classificação de origem para a fonte de uma linha de inventário (map é reconhecida como própria do PlayerHUD; qualquer coisa fora das 4 fontes conhecidas cai para uma origem genérica "game") |
+| `backup_restore_test.php` | 3 | Definições de backup/restore cobrem todas as tabelas RPG; round-trip completo de curso (incl. duas atividades reais) preserva dados de classe/capítulo/história RPG, poderes de item (`action_type`/`action_value`), tiers de emoji da classe, e o requisito de uma quest `TYPE_SPECIFIC_TRADE` remapeado contra a troca restaurada em vez do mapeamento de item; um cmid fixado no `deadline_extension` e o requisito de uma quest `TYPE_ACTIVITY` são ambos remapeados para a atividade do curso restaurado; um segundo item `deadline_extension` com seu próprio cmid confirma que o lookup em lote de `after_restore()` não mistura o cmid de um item com o de outro |
+| `collection_tab_test.php` | 9 | Aba Coleção: mapeamento de `filter_type` (avatar/prazo/nenhum), `power_hint_avatar` exibido para item não-secreto não possuído e oculto para secreto, flag `is_equipped`; classificação de origem para a fonte de uma linha de inventário (map é reconhecida como própria do PlayerHUD; qualquer coisa fora das 4 fontes conhecidas cai para uma origem genérica "game"); `get_lp_activities()` é memoizado entre múltiplos itens na mesma renderização (N+1 corrigido) |
 | `content_crud_test.php` | 13 | CRUD de itens, capítulos e trocas: criação persiste todos os campos, atualização altera campos, exclusão remove registro, listagem escoped por instância |
 | `cross_instance_security_test.php` | 12 | Isolamento cross-instance: guardas de item, quest, capítulo e troca aceitam IDs da própria instância e rejeitam IDs alheios sem modificar o registro alvo |
-| `db_upgrade_test.php` | 6 | Passos de upgrade com lógica real de migração de dados (diferente de DDL de schema puro): marca um item pré-existente literalmente chamado 'PlayerCoin' com `action_type=playercoin`, deixa intocados itens não relacionados/já marcados; retroalimenta `xpawarded` numa linha de inventário pré-existente de uma origem que paga XP de verdade (map/teacher/revoked) usando o XP atual do item, mas não para uma linha de origem `drop` nem uma linha coletada de um drop infinito (`maxusage=0`); retroalimenta o `xpawarded` de uma reivindicação de quest pré-existente a partir do `reward_xp` atual da quest |
+| `db_upgrade_test.php` | 7 | Passos de upgrade com lógica real de migração de dados (diferente de DDL de schema puro): marca um item pré-existente literalmente chamado 'PlayerCoin' com `action_type=playercoin`, deixa intocados itens não relacionados/já marcados; retroalimenta `xpawarded` numa linha de inventário pré-existente de uma origem que paga XP de verdade (map/teacher/revoked) usando o XP atual do item, mas não para uma linha de origem `drop` nem uma linha coletada de um drop infinito (`maxusage=0`); retroalimenta o `xpawarded` de uma reivindicação de quest pré-existente a partir do `reward_xp` atual da quest; retroalimenta um código de drop faltante com um código único que não colide com um já existente na mesma instância |
 | `drop_guard_test.php` | 7 | Limites de coleta, itens consumidos por troca, aplicação de cooldown |
-| `game_test.php` | 38 | `get_game_stats()` totaliza XP/nível mais a inclusão de XP de quests (e exclusão quando a quest está desabilitada), verificado contra o próprio total de `analytics::economy_health()`; anti-farm de coleta e cooldown; `get_avatar_item` (habilitado, desabilitado, instância estrangeira, não encontrado); XP concedido ao coletar drop com uso finito; exclusão de gerentes do ranking; flags de milestone de level-up, vitória no jogo e primeira PlayerCoin na coleta; `xp_to_level`; criação automática de jogador, alternância de gamificação e visibilidade no ranking, inventário (exclui revogados/consumidos), `has_item`; `get_user_rank` ordem por XP, desempate por chegada, exclusão de gerentes e de não matriculados; hidratação de requisitos/recompensas em `get_full_trades`, caso vazio, e bloqueio de disponibilidade quando o item de qualquer um dos lados está desabilitado; heurística de sugestões de troca (avatares com desconto, pulo de avatar já coberto, pré-requisitos) e persistência; `change_xp` emite o evento `xp_changed` ao conceder, ao deduzir (piso em zero) e fica em silêncio num no-op de verdade |
+| `form/edit_item_form_test.php` | 4 | Validação server-side do campo de imagem do item: valor emoji passa; URL HTTPS válida passa; payload de quebra de atributo (`http` seguido de aspas/tags) é rejeitado; valor `http`-like malformado que não é uma URL de verdade é rejeitado |
+| `game_test.php` | 41 | `get_game_stats()` totaliza XP/nível mais a inclusão de XP de quests (e exclusão quando a quest está desabilitada), verificado contra o próprio total de `analytics::economy_health()`; anti-farm de coleta e cooldown; `get_avatar_item` (habilitado, desabilitado, instância estrangeira, não encontrado); XP concedido ao coletar drop com uso finito; exclusão de gerentes do ranking; flags de milestone de level-up, vitória no jogo e primeira PlayerCoin na coleta; `xp_to_level`; criação automática de jogador, alternância de gamificação e visibilidade no ranking, inventário (exclui revogados/consumidos), `has_item`; `get_user_rank` ordem por XP, desempate por chegada, exclusão de gerentes e de não matriculados; hidratação de requisitos/recompensas em `get_full_trades`, caso vazio, e bloqueio de disponibilidade quando o item de qualquer um dos lados está desabilitado; heurística de sugestões de troca (avatares com desconto, pulo de avatar já coberto, pré-requisitos) e persistência, com o emoji do avatar escapado (`strip_tags`) em `build_trade_suggestions`; `change_xp` emite o evento `xp_changed` ao conceder, ao deduzir (piso em zero) e fica em silêncio num no-op de verdade; `get_leaderboard` sinaliza corretamente o grupo do próprio usuário no ranking por grupo e restringe o filtro de grupo do professor aos membros reais |
 | `gamemaster_test.php` | 6 | Conceder/revogar/excluir item e quest preservando timestamps do ranking; XP mínimo em zero |
 | `instance_delete_test.php` | 1 | Excluir uma instância do bloco limpa todas as tabelas próprias do plugin (`instance_cleanup`) |
 | `item_delete_cascade_test.php` | 17 | Detecção de trocas órfãs ao excluir item (único req, um de dois, único reward, combinado req+reward); verificações em lote; isolamento cross-instance; exclusão remove o item e cascateia trocas órfãs sem afetar as não-órfãs; excluir um item (único ou em lote) reverte XP só das cópias que realmente ganharam XP, deixando intactas as cópias de drop infinito (XP zero) |
 | `karma_test.php` | 11 | Leitura/escrita de karma, deltas positivos/negativos, clamping nos limites ±999, acumulação sucessiva |
-| `lib_test.php` | 18 | `block_playerhud_myprofile_navigation`: todo ramo de no-op (sem curso, curso do site, sem instância do bloco, sem registro de jogador, gamificação desabilitada) e um jogador ativo com item coletado recebe a seção de perfil; `block_playerhud_get_drop_details_by_code`: correspondência, código desconhecido, rejeição de instância estrangeira, exclusão de item desabilitado; `block_playerhud_is_visible_for_class`: público (vazio/'0'), classe correspondente/não correspondente, '0' dentro de uma lista; `block_playerhud_pluginfile`: contexto não-bloco, área de arquivo desconhecida, nenhum arquivo armazenado encontrado |
-| `privacy_provider_test.php` | 11 | LGPD com cobertura completa: descoberta de contexto/usuário (`get_contexts_for_userid`, `get_users_in_context`); `export_user_data` nas seis subárvores (perfil, RPG, inventário, missões, trocas, logs de IA); exclusão por usuário, multiusuário e de contexto inteiro com garantia de isolamento; exportação/exclusão de toda chave de API e preferência de avatar; declaração de metadados; guardas de contexto não-bloco como no-ops |
+| `lib_test.php` | 24 | `block_playerhud_myprofile_navigation`: todo ramo de no-op (sem curso, curso do site, sem instância do bloco, sem registro de jogador, gamificação desabilitada) e um jogador ativo com item coletado recebe a seção de perfil, incl. um viewer estudante comum (não admin); a seção só é montada quando o viewer tem `block/playerhud:view` **e** `moodle/block:view` no contexto do bloco (capability negada de qualquer um dos dois é no-op); respeita o opt-out `ranking_visibility` do leaderboard — um colega não vê o perfil oculto de outro estudante, mas o próprio dono sempre vê o seu e um professor com `block/playerhud:manage` sempre vê qualquer um; `block_playerhud_get_drop_details_by_code`: correspondência, código desconhecido, rejeição de instância estrangeira, exclusão de item desabilitado; `block_playerhud_is_visible_for_class`: público (vazio/'0'), classe correspondente/não correspondente, '0' dentro de uma lista; `block_playerhud_pluginfile`: contexto não-bloco, área de arquivo desconhecida, nenhum arquivo armazenado encontrado |
+| `privacy_provider_test.php` | 19 | LGPD com cobertura completa: descoberta de contexto/usuário (`get_contexts_for_userid`, `get_users_in_context`); `export_user_data` nas seis subárvores (perfil, RPG, inventário, missões, trocas, logs de IA), incl. `xp_gained` de missão e `created`/`modified` do progresso de RPG, que antes ficavam de fora; exclusão por usuário, multiusuário e de contexto inteiro com garantia de isolamento, incl. a limpeza de `wizard_objects`/`wizard_shortcodes` antes de `wizard_runs` (evitando linhas órfãs com `runid` inexistente); exportação/exclusão de toda chave de API e preferência de avatar; declaração de metadados completa por coluna real da tabela (não por chave individual) para `playerhud_user`, `inventory`, `ai_logs`, `wizard_runs`, `rpg_progress`, `quest_log` e `trade_log`; guardas de contexto não-bloco como no-ops |
 | `quest_test.php` | 35 | Verificações de conclusão (nível, XP, itens, trocas, conclusão de atividade); reivindicar recompensas; quest desabilitada; idempotência; flags de comemoração de level-up e vitória no jogo ao reivindicar recompensa; `has_claimable_quests` em todos os tipos de requisito incl. conclusão de atividade, com curto-circuito de reivindicadas/não reivindicadas; mapeamento de `build_record_from_suggestion`, transporte de item-ids e piso do override de XP; `get_heuristic_suggestions` milestones de nível/coleção/economia/atividade com pulo de duplicatas; uma atividade com acompanhamento de conclusão oferecida como missão heurística é detectada como cumprida assim que a atividade é realmente concluída |
 | `rpg_classes_test.php` | 8 | Atribuição de classe, proteção contra duplicatas, inicialização de karma, limites de tier de retrato |
-| `story_manager_test.php` | 15 | Carregamento de cena, persistência de progresso, navegação de escolhas, delta de karma, conclusão de capítulo, casos de erro |
+| `story_manager_test.php` | 25 | Carregamento de cena, persistência de progresso, navegação de escolhas, delta de karma, conclusão de capítulo, casos de erro; `make_choice()` adquire e libera o lock por usuário sem travar numa chamada normal; inventário `consumed`/`revoked` é rejeitado como pagamento de uma escolha com custo, uma cópia genuína é aceita e consumida; `load_scene()`, `make_choice()` e `load_recap()` revalidam `unlock_date`/`required_level` do capítulo no servidor (antes só a UI bloqueava o clique), com `load_recap()` isento dessa checagem para um capítulo já concluído — reler algo legitimamente terminado nunca re-trava, mesmo que o professor aperte as regras depois |
 | `suggest_trades_state_test.php` | 4 | Botão Sugerir Trocas: desabilitado sem pré-requisitos, desabilitado só com moeda, desabilitado quando todos os avatares cobertos, habilitado com cobertura parcial |
 | `trade_test.php` | 9 | Montagem de trocas, fundos insuficientes, sucesso atômico, limite único, restrição por grupo; uma troca que referencia um item de recompensa desabilitado é rejeitada de imediato mesmo com saldo suficiente |
-| `utils_test.php` | 4 | `get_avatar_html`: emoji gera div `ph-avatar-emoji` com span aria-hidden; URL HTTP gera tag img `ph-avatar-img`; imagem nula não lança exceção em `get_avatar_html` nem em `get_items_display_data` |
-| **Subtotal** | **230** | |
+| `utils_test.php` | 6 | `get_avatar_html`: emoji gera div `ph-avatar-emoji` com span aria-hidden; URL HTTP gera tag img `ph-avatar-img`; imagem nula não lança exceção em `get_avatar_html` nem em `get_items_display_data`; `generate_drop_code()` retorna um código de 6 caracteres alfanuméricos maiúsculos, e gerar/persistir vários códigos seguidos para a mesma instância nunca produz um repetido |
+| **Subtotal** | **265** | |
 
 ### Testes de Lógica de Negócio Compartilhada (`tests/local/`)
 
@@ -38,10 +39,10 @@ Lógica reutilizada por mais de um ponto de entrada (as próprias web services d
 | `analytics_test.php` | 11 | Economy Health: razão entre XP total ganhável e o teto (vazio/difícil/perfeito/fácil), recompensas de quest e itens infinitos/sem drop no detalhamento, guarda de teto zero; histograma de distribuição de níveis, ordenação do overflow do cap (`N+`), percentual da barra mais alta, guarda de XP-por-nível zero, conjunto de jogadores vazio não produz linhas; o XP atual de `balance_context()` sempre bate com o total do próprio `economy_health()` |
 | `audit_log_test.php` | 5 | Consulta compartilhada de log de auditoria (`get_logs()`) usada pela aba Relatórios do professor e pela aba Histórico do estudante: o `xp_gained` de um item reflete o valor `xpawarded` registrado no momento da concessão, não o XP atual do item (e bate quando nunca editado); um item concedido por quest reporta `xp_gained` zero, já que seu próprio XP nunca é pago por esse caminho; uma linha revogada reporta o negativo do valor originalmente registrado, não o XP atual do item; a reivindicação de uma quest reflete o valor registrado, não o `reward_xp` atual da quest |
 | `drop_distribution_test.php` | 12 | Descoberta de módulos elegíveis: inclui fóruns, exclui módulos em exclusão e o fórum de avisos do curso (reservado para PlayerCoin/Item Secreto), vazio para curso sem atividades; sugestão por melhor correspondência de nome incl. caso sem correspondência; busca de cmid por shortcode já inserido incl. não encontrado e entrada vazia; divisão de cotas por atividade sempre soma o alvo, limita ao número de atividades, casos de borda |
-| `external_items_test.php` | 18 | API de itens entre plugins usada por outros plugins da família Player (ex.: PlayerWords): `belongs_to_instance()` aceita a própria instância de um item (habilitado ou desabilitado) e rejeita instância estrangeira, id inexistente, ou ids zero/negativos sem consultar o banco; `grant()` insere uma linha de inventário por unidade com seu próprio `xpawarded` e credita o XP total uma vez, retém XP quando quem chama sinaliza a origem como sem limite, e é no-op para item de instância estrangeira ou desabilitado; `consume()` marca as linhas mais antigas como consumidas em caso de sucesso, retorna false quando o saldo é insuficiente, e retorna null (não false) para item de instância estrangeira, para que quem chama dispense o custo em vez de bloquear o estudante para sempre; `get_name()`/`get_xp()` resolvem para a própria instância do item e retornam vazio/zero para uma estrangeira; `get_available_quantity()` conta só linhas ativas (não revogadas/não consumidas) e é zero para item de instância estrangeira mesmo que o usuário possua unidades dele |
+| `external_items_test.php` | 19 | API de itens entre plugins usada por outros plugins da família Player (ex.: PlayerWords): `belongs_to_instance()` aceita a própria instância de um item (habilitado ou desabilitado) e rejeita instância estrangeira, id inexistente, ou ids zero/negativos sem consultar o banco; `grant()` insere uma linha de inventário por unidade com seu próprio `xpawarded` e credita o XP total uma vez, retém XP quando quem chama sinaliza a origem como sem limite, é no-op para item de instância estrangeira ou desabilitado, e insere em lote (`insert_records`) em vez de um `insert_record()` por unidade — conceder 10x mais unidades não custa mais queries; `consume()` marca as linhas mais antigas como consumidas em caso de sucesso, retorna false quando o saldo é insuficiente, e retorna null (não false) para item de instância estrangeira, para que quem chama dispense o custo em vez de bloquear o estudante para sempre; `get_name()`/`get_xp()` resolvem para a própria instância do item e retornam vazio/zero para uma estrangeira; `get_available_quantity()` conta só linhas ativas (não revogadas/não consumidas) e é zero para item de instância estrangeira mesmo que o usuário possua unidades dele |
 | `wizard_test.php` | 17 | Manifesto da rodada: status de início/fim; desfazer exclui objetos registrados em todas as tabelas, remove o shortcode registrado, reverte XP e limpa o histórico de jogo, rejeita instância incompatível; listagem de rodadas ativas com contagens e limite; detecção de "já gerado" por mecânica incl. rodadas obsoletas sem conteúdo, itens só no manifesto, itens só logados pela IA e a checagem só-de-config do Ranking; `ensure_config_flag` liga uma flag sem tocar em config irmã e não faz nada quando já está ligada |
 | `xp_budget_test.php` | 15 | Contagens de item/missão/capítulo por tamanho de jornada incl. fallback pra curta; `distribute_share` divide a folga igualmente, espalha o resto nos primeiros elementos, limita à folga quando há mais elementos que ela, casos de borda; mapeamento de níveis-máximos sugeridos; rodízio balanceado de missões entre tipos, preservação de ordem dentro de um tipo, todas selecionadas quando o limite as cobre, casos de borda |
-| **Subtotal** | **78** | |
+| **Subtotal** | **79** | |
 
 ### Testes de Web Services (`tests/external/`)
 
@@ -58,20 +59,20 @@ Uma classe de teste por função de web service, validando o contrato da API ext
 | `generate_ai_content_test.php` | 2 | Sem chave de API → `success=false`; guarda de capability (`manage`) |
 | `generate_class_oracle_test.php` | 2 | Sem chave de API → `success=false`; guarda de capability (`manage`) |
 | `generate_story_test.php` | 2 | Sem chave de API → `success=false`; guarda de capability (`manage`) |
-| `insert_drop_shortcode_test.php` | 7 | Shortcode inserido no campo de conteúdo do módulo; inserção duplicada rejeitada; drop de outra instância rejeitado; drop renomeado pra atividade em que caiu; `mode=text` com rótulo customizado; modo desconhecido cai pra card; guarda de capability |
+| `insert_drop_shortcode_test.php` | 9 | Shortcode inserido no campo de conteúdo do módulo; inserção duplicada rejeitada; drop de outra instância rejeitado; drop renomeado pra atividade em que caiu; `mode=text` com rótulo customizado; modo desconhecido cai pra card; guarda de capability; `execute_batch()` insere shortcodes para vários drops numa só chamada (usada pela distribuição do assistente), e uma falha isolada num drop não bloqueia o processamento dos demais |
 | `load_recap_test.php` | 3 | HTML de recap gerado após visita à cena; sem histórico → exceção; guarda de capability (`view`) |
 | `load_scene_test.php` | 3 | Nó inicial e escolhas retornados; capítulo inválido → exceção; guarda de capability (`view`) |
 | `make_choice_test.php` | 3 | Avança a história até o nó de destino; escolha inválida → exceção; guarda de capability (`view`) |
 | `remove_drop_shortcode_test.php` | 5 | Shortcode existente removido; shortcode separado por `<br>` removido; shortcode com atributos `mode=`/`text=` removido; ausência de shortcode é noop sem erro; guarda de capability |
 | `setup_playercoin_drop_test.php` | 6 | Sucesso; sem fórum → `success=false`; item de outra instância rejeitado; curso que não é dono da instância rejeitado; shortcode anteposto ao intro existente; guarda de capability |
-| `use_item_test.php` | 8 | Guarda de capability (`view`); item não possuído → exceção; poder de prazo: sem atividade, sem regra, cria override e consome item, atualiza override existente; poder de avatar: equipar e desequipar funcionam mesmo com `$OUTPUT` resetado pro placeholder `bootstrap_renderer` ainda não resolvido, reproduzindo a mesma condição de uma requisição AJAX real |
+| `use_item_test.php` | 10 | Guarda de capability (`view`); item não possuído → exceção; poder de prazo: sem atividade, sem regra, cria override e consome item, atualiza override existente, rejeita um `targetcmid` de outro curso mesmo quando já existe um override pra esse cmid+userid; duas concessões sequenciais legítimas (dois itens em posse) consomem cada uma sua própria unidade e estendem exatamente um bloco de dias por chamada, sem dobrar a extensão de nenhuma das duas; poder de avatar: equipar e desequipar funcionam mesmo com `$OUTPUT` resetado pro placeholder `bootstrap_renderer` ainda não resolvido, reproduzindo a mesma condição de uma requisição AJAX real |
 | `wizard_apply_suggested_levels_test.php` | 3 | Aplica a sugestão quando a config está nos padrões; ainda aplica quando a config já foi customizada; preserva todo outro campo de config intocado |
 | `wizard_generate_helpers_test.php` | 10 | `build_step_types()` bate com os módulos selecionados na ordem, pula `auto_distribute` quando o distribuir de Itens está desligado, vazio quando nada selecionado; `compute_shared_xp_shares()` vazio sem Itens/Missões, Pill/Extensão de Prazo usam seus próprios padrões sozinhos, dividem o orçamento com Itens quando combinados; `resolve_or_create_progress_item()` idempotente e cria um item completo quando falta; `resolve_previous_chapter_context()` lê o capítulo mais recente; `distribute_drops()` limita cada atividade à sua cota calculada em vez de deixar só a correspondência de nome empilhar todo drop numa única atividade |
 | `wizard_list_runs_test.php` | 4 | Resumo de uma rodada ativa; rodada de RPG resumida; rodadas desfeitas excluídas; guarda de capability |
 | `wizard_rollback_test.php` | 3 | Exclui os objetos gerados pela rodada, contagem reportada bate com o que foi registrado; rejeita instância incompatível; guarda de capability |
 | `wizard_run_step_test.php` | 56 | Um passo de progresso ao vivo por vez, por mecânica (PlayerCoin, Avatares, Missões, Comércio, Colecionável de Conhecimento, Item Secreto, Ranking, Extensão de Prazo, RPG, Item RPG, auto-distribuir): criação de item/quest/troca com registro no manifesto, retentativas idempotentes, desfazer por mecânica, controle pela flag de distribuir, tom/tamanho de jornada influenciando o conteúdo, e a inserção exclusiva no fórum de avisos pra PlayerCoin e Item Secreto (incl. no-op sem fórum de avisos); tipo de passo desconhecido, guarda de capability, rejeição de `runid` de outra instância, passo com falha não finaliza a rodada, passo final reporta a economia só quando solicitado |
 | `wizard_start_test.php` | 8 | Um passo de plano por módulo selecionado; a flag de "passo lento" reflete se Próximo Capítulo foi selecionado; a divisão de cotas de XP bate com os módulos selecionados; o XP bônus da Pill presente quando selecionada sozinha; o módulo de arco da história se expande num outline + um passo por capítulo, a quantidade de passos cresce com o tamanho da jornada, o manifesto mantém o nome lógico do módulo; guarda de capability |
-| **Subtotal** | **151** | |
+| **Subtotal** | **155** | |
 
 ### Testes de Controlador (`tests/controller/`)
 
@@ -82,15 +83,15 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `aikeys_test.php` | 4 | Armazenamento de chaves de IA: chaves aparadas e salvas como preferências do usuário, padrão vazio para campo ausente, chaves legadas removidas do config do bloco, config limpo intocado |
 | `chapters_test.php` | 13 | Persistência e ordenação de capítulos: salvar (inserir, atualizar, padrões, isolamento), excluir em cascata cenas/escolhas, mover/reordenar com renumeração da lista completa, no-op na borda |
 | `classes_test.php` | 7 | Persistência de classe RPG: inserção (HP base, vínculo de instância, emojis por tier), atualização preserva HP base, trim de emoji, isolamento; exclusão remove registro e retratos por tier, isolamento, irmãos preservados |
-| `drops_test.php` | 14 | Persistência de drop: salvar (inserir + código, ilimitado, atualizar preserva propriedade, isolamento, item estrangeiro); excluir único e no-op estrangeiro; exclusão em massa só dos próprios com contagem, entrada vazia; `get_owned_item` retorna para a instância dona e rejeita instância estrangeira; `get_sort_data` alterna ícone/direção da coluna de ordenação ativa; `view_manage_page`/`handle_edit_form` renderizam de ponta a ponta pelo `$OUTPUT`/`$PAGE` globais reais para um professor com a capability de gerenciamento |
+| `drops_test.php` | 15 | Persistência de drop: salvar (inserir + código, ilimitado, atualizar preserva propriedade, isolamento, item estrangeiro); excluir único e no-op estrangeiro; exclusão em massa só dos próprios com contagem, entrada vazia; `get_owned_item` retorna para a instância dona e rejeita instância estrangeira; `get_sort_data` alterna ícone/direção da coluna de ordenação ativa; `view_manage_page`/`handle_edit_form` renderizam de ponta a ponta pelo `$OUTPUT`/`$PAGE` globais reais para um professor com a capability de gerenciamento; o template da tabela de gerenciamento escapa o conteúdo de mídia do drop |
 | `export_test.php` | 7 | Construtor da exportação de notas: campos da linha e nível derivado, ordenação por XP, teto de nível, exclusão de professores/gerentes, colunas localizadas sem jogadores, exclusão de não matriculados, desempate por última ação |
-| `items_test.php` | 15 | Ciclo de vida do item: toggle de ativação e no-op estrangeiro; conceder adiciona inventário + XP, 0 XP, rejeição estrangeira; revogar desconta XP, preserva drop infinito, no-op estrangeiro; revogar desconta o XP realmente registrado no momento da concessão, não o XP atual do item; detecção de trocas sobreviventes (troca aparada, órfã excluída, não relacionada ignorada); `find_xp_impact` soma só as cópias que realmente ganharam XP entre todos os detentores, vazio para item nunca possuído, e no-op para lista de ids vazia |
+| `items_test.php` | 16 | Ciclo de vida do item: toggle de ativação e no-op estrangeiro; conceder adiciona inventário + XP, 0 XP, rejeição estrangeira; revogar desconta XP, preserva drop infinito, no-op estrangeiro; revogar desconta o XP realmente registrado no momento da concessão, não o XP atual do item; detecção de trocas sobreviventes (troca aparada, órfã excluída, não relacionada ignorada); `find_xp_impact` soma só as cópias que realmente ganharam XP entre todos os detentores, vazio para item nunca possuído, e no-op para lista de ids vazia |
 | `manage_entry_points_test.php` | 20 | A metade HTTP dos controladores, exercitada pelo ciclo real de requisição (superglobais preenchidas como um navegador faria, `redirect()` capturado como `redirecterrordetected` sob CLI): as ações de excluir e excluir em lote de drops realmente removem as linhas, um id de drop de outra instância nunca é excluído, uma sesskey errada não exclui nada, a listagem renderiza só os drops da própria instância e cai num campo de ordenação seguro diante de um parâmetro `sort` forjado; excluir uma cena cascateia para suas escolhas, um nó de outro capítulo fica intacto, um capítulo de outra instância é rejeitado; coletar concede o item e seu XP, não paga XP em drop infinito, rejeita drop de outra instância, item desabilitado e sesskey inválida sem gravar nada; os editores de classe e troca rejeitam um registro de outra instância, e todas essas telas ficam fechadas para quem não tem `block/playerhud:manage` (ou `:view` no coletar) |
 | `quests_test.php` | 12 | Ciclo de vida da missão: toggle e no-op estrangeiro; excluir reverte XP por conclusão, sem recompensa, no-op estrangeiro; excluir e excluir em lote revertem o XP realmente registrado por conclusão, não a recompensa atual da quest; massa só dos próprios com reversão agregada de XP e contagem, entrada vazia; `find_xp_impact` soma só as conclusões que realmente ganharam XP entre todos os reivindicantes, vazio para quest nunca reivindicada, e no-op para lista de ids vazia |
 | `scenes_test.php` | 6 | Persistência de cena/escolha da história: salvar escolhas, atribuição de classe com normalização de ID string/int (regressão `set_class_id`), classe requerida, próximo nó, custo de item, criação de nó de continuação |
 | `suggestions_test.php` | 4 | Persistência de sugestões: só as missões marcadas são inseridas (e nenhuma selecionada), só as trocas marcadas são criadas com reqs/recompensas (e nenhuma selecionada) |
 | `trades_test.php` | 7 | Persistência de troca: salvar (inserir com reqs + recompensas, atualizar substitui, isolamento, item estrangeiro filtrado); excluir em cascata reqs/recompensas/log, isolamento, irmãos preservados |
-| **Subtotal** | **109** | |
+| **Subtotal** | **111** | |
 
 ### Testes de Saída / Renderer (`tests/output/`)
 
@@ -100,18 +101,18 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `manage/quest_delete_confirm_test.php` | 3 | Contexto de confirmação de exclusão de quest: exclusão única produz a ação `delete_quest_force` com o aviso de impacto de XP e o link de desabilitar-em-vez-de; exclusão em lote produz `bulk_delete_quests_force` com a lista de ids e nunca mostra o link de desabilitar mesmo com uma URL de alternância fornecida; sem impacto de XP omite tanto o aviso quanto o link |
 | `manage/tab_chapters_test.php` | 4 | Avisos de visibilidade do card de capítulo: sinalização de cena inicial ausente, texto e limites do aviso de nível acima do máximo |
 | `manage/tab_config_test.php` | 2 | Aba Config (resumo Economy Health): uma instância sem itens ou quests ainda exporta um resumo vazio bem formado, sem quebrar no `economy_health()`; um item com XP contribui pro detalhamento e pro total alcançável |
-| `manage/tab_reports_test.php` | 2 | Aba Relatórios: uma instância sem jogadores/itens/quests ainda exporta um resumo bem formado com o drill-down de auditoria inativo; `display()` renderiza HTML real de ponta a ponta pelo `$OUTPUT` global |
+| `manage/tab_reports_test.php` | 5 | Aba Relatórios: uma instância sem jogadores/itens/quests ainda exporta um resumo bem formado com o drill-down de auditoria inativo; `display()` renderiza HTML real de ponta a ponta pelo `$OUTPUT` global; mais de 30 logs de IA só exportam a primeira página (30) por padrão, mais recentes primeiro, e `ai_showall=1` retorna todos; o fallback de `inventory.source` sem lang string `report_src_*` correspondente é escapado (`s()`) no drill-down de auditoria, em vez de entrar cru no sink de triple-mustache `details_html` |
 | `view/header_test.php` | 2 | Cabeçalho do HUD: um jogador sem avatar equipado cai pra foto de perfil padrão, carregando nome/XP/nível sem badge de grupo (sem mod_playergroup); um item de avatar equipado substitui a foto de perfil padrão |
-| `view/tab_chapters_test.php` | 4 | Aba Capítulos: sem capítulos renderiza o estado vazio em vez de quebrar; um capítulo desbloqueado e não concluído é listado como disponível; um capítulo registrado na lista `completed_chapters` do jogador renderiza como concluído; um capítulo com data de desbloqueio futura renderiza como bloqueado |
+| `view/tab_chapters_test.php` | 5 | Aba Capítulos: sem capítulos renderiza o estado vazio em vez de quebrar; um capítulo desbloqueado e não concluído é listado como disponível; um capítulo registrado na lista `completed_chapters` do jogador renderiza como concluído; um capítulo com data de desbloqueio futura renderiza como bloqueado; um capítulo com `required_level` acima do nível do jogador também renderiza como bloqueado, coerente com a checagem que o servidor agora aplica |
 | `view/tab_class_select_test.php` | 3 | Aba de seleção de classe: sem classes configuradas renderiza o estado vazio em vez de quebrar; uma classe que o jogador ainda não escolheu é listada sem seleção; uma classe já escolhida pelo jogador é marcada como selecionada |
-| `view/tab_history_test.php` | 1 | Aba Log: um jogador sem eventos registrados ainda exporta um estado vazio bem formado, com os 5 cabeçalhos de coluna ordenável presentes |
+| `view/tab_history_test.php` | 2 | Aba Log: um jogador sem eventos registrados ainda exporta um estado vazio bem formado, com os 5 cabeçalhos de coluna ordenável presentes; o fallback de `inventory.source` sem lang string `report_src_*` correspondente é escapado (`s()`) em vez de entrar cru no sink de triple-mustache `details_html` |
 | `view/tab_quests_test.php` | 4 | Aba Quests: sem quests renderiza a notificação de vazio em vez de quebrar; uma quest concluída e não reivindicada é listada com ação de reivindicar; uma quest já reivindicada mostra a data de reivindicação em vez da ação; `get_type_label()` mapeia toda constante de tipo de quest pra um rótulo e cai no fallback pra um tipo não reconhecido |
 | `view/tab_ranking_test.php` | 4 | Aba Ranking: desabilitado na config do bloco encerra antes de tocar em qualquer dado de jogador; um estudante visível vê o conteúdo do ranking; um estudante oculto vê seu próprio toggle de privacidade mas não o ranking; um professor sempre vê o conteúdo com os controles de filtro exclusivos de professor ativos |
 | `view/tab_rules_test.php` | 2 | Aba Regras/ajuda: uma config sem `help_content` cai no template padrão do sistema, carregando as flags de recurso habilitado dos cards de ajuda padrão; `help_content` customizado com `use_default_help` desabilitado renderiza o conteúdo próprio do professor em vez do padrão |
 | `view/tab_shop_test.php` | 4 | Aba Loja: sem trocas renderiza o estado vazio em vez de quebrar; um estudante com o item exigido em quantidade suficiente pode pagar a troca; um estudante sem o item exigido não pode pagar; uma troca de uso único já concluída é marcada como tal |
-| **Subtotal** | **44** | |
+| **Subtotal** | **49** | |
 
-| **Total geral** | **612** | |
+| **Total geral** | **659** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -148,20 +149,21 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `external\generate_ai_content` | 77% |
 | `external\generate_class_oracle` | 67% |
 | `external\generate_story` | 75% |
-| `external\insert_drop_shortcode` | 87% |
+| `external\insert_drop_shortcode` | 91% |
 | `external\load_recap` | 100% |
 | `external\load_scene` | 79% |
 | `external\make_choice` | 79% |
 | `external\remove_drop_shortcode` | 84% |
 | `external\setup_playercoin_drop` | 90% |
-| `external\use_item` | 88% |
+| `external\use_item` | 82% |
 | `external\wizard_apply_suggested_levels` | 83% |
 | `external\wizard_generate` | 85% |
 | `external\wizard_list_runs` | 100% |
 | `external\wizard_rollback` | 100% |
 | `external\wizard_run_step` | 86% |
 | `external\wizard_start` | 99% |
-| `game` | 84% |
+| `form\edit_item_form` | 75% |
+| `game` | 92% |
 | `instance_cleanup` | 100% |
 | `local\analytics` | 92% |
 | `local\audit_log` | 78% |
@@ -174,35 +176,39 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `output\manage\quest_delete_confirm` | 100% |
 | `output\manage\tab_chapters` | 7% |
 | `output\manage\tab_config` | 81% |
-| `output\manage\tab_reports` | 37% |
+| `output\manage\tab_reports` | 80% |
 | `output\view\header` | 95% |
 | `output\view\tab_chapters` | 100% |
 | `output\view\tab_class_select` | 79% |
-| `output\view\tab_collection` | 68% |
-| `output\view\tab_history` | 60% |
+| `output\view\tab_collection` | 83% |
+| `output\view\tab_history` | 79% |
 | `output\view\tab_quests` | 79% |
 | `output\view\tab_ranking` | 64% |
 | `output\view\tab_rules` | 78% |
 | `output\view\tab_shop` | 92% |
-| `privacy\provider` | 96% |
+| `privacy\provider` | 97% |
 | `quest` | 90% |
-| `story_manager` | 61% |
+| `story_manager` | 74% |
 | `trade_manager` | 91% |
 | `utils` | 53% |
-| **Total** | **58%** |
+| **Total** | **62%** |
 
-68 das 86 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
+69 das 86 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
 observadores de evento e wrappers finos de output nunca carregados via `require` durante a
 execução desta suíte) não têm nenhum dado de cobertura e são omitidas em vez de aparecerem
 como um 0% enganoso.
 
 Os percentuais mais baixos da tabela refletem limites estruturais, não lacunas de teste:
 
-- `ai\generator` (6%) e os ramos de IA de `chat_message`/`execute_chat_action` chamam
+- `ai\generator` (12%) e os ramos de IA de `chat_message`/`execute_chat_action` chamam
   provedores externos reais via curl, sem camada de mock HTTP.
 - A metade AJAX de `collect::execute()` termina em `die()`, submissões reais de `moodleform`
   dependem do navegador, e o comportamento movido por JavaScript não existe no lado do
   servidor — tudo isso é coberto pela suíte Behat abaixo.
+- `external\use_item` (82%) tem um ramo de gate atômico contra corrida (consumir o item antes de
+  escrever a extensão de prazo) que só falha sob concorrência real de duas requisições — uma
+  limitação estrutural do PHPUnit de processo único documentada no próprio teste, verificada ao
+  vivo via requisições HTTP genuinamente concorrentes em vez de coberta aqui.
 
 ### Arquivos de Função Solta
 
@@ -212,20 +218,21 @@ entram no percentual do **Total**; medidos isoladamente:
 
 | Arquivo | Casos | Cobertura de linhas |
 |---------|------:|:--------------------:|
-| `lib.php` | 18 | 94% |
-| `db/upgrade.php` | 6 | 66% |
+| `lib.php` | 24 | 95% |
+| `db/upgrade.php` | 7 | 71% |
 
 - `lib.php` (`tests/lib_test.php`): as quatro funções são testadas diretamente —
   `block_playerhud_myprofile_navigation()` em todo ramo (sem curso, curso do site, sem instância
   do bloco, sem registro de jogador, gamificação desabilitada, jogador ativo com item recebe a
-  seção de perfil), `block_playerhud_get_drop_details_by_code()` (correspondência, código
+  seção de perfil, capability `block/playerhud:view`/`moodle/block:view` negada, opt-out
+  `ranking_visibility`), `block_playerhud_get_drop_details_by_code()` (correspondência, código
   desconhecido, instância estrangeira, item desabilitado) e `block_playerhud_is_visible_for_class()`
   (público, classe correspondente/não correspondente, '0' dentro de uma lista).
   `block_playerhud_pluginfile()` é coberta até o ponto em que um arquivo correspondente é
   encontrado de verdade — o único ramo que fica de fora chama `send_stored_file()`, que encerra
   o script, a mesma limitação estrutural já registrada pra metade AJAX do `collect::execute()`
   abaixo.
-- `db/upgrade.php` (`db_upgrade_test.php`): os 6 testes que carregam lógica real de migração de
+- `db/upgrade.php` (`db_upgrade_test.php`): os 7 testes que carregam lógica real de migração de
   dados chamam `xmldb_block_playerhud_upgrade()` diretamente, o que já basta pro Xdebug medir
   como qualquer outra chamada de função, mesmo o ambiente de teste do PHPUnit sempre instalando
   um schema novo a partir do `install.xml` e nunca executando o caminho automático de upgrade.
