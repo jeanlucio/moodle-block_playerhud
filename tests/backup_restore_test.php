@@ -112,8 +112,13 @@ final class backup_restore_test extends advanced_testcase {
         // the block instance.
         $course = $this->getDataGenerator()->create_course();
         $coursecontext = \context_course::instance($course->id);
-        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Page One']);
         $sourcecmid = $page->cmid;
+        // A second activity/item pair, so after_restore()'s batch-loaded $items map (keyed by
+        // the NEW item id) is exercised with more than one entry — a regression check that the
+        // batch lookup does not mix up which action_value belongs to which item.
+        $page2 = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Page Two']);
+        $sourcecmid2 = $page2->cmid;
 
         $bi = (object) [
             'blockname'         => 'playerhud',
@@ -145,6 +150,15 @@ final class backup_restore_test extends advanced_testcase {
             'name'            => 'Scroll of Reprieve',
             'action_type'     => 'deadline_extension',
             'action_value'    => json_encode(['days' => 2, 'cmid' => $sourcecmid]),
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'Scroll of Reprieve II',
+            'action_type'     => 'deadline_extension',
+            'action_value'    => json_encode(['days' => 5, 'cmid' => $sourcecmid2]),
             'timecreated'     => time(),
             'timemodified'    => time(),
         ]);
@@ -260,11 +274,17 @@ final class backup_restore_test extends advanced_testcase {
         );
         $this->assertSame('🧙', $restoredclass->emoji_tier1, 'Class emoji must be preserved.');
 
-        // The page module must have been remapped to a new cmid in the restored course.
+        // Both page modules must have been remapped to new cmids in the restored course.
         $restoredpages = get_fast_modinfo($newcourse->id)->get_instances_of('page');
-        $this->assertCount(1, $restoredpages, 'Page activity must be restored.');
-        $restoredcmid = (int) reset($restoredpages)->id;
+        $this->assertCount(2, $restoredpages, 'Both page activities must be restored.');
+        $restoredcmidsbyname = [];
+        foreach ($restoredpages as $restoredpage) {
+            $restoredcmidsbyname[$restoredpage->name] = (int) $restoredpage->id;
+        }
+        $restoredcmid = $restoredcmidsbyname['Page One'];
+        $restoredcmid2 = $restoredcmidsbyname['Page Two'];
         $this->assertNotSame($sourcecmid, $restoredcmid, 'Restored course module must get a new id.');
+        $this->assertNotSame($sourcecmid2, $restoredcmid2, 'Restored course module must get a new id.');
 
         $restoreditem = $DB->get_record(
             'block_playerhud_items',
@@ -278,6 +298,23 @@ final class backup_restore_test extends advanced_testcase {
             $restoredcmid,
             $restoredaction['cmid'],
             'The pinned cmid must be remapped to the restored activity, not leak the old course id.'
+        );
+
+        // Regression check for the security-audit N+1 finding: after_restore() now batch-loads
+        // every deferred item once instead of a get_record() per iteration. This second item
+        // proves that batch lookup correctly keeps each item's own cmid separate — not mixed up
+        // with the first item's, which a naive shared-variable refactor could easily get wrong.
+        $restoreditem2 = $DB->get_record(
+            'block_playerhud_items',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'Scroll of Reprieve II']
+        );
+        $this->assertNotFalse($restoreditem2, 'Second item power must be restored.');
+        $restoredaction2 = json_decode($restoreditem2->action_value, true);
+        $this->assertSame(5, $restoredaction2['days'], 'Second item extension duration must be preserved.');
+        $this->assertSame(
+            $restoredcmid2,
+            $restoredaction2['cmid'],
+            'The second item must be remapped to its OWN restored activity, not the first item\'s.'
         );
 
         $restoredtrade = $DB->get_record(

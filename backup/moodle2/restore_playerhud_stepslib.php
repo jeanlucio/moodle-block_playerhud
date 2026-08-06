@@ -594,12 +594,19 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
             }
         }
 
+        if (empty($this->deferreditemcmids)) {
+            return;
+        }
+
+        // Batch-load every deferred item once instead of a get_record() per iteration.
+        $items = $DB->get_records_list('block_playerhud_items', 'id', array_keys($this->deferreditemcmids));
+
         foreach ($this->deferreditemcmids as $itemid => $oldcmid) {
             $newcmid = $this->get_mappingid('course_module', $oldcmid);
             if (!$newcmid) {
                 continue;
             }
-            $item = $DB->get_record('block_playerhud_items', ['id' => $itemid]);
+            $item = $items[$itemid] ?? null;
             if (!$item || empty($item->action_value)) {
                 continue;
             }
