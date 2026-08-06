@@ -176,4 +176,46 @@ final class tab_reports_test extends advanced_testcase {
         $this->assertSame(1, $data['ai_showall']);
         $this->assertCount(35, $data['ai_logs']);
     }
+
+    /**
+     * Regression test for the security-audit finding: when inventory.source has no matching
+     * report_src_<source> lang string, the raw value was used unescaped as details_html, which
+     * the template renders via triple-mustache ({{{details_html}}}) — a live-HTML sink on the
+     * teacher's own Reports tab. The fallback must now be escaped.
+     */
+    public function test_export_for_template_audit_drilldown_escapes_unknown_source_fallback(): void {
+        global $DB;
+
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'Test Item',
+            'xp'              => 0,
+            'enabled'         => 1,
+            'tradable'        => 1,
+            'secret'          => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        // The inventory.source column is CHAR(20) — keep the payload within that limit.
+        $payload = '<img src=x>';
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid'      => 2,
+            'itemid'      => $itemid,
+            'dropid'      => 0,
+            'source'      => $payload,
+            'timecreated' => time(),
+            'xpawarded'   => 0,
+        ]);
+
+        $_GET['r_userid'] = 2;
+
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+
+        $this->assertTrue($data['is_audit']);
+        $this->assertNotEmpty($data['audit_logs']);
+        $this->assertStringNotContainsString('<img', $data['audit_logs'][0]['details_html']);
+        $this->assertStringContainsString('&lt;img', $data['audit_logs'][0]['details_html']);
+    }
 }

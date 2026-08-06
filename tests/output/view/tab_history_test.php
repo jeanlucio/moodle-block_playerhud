@@ -112,4 +112,49 @@ final class tab_history_test extends advanced_testcase {
         $this->assertArrayHasKey('xp', $data['headers']);
         $this->assertArrayHasKey('details', $data['headers']);
     }
+
+    /**
+     * Regression test for the security-audit finding: when inventory.source has no matching
+     * report_src_<source> lang string, the raw value was used unescaped as details_html, which
+     * the template renders via triple-mustache ({{{details_html}}}) — a live-HTML sink. The
+     * fallback must now be escaped, so a stray '<'/'>' in an unrecognised source value (e.g. a
+     * future third-party integrator's tag) can never be interpreted as markup.
+     */
+    public function test_export_for_template_escapes_unknown_source_fallback(): void {
+        global $DB;
+
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'Test Item',
+            'xp'              => 0,
+            'enabled'         => 1,
+            'tradable'        => 1,
+            'secret'          => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        // The inventory.source column is CHAR(20) — keep the payload within that limit.
+        $payload = '<img src=x>';
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid'      => $this->user->id,
+            'itemid'      => $itemid,
+            'dropid'      => 0,
+            'source'      => $payload,
+            'timecreated' => time(),
+            'xpawarded'   => 0,
+        ]);
+
+        $_GET['id'] = $this->course->id;
+
+        $config = new \stdClass();
+        $player = (object) ['userid' => $this->user->id];
+        $tab = new tab_history($config, $player, $this->instanceid);
+
+        $data = $tab->export_for_template($this->createMock(\core\output\core_renderer::class));
+
+        $this->assertTrue($data['has_logs']);
+        $this->assertStringNotContainsString('<img', $data['logs'][0]['details_html']);
+        $this->assertStringContainsString('&lt;img', $data['logs'][0]['details_html']);
+    }
 }

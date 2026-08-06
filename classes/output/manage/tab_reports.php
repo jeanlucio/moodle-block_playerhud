@@ -735,7 +735,7 @@ class tab_reports implements renderable, templatable {
             foreach ($logs as $log) {
                 $srckey = 'report_src_' . $log->details;
                 $detailtext = get_string_manager()->string_exists($srckey, 'block_playerhud') ?
-                    get_string($srckey, 'block_playerhud') : $log->details;
+                    get_string($srckey, 'block_playerhud') : s($log->details);
 
                 $badgeclass = 'bg-secondary text-white';
                 $badgetext  = get_string('report_type_other', 'block_playerhud');
