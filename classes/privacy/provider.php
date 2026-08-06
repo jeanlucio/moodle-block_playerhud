@@ -52,14 +52,25 @@ class provider implements
         $collection->add_user_preference('block_playerhud_avatar', 'privacy:metadata:preference:avatar');
         // Main User Data.
         $collection->add_database_table('block_playerhud_user', [
+            'blockinstanceid' => 'privacy:metadata:playerhud_user:blockinstanceid',
+            'userid' => 'privacy:metadata:playerhud_user:userid',
             'currentxp' => 'privacy:metadata:playerhud_user:currentxp',
+            'enable_gamification' => 'privacy:metadata:playerhud_user:enable_gamification',
             'ranking_visibility' => 'privacy:metadata:playerhud_user:ranking_visibility',
+            'last_inventory_view' => 'privacy:metadata:playerhud_user:last_inventory_view',
+            'last_shop_view' => 'privacy:metadata:playerhud_user:last_shop_view',
+            'milestones' => 'privacy:metadata:playerhud_user:milestones',
             'timecreated' => 'privacy:metadata:timecreated',
+            'timemodified' => 'privacy:metadata:timemodified',
         ], 'privacy:metadata:playerhud_user');
 
         // Inventory.
         $collection->add_database_table('block_playerhud_inventory', [
+            'userid' => 'privacy:metadata:inventory:userid',
             'itemid' => 'privacy:metadata:inventory:itemid',
+            'dropid' => 'privacy:metadata:inventory:dropid',
+            'source' => 'privacy:metadata:inventory:source',
+            'xpawarded' => 'privacy:metadata:inventory:xpawarded',
             'timecreated' => 'privacy:metadata:timecreated',
         ], 'privacy:metadata:inventory');
 
@@ -210,7 +221,8 @@ class provider implements
             "userid = :userid AND blockinstanceid $insql",
             $params,
             '',
-            'blockinstanceid, currentxp, enable_gamification, timecreated'
+            'blockinstanceid, currentxp, enable_gamification, ranking_visibility, ' .
+                'last_inventory_view, last_shop_view, milestones, timecreated, timemodified'
         );
 
         // 3. Bulk fetch RPG Progress.
@@ -223,7 +235,8 @@ class provider implements
         );
 
         // 4. Bulk fetch Inventory.
-        $sqlinv = "SELECT inv.id, it.blockinstanceid, inv.itemid, inv.timecreated
+        $sqlinv = "SELECT inv.id, it.blockinstanceid, inv.itemid, inv.dropid, inv.source,
+                          inv.xpawarded, inv.timecreated
                      FROM {block_playerhud_inventory} inv
                      JOIN {block_playerhud_items} it ON inv.itemid = it.id
                     WHERE inv.userid = :userid AND it.blockinstanceid $insql";
@@ -235,6 +248,9 @@ class provider implements
             foreach ($inventoryrecords as $inv) {
                 $inventorybyinstance[$inv->blockinstanceid][] = [
                     'item_id' => $inv->itemid,
+                    'drop_id' => $inv->dropid,
+                    'source' => $inv->source,
+                    'xp_awarded' => $inv->xpawarded,
                     'collected_on' => transform::datetime($inv->timecreated),
                 ];
             }
@@ -328,7 +344,14 @@ class provider implements
                     (object) [
                         'currentxp' => $player->currentxp,
                         'level_progress' => $player->enable_gamification ? get_string('yes') : get_string('no'),
+                        'ranking_visible' => $player->ranking_visibility ? get_string('yes') : get_string('no'),
+                        'last_inventory_view' => $player->last_inventory_view
+                            ? transform::datetime($player->last_inventory_view) : '-',
+                        'last_shop_view' => $player->last_shop_view
+                            ? transform::datetime($player->last_shop_view) : '-',
+                        'milestones' => $player->milestones,
                         'joined' => transform::datetime($player->timecreated),
+                        'modified' => transform::datetime($player->timemodified),
                     ]
                 );
             }

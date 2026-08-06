@@ -423,6 +423,73 @@ final class privacy_provider_test extends advanced_testcase {
     }
 
     /**
+     * Test that every column of block_playerhud_user is declared in the privacy metadata.
+     * Regression test for the security-audit finding: the declared fields had drifted out of
+     * sync with the real schema (enable_gamification, last_inventory_view, last_shop_view,
+     * milestones, timemodified were all missing). A per-key assertion would not catch a
+     * column added later without a matching declaration, so this compares the declared
+     * fields against the table's real columns instead.
+     */
+    public function test_get_metadata_declares_all_playerhud_user_columns(): void {
+        global $DB;
+
+        $collection = provider::get_metadata(new collection('block_playerhud'));
+
+        $tableitem = null;
+        foreach ($collection->get_collection() as $item) {
+            if ($item->get_name() === 'block_playerhud_user') {
+                $tableitem = $item;
+                break;
+            }
+        }
+        $this->assertNotNull($tableitem, 'block_playerhud_user must be declared in the privacy metadata.');
+
+        $declaredfields = array_keys($tableitem->get_privacy_fields());
+        $realcolumns = array_diff(array_keys($DB->get_columns('block_playerhud_user')), ['id']);
+
+        sort($declaredfields);
+        sort($realcolumns);
+        $this->assertEquals(
+            $realcolumns,
+            $declaredfields,
+            'Every column of block_playerhud_user, except id, must be declared in the privacy metadata.'
+        );
+    }
+
+    /**
+     * Test that every column of block_playerhud_inventory is declared in the privacy metadata.
+     * Regression test for the security-audit finding: dropid, source, userid and xpawarded
+     * were all missing from the declaration. A per-key assertion would not catch a column
+     * added later without a matching declaration, so this compares the declared fields
+     * against the table's real columns instead.
+     */
+    public function test_get_metadata_declares_all_inventory_columns(): void {
+        global $DB;
+
+        $collection = provider::get_metadata(new collection('block_playerhud'));
+
+        $tableitem = null;
+        foreach ($collection->get_collection() as $item) {
+            if ($item->get_name() === 'block_playerhud_inventory') {
+                $tableitem = $item;
+                break;
+            }
+        }
+        $this->assertNotNull($tableitem, 'block_playerhud_inventory must be declared in the privacy metadata.');
+
+        $declaredfields = array_keys($tableitem->get_privacy_fields());
+        $realcolumns = array_diff(array_keys($DB->get_columns('block_playerhud_inventory')), ['id']);
+
+        sort($declaredfields);
+        sort($realcolumns);
+        $this->assertEquals(
+            $realcolumns,
+            $declaredfields,
+            'Every column of block_playerhud_inventory, except id, must be declared in the privacy metadata.'
+        );
+    }
+
+    /**
      * Test that every column of block_playerhud_ai_logs is declared in the privacy metadata.
      * A per-key assertion would not catch a column added later without a matching declaration,
      * so this compares the declared fields against the table's real columns instead.
@@ -549,19 +616,30 @@ final class privacy_provider_test extends advanced_testcase {
 
         $pluginname = get_string('pluginname', 'block_playerhud');
 
-        // A. General profile.
+        // A. General profile. ranking_visible/last_*_view/milestones/modified are asserted
+        // here as a regression check: these fields are declared in get_metadata() but were
+        // never actually populated by export_user_data() before the security-audit fix.
         $profile = $writer->get_data([$pluginname, get_string('profile')]);
         $this->assertEquals(5000, $profile->currentxp);
+        $this->assertEquals(get_string('yes'), $profile->ranking_visible);
+        $this->assertEquals('-', $profile->last_inventory_view);
+        $this->assertEquals('-', $profile->last_shop_view);
+        $this->assertEquals(0, $profile->milestones);
+        $this->assertNotEmpty($profile->modified);
 
         // B. RPG progress.
         $rpg = $writer->get_data([$pluginname, get_string('privacy_export_rpg', 'block_playerhud')]);
         $this->assertEquals(7, $rpg->class_id);
         $this->assertEquals(42, $rpg->karma);
 
-        // C. Inventory.
+        // C. Inventory. drop_id/source/xp_awarded are the same kind of regression check as
+        // the profile fields above.
         $inventory = $writer->get_data([$pluginname, get_string('tab_collection', 'block_playerhud')]);
         $this->assertCount(1, $inventory->items);
         $this->assertEquals($this->itemid, $inventory->items[0]['item_id']);
+        $this->assertEquals(0, $inventory->items[0]['drop_id']);
+        $this->assertEquals('test', $inventory->items[0]['source']);
+        $this->assertEquals(0, $inventory->items[0]['xp_awarded']);
 
         // D. Quest logs.
         $quests = $writer->get_data([$pluginname, get_string('privacy_export_quest_log', 'block_playerhud')]);
