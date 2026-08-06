@@ -215,4 +215,38 @@ final class db_upgrade_test extends advanced_testcase {
 
         $this->assertEquals(25, $DB->get_field('block_playerhud_quest_log', 'xpawarded', ['id' => $logid]));
     }
+
+    /**
+     * Regression test for the N+1 performance finding: the code-backfill step must still
+     * assign a unique, non-empty code to a drop that lacks one, and that code must not
+     * collide with a code the instance already holds — the schema's own unique index
+     * (blockinstanceid, code) means a second pre-existing empty-code row cannot even be
+     * inserted as a fixture here to test collision between two backfilled codes directly, but
+     * the code path is identical for both cases (checked against the same in-memory set).
+     */
+    public function test_upgrade_backfills_a_unique_drop_code(): void {
+        global $DB;
+
+        $itemid = $this->create_item('Chest');
+        $existingcode = 'AAAAAA';
+        $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $this->instanceid, 'itemid' => $itemid, 'name' => 'Has code',
+            'maxusage' => 1, 'respawntime' => 0, 'code' => $existingcode,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $needscodeid = $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $this->instanceid, 'itemid' => $itemid, 'name' => 'Needs code',
+            'maxusage' => 1, 'respawntime' => 0, 'code' => '',
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        $this->set_current_version(2026062303);
+        xmldb_block_playerhud_upgrade(2026062303);
+
+        $code = $DB->get_field('block_playerhud_drops', 'code', ['id' => $needscodeid]);
+
+        $this->assertNotEmpty($code);
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]{6}$/', $code);
+        $this->assertNotEquals($existingcode, $code, 'A backfilled code must not collide with a pre-existing one.');
+    }
 }

@@ -139,15 +139,25 @@ function xmldb_block_playerhud_upgrade($oldversion) {
             'code IS NULL OR code = :empty',
             ['empty' => '']
         );
+
+        // Existing codes per blockinstanceid, loaded once so each collision check below is an
+        // in-memory lookup instead of a record_exists() round-trip — a site with years of
+        // accumulated drops previously paid at least 2 DB calls per row (more on any hash
+        // collision) just to find a free code.
+        $codesbyinstance = [];
+        $existingcodes = $DB->get_records_sql(
+            "SELECT id, blockinstanceid, code FROM {block_playerhud_drops} WHERE code IS NOT NULL AND code <> ''"
+        );
+        foreach ($existingcodes as $existing) {
+            $codesbyinstance[$existing->blockinstanceid][$existing->code] = true;
+        }
+
         foreach ($drops as $drop) {
-            $exists = true;
-            while ($exists) {
+            do {
                 $code = strtoupper(random_string(6));
-                $exists = $DB->record_exists('block_playerhud_drops', [
-                    'blockinstanceid' => $drop->blockinstanceid,
-                    'code' => $code,
-                ]);
-            }
+            } while (isset($codesbyinstance[$drop->blockinstanceid][$code]));
+
+            $codesbyinstance[$drop->blockinstanceid][$code] = true;
             $DB->set_field('block_playerhud_drops', 'code', $code, ['id' => $drop->id]);
         }
 
@@ -270,18 +280,20 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         // the column and is safe to backfill unconditionally. This does not recover a row where
         // the item was edited after the historical grant — that number is unrecoverable without
         // forensic log reconstruction — but it preserves whatever accuracy already existed
-        // instead of collapsing every pre-existing row to 0.
-        $sql = "SELECT inv.id, i.xp
-                  FROM {block_playerhud_inventory} inv
-                  JOIN {block_playerhud_items} i ON i.id = inv.itemid
-             LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
-                 WHERE inv.source IN ('map', 'teacher', 'revoked')
-                   AND i.xp > 0
-                   AND COALESCE(d.maxusage, 1) > 0";
-        $rows = $DB->get_records_sql($sql);
-        foreach ($rows as $row) {
-            $DB->set_field('block_playerhud_inventory', 'xpawarded', $row->xp, ['id' => $row->id]);
-        }
+        // instead of collapsing every pre-existing row to 0. A single correlated-subquery
+        // UPDATE, same pattern as the quest_log backfill below (2026070903), instead of one
+        // set_field() round-trip per matching row.
+        $DB->execute(
+            "UPDATE {block_playerhud_inventory}
+                SET xpawarded = (
+                    SELECT i.xp FROM {block_playerhud_items} i WHERE i.id = itemid
+                )
+              WHERE source IN ('map', 'teacher', 'revoked')
+                AND itemid IN (SELECT id FROM {block_playerhud_items} WHERE xp > 0)
+                AND COALESCE(
+                    (SELECT d.maxusage FROM {block_playerhud_drops} d WHERE d.id = dropid), 1
+                ) > 0"
+        );
 
         upgrade_block_savepoint(true, 2026070901, 'playerhud');
     }
@@ -303,19 +315,22 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         );
 
         if ($cutoff) {
-            $sql = "SELECT inv.id, i.xp
-                      FROM {block_playerhud_inventory} inv
-                      JOIN {block_playerhud_items} i ON i.id = inv.itemid
-                 LEFT JOIN {block_playerhud_drops} d ON inv.dropid = d.id
-                     WHERE inv.source IN ('map', 'teacher', 'revoked')
-                       AND inv.xpawarded = 0
-                       AND inv.timecreated < :cutoff
-                       AND i.xp > 0
-                       AND COALESCE(d.maxusage, 1) > 0";
-            $rows = $DB->get_records_sql($sql, ['cutoff' => $cutoff]);
-            foreach ($rows as $row) {
-                $DB->set_field('block_playerhud_inventory', 'xpawarded', $row->xp, ['id' => $row->id]);
-            }
+            // Single correlated-subquery UPDATE instead of one set_field() round-trip per
+            // matching row, same pattern as the block above.
+            $DB->execute(
+                "UPDATE {block_playerhud_inventory}
+                    SET xpawarded = (
+                        SELECT i.xp FROM {block_playerhud_items} i WHERE i.id = itemid
+                    )
+                  WHERE source IN ('map', 'teacher', 'revoked')
+                    AND xpawarded = 0
+                    AND timecreated < :cutoff
+                    AND itemid IN (SELECT id FROM {block_playerhud_items} WHERE xp > 0)
+                    AND COALESCE(
+                        (SELECT d.maxusage FROM {block_playerhud_drops} d WHERE d.id = dropid), 1
+                    ) > 0",
+                ['cutoff' => $cutoff]
+            );
         }
 
         upgrade_block_savepoint(true, 2026070902, 'playerhud');
