@@ -214,6 +214,12 @@ class edit_item_form extends \moodleform {
         if (!is_numeric($data['xp'])) {
             $errors['xp'] = get_string('validate_number', 'core');
         }
+        // Defense in depth: the image field can hold a raw URL (rendered as an <img src>
+        // client-side), so reject anything that does not survive PARAM_URL cleaning.
+        $image = (string) ($data['image'] ?? '');
+        if (strpos($image, 'http') === 0 && clean_param($image, PARAM_URL) === '') {
+            $errors['image'] = get_string('itemimage_invalidurl', 'block_playerhud');
+        }
         return $errors;
     }
 }

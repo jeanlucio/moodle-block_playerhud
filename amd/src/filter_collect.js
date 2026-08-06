@@ -79,13 +79,12 @@ const updateStash = (itemData) => {
         stash.children().filter((i, el) => $(el).attr('data-name') === itemData.name).remove();
 
         const isImage = String(itemData.isimage) === '1';
-        let contentHtml = '';
 
-        if (isImage) {
-            contentHtml = `<img src="${itemData.image}" alt="" class="ph-mini-item-img rounded-0">`;
-        } else {
-            contentHtml = `<span class="ph-emoji" aria-hidden="true">${itemData.image}</span>`;
-        }
+        // Built via DOM methods (never string concatenation) so a stored item.image value can
+        // never be interpreted as markup, regardless of what it contains.
+        const content = isImage ?
+            $('<img>', {src: itemData.image, alt: '', 'class': 'ph-mini-item-img rounded-0'}) :
+            $('<span>', {'class': 'ph-emoji', 'aria-hidden': 'true'}).text(itemData.image);
 
         const newItem = $('<div>', {
             'class': 'ph-mini-item ph-item-trigger',
@@ -102,7 +101,7 @@ const updateStash = (itemData) => {
         });
 
         newItem.append(`<div class="d-none ph-item-description-content">${itemData.description || ''}</div>`);
-        newItem.append(contentHtml);
+        newItem.append(content);
 
         newItem.hide().prependTo(stash).fadeIn();
 

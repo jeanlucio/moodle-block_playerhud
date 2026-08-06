@@ -48,7 +48,6 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
 
                 const param = 'code=' + currentDropCode;
                 let code = '[PLAYERHUD_DROP ' + param + ']';
-                let previewHtml = '';
 
                 // Handle visibility and preview generation based on selected mode.
                 if (mode === 'text') {
@@ -76,13 +75,14 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
 
                     code = '[PLAYERHUD_DROP ' + param + ' mode=image]';
 
-                    // Server-sourced values: url and content are sanitised by PHP before reaching JS.
-                    const imgContent = currentItem.isImage ?
-                        `<img src="${currentItem.url}" class="ph-gen-img-lg" alt="">` :
-                        `<span class="ph-gen-emoji-lg" aria-hidden="true">${currentItem.content}</span>`;
+                    // Built via DOM methods (never string concatenation) so a stored item
+                    // url/content value can never be interpreted as markup.
+                    const $imgContent = currentItem.isImage ?
+                        $('<img>', {src: currentItem.url, 'class': 'ph-gen-img-lg', alt: ''}) :
+                        $('<span>', {'class': 'ph-gen-emoji-lg', 'aria-hidden': 'true'}).text(currentItem.content);
 
-                    previewHtml = `<div class="ph-gen-preview-wrapper-img">${imgContent}</div>`;
-                    $previewBox.html(previewHtml);
+                    const $wrapper = $('<div>', {'class': 'ph-gen-preview-wrapper-img'}).append($imgContent);
+                    $previewBox.empty().append($wrapper);
 
                 } else {
                     // Card Mode.
@@ -106,13 +106,13 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
 
                     // Build card preview with jQuery DOM methods so user-typed text and
                     // server item data are never interpreted as HTML markup.
-                    const iconHtml = currentItem.isImage ?
-                        `<img src="${currentItem.url}" class="ph-icon-contain" alt="">` :
-                        `<div class="fs-1 lh-1">${currentItem.content}</div>`;
+                    const $iconContent = currentItem.isImage ?
+                        $('<img>', {src: currentItem.url, 'class': 'ph-icon-contain', alt: ''}) :
+                        $('<div>', {'class': 'fs-1 lh-1'}).text(currentItem.content);
 
                     const $card = $('<div>', {'class': 'ph-gen-preview-real-card card p-2 border shadow-sm position-relative'});
                     $('<div>', {'class': 'mb-2 d-flex align-items-center justify-content-center ph-h-60'})
-                        .html(iconHtml).appendTo($card);
+                        .append($iconContent).appendTo($card);
                     $('<strong>', {'class': 'd-block mb-2 text-truncate ph-fs-09'})
                         .text(currentItem.name).appendTo($card);
 

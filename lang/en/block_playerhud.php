@@ -496,6 +496,7 @@ $string['item_xp'] = 'XP Value';
 $string['item_xp_edit_warning'] = '{$a} student(s) already have this item; changing its XP value does not affect what they already earned.';
 $string['itemimage_emoji'] = 'Emoji or Image URL';
 $string['itemimage_emoji_help'] = 'Use this field if you don\'t want to upload a file.<br>You can paste an Emoji (e.g. 🛡️, 🧪) or a direct link to an image on the web.<br><b>Note:</b> If you upload a file below, this field will be ignored.';
+$string['itemimage_invalidurl'] = 'Invalid image URL.';
 $string['itemname'] = 'Item Name';
 $string['itemnotfound'] = 'Item not found or inactive.';
 $string['items'] = 'Items:';
