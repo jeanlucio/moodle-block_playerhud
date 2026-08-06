@@ -287,11 +287,15 @@ class story_manager {
             throw new \moodle_exception('story_error_karma_required', 'block_playerhud');
         }
 
-        // Item cost: validate and consume.
+        // Item cost: validate and consume. Excludes 'revoked'/'consumed' rows, matching
+        // trade_manager::execute_trade() and game::get_inventory() — otherwise a copy already
+        // spent in a trade (source flipped to 'consumed', row not deleted) or soft-revoked by
+        // a teacher could be spent here a second time.
         if ($choice->cost_itemid > 0) {
             $qtyneeded = max(1, (int) $choice->cost_item_qty);
-            $inventory = $DB->get_records(
+            $inventory = $DB->get_records_select(
                 'block_playerhud_inventory',
+                "userid = :userid AND itemid = :itemid AND source NOT IN ('revoked', 'consumed')",
                 ['userid' => $userid, 'itemid' => $choice->cost_itemid],
                 'timecreated ASC',
                 'id',
@@ -591,14 +595,16 @@ class story_manager {
             ? $DB->get_records_list('block_playerhud_items', 'id', $itemids)
             : [];
 
-        // Bulk-fetch inventory counts for cost items (one query, not N+1).
+        // Bulk-fetch inventory counts for cost items (one query, not N+1). Excludes
+        // 'revoked'/'consumed' rows so the affordability shown here agrees with what
+        // make_choice() actually accepts as payment.
         $invcounts = [];
         if (!$ispreview && !empty($itemids)) {
             [$insql, $inparams] = $DB->get_in_or_equal(array_values($itemids));
             $inparams[] = $userid;
             $sql = "SELECT itemid, COUNT(id) AS cnt
                       FROM {block_playerhud_inventory}
-                     WHERE itemid $insql AND userid = ?
+                     WHERE itemid $insql AND userid = ? AND source NOT IN ('revoked', 'consumed')
                   GROUP BY itemid";
             foreach ($DB->get_records_sql($sql, $inparams) as $row) {
                 $invcounts[(int) $row->itemid] = (int) $row->cnt;

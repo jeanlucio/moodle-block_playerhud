@@ -108,13 +108,17 @@ final class story_manager_test extends advanced_testcase {
      * @param string $text    Choice label text.
      * @param int $nextnodeid Destination node ID (0 = terminal).
      * @param int $karmadelta Karma change when this choice is made.
+     * @param int $costitemid Item required to make this choice (0 = no cost).
+     * @param int $costqty    Quantity of the cost item required.
      * @return \stdClass The created choice record.
      */
     protected function create_choice(
         int $nodeid,
         string $text,
         int $nextnodeid = 0,
-        int $karmadelta = 0
+        int $karmadelta = 0,
+        int $costitemid = 0,
+        int $costqty = 1
     ): \stdClass {
         global $DB;
 
@@ -126,11 +130,54 @@ final class story_manager_test extends advanced_testcase {
             'req_karma_min' => 0,
             'karma_delta'  => $karmadelta,
             'set_class_id' => 0,
-            'cost_itemid'  => 0,
-            'cost_item_qty' => 1,
+            'cost_itemid'  => $costitemid,
+            'cost_item_qty' => $costqty,
         ];
         $choice->id = $DB->insert_record('block_playerhud_choices', $choice);
         return $choice;
+    }
+
+    /**
+     * Inserts an item row for this block instance.
+     *
+     * @param string $name Item name.
+     * @return \stdClass The created item record.
+     */
+    protected function create_item(string $name): \stdClass {
+        global $DB;
+
+        $item = (object) [
+            'blockinstanceid' => $this->instanceid,
+            'name'            => $name,
+            'xp'              => 0,
+            'enabled'         => 1,
+            'tradable'        => 1,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ];
+        $item->id = $DB->insert_record('block_playerhud_items', $item);
+        return $item;
+    }
+
+    /**
+     * Inserts an inventory row for a user, with the given source tag.
+     *
+     * @param int $userid Holder user ID.
+     * @param int $itemid Item held.
+     * @param string $source Inventory source tag (e.g. 'teacher', 'consumed', 'revoked').
+     * @return int The new inventory row ID.
+     */
+    protected function add_inventory(int $userid, int $itemid, string $source): int {
+        global $DB;
+
+        return (int) $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid'      => $userid,
+            'itemid'      => $itemid,
+            'dropid'      => 0,
+            'source'      => $source,
+            'timecreated' => time(),
+            'xpawarded'   => 0,
+        ]);
     }
 
     /**
@@ -537,5 +584,78 @@ final class story_manager_test extends advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertEquals('story_error_invalid_choice', $e->errorcode);
         }
+    }
+
+    /**
+     * Regression test for the security-audit finding: a 'consumed' (already spent in a trade)
+     * or 'revoked' (soft-revoked by a teacher) inventory row must not be accepted as payment
+     * for an item-cost choice — matching trade_manager::execute_trade() and
+     * game::get_inventory(), which both exclude those sources.
+     */
+    public function test_make_choice_rejects_consumed_and_revoked_inventory_as_payment(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_item('Story Key');
+        $this->add_inventory($user->id, $item->id, 'consumed');
+        $this->add_inventory($user->id, $item->id, 'revoked');
+
+        $chapter = $this->create_chapter('Gated Chapter');
+        $nodea = $this->create_node($chapter->id, 'Start', true);
+        $choice = $this->create_choice($nodea->id, 'Use key', 0, 0, $item->id, 1);
+
+        try {
+            story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+            $this->fail('Expected story_error_need_item exception not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertEquals('story_error_need_item', $e->errorcode);
+        }
+    }
+
+    /**
+     * A genuinely held (not consumed/revoked) inventory copy is still accepted as payment and
+     * consumed exactly once — confirms the source filter does not break the legitimate path.
+     */
+    public function test_make_choice_accepts_valid_inventory_as_payment(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_item('Story Key');
+        $this->add_inventory($user->id, $item->id, 'teacher');
+
+        $chapter = $this->create_chapter('Gated Chapter');
+        $nodea = $this->create_node($chapter->id, 'Start', true);
+        $choice = $this->create_choice($nodea->id, 'Use key', 0, 0, $item->id, 1);
+
+        $result = story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+
+        $this->assertTrue($result['finished']);
+        $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id, 'itemid' => $item->id]));
+    }
+
+    /**
+     * prepare_node_data() (via load_scene) must disable a cost-gated choice when the only
+     * matching inventory rows are 'consumed'/'revoked' — otherwise the UI would show the
+     * choice as affordable while make_choice() correctly rejects it, a confusing mismatch.
+     */
+    public function test_load_scene_disables_choice_when_only_consumed_inventory_held(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_item('Story Key');
+        $this->add_inventory($user->id, $item->id, 'consumed');
+
+        $chapter = $this->create_chapter('Gated Chapter');
+        $nodea = $this->create_node($chapter->id, 'Start', true);
+        $this->create_choice($nodea->id, 'Use key', 0, 0, $item->id, 1);
+
+        $result = story_manager::load_scene($this->instanceid, $user->id, $chapter->id);
+
+        $this->assertTrue($result['node']['choices'][0]['disabled']);
     }
 }
