@@ -611,6 +611,17 @@ class game {
 
         $rawusers = $DB->get_records_sql($sql, ['pid' => $blockinstanceid, 'enrolcourseid' => $courseid]);
 
+        // Membership set for the teacher's group filter, built once from the map already
+        // loaded above instead of a groups_is_member() DB call per ranked user.
+        $filtergroupmemberids = [];
+        if ($isteacher && $filtergroup > 0) {
+            foreach ($usergroupsmap as $mapuserid => $mapgroups) {
+                if (in_array($filtergroup, array_column($mapgroups, 'id'))) {
+                    $filtergroupmemberids[$mapuserid] = true;
+                }
+            }
+        }
+
         $individualranking = [];
         $coursecontext = \context_course::instance($courseid);
 
@@ -634,7 +645,7 @@ class game {
             }
 
             // Teacher group filter: skip users outside the selected group.
-            if ($isteacher && $filtergroup > 0 && !groups_is_member($filtergroup, $usr->userid)) {
+            if ($isteacher && $filtergroup > 0 && !isset($filtergroupmemberids[$usr->userid])) {
                 continue;
             }
 
@@ -730,6 +741,10 @@ class game {
             $params = array_merge([$blockinstanceid], $gparams);
             $allgroupstats = $DB->get_records_sql($sqlgrp, $params);
 
+            // Current user's own group IDs, from the map already loaded above instead of a
+            // groups_is_member() DB call per course group.
+            $mygroupids = array_column($usergroupsmap[$currentuserid] ?? [], 'id');
+
             foreach ($groups as $grp) {
                 if (isset($allgroupstats[$grp->id]) && $allgroupstats[$grp->id]->qtd > 0) {
                     $stat = $allgroupstats[$grp->id];
@@ -741,7 +756,7 @@ class game {
                     $gobj->average_xp = $avg;
                     $gobj->last_xp_change = (int)$stat->last_xp_change;
                     $gobj->member_count = $stat->qtd;
-                    $gobj->is_my_group = groups_is_member($grp->id, $currentuserid);
+                    $gobj->is_my_group = in_array((int) $grp->id, $mygroupids, true);
 
                     $badge = $groupbadges[(int) $grp->id] ?? '';
                     $gobj->badge = $badge;

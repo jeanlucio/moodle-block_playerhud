@@ -629,6 +629,104 @@ final class game_test extends advanced_testcase {
     }
 
     /**
+     * Regression test for the group ranking's is_my_group flag, refactored from a per-group
+     * groups_is_member() DB call to a lookup against the already-loaded membership map
+     * (performance finding from the security audit). Must still correctly flag only the
+     * group(s) the viewing user actually belongs to.
+     */
+    public function test_get_leaderboard_group_ranking_flags_my_group_correctly(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => $coursecontext->id,
+            'showinsubcontexts' => 0, 'pagetypepattern' => 'course-view-*', 'subpagepattern' => null,
+            'defaultregion' => 'side-pre', 'defaultweight' => 0,
+            'configdata' => base64_encode(serialize(new \stdClass())),
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        $student = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $this->getDataGenerator()->enrol_user($other->id, $course->id, 'student');
+
+        $mygroup = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $othergroup = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $this->getDataGenerator()->create_group_member(['groupid' => $mygroup->id, 'userid' => $student->id]);
+        $this->getDataGenerator()->create_group_member(['groupid' => $othergroup->id, 'userid' => $other->id]);
+
+        $now = time();
+        foreach ([$student->id, $other->id] as $uid) {
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid' => $instanceid, 'userid' => $uid, 'currentxp' => 100,
+                'ranking_visibility' => 1, 'enable_gamification' => 1,
+                'timecreated' => $now, 'timemodified' => $now,
+            ]);
+        }
+
+        $result = game::get_leaderboard($instanceid, $course->id, $student->id, false);
+        $groupsbyid = [];
+        foreach ($result['groups'] as $g) {
+            $groupsbyid[$g->id] = $g;
+        }
+
+        $this->assertTrue($groupsbyid[$mygroup->id]->is_my_group, 'The viewing user\'s own group must be flagged.');
+        $this->assertFalse(
+            $groupsbyid[$othergroup->id]->is_my_group,
+            'A group the viewing user does not belong to must not be flagged.'
+        );
+    }
+
+    /**
+     * Regression test for the teacher group filter, refactored from a per-user
+     * groups_is_member() DB call to a lookup against the already-loaded membership map
+     * (performance finding from the security audit). Must still correctly restrict the
+     * individual ranking to members of the filtered group only.
+     */
+    public function test_get_leaderboard_teacher_filtergroup_restricts_to_members(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => $coursecontext->id,
+            'showinsubcontexts' => 0, 'pagetypepattern' => 'course-view-*', 'subpagepattern' => null,
+            'defaultregion' => 'side-pre', 'defaultweight' => 0,
+            'configdata' => base64_encode(serialize(new \stdClass())),
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        $teacher = $this->getDataGenerator()->create_user();
+        $inmember = $this->getDataGenerator()->create_user();
+        $outmember = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->getDataGenerator()->enrol_user($inmember->id, $course->id, 'student');
+        $this->getDataGenerator()->enrol_user($outmember->id, $course->id, 'student');
+
+        $targetgroup = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $this->getDataGenerator()->create_group_member(['groupid' => $targetgroup->id, 'userid' => $inmember->id]);
+
+        $now = time();
+        foreach ([$inmember->id, $outmember->id] as $uid) {
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid' => $instanceid, 'userid' => $uid, 'currentxp' => 100,
+                'ranking_visibility' => 1, 'enable_gamification' => 1,
+                'timecreated' => $now, 'timemodified' => $now,
+            ]);
+        }
+
+        $result = game::get_leaderboard($instanceid, $course->id, $teacher->id, true, (int) $targetgroup->id);
+        $rankeduserids = array_map('intval', array_column($result['individual'], 'userid'));
+
+        $this->assertContains((int) $inmember->id, $rankeduserids, 'Member of the filtered group must appear.');
+        $this->assertNotContains((int) $outmember->id, $rankeduserids, 'Non-member of the filtered group must not appear.');
+    }
+
+    /**
      * xp_to_level maps XP to the configured level, clamped to the cap.
      */
     public function test_xp_to_level(): void {
