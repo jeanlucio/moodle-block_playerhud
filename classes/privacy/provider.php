@@ -76,20 +76,27 @@ class provider implements
 
         // RPG Progress (Karma, Classes, Story).
         $collection->add_database_table('block_playerhud_rpg_progress', [
+            'blockinstanceid' => 'privacy:metadata:rpg:blockinstanceid',
+            'userid' => 'privacy:metadata:rpg:userid',
             'classid' => 'privacy:metadata:rpg:classid',
             'karma' => 'privacy:metadata:rpg:karma',
             'current_nodes' => 'privacy:metadata:rpg:nodes',
             'completed_chapters' => 'privacy:metadata:rpg:chapters',
+            'timecreated' => 'privacy:metadata:timecreated',
+            'timemodified' => 'privacy:metadata:timemodified',
         ], 'privacy:metadata:rpg');
 
         // Logs.
         $collection->add_database_table('block_playerhud_quest_log', [
             'questid' => 'privacy:metadata:quest_log:questid',
+            'userid' => 'privacy:metadata:quest_log:userid',
+            'xpawarded' => 'privacy:metadata:quest_log:xpawarded',
             'timecreated' => 'privacy:metadata:timecreated',
         ], 'privacy:metadata:quest_log');
 
         $collection->add_database_table('block_playerhud_trade_log', [
             'tradeid' => 'privacy:metadata:trade_log:tradeid',
+            'userid' => 'privacy:metadata:trade_log:userid',
             'timecreated' => 'privacy:metadata:timecreated',
         ], 'privacy:metadata:trade_log');
 
@@ -231,7 +238,7 @@ class provider implements
             "userid = :userid AND blockinstanceid $insql",
             $params,
             '',
-            'blockinstanceid, classid, karma, current_nodes, completed_chapters'
+            'blockinstanceid, classid, karma, current_nodes, completed_chapters, timecreated, timemodified'
         );
 
         // 4. Bulk fetch Inventory.
@@ -257,7 +264,7 @@ class provider implements
         }
 
         // 5. Bulk fetch Quest Logs.
-        $sqlql = "SELECT ql.id, q.blockinstanceid, q.name AS questname, ql.timecreated
+        $sqlql = "SELECT ql.id, q.blockinstanceid, q.name AS questname, ql.xpawarded, ql.timecreated
                     FROM {block_playerhud_quest_log} ql
                     JOIN {block_playerhud_quests} q ON ql.questid = q.id
                    WHERE ql.userid = :userid AND q.blockinstanceid $insql
@@ -270,6 +277,7 @@ class provider implements
             foreach ($questlogs as $log) {
                 $questlogsbyinstance[$log->blockinstanceid][] = [
                     'quest_name' => $log->questname,
+                    'xp_gained' => $log->xpawarded,
                     'claimed_on' => transform::datetime($log->timecreated),
                 ];
             }
@@ -366,6 +374,8 @@ class provider implements
                         'karma' => $rpg->karma,
                         'history' => $rpg->current_nodes,
                         'completed_chapters' => $rpg->completed_chapters,
+                        'created' => transform::datetime($rpg->timecreated),
+                        'modified' => transform::datetime($rpg->timemodified),
                     ]
                 );
             }
@@ -432,6 +442,19 @@ class provider implements
         $DB->delete_records('block_playerhud_user', ['blockinstanceid' => $instanceid]);
         $DB->delete_records('block_playerhud_rpg_progress', ['blockinstanceid' => $instanceid]);
         $DB->delete_records('block_playerhud_ai_logs', ['blockinstanceid' => $instanceid]);
+
+        // Wizard rollback manifest (children) must go before their parent wizard runs, or the
+        // rows are left dangling with a runid that no longer exists in block_playerhud_wizard_runs.
+        $DB->delete_records_select(
+            'block_playerhud_wizard_objects',
+            'runid IN (SELECT id FROM {block_playerhud_wizard_runs} WHERE blockinstanceid = :instanceid)',
+            ['instanceid' => $instanceid]
+        );
+        $DB->delete_records_select(
+            'block_playerhud_wizard_shortcodes',
+            'runid IN (SELECT id FROM {block_playerhud_wizard_runs} WHERE blockinstanceid = :instanceid)',
+            ['instanceid' => $instanceid]
+        );
         $DB->delete_records('block_playerhud_wizard_runs', ['blockinstanceid' => $instanceid]);
 
         // Delete inventory (Fetch block items).
@@ -523,6 +546,18 @@ class provider implements
             "blockinstanceid = :instanceid AND userid $usql",
             $params
         );
+
+        // Wizard rollback manifest (children) must go before their parent wizard runs, or the
+        // rows are left dangling with a runid that no longer exists in block_playerhud_wizard_runs.
+        $sqlwizardruns = "SELECT id FROM {block_playerhud_wizard_runs}
+                            WHERE blockinstanceid = :instanceid AND userid $usql";
+        $wizardrunrecords = $DB->get_records_sql($sqlwizardruns, $params);
+        if ($wizardrunrecords) {
+            $runids = array_keys($wizardrunrecords);
+            [$rdelsql, $rdelparams] = $DB->get_in_or_equal($runids);
+            $DB->delete_records_select('block_playerhud_wizard_objects', "runid $rdelsql", $rdelparams);
+            $DB->delete_records_select('block_playerhud_wizard_shortcodes', "runid $rdelsql", $rdelparams);
+        }
 
         $DB->delete_records_select(
             'block_playerhud_wizard_runs',

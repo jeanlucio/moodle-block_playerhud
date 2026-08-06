@@ -148,6 +148,8 @@ final class privacy_provider_test extends advanced_testcase {
             'karma' => 42,
             'current_nodes' => '{"ch1":"nodeA"}',
             'completed_chapters' => '["ch1"]',
+            'timecreated' => time(),
+            'timemodified' => time(),
         ]);
 
         $DB->insert_record('block_playerhud_inventory', (object) [
@@ -179,6 +181,7 @@ final class privacy_provider_test extends advanced_testcase {
         $DB->insert_record('block_playerhud_quest_log', (object) [
             'questid' => $this->questid,
             'userid' => $userid,
+            'xpawarded' => 10,
             'timecreated' => time(),
         ]);
 
@@ -552,6 +555,105 @@ final class privacy_provider_test extends advanced_testcase {
     }
 
     /**
+     * Test that every column of block_playerhud_rpg_progress is declared in the privacy
+     * metadata. Regression test for the security-audit finding: blockinstanceid and userid
+     * were missing from the declaration, and timecreated/timemodified were missing too even
+     * though the audit report itself only flagged the first two. A per-key assertion would
+     * not catch a column added later without a matching declaration, so this compares the
+     * declared fields against the table's real columns instead.
+     */
+    public function test_get_metadata_declares_all_rpg_progress_columns(): void {
+        global $DB;
+
+        $collection = provider::get_metadata(new collection('block_playerhud'));
+
+        $tableitem = null;
+        foreach ($collection->get_collection() as $item) {
+            if ($item->get_name() === 'block_playerhud_rpg_progress') {
+                $tableitem = $item;
+                break;
+            }
+        }
+        $this->assertNotNull($tableitem, 'block_playerhud_rpg_progress must be declared in the privacy metadata.');
+
+        $declaredfields = array_keys($tableitem->get_privacy_fields());
+        $realcolumns = array_diff(array_keys($DB->get_columns('block_playerhud_rpg_progress')), ['id']);
+
+        sort($declaredfields);
+        sort($realcolumns);
+        $this->assertEquals(
+            $realcolumns,
+            $declaredfields,
+            'Every column of block_playerhud_rpg_progress, except id, must be declared in the privacy metadata.'
+        );
+    }
+
+    /**
+     * Test that every column of block_playerhud_quest_log is declared in the privacy metadata.
+     * Regression test for the security-audit finding: userid and xpawarded were missing from
+     * the declaration. A per-key assertion would not catch a column added later without a
+     * matching declaration, so this compares the declared fields against the table's real
+     * columns instead.
+     */
+    public function test_get_metadata_declares_all_quest_log_columns(): void {
+        global $DB;
+
+        $collection = provider::get_metadata(new collection('block_playerhud'));
+
+        $tableitem = null;
+        foreach ($collection->get_collection() as $item) {
+            if ($item->get_name() === 'block_playerhud_quest_log') {
+                $tableitem = $item;
+                break;
+            }
+        }
+        $this->assertNotNull($tableitem, 'block_playerhud_quest_log must be declared in the privacy metadata.');
+
+        $declaredfields = array_keys($tableitem->get_privacy_fields());
+        $realcolumns = array_diff(array_keys($DB->get_columns('block_playerhud_quest_log')), ['id']);
+
+        sort($declaredfields);
+        sort($realcolumns);
+        $this->assertEquals(
+            $realcolumns,
+            $declaredfields,
+            'Every column of block_playerhud_quest_log, except id, must be declared in the privacy metadata.'
+        );
+    }
+
+    /**
+     * Test that every column of block_playerhud_trade_log is declared in the privacy metadata.
+     * Regression test for the security-audit finding: userid was missing from the declaration.
+     * A per-key assertion would not catch a column added later without a matching declaration,
+     * so this compares the declared fields against the table's real columns instead.
+     */
+    public function test_get_metadata_declares_all_trade_log_columns(): void {
+        global $DB;
+
+        $collection = provider::get_metadata(new collection('block_playerhud'));
+
+        $tableitem = null;
+        foreach ($collection->get_collection() as $item) {
+            if ($item->get_name() === 'block_playerhud_trade_log') {
+                $tableitem = $item;
+                break;
+            }
+        }
+        $this->assertNotNull($tableitem, 'block_playerhud_trade_log must be declared in the privacy metadata.');
+
+        $declaredfields = array_keys($tableitem->get_privacy_fields());
+        $realcolumns = array_diff(array_keys($DB->get_columns('block_playerhud_trade_log')), ['id']);
+
+        sort($declaredfields);
+        sort($realcolumns);
+        $this->assertEquals(
+            $realcolumns,
+            $declaredfields,
+            'Every column of block_playerhud_trade_log, except id, must be declared in the privacy metadata.'
+        );
+    }
+
+    /**
      * Test that the context where a user stored data is discovered.
      */
     public function test_get_contexts_for_userid(): void {
@@ -627,10 +729,14 @@ final class privacy_provider_test extends advanced_testcase {
         $this->assertEquals(0, $profile->milestones);
         $this->assertNotEmpty($profile->modified);
 
-        // B. RPG progress.
+        // B. RPG progress. created/modified are a regression check: these columns were added
+        // to get_metadata() by the security-audit fix but were never populated by
+        // export_user_data() before this fix.
         $rpg = $writer->get_data([$pluginname, get_string('privacy_export_rpg', 'block_playerhud')]);
         $this->assertEquals(7, $rpg->class_id);
         $this->assertEquals(42, $rpg->karma);
+        $this->assertNotEmpty($rpg->created);
+        $this->assertNotEmpty($rpg->modified);
 
         // C. Inventory. drop_id/source/xp_awarded are the same kind of regression check as
         // the profile fields above.
@@ -641,10 +747,13 @@ final class privacy_provider_test extends advanced_testcase {
         $this->assertEquals('test', $inventory->items[0]['source']);
         $this->assertEquals(0, $inventory->items[0]['xp_awarded']);
 
-        // D. Quest logs.
+        // D. Quest logs. xp_gained is a regression check: this column was added to
+        // get_metadata() by the security-audit fix but was never populated by
+        // export_user_data() before this fix.
         $quests = $writer->get_data([$pluginname, get_string('privacy_export_quest_log', 'block_playerhud')]);
         $this->assertCount(1, $quests->quests);
         $this->assertEquals('Privacy Quest', $quests->quests[0]['quest_name']);
+        $this->assertEquals(10, $quests->quests[0]['xp_gained']);
 
         // E. Trade logs.
         $trades = $writer->get_data([$pluginname, get_string('tab_shop', 'block_playerhud')]);
@@ -679,6 +788,85 @@ final class privacy_provider_test extends advanced_testcase {
 
         $this->assertEquals(0, $this->total_user_rows($usera->id));
         $this->assertEquals(0, $this->total_user_rows($userb->id));
+    }
+
+    /**
+     * Test that deleting a whole context also removes the wizard run's rollback manifest
+     * (wizard_objects/wizard_shortcodes), not just the wizard_runs row itself. Regression test:
+     * these child tables were left orphaned (dangling runid) by delete_data_for_all_users_in_
+     * context(), unlike instance_cleanup.php's instance_delete() path, which already deleted
+     * them in the correct child-before-parent order.
+     */
+    public function test_delete_data_for_all_users_in_context_removes_wizard_run_children(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_user($user->id);
+
+        $runid = $DB->get_field('block_playerhud_wizard_runs', 'id', [
+            'blockinstanceid' => $this->instanceid,
+            'userid' => $user->id,
+        ], MUST_EXIST);
+        $DB->insert_record('block_playerhud_wizard_objects', (object) [
+            'runid' => $runid,
+            'objecttable' => 'block_playerhud_items',
+            'objectid' => $this->itemid,
+            'timecreated' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_wizard_shortcodes', (object) [
+            'runid' => $runid,
+            'dropid' => 1,
+            'cmid' => 1,
+            'field' => 'intro',
+            'timecreated' => time(),
+        ]);
+
+        $this->assertEquals(1, $DB->count_records('block_playerhud_wizard_objects', ['runid' => $runid]));
+        $this->assertEquals(1, $DB->count_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]));
+
+        provider::delete_data_for_all_users_in_context($this->context);
+
+        $this->assertEquals(
+            0,
+            $DB->count_records('block_playerhud_wizard_objects', ['runid' => $runid]),
+            'Wizard object manifest rows must not be left dangling with a deleted runid.'
+        );
+        $this->assertEquals(
+            0,
+            $DB->count_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]),
+            'Wizard shortcode manifest rows must not be left dangling with a deleted runid.'
+        );
+    }
+
+    /**
+     * Same regression as above, but for the per-user deletion path
+     * (delete_data_for_user/delete_data_for_users), which shares the same underlying gap.
+     */
+    public function test_delete_data_for_user_removes_wizard_run_children(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_user($user->id);
+
+        $runid = $DB->get_field('block_playerhud_wizard_runs', 'id', [
+            'blockinstanceid' => $this->instanceid,
+            'userid' => $user->id,
+        ], MUST_EXIST);
+        $DB->insert_record('block_playerhud_wizard_objects', (object) [
+            'runid' => $runid,
+            'objecttable' => 'block_playerhud_items',
+            'objectid' => $this->itemid,
+            'timecreated' => time(),
+        ]);
+
+        $approved = new approved_contextlist($user, 'block_playerhud', [$this->context->id]);
+        provider::delete_data_for_user($approved);
+
+        $this->assertEquals(
+            0,
+            $DB->count_records('block_playerhud_wizard_objects', ['runid' => $runid]),
+            'Wizard object manifest rows must not be left dangling after a per-user deletion.'
+        );
     }
 
     /**
