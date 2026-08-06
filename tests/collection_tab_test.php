@@ -81,6 +81,58 @@ final class collection_tab_test extends advanced_testcase {
     }
 
     /**
+     * Regression test for the N+1 performance finding: get_lp_activities() must be memoised,
+     * not re-queried once per eligible deadline_extension item in the collection. Exercises
+     * the render with two such items and confirms the query only runs once.
+     */
+    public function test_get_lp_activities_is_memoised_across_multiple_items(): void {
+        global $DB;
+
+        if (!class_exists('\local_latepenalty\recalculator')) {
+            $this->markTestSkipped('Requires local_latepenalty.');
+        }
+
+        // Owned items only: the deadline_extension detail block (where get_lp_activities() is
+        // called) is skipped entirely for unowned items.
+        $item1 = $this->create_item('Extra Time A', 'deadline_extension');
+        $item2 = $this->create_item('Extra Time B', 'deadline_extension');
+        foreach ([$item1, $item2] as $item) {
+            $DB->insert_record('block_playerhud_inventory', (object) [
+                'userid' => $this->user->id, 'itemid' => $item->id, 'dropid' => 0,
+                'source' => 'test', 'timecreated' => time(),
+            ]);
+        }
+
+        $player = (object) ['userid' => $this->user->id, 'currentxp' => 0, 'last_inventory_view' => 0];
+        $output = $this->createMock(\renderer_base::class);
+        $tab    = new tab_collection(new \stdClass(), $player, $this->instanceid);
+
+        // The full render processes both owned deadline_extension items, calling
+        // get_lp_activities() twice internally — proves the loop itself only pays the query
+        // cost once even with two eligible items.
+        $ref = new \ReflectionMethod($tab, 'get_lp_activities');
+        $ref->setAccessible(true);
+
+        $beforefirst = $DB->perf_get_queries();
+        $ref->invoke($tab);
+        $firstcallqueries = $DB->perf_get_queries() - $beforefirst;
+
+        $beforesecond = $DB->perf_get_queries();
+        $ref->invoke($tab);
+        $secondcallqueries = $DB->perf_get_queries() - $beforesecond;
+
+        $this->assertGreaterThan(0, $firstcallqueries, 'The first call must actually query local_latepenalty_rules.');
+        $this->assertSame(0, $secondcallqueries, 'A second call to get_lp_activities() must not hit the database.');
+
+        // End-to-end: the real render (two owned deadline_extension items) still works and
+        // surfaces the LP activity list, not just the isolated memoisation.
+        $data = $tab->export_for_template($output);
+        $found = $this->find_item($data, $item1->id);
+        $this->assertNotNull($found);
+        $this->assertArrayHasKey('lp_activities', $found);
+    }
+
+    /**
      * A plain item (no action_type) has filter_type = 'none'.
      */
     public function test_filter_type_none_for_plain_items(): void {

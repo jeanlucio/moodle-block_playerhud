@@ -38,6 +38,9 @@ class tab_collection implements renderable, templatable {
     /** @var int Block instance ID. */
     protected $instanceid;
 
+    /** @var array|null Memoised result of get_lp_activities(), null until first computed. */
+    protected ?array $lpactivitiescache = null;
+
     /**
      * Constructor.
      *
@@ -417,9 +420,17 @@ class tab_collection implements renderable, templatable {
     /**
      * Return LP-eligible activities (local_latepenalty_rules.enabled = 1) for this block's course.
      *
+     * Memoised: the result is identical on every call within a single render (it does not
+     * depend on which item is being processed), so a caller inside a per-item loop does not
+     * repeat the query once per eligible item.
+     *
      * @return array cmid => activity name map.
      */
     protected function get_lp_activities(): array {
+        if ($this->lpactivitiescache !== null) {
+            return $this->lpactivitiescache;
+        }
+
         global $DB;
 
         $coursecontext = \context_block::instance($this->instanceid)->get_course_context();
@@ -436,6 +447,8 @@ class tab_collection implements renderable, templatable {
                 continue;
             }
         }
+
+        $this->lpactivitiescache = $activities;
         return $activities;
     }
 }
