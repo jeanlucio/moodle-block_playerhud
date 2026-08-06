@@ -166,15 +166,21 @@ class use_item extends external_api {
                 ];
             }
 
+            // Validate cmid belongs to this block's own course unconditionally — not only in
+            // the branch below that needs $cm to compute $base. Skipping this check whenever
+            // an override already exists (e.g. one set up in a different course) would let a
+            // deadline-extension item bound to this course's economy be spent against a cmid
+            // outside it. get_cm() throws moodle_exception when cmid is not part of $courseid.
+            $modinfo = get_fast_modinfo($courseid);
+            $cm      = $modinfo->get_cm($cmid);
+
             $override = $DB->get_record('local_latepenalty_overrides', ['cmid' => $cmid, 'userid' => $USER->id]);
             if ($override && $override->deadline !== null) {
                 $base = (int)$override->deadline;
             } else {
-                $modinfo = get_fast_modinfo($courseid);
-                $cm      = $modinfo->get_cm($cmid);
-                $cmrec   = $cm->get_course_module_record();
+                $cmrec = $cm->get_course_module_record();
                 $cmrec->modname = $cm->modname;
-                $base    = (int)(\local_latepenalty\penalty_helper::get_deadline($cmrec) ?? time());
+                $base  = (int)(\local_latepenalty\penalty_helper::get_deadline($cmrec) ?? time());
             }
 
             $newdeadline = $base + ($days * DAYSECS);

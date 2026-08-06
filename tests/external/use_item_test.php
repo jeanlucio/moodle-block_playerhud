@@ -250,6 +250,38 @@ final class use_item_test extends external_base_testcase {
         $this->assertEquals($base + DAYSECS, (int) reset($overrides)->deadline);
     }
 
+    /**
+     * Regression test for the security-audit finding: a targetcmid outside this block's own
+     * course must be rejected even when an override already exists for that cmid+userid pair
+     * (e.g. set up through a deadline-extension item in a different course). Before the fix,
+     * an existing override skipped the get_fast_modinfo($courseid)->get_cm($cmid) check that
+     * would otherwise reject a foreign cmid.
+     */
+    public function test_use_item_deadline_rejects_foreign_course_cmid_with_existing_override(): void {
+        global $USER;
+
+        if (!class_exists('\local_latepenalty\recalculator')) {
+            $this->markTestSkipped('Requires local_latepenalty.');
+        }
+
+        // A second, unrelated course with its own late-penalty-enabled activity.
+        $othercourse = $this->getDataGenerator()->create_course();
+        $foreignassign = $this->getDataGenerator()->create_module('assign', [
+            'course'  => $othercourse->id,
+            'duedate' => time() + DAYSECS,
+        ]);
+        $this->create_lp_rule($foreignassign->cmid);
+        // An override already exists for this user on the FOREIGN course's cmid.
+        $this->create_lp_override($foreignassign->cmid, (int) $USER->id, time() + (3 * DAYSECS));
+
+        $item = $this->create_deadline_item(1, 0);
+        $this->give_item_to_user((int) $USER->id, $item->id);
+
+        // Execute against THIS block's own course, but targeting the foreign cmid.
+        $this->expectException(\moodle_exception::class);
+        use_item::execute($this->instanceid, $this->course->id, $item->id, $foreignassign->cmid);
+    }
+
     // Helpers.
 
     /**
