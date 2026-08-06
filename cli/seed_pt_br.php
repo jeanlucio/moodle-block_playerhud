@@ -96,10 +96,10 @@ if ($options['reset']) {
     }
     // Remove seed users.
     $seedusers = $DB->get_records_sql(
-        "SELECT id FROM {user} WHERE username LIKE 'seed_%' AND deleted = 0"
+        "SELECT * FROM {user} WHERE username LIKE 'seed_%' AND deleted = 0"
     );
     foreach ($seedusers as $u) {
-        delete_user($DB->get_record('user', ['id' => $u->id]));
+        delete_user($u);
     }
     cli_writeln("Usuários seed removidos.\n");
 }
