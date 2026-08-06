@@ -1122,7 +1122,11 @@ class game {
                 'cost_qty'     => $costqty,
                 'cost_itemid'  => $playercoin->id,
                 'cost_emoji'   => '🪙',
-                'reward_emoji' => $avatar->image,
+                // Image can hold a raw teacher-typed emoji/URL, and this array ends up
+                // interpolated into unescaped HTML by suggest_trades_form's static element —
+                // never let it through unsanitised (see get_items_display_data(), which
+                // callers must strip_tags() themselves for the same reason).
+                'reward_emoji' => strip_tags($avatar->image),
                 'reward_label' => format_string($avatar->name),
                 'rewards'      => [['id' => $avatar->id, 'qty' => 1]],
                 'name'         => format_string($avatar->name),

