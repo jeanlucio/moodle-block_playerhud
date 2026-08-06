@@ -119,6 +119,15 @@ function block_playerhud_myprofile_navigation(
     }
 
     $instance = reset($instances);
+    $blockcontext = \context_block::instance($instance->id);
+
+    // The viewer must actually be allowed to see this block instance — capability-denied or
+    // hidden blocks must not leak gamification data through the profile page, a surface that
+    // bypasses the block's own visibility entirely otherwise.
+    if (!has_capability('block/playerhud:view', $blockcontext) || !has_capability('moodle/block:view', $blockcontext)) {
+        return;
+    }
+
     $player = $DB->get_record('block_playerhud_user', [
         'blockinstanceid' => $instance->id,
         'userid' => $user->id,

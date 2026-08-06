@@ -266,6 +266,101 @@ final class lib_test extends advanced_testcase {
         $this->assertArrayHasKey('playerhud', $tree->nodes);
     }
 
+    /**
+     * A regular student viewer (not admin) with the default capabilities intact still sees the
+     * section. Regression coverage alongside the two denied-capability tests below: the new
+     * guard must not accidentally block the common case for a real, unprivileged viewer.
+     */
+    public function test_myprofile_navigation_adds_section_for_a_regular_student_viewer(): void {
+        global $DB;
+
+        $this->resolve_real_renderer();
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid'     => $this->instanceid,
+            'userid'              => 2,
+            'currentxp'           => 30,
+            'enable_gamification' => 1,
+            'ranking_visibility'  => 1,
+            'timecreated'         => time(),
+            'timemodified'        => time(),
+        ]);
+
+        $viewer = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($viewer->id, $this->course->id, 'student');
+        $this->setUser($viewer);
+
+        $tree = new tree();
+        block_playerhud_myprofile_navigation($tree, (object) ['id' => 2], false, $this->course);
+
+        $this->assertArrayHasKey('playerhud', $tree->categories);
+    }
+
+    /**
+     * A viewer without block/playerhud:view in the block context (denied by a role override)
+     * gets no profile section, even for an active, opted-in player. Regression test for the
+     * security-audit finding: the callback previously mounted profile_content for ANY viewer
+     * able to open the profile page at all, without checking the block's own view capability.
+     */
+    public function test_myprofile_navigation_noop_when_view_capability_denied(): void {
+        global $DB;
+
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid'     => $this->instanceid,
+            'userid'              => 2,
+            'currentxp'           => 30,
+            'enable_gamification' => 1,
+            'ranking_visibility'  => 1,
+            'timecreated'         => time(),
+            'timemodified'        => time(),
+        ]);
+
+        $viewer = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($viewer->id, $this->course->id, 'student');
+        $blockcontext = context_block::instance($this->instanceid);
+        $studentrole = $DB->get_record('role', ['shortname' => 'student'], '*', MUST_EXIST);
+        assign_capability('block/playerhud:view', CAP_PROHIBIT, $studentrole->id, $blockcontext->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+        $this->setUser($viewer);
+
+        $tree = new tree();
+        block_playerhud_myprofile_navigation($tree, (object) ['id' => 2], false, $this->course);
+
+        $this->assertEmpty($tree->categories);
+    }
+
+    /**
+     * A viewer without moodle/block:view in the block context (the block is effectively hidden
+     * from their role) also gets no profile section — this generic core capability is what
+     * governs whether a block instance is visible at all, independent of the plugin's own
+     * :view capability.
+     */
+    public function test_myprofile_navigation_noop_when_block_view_capability_denied(): void {
+        global $DB;
+
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid'     => $this->instanceid,
+            'userid'              => 2,
+            'currentxp'           => 30,
+            'enable_gamification' => 1,
+            'ranking_visibility'  => 1,
+            'timecreated'         => time(),
+            'timemodified'        => time(),
+        ]);
+
+        $viewer = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($viewer->id, $this->course->id, 'student');
+        $blockcontext = context_block::instance($this->instanceid);
+        $studentrole = $DB->get_record('role', ['shortname' => 'student'], '*', MUST_EXIST);
+        assign_capability('moodle/block:view', CAP_PROHIBIT, $studentrole->id, $blockcontext->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+        $this->setUser($viewer);
+
+        $tree = new tree();
+        block_playerhud_myprofile_navigation($tree, (object) ['id' => 2], false, $this->course);
+
+        $this->assertEmpty($tree->categories);
+    }
+
     // Tests for block_playerhud_get_drop_details_by_code().
 
     /**
