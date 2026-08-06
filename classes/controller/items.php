@@ -53,16 +53,24 @@ class items {
     /**
      * Manually grants an item to a player and awards its XP.
      *
-     * The item must belong to the instance. The inventory row is tagged with
-     * source 'teacher' and no originating drop.
+     * The item must belong to the instance and the recipient must be enrolled in the
+     * instance's own course — a teacher's grant capability is scoped to their course, not to
+     * arbitrary userids elsewhere on the site.
+     *
+     * The inventory row is tagged with source 'teacher' and no originating drop.
      *
      * @param int $itemid The item to grant.
      * @param int $userid The recipient user ID.
      * @param int $instanceid The owning block instance ID.
+     * @param int $courseid The course the block instance belongs to.
      * @return void
      */
-    public static function grant_item(int $itemid, int $userid, int $instanceid): void {
+    public static function grant_item(int $itemid, int $userid, int $instanceid, int $courseid): void {
         global $DB;
+
+        if (!is_enrolled(\context_course::instance($courseid), $userid, '', true)) {
+            throw new \moodle_exception('invaliduserid');
+        }
 
         $item = $DB->get_record(
             'block_playerhud_items',

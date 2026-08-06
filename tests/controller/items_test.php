@@ -37,8 +37,14 @@ use stdClass;
  * @covers     \block_playerhud\controller\items
  */
 final class items_test extends advanced_testcase {
+    /** @var int Course ID created by the most recent make_instance() call. */
+    protected int $lastcourseid = 0;
+
     /**
      * Creates a course with a PlayerHUD block instance and returns its ID.
+     *
+     * The owning course ID is exposed via $this->lastcourseid for tests that need to enrol a
+     * user in it (e.g. grant_item()'s enrolment check).
      *
      * @return int The new block instance ID.
      */
@@ -46,6 +52,7 @@ final class items_test extends advanced_testcase {
         global $DB;
 
         $course = $this->getDataGenerator()->create_course();
+        $this->lastcourseid = (int) $course->id;
         $coursecontext = \context_course::instance($course->id);
 
         return (int) $DB->insert_record('block_instances', (object) [
@@ -218,11 +225,13 @@ final class items_test extends advanced_testcase {
         global $DB;
         $this->resetAfterTest();
         $instanceid = $this->make_instance();
+        $courseid = $this->lastcourseid;
         $itemid = $this->make_item($instanceid, 30);
         $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $courseid);
         $this->seed_player($instanceid, (int) $user->id, 50);
 
-        items::grant_item($itemid, (int) $user->id, $instanceid);
+        items::grant_item($itemid, (int) $user->id, $instanceid, $courseid);
 
         $inv = $DB->get_record('block_playerhud_inventory', ['userid' => $user->id], '*', MUST_EXIST);
         $this->assertSame($itemid, (int) $inv->itemid);
@@ -242,11 +251,13 @@ final class items_test extends advanced_testcase {
         global $DB;
         $this->resetAfterTest();
         $instanceid = $this->make_instance();
+        $courseid = $this->lastcourseid;
         $itemid = $this->make_item($instanceid, 0);
         $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $courseid);
         $this->seed_player($instanceid, (int) $user->id, 50);
 
-        items::grant_item($itemid, (int) $user->id, $instanceid);
+        items::grant_item($itemid, (int) $user->id, $instanceid, $courseid);
 
         $this->assertSame(1, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
         $this->assertSame(0, (int) $DB->get_field('block_playerhud_inventory', 'xpawarded', ['userid' => $user->id]));
@@ -264,14 +275,39 @@ final class items_test extends advanced_testcase {
         $this->resetAfterTest();
         $instancea = $this->make_instance();
         $instanceb = $this->make_instance();
+        $courseb = $this->lastcourseid;
         $itemid = $this->make_item($instancea, 30);
         $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $courseb);
 
         try {
-            items::grant_item($itemid, (int) $user->id, $instanceb);
+            items::grant_item($itemid, (int) $user->id, $instanceb, $courseb);
             $this->fail('Expected a dml_missing_record_exception.');
         } catch (\dml_missing_record_exception $e) {
             $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+        }
+    }
+
+    /**
+     * Regression test for the security-audit finding: grant_item() must reject a userid that
+     * is not enrolled in the block instance's own course, before any inventory/XP side effect.
+     */
+    public function test_grant_item_rejects_unenrolled_user(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $courseid = $this->lastcourseid;
+        $itemid = $this->make_item($instanceid, 30);
+        // Deliberately not enrolled in $courseid.
+        $user = $this->getDataGenerator()->create_user();
+
+        try {
+            items::grant_item($itemid, (int) $user->id, $instanceid, $courseid);
+            $this->fail('Expected a moodle_exception for an unenrolled user.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invaliduserid', $e->errorcode);
+            $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+            $this->assertSame(0, $DB->count_records('block_playerhud_user', ['userid' => $user->id]));
         }
     }
 

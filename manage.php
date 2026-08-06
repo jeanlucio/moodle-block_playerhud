@@ -508,7 +508,7 @@ if ($action === 'grant_item' && confirm_sesskey()) {
     $ruserid = required_param('r_userid', PARAM_INT);
     $itemid = required_param('itemid', PARAM_INT);
 
-    \block_playerhud\controller\items::grant_item($itemid, $ruserid, $instanceid);
+    \block_playerhud\controller\items::grant_item($itemid, $ruserid, $instanceid, $courseid);
 
     $url = new moodle_url($baseurl, ['tab' => 'reports', 'r_userid' => $ruserid]);
     redirect($url, get_string('item_granted', 'block_playerhud'), null, \core\output\notification::NOTIFY_SUCCESS);
