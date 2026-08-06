@@ -54,9 +54,10 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
      */
     function updateTitle(title) {
         if (titleEl && title) {
-            titleEl.innerHTML =
-                '<i class="fa fa-book me-2" aria-hidden="true"></i>' +
-                document.createTextNode(title).nodeValue;
+            const icon = document.createElement('i');
+            icon.className = 'fa fa-book me-2';
+            icon.setAttribute('aria-hidden', 'true');
+            titleEl.replaceChildren(icon, document.createTextNode(title));
         }
     }
 
@@ -221,15 +222,24 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             var footerEl = card.querySelector('.mt-auto.w-100.text-center');
             var recapDiv = document.createElement('div');
             recapDiv.className = 'ph-chapter-recap-wrap';
-            recapDiv.innerHTML =
-                '<button class="btn btn-sm btn-outline-info w-100"' +
-                ' data-action="read-recap"' +
-                ' data-chapterid="' + chapterid + '"' +
-                ' data-title="' + chapterTitle.replace(/"/g, '&quot;') + '"' +
-                ' data-bs-toggle="modal" data-bs-target="#ph-story-modal"' +
-                ' data-toggle="modal" data-target="#ph-story-modal">' +
-                '<i class="fa fa-history" aria-hidden="true"></i> ' + strings.readAgain +
-                '</button>';
+
+            const recapBtn = document.createElement('button');
+            recapBtn.className = 'btn btn-sm btn-outline-info w-100';
+            recapBtn.setAttribute('data-action', 'read-recap');
+            recapBtn.setAttribute('data-chapterid', chapterid);
+            recapBtn.setAttribute('data-title', chapterTitle);
+            recapBtn.setAttribute('data-bs-toggle', 'modal');
+            recapBtn.setAttribute('data-bs-target', '#ph-story-modal');
+            recapBtn.setAttribute('data-toggle', 'modal');
+            recapBtn.setAttribute('data-target', '#ph-story-modal');
+
+            const recapIcon = document.createElement('i');
+            recapIcon.className = 'fa fa-history';
+            recapIcon.setAttribute('aria-hidden', 'true');
+            recapBtn.appendChild(recapIcon);
+            recapBtn.appendChild(document.createTextNode(' ' + strings.readAgain));
+
+            recapDiv.appendChild(recapBtn);
 
             if (footerEl) {
                 footerEl.appendChild(recapDiv);
