@@ -97,6 +97,142 @@ class quest {
     }
 
     /**
+     * Precomputes the per-user aggregates check_status() needs, for every quest in a list at
+     * once — unique/total item counts, trade count and completed chapters are the same value
+     * regardless of which quest asks for them, and TYPE_SPECIFIC_ITEM/TYPE_SPECIFIC_TRADE only
+     * vary by itemid/tradeid, so both are cheap to batch with one grouped query. Each aggregate
+     * is computed only when at least one quest in the list actually needs it. Pass the result as
+     * check_status()'s optional last argument when checking many quests in a loop (e.g. the
+     * student Quests tab) to turn what would be one query per quest into a handful of queries
+     * total, regardless of quest count.
+     *
+     * @param int $userid The user ID.
+     * @param int $blockinstanceid The block instance ID.
+     * @param \stdClass[] $quests Every quest that will be passed to check_status() afterwards.
+     * @return array Totals structure, passed as check_status()'s optional last argument.
+     */
+    public static function preload_totals(int $userid, int $blockinstanceid, array $quests): array {
+        global $DB;
+
+        $totals = [
+            'unique_items' => null,
+            'total_items' => null,
+            'trades' => null,
+            'done_chapters' => null,
+            'specific_items' => [],
+            'specific_trades' => [],
+        ];
+
+        $needuniqueitems = false;
+        $needtotalitems = false;
+        $needtrades = false;
+        $needchapters = false;
+        $specificitemids = [];
+        $specifictradeids = [];
+
+        foreach ($quests as $quest) {
+            switch ((int) $quest->type) {
+                case self::TYPE_UNIQUE_ITEMS:
+                    $needuniqueitems = true;
+                    break;
+                case self::TYPE_TOTAL_ITEMS:
+                    $needtotalitems = true;
+                    break;
+                case self::TYPE_TRADES:
+                    $needtrades = true;
+                    break;
+                case self::TYPE_CHAPTER:
+                    $needchapters = true;
+                    break;
+                case self::TYPE_SPECIFIC_ITEM:
+                    $itemid = (int) $quest->req_itemid;
+                    if ($itemid > 0) {
+                        $specificitemids[$itemid] = $itemid;
+                    }
+                    break;
+                case self::TYPE_SPECIFIC_TRADE:
+                    $tradeid = (int) $quest->req_itemid;
+                    if ($tradeid > 0) {
+                        $specifictradeids[$tradeid] = $tradeid;
+                    }
+                    break;
+            }
+        }
+
+        if ($needuniqueitems) {
+            $totals['unique_items'] = (int) $DB->count_records_sql(
+                "SELECT COUNT(DISTINCT inv.itemid)
+                   FROM {block_playerhud_inventory} inv
+                   JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                  WHERE inv.userid = ? AND it.blockinstanceid = ?",
+                [$userid, $blockinstanceid]
+            );
+        }
+
+        if ($needtotalitems) {
+            $totals['total_items'] = (int) $DB->count_records_sql(
+                "SELECT COUNT(inv.id)
+                   FROM {block_playerhud_inventory} inv
+                   JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                  WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source NOT IN ('revoked', 'consumed')",
+                [$userid, $blockinstanceid]
+            );
+        }
+
+        if ($needtrades) {
+            $totals['trades'] = (int) $DB->count_records_sql(
+                "SELECT COUNT(tl.id)
+                   FROM {block_playerhud_trade_log} tl
+                   JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
+                  WHERE tl.userid = ? AND t.blockinstanceid = ?",
+                [$userid, $blockinstanceid]
+            );
+        }
+
+        if ($needchapters) {
+            $chapjson = $DB->get_field(
+                'block_playerhud_rpg_progress',
+                'completed_chapters',
+                ['blockinstanceid' => $blockinstanceid, 'userid' => $userid]
+            );
+            $donechapters = ($chapjson) ? json_decode($chapjson, true) : [];
+            $totals['done_chapters'] = is_array($donechapters) ? $donechapters : [];
+        }
+
+        if (!empty($specificitemids)) {
+            [$insql, $inparams] = $DB->get_in_or_equal(array_values($specificitemids), SQL_PARAMS_NAMED);
+            $inparams['userid'] = $userid;
+            $rows = $DB->get_records_sql(
+                "SELECT itemid, COUNT(*) AS cnt
+                   FROM {block_playerhud_inventory}
+                  WHERE userid = :userid AND itemid $insql
+               GROUP BY itemid",
+                $inparams
+            );
+            foreach ($rows as $row) {
+                $totals['specific_items'][(int) $row->itemid] = (int) $row->cnt;
+            }
+        }
+
+        if (!empty($specifictradeids)) {
+            [$insql, $inparams] = $DB->get_in_or_equal(array_values($specifictradeids), SQL_PARAMS_NAMED);
+            $inparams['userid'] = $userid;
+            $rows = $DB->get_records_sql(
+                "SELECT tradeid, COUNT(*) AS cnt
+                   FROM {block_playerhud_trade_log}
+                  WHERE userid = :userid AND tradeid $insql
+               GROUP BY tradeid",
+                $inparams
+            );
+            foreach ($rows as $row) {
+                $totals['specific_trades'][(int) $row->tradeid] = (int) $row->cnt;
+            }
+        }
+
+        return $totals;
+    }
+
+    /**
      * Checks the status of a quest for a specific user.
      *
      * @param \stdClass $quest The quest object.
@@ -104,6 +240,9 @@ class quest {
      * @param int $courseid The course ID.
      * @param int $currentxp The user's current XP.
      * @param int $currentlevel The user's current level.
+     * @param array|null $totals Precomputed aggregates from {@see preload_totals()}; null (the
+     *                           default, used by claim_reward()'s single-quest check) always
+     *                           queries.
      * @return \stdClass Status object {completed, progress, label, action_url, is_activity}.
      */
     public static function check_status(
@@ -111,7 +250,8 @@ class quest {
         int $userid,
         int $courseid,
         int $currentxp,
-        int $currentlevel
+        int $currentlevel,
+        ?array $totals = null
     ): \stdClass {
         global $DB, $CFG;
         require_once($CFG->libdir . '/completionlib.php');
@@ -142,12 +282,16 @@ class quest {
                 break;
 
             case self::TYPE_UNIQUE_ITEMS:
-                // Refactored to count only items from this specific block instance.
-                $sql = "SELECT COUNT(DISTINCT inv.itemid)
-                          FROM {block_playerhud_inventory} inv
-                          JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                         WHERE inv.userid = ? AND it.blockinstanceid = ?";
-                $current = $DB->count_records_sql($sql, [$userid, $quest->blockinstanceid]);
+                if ($totals !== null && $totals['unique_items'] !== null) {
+                    $current = $totals['unique_items'];
+                } else {
+                    // Refactored to count only items from this specific block instance.
+                    $sql = "SELECT COUNT(DISTINCT inv.itemid)
+                              FROM {block_playerhud_inventory} inv
+                              JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                             WHERE inv.userid = ? AND it.blockinstanceid = ?";
+                    $current = $DB->count_records_sql($sql, [$userid, $quest->blockinstanceid]);
+                }
                 $target = (int)$quest->requirement;
 
                 $status->completed = ($current >= $target);
@@ -165,7 +309,11 @@ class quest {
                 }
 
                 // Item ID is unique, but belongs to an instance, so counting is safe within context.
-                $current = $DB->count_records('block_playerhud_inventory', ['userid' => $userid, 'itemid' => $itemid]);
+                if ($totals !== null) {
+                    $current = $totals['specific_items'][$itemid] ?? 0;
+                } else {
+                    $current = $DB->count_records('block_playerhud_inventory', ['userid' => $userid, 'itemid' => $itemid]);
+                }
 
                 $status->completed = ($current >= $target);
                 $status->progress = ($target > 0) ? min(100, floor(($current / $target) * 100)) : 100;
@@ -173,11 +321,15 @@ class quest {
                 break;
 
             case self::TYPE_TOTAL_ITEMS:
-                $sql = "SELECT COUNT(inv.id)
-                          FROM {block_playerhud_inventory} inv
-                          JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                         WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source NOT IN ('revoked', 'consumed')";
-                $current = $DB->count_records_sql($sql, [$userid, $quest->blockinstanceid]);
+                if ($totals !== null && $totals['total_items'] !== null) {
+                    $current = $totals['total_items'];
+                } else {
+                    $sql = "SELECT COUNT(inv.id)
+                              FROM {block_playerhud_inventory} inv
+                              JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                             WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source NOT IN ('revoked', 'consumed')";
+                    $current = $DB->count_records_sql($sql, [$userid, $quest->blockinstanceid]);
+                }
                 $target = (int)$quest->requirement;
 
                 $status->completed = ($current >= $target);
@@ -186,11 +338,15 @@ class quest {
                 break;
 
             case self::TYPE_TRADES:
-                $sql = "SELECT COUNT(tl.id)
-                          FROM {block_playerhud_trade_log} tl
-                          JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
-                         WHERE tl.userid = ? AND t.blockinstanceid = ?";
-                $current = $DB->count_records_sql($sql, [$userid, $quest->blockinstanceid]);
+                if ($totals !== null && $totals['trades'] !== null) {
+                    $current = $totals['trades'];
+                } else {
+                    $sql = "SELECT COUNT(tl.id)
+                              FROM {block_playerhud_trade_log} tl
+                              JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
+                             WHERE tl.userid = ? AND t.blockinstanceid = ?";
+                    $current = $DB->count_records_sql($sql, [$userid, $quest->blockinstanceid]);
+                }
                 $target = (int)$quest->requirement;
 
                 $status->completed = ($current >= $target);
@@ -207,7 +363,11 @@ class quest {
                     break;
                 }
 
-                $current = $DB->count_records('block_playerhud_trade_log', ['userid' => $userid, 'tradeid' => $tradeid]);
+                if ($totals !== null) {
+                    $current = $totals['specific_trades'][$tradeid] ?? 0;
+                } else {
+                    $current = $DB->count_records('block_playerhud_trade_log', ['userid' => $userid, 'tradeid' => $tradeid]);
+                }
 
                 $status->completed = ($current >= $target);
                 $status->progress = ($target > 0) ? min(100, floor(($current / $target) * 100)) : 100;
@@ -261,14 +421,18 @@ class quest {
 
             case self::TYPE_CHAPTER:
                 $chapterid = (int)$quest->requirement;
-                $chapjson = $DB->get_field(
-                    'block_playerhud_rpg_progress',
-                    'completed_chapters',
-                    ['blockinstanceid' => $quest->blockinstanceid, 'userid' => $userid]
-                );
-                $donechapters = ($chapjson) ? json_decode($chapjson, true) : [];
-                if (!is_array($donechapters)) {
-                    $donechapters = [];
+                if ($totals !== null && $totals['done_chapters'] !== null) {
+                    $donechapters = $totals['done_chapters'];
+                } else {
+                    $chapjson = $DB->get_field(
+                        'block_playerhud_rpg_progress',
+                        'completed_chapters',
+                        ['blockinstanceid' => $quest->blockinstanceid, 'userid' => $userid]
+                    );
+                    $donechapters = ($chapjson) ? json_decode($chapjson, true) : [];
+                    if (!is_array($donechapters)) {
+                        $donechapters = [];
+                    }
                 }
                 $status->completed = in_array($chapterid, $donechapters);
                 $status->progress  = $status->completed ? 100 : 0;

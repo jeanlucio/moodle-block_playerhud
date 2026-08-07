@@ -133,6 +133,9 @@ class tab_quests implements renderable {
         $stats       = game::get_game_stats($this->config, $this->instanceid, $this->player->currentxp);
         $playerlevel = $stats['level'];
 
+        // Precompute the aggregates check_status() needs once for the whole list (avoid N+1).
+        $totals = quest::preload_totals($USER->id, $this->instanceid, $quests);
+
         // Base URL for claim actions.
         $viewurl = new moodle_url('/blocks/playerhud/view.php', [
             'id'         => $this->courseid,
@@ -162,7 +165,8 @@ class tab_quests implements renderable {
                 $USER->id,
                 $this->courseid,
                 $this->player->currentxp,
-                $playerlevel
+                $playerlevel,
+                $totals
             );
 
             // Skip quests whose linked activity is not visible to this user.

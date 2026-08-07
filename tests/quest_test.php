@@ -559,6 +559,103 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
+     * check_status() with a preload_totals() result must return exactly the same status as the
+     * unbatched per-call path, for every query-backed quest type at once — including two
+     * TYPE_SPECIFIC_ITEM/TYPE_SPECIFIC_TRADE quests targeting different ids, to prove the
+     * grouped-by-id preload keeps each quest's own count separate from its siblings'.
+     */
+    public function test_preload_totals_matches_the_unbatched_per_quest_results(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+
+        $itema = $this->create_dummy_item('Sword');
+        $itemb = $this->create_dummy_item('Shield');
+        $this->give_item($user->id, $itema->id, 2);
+        $this->give_item($user->id, $itemb->id, 1);
+
+        $tradea = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'name' => 'Trade A',
+            'groupid' => 0,
+            'onetime' => 0,
+            'timecreated' => time(),
+        ]);
+        $tradeb = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'name' => 'Trade B',
+            'groupid' => 0,
+            'onetime' => 0,
+            'timecreated' => time(),
+        ]);
+        $this->log_trade($user->id, $tradea, 2);
+        $this->log_trade($user->id, $tradeb, 1);
+
+        $DB->insert_record('block_playerhud_rpg_progress', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'userid' => $user->id,
+            'classid' => 0,
+            'karma' => 0,
+            'completed_chapters' => json_encode([7]),
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ]);
+
+        $quests = [
+            $this->create_quest(quest::TYPE_UNIQUE_ITEMS, '2'),
+            $this->create_quest(quest::TYPE_TOTAL_ITEMS, '3'),
+            $this->create_quest(quest::TYPE_TRADES, '3'),
+            $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '2', 0, 0, $itema->id),
+            $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '2', 0, 0, $itemb->id),
+            $this->create_quest(quest::TYPE_SPECIFIC_TRADE, '2', 0, 0, $tradea),
+            $this->create_quest(quest::TYPE_SPECIFIC_TRADE, '2', 0, 0, $tradeb),
+            $this->create_quest(quest::TYPE_CHAPTER, '7'),
+            $this->create_quest(quest::TYPE_CHAPTER, '9'),
+        ];
+
+        $totals = quest::preload_totals($user->id, $this->instanceid, $quests);
+
+        foreach ($quests as $quest) {
+            $expected = quest::check_status($quest, $user->id, $this->course->id, 0, 1);
+            $actual = quest::check_status($quest, $user->id, $this->course->id, 0, 1, $totals);
+            $this->assertEquals($expected, $actual, "Mismatch for quest type {$quest->type} (req_itemid={$quest->req_itemid}).");
+        }
+    }
+
+    /**
+     * The whole point of preload_totals(): checking many quests with a preloaded totals array
+     * costs a roughly constant number of reads, instead of scaling with the quest count the way
+     * the unbatched per-call path does.
+     */
+    public function test_preload_totals_reduces_reads_across_many_quests(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Gem');
+        $this->give_item($user->id, $item->id, 3);
+
+        $quests = [];
+        for ($i = 0; $i < 6; $i++) {
+            $quests[] = $this->create_quest(quest::TYPE_UNIQUE_ITEMS, '1');
+        }
+
+        $readsbefore = $DB->perf_get_reads();
+        foreach ($quests as $quest) {
+            quest::check_status($quest, $user->id, $this->course->id, 0, 1);
+        }
+        $unbatchedreads = $DB->perf_get_reads() - $readsbefore;
+
+        $readsbefore = $DB->perf_get_reads();
+        $totals = quest::preload_totals($user->id, $this->instanceid, $quests);
+        foreach ($quests as $quest) {
+            quest::check_status($quest, $user->id, $this->course->id, 0, 1, $totals);
+        }
+        $batchedreads = $DB->perf_get_reads() - $readsbefore;
+
+        $this->assertLessThan($unbatchedreads, $batchedreads);
+    }
+
+    /**
      * Successful claim: XP is credited to the player and log entry is written.
      */
     public function test_claim_reward_grants_xp(): void {
