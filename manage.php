@@ -340,7 +340,11 @@ if ($action === 'delete_quest_force' && $questid && confirm_sesskey()) {
 if ($action === 'bulk_delete_quests' && confirm_sesskey()) {
     $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
     if (!empty($bulkids)) {
-        $xpimpact = \block_playerhud\controller\quests::find_xp_impact($bulkids);
+        [$insql, $inparams] = $DB->get_in_or_equal($bulkids);
+        $params = array_merge($inparams, [$instanceid]);
+        $quests = $DB->get_records_select('block_playerhud_quests', "id $insql AND blockinstanceid = ?", $params);
+        $questids = array_keys($quests);
+        $xpimpact = \block_playerhud\controller\quests::find_xp_impact($questids);
 
         if ($xpimpact->studentcount > 0) {
             $questsurl = new moodle_url($baseurl, ['tab' => 'quests', 'sort' => $sort, 'dir' => $dir]);
@@ -350,7 +354,7 @@ if ($action === 'bulk_delete_quests' && confirm_sesskey()) {
                 get_string('delete_selected', 'block_playerhud'),
                 $xpimpact,
                 true,
-                $bulkids,
+                $questids,
                 [
                     'form'   => $baseurl->out(false),
                     'cancel' => $questsurl->out(false),

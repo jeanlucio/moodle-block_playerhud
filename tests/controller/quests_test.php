@@ -359,4 +359,39 @@ final class quests_test extends advanced_testcase {
         $this->assertSame(0, $impact->studentcount);
         $this->assertSame(0, $impact->totalxp);
     }
+
+    /**
+     * Regression test for the security-audit finding: manage.php's bulk_delete_quests preview
+     * used to pass the raw client-supplied bulk_ids straight to find_xp_impact() with no
+     * ownership check, letting a teacher discover how many students completed, and how much
+     * XP was awarded by, quests belonging to a completely different instance. Reproduces the
+     * exact scoping manage.php now applies before calling find_xp_impact(): filter the ids
+     * through "id IN (...) AND blockinstanceid = ?" first.
+     */
+    public function test_find_xp_impact_preview_excludes_a_foreign_instance_quest_when_scoped(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $instanceb = $this->make_instance();
+        $questa = $this->seed_quest($instancea, 50);
+        $questb = $this->seed_quest($instanceb, 999);
+        $usera = $this->getDataGenerator()->create_user();
+        $userb = $this->getDataGenerator()->create_user();
+        $this->seed_log($questa, (int) $usera->id, 50);
+        $this->seed_log($questb, (int) $userb->id, 999);
+
+        // The exact scoping manage.php's bulk_delete_quests action now applies before the preview.
+        $bulkids = [$questa, $questb];
+        [$insql, $inparams] = $DB->get_in_or_equal($bulkids);
+        $params = array_merge($inparams, [$instancea]);
+        $quests = $DB->get_records_select('block_playerhud_quests', "id $insql AND blockinstanceid = ?", $params);
+        $questids = array_keys($quests);
+
+        $impact = quests::find_xp_impact($questids);
+
+        $this->assertSame([$questa], $questids, 'Only the caller own-instance quest must survive the scoping.');
+        $this->assertSame(1, $impact->studentcount);
+        $this->assertSame(50, $impact->totalxp, 'The foreign instance quest XP must never be counted.');
+    }
 }
