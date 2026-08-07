@@ -27,6 +27,9 @@ require_once($CFG->libdir . '/formslib.php');
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class edit_trade_form extends \moodleform {
+    /** @var int Upper bound for repeats_req/repeats_give — see definition()'s clamp. */
+    const MAX_REPEATS = 50;
+
     /**
      * Definition of the form.
      */
@@ -53,6 +56,14 @@ class edit_trade_form extends \moodleform {
         if (!empty($this->_customdata['db_give_count'])) {
             $repeatsgive = max($repeatsgive, $this->_customdata['db_give_count']);
         }
+
+        // Clamp: repeats_req/repeats_give are client-supplied and directly drive the loops
+        // below, each iteration allocating several MoodleQuickForm elements — an unbounded
+        // value (e.g. a plain GET with repeats_req=99999999) exhausts a PHP worker's memory or
+        // execution time before the form is ever submitted. No legitimate trade needs more than
+        // MAX_REPEATS requirement/reward slots.
+        $repeatsreq = min(self::MAX_REPEATS, max(1, $repeatsreq));
+        $repeatsgive = min(self::MAX_REPEATS, max(1, $repeatsgive));
 
         $mform->addElement('hidden', 'repeats_req');
         $mform->setType('repeats_req', PARAM_INT);

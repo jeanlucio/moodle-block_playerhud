@@ -494,6 +494,22 @@ final class manage_entry_points_test extends advanced_testcase {
         (new scenes())->view_manage_page();
     }
 
+    /**
+     * Regression test for the security-audit DoS finding: 'repeats' is client-supplied and
+     * directly drove two unbounded loops (the add_choice_btn re-render branch, reachable via a
+     * plain GET with no sesskey, and the real-submission branch) — each iteration reading 8
+     * optional_param() values. clamp_repeats() must cap both at MAX_REPEATS regardless of how
+     * large the request value is.
+     */
+    public function test_scenes_clamp_repeats_caps_an_oversized_value(): void {
+        $method = new \ReflectionMethod(scenes::class, 'clamp_repeats');
+        $method->setAccessible(true);
+
+        $this->assertSame(scenes::MAX_REPEATS, $method->invoke(null, 99999999));
+        $this->assertSame(5, $method->invoke(null, 5));
+        $this->assertSame(scenes::MAX_REPEATS, $method->invoke(null, scenes::MAX_REPEATS));
+    }
+
     // Collect — the non-AJAX pickup path.
 
     /**
@@ -713,6 +729,30 @@ final class manage_entry_points_test extends advanced_testcase {
 
         $this->expectException(\dml_missing_record_exception::class);
         (new trades())->handle_edit_form();
+    }
+
+    /**
+     * Regression test for the security-audit DoS finding: a plain GET (no submission, no
+     * sesskey) with an oversized repeats_req/repeats_give must not make the form allocate an
+     * unbounded number of MoodleQuickForm elements. Uses 200 (not the report's PoC value of
+     * millions) so the pre-fix run stays fast enough to assert against directly.
+     */
+    public function test_trade_editor_clamps_an_oversized_repeats_counter(): void {
+        $this->setAdminUser();
+
+        $_GET = [
+            'courseid'     => $this->course->id,
+            'instanceid'   => $this->instanceid,
+            'repeats_req'  => 200,
+            'repeats_give' => 200,
+        ];
+
+        $html = (new trades())->handle_edit_form();
+
+        $this->assertStringContainsString('req_itemid_49', $html, 'Up to the clamp must still render.');
+        $this->assertStringNotContainsString('req_itemid_50', $html, 'Must not render past the clamp.');
+        $this->assertStringContainsString('give_itemid_49', $html, 'Up to the clamp must still render.');
+        $this->assertStringNotContainsString('give_itemid_50', $html, 'Must not render past the clamp.');
     }
 
     /**

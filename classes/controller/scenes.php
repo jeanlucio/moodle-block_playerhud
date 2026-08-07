@@ -27,6 +27,21 @@ use moodle_url;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class scenes {
+    /** @var int Upper bound for a client-supplied 'repeats' counter — see the two read points below. */
+    const MAX_REPEATS = 50;
+
+    /**
+     * Clamps a client-supplied 'repeats' counter so it can never drive an unbounded loop —
+     * shared by both read points in this class, since a form re-render and a real submission
+     * must cover the same range.
+     *
+     * @param int $requested The raw value read from the request.
+     * @return int The clamped value, never exceeding MAX_REPEATS.
+     */
+    protected static function clamp_repeats(int $requested): int {
+        return min(self::MAX_REPEATS, $requested);
+    }
+
     /**
      * Renders the scene management list for a chapter.
      *
@@ -241,7 +256,11 @@ class scenes {
         }
 
         if (optional_param('add_choice_btn', false, PARAM_BOOL)) {
-            $postedrepeats = optional_param('repeats', 3, PARAM_INT);
+            // Clamped: 'repeats' is client-supplied and directly drives this loop's iteration
+            // count, each pass reading 8 more optional_param() values into $currentdata —
+            // reachable via a plain GET (no sesskey) since add_choice_btn alone is enough to
+            // reach this branch, before the form is ever submitted.
+            $postedrepeats = self::clamp_repeats(optional_param('repeats', 3, PARAM_INT));
             for ($k = 0; $k < $postedrepeats + 1; $k++) {
                 $currentdata["choice_text_$k"]      = optional_param("choice_text_$k", '', PARAM_TEXT);
                 $currentdata["choice_next_$k"]      = optional_param("choice_next_$k", 0, PARAM_INT);
@@ -311,7 +330,10 @@ class scenes {
                 $currentnodeid = $DB->insert_record('block_playerhud_story_nodes', $record);
             }
 
-            $repeatscount = optional_param('repeats', 0, PARAM_INT);
+            // Clamped for the same reason as the add_choice_btn branch above — the sesskey
+            // check inside get_data() guards against CSRF, not against an oversized value from
+            // the form's own authenticated submitter.
+            $repeatscount = self::clamp_repeats(optional_param('repeats', 0, PARAM_INT));
 
             $submittedchoices = [];
             for ($i = 0; $i < $repeatscount; $i++) {
