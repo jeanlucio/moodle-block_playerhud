@@ -488,26 +488,21 @@ class wizard {
     }
 
     /**
-     * Deletes the run's trades through the trade controller, so each trade's
-     * requirement, reward and log rows are cleaned up the same way a manual trade
-     * deletion would. Ids no longer present are skipped.
+     * Deletes the run's trades through the trade controller's bulk path, so each trade's
+     * requirement, reward and log rows are cleaned up the same way a manual trade deletion
+     * would, in one query per child table instead of one delete_trade() call per trade. Ids no
+     * longer present are skipped.
      *
      * @param int[] $tradeids The recorded trade IDs.
      * @param int $instanceid The owning block instance ID.
      * @return void
      */
     private static function rollback_trades(array $tradeids, int $instanceid): void {
-        global $DB;
-
         if (empty($tradeids)) {
             return;
         }
 
-        $existing = $DB->get_records_list('block_playerhud_trades', 'id', $tradeids, '', 'id');
-        $controller = new \block_playerhud\controller\trades();
-        foreach ($existing as $trade) {
-            $controller->delete_trade((int) $trade->id, $instanceid);
-        }
+        \block_playerhud\controller\trades::bulk_delete_trades($tradeids, $instanceid);
     }
 
     /**
@@ -553,24 +548,19 @@ class wizard {
     }
 
     /**
-     * Deletes the run's story chapters through the chapter controller, cascading to
-     * their scenes and choices. Ids no longer present are skipped.
+     * Deletes the run's story chapters through the chapter controller's bulk path, cascading to
+     * their scenes and choices in one query per child table instead of one delete_chapter()
+     * call per chapter. Ids no longer present are skipped.
      *
      * @param int[] $chapterids The recorded chapter IDs.
      * @param int $instanceid The owning block instance ID.
      * @return void
      */
     private static function rollback_chapters(array $chapterids, int $instanceid): void {
-        global $DB;
-
         if (empty($chapterids)) {
             return;
         }
 
-        $existing = $DB->get_records_list('block_playerhud_chapters', 'id', $chapterids, '', 'id');
-        $controller = new \block_playerhud\controller\chapters();
-        foreach ($existing as $chapter) {
-            $controller->delete_chapter((int) $chapter->id, $instanceid);
-        }
+        \block_playerhud\controller\chapters::bulk_delete_chapters($chapterids, $instanceid);
     }
 }

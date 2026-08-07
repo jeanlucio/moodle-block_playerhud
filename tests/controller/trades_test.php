@@ -283,4 +283,61 @@ final class trades_test extends advanced_testcase {
         $this->assertFalse($DB->record_exists('block_playerhud_trades', ['id' => $target]));
         $this->assertTrue($DB->record_exists('block_playerhud_trades', ['id' => $sibling]));
     }
+
+    /**
+     * bulk_delete_trades removes every requested trade together with its requirements,
+     * rewards and log, in one pass — used by the wizard's rollback instead of one
+     * delete_trade() call per trade.
+     */
+    public function test_bulk_delete_trades_removes_trades_and_children(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $item = $this->make_item($instanceid);
+        $tradea = $this->seed_trade($instanceid, 'A');
+        $tradeb = $this->seed_trade($instanceid, 'B');
+        foreach ([$tradea, $tradeb] as $tid) {
+            $DB->insert_record('block_playerhud_trade_reqs', (object) [
+                'tradeid' => $tid, 'itemid' => $item, 'qty' => 1,
+            ]);
+            $DB->insert_record('block_playerhud_trade_log', (object) [
+                'tradeid' => $tid, 'userid' => 1, 'timecreated' => time(),
+            ]);
+        }
+
+        $deleted = trades::bulk_delete_trades([$tradea, $tradeb], $instanceid);
+
+        $this->assertSame(2, $deleted);
+        $this->assertFalse($DB->record_exists('block_playerhud_trades', ['id' => $tradea]));
+        $this->assertFalse($DB->record_exists('block_playerhud_trades', ['id' => $tradeb]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_trade_reqs', ['tradeid' => $tradea]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_trade_log', ['tradeid' => $tradeb]));
+    }
+
+    /**
+     * A trade id belonging to another instance is filtered out of the bulk delete rather than
+     * deleting it or throwing — the same ownership guard as delete_trade(), applied in bulk.
+     */
+    public function test_bulk_delete_trades_ignores_a_foreign_instance_trade(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $instanceb = $this->make_instance();
+        $owntrade = $this->seed_trade($instancea, 'Owned by A');
+        $foreigntrade = $this->seed_trade($instanceb, 'Owned by B');
+
+        $deleted = trades::bulk_delete_trades([$owntrade, $foreigntrade], $instancea);
+
+        $this->assertSame(1, $deleted);
+        $this->assertFalse($DB->record_exists('block_playerhud_trades', ['id' => $owntrade]));
+        $this->assertTrue($DB->record_exists('block_playerhud_trades', ['id' => $foreigntrade]));
+    }
+
+    /**
+     * An empty id list is a no-op, returning 0 without touching the database.
+     */
+    public function test_bulk_delete_trades_empty_returns_zero(): void {
+        $this->resetAfterTest();
+        $this->assertSame(0, trades::bulk_delete_trades([], $this->make_instance()));
+    }
 }

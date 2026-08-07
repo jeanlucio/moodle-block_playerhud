@@ -125,6 +125,47 @@ final class wizard_test extends advanced_testcase {
     }
 
     /**
+     * Rollback deletes recorded trades and chapters through their bulk_delete_* paths —
+     * regression test for the performance-audit finding: before it, rollback_trades()/
+     * rollback_chapters() called delete_trade()/delete_chapter() once per row; this exercises
+     * the real wizard::rollback() entry point end-to-end, not just the controller methods
+     * directly, and confirms child rows (trade_reqs, story_nodes/choices) are gone too.
+     */
+    public function test_rollback_deletes_trades_and_chapters(): void {
+        global $DB, $USER;
+
+        $tradeid = (int) $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Trade', 'groupid' => 0,
+            'centralized' => 1, 'onetime' => 0, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $item = $this->create_item();
+        $reqid = (int) $DB->insert_record('block_playerhud_trade_reqs', (object) [
+            'tradeid' => $tradeid, 'itemid' => $item, 'qty' => 1,
+        ]);
+
+        $chapterid = (int) $DB->insert_record('block_playerhud_chapters', (object) [
+            'blockinstanceid' => $this->instanceid, 'title' => 'Chapter', 'intro_text' => '',
+            'unlock_date' => 0, 'required_level' => 0, 'sortorder' => 1,
+        ]);
+        $nodeid = (int) $DB->insert_record('block_playerhud_story_nodes', (object) [
+            'chapterid' => $chapterid, 'content' => 'Start', 'is_start' => 1,
+        ]);
+
+        $runid = wizard::start_run($this->instanceid, (int) $USER->id, ['comercio', 'rpg']);
+        wizard::record_objects($runid, 'block_playerhud_trades', [$tradeid]);
+        wizard::record_objects($runid, 'block_playerhud_chapters', [$chapterid]);
+        wizard::finish_run($runid, 'done');
+
+        $deleted = wizard::rollback($runid, $this->instanceid, $this->courseid);
+
+        $this->assertSame(2, $deleted);
+        $this->assertFalse($DB->record_exists('block_playerhud_trades', ['id' => $tradeid]));
+        $this->assertFalse($DB->record_exists('block_playerhud_trade_reqs', ['id' => $reqid]));
+        $this->assertFalse($DB->record_exists('block_playerhud_chapters', ['id' => $chapterid]));
+        $this->assertFalse($DB->record_exists('block_playerhud_story_nodes', ['id' => $nodeid]));
+    }
+
+    /**
      * Rollback strips a recorded shortcode back out of the course content it was
      * inserted into, in addition to deleting the drop row.
      */

@@ -282,4 +282,42 @@ class trades {
             $transaction->rollback($e);
         }
     }
+
+    /**
+     * Deletes several trades together with their requirements, rewards and log entries, in one
+     * query per child table instead of one delete_trade() call per trade.
+     *
+     * Foreign-instance ids are silently filtered out first, matching delete_trade()'s own
+     * ownership check.
+     *
+     * @param int[] $tradeids The trades to delete.
+     * @param int $instanceid The owning block instance ID.
+     * @return int The number of trades actually deleted.
+     */
+    public static function bulk_delete_trades(array $tradeids, int $instanceid): int {
+        global $DB;
+
+        if (empty($tradeids)) {
+            return 0;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($tradeids);
+        $params = array_merge($inparams, [$instanceid]);
+        $trades = $DB->get_records_select('block_playerhud_trades', "id $insql AND blockinstanceid = ?", $params);
+        if (!$trades) {
+            return 0;
+        }
+
+        $validids = array_keys($trades);
+        [$tinsql, $tinparams] = $DB->get_in_or_equal($validids);
+
+        $transaction = $DB->start_delegated_transaction();
+        $DB->delete_records_select('block_playerhud_trade_reqs', "tradeid $tinsql", $tinparams);
+        $DB->delete_records_select('block_playerhud_trade_rewards', "tradeid $tinsql", $tinparams);
+        $DB->delete_records_select('block_playerhud_trade_log', "tradeid $tinsql", $tinparams);
+        $DB->delete_records_select('block_playerhud_trades', "id $tinsql", $tinparams);
+        $transaction->allow_commit();
+
+        return count($validids);
+    }
 }

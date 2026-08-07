@@ -225,6 +225,48 @@ class chapters {
     }
 
     /**
+     * Deletes several chapters together with their scenes and choices, in one query per child
+     * table instead of one delete_chapter() call per chapter.
+     *
+     * Foreign-instance ids are silently filtered out first, matching delete_chapter()'s own
+     * ownership check.
+     *
+     * @param int[] $chapterids The chapters to delete.
+     * @param int $instanceid The owning block instance ID.
+     * @return int The number of chapters actually deleted.
+     */
+    public static function bulk_delete_chapters(array $chapterids, int $instanceid): int {
+        global $DB;
+
+        if (empty($chapterids)) {
+            return 0;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($chapterids);
+        $params = array_merge($inparams, [$instanceid]);
+        $chapters = $DB->get_records_select('block_playerhud_chapters', "id $insql AND blockinstanceid = ?", $params);
+        if (!$chapters) {
+            return 0;
+        }
+
+        $validids = array_keys($chapters);
+        [$cinsql, $cinparams] = $DB->get_in_or_equal($validids);
+
+        $sceneids = $DB->get_fieldset_select('block_playerhud_story_nodes', 'id', "chapterid $cinsql", $cinparams);
+
+        $transaction = $DB->start_delegated_transaction();
+        if ($sceneids) {
+            [$sinsql, $sinparams] = $DB->get_in_or_equal($sceneids);
+            $DB->delete_records_select('block_playerhud_choices', "nodeid $sinsql", $sinparams);
+        }
+        $DB->delete_records_select('block_playerhud_story_nodes', "chapterid $cinsql", $cinparams);
+        $DB->delete_records_select('block_playerhud_chapters', "id $cinsql", $cinparams);
+        $transaction->allow_commit();
+
+        return count($validids);
+    }
+
+    /**
      * Moves a chapter one position up or down within its block instance.
      *
      * Reorders against the full ordered list and renumbers every chapter

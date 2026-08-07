@@ -230,6 +230,58 @@ final class chapters_test extends advanced_testcase {
     }
 
     /**
+     * bulk_delete_chapters removes every requested chapter together with its scenes and
+     * choices, in one pass — used by the wizard's rollback instead of one delete_chapter()
+     * call per chapter.
+     */
+    public function test_bulk_delete_chapters_removes_chapters_scenes_and_choices(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $chaptera = $this->seed_chapter($instanceid, 'A');
+        $chapterb = $this->seed_chapter($instanceid, 'B');
+        [$nodea, $choicea] = $this->seed_node_with_choice($chaptera);
+        [$nodeb, $choiceb] = $this->seed_node_with_choice($chapterb);
+
+        $deleted = chapters::bulk_delete_chapters([$chaptera, $chapterb], $instanceid);
+
+        $this->assertSame(2, $deleted);
+        $this->assertFalse($DB->record_exists('block_playerhud_chapters', ['id' => $chaptera]));
+        $this->assertFalse($DB->record_exists('block_playerhud_chapters', ['id' => $chapterb]));
+        $this->assertFalse($DB->record_exists('block_playerhud_story_nodes', ['id' => $nodea]));
+        $this->assertFalse($DB->record_exists('block_playerhud_story_nodes', ['id' => $nodeb]));
+        $this->assertFalse($DB->record_exists('block_playerhud_choices', ['id' => $choicea]));
+        $this->assertFalse($DB->record_exists('block_playerhud_choices', ['id' => $choiceb]));
+    }
+
+    /**
+     * A chapter id belonging to another instance is filtered out of the bulk delete rather than
+     * deleting it or throwing — the same ownership guard as delete_chapter(), applied in bulk.
+     */
+    public function test_bulk_delete_chapters_ignores_a_foreign_instance_chapter(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $instanceb = $this->make_instance();
+        $ownchapter = $this->seed_chapter($instancea, 'Owned by A');
+        $foreignchapter = $this->seed_chapter($instanceb, 'Owned by B');
+
+        $deleted = chapters::bulk_delete_chapters([$ownchapter, $foreignchapter], $instancea);
+
+        $this->assertSame(1, $deleted);
+        $this->assertFalse($DB->record_exists('block_playerhud_chapters', ['id' => $ownchapter]));
+        $this->assertTrue($DB->record_exists('block_playerhud_chapters', ['id' => $foreignchapter]));
+    }
+
+    /**
+     * An empty id list is a no-op, returning 0 without touching the database.
+     */
+    public function test_bulk_delete_chapters_empty_returns_zero(): void {
+        $this->resetAfterTest();
+        $this->assertSame(0, chapters::bulk_delete_chapters([], $this->make_instance()));
+    }
+
+    /**
      * Moving a chapter up swaps its sort order with the previous one.
      */
     public function test_move_chapter_up_swaps_with_previous(): void {
