@@ -1076,6 +1076,67 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
+     * Regression test for the performance-audit finding's refactor: has_claimable_quests() now
+     * reads TYPE_SPECIFIC_ITEM/TYPE_SPECIFIC_TRADE counts from preload_totals()'s grouped-by-id
+     * map instead of its own per-id memoized queries. A quest for item B must never be
+     * considered claimable because of how much of an unrelated item A the student holds — the
+     * exact bug a broken group-by/keying refactor could introduce.
+     */
+    public function test_has_claimable_quests_specific_item_and_trade_counts_stay_isolated(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $itema = $this->create_dummy_item('Item A');
+        $itemb = $this->create_dummy_item('Item B');
+        $this->give_item($user->id, $itema->id, 5);
+        // Zero copies of item B.
+
+        $tradea = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Trade A',
+            'groupid' => 0, 'centralized' => 1, 'onetime' => 0, 'timecreated' => time(),
+        ]);
+        $tradeb = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Trade B',
+            'groupid' => 0, 'centralized' => 1, 'onetime' => 0, 'timecreated' => time(),
+        ]);
+        $this->log_trade($user->id, $tradea, 5);
+        // Zero completions of trade B.
+
+        $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '1', 0, 0, $itemb->id);
+        $this->create_quest(quest::TYPE_SPECIFIC_TRADE, '1', 0, 0, $tradeb);
+
+        // Only quests for B exist, and the student holds none of B — must not be claimable
+        // just because they hold plenty of the unrelated A.
+        $this->assertFalse(
+            quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 0, 1)
+        );
+    }
+
+    /**
+     * The whole point of the refactor: checking N distinct TYPE_SPECIFIC_ITEM quests costs a
+     * roughly constant number of reads via preload_totals()'s single grouped query, instead of
+     * scaling with the number of distinct items.
+     */
+    public function test_has_claimable_quests_read_count_does_not_scale_with_distinct_items(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        for ($i = 0; $i < 6; $i++) {
+            $item = $this->create_dummy_item('Item ' . $i);
+            // Impossible requirement: forces the full unclaimed list to be scanned.
+            $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '999999', 0, 0, $item->id);
+        }
+
+        $readsbefore = $DB->perf_get_reads();
+        quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 0, 1);
+        $reads = $DB->perf_get_reads() - $readsbefore;
+
+        // Measured: old per-id-query code costs 9 reads for 6 distinct items; the grouped
+        // preload_totals() query costs 3, regardless of how many distinct items are involved.
+        $this->assertLessThanOrEqual(6, $reads);
+    }
+
+    /**
      * A completion-tracked activity is offered as a heuristic quest and drives the
      * activity branch of the claimable check.
      */

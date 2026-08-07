@@ -592,8 +592,8 @@ class quest {
     /**
      * Checks if the user has at least one completed-but-unclaimed quest.
      *
-     * Optimized for sidebar use: lazy-loads DB counts only once per type,
-     * and short-circuits as soon as a claimable quest is found.
+     * Optimized for sidebar use: batches the per-user aggregates via preload_totals() once for
+     * the whole unclaimed list, and short-circuits as soon as a claimable quest is found.
      *
      * @param int $instanceid Block instance ID.
      * @param int $userid User ID.
@@ -626,14 +626,10 @@ class quest {
             return false;
         }
 
-        // Lazy-loaded counters — each is fetched at most once regardless of quest count.
-        $uniqueitems = null;
-        $totalitems = null;
-        $tradecount = null;
-        $specificitemcnt = [];
-        $specifictradecnt = [];
+        // Same aggregates check_status() uses, precomputed once for the whole list instead of
+        // once per distinct specific-item/specific-trade id.
+        $totals = self::preload_totals($userid, $instanceid, $unclaimed);
         $modinfo = null;
-        $completedchapters = null;
 
         foreach ($unclaimed as $q) {
             $completed = false;
@@ -648,25 +644,11 @@ class quest {
                     break;
 
                 case self::TYPE_UNIQUE_ITEMS:
-                    if ($uniqueitems === null) {
-                        $sql = "SELECT COUNT(DISTINCT inv.itemid)
-                                  FROM {block_playerhud_inventory} inv
-                                  JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                                 WHERE inv.userid = ? AND it.blockinstanceid = ?";
-                        $uniqueitems = (int)$DB->count_records_sql($sql, [$userid, $instanceid]);
-                    }
-                    $completed = ($uniqueitems >= (int)$q->requirement);
+                    $completed = ($totals['unique_items'] >= (int)$q->requirement);
                     break;
 
                 case self::TYPE_TOTAL_ITEMS:
-                    if ($totalitems === null) {
-                        $sql = "SELECT COUNT(inv.id)
-                                  FROM {block_playerhud_inventory} inv
-                                  JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                                 WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source NOT IN ('revoked', 'consumed')";
-                        $totalitems = (int)$DB->count_records_sql($sql, [$userid, $instanceid]);
-                    }
-                    $completed = ($totalitems >= (int)$q->requirement);
+                    $completed = ($totals['total_items'] >= (int)$q->requirement);
                     break;
 
                 case self::TYPE_SPECIFIC_ITEM:
@@ -674,24 +656,11 @@ class quest {
                     if ($itemid <= 0) {
                         break;
                     }
-                    if (!isset($specificitemcnt[$itemid])) {
-                        $specificitemcnt[$itemid] = (int)$DB->count_records(
-                            'block_playerhud_inventory',
-                            ['userid' => $userid, 'itemid' => $itemid]
-                        );
-                    }
-                    $completed = ($specificitemcnt[$itemid] >= (int)$q->requirement);
+                    $completed = (($totals['specific_items'][$itemid] ?? 0) >= (int)$q->requirement);
                     break;
 
                 case self::TYPE_TRADES:
-                    if ($tradecount === null) {
-                        $sql = "SELECT COUNT(tl.id)
-                                  FROM {block_playerhud_trade_log} tl
-                                  JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
-                                 WHERE tl.userid = ? AND t.blockinstanceid = ?";
-                        $tradecount = (int)$DB->count_records_sql($sql, [$userid, $instanceid]);
-                    }
-                    $completed = ($tradecount >= (int)$q->requirement);
+                    $completed = ($totals['trades'] >= (int)$q->requirement);
                     break;
 
                 case self::TYPE_SPECIFIC_TRADE:
@@ -699,13 +668,7 @@ class quest {
                     if ($tradeid <= 0) {
                         break;
                     }
-                    if (!isset($specifictradecnt[$tradeid])) {
-                        $specifictradecnt[$tradeid] = (int)$DB->count_records(
-                            'block_playerhud_trade_log',
-                            ['userid' => $userid, 'tradeid' => $tradeid]
-                        );
-                    }
-                    $completed = ($specifictradecnt[$tradeid] >= (int)$q->requirement);
+                    $completed = (($totals['specific_trades'][$tradeid] ?? 0) >= (int)$q->requirement);
                     break;
 
                 case self::TYPE_ACTIVITY:
@@ -729,18 +692,7 @@ class quest {
                     break;
 
                 case self::TYPE_CHAPTER:
-                    if ($completedchapters === null) {
-                        $chapjson = $DB->get_field(
-                            'block_playerhud_rpg_progress',
-                            'completed_chapters',
-                            ['blockinstanceid' => $instanceid, 'userid' => $userid]
-                        );
-                        $completedchapters = $chapjson ? json_decode($chapjson, true) : [];
-                        if (!is_array($completedchapters)) {
-                            $completedchapters = [];
-                        }
-                    }
-                    $completed = in_array((int)$q->requirement, $completedchapters);
+                    $completed = in_array((int)$q->requirement, $totals['done_chapters']);
                     break;
             }
 
