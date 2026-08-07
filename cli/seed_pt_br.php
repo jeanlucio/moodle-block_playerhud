@@ -141,12 +141,23 @@ $coursecontext = context_course::instance($course->id);
  * @param string $firstname First name.
  * @param string $lastname Last name.
  * @param string $password Plaintext password.
+ * @param array|null $existingusers Preloaded existing seed users keyed by username (from
+ *        SELECT * WHERE username LIKE '<prefix>%'); avoids a get_record() per call when
+ *        creating several users in a loop. Null falls back to a direct lookup.
  * @return stdClass User record.
  */
-function seed_create_user(string $username, string $firstname, string $lastname, string $password): stdClass {
+function seed_create_user(
+    string $username,
+    string $firstname,
+    string $lastname,
+    string $password,
+    ?array $existingusers = null
+): stdClass {
     global $DB, $CFG;
 
-    $existing = $DB->get_record('user', ['username' => $username, 'deleted' => 0]);
+    $existing = $existingusers !== null
+        ? ($existingusers[$username] ?? null)
+        : $DB->get_record('user', ['username' => $username, 'deleted' => 0]);
     if ($existing) {
         return $existing;
     }
@@ -219,7 +230,13 @@ function seed_set_avatar(int $userid, string $initial, string $hexcolor): void {
     unlink($tmpfile);
 }
 
-$teacher = seed_create_user(SEED_USER_PREFIX . 'teacher', 'Mestre', 'Dungeon', SEED_PASSWORD);
+// Preloaded once so seed_create_user() below never re-queries per account.
+$existingseedusers = [];
+foreach ($DB->get_records_sql("SELECT * FROM {user} WHERE username LIKE '" . SEED_USER_PREFIX . "%' AND deleted = 0") as $u) {
+    $existingseedusers[$u->username] = $u;
+}
+
+$teacher = seed_create_user(SEED_USER_PREFIX . 'teacher', 'Mestre', 'Dungeon', SEED_PASSWORD, $existingseedusers);
 $students = [];
 $studentnames = [
     [SEED_USER_PREFIX . 'alice', 'Alice', 'Espada', '#e57373'],
@@ -229,7 +246,7 @@ $studentnames = [
     [SEED_USER_PREFIX . 'eve', 'Eve', 'Adaga', '#ffb74d'],
 ];
 foreach ($studentnames as [$uname, $fname, $lname, $avatarcolor]) {
-    $student = seed_create_user($uname, $fname, $lname, SEED_PASSWORD);
+    $student = seed_create_user($uname, $fname, $lname, SEED_PASSWORD, $existingseedusers);
     if ((int) $student->picture === 0) {
         seed_set_avatar($student->id, $fname, $avatarcolor);
     }
@@ -734,12 +751,18 @@ cli_writeln("Trades prontos: 2 trocas criadas.");
  * @param int $instanceid Block instance ID.
  * @param int $userid User ID.
  * @param int $xp Current XP.
+ * @param array|null $existinguserids Preloaded userids (as array keys) that already have a
+ *        row, from a single get_fieldset_select() before the loop. Null falls back to a
+ *        direct lookup.
  * @return void
  */
-function seed_upsert_user_xp(int $instanceid, int $userid, int $xp): void {
+function seed_upsert_user_xp(int $instanceid, int $userid, int $xp, ?array $existinguserids = null): void {
     global $DB, $now;
 
-    if ($DB->record_exists('block_playerhud_user', ['blockinstanceid' => $instanceid, 'userid' => $userid])) {
+    $exists = $existinguserids !== null
+        ? isset($existinguserids[$userid])
+        : $DB->record_exists('block_playerhud_user', ['blockinstanceid' => $instanceid, 'userid' => $userid]);
+    if ($exists) {
         return;
     }
 
@@ -763,12 +786,18 @@ function seed_upsert_user_xp(int $instanceid, int $userid, int $xp): void {
  * @param int $userid User ID.
  * @param int $classid RPG class ID.
  * @param int $karma Karma value.
+ * @param array|null $existinguserids Preloaded userids (as array keys) that already have a
+ *        row, from a single get_fieldset_select() before the loop. Null falls back to a
+ *        direct lookup.
  * @return void
  */
-function seed_upsert_rpg_progress(int $instanceid, int $userid, int $classid, int $karma): void {
+function seed_upsert_rpg_progress(int $instanceid, int $userid, int $classid, int $karma, ?array $existinguserids = null): void {
     global $DB;
 
-    if ($DB->record_exists('block_playerhud_rpg_progress', ['blockinstanceid' => $instanceid, 'userid' => $userid])) {
+    $exists = $existinguserids !== null
+        ? isset($existinguserids[$userid])
+        : $DB->record_exists('block_playerhud_rpg_progress', ['blockinstanceid' => $instanceid, 'userid' => $userid]);
+    if ($exists) {
         return;
     }
 
@@ -791,10 +820,27 @@ $classids = [
 ];
 $karmas = [10, -5, 20, 0, -20];
 
+// Preloaded once so the two upserts below never re-query per student.
+$studentids = array_map(static fn(stdClass $s): int => (int) $s->id, $students);
+[$sidinsql, $sidinparams] = $DB->get_in_or_equal($studentids, SQL_PARAMS_NAMED);
+$sidinparams['instanceid'] = $instanceid;
+$existingxpuserids = array_flip($DB->get_fieldset_select(
+    'block_playerhud_user',
+    'userid',
+    "blockinstanceid = :instanceid AND userid $sidinsql",
+    $sidinparams
+));
+$existingrpguserids = array_flip($DB->get_fieldset_select(
+    'block_playerhud_rpg_progress',
+    'userid',
+    "blockinstanceid = :instanceid AND userid $sidinsql",
+    $sidinparams
+));
+
 foreach ($students as $idx => $student) {
     // XP starts at 0 and is recalculated from real events after inventory/quests.
-    seed_upsert_user_xp($instanceid, $student->id, 0);
-    seed_upsert_rpg_progress($instanceid, $student->id, $classids[$idx], $karmas[$idx]);
+    seed_upsert_user_xp($instanceid, $student->id, 0, $existingxpuserids);
+    seed_upsert_rpg_progress($instanceid, $student->id, $classids[$idx], $karmas[$idx], $existingrpguserids);
 }
 cli_writeln("Registros base de usuários criados.");
 
@@ -904,18 +950,36 @@ function seed_execute_trade(int $userid, stdClass $trade, array $reqs, array $re
         return;
     }
 
-    foreach ($reqs as $req) {
-        $owned = $DB->get_records(
+    if (!empty($reqs)) {
+        // Load every requirement's owned copies in one query, grouped by itemid, instead of
+        // one get_records() per requirement.
+        $itemids = array_column($reqs, 'itemid');
+        [$insql, $inparams] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED);
+        $inparams['userid'] = $userid;
+        $owned = $DB->get_records_select(
             'block_playerhud_inventory',
-            ['userid' => $userid, 'itemid' => $req['itemid']],
+            "userid = :userid AND itemid $insql",
+            $inparams,
             'timecreated ASC',
-            'id',
-            0,
-            $req['qty']
+            'id, itemid'
         );
-        $ids = array_keys($owned);
-        [$insql, $inparams] = $DB->get_in_or_equal($ids, SQL_PARAMS_NAMED, 'tc');
-        $DB->set_field_select('block_playerhud_inventory', 'source', 'consumed', "id $insql", $inparams);
+
+        $ownedbyitem = [];
+        foreach ($owned as $row) {
+            $ownedbyitem[$row->itemid][] = $row->id;
+        }
+
+        $idstoconsume = [];
+        foreach ($reqs as $req) {
+            $pool = $ownedbyitem[$req['itemid']] ?? [];
+            $idstoconsume = array_merge($idstoconsume, array_slice($pool, 0, $req['qty']));
+            $ownedbyitem[$req['itemid']] = array_slice($pool, $req['qty']);
+        }
+
+        if (!empty($idstoconsume)) {
+            [$csql, $cparams] = $DB->get_in_or_equal($idstoconsume, SQL_PARAMS_NAMED, 'tc');
+            $DB->set_field_select('block_playerhud_inventory', 'source', 'consumed', "id $csql", $cparams);
+        }
     }
 
     foreach ($rewards as $reward) {
