@@ -12,6 +12,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `collection_tab_test.php` | 9 |
 | `content_crud_test.php` | 13 |
 | `cross_instance_security_test.php` | 12 |
+| `db_access_test.php` | 1 |
 | `db_upgrade_test.php` | 7 |
 | `drop_guard_test.php` | 7 |
 | `form/edit_item_form_test.php` | 4 |
@@ -20,15 +21,15 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `instance_delete_test.php` | 1 |
 | `item_delete_cascade_test.php` | 17 |
 | `karma_test.php` | 11 |
-| `lib_test.php` | 24 |
+| `lib_test.php` | 27 |
 | `privacy_provider_test.php` | 19 |
-| `quest_test.php` | 35 |
+| `quest_test.php` | 40 |
 | `rpg_classes_test.php` | 8 |
-| `story_manager_test.php` | 25 |
+| `story_manager_test.php` | 26 |
 | `suggest_trades_state_test.php` | 4 |
 | `trade_test.php` | 9 |
 | `utils_test.php` | 6 |
-| **Subtotal** | **265** |
+| **Subtotal** | **275** |
 
 ### Local Business-Logic Tests (`tests/local/`)
 
@@ -38,9 +39,9 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `audit_log_test.php` | 5 |
 | `drop_distribution_test.php` | 12 |
 | `external_items_test.php` | 19 |
-| `wizard_test.php` | 17 |
+| `wizard_test.php` | 20 |
 | `xp_budget_test.php` | 15 |
-| **Subtotal** | **79** |
+| **Subtotal** | **82** |
 
 ### Web Services Tests (`tests/external/`)
 
@@ -55,7 +56,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `generate_ai_content_test.php` | 2 |
 | `generate_class_oracle_test.php` | 2 |
 | `generate_story_test.php` | 2 |
-| `insert_drop_shortcode_test.php` | 9 |
+| `insert_drop_shortcode_test.php` | 11 |
 | `load_recap_test.php` | 3 |
 | `load_scene_test.php` | 3 |
 | `make_choice_test.php` | 3 |
@@ -63,29 +64,29 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `setup_playercoin_drop_test.php` | 6 |
 | `use_item_test.php` | 10 |
 | `wizard_apply_suggested_levels_test.php` | 3 |
-| `wizard_generate_helpers_test.php` | 10 |
+| `wizard_generate_helpers_test.php` | 12 |
 | `wizard_list_runs_test.php` | 4 |
 | `wizard_rollback_test.php` | 3 |
-| `wizard_run_step_test.php` | 56 |
-| `wizard_start_test.php` | 8 |
-| **Subtotal** | **155** |
+| `wizard_run_step_test.php` | 57 |
+| `wizard_start_test.php` | 9 |
+| **Subtotal** | **161** |
 
 ### Controller Tests (`tests/controller/`)
 
 | Test file | Cases |
 |-----------|------:|
 | `aikeys_test.php` | 4 |
-| `chapters_test.php` | 13 |
+| `chapters_test.php` | 16 |
 | `classes_test.php` | 7 |
 | `drops_test.php` | 15 |
 | `export_test.php` | 7 |
 | `items_test.php` | 16 |
-| `manage_entry_points_test.php` | 20 |
-| `quests_test.php` | 12 |
+| `manage_entry_points_test.php` | 23 |
+| `quests_test.php` | 13 |
 | `scenes_test.php` | 6 |
 | `suggestions_test.php` | 4 |
-| `trades_test.php` | 7 |
-| **Subtotal** | **111** |
+| `trades_test.php` | 10 |
+| **Subtotal** | **121** |
 
 ### Output / Renderer Tests (`tests/output/`)
 
@@ -106,12 +107,12 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `view/tab_shop_test.php` | 4 |
 | **Subtotal** | **49** |
 
-| **Grand Total** | **659** |
+| **Grand Total** | **688** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
 ```
 
-**Overall line coverage** (`moodle-coverage`, PHPUnit + Xdebug): **62%**.
+**Overall line coverage** (`moodle-coverage`, PHPUnit + Xdebug): **63%**.
 
 [Full test-by-test breakdown and coverage table →]({{ '/testing.html' | relative_url }})
