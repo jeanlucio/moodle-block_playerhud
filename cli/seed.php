@@ -957,7 +957,7 @@ if ($tradekeys) {
 
 /**
  * Logs a quest as claimed and adds the reward item to inventory if applicable.
- * Does not update currentxp directly — seed_recalc_xp handles that in bulk.
+ * Does not update currentxp directly — seed_recalc_xp_for_students handles that in bulk.
  *
  * @param int $instanceid Block instance ID.
  * @param stdClass $quest Quest record.
@@ -1035,44 +1035,58 @@ cli_writeln("Completed quests recorded.");
 // 15. Recalculate XP from real events.
 
 /**
- * Calculates a user's total XP from finite-drop inventory plus claimed quest rewards.
- * Mirrors the rules in game::process_collection and quest::claim_reward.
+ * Calculates total XP (finite-drop inventory plus claimed quest rewards) for several students
+ * at once. Mirrors the rules in game::process_collection and quest::claim_reward.
  *
  * @param int $instanceid Block instance ID.
- * @param int $userid User ID.
- * @return int Calculated total XP.
+ * @param int[] $userids Student user IDs.
+ * @return array XP total keyed by userid (0 for a student with no XP-earning activity yet).
  */
-function seed_recalc_xp(int $instanceid, int $userid): int {
+function seed_recalc_xp_for_students(int $instanceid, array $userids): array {
     global $DB;
 
-    $itemxp = (int) $DB->get_field_sql(
-        "SELECT COALESCE(SUM(i.xp), 0)
+    $totals = array_fill_keys($userids, 0);
+    if (empty($userids)) {
+        return $totals;
+    }
+
+    [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
+    $inparams['instanceid'] = $instanceid;
+
+    $itemrows = $DB->get_records_sql(
+        "SELECT inv.userid, COALESCE(SUM(i.xp), 0) AS xp
            FROM {block_playerhud_inventory} inv
            JOIN {block_playerhud_items} i ON i.id = inv.itemid
            JOIN {block_playerhud_drops} d ON d.id = inv.dropid
-          WHERE inv.userid = :userid
+          WHERE inv.userid $insql
             AND i.blockinstanceid = :instanceid
-            AND d.maxusage > 0",
-        ['userid' => $userid, 'instanceid' => $instanceid]
+            AND d.maxusage > 0
+       GROUP BY inv.userid",
+        $inparams
     );
+    foreach ($itemrows as $row) {
+        $totals[(int) $row->userid] += (int) $row->xp;
+    }
 
-    $questxp = (int) $DB->get_field_sql(
-        "SELECT COALESCE(SUM(q.reward_xp), 0)
+    $questrows = $DB->get_records_sql(
+        "SELECT ql.userid, COALESCE(SUM(q.reward_xp), 0) AS xp
            FROM {block_playerhud_quest_log} ql
            JOIN {block_playerhud_quests} q ON q.id = ql.questid
-          WHERE ql.userid = :userid
-            AND q.blockinstanceid = :instanceid",
-        ['userid' => $userid, 'instanceid' => $instanceid]
+          WHERE ql.userid $insql
+            AND q.blockinstanceid = :instanceid
+       GROUP BY ql.userid",
+        $inparams
     );
+    foreach ($questrows as $row) {
+        $totals[(int) $row->userid] += (int) $row->xp;
+    }
 
-    return $itemxp + $questxp;
+    return $totals;
 }
 
-$finalxp = [];
+$finalxp = seed_recalc_xp_for_students($instanceid, array_map(fn(stdClass $s): int => (int) $s->id, $students));
 foreach ($students as $student) {
-    $xp = seed_recalc_xp($instanceid, $student->id);
-    $finalxp[$student->id] = $xp;
-    $DB->set_field('block_playerhud_user', 'currentxp', $xp, [
+    $DB->set_field('block_playerhud_user', 'currentxp', $finalxp[$student->id], [
         'blockinstanceid' => $instanceid,
         'userid'          => $student->id,
     ]);
