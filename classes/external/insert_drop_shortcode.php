@@ -138,6 +138,12 @@ class insert_drop_shortcode extends external_api {
         self::require_manage_and_course_match($instanceid, $courseid);
 
         $columnscache = [];
+        $dropscache = self::preload_drops($instanceid, array_map(
+            fn(array $item): int => (int) $item['dropid'],
+            $items
+        ));
+        $fieldvaluescache = self::preload_field_values($courseid, $items);
+
         $results = [];
         $anysucceeded = false;
 
@@ -152,7 +158,9 @@ class insert_drop_shortcode extends external_api {
                 (string) ($item['mode'] ?? 'card'),
                 (string) ($item['customtext'] ?? ''),
                 $columnscache,
-                true
+                true,
+                $dropscache,
+                $fieldvaluescache
             );
             $results[$key] = $result;
             if ($result['success']) {
@@ -165,6 +173,73 @@ class insert_drop_shortcode extends external_api {
         }
 
         return $results;
+    }
+
+    /**
+     * Bulk-loads every drop referenced by a batch in a single query, scoped to the instance.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int[] $dropids Drop IDs to load.
+     * @return array Drop records (id, code, itemid) keyed by dropid.
+     */
+    protected static function preload_drops(int $instanceid, array $dropids): array {
+        global $DB;
+
+        $dropids = array_unique(array_filter($dropids));
+        if (empty($dropids)) {
+            return [];
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($dropids, SQL_PARAMS_NAMED);
+        $inparams['instanceid'] = $instanceid;
+
+        return $DB->get_records_sql(
+            "SELECT d.id, d.code, d.itemid
+               FROM {block_playerhud_drops} d
+               JOIN {block_playerhud_items} i ON d.itemid = i.id
+              WHERE d.id $insql AND i.blockinstanceid = :instanceid",
+            $inparams
+        );
+    }
+
+    /**
+     * Bulk-loads the current value of every course module field referenced by a batch, grouped
+     * by module type and field so a batch spanning several activity types issues one query per
+     * (modname, field) pair instead of one query per item.
+     *
+     * @param int $courseid Course ID.
+     * @param array $items Batch items, same shape as {@see execute_batch()}'s own parameter.
+     * @return array Values keyed by [modname][field][course-module-instance id].
+     */
+    protected static function preload_field_values(int $courseid, array $items): array {
+        global $DB;
+
+        $modinfo = get_fast_modinfo($courseid);
+        $wanted = [];
+        foreach ($items as $item) {
+            $field = (string) $item['field'];
+            if (!in_array($field, ['intro', 'content'], true)) {
+                continue;
+            }
+            try {
+                $cm = $modinfo->get_cm((int) $item['cmid']);
+            } catch (\moodle_exception $e) {
+                continue;
+            }
+            $wanted[$cm->modname][$field][] = $cm->instance;
+        }
+
+        $cache = [];
+        foreach ($wanted as $modname => $byfield) {
+            foreach ($byfield as $field => $instanceids) {
+                $rows = $DB->get_records_list($modname, 'id', array_unique($instanceids), '', 'id, ' . $field);
+                foreach ($rows as $row) {
+                    $cache[$modname][$field][$row->id] = (string) ($row->$field ?? '');
+                }
+            }
+        }
+
+        return $cache;
     }
 
     /**
@@ -201,6 +276,12 @@ class insert_drop_shortcode extends external_api {
      * @param array $columnscache Column list per modname, reused across calls in the same batch.
      * @param bool $deferrebuild When true, the caller is responsible for calling
      *                           rebuild_course_cache() itself once, after every drop is inserted.
+     * @param array|null $dropscache Drop records preloaded by {@see preload_drops()}, keyed by
+     *                               dropid; null (the execute() single-call path) always queries.
+     * @param array|null $fieldvaluescache Field values preloaded by {@see preload_field_values()};
+     *                                     updated in place after each write so a later item in
+     *                                     the same batch targeting the same field sees it; null
+     *                                     (the execute() single-call path) always queries.
      * @return array Result structure.
      */
     protected static function insert_one(
@@ -213,7 +294,9 @@ class insert_drop_shortcode extends external_api {
         string $mode,
         string $customtext,
         array &$columnscache,
-        bool $deferrebuild
+        bool $deferrebuild,
+        ?array $dropscache = null,
+        ?array &$fieldvaluescache = null
     ): array {
         global $DB;
 
@@ -233,13 +316,17 @@ class insert_drop_shortcode extends external_api {
         }
 
         // Load the drop and verify it belongs to this block instance.
-        $drop = $DB->get_record_sql(
-            "SELECT d.id, d.code, d.itemid
-               FROM {block_playerhud_drops} d
-               JOIN {block_playerhud_items} i ON d.itemid = i.id
-              WHERE d.id = :dropid AND i.blockinstanceid = :instanceid",
-            ['dropid' => $dropid, 'instanceid' => $instanceid]
-        );
+        if ($dropscache !== null) {
+            $drop = $dropscache[$dropid] ?? null;
+        } else {
+            $drop = $DB->get_record_sql(
+                "SELECT d.id, d.code, d.itemid
+                   FROM {block_playerhud_drops} d
+                   JOIN {block_playerhud_items} i ON d.itemid = i.id
+                  WHERE d.id = :dropid AND i.blockinstanceid = :instanceid",
+                ['dropid' => $dropid, 'instanceid' => $instanceid]
+            );
+        }
 
         if (!$drop) {
             return ['success' => false, 'message' => get_string('invalidrecord', 'error')];
@@ -267,9 +354,13 @@ class insert_drop_shortcode extends external_api {
         }
 
         // Read current field value.
-        $currentval = $DB->get_field($modname, $field, ['id' => $cm->instance]);
-        if ($currentval === false) {
-            $currentval = '';
+        if ($fieldvaluescache !== null && isset($fieldvaluescache[$modname][$field][$cm->instance])) {
+            $currentval = $fieldvaluescache[$modname][$field][$cm->instance];
+        } else {
+            $currentval = $DB->get_field($modname, $field, ['id' => $cm->instance]);
+            if ($currentval === false) {
+                $currentval = '';
+            }
         }
 
         // Prevent duplicate insertion.
@@ -298,6 +389,13 @@ class insert_drop_shortcode extends external_api {
 
         // Save the new value.
         $DB->set_field($modname, $field, $newval, ['id' => $cm->instance]);
+
+        // Keep the preloaded cache in sync so a later item in the same batch targeting the same
+        // course module and field (e.g. two drops landing on the same activity) sees this write
+        // instead of the stale value read at the start of the batch.
+        if ($fieldvaluescache !== null) {
+            $fieldvaluescache[$modname][$field][$cm->instance] = $newval;
+        }
 
         // Update timemodified if the column exists.
         if (isset($columns['timemodified'])) {

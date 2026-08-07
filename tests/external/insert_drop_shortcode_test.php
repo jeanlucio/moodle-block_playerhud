@@ -119,6 +119,71 @@ final class insert_drop_shortcode_test extends external_base_testcase {
     }
 
     /**
+     * Two drops landing on the same activity and field in one batch must both survive: the
+     * preloaded field-value cache is read once at the start of the batch, so without in-place
+     * invalidation the second item would overwrite the first item's shortcode instead of
+     * appending after it.
+     */
+    public function test_execute_batch_two_drops_into_the_same_activity_and_field_both_land(): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'content' => '']);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid1, $code1] = $this->create_drop($item->id);
+        [$dropid2, $code2] = $this->create_drop($item->id);
+
+        $results = insert_drop_shortcode::execute_batch($this->instanceid, $this->course->id, [
+            ['dropid' => $dropid1, 'cmid' => $page->cmid, 'field' => 'content', 'position' => 'top'],
+            ['dropid' => $dropid2, 'cmid' => $page->cmid, 'field' => 'content', 'position' => 'bottom'],
+        ]);
+
+        $this->assertTrue($results[0]['success']);
+        $this->assertTrue($results[1]['success']);
+
+        $content = (string) $DB->get_field('page', 'content', ['id' => $page->id]);
+        $this->assertStringContainsString('code=' . $code1, $content);
+        $this->assertStringContainsString('code=' . $code2, $content);
+    }
+
+    /**
+     * The preloaded drop and field-value caches keep the number of reads roughly constant as
+     * the batch grows, instead of scaling linearly with the number of items — the actual
+     * performance property the preload methods exist for.
+     */
+    public function test_execute_batch_read_count_does_not_scale_with_batch_size(): void {
+        global $DB;
+
+        $item = $this->create_item($this->instanceid, 'Gem');
+
+        $smallitems = [];
+        for ($i = 0; $i < 2; $i++) {
+            $page = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'content' => '']);
+            [$dropid] = $this->create_drop($item->id);
+            $smallitems[] = ['dropid' => $dropid, 'cmid' => $page->cmid, 'field' => 'content', 'position' => 'top'];
+        }
+
+        $bigitems = [];
+        for ($i = 0; $i < 8; $i++) {
+            $page = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'content' => '']);
+            [$dropid] = $this->create_drop($item->id);
+            $bigitems[] = ['dropid' => $dropid, 'cmid' => $page->cmid, 'field' => 'content', 'position' => 'top'];
+        }
+
+        $readsbefore = $DB->perf_get_reads();
+        insert_drop_shortcode::execute_batch($this->instanceid, $this->course->id, $smallitems);
+        $smallreads = $DB->perf_get_reads() - $readsbefore;
+
+        $readsbefore = $DB->perf_get_reads();
+        insert_drop_shortcode::execute_batch($this->instanceid, $this->course->id, $bigitems);
+        $bigreads = $DB->perf_get_reads() - $readsbefore;
+
+        // A 4x larger batch (2 -> 8 items) must not come close to a 4x read count: with the old
+        // one-query-per-item design bigreads would be ~4x smallreads; with preloading it stays
+        // within a couple of extra reads regardless of batch size.
+        $this->assertLessThan($smallreads + 3, $bigreads);
+    }
+
+    /**
      * A batch entry targeting an invalid field fails on its own without aborting the rest
      * of the batch.
      */
