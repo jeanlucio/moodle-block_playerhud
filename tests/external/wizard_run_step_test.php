@@ -1728,4 +1728,19 @@ final class wizard_run_step_test extends external_base_testcase {
         $this->assertSame('Reactor Room', $drop->name);
         $this->assertNotSame($itemname, $drop->name);
     }
+
+    /**
+     * Regression test for the security-audit finding: execute() only checked
+     * block/playerhud:manage on the instance's own block context, never that the block instance
+     * actually belongs to the client-supplied courseid. A teacher who owns one instance could
+     * swap courseid for an unrelated course and have steps like "missions" read that course's
+     * own activity structure through get_fast_modinfo($courseid).
+     */
+    public function test_execute_rejects_a_foreign_courseid(): void {
+        $othercourse = $this->getDataGenerator()->create_course();
+        $runid = $this->start_empty_run();
+
+        $this->expectException(\moodle_exception::class);
+        wizard_run_step::execute($this->instanceid, $othercourse->id, $runid, 'playercoin', '');
+    }
 }

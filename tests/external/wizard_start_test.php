@@ -233,4 +233,17 @@ final class wizard_start_test extends external_base_testcase {
         $this->expectException(\required_capability_exception::class);
         wizard_start::execute($this->instanceid, $this->course->id, '', '', 'short', false, true);
     }
+
+    /**
+     * Regression test for the security-audit finding: execute() only checked
+     * block/playerhud:manage on the instance's own block context, never that the block instance
+     * actually belongs to the client-supplied courseid, symmetric to the same fix in
+     * wizard_run_step::execute().
+     */
+    public function test_wizard_start_rejects_a_foreign_courseid(): void {
+        $othercourse = $this->getDataGenerator()->create_course();
+
+        $this->expectException(\moodle_exception::class);
+        wizard_start::execute($this->instanceid, $othercourse->id, '');
+    }
 }

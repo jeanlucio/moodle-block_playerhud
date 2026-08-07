@@ -470,4 +470,28 @@ final class wizard_test extends advanced_testcase {
         $after = $DB->get_field('block_instances', 'configdata', ['id' => $this->instanceid]);
         $this->assertSame($before, $after);
     }
+
+    /**
+     * The block instance's own course is always accepted.
+     */
+    public function test_require_course_matches_instance_accepts_the_real_course(): void {
+        $blockcontext = \context_block::instance($this->instanceid);
+
+        wizard::require_course_matches_instance($blockcontext, $this->courseid);
+        $this->assertTrue(true);
+    }
+
+    /**
+     * Regression test for the security-audit finding: passing a courseid that does not match
+     * the block instance's own course must be rejected, closing the gap where
+     * require_capability() alone on the block context said nothing about which course a
+     * client-supplied courseid actually pointed to.
+     */
+    public function test_require_course_matches_instance_rejects_a_foreign_course(): void {
+        $othercourse = $this->getDataGenerator()->create_course();
+        $blockcontext = \context_block::instance($this->instanceid);
+
+        $this->expectException(\moodle_exception::class);
+        wizard::require_course_matches_instance($blockcontext, (int) $othercourse->id);
+    }
 }

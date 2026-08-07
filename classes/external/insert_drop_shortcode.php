@@ -24,6 +24,7 @@
 
 namespace block_playerhud\external;
 
+use block_playerhud\local\wizard;
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_value;
@@ -183,11 +184,7 @@ class insert_drop_shortcode extends external_api {
         $coursecontext = \context_course::instance($courseid);
         require_capability('moodle/course:manageactivities', $coursecontext);
 
-        // Verify the block instance actually belongs to the supplied course.
-        $blockcoursectx = $context->get_course_context(false);
-        if (!$blockcoursectx || (int) $blockcoursectx->instanceid !== $courseid) {
-            throw new \moodle_exception('accessdenied', 'admin');
-        }
+        wizard::require_course_matches_instance($context, $courseid);
     }
 
     /**

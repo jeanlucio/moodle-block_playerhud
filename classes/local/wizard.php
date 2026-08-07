@@ -37,6 +37,30 @@ namespace block_playerhud\local;
  */
 class wizard {
     /**
+     * Ensures a block context's own course matches an externally supplied courseid.
+     *
+     * Web service parameters send instanceid and courseid as two independent values the
+     * client controls. A require_capability('block/playerhud:manage', $blockcontext) check
+     * alone is satisfied as long as the caller owns *some* instance with that capability — it
+     * says nothing about whether courseid is the instance's real course or an unrelated one
+     * the caller does not manage. Every wizard entry point that later derives course content
+     * (activity names, course modules) from the client-supplied courseid must call this right
+     * after its own require_capability(), or a teacher can swap courseid for another course's
+     * id and read that course's structure through their own instance's capability.
+     *
+     * @param \context_block $blockcontext Already-validated block context.
+     * @param int $courseid Course ID supplied by the client, to verify against the block.
+     * @return void
+     * @throws \moodle_exception If the block instance does not belong to $courseid.
+     */
+    public static function require_course_matches_instance(\context_block $blockcontext, int $courseid): void {
+        $coursecontext = $blockcontext->get_course_context(false);
+        if (!$coursecontext || (int) $coursecontext->instanceid !== $courseid) {
+            throw new \moodle_exception('accessdenied', 'admin');
+        }
+    }
+
+    /**
      * Starts a new wizard run.
      *
      * @param int $blockinstanceid The block instance ID.
