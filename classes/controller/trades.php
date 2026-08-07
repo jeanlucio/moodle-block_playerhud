@@ -77,8 +77,20 @@ class trades {
         $dbgivecount = 0;
         $requirements = [];
         $rewards      = [];
+        $trade        = null;
 
         if ($tradeid) {
+            // Ownership must be confirmed before touching trade_reqs/trade_rewards at all —
+            // otherwise their row counts (via db_req_count/db_give_count below, which size the
+            // form's hidden repeats_req/repeats_give fields on every request, submitted or not)
+            // become an oracle for a foreign trade's requirement/reward counts.
+            $trade = $DB->get_record(
+                'block_playerhud_trades',
+                ['id' => $tradeid, 'blockinstanceid' => $instanceid],
+                '*',
+                MUST_EXIST
+            );
+
             $requirements = $DB->get_records(
                 'block_playerhud_trade_reqs',
                 ['tradeid' => $tradeid],
@@ -102,12 +114,6 @@ class trades {
         ]);
 
         if ($tradeid && !$mform->is_submitted()) {
-            $trade = $DB->get_record(
-                'block_playerhud_trades',
-                ['id' => $tradeid, 'blockinstanceid' => $instanceid],
-                '*',
-                MUST_EXIST
-            );
             $data              = (array) $trade;
             $data['courseid']  = $courseid;
             $data['instanceid'] = $instanceid;

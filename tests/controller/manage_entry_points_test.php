@@ -676,6 +676,46 @@ final class manage_entry_points_test extends advanced_testcase {
     }
 
     /**
+     * A genuinely submitted request (the moodleform "_qf__" marker present, as a real POST
+     * carries it) for a trade owned by another block instance must still be rejected before
+     * trade_reqs/trade_rewards are ever read for it — otherwise their row counts leak into the
+     * re-rendered form's repeats_req/repeats_give sizing as an oracle for a foreign trade's
+     * requirement/reward counts, since form validation failing (no 'name' etc. supplied) would
+     * fall through to render instead of throwing.
+     */
+    public function test_trade_editor_rejects_a_submitted_trade_from_another_instance(): void {
+        global $DB;
+
+        $this->setAdminUser();
+        $othercourse   = $this->getDataGenerator()->create_course();
+        $otherinstance = $this->make_instance($othercourse);
+        $foreigntrade  = (int) $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $otherinstance,
+            'name'            => 'Foreign Bargain',
+            'groupid'         => 0,
+            'centralized'     => 1,
+            'onetime'         => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+        $DB->insert_record('block_playerhud_trade_reqs', (object) [
+            'tradeid' => $foreigntrade, 'itemid' => $this->make_item($otherinstance), 'qty' => 1,
+        ]);
+
+        $formidentifier = str_replace('\\', '_', \block_playerhud\form\edit_trade_form::class);
+        $_POST = [
+            'courseid'                  => $this->course->id,
+            'instanceid'                => $this->instanceid,
+            'tradeid'                   => $foreigntrade,
+            'sesskey'                   => sesskey(),
+            '_qf__' . $formidentifier   => 1,
+        ];
+
+        $this->expectException(\dml_missing_record_exception::class);
+        (new trades())->handle_edit_form();
+    }
+
+    /**
      * A student without block/playerhud:manage cannot open the trade editor.
      */
     public function test_trade_editor_requires_the_manage_capability(): void {
