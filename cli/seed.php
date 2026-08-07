@@ -26,7 +26,7 @@
  *   php blocks/playerhud/cli/seed.php --password=YourDevPassword --force
  *
  * The --password flag is required and sets the login password for all demo
- * users created by this script (e.g. seed_teacher, seed_student1, …).
+ * users created by this script (e.g. seed_en_teacher, seed_en_alice, …).
  * Use it to log in to the Moodle instance as one of those test accounts.
  * The script refuses to run on non-development sites unless --force is passed.
  *
@@ -80,6 +80,9 @@ if (
 /** @var string Shortname of the demo course created by this seed script. */
 const SEED_COURSE_SHORTNAME = 'playerhud-demo';
 
+/** @var string Username prefix for every account this script creates. */
+const SEED_USER_PREFIX = 'seed_en_';
+
 /** @var string Password for all seed users, supplied via --password flag. */
 define('SEED_PASSWORD', $options['password']);
 
@@ -97,9 +100,10 @@ if ($options['reset']) {
         delete_course($existing, false);
         cli_writeln("Course removed.\n");
     }
-    // Remove seed users.
+    // Remove seed users. Scoped to this script's own prefix — the Portuguese seed script
+    // uses a different one, so running --reset here never touches its accounts.
     $seedusers = $DB->get_records_sql(
-        "SELECT * FROM {user} WHERE username LIKE 'seed_%' AND deleted = 0"
+        "SELECT * FROM {user} WHERE username LIKE '" . SEED_USER_PREFIX . "%' AND deleted = 0"
     );
     foreach ($seedusers as $u) {
         delete_user($u);
@@ -214,14 +218,14 @@ function seed_set_avatar(int $userid, string $initial, string $hexcolor): void {
     unlink($tmpfile);
 }
 
-$teacher = seed_create_user('seed_teacher', 'Dungeon', 'Master', SEED_PASSWORD);
+$teacher = seed_create_user(SEED_USER_PREFIX . 'teacher', 'Dungeon', 'Master', SEED_PASSWORD);
 $students = [];
 $studentnames = [
-    ['seed_alice', 'Alice', 'Sword', '#e57373'],
-    ['seed_bob', 'Bob', 'Bow', '#64b5f6'],
-    ['seed_carol', 'Carol', 'Staff', '#ba68c8'],
-    ['seed_dave', 'Dave', 'Shield', '#81c784'],
-    ['seed_eve', 'Eve', 'Dagger', '#ffb74d'],
+    [SEED_USER_PREFIX . 'alice', 'Alice', 'Sword', '#e57373'],
+    [SEED_USER_PREFIX . 'bob', 'Bob', 'Bow', '#64b5f6'],
+    [SEED_USER_PREFIX . 'carol', 'Carol', 'Staff', '#ba68c8'],
+    [SEED_USER_PREFIX . 'dave', 'Dave', 'Shield', '#81c784'],
+    [SEED_USER_PREFIX . 'eve', 'Eve', 'Dagger', '#ffb74d'],
 ];
 foreach ($studentnames as [$uname, $fname, $lname, $avatarcolor]) {
     $student = seed_create_user($uname, $fname, $lname, SEED_PASSWORD);
