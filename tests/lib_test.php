@@ -164,6 +164,69 @@ final class lib_test extends advanced_testcase {
         $this->assertFalse($result);
     }
 
+    /**
+     * Regression test for the security-audit finding: a viewer without block/playerhud:view in
+     * the block context (denied by a role override) must not be able to download item/class art
+     * through the file-serving path — the callback previously served files to any logged-in
+     * course participant regardless of the block's own view capability.
+     */
+    public function test_pluginfile_rejects_view_capability_denied(): void {
+        global $DB;
+
+        $viewer = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($viewer->id, $this->course->id, 'student');
+        $blockcontext = context_block::instance($this->instanceid);
+        $studentrole = $DB->get_record('role', ['shortname' => 'student'], '*', MUST_EXIST);
+        assign_capability('block/playerhud:view', CAP_PROHIBIT, $studentrole->id, $blockcontext->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+        $this->setUser($viewer);
+
+        $this->expectException(\required_capability_exception::class);
+        block_playerhud_pluginfile($this->course, new stdClass(), $blockcontext, 'item_image', ['1'], false);
+    }
+
+    /**
+     * Same regression as above, for moodle/block:view (the block instance effectively hidden
+     * from the viewer's role) — independent of the plugin's own :view capability.
+     */
+    public function test_pluginfile_rejects_block_view_capability_denied(): void {
+        global $DB;
+
+        $viewer = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($viewer->id, $this->course->id, 'student');
+        $blockcontext = context_block::instance($this->instanceid);
+        $studentrole = $DB->get_record('role', ['shortname' => 'student'], '*', MUST_EXIST);
+        assign_capability('moodle/block:view', CAP_PROHIBIT, $studentrole->id, $blockcontext->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+        $this->setUser($viewer);
+
+        $this->expectException(\required_capability_exception::class);
+        block_playerhud_pluginfile($this->course, new stdClass(), $blockcontext, 'item_image', ['1'], false);
+    }
+
+    /**
+     * A regular enrolled student, with the default capabilities intact, is not blocked by the
+     * new capability checks — it reaches the same "no file" false return a viewer with every
+     * permission would get, proving the guard does not accidentally break the common case.
+     */
+    public function test_pluginfile_allows_a_regular_student_through_the_capability_check(): void {
+        $viewer = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($viewer->id, $this->course->id, 'student');
+        $this->setUser($viewer);
+        $blockcontext = context_block::instance($this->instanceid);
+
+        $result = block_playerhud_pluginfile(
+            $this->course,
+            new stdClass(),
+            $blockcontext,
+            'item_image',
+            ['999'],
+            false
+        );
+
+        $this->assertFalse($result);
+    }
+
     // Tests for block_playerhud_myprofile_navigation().
 
     /**

@@ -43,6 +43,12 @@ function block_playerhud_pluginfile($course, $birecord, $context, $filearea, $ar
     // 2. Permission Check: User must be logged in to the course to see assets.
     require_login($course);
 
+    // 2b. The viewer must actually be allowed to see this block instance — capability-denied
+    // or hidden blocks must not leak item/class art through the file-serving path, mirroring
+    // the same pair of checks block_playerhud_myprofile_navigation() already applies.
+    require_capability('block/playerhud:view', $context);
+    require_capability('moodle/block:view', $context);
+
     // 3. Validate File Areas.
     $validareas = ['item_image'];
     for ($i = 1; $i <= 5; $i++) {
