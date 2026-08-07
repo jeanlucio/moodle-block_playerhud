@@ -257,6 +257,79 @@ final class wizard_generate_helpers_test extends external_base_testcase {
     }
 
     /**
+     * A drop id belonging to another block instance must never be looked up or distributed —
+     * distribute_drops() receives $dropids straight from the client (accumulated across wizard
+     * steps), so a foreign id mixed into the list must be silently dropped instead of leaking
+     * its name or inflating compute_activity_quotas()'s count.
+     */
+    public function test_distribute_drops_ignores_a_drop_from_another_instance(): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'name' => 'Only Wing',
+            'content' => 'Original body.',
+        ]);
+
+        $runid = \block_playerhud\local\wizard::start_run($this->instanceid, 2, []);
+        $ownitem = $this->create_item($this->instanceid, 'Own Relic');
+        $owndropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'itemid' => $ownitem->id,
+            'name' => $ownitem->name,
+            'maxusage' => 1,
+            'respawntime' => 0,
+            'code' => \block_playerhud\utils::generate_drop_code($this->instanceid),
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ]);
+
+        $foreigninstanceid = $this->create_block_instance();
+        $foreignitem = $this->create_item($foreigninstanceid, 'Foreign Relic');
+        $foreigndropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $foreigninstanceid,
+            'itemid' => $foreignitem->id,
+            'name' => $foreignitem->name,
+            'maxusage' => 1,
+            'respawntime' => 0,
+            'code' => \block_playerhud\utils::generate_drop_code($foreigninstanceid),
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ]);
+
+        $message = wizard_generate::distribute_drops(
+            $this->instanceid,
+            $this->course->id,
+            [$owndropid, $foreigndropid],
+            $runid
+        );
+        $this->assertSame('', $message);
+
+        $content = (string) $DB->get_field('page', 'content', ['id' => $page->id]);
+        $this->assertSame(1, substr_count($content, '[PLAYERHUD_DROP'), 'Only the own-instance drop must be placed.');
+        $this->assertStringNotContainsString('Foreign Relic', $content);
+    }
+
+    /**
+     * An empty $dropids list (nothing left to distribute) must return early instead of calling
+     * get_in_or_equal() with an empty array, which throws a coding_exception — a state the
+     * client can legitimately reach, not a programmer mistake.
+     */
+    public function test_distribute_drops_returns_early_when_dropids_is_empty(): void {
+        $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'name' => 'Only Wing',
+            'content' => 'Original body.',
+        ]);
+
+        $runid = \block_playerhud\local\wizard::start_run($this->instanceid, 2, []);
+
+        $message = wizard_generate::distribute_drops($this->instanceid, $this->course->id, [], $runid);
+
+        $this->assertSame('', $message);
+    }
+
+    /**
      * Builds a params array matching wizard_start::execute_parameters()'s shape, with every
      * include_* flag defaulting to false and every distribute_* flag defaulting to true (its
      * real default) — mirrors what wizard_start's own validate_parameters() produces, since

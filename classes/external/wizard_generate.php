@@ -1487,11 +1487,19 @@ class wizard_generate {
             return get_string('wizard_distribute_no_activities', 'block_playerhud');
         }
 
+        if (empty($dropids)) {
+            return '';
+        }
+
+        // Drop ids come from the client (accumulated from earlier wizard steps) and are not
+        // otherwise trusted — scope the lookup to this instance so a foreign drop id can never
+        // feed its name into suggest_module() or inflate compute_activity_quotas()'s count.
         [$insql, $inparams] = $DB->get_in_or_equal($dropids, SQL_PARAMS_NAMED);
+        $inparams['instanceid'] = $instanceid;
         $sql = "SELECT d.id, d.code, d.name AS drop_name, i.name AS item_name
                   FROM {block_playerhud_drops} d
                   JOIN {block_playerhud_items} i ON d.itemid = i.id
-                 WHERE d.id $insql";
+                 WHERE d.id $insql AND i.blockinstanceid = :instanceid";
         $drops = $DB->get_records_sql($sql, $inparams);
 
         $modules = array_values($modules);
