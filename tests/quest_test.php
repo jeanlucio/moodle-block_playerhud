@@ -1114,8 +1114,8 @@ final class quest_test extends advanced_testcase {
 
     /**
      * The whole point of the refactor: checking N distinct TYPE_SPECIFIC_ITEM quests costs a
-     * roughly constant number of reads via preload_totals()'s single grouped query, instead of
-     * scaling with the number of distinct items.
+     * roughly constant number of reads via one grouped query covering every distinct itemid,
+     * instead of scaling with the number of distinct items.
      */
     public function test_has_claimable_quests_read_count_does_not_scale_with_distinct_items(): void {
         global $DB;
@@ -1132,8 +1132,34 @@ final class quest_test extends advanced_testcase {
         $reads = $DB->perf_get_reads() - $readsbefore;
 
         // Measured: old per-id-query code costs 9 reads for 6 distinct items; the grouped
-        // preload_totals() query costs 3, regardless of how many distinct items are involved.
+        // query costs 3, regardless of how many distinct items are involved.
         $this->assertLessThanOrEqual(6, $reads);
+    }
+
+    /**
+     * The lazy side of the same refactor: a quest type never reached before the loop
+     * short-circuits must not pay for its aggregate query at all. A satisfied TYPE_XP_TOTAL
+     * quest listed first must return true without ever grouping the TYPE_SPECIFIC_ITEM quests
+     * that follow it — a naive "batch everything up front" version would pay for all of them
+     * regardless of the short-circuit.
+     */
+    public function test_has_claimable_quests_short_circuit_skips_unreached_aggregates(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $this->create_quest(quest::TYPE_XP_TOTAL, '100');
+        for ($i = 0; $i < 5; $i++) {
+            $item = $this->create_dummy_item('Item ' . $i);
+            $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '1', 0, 0, $item->id);
+        }
+
+        $readsbefore = $DB->perf_get_reads();
+        $result = quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 200, 1);
+        $reads = $DB->perf_get_reads() - $readsbefore;
+
+        $this->assertTrue($result);
+        // Only the initial quests + claimed-ids fetch — no specific-item grouped query at all.
+        $this->assertLessThanOrEqual(2, $reads);
     }
 
     /**

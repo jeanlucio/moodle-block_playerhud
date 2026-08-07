@@ -200,36 +200,76 @@ class quest {
         }
 
         if (!empty($specificitemids)) {
-            [$insql, $inparams] = $DB->get_in_or_equal(array_values($specificitemids), SQL_PARAMS_NAMED);
-            $inparams['userid'] = $userid;
-            $rows = $DB->get_records_sql(
-                "SELECT itemid, COUNT(*) AS cnt
-                   FROM {block_playerhud_inventory}
-                  WHERE userid = :userid AND itemid $insql
-               GROUP BY itemid",
-                $inparams
-            );
-            foreach ($rows as $row) {
-                $totals['specific_items'][(int) $row->itemid] = (int) $row->cnt;
-            }
+            $totals['specific_items'] = self::count_specific_items($userid, array_values($specificitemids));
         }
 
         if (!empty($specifictradeids)) {
-            [$insql, $inparams] = $DB->get_in_or_equal(array_values($specifictradeids), SQL_PARAMS_NAMED);
-            $inparams['userid'] = $userid;
-            $rows = $DB->get_records_sql(
-                "SELECT tradeid, COUNT(*) AS cnt
-                   FROM {block_playerhud_trade_log}
-                  WHERE userid = :userid AND tradeid $insql
-               GROUP BY tradeid",
-                $inparams
-            );
-            foreach ($rows as $row) {
-                $totals['specific_trades'][(int) $row->tradeid] = (int) $row->cnt;
-            }
+            $totals['specific_trades'] = self::count_specific_trades($userid, array_values($specifictradeids));
         }
 
         return $totals;
+    }
+
+    /**
+     * Counts owned inventory rows per itemid, in one grouped query instead of one per item.
+     *
+     * @param int $userid The user ID.
+     * @param int[] $itemids Distinct item IDs to count.
+     * @return array Counts keyed by itemid.
+     */
+    private static function count_specific_items(int $userid, array $itemids): array {
+        global $DB;
+
+        if (empty($itemids)) {
+            return [];
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED);
+        $inparams['userid'] = $userid;
+        $rows = $DB->get_records_sql(
+            "SELECT itemid, COUNT(*) AS cnt
+               FROM {block_playerhud_inventory}
+              WHERE userid = :userid AND itemid $insql
+           GROUP BY itemid",
+            $inparams
+        );
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row->itemid] = (int) $row->cnt;
+        }
+        return $counts;
+    }
+
+    /**
+     * Counts trade_log rows per tradeid, in one grouped query instead of one per trade.
+     *
+     * @param int $userid The user ID.
+     * @param int[] $tradeids Distinct trade IDs to count.
+     * @return array Counts keyed by tradeid.
+     */
+    private static function count_specific_trades(int $userid, array $tradeids): array {
+        global $DB;
+
+        if (empty($tradeids)) {
+            return [];
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($tradeids, SQL_PARAMS_NAMED);
+        $inparams['userid'] = $userid;
+        $rows = $DB->get_records_sql(
+            "SELECT tradeid, COUNT(*) AS cnt
+               FROM {block_playerhud_trade_log}
+              WHERE userid = :userid AND tradeid $insql
+           GROUP BY tradeid",
+            $inparams
+        );
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row->tradeid] = (int) $row->cnt;
+        }
+        return $counts;
     }
 
     /**
@@ -592,8 +632,10 @@ class quest {
     /**
      * Checks if the user has at least one completed-but-unclaimed quest.
      *
-     * Optimized for sidebar use: batches the per-user aggregates via preload_totals() once for
-     * the whole unclaimed list, and short-circuits as soon as a claimable quest is found.
+     * Optimized for sidebar use: each aggregate is fetched at most once, lazily, on first actual
+     * need — never for a type the loop short-circuits before reaching. TYPE_SPECIFIC_ITEM/
+     * TYPE_SPECIFIC_TRADE still group every distinct id from the whole unclaimed list into one
+     * query apiece the first time either type is reached, rather than one query per id.
      *
      * @param int $instanceid Block instance ID.
      * @param int $userid User ID.
@@ -626,9 +668,14 @@ class quest {
             return false;
         }
 
-        // Same aggregates check_status() uses, precomputed once for the whole list instead of
-        // once per distinct specific-item/specific-trade id.
-        $totals = self::preload_totals($userid, $instanceid, $unclaimed);
+        // Lazy-loaded counters — each is fetched at most once, only if actually needed before
+        // a claimable quest short-circuits the loop.
+        $uniqueitems = null;
+        $totalitems = null;
+        $tradecount = null;
+        $specificitemcnt = null;
+        $specifictradecnt = null;
+        $completedchapters = null;
         $modinfo = null;
 
         foreach ($unclaimed as $q) {
@@ -644,11 +691,25 @@ class quest {
                     break;
 
                 case self::TYPE_UNIQUE_ITEMS:
-                    $completed = ($totals['unique_items'] >= (int)$q->requirement);
+                    if ($uniqueitems === null) {
+                        $sql = "SELECT COUNT(DISTINCT inv.itemid)
+                                  FROM {block_playerhud_inventory} inv
+                                  JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                                 WHERE inv.userid = ? AND it.blockinstanceid = ?";
+                        $uniqueitems = (int)$DB->count_records_sql($sql, [$userid, $instanceid]);
+                    }
+                    $completed = ($uniqueitems >= (int)$q->requirement);
                     break;
 
                 case self::TYPE_TOTAL_ITEMS:
-                    $completed = ($totals['total_items'] >= (int)$q->requirement);
+                    if ($totalitems === null) {
+                        $sql = "SELECT COUNT(inv.id)
+                                  FROM {block_playerhud_inventory} inv
+                                  JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                                 WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source NOT IN ('revoked', 'consumed')";
+                        $totalitems = (int)$DB->count_records_sql($sql, [$userid, $instanceid]);
+                    }
+                    $completed = ($totalitems >= (int)$q->requirement);
                     break;
 
                 case self::TYPE_SPECIFIC_ITEM:
@@ -656,11 +717,29 @@ class quest {
                     if ($itemid <= 0) {
                         break;
                     }
-                    $completed = (($totals['specific_items'][$itemid] ?? 0) >= (int)$q->requirement);
+                    if ($specificitemcnt === null) {
+                        // First specific-item quest reached: group every distinct itemid from
+                        // the whole unclaimed list into one query, not just this one.
+                        $itemids = [];
+                        foreach ($unclaimed as $uq) {
+                            if ($uq->type == self::TYPE_SPECIFIC_ITEM && (int) $uq->req_itemid > 0) {
+                                $itemids[(int) $uq->req_itemid] = (int) $uq->req_itemid;
+                            }
+                        }
+                        $specificitemcnt = self::count_specific_items($userid, array_values($itemids));
+                    }
+                    $completed = (($specificitemcnt[$itemid] ?? 0) >= (int)$q->requirement);
                     break;
 
                 case self::TYPE_TRADES:
-                    $completed = ($totals['trades'] >= (int)$q->requirement);
+                    if ($tradecount === null) {
+                        $sql = "SELECT COUNT(tl.id)
+                                  FROM {block_playerhud_trade_log} tl
+                                  JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
+                                 WHERE tl.userid = ? AND t.blockinstanceid = ?";
+                        $tradecount = (int)$DB->count_records_sql($sql, [$userid, $instanceid]);
+                    }
+                    $completed = ($tradecount >= (int)$q->requirement);
                     break;
 
                 case self::TYPE_SPECIFIC_TRADE:
@@ -668,7 +747,18 @@ class quest {
                     if ($tradeid <= 0) {
                         break;
                     }
-                    $completed = (($totals['specific_trades'][$tradeid] ?? 0) >= (int)$q->requirement);
+                    if ($specifictradecnt === null) {
+                        // First specific-trade quest reached: group every distinct tradeid from
+                        // the whole unclaimed list into one query, not just this one.
+                        $tradeids = [];
+                        foreach ($unclaimed as $uq) {
+                            if ($uq->type == self::TYPE_SPECIFIC_TRADE && (int) $uq->req_itemid > 0) {
+                                $tradeids[(int) $uq->req_itemid] = (int) $uq->req_itemid;
+                            }
+                        }
+                        $specifictradecnt = self::count_specific_trades($userid, array_values($tradeids));
+                    }
+                    $completed = (($specifictradecnt[$tradeid] ?? 0) >= (int)$q->requirement);
                     break;
 
                 case self::TYPE_ACTIVITY:
@@ -692,7 +782,18 @@ class quest {
                     break;
 
                 case self::TYPE_CHAPTER:
-                    $completed = in_array((int)$q->requirement, $totals['done_chapters']);
+                    if ($completedchapters === null) {
+                        $chapjson = $DB->get_field(
+                            'block_playerhud_rpg_progress',
+                            'completed_chapters',
+                            ['blockinstanceid' => $instanceid, 'userid' => $userid]
+                        );
+                        $completedchapters = $chapjson ? json_decode($chapjson, true) : [];
+                        if (!is_array($completedchapters)) {
+                            $completedchapters = [];
+                        }
+                    }
+                    $completed = in_array((int)$q->requirement, $completedchapters);
                     break;
             }
 
