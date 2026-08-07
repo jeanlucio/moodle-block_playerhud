@@ -366,7 +366,12 @@ class story_manager {
                 );
             }
 
-            $DB->delete_records_list('block_playerhud_inventory', 'id', array_keys($inventory));
+            // Soft-consume (flip source instead of deleting) so drop_guard::check_pickup_allowed()
+            // still counts these rows against the origin drop's maxusage/cooldown, and their
+            // xpawarded value survives for items::delete_item()'s XP rollback — the same
+            // consumption pattern trade_manager::execute_trade() already uses.
+            [$idinsql, $idinparams] = $DB->get_in_or_equal(array_keys($inventory), SQL_PARAMS_NAMED);
+            $DB->set_field_select('block_playerhud_inventory', 'source', 'consumed', "id $idinsql", $idinparams);
             $itemname = $DB->get_field('block_playerhud_items', 'name', ['id' => $choice->cost_itemid]);
             $events[] = [
                 'type' => 'item_loss',

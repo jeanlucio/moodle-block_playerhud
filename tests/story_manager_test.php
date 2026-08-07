@@ -636,7 +636,85 @@ final class story_manager_test extends advanced_testcase {
         $result = story_manager::make_choice($this->instanceid, $user->id, $choice->id);
 
         $this->assertTrue($result['finished']);
-        $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id, 'itemid' => $item->id]));
+
+        // Soft-consumed (source flipped, row kept), not hard-deleted — matches
+        // trade_manager::execute_trade()'s consumption pattern, and is what lets
+        // drop_guard::check_pickup_allowed() still count this row against the origin drop's
+        // maxusage/cooldown (see test_make_choice_does_not_reset_the_origin_drops_pickup_limit).
+        $active = $DB->count_records_select(
+            'block_playerhud_inventory',
+            "userid = :userid AND itemid = :itemid AND source NOT IN ('revoked', 'consumed')",
+            ['userid' => $user->id, 'itemid' => $item->id]
+        );
+        $this->assertSame(0, $active, 'No active copy should remain after paying the choice cost.');
+        $this->assertSame(1, $DB->count_records('block_playerhud_inventory', [
+            'userid' => $user->id, 'itemid' => $item->id, 'source' => 'consumed',
+        ]), 'The spent copy must be retained as consumed, not deleted.');
+    }
+
+    /**
+     * Regression test for the security-audit finding: paying a choice cost with a copy that
+     * came from a finite/cooldown-bearing map drop must NOT let the student re-collect that
+     * drop beyond its configured maxusage. Before the fix, make_choice_locked() hard-deleted
+     * the inventory row, so drop_guard::check_pickup_allowed()'s raw row count over
+     * (userid, dropid) no longer saw it and let a second pickup through.
+     */
+    public function test_make_choice_does_not_reset_the_origin_drops_pickup_limit(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_item('Story Key');
+        $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'itemid' => $item->id,
+            'name' => 'Key Spot',
+            'maxusage' => 1,
+            'respawntime' => 0,
+            'code' => \block_playerhud\utils::generate_drop_code($this->instanceid),
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ]);
+
+        // Simulate the student collecting the drop once — the row it leaves behind is what the
+        // exploit tried to erase by spending the item in a story choice.
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid' => $user->id,
+            'itemid' => $item->id,
+            'dropid' => $dropid,
+            'source' => 'map',
+            'timecreated' => time(),
+            'xpawarded' => 50,
+        ]);
+
+        try {
+            \block_playerhud\drop_guard::check_pickup_allowed($dropid, $user->id, 1, 0);
+            $this->fail('Sanity check failed: the drop must already be at its pickup limit before the choice is made.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('limitreached', $e->errorcode);
+        }
+
+        $chapter = $this->create_chapter('Gated Chapter');
+        $nodea = $this->create_node($chapter->id, 'Start', true);
+        $choice = $this->create_choice($nodea->id, 'Use key', 0, 0, $item->id, 1);
+
+        story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+
+        try {
+            \block_playerhud\drop_guard::check_pickup_allowed($dropid, $user->id, 1, 0);
+            $this->fail('Spending the item in a story choice must not refund a pickup of its origin drop.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('limitreached', $e->errorcode);
+        }
+
+        // The spent copy must still carry its original xpawarded value, so items::delete_item()'s
+        // XP rollback (which sums surviving xpawarded) does not under-deduct for it later.
+        $consumed = $DB->get_record('block_playerhud_inventory', [
+            'userid' => $user->id, 'itemid' => $item->id, 'source' => 'consumed',
+        ], '*', MUST_EXIST);
+        $this->assertSame(50, (int) $consumed->xpawarded);
     }
 
     /**
