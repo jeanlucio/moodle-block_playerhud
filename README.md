@@ -5,7 +5,6 @@
 ![Status](https://img.shields.io/badge/Status-Stable-green?style=flat)
 [![Latest Release](https://img.shields.io/github/v/release/jeanlucio/moodle-block_playerhud?style=flat)](https://github.com/jeanlucio/moodle-block_playerhud/releases)
 [![Last Commit](https://img.shields.io/github/last-commit/jeanlucio/moodle-block_playerhud?style=flat)](https://github.com/jeanlucio/moodle-block_playerhud/commits)
-
 [![Moodle Plugin CI](https://github.com/jeanlucio/moodle-block_playerhud/actions/workflows/ci.yml/badge.svg)](https://github.com/jeanlucio/moodle-block_playerhud/actions/workflows/ci.yml)
 [![MDL Shield](https://img.shields.io/endpoint?url=https%3A%2F%2Fmdlshield.com%2Fapi%2Fbadge%2Fblock_playerhud)](https://mdlshield.com/plugins/block_playerhud)
 [![Open Issues](https://img.shields.io/github/issues/jeanlucio/moodle-block_playerhud?style=flat)](https://github.com/jeanlucio/moodle-block_playerhud/issues)
