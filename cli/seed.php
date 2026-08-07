@@ -89,16 +89,20 @@ cli_writeln("=== block_playerhud seed ===\n");
 if ($options['reset']) {
     $existing = $DB->get_record('course', ['shortname' => SEED_COURSE_SHORTNAME]);
     if ($existing) {
+        // Deleting the course cascades into every block's own instance_delete(), and some
+        // third-party blocks (e.g. block_stash) call require_capability() from there —
+        // that fails with no current user set, which is the CLI default.
+        \core\session\manager::set_user(get_admin());
         cli_writeln("Removing existing demo course (id={$existing->id})...");
         delete_course($existing, false);
         cli_writeln("Course removed.\n");
     }
     // Remove seed users.
     $seedusers = $DB->get_records_sql(
-        "SELECT id FROM {user} WHERE username LIKE 'seed_%' AND deleted = 0"
+        "SELECT * FROM {user} WHERE username LIKE 'seed_%' AND deleted = 0"
     );
     foreach ($seedusers as $u) {
-        delete_user($DB->get_record('user', ['id' => $u->id]));
+        delete_user($u);
     }
     cli_writeln("Seed users removed.\n");
 }
@@ -446,7 +450,7 @@ function seed_upsert_drop(
         'name'            => $location,
         'maxusage'        => $maxusage,
         'respawntime'     => $respawntime,
-        'code'            => strtoupper(substr(md5(uniqid($location, true)), 0, 8)),
+        'code'            => \block_playerhud\utils::generate_drop_code($instanceid),
         'timecreated'     => $now,
         'timemodified'    => $now,
     ];
@@ -469,7 +473,7 @@ cli_writeln("Drops ready: Dark Forest, Harbor Tavern, Royal Library, Dwarf Cave,
  * @param int $instanceid Block instance ID.
  * @param string $name Quest name.
  * @param string $description Quest description.
- * @param int $type Quest type (1=level, 3=unique items, 4=specific item).
+ * @param int $type Quest type (1=level, 2=XP total, 3=unique items, 4=specific item, 7=trades).
  * @param string $requirement Requirement value.
  * @param int $reqitemid Required item ID.
  * @param int $rewardxp XP reward.

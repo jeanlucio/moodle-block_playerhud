@@ -90,6 +90,10 @@ cli_writeln("=== block_playerhud seed ===\n");
 if ($options['reset']) {
     $existing = $DB->get_record('course', ['shortname' => SEED_COURSE_SHORTNAME]);
     if ($existing) {
+        // Deleting the course cascades into every block's own instance_delete(), and some
+        // third-party blocks (e.g. block_stash) call require_capability() from there —
+        // that fails with no current user set, which is the CLI default.
+        \core\session\manager::set_user(get_admin());
         cli_writeln("Removendo curso demo existente (id={$existing->id})...");
         delete_course($existing, false);
         cli_writeln("Curso removido.\n");
@@ -365,7 +369,7 @@ cli_writeln("Classes RPG prontas: Guerreiro, Mago, Ladino (com retratos evolutiv
  * @param int $xp XP value.
  * @param string $description Item description.
  * @param int $secret Whether item is secret.
- * @param string $image Image filename for the item.
+ * @param string $image Emoji or image reference.
  * @return stdClass Item record.
  */
 function seed_upsert_item(
@@ -414,7 +418,7 @@ cli_writeln("Itens prontos: " . $itemnames);
 // 8. Drops.
 
 /**
- * Creates a drop if none exists for the given item name.
+ * Creates a drop if none exists for the given item and location name.
  *
  * @param int $instanceid Block instance ID.
  * @param int $itemid Item ID.
@@ -470,7 +474,7 @@ cli_writeln("Drops prontos: Floresta, Taverna, Biblioteca, Caverna, Cofre.");
  * @param int $instanceid Block instance ID.
  * @param string $name Quest name.
  * @param string $description Quest description.
- * @param int $type Quest type (1=item collect, 2=level).
+ * @param int $type Quest type (1=level, 2=XP total, 3=unique items, 4=specific item, 7=trades).
  * @param string $requirement Requirement value.
  * @param int $reqitemid Required item ID.
  * @param int $rewardxp XP reward.
@@ -721,7 +725,7 @@ cli_writeln("Trades prontos: 2 trocas criadas.");
 // 12. User game records.
 
 /**
- * Creates or updates a user XP record.
+ * Creates a user XP record if one does not exist.
  *
  * @param int $instanceid Block instance ID.
  * @param int $userid User ID.
@@ -749,7 +753,7 @@ function seed_upsert_user_xp(int $instanceid, int $userid, int $xp): void {
 }
 
 /**
- * Creates or updates RPG progress for a user.
+ * Creates RPG progress for a user if one does not exist.
  *
  * @param int $instanceid Block instance ID.
  * @param int $userid User ID.
@@ -1120,10 +1124,12 @@ function seed_create_module(stdClass $course, string $modulename, array $extra):
         "SELECT cm.* FROM {course_modules} cm
            JOIN {{$modulename}} m ON m.id = cm.instance
           WHERE cm.course = :course AND m.name = :name",
-        ['course' => $course->id, 'name' => $extra['name']]
+        ['course' => $course->id, 'name' => $extra['name']],
+        IGNORE_MULTIPLE
     );
     if ($existingcm) {
-        return get_coursemodule_from_id($modulename, $existingcm->id);
+        $cm = get_coursemodule_from_id($modulename, $existingcm->id);
+        return $cm ?: null;
     }
 
     $moduleinfo = (object) array_merge([
