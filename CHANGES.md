@@ -5,6 +5,91 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.8.1] — 2026-08-10
+
+### Added
+- The AI Game Master Assistant and content generators now include the active
+  Moodle interface language in the system prompt, so responses default to the
+  teacher's own language instead of relying solely on detecting the language
+  of their message.
+
+### Security
+- **Cross-instance data disclosure (IDOR) closed in five places:** a teacher
+  with manage rights on their own block instance could reach data belonging
+  to another instance by supplying a foreign ID — trade requirements/rewards
+  (via a failed form re-render), a quest's XP-impact preview before bulk
+  deletion, drop distribution targets, the Gamification Wizard's course
+  structure reads, and item/class artwork served through the plugin's file
+  area (which additionally never checked the block's own view capability at
+  all).
+- **Profile page bypassed the block's own access control:** the
+  gamification section added to a user's Moodle profile page showed level,
+  XP and collected items regardless of the block's view capability, whether
+  the block instance was hidden, or whether the student had opted their
+  ranking out of public visibility. All three are now enforced exactly as
+  the block's own render path already does.
+- **Story chapters could be played ahead of their schedule or level gate:**
+  `unlock_date` and `required_level` were only enforced by hiding the
+  chapter card in the UI; the underlying web services never re-checked
+  either condition server-side. The student chapter list now also shows a
+  required-level lock reason, previously shown only for a future
+  `unlock_date`.
+- **Reward duplication under concurrent requests:** closed races in story
+  choices and in the deadline-extension item power, matching the per-user
+  lock already used by drop collection, trades and quest claims.
+- A story choice could be paid for twice with the same item unit: the
+  validation and consumption checks did not exclude inventory rows already
+  spent in a trade or revoked by a teacher.
+- The page-based drop-collection fallback (used when JavaScript doesn't
+  intercept the drop link) reimplemented its own limit/cooldown check
+  instead of the shared, locked one, letting a client bypass the configured
+  pickup limit by requesting the page URL directly.
+- A deadline-extension item could target another course's activity when a
+  scheduling override already existed for it; the course-membership check
+  was previously skipped in that case.
+- Stored XSS closed in four places: an item's image field in the student
+  collection view, an avatar item's emoji reused on the teacher's Suggest
+  Trades form, the drop management table's item preview, and an
+  unrecognised inventory source value falling through to the audit log
+  unescaped.
+- Manually granting an item to a student no longer accepts an arbitrary
+  site-wide user ID; the recipient must be enrolled in the block's course.
+- `block/playerhud:manage` now carries `RISK_PERSONAL`, matching the other
+  users' XP, inventory and RPG progress the management panel exposes.
+- Declared several personal-data columns that were missing from the Privacy
+  Provider across five tables and extended the GDPR export to match; wizard
+  rollback rows orphaned by privacy deletion are now cleaned up in the
+  correct order.
+
+### Fixed
+- Redirect notifications (success, error, warning) across the admin/teacher
+  UI and the trade/quest flows always rendered as a plain info banner,
+  regardless of the actual outcome.
+- Equipping or unequipping an avatar item over AJAX showed a generic error
+  dialog instead of working.
+- Opening the Ranking tab on a course with ranking disabled in block
+  settings threw an error, due to a missing language string.
+- Header shortcut buttons (history/help) were glued to the "PlayerHUD"
+  title text instead of sitting at the card's right edge.
+- Several N+1 query patterns removed from the leaderboard, quest-claim
+  checks, drop distribution and rollback in the Wizard, the schema upgrade's
+  backfill steps, backup/restore, and the item-grant API other Player-family
+  plugins use — most noticeable on courses with many students, items or
+  drops.
+
+### Tests
+- The suite grew from 556 to 688 tests (63% overall line coverage, up from
+  47%); every controller, view and management class now carries explicit
+  parameter and return type hints, verified against its real call sites.
+
+### Documentation
+- Fixed several ecosystem documentation links that rendered as plain,
+  unclickable text; the PlayerGames badge now points at the PlayerGames hub.
+- Clarified that the Filter plugin is recommended, not required, and
+  documented the optional AI Hub integration.
+
+---
+
 ## [v1.8.0] — 2026-07-28
 
 ### Added
