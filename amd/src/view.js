@@ -69,15 +69,22 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                 if (!titleEl) {
                     return;
                 }
-                // Wrap the title + buttons in a flex row so they appear side by side.
-                var wrapper = document.createElement('div');
-                wrapper.className = 'd-flex align-items-center mb-2';
-                titleEl.parentElement.insertBefore(wrapper, titleEl);
-                titleEl.classList.add('mb-0');
-                wrapper.appendChild(titleEl);
-                btnRow.remove();
+                // Core/block.mustache already renders the title and the edit
+                // controls (move/kebab, editing mode only) as siblings inside
+                // one flex row, with the controls pushed right via ms-auto.
+                // Reuse that same row instead of building a nested one: an
+                // inner wrapper only grows to fit its own content, so an
+                // ms-auto inside it just hugs the title instead of reaching
+                // the card's right edge. Insert the buttons right after the
+                // title and move ms-auto onto them, so both button groups end
+                // up clustered together at the right edge.
+                const editControls = block.querySelector('.block-controls');
+                if (editControls) {
+                    editControls.classList.remove('ms-auto');
+                    editControls.classList.add('ms-2');
+                }
                 btnRow.classList.add('ms-auto');
-                wrapper.appendChild(btnRow);
+                titleEl.insertAdjacentElement('afterend', btnRow);
             }());
 
             // 1. Disable HUD Confirmation.
