@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.8.2] — 2026-08-12
+
+### Security
+- **Stored markup injection in item, quest and story-scene descriptions:**
+  pasting the visible text of an already-open item modal into the
+  description/content editor also carried along the modal's own DOM
+  skeleton (nested `modal`/`modal-dialog`/`modal-content` markup and stray
+  editor ids), which survived unsanitized and rendered as a modal nested
+  inside the real modal for every viewer. Item, quest and scene rich-text
+  fields are now restricted to a small allowlist of inline formatting tags
+  and cleaned of unsafe attributes before being saved.
+
+### Fixed
+- A player's claimable-quest check could evaluate quests in an order the
+  database was free to change between engines, occasionally paying for an
+  aggregate query for a quest type that should have been skipped by an
+  earlier, already-satisfied quest. Quest evaluation order is now
+  deterministic.
+
 ## [v1.8.1] — 2026-08-10
 
 ### Added
