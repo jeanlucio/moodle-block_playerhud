@@ -654,7 +654,11 @@ class quest {
         global $DB, $CFG;
         require_once($CFG->libdir . '/completionlib.php');
 
-        $quests = $DB->get_records('block_playerhud_quests', ['blockinstanceid' => $instanceid, 'enabled' => 1]);
+        $quests = $DB->get_records(
+            'block_playerhud_quests',
+            ['blockinstanceid' => $instanceid, 'enabled' => 1],
+            'id ASC'
+        );
         if (empty($quests)) {
             return false;
         }
