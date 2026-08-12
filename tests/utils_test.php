@@ -151,6 +151,70 @@ final class utils_test extends advanced_testcase {
     }
 
     /**
+     * Regression test for a production incident: an editingteacher copied the visible text
+     * out of an already-open item modal and pasted it into another item's description field.
+     * The browser selection carried along the modal's own DOM skeleton (nested
+     * <div class="modal">...<div class="modal-content"> plus stray yui_* ids), which then
+     * rendered as a modal nested inside the real modal when the item was opened. The div
+     * skeleton and its ids must not survive sanitization, but the actual description text
+     * must be preserved.
+     */
+    public function test_sanitize_rich_description_strips_pasted_modal_skeleton(): void {
+        $poisoned = '<div id="ph-item-modal-view" class="modal fade ph-modal-zindex ph-item-modal show">'
+            . '<div id="yui_3_18_1_1_1786538342166_238" class="modal-dialog modal-dialog-centered">'
+            . '<div id="yui_3_18_1_1_1786538342166_237" class="modal-content border-0 shadow-lg">'
+            . '<div id="yui_3_18_1_1_1786538342166_236" class="modal-body pt-0">'
+            . '<div id="phModalDescView" class="text-muted text-break mb-3">'
+            . '<p id="yui_3_18_1_1_1786538342166_242">Aparelho quântico que une as mentes da tripulação.</p>'
+            . '</div></div></div></div></div>';
+
+        $clean = utils::sanitize_rich_description($poisoned);
+
+        $this->assertStringNotContainsString('<div', $clean);
+        $this->assertStringNotContainsString('modal', $clean);
+        $this->assertStringNotContainsString('yui_3_18_1_1', $clean);
+        $this->assertStringContainsString('Aparelho quântico que une as mentes da tripulação.', $clean);
+    }
+
+    /**
+     * Ordinary formatting an editingteacher applies through the WYSIWYG toolbar (bold,
+     * italic, list, paragraph) must survive sanitization unchanged.
+     */
+    public function test_sanitize_rich_description_preserves_basic_formatting(): void {
+        $html = '<p>A <strong>rare</strong> item that grants <em>bonus XP</em>.</p><ul><li>Effect one</li></ul>';
+
+        $clean = utils::sanitize_rich_description($html);
+
+        $this->assertStringContainsString('<strong>rare</strong>', $clean);
+        $this->assertStringContainsString('<em>bonus XP</em>', $clean);
+        $this->assertStringContainsString('<li>Effect one</li>', $clean);
+    }
+
+    /**
+     * A <script> tag pasted or typed into the editor's HTML source view must not survive —
+     * neither as an executable tag nor implicitly re-created by the cleanup step.
+     */
+    public function test_sanitize_rich_description_strips_script_tag(): void {
+        $html = '<p>Item text</p><script>alert(document.cookie)</script>';
+
+        $clean = utils::sanitize_rich_description($html);
+
+        $this->assertStringNotContainsString('<script', $clean);
+    }
+
+    /**
+     * A javascript: URI on an otherwise-allowed <a> tag must be neutralized by the
+     * clean_param(PARAM_CLEANHTML) pass, not merely left in place because <a> is allowed.
+     */
+    public function test_sanitize_rich_description_neutralizes_javascript_uri(): void {
+        $html = '<a href="javascript:alert(1)">click</a>';
+
+        $clean = utils::sanitize_rich_description($html);
+
+        $this->assertStringNotContainsString('javascript:', $clean);
+    }
+
+    /**
      * Insert a minimal block_instances row and return its ID.
      *
      * @return int The new instance ID.

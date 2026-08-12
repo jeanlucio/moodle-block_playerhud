@@ -118,7 +118,7 @@ class tab_items implements renderable {
                 $record->xp = $data->xp;
                 $record->enabled = $data->enabled;
                 $record->secret = $data->secret;
-                $record->description = $data->description['text'];
+                $record->description = \block_playerhud\utils::sanitize_rich_description($data->description['text']);
                 $record->tradable = 1;
                 $record->maxusage = 1;
                 $record->respawntime = 0;

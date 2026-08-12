@@ -325,4 +325,24 @@ class utils {
             ['class' => 'ph-avatar-emoji rounded-circle shadow-sm']
         );
     }
+
+    /**
+     * Sanitize a rich-text value submitted via a Moodle 'editor' form element.
+     *
+     * Restricts the value to a small allowlist of inline formatting tags before running
+     * it through Moodle's own HTML cleaner. This is defense in depth against an admin or
+     * editingteacher pasting fully rendered page markup into the field — e.g. copying the
+     * visible text out of an already-open modal also drags along its surrounding
+     * <div class="modal">...<div class="modal-content"> skeleton, which Moodle's default
+     * purifier profile keeps untouched (div/class are ordinary allowed HTML) and which
+     * then renders as a nested modal-in-modal when later reinjected via {{{description}}}.
+     *
+     * @param string $html Raw HTML submitted by the rich-text editor.
+     * @return string Sanitized HTML safe to persist and later render with format_text().
+     */
+    public static function sanitize_rich_description(string $html): string {
+        $allowedtags = '<p><br><strong><b><em><i><u><ul><ol><li><a>';
+        $stripped = strip_tags($html, $allowedtags);
+        return clean_param($stripped, PARAM_CLEANHTML);
+    }
 }

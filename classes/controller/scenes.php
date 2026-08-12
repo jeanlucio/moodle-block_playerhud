@@ -311,7 +311,7 @@ class scenes {
         } else if ($data = $mform->get_data()) {
             $record            = new \stdClass();
             $record->chapterid = $chapterid;
-            $record->content   = $data->content['text'];
+            $record->content   = \block_playerhud\utils::sanitize_rich_description($data->content['text']);
             $record->is_start  = (int) $data->is_start;
 
             if ($data->nodeid) {

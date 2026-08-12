@@ -510,6 +510,76 @@ final class manage_entry_points_test extends advanced_testcase {
         $this->assertSame(scenes::MAX_REPEATS, $method->invoke(null, scenes::MAX_REPEATS));
     }
 
+    // Scenes — edit form save path.
+
+    /**
+     * Regression test mirroring the item-description incident: pasting the visible text of an
+     * already-open item modal into a scene's content editor drags along its DOM skeleton. The
+     * stored node content must come out as only the real text, with the nested
+     * <div class="modal">...</div> structure and its yui_* ids stripped by
+     * utils::sanitize_rich_description() before scenes::handle_edit_form() persists it.
+     */
+    public function test_scenes_edit_form_sanitizes_pasted_modal_skeleton_in_content(): void {
+        global $DB;
+
+        $this->setAdminUser();
+        $chapterid = $this->make_chapter($this->instanceid);
+
+        $poisoned = '<div id="ph-item-modal-view" class="modal fade ph-modal-zindex ph-item-modal show">'
+            . '<div id="yui_3_18_1_1_1786538342166_237" class="modal-content border-0 shadow-lg">'
+            . '<div id="phModalDescView" class="text-muted text-break mb-3">'
+            . '<p id="yui_3_18_1_1_1786538342166_242">Voce acorda em uma cela escura e umida.</p>'
+            . '</div></div></div>';
+
+        $formidentifier = str_replace('\\', '_', \block_playerhud\form\edit_scene_form::class);
+        $_POST = [
+            'courseid'                => $this->course->id,
+            'instanceid'              => $this->instanceid,
+            'chapterid'               => $chapterid,
+            'nodeid'                  => 0,
+            'content'                 => ['text' => $poisoned, 'format' => FORMAT_HTML],
+            'is_start'                => 1,
+            'sesskey'                 => sesskey(),
+            '_qf__' . $formidentifier => 1,
+        ];
+
+        $this->assert_redirects(fn() => (new scenes())->handle_edit_form());
+
+        $node = $DB->get_record('block_playerhud_story_nodes', ['chapterid' => $chapterid], '*', MUST_EXIST);
+        $this->assertStringNotContainsString('<div', $node->content);
+        $this->assertStringNotContainsString('modal', $node->content);
+        $this->assertStringNotContainsString('yui_3_18_1_1', $node->content);
+        $this->assertStringContainsString('Voce acorda em uma cela escura e umida.', $node->content);
+    }
+
+    /**
+     * Ordinary WYSIWYG formatting must survive the save path unchanged.
+     */
+    public function test_scenes_edit_form_preserves_basic_formatting_in_content(): void {
+        global $DB;
+
+        $this->setAdminUser();
+        $chapterid = $this->make_chapter($this->instanceid);
+        $html = '<p>The door creaks open to reveal a <strong>hidden passage</strong>.</p>';
+
+        $formidentifier = str_replace('\\', '_', \block_playerhud\form\edit_scene_form::class);
+        $_POST = [
+            'courseid'                => $this->course->id,
+            'instanceid'              => $this->instanceid,
+            'chapterid'               => $chapterid,
+            'nodeid'                  => 0,
+            'content'                 => ['text' => $html, 'format' => FORMAT_HTML],
+            'is_start'                => 1,
+            'sesskey'                 => sesskey(),
+            '_qf__' . $formidentifier => 1,
+        ];
+
+        $this->assert_redirects(fn() => (new scenes())->handle_edit_form());
+
+        $node = $DB->get_record('block_playerhud_story_nodes', ['chapterid' => $chapterid], '*', MUST_EXIST);
+        $this->assertStringContainsString('<strong>hidden passage</strong>', $node->content);
+    }
+
     // Collect — the non-AJAX pickup path.
 
     /**

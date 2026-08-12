@@ -124,7 +124,7 @@ class tab_quests implements renderable {
             $record                    = new \stdClass();
             $record->blockinstanceid   = $this->instanceid;
             $record->name              = $data->name;
-            $record->description       = $data->description['text'];
+            $record->description       = \block_playerhud\utils::sanitize_rich_description($data->description['text']);
             $record->type              = $type;
             $record->enabled           = (int)$data->enabled;
             $record->reward_xp         = max(0, (int)$data->reward_xp);
