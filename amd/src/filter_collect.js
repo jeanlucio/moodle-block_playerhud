@@ -505,6 +505,8 @@ export const init = () => {
         confirmTitle: M.util.get_string('confirmation', 'admin'),
         yes: M.util.get_string('yes', 'moodle'),
         cancel: M.util.get_string('cancel', 'moodle'),
+        errorTitle: M.util.get_string('error', 'moodle'),
+        ok: M.util.get_string('ok', 'moodle'),
     };
 
     // Async update via Str module for AJAX-fragment contexts (e.g. forum posts with
@@ -527,9 +529,11 @@ export const init = () => {
             {key: 'confirmation', component: 'admin'},
             {key: 'yes', component: 'moodle'},
             {key: 'cancel', component: 'moodle'},
+            {key: 'error', component: 'moodle'},
+            {key: 'ok', component: 'moodle'},
         ]).then(([collected, respawntime, infinite, immediate, singleCollection,
                   strError, lastCollected, level, xp, noDescription,
-                  confirmTitle, yes, cancel]) => {
+                  confirmTitle, yes, cancel, errorTitle, ok]) => {
             appStrings.collected = collected;
             appStrings.respawntime = respawntime;
             appStrings.infinite = infinite;
@@ -543,6 +547,8 @@ export const init = () => {
             appStrings.confirmTitle = confirmTitle;
             appStrings.yes = yes;
             appStrings.cancel = cancel;
+            appStrings.errorTitle = errorTitle;
+            appStrings.ok = ok;
             return;
         }).catch(() => { /* Keep M.util fallbacks. */ });
     } catch (e) {
@@ -815,13 +821,13 @@ export const init = () => {
             }
 
             toggleLoading(trigger, false, originalHtml);
-            // eslint-disable-next-line consistent-return, promise/no-nesting
-            return Str.get_strings([
-                {key: 'error', component: 'core'},
-                {key: 'ok', component: 'core'}
-            ]).then((strs) => {
-                return Notification.alert(strs[0], resp.message, strs[1]);
-            });
+            // Uses appStrings (already loaded synchronously via M.util.get_string() in init(),
+            // see the "error" business rule this responds to) instead of a fresh Str.get_strings()
+            // call — a moodle_exception thrown by a business rule the student can legitimately
+            // hit (e.g. the collection limit) reaches this branch as resp.success === false, and
+            // must never be able to fail itself just to report that outcome.
+            // eslint-disable-next-line consistent-return
+            return Notification.alert(appStrings.errorTitle, resp.message, appStrings.ok);
 
         }).catch((ex) => {
             toggleLoading(trigger, false, originalHtml);
