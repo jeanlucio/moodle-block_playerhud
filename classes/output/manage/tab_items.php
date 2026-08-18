@@ -552,7 +552,7 @@ class tab_items implements renderable {
         $page    = optional_param('page', 0, PARAM_INT);
         $perpage = 30;
 
-        $sql = "SELECT d.id, d.name AS drop_name, d.code, d.maxusage, d.respawntime,
+        $sql = "SELECT d.id, d.name AS drop_name, d.code, d.maxusage, d.value, d.respawntime,
                        i.id AS itemid, i.name AS item_name
                   FROM {block_playerhud_drops} d
                   JOIN {block_playerhud_items} i ON i.id = d.itemid
@@ -584,6 +584,7 @@ class tab_items implements renderable {
                 'code'            => s($drop->code),
                 'is_infinite'     => ($drop->maxusage == 0),
                 'maxusage'        => $drop->maxusage,
+                'value'           => $drop->value,
                 'is_immediate'    => ($drop->respawntime == 0),
                 'respawntime_fmt' => format_time($drop->respawntime),
                 'url_edit'        => (new moodle_url('/blocks/playerhud/edit_drop.php', [
@@ -609,6 +610,7 @@ class tab_items implements renderable {
             'str_col_drop'    => get_string('drop_name_label', 'block_playerhud'),
             'str_col_code'    => get_string('drops_col_code', 'block_playerhud'),
             'str_col_usage'   => get_string('maxusage', 'block_playerhud'),
+            'str_col_value'   => get_string('drop_value', 'block_playerhud'),
             'str_col_respawn' => get_string('respawntime', 'block_playerhud'),
             'str_col_actions' => get_string('actions'),
             'str_edit'        => get_string('edit'),

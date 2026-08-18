@@ -345,4 +345,31 @@ class utils {
         $stripped = strip_tags($html, $allowedtags);
         return clean_param($stripped, PARAM_CLEANHTML);
     }
+
+    /**
+     * Format an item quantity compactly for display (1000 -> "1k", 1500 -> "1.5k",
+     * 1000000 -> "1M"), leaving values under a thousand as plain numbers.
+     *
+     * The exact value is never lost by this call — callers keep it available separately
+     * (e.g. in a data-count attribute) for tooltips or accessible text.
+     *
+     * @param int $value Value to format.
+     * @return string Compact representation.
+     */
+    public static function format_compact_number(int $value): string {
+        $abs  = abs($value);
+        $sign = $value < 0 ? '-' : '';
+
+        if ($abs >= 1000000) {
+            $short = rtrim(rtrim(number_format($abs / 1000000, 1), '0'), '.');
+            return $sign . $short . 'M';
+        }
+
+        if ($abs >= 1000) {
+            $short = rtrim(rtrim(number_format($abs / 1000, 1), '0'), '.');
+            return $sign . $short . 'k';
+        }
+
+        return (string)$value;
+    }
 }

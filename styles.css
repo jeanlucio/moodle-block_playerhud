@@ -1276,6 +1276,18 @@
     width: 130px;
     min-width: 100px;
 }
+.block_playerhud .ph-col-value,
+.path-blocks-playerhud .ph-col-value,
+.filter_playerhud .ph-col-value {
+    width: 110px;
+    min-width: 90px;
+}
+.block_playerhud .ph-grant-qty-input,
+.path-blocks-playerhud .ph-grant-qty-input,
+.filter_playerhud .ph-grant-qty-input {
+    max-width: 80px;
+    flex: 0 0 auto;
+}
 .block_playerhud .ph-col-time,
 .path-blocks-playerhud .ph-col-time,
 .filter_playerhud .ph-col-time {

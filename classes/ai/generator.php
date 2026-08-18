@@ -279,6 +279,7 @@ class generator {
             $drop->name = !empty($options['drop_location']) ? $options['drop_location'] : $fallbackname;
 
             $drop->maxusage = (int)($options['drop_max'] ?? 0);
+            $drop->value = max(1, (int)($options['drop_value'] ?? 1));
             $minutes = (int)($options['drop_time'] ?? 0);
             $drop->respawntime = $minutes * 60;
             $drop->timecreated = time();

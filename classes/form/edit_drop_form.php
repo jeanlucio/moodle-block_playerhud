@@ -69,16 +69,33 @@ class edit_drop_form extends \moodleform {
         $mform->addElement('static', 'warning_infinite', '', $warningmsg);
         $mform->hideIf('warning_infinite', 'unlimited', 'notchecked');
 
-        // Max Quantity (If not unlimited).
+        // Max Quantity (If not unlimited). Label unified on 'maxusage' ("Collection Limit")
+        // rather than the older 'drop_max_qty' ("Max Quantity") string, which is now an orphan
+        // — both used to name this same field depending on the screen (this form vs. the
+        // drops list table), and "Max Quantity" also collided in meaning with the new 'value'
+        // field just below (how many times vs. how much each time).
         $mform->addElement(
             'text',
             'maxusage',
-            get_string('drop_max_qty', 'block_playerhud'),
+            get_string('maxusage', 'block_playerhud'),
             ['type' => 'number', 'min' => '1']
         );
         $mform->setType('maxusage', PARAM_INT);
         $mform->setDefault('maxusage', 1);
         $mform->hideIf('maxusage', 'unlimited', 'checked');
+        $mform->addHelpButton('maxusage', 'maxusage', 'block_playerhud');
+
+        // Value per collection: how many units are granted each time, independent of maxusage
+        // (how many times the drop can be collected).
+        $mform->addElement(
+            'text',
+            'value',
+            get_string('drop_value', 'block_playerhud'),
+            ['type' => 'number', 'min' => '1']
+        );
+        $mform->setType('value', PARAM_INT);
+        $mform->setDefault('value', 1);
+        $mform->addHelpButton('value', 'drop_value', 'block_playerhud');
 
         // Respawn Time (Cooldown).
         $mform->addElement(

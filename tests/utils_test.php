@@ -215,6 +215,38 @@ final class utils_test extends advanced_testcase {
     }
 
     /**
+     * Values under a thousand are shown as plain integers, unchanged.
+     */
+    public function test_format_compact_number_below_thousand_is_unchanged(): void {
+        $this->assertSame('0', utils::format_compact_number(0));
+        $this->assertSame('999', utils::format_compact_number(999));
+    }
+
+    /**
+     * Thousands compact to "k", dropping a trailing ".0" when the value is exact.
+     */
+    public function test_format_compact_number_thousands_use_k_suffix(): void {
+        $this->assertSame('1k', utils::format_compact_number(1000));
+        $this->assertSame('1.5k', utils::format_compact_number(1500));
+        $this->assertSame('999.9k', utils::format_compact_number(999900));
+    }
+
+    /**
+     * Millions compact to "M", same trailing-zero trimming rule as thousands.
+     */
+    public function test_format_compact_number_millions_use_m_suffix(): void {
+        $this->assertSame('1M', utils::format_compact_number(1000000));
+        $this->assertSame('1.2M', utils::format_compact_number(1200000));
+    }
+
+    /**
+     * A negative value keeps its sign in front of the compacted magnitude.
+     */
+    public function test_format_compact_number_preserves_negative_sign(): void {
+        $this->assertSame('-1k', utils::format_compact_number(-1000));
+    }
+
+    /**
      * Insert a minimal block_instances row and return its ID.
      *
      * @return int The new instance ID.

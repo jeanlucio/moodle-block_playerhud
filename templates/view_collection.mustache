@@ -34,6 +34,7 @@
                 "id": 1,
                 "name": "Sword",
                 "count": 5,
+                "count_display": "5",
                 "badge_new": true,
                 "is_image": false,
                 "image_content": "⚔️",
@@ -82,6 +83,7 @@
          data-id="{{id}}"
          data-name="{{name}}"
          data-count="{{count}}"
+         data-count-display="{{count_display}}"
          data-image="{{data_image_payload}}"
          data-isimage="{{is_image_bool}}"
          {{#count}}
@@ -106,8 +108,8 @@
         {{! MODAL STYLE ITEM COUNTER (Dark with "x") }}
         {{#count}}
             <span class="badge bg-dark text-white rounded-pill position-absolute shadow-sm ph-count-badge"
-                  title="{{#str}} qty, block_playerhud {{/str}}">
-                x{{count}}
+                  title="{{#str}} qty, block_playerhud {{/str}}: {{count}}">
+                x{{count_display}}
             </span>
         {{/count}}
 

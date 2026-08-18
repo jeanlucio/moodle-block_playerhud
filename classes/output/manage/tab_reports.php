@@ -284,6 +284,7 @@ class tab_reports implements renderable, templatable {
             'col_object'        => get_string('report_col_object', 'block_playerhud'),
             'col_ai'            => get_string('report_col_ai', 'block_playerhud'),
             'grant_item_select' => get_string('grant_item_select', 'block_playerhud'),
+            'qty'               => get_string('qty', 'block_playerhud'),
             'revoke_item'       => get_string('revoke_item', 'block_playerhud'),
             'confirm_revoke'    => get_string('confirm_revoke', 'block_playerhud'),
             'delete'            => get_string('delete'),
@@ -800,6 +801,7 @@ class tab_reports implements renderable, templatable {
                         $iconemoji = $media['is_image'] ? '' : strip_tags($media['content']);
                     }
                     $log->inventory_id = 0;
+                    $log->stack_log_id = 0;
                 } else if ($log->event_type === 'item_consumed') {
                     $badgeclass = 'bg-warning text-dark';
                     $badgetext  = get_string('report_type_consumed', 'block_playerhud');
@@ -810,6 +812,7 @@ class tab_reports implements renderable, templatable {
                         $iconemoji = $media['is_image'] ? '' : strip_tags($media['content']);
                     }
                     $log->inventory_id = 0;
+                    $log->stack_log_id = 0;
                 } else if ($log->event_type === 'trade') {
                     $badgeclass = 'bg-success text-white';
                     $badgetext  = get_string('report_type_trade', 'block_playerhud');
@@ -848,6 +851,15 @@ class tab_reports implements renderable, templatable {
                         'r_userid' => $userid,
                         'sesskey' => sesskey(),
                     ]);
+                } else if ($log->stack_log_id > 0 && property_exists($this, 'courseid')) {
+                    $urldelete = new \moodle_url('/blocks/playerhud/manage.php', [
+                        'id' => $this->courseid,
+                        'instanceid' => $this->instanceid,
+                        'action' => 'revoke_stack_entry',
+                        'logid' => $log->stack_log_id,
+                        'r_userid' => $userid,
+                        'sesskey' => sesskey(),
+                    ]);
                 }
 
                 $results[] = [
@@ -862,7 +874,7 @@ class tab_reports implements renderable, templatable {
                     'xp_badge'      => $xpbadge,
                     'details_html'  => $detailtext,
                     'url_revoke'    => $urldelete ? $urldelete->out(false) : '',
-                    'has_revoke'    => ($log->inventory_id > 0),
+                    'has_revoke'    => ($log->inventory_id > 0 || $log->stack_log_id > 0),
                 ];
             }
         }

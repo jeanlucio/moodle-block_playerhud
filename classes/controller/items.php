@@ -134,11 +134,15 @@ class items {
      * recorded xpawarded, not a proportional share; see the design note on this simplification
      * (revoke does not attempt to reconstruct XP per remaining unit).
      *
+     * Returns whether anything was actually reverted — false is a normal outcome (e.g. the
+     * caller double-clicking an already-fully-spent-or-revoked entry), not an error, and lets
+     * the UI show accurate feedback instead of a misleading generic success message.
+     *
      * @param int $logid The block_playerhud_stack_log row to revoke.
      * @param int $instanceid The owning block instance ID.
-     * @return void
+     * @return bool True if a balance/XP change actually happened, false if it was a no-op.
      */
-    public static function revoke_stack_log_entry(int $logid, int $instanceid): void {
+    public static function revoke_stack_log_entry(int $logid, int $instanceid): bool {
         global $DB;
 
         $log = $DB->get_record_sql(
@@ -149,7 +153,7 @@ class items {
             ['logid' => $logid, 'instanceid' => $instanceid]
         );
         if (!$log || (int) $log->delta <= 0) {
-            return;
+            return false;
         }
 
         $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
@@ -166,7 +170,7 @@ class items {
             $currentqty = $stack ? (int) $stack->qty : 0;
             $toremove = min((int) $log->delta, $currentqty);
             if ($toremove <= 0) {
-                return;
+                return false;
             }
 
             $now = time();
@@ -206,6 +210,8 @@ class items {
         } finally {
             $lock->release();
         }
+
+        return true;
     }
 
     /**

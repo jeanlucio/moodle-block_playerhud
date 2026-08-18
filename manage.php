@@ -507,12 +507,32 @@ if ($action === 'revoke_item' && confirm_sesskey()) {
     redirect($url, get_string('item_revoked', 'block_playerhud'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
 
+// Action: Revoke Stack Log Entry (Teacher manually reverts a new-engine grant/consume entry).
+if ($action === 'revoke_stack_entry' && confirm_sesskey()) {
+    $logid = required_param('logid', PARAM_INT);
+    $ruserid = required_param('r_userid', PARAM_INT);
+
+    $reverted = \block_playerhud\controller\items::revoke_stack_log_entry($logid, $instanceid);
+
+    $url = new moodle_url($baseurl, ['tab' => 'reports', 'r_userid' => $ruserid]);
+    if ($reverted) {
+        redirect($url, get_string('item_revoked', 'block_playerhud'), null, \core\output\notification::NOTIFY_SUCCESS);
+    }
+    redirect(
+        $url,
+        get_string('stack_entry_already_revoked', 'block_playerhud'),
+        null,
+        \core\output\notification::NOTIFY_INFO
+    );
+}
+
 // Action: Grant Item (Teacher manually gives item).
 if ($action === 'grant_item' && confirm_sesskey()) {
     $ruserid = required_param('r_userid', PARAM_INT);
     $itemid = required_param('itemid', PARAM_INT);
+    $qty = optional_param('qty', 1, PARAM_INT);
 
-    \block_playerhud\controller\items::grant_item($itemid, $ruserid, $instanceid, $courseid);
+    \block_playerhud\controller\items::grant_item($itemid, $ruserid, $instanceid, $courseid, max(1, $qty));
 
     $url = new moodle_url($baseurl, ['tab' => 'reports', 'r_userid' => $ruserid]);
     redirect($url, get_string('item_granted', 'block_playerhud'), null, \core\output\notification::NOTIFY_SUCCESS);

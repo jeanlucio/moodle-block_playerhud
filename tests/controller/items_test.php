@@ -449,7 +449,7 @@ final class items_test extends advanced_testcase {
         $this->seed_player($instanceid, (int) $user->id, 100);
         $logid = external_items::grant($instanceid, $itemid, (int) $user->id, 2, 'teacher', false);
 
-        items::revoke_stack_log_entry($logid, $instanceid);
+        $this->assertTrue(items::revoke_stack_log_entry($logid, $instanceid));
 
         $this->assertSame(0, external_items::get_available_quantity($instanceid, $itemid, (int) $user->id));
         // Net zero: the grant of 2x30xp added 60, the revoke deducts that same 60 back.
@@ -479,7 +479,7 @@ final class items_test extends advanced_testcase {
         $logid = external_items::grant($instanceid, $itemid, (int) $user->id, 5, 'teacher', false);
         external_items::consume($instanceid, $itemid, (int) $user->id, 3);
 
-        items::revoke_stack_log_entry($logid, $instanceid);
+        $this->assertTrue(items::revoke_stack_log_entry($logid, $instanceid));
 
         $this->assertSame(0, external_items::get_available_quantity($instanceid, $itemid, (int) $user->id));
         // Net zero: the grant of 5x30xp added 150, the revoke deducts that same full 150 back
@@ -507,9 +507,35 @@ final class items_test extends advanced_testcase {
             'userid' => $user->id, 'itemid' => $itemid, 'delta' => -1,
         ]);
 
-        items::revoke_stack_log_entry($consumelogid, $instanceid);
+        $this->assertFalse(items::revoke_stack_log_entry($consumelogid, $instanceid));
 
         $this->assertSame(2, external_items::get_available_quantity($instanceid, $itemid, (int) $user->id));
+    }
+
+    /**
+     * Revoking the same grant entry twice is a safe no-op the second time — it must not remove
+     * a second batch of units from an unrelated later grant, nor deduct XP twice. This is the
+     * exact scenario a teacher can trigger by clicking an already-processed revoke link again
+     * (the UI leaves the button visible after a revoke, since the append-only ledger design
+     * does not retroactively mark the original grant row as spent).
+     */
+    public function test_revoke_stack_log_entry_twice_is_idempotent_noop(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 30);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 100);
+        $logid = external_items::grant($instanceid, $itemid, (int) $user->id, 2, 'teacher', false);
+
+        $this->assertTrue(items::revoke_stack_log_entry($logid, $instanceid));
+        $this->assertFalse(items::revoke_stack_log_entry($logid, $instanceid));
+
+        $this->assertSame(0, external_items::get_available_quantity($instanceid, $itemid, (int) $user->id));
+        $this->assertSame(100, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
     }
 
     /**
@@ -524,7 +550,7 @@ final class items_test extends advanced_testcase {
         $this->seed_player($instancea, (int) $user->id, 100);
         $logid = external_items::grant($instancea, $itemid, (int) $user->id, 1, 'teacher', false);
 
-        items::revoke_stack_log_entry($logid, $instanceb);
+        $this->assertFalse(items::revoke_stack_log_entry($logid, $instanceb));
 
         $this->assertSame(1, external_items::get_available_quantity($instancea, $itemid, (int) $user->id));
     }

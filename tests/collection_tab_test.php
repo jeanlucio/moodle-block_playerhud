@@ -233,6 +233,61 @@ final class collection_tab_test extends advanced_testcase {
     }
 
     /**
+     * An item obtained only through the new stacking engine (no legacy inventory rows at all)
+     * still counts, dates, and badges correctly — count comes from block_playerhud_stack, the
+     * "new" badge and date come from block_playerhud_stack_log, not from the (empty) legacy
+     * per-copy loop.
+     */
+    public function test_new_engine_only_item_counts_and_shows_new_badge(): void {
+        $item = $this->create_item('Diamond', '');
+        $this->grant_stack($item->id, 5, 'shop');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame(5, $found['count']);
+        $this->assertSame('5', $found['count_display']);
+        $this->assertTrue($found['badge_new']);
+        $this->assertSame(5, $found['origin_shop']);
+    }
+
+    /**
+     * A user with balance split across both storage generations (legacy rows plus a new-engine
+     * balance for the same item) sees the two sources summed into a single count.
+     */
+    public function test_combined_legacy_and_new_engine_balance_sums_correctly(): void {
+        $item = $this->create_item('Ruby', '');
+        $this->grant_copy($item->id, 'map');
+        $this->grant_copy($item->id, 'map');
+        $this->grant_stack($item->id, 3, 'quest');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame(5, $found['count']);
+        $this->assertSame(2, $found['origin_map']);
+        $this->assertSame(3, $found['origin_quest']);
+    }
+
+    /**
+     * A quantity in the thousands is rendered compactly (count_display), while the exact value
+     * is preserved separately in count for JS/data-attribute consumers.
+     */
+    public function test_high_quantity_uses_compact_display(): void {
+        $item = $this->create_item('PlayerCoin', '');
+        $this->grant_stack($item->id, 1500, 'shop');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame(1500, $found['count']);
+        $this->assertSame('1.5k', $found['count_display']);
+    }
+
+    /**
      * Build the export array for the given user with a minimal player object.
      *
      * @param int $userid User ID to build collection for.
@@ -331,5 +386,24 @@ final class collection_tab_test extends advanced_testcase {
             'source'      => $source,
             'timecreated' => time(),
         ]);
+    }
+
+    /**
+     * Grant the current test user a quantity via the new stacking engine.
+     *
+     * @param int $itemid Item ID to grant.
+     * @param int $qty Quantity to grant.
+     * @param string $source Grant source value (e.g. 'shop', 'quest').
+     * @return void
+     */
+    private function grant_stack(int $itemid, int $qty, string $source): void {
+        \block_playerhud\local\external_items::grant(
+            $this->instanceid,
+            $itemid,
+            $this->user->id,
+            $qty,
+            $source,
+            true
+        );
     }
 }

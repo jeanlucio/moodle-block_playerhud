@@ -104,7 +104,7 @@ class drops {
         $sort       = optional_param('sort', 'id', PARAM_ALPHA);
         $dir        = optional_param('dir', 'DESC', PARAM_ALPHA);
 
-        $allowedsorts = ['id', 'mapcode', 'maxusage', 'respawntime', 'timecreated'];
+        $allowedsorts = ['id', 'mapcode', 'maxusage', 'value', 'respawntime', 'timecreated'];
         if (!in_array($sort, $allowedsorts, true)) {
             $sort = 'id';
         }
@@ -179,6 +179,7 @@ class drops {
                     'name' => format_text($drop->name, FORMAT_HTML, ['context' => $coursecontext]),
                     'is_infinite' => ($drop->maxusage == 0),
                     'maxusage' => $drop->maxusage,
+                    'value' => $drop->value,
                     'is_immediate' => ($drop->respawntime == 0),
                     'respawntime' => $drop->respawntime,
                     'respawntime_fmt' => format_time($drop->respawntime),
@@ -214,7 +215,14 @@ class drops {
             ),
             'qty' => $this->get_sort_data(
                 'maxusage',
-                get_string('drop_max_qty', 'block_playerhud'),
+                get_string('maxusage', 'block_playerhud'),
+                $sort,
+                $dir,
+                $baseurl
+            ),
+            'value' => $this->get_sort_data(
+                'value',
+                get_string('drop_value', 'block_playerhud'),
                 $sort,
                 $dir,
                 $baseurl
@@ -393,6 +401,7 @@ class drops {
 
         // Unlimited logic.
         $record->maxusage = (!empty($data->unlimited)) ? 0 : max(1, (int)$data->maxusage);
+        $record->value    = max(1, (int)($data->value ?? 1));
 
         if (!empty($data->id)) {
             // Verify the drop belongs to this instance before updating to prevent cross-instance edits.
