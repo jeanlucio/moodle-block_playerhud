@@ -249,4 +249,38 @@ final class db_upgrade_test extends advanced_testcase {
         $this->assertMatchesRegularExpression('/^[A-Z0-9]{6}$/', $code);
         $this->assertNotEquals($existingcode, $code, 'A backfilled code must not collide with a pre-existing one.');
     }
+
+    /**
+     * This step carries no migration logic (unlike every other step in this file) — it is
+     * plain schema DDL, covered thoroughly by moodle-check-schema against a real database.
+     * The PHPUnit test environment always installs from the current install.xml, so the
+     * columns/tables this step adds already exist before the upgrade function is even
+     * called — asserting their presence alone would pass just as well with a broken or
+     * missing upgrade step. The pre-upgrade state is forced here by dropping them first, so
+     * the assertions below can only pass if xmldb_block_playerhud_upgrade()'s own
+     * add_field()/create_table() calls actually ran.
+     */
+    public function test_upgrade_adds_quantity_schema(): void {
+        global $DB;
+
+        $dbman = $DB->get_manager();
+        $dbman->drop_table(new \xmldb_table('block_playerhud_stack_log'));
+        $dbman->drop_table(new \xmldb_table('block_playerhud_stack'));
+        $dbman->drop_field(new \xmldb_table('block_playerhud_quests'), new \xmldb_field('reward_itemqty'));
+        $dbman->drop_field(new \xmldb_table('block_playerhud_drops'), new \xmldb_field('value'));
+
+        $this->set_current_version(2026070903);
+        xmldb_block_playerhud_upgrade(2026070903);
+
+        $this->assertTrue($dbman->table_exists('block_playerhud_stack'));
+        $this->assertTrue($dbman->table_exists('block_playerhud_stack_log'));
+        $this->assertTrue($dbman->field_exists(
+            new \xmldb_table('block_playerhud_drops'),
+            new \xmldb_field('value')
+        ));
+        $this->assertTrue($dbman->field_exists(
+            new \xmldb_table('block_playerhud_quests'),
+            new \xmldb_field('reward_itemqty')
+        ));
+    }
 }
