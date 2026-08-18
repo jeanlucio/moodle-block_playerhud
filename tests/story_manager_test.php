@@ -28,6 +28,7 @@ use block_playerhud\story_manager;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\story_manager
+ * @covers     \block_playerhud\local\external_items
  */
 final class story_manager_test extends advanced_testcase {
     /** @var int Block instance ID shared across test methods. */
@@ -650,6 +651,60 @@ final class story_manager_test extends advanced_testcase {
         $this->assertSame(1, $DB->count_records('block_playerhud_inventory', [
             'userid' => $user->id, 'itemid' => $item->id, 'source' => 'consumed',
         ]), 'The spent copy must be retained as consumed, not deleted.');
+    }
+
+    /**
+     * A choice cost held entirely through the new engine (block_playerhud_stack) is accepted
+     * and consumed through external_items::consume(), never touching block_playerhud_inventory.
+     */
+    public function test_make_choice_accepts_new_engine_balance_as_payment(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_item('Story Key');
+        \block_playerhud\local\external_items::grant($this->instanceid, $item->id, $user->id, 1, 'teacher', true);
+
+        $chapter = $this->create_chapter('Gated Chapter');
+        $nodea = $this->create_node($chapter->id, 'Start', true);
+        $choice = $this->create_choice($nodea->id, 'Use key', 0, 0, $item->id, 1);
+
+        $result = story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+
+        $this->assertTrue($result['finished']);
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_stack', 'qty', [
+            'userid' => $user->id, 'itemid' => $item->id,
+        ]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+    }
+
+    /**
+     * A choice cost split across both storage generations is paid correctly — the delicate
+     * case flagged in the design: consume() must spend everything available in
+     * block_playerhud_stack before falling back to legacy rows for the remainder.
+     */
+    public function test_make_choice_pays_cost_split_across_both_storage_generations(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_item('Story Key');
+        $this->add_inventory($user->id, $item->id, 'teacher');
+        \block_playerhud\local\external_items::grant($this->instanceid, $item->id, $user->id, 1, 'teacher', true);
+
+        $chapter = $this->create_chapter('Gated Chapter');
+        $nodea = $this->create_node($chapter->id, 'Start', true);
+        $choice = $this->create_choice($nodea->id, 'Use key', 0, 0, $item->id, 2);
+
+        $result = story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+
+        $this->assertTrue($result['finished']);
+        $this->assertSame(
+            0,
+            \block_playerhud\local\external_items::get_available_quantity($this->instanceid, $item->id, $user->id)
+        );
     }
 
     /**

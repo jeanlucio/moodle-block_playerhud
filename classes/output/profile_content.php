@@ -124,19 +124,28 @@ class profile_content implements \renderable, \templatable {
     private function get_recent_items(int $limit = self::ITEM_LIMIT): array {
         global $DB;
 
-        $sql = "SELECT inv.itemid, MAX(inv.timecreated) AS lastcollected, MAX(inv.id) AS lastinvid
-                  FROM {block_playerhud_inventory} inv
-                  JOIN {block_playerhud_items} i ON inv.itemid = i.id
-                 WHERE inv.userid = :userid
-                   AND i.blockinstanceid = :bid
-                   AND inv.source NOT IN ('revoked', 'consumed')
-                   AND i.enabled = 1
-                 GROUP BY inv.itemid
-                 ORDER BY lastcollected DESC, lastinvid DESC";
+        // Combines both storage generations: legacy inventory rows (excluding
+        // revoked/consumed) and the new engine's current balance (qty > 0 — an item fully
+        // spent since is no longer "held", matching the legacy side's active-only filter).
+        $sql = "SELECT itemid, MAX(lastcollected) AS lastcollected, MAX(lastinvid) AS lastinvid FROM (
+                    SELECT inv.itemid AS itemid, inv.timecreated AS lastcollected, inv.id AS lastinvid
+                      FROM {block_playerhud_inventory} inv
+                      JOIN {block_playerhud_items} i ON inv.itemid = i.id
+                     WHERE inv.userid = :userid1 AND i.blockinstanceid = :bid1
+                           AND inv.source NOT IN ('revoked', 'consumed') AND i.enabled = 1
+                     UNION ALL
+                    SELECT s.itemid AS itemid, s.timemodified AS lastcollected, 0 AS lastinvid
+                      FROM {block_playerhud_stack} s
+                      JOIN {block_playerhud_items} i ON s.itemid = i.id
+                     WHERE s.userid = :userid2 AND i.blockinstanceid = :bid2
+                           AND i.enabled = 1 AND s.qty > 0
+                ) combined
+             GROUP BY itemid
+             ORDER BY lastcollected DESC, lastinvid DESC";
 
         $rows = $DB->get_records_sql($sql, [
-            'userid' => $this->userid,
-            'bid' => $this->blockinstanceid,
+            'userid1' => $this->userid, 'bid1' => $this->blockinstanceid,
+            'userid2' => $this->userid, 'bid2' => $this->blockinstanceid,
         ], 0, $limit);
 
         if (empty($rows)) {
@@ -186,14 +195,23 @@ class profile_content implements \renderable, \templatable {
         global $DB;
 
         return (int)$DB->count_records_sql(
-            "SELECT COUNT(DISTINCT inv.itemid)
-               FROM {block_playerhud_inventory} inv
-               JOIN {block_playerhud_items} i ON inv.itemid = i.id
-              WHERE inv.userid = :userid
-                AND i.blockinstanceid = :bid
-                AND inv.source NOT IN ('revoked', 'consumed')
-                AND i.enabled = 1",
-            ['userid' => $this->userid, 'bid' => $this->blockinstanceid]
+            "SELECT COUNT(DISTINCT itemid) FROM (
+                 SELECT inv.itemid
+                   FROM {block_playerhud_inventory} inv
+                   JOIN {block_playerhud_items} i ON inv.itemid = i.id
+                  WHERE inv.userid = :userid1 AND i.blockinstanceid = :bid1
+                        AND inv.source NOT IN ('revoked', 'consumed') AND i.enabled = 1
+                  UNION
+                 SELECT s.itemid
+                   FROM {block_playerhud_stack} s
+                   JOIN {block_playerhud_items} i ON s.itemid = i.id
+                  WHERE s.userid = :userid2 AND i.blockinstanceid = :bid2
+                        AND i.enabled = 1 AND s.qty > 0
+             ) combined",
+            [
+                'userid1' => $this->userid, 'bid1' => $this->blockinstanceid,
+                'userid2' => $this->userid, 'bid2' => $this->blockinstanceid,
+            ]
         );
     }
 }

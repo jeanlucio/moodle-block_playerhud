@@ -36,6 +36,8 @@ use stdClass;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\local\audit_log
+ * @covers     \block_playerhud\local\external_items
+ * @covers     \block_playerhud\controller\items
  */
 final class audit_log_test extends advanced_testcase {
     /** @var int Block instance ID. */
@@ -206,5 +208,56 @@ final class audit_log_test extends advanced_testcase {
         $this->assertCount(1, $logs);
         $this->assertEquals(200, $logs[0]->xp_gained);
         $this->assertEquals('quest', $logs[0]->event_type);
+    }
+
+    /**
+     * A grant recorded through the new engine (block_playerhud_stack_log) appears in the feed
+     * as an 'item' event with its recorded xp_gained — the storage generation every grant now
+     * uses, alongside the legacy inventory branch above.
+     */
+    public function test_new_engine_grant_appears_as_item_event(): void {
+        $itemid = $this->create_item(30);
+        external_items::grant($this->instanceid, $itemid, $this->user->id, 2, 'teacher', false);
+
+        $logs = array_values($this->get_logs()['logs']);
+        $this->assertCount(1, $logs);
+        $this->assertEquals('item', $logs[0]->event_type);
+        $this->assertEquals(60, $logs[0]->xp_gained);
+    }
+
+    /**
+     * A consume recorded through the new engine appears as its own 'item_consumed' event,
+     * distinct from the grant that preceded it — reports xp_gained = 0, since consume() never
+     * touches XP.
+     */
+    public function test_new_engine_consume_appears_as_item_consumed_event(): void {
+        $itemid = $this->create_item(0);
+        external_items::grant($this->instanceid, $itemid, $this->user->id, 1, 'teacher', true);
+        external_items::consume($this->instanceid, $itemid, $this->user->id, 1);
+
+        $logs = array_values($this->get_logs()['logs']);
+        $this->assertCount(2, $logs);
+        $consumed = array_values(array_filter($logs, static fn($log) => $log->event_type === 'item_consumed'));
+        $this->assertCount(1, $consumed);
+        $this->assertEquals(0, $consumed[0]->xp_gained);
+    }
+
+    /**
+     * Revoking a new-engine grant appears as its own 'item_revoked' event reporting the
+     * negative of the original grant's recorded xpawarded — the regression this test guards:
+     * revoke_stack_log_entry() must carry that amount onto its own compensating log row, not
+     * default it to zero, or this figure would silently read 0 instead of what was actually
+     * deducted.
+     */
+    public function test_new_engine_revoke_appears_as_item_revoked_event_with_negative_value(): void {
+        $itemid = $this->create_item(50);
+        $logid = external_items::grant($this->instanceid, $itemid, $this->user->id, 1, 'teacher', false);
+
+        \block_playerhud\controller\items::revoke_stack_log_entry($logid, $this->instanceid);
+
+        $logs = array_values($this->get_logs()['logs']);
+        $revoked = array_values(array_filter($logs, static fn($log) => $log->event_type === 'item_revoked'));
+        $this->assertCount(1, $revoked);
+        $this->assertEquals(-50, $revoked[0]->xp_gained);
     }
 }

@@ -72,6 +72,7 @@ class audit_log {
         $concatitem  = $DB->sql_concat("'item_'", "inv.id");
         $concattrade = $DB->sql_concat("'trade_'", "tl.id");
         $concatquest = $DB->sql_concat("'quest_'", "ql.id");
+        $concatstack = $DB->sql_concat("'stack_'", "sl.id");
 
         $innersql = "
             SELECT {$concatitem} AS uniqueid,
@@ -84,24 +85,39 @@ class audit_log {
                        WHEN inv.source = 'revoked' THEN -inv.xpawarded
                        ELSE inv.xpawarded
                    END AS xp_gained,
-                   i.id AS itemid, inv.id AS inventory_id, 0 AS trade_id
+                   i.id AS itemid, inv.id AS inventory_id, 0 AS trade_id, 0 AS stack_log_id
               FROM {block_playerhud_inventory} inv
               JOIN {block_playerhud_items} i ON inv.itemid = i.id
              WHERE inv.userid = :u1 AND i.blockinstanceid = :p1
             UNION ALL
             SELECT {$concattrade} AS uniqueid, 'trade' AS event_type, t.name AS object_name, tl.timecreated,
                    'trade_completed' AS details, '⚖️' AS icon, 0 AS xp_gained, 0 AS itemid,
-                   0 AS inventory_id, t.id AS trade_id
+                   0 AS inventory_id, t.id AS trade_id, 0 AS stack_log_id
               FROM {block_playerhud_trade_log} tl
               JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
              WHERE tl.userid = :u2 AND t.blockinstanceid = :p2
             UNION ALL
             SELECT {$concatquest} AS uniqueid, 'quest' AS event_type, q.name AS object_name, ql.timecreated,
                    'quest_claim' AS details, q.image_done AS icon, ql.xpawarded AS xp_gained,
-                   0 AS itemid, 0 AS inventory_id, 0 AS trade_id
+                   0 AS itemid, 0 AS inventory_id, 0 AS trade_id, 0 AS stack_log_id
               FROM {block_playerhud_quest_log} ql
               JOIN {block_playerhud_quests} q ON ql.questid = q.id
-             WHERE ql.userid = :u3 AND q.blockinstanceid = :p3";
+             WHERE ql.userid = :u3 AND q.blockinstanceid = :p3
+            UNION ALL
+            SELECT {$concatstack} AS uniqueid,
+                   CASE WHEN sl.source = 'revoked' THEN 'item_revoked'
+                        WHEN sl.delta < 0 THEN 'item_consumed'
+                        ELSE 'item' END AS event_type,
+                   i.name AS object_name, sl.timecreated,
+                   sl.source AS details, i.image AS icon,
+                   CASE
+                       WHEN sl.source = 'revoked' THEN -sl.xpawarded
+                       ELSE sl.xpawarded
+                   END AS xp_gained,
+                   i.id AS itemid, 0 AS inventory_id, 0 AS trade_id, sl.id AS stack_log_id
+              FROM {block_playerhud_stack_log} sl
+              JOIN {block_playerhud_items} i ON sl.itemid = i.id
+             WHERE sl.userid = :u4 AND i.blockinstanceid = :p4";
 
         $params = [
             'u1' => $userid,
@@ -110,6 +126,8 @@ class audit_log {
             'p2' => $instanceid,
             'u3' => $userid,
             'p3' => $instanceid,
+            'u4' => $userid,
+            'p4' => $instanceid,
         ];
 
         $where = "1=1";

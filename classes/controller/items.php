@@ -176,13 +176,17 @@ class items {
                 $stack->timemodified = $now;
                 $DB->update_record('block_playerhud_stack', $stack);
 
+                // Xpawarded mirrors the amount change_xp() is about to deduct below (the
+                // simplification already documented: the log entry's own recorded amount, not
+                // a per-unit reconstruction) — so audit_log's UNION can show this action's real
+                // XP impact the same way it already does for a legacy revoked inventory row.
                 $DB->insert_record('block_playerhud_stack_log', (object) [
                     'userid'      => $log->userid,
                     'itemid'      => $log->itemid,
                     'dropid'      => 0,
                     'delta'       => -$toremove,
                     'source'      => 'revoked',
-                    'xpawarded'   => 0,
+                    'xpawarded'   => (int) $log->xpawarded,
                     'timecreated' => $now,
                 ]);
 

@@ -346,4 +346,129 @@ class external_items {
 
         return $legacycount + ($stackqty !== false ? (int)$stackqty : 0);
     }
+
+    /**
+     * Bulk variant of get_available_quantity() for checking several items of the same user at
+     * once (e.g. a quest's TYPE_TOTAL_ITEMS/TYPE_UNIQUE_ITEMS possession count, or a story
+     * chapter's affordability precheck across every choice on screen) without calling $DB once
+     * per item.
+     *
+     * Items not belonging to $blockinstanceid are silently omitted from the result, the same
+     * ownership guarantee every other method in this class enforces — never a KeyError for the
+     * caller, just a missing key.
+     *
+     * @param int $blockinstanceid Block instance ID every item must belong to.
+     * @param int[] $itemids PlayerHUD item IDs to resolve.
+     * @param int $userid User ID.
+     * @return array<int, int> Quantity available, keyed by item ID.
+     */
+    public static function get_available_quantities_bulk(int $blockinstanceid, array $itemids, int $userid): array {
+        global $DB;
+
+        $itemids = array_values(array_unique(array_filter(
+            array_map('intval', $itemids),
+            static fn(int $id): bool => $id > 0
+        )));
+        if (empty($itemids)) {
+            return [];
+        }
+
+        [$ownsql, $ownparams] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED, 'own');
+        $ownparams['blockinstanceid'] = $blockinstanceid;
+        $ownitemids = array_map('intval', $DB->get_fieldset_select(
+            'block_playerhud_items',
+            'id',
+            "id $ownsql AND blockinstanceid = :blockinstanceid",
+            $ownparams
+        ));
+        if (empty($ownitemids)) {
+            return [];
+        }
+
+        [$legsql, $legparams] = $DB->get_in_or_equal($ownitemids, SQL_PARAMS_NAMED, 'leg');
+        $legparams['userid'] = $userid;
+        $legacycounts = $DB->get_records_sql_menu(
+            "SELECT itemid, COUNT(id) AS qty
+               FROM {block_playerhud_inventory}
+              WHERE userid = :userid AND itemid $legsql AND source NOT IN ('revoked', 'consumed')
+           GROUP BY itemid",
+            $legparams
+        );
+
+        [$stsql, $stparams] = $DB->get_in_or_equal($ownitemids, SQL_PARAMS_NAMED, 'st');
+        $stparams['userid'] = $userid;
+        $stackqtys = $DB->get_records_sql_menu(
+            "SELECT itemid, qty FROM {block_playerhud_stack} WHERE userid = :userid AND itemid $stsql",
+            $stparams
+        );
+
+        $result = [];
+        foreach ($ownitemids as $itemid) {
+            $result[$itemid] = (int) ($legacycounts[$itemid] ?? 0) + (int) ($stackqtys[$itemid] ?? 0);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Returns how many distinct item types a user has ever obtained within a block instance —
+     * the possession count behind quest::TYPE_UNIQUE_ITEMS.
+     *
+     * Combines block_playerhud_inventory and block_playerhud_stack_log with no eligibility
+     * filter on either side, matching the pre-existing "ever obtained" semantics this quest
+     * type has always used: a copy later revoked/consumed/spent still counts, since the
+     * question is whether the type was ever reached, not whether it is still held.
+     *
+     * @param int $blockinstanceid Block instance ID.
+     * @param int $userid User ID.
+     * @return int
+     */
+    public static function count_distinct_items_for_instance(int $blockinstanceid, int $userid): int {
+        global $DB;
+
+        return (int) $DB->count_records_sql(
+            "SELECT COUNT(DISTINCT itemid) FROM (
+                 SELECT inv.itemid
+                   FROM {block_playerhud_inventory} inv
+                   JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                  WHERE inv.userid = :userid1 AND it.blockinstanceid = :bi1
+                  UNION
+                 SELECT sl.itemid
+                   FROM {block_playerhud_stack_log} sl
+                   JOIN {block_playerhud_items} it ON sl.itemid = it.id
+                  WHERE sl.userid = :userid2 AND it.blockinstanceid = :bi2
+             ) combined",
+            ['userid1' => $userid, 'bi1' => $blockinstanceid, 'userid2' => $userid, 'bi2' => $blockinstanceid]
+        );
+    }
+
+    /**
+     * Returns the total quantity of every item a user currently holds within a block instance,
+     * summed across all items — the possession count behind quest::TYPE_TOTAL_ITEMS.
+     *
+     * @param int $blockinstanceid Block instance ID.
+     * @param int $userid User ID.
+     * @return int
+     */
+    public static function count_total_items_for_instance(int $blockinstanceid, int $userid): int {
+        global $DB;
+
+        $legacy = $DB->count_records_sql(
+            "SELECT COUNT(inv.id)
+               FROM {block_playerhud_inventory} inv
+               JOIN {block_playerhud_items} it ON inv.itemid = it.id
+              WHERE inv.userid = :userid AND it.blockinstanceid = :bi
+                    AND inv.source NOT IN ('revoked', 'consumed')",
+            ['userid' => $userid, 'bi' => $blockinstanceid]
+        );
+        $stack = $DB->get_field_sql(
+            "SELECT COALESCE(SUM(s.qty), 0)
+               FROM {block_playerhud_stack} s
+               JOIN {block_playerhud_items} it ON s.itemid = it.id
+              WHERE s.userid = :userid AND it.blockinstanceid = :bi",
+            ['userid' => $userid, 'bi' => $blockinstanceid]
+        );
+
+        return (int) $legacy + (int) $stack;
+    }
 }

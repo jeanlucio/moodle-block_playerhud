@@ -160,22 +160,16 @@ class quest {
         }
 
         if ($needuniqueitems) {
-            $totals['unique_items'] = (int) $DB->count_records_sql(
-                "SELECT COUNT(DISTINCT inv.itemid)
-                   FROM {block_playerhud_inventory} inv
-                   JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                  WHERE inv.userid = ? AND it.blockinstanceid = ?",
-                [$userid, $blockinstanceid]
+            $totals['unique_items'] = \block_playerhud\local\external_items::count_distinct_items_for_instance(
+                $blockinstanceid,
+                $userid
             );
         }
 
         if ($needtotalitems) {
-            $totals['total_items'] = (int) $DB->count_records_sql(
-                "SELECT COUNT(inv.id)
-                   FROM {block_playerhud_inventory} inv
-                   JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                  WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source NOT IN ('revoked', 'consumed')",
-                [$userid, $blockinstanceid]
+            $totals['total_items'] = \block_playerhud\local\external_items::count_total_items_for_instance(
+                $blockinstanceid,
+                $userid
             );
         }
 
@@ -211,34 +205,29 @@ class quest {
     }
 
     /**
-     * Counts owned inventory rows per itemid, in one grouped query instead of one per item.
+     * Returns available quantity per itemid, in one batched call instead of one per item —
+     * thin wrapper kept here so every existing caller in this class stays unchanged.
      *
      * @param int $userid The user ID.
      * @param int[] $itemids Distinct item IDs to count.
-     * @return array Counts keyed by itemid.
+     * @return array Quantities keyed by itemid.
      */
     private static function count_specific_items(int $userid, array $itemids): array {
-        global $DB;
-
         if (empty($itemids)) {
             return [];
         }
 
-        [$insql, $inparams] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED);
-        $inparams['userid'] = $userid;
-        $rows = $DB->get_records_sql(
-            "SELECT itemid, COUNT(*) AS cnt
-               FROM {block_playerhud_inventory}
-              WHERE userid = :userid AND itemid $insql
-           GROUP BY itemid",
-            $inparams
-        );
+        // Every quest here already belongs to the same block instance (the whole point of
+        // preload_totals()/has_claimable_quests() is scoping to one instance's quest list), so
+        // any one item's blockinstanceid works to satisfy the ownership check.
+        global $DB;
+        $blockinstanceid = (int) $DB->get_field('block_playerhud_items', 'blockinstanceid', ['id' => reset($itemids)]);
 
-        $counts = [];
-        foreach ($rows as $row) {
-            $counts[(int) $row->itemid] = (int) $row->cnt;
-        }
-        return $counts;
+        return \block_playerhud\local\external_items::get_available_quantities_bulk(
+            $blockinstanceid,
+            $itemids,
+            $userid
+        );
     }
 
     /**
@@ -325,12 +314,10 @@ class quest {
                 if ($totals !== null && $totals['unique_items'] !== null) {
                     $current = $totals['unique_items'];
                 } else {
-                    // Refactored to count only items from this specific block instance.
-                    $sql = "SELECT COUNT(DISTINCT inv.itemid)
-                              FROM {block_playerhud_inventory} inv
-                              JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                             WHERE inv.userid = ? AND it.blockinstanceid = ?";
-                    $current = $DB->count_records_sql($sql, [$userid, $quest->blockinstanceid]);
+                    $current = \block_playerhud\local\external_items::count_distinct_items_for_instance(
+                        $quest->blockinstanceid,
+                        $userid
+                    );
                 }
                 $target = (int)$quest->requirement;
 
@@ -349,10 +336,19 @@ class quest {
                 }
 
                 // Item ID is unique, but belongs to an instance, so counting is safe within context.
+                // get_available_quantity() excludes revoked/consumed copies, aligning this
+                // fallback with count_specific_items() (the preloaded path below, via
+                // get_available_quantities_bulk()) — the inline path used to count every row
+                // regardless of source, an inconsistency between the two paths for the same
+                // quest type, not a deliberate distinct semantic.
                 if ($totals !== null) {
                     $current = $totals['specific_items'][$itemid] ?? 0;
                 } else {
-                    $current = $DB->count_records('block_playerhud_inventory', ['userid' => $userid, 'itemid' => $itemid]);
+                    $current = \block_playerhud\local\external_items::get_available_quantity(
+                        $quest->blockinstanceid,
+                        $itemid,
+                        $userid
+                    );
                 }
 
                 $status->completed = ($current >= $target);
@@ -364,11 +360,10 @@ class quest {
                 if ($totals !== null && $totals['total_items'] !== null) {
                     $current = $totals['total_items'];
                 } else {
-                    $sql = "SELECT COUNT(inv.id)
-                              FROM {block_playerhud_inventory} inv
-                              JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                             WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source NOT IN ('revoked', 'consumed')";
-                    $current = $DB->count_records_sql($sql, [$userid, $quest->blockinstanceid]);
+                    $current = \block_playerhud\local\external_items::count_total_items_for_instance(
+                        $quest->blockinstanceid,
+                        $userid
+                    );
                 }
                 $target = (int)$quest->requirement;
 
@@ -697,22 +692,20 @@ class quest {
 
                 case self::TYPE_UNIQUE_ITEMS:
                     if ($uniqueitems === null) {
-                        $sql = "SELECT COUNT(DISTINCT inv.itemid)
-                                  FROM {block_playerhud_inventory} inv
-                                  JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                                 WHERE inv.userid = ? AND it.blockinstanceid = ?";
-                        $uniqueitems = (int)$DB->count_records_sql($sql, [$userid, $instanceid]);
+                        $uniqueitems = \block_playerhud\local\external_items::count_distinct_items_for_instance(
+                            $instanceid,
+                            $userid
+                        );
                     }
                     $completed = ($uniqueitems >= (int)$q->requirement);
                     break;
 
                 case self::TYPE_TOTAL_ITEMS:
                     if ($totalitems === null) {
-                        $sql = "SELECT COUNT(inv.id)
-                                  FROM {block_playerhud_inventory} inv
-                                  JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                                 WHERE inv.userid = ? AND it.blockinstanceid = ? AND inv.source NOT IN ('revoked', 'consumed')";
-                        $totalitems = (int)$DB->count_records_sql($sql, [$userid, $instanceid]);
+                        $totalitems = \block_playerhud\local\external_items::count_total_items_for_instance(
+                            $instanceid,
+                            $userid
+                        );
                     }
                     $completed = ($totalitems >= (int)$q->requirement);
                     break;

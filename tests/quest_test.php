@@ -17,6 +17,7 @@
 namespace block_playerhud;
 
 use advanced_testcase;
+use block_playerhud\local\external_items;
 use block_playerhud\quest;
 
 /**
@@ -28,6 +29,7 @@ use block_playerhud\quest;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\quest
  * @covers     \block_playerhud\event\quest_collected
+ * @covers     \block_playerhud\local\external_items
  */
 final class quest_test extends advanced_testcase {
     /** @var int Block instance ID. */
@@ -410,6 +412,58 @@ final class quest_test extends advanced_testcase {
 
         $this->assertFalse($status->completed);
         $this->assertEquals(80, $status->progress);
+    }
+
+    /**
+     * TYPE_SPECIFIC_ITEM: possession is met by a balance split across legacy inventory rows
+     * and the new block_playerhud_stack table — neither source alone would reach the target.
+     */
+    public function test_check_status_specific_item_met_via_combined_balance(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Iron Ore');
+
+        $this->give_item($user->id, $item->id, 2);
+        external_items::grant($this->instanceid, $item->id, $user->id, 3, 'teacher', true);
+
+        $quest  = $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '5', 0, 0, $item->id);
+        $status = quest::check_status($quest, $user->id, $this->course->id, 0, 1);
+
+        $this->assertTrue($status->completed);
+    }
+
+    /**
+     * TYPE_UNIQUE_ITEMS: an item held only through the new engine still counts as a distinct
+     * type reached, alongside one held only through legacy inventory.
+     */
+    public function test_check_status_unique_items_met_via_combined_balance(): void {
+        $user   = $this->getDataGenerator()->create_user();
+        $legacy = $this->create_dummy_item('Iron Ore');
+        $newone = $this->create_dummy_item('Diamante');
+
+        $this->give_item($user->id, $legacy->id, 1);
+        external_items::grant($this->instanceid, $newone->id, $user->id, 1, 'teacher', true);
+
+        $quest  = $this->create_quest(quest::TYPE_UNIQUE_ITEMS, '2');
+        $status = quest::check_status($quest, $user->id, $this->course->id, 0, 1);
+
+        $this->assertTrue($status->completed);
+    }
+
+    /**
+     * TYPE_TOTAL_ITEMS: the total sums quantity held across both storage generations.
+     */
+    public function test_check_status_total_items_met_via_combined_balance(): void {
+        $user   = $this->getDataGenerator()->create_user();
+        $legacy = $this->create_dummy_item('Iron Ore');
+        $newone = $this->create_dummy_item('Diamante');
+
+        $this->give_item($user->id, $legacy->id, 2);
+        external_items::grant($this->instanceid, $newone->id, $user->id, 3, 'teacher', true);
+
+        $quest  = $this->create_quest(quest::TYPE_TOTAL_ITEMS, '5');
+        $status = quest::check_status($quest, $user->id, $this->course->id, 0, 1);
+
+        $this->assertTrue($status->completed);
     }
 
     /**
