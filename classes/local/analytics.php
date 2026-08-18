@@ -64,7 +64,7 @@ class analytics {
         $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $instanceid, 'enabled' => 1]);
         if ($items) {
             // Preload all drops for this instance to avoid an N+1 query problem.
-            $sql = "SELECT d.id, d.itemid, d.maxusage
+            $sql = "SELECT d.id, d.itemid, d.maxusage, d.value
                       FROM {block_playerhud_drops} d
                       JOIN {block_playerhud_items} i ON d.itemid = i.id
                      WHERE i.blockinstanceid = :instanceid AND i.enabled = 1";
@@ -86,8 +86,13 @@ class analytics {
 
                 foreach ($dropsbyitem[$item->id] as $drop) {
                     if ($drop->maxusage > 0) {
-                        $itemxp += ($item->xp * $drop->maxusage);
-                        $totaldropuses += $drop->maxusage;
+                        // Total units earnable from this drop: how many times it can be
+                        // collected (maxusage) times how many units each collection grants
+                        // (value) — a drop worth 2 units per pickup with a limit of 2 pickups
+                        // pays out 4 units total, not 2.
+                        $units = $drop->maxusage * max(1, (int)$drop->value);
+                        $itemxp += ($item->xp * $units);
+                        $totaldropuses += $units;
                     } else {
                         $hasinfinite = true;
                     }
