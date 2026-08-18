@@ -50,6 +50,8 @@ final class backup_restore_test extends advanced_testcase {
             'block_playerhud_story_nodes',
             'block_playerhud_choices',
             'block_playerhud_rpg_progress',
+            'block_playerhud_stack',
+            'block_playerhud_stack_log',
         ];
 
         foreach ($expectedtables as $table) {
@@ -78,6 +80,8 @@ final class backup_restore_test extends advanced_testcase {
             'block_playerhud_story_nodes',
             'block_playerhud_choices',
             'block_playerhud_rpg_progress',
+            'block_playerhud_stack',
+            'block_playerhud_stack_log',
         ];
 
         foreach ($expectedtables as $table) {
@@ -202,6 +206,40 @@ final class backup_restore_test extends advanced_testcase {
             'content'   => 'It was a dark and stormy night.',
             'is_start'  => 1,
         ]);
+
+        // 2b. Seed item quantity balance + ledger (new-engine storage) for an enrolled user,
+        // exercising both the userid and dropid remap paths.
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+
+        $coinid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'PlayerCoin',
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        $coindropid = $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $instanceid,
+            'itemid'          => $coinid,
+            'code'            => \block_playerhud\utils::generate_drop_code($instanceid),
+            'name'            => 'Treasure Vault',
+            'maxusage'        => 1,
+            'value'           => 1500,
+            'respawntime'     => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        \block_playerhud\local\external_items::grant(
+            $instanceid,
+            $coinid,
+            $student->id,
+            1500,
+            'map',
+            true,
+            $coindropid
+        );
 
         // 3. Backup.
         $bc = new \backup_controller(
@@ -343,6 +381,39 @@ final class backup_restore_test extends advanced_testcase {
             $restoredcmid,
             (int) $restoredactivityquest->requirement,
             'Activity quest requirement must be remapped to the restored course module.'
+        );
+
+        // 8. Item quantity balance and ledger (new-engine storage) must be restored intact,
+        // with itemid, userid and dropid all remapped to their restored counterparts.
+        $restoredcoin = $DB->get_record(
+            'block_playerhud_items',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'PlayerCoin']
+        );
+        $this->assertNotFalse($restoredcoin, 'PlayerCoin item must be restored.');
+
+        $restoreddrop = $DB->get_record(
+            'block_playerhud_drops',
+            ['blockinstanceid' => $restoredblock->id, 'itemid' => $restoredcoin->id]
+        );
+        $this->assertNotFalse($restoreddrop, 'Treasure Vault drop must be restored.');
+
+        $restoredstack = $DB->get_record('block_playerhud_stack', [
+            'userid' => $student->id,
+            'itemid' => $restoredcoin->id,
+        ]);
+        $this->assertNotFalse($restoredstack, 'Item quantity balance must be restored.');
+        $this->assertSame(1500, (int) $restoredstack->qty, 'Restored balance must keep its exact quantity.');
+
+        $restoredstacklog = $DB->get_record('block_playerhud_stack_log', [
+            'userid' => $student->id,
+            'itemid' => $restoredcoin->id,
+        ]);
+        $this->assertNotFalse($restoredstacklog, 'Item quantity ledger entry must be restored.');
+        $this->assertSame(1500, (int) $restoredstacklog->delta, 'Ledger delta must be preserved.');
+        $this->assertSame(
+            (int) $restoreddrop->id,
+            (int) $restoredstacklog->dropid,
+            'Ledger entry dropid must be remapped to the restored drop, not the old one.'
         );
     }
 }
