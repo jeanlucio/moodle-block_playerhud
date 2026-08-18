@@ -51,48 +51,39 @@ class items {
     }
 
     /**
-     * Manually grants an item to a player and awards its XP.
+     * Manually grants $qty units of an item to a player and awards its XP (multiplied by
+     * $qty).
      *
      * The item must belong to the instance and the recipient must be enrolled in the
      * instance's own course — a teacher's grant capability is scoped to their course, not to
      * arbitrary userids elsewhere on the site.
      *
-     * The inventory row is tagged with source 'teacher' and no originating drop.
-     *
      * @param int $itemid The item to grant.
      * @param int $userid The recipient user ID.
      * @param int $instanceid The owning block instance ID.
      * @param int $courseid The course the block instance belongs to.
+     * @param int $qty Number of units to grant.
      * @return void
      */
-    public static function grant_item(int $itemid, int $userid, int $instanceid, int $courseid): void {
+    public static function grant_item(int $itemid, int $userid, int $instanceid, int $courseid, int $qty = 1): void {
         global $DB;
 
         if (!is_enrolled(\context_course::instance($courseid), $userid, '', true)) {
             throw new \moodle_exception('invaliduserid');
         }
 
-        $item = $DB->get_record(
+        // Kept as an explicit, loudly-failing MUST_EXIST lookup rather than letting
+        // external_items::grant() silently no-op on a foreign/nonexistent item — a teacher's
+        // deliberate "grant this item" action must never look like it succeeded when it did
+        // not.
+        $DB->get_record(
             'block_playerhud_items',
             ['id' => $itemid, 'blockinstanceid' => $instanceid],
             '*',
             MUST_EXIST
         );
-        $player = \block_playerhud\game::get_player($instanceid, $userid);
-        $xpgain = ($item->xp > 0) ? (int)$item->xp : 0;
 
-        $newinv              = new \stdClass();
-        $newinv->userid      = $userid;
-        $newinv->itemid      = $item->id;
-        $newinv->dropid      = 0;
-        $newinv->source      = 'teacher';
-        $newinv->timecreated = time();
-        $newinv->xpawarded   = $xpgain;
-        $DB->insert_record('block_playerhud_inventory', $newinv);
-
-        if ($xpgain > 0) {
-            \block_playerhud\game::change_xp($player, $xpgain, $instanceid);
-        }
+        \block_playerhud\local\external_items::grant($instanceid, $itemid, $userid, max(1, $qty), 'teacher', false);
     }
 
     /**
@@ -130,6 +121,87 @@ class items {
         $inv->source      = 'revoked';
         $inv->timecreated = time();
         $DB->update_record('block_playerhud_inventory', $inv);
+    }
+
+    /**
+     * Soft-revokes a single block_playerhud_stack_log grant entry — the storage generation
+     * every grant_item()/quest reward/trade reward/drop collection uses from now on.
+     *
+     * Only a positive-delta (grant) entry can be revoked; a consume/revoked entry has nothing
+     * left to give back and is a no-op, same as a foreign log row. The amount actually removed
+     * from the balance is capped at whatever remains there — the item may have been partly or
+     * fully spent since this specific grant — but the XP deducted is always this entry's full
+     * recorded xpawarded, not a proportional share; see the design note on this simplification
+     * (revoke does not attempt to reconstruct XP per remaining unit).
+     *
+     * @param int $logid The block_playerhud_stack_log row to revoke.
+     * @param int $instanceid The owning block instance ID.
+     * @return void
+     */
+    public static function revoke_stack_log_entry(int $logid, int $instanceid): void {
+        global $DB;
+
+        $log = $DB->get_record_sql(
+            "SELECT sl.*
+               FROM {block_playerhud_stack_log} sl
+               JOIN {block_playerhud_items} i ON i.id = sl.itemid
+              WHERE sl.id = :logid AND i.blockinstanceid = :instanceid",
+            ['logid' => $logid, 'instanceid' => $instanceid]
+        );
+        if (!$log || (int) $log->delta <= 0) {
+            return;
+        }
+
+        $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
+        $lock = $lockfactory->get_lock(
+            \block_playerhud\local\external_items::stack_lock_key((int) $log->itemid, (int) $log->userid),
+            5
+        );
+        if (!$lock) {
+            throw new \moodle_exception('error_collect_lock', 'block_playerhud');
+        }
+
+        try {
+            $stack = $DB->get_record('block_playerhud_stack', ['userid' => $log->userid, 'itemid' => $log->itemid]);
+            $currentqty = $stack ? (int) $stack->qty : 0;
+            $toremove = min((int) $log->delta, $currentqty);
+            if ($toremove <= 0) {
+                return;
+            }
+
+            $now = time();
+            $transaction = $DB->start_delegated_transaction();
+            try {
+                $stack->qty = $currentqty - $toremove;
+                $stack->timemodified = $now;
+                $DB->update_record('block_playerhud_stack', $stack);
+
+                $DB->insert_record('block_playerhud_stack_log', (object) [
+                    'userid'      => $log->userid,
+                    'itemid'      => $log->itemid,
+                    'dropid'      => 0,
+                    'delta'       => -$toremove,
+                    'source'      => 'revoked',
+                    'xpawarded'   => 0,
+                    'timecreated' => $now,
+                ]);
+
+                $player = $DB->get_record(
+                    'block_playerhud_user',
+                    ['blockinstanceid' => $instanceid, 'userid' => $log->userid]
+                );
+                if ($player && (int) $log->xpawarded > 0) {
+                    \block_playerhud\game::change_xp($player, -(int) $log->xpawarded, $instanceid);
+                }
+
+                $transaction->allow_commit();
+            } catch (\Exception $e) {
+                $transaction->rollback($e);
+                throw $e;
+            }
+        } finally {
+            $lock->release();
+        }
     }
 
     /**
@@ -239,34 +311,60 @@ class items {
     }
 
     /**
+     * Returns each holder's total recorded XP for the given items, summed across both
+     * block_playerhud_inventory (legacy, frozen) and block_playerhud_stack_log (every grant
+     * since) — deleting an item must reverse XP earned through either storage generation, not
+     * just the one that happened to exist when this code was first written. A negative-delta
+     * (consume/revoked) log row always carries xpawarded = 0, so summing every row regardless
+     * of delta sign never double-counts a reversal.
+     *
+     * @param int[] $itemids Item IDs.
+     * @return \stdClass[] Records with userid and totalxp, keyed by userid.
+     */
+    private static function get_xp_holders(array $itemids): array {
+        global $DB;
+
+        if (empty($itemids)) {
+            return [];
+        }
+
+        // Two separate get_in_or_equal() calls with distinct param prefixes — the pgsql native
+        // driver requires one bound value per occurrence of a named placeholder in the SQL
+        // text, not one per distinct name, so the same $insql/$inparams pair cannot be reused
+        // for both UNION branches.
+        [$insql1, $inparams1] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED, 'xh1');
+        [$insql2, $inparams2] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED, 'xh2');
+        $sql = "SELECT userid, SUM(xpawarded) AS totalxp
+                  FROM (
+                      SELECT userid, xpawarded FROM {block_playerhud_inventory} WHERE itemid $insql1
+                       UNION ALL
+                      SELECT userid, xpawarded FROM {block_playerhud_stack_log} WHERE itemid $insql2
+                  ) combined
+              GROUP BY userid";
+
+        return $DB->get_records_sql($sql, array_merge($inparams1, $inparams2));
+    }
+
+    /**
      * Summarises the recorded XP impact of deleting the given items.
      *
      * Aggregate only (student count and total XP), never a per-student breakdown, so the
-     * confirmation screen stays short even on a large course. Only counts copies that actually
-     * earned XP (xpawarded > 0); a copy from an infinite drop or a zero-XP item never shows up
+     * confirmation screen stays short even on a large course. Only counts holders that actually
+     * earned XP (totalxp > 0); a copy from an infinite drop or a zero-XP item never shows up
      * here, since deleting it never touches anyone's balance.
      *
      * @param int[] $itemids Item IDs being deleted.
      * @return \stdClass {studentcount: int, totalxp: int}.
      */
     public static function find_xp_impact(array $itemids): \stdClass {
-        global $DB;
-
         $impact = (object) ['studentcount' => 0, 'totalxp' => 0];
-        if (empty($itemids)) {
-            return $impact;
+
+        foreach (self::get_xp_holders($itemids) as $holder) {
+            if ((int) $holder->totalxp > 0) {
+                $impact->studentcount++;
+                $impact->totalxp += (int) $holder->totalxp;
+            }
         }
-
-        [$insql, $inparams] = $DB->get_in_or_equal($itemids);
-        $row = $DB->get_record_sql(
-            "SELECT COUNT(DISTINCT userid) AS studentcount, COALESCE(SUM(xpawarded), 0) AS totalxp
-               FROM {block_playerhud_inventory}
-              WHERE itemid $insql AND xpawarded > 0",
-            $inparams
-        );
-
-        $impact->studentcount = (int) $row->studentcount;
-        $impact->totalxp = (int) $row->totalxp;
 
         return $impact;
     }
@@ -291,19 +389,15 @@ class items {
 
         self::delete_orphaned_trades($tradeids);
 
-        // Remove each holder's recorded XP for this item.
-        $holders = $DB->get_records_sql(
-            "SELECT userid, SUM(xpawarded) AS totalxp
-               FROM {block_playerhud_inventory}
-              WHERE itemid = ?
-           GROUP BY userid",
-            [$itemid]
-        );
+        // Remove each holder's recorded XP for this item (both storage generations).
+        $holders = self::get_xp_holders([$itemid]);
         if ($holders) {
             self::remove_xp_from_holders($holders, $instanceid);
         }
 
         $DB->delete_records('block_playerhud_inventory', ['itemid' => $itemid]);
+        $DB->delete_records('block_playerhud_stack', ['itemid' => $itemid]);
+        $DB->delete_records('block_playerhud_stack_log', ['itemid' => $itemid]);
         $DB->delete_records('block_playerhud_drops', ['itemid' => $itemid]);
         $DB->delete_records('block_playerhud_trade_reqs', ['itemid' => $itemid]);
         $DB->delete_records('block_playerhud_trade_rewards', ['itemid' => $itemid]);
@@ -342,18 +436,14 @@ class items {
 
         self::delete_orphaned_trades($tradeids);
 
-        $holders = $DB->get_records_sql(
-            "SELECT userid, SUM(xpawarded) AS totalxp
-               FROM {block_playerhud_inventory}
-              WHERE itemid $iteminsql
-           GROUP BY userid",
-            $iteminparams
-        );
+        $holders = self::get_xp_holders($itemids);
         if ($holders) {
             self::remove_xp_from_holders($holders, $instanceid);
         }
 
         $DB->delete_records_select('block_playerhud_inventory', "itemid $iteminsql", $iteminparams);
+        $DB->delete_records_select('block_playerhud_stack', "itemid $iteminsql", $iteminparams);
+        $DB->delete_records_select('block_playerhud_stack_log', "itemid $iteminsql", $iteminparams);
         $DB->delete_records_select('block_playerhud_drops', "itemid $iteminsql", $iteminparams);
         $DB->delete_records_select('block_playerhud_trade_reqs', "itemid $iteminsql", $iteminparams);
         $DB->delete_records_select('block_playerhud_trade_rewards', "itemid $iteminsql", $iteminparams);

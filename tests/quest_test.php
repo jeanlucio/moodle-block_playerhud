@@ -718,7 +718,7 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
-     * Successful claim: item is added to inventory and log entry is written.
+     * Successful claim: item is granted (one qty-1 ledger entry, source 'quest').
      */
     public function test_claim_reward_grants_item(): void {
         global $DB;
@@ -731,12 +731,34 @@ final class quest_test extends advanced_testcase {
 
         quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
 
-        $invinventory = $DB->count_records('block_playerhud_inventory', [
-            'userid' => $user->id,
-            'itemid' => $reward->id,
-            'source' => 'quest',
-        ]);
-        $this->assertEquals(1, $invinventory);
+        $this->assertSame(
+            1,
+            \block_playerhud\local\external_items::get_available_quantity($this->instanceid, $reward->id, $user->id)
+        );
+        $this->assertSame(1, $DB->count_records('block_playerhud_stack_log', [
+            'userid' => $user->id, 'itemid' => $reward->id, 'source' => 'quest',
+        ]));
+    }
+
+    /**
+     * A quest's reward_itemqty > 1 grants that many units in a single ledger entry.
+     */
+    public function test_claim_reward_grants_configured_item_quantity(): void {
+        global $DB;
+
+        $user   = $this->getDataGenerator()->create_user();
+        $reward = $this->create_dummy_item('Diamante');
+        $quest  = $this->create_quest(quest::TYPE_XP_TOTAL, '50', 0, $reward->id);
+        $DB->set_field('block_playerhud_quests', 'reward_itemqty', 500, ['id' => $quest->id]);
+
+        $this->set_player_xp($user->id, 50);
+
+        quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+
+        $this->assertSame(
+            500,
+            \block_playerhud\local\external_items::get_available_quantity($this->instanceid, $reward->id, $user->id)
+        );
     }
 
     /**
@@ -756,7 +778,7 @@ final class quest_test extends advanced_testcase {
 
         quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
 
-        $xpawarded = $DB->get_field('block_playerhud_inventory', 'xpawarded', [
+        $xpawarded = $DB->get_field('block_playerhud_stack_log', 'xpawarded', [
             'userid' => $user->id,
             'itemid' => $reward->id,
         ]);

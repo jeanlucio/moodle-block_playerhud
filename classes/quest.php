@@ -581,15 +581,16 @@ class quest {
                 if ($quest->reward_itemid > 0) {
                     $item = $DB->get_record('block_playerhud_items', ['id' => $quest->reward_itemid]);
                     if ($item) {
-                        $inv = new \stdClass();
-                        $inv->userid = $userid;
-                        $inv->itemid = $item->id;
-                        $inv->dropid = 0; // 0 indicates reward from Quest.
-                        $inv->timecreated = time();
-                        $inv->source = 'quest';
-                        $inv->xpawarded = 0;
-                        $DB->insert_record('block_playerhud_inventory', $inv);
-                        $rewardstxt[] = format_string($item->name);
+                        $itemqty = max(1, (int)$quest->reward_itemqty);
+                        \block_playerhud\local\external_items::grant(
+                            $blockinstanceid,
+                            $item->id,
+                            $userid,
+                            $itemqty,
+                            'quest',
+                            true
+                        );
+                        $rewardstxt[] = ($itemqty > 1 ? "{$itemqty}x " : '') . format_string($item->name);
                     }
                 }
 

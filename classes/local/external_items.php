@@ -62,15 +62,15 @@ class external_items {
     }
 
     /**
-     * Returns the per-user-per-item lock key shared by grant() and consume(), so a concurrent
-     * grant and consume of the same item can never race each other's read-modify-write of
-     * block_playerhud_stack.qty.
+     * Returns the per-user-per-item lock key shared by grant() and consume() (and, in
+     * classes\controller\items, revoke_stack_log_entry()), so no two of them can ever race each
+     * other's read-modify-write of block_playerhud_stack.qty for the same user+item.
      *
      * @param int $itemid PlayerHUD item ID.
      * @param int $userid User ID.
      * @return string
      */
-    private static function stack_lock_key(int $itemid, int $userid): string {
+    public static function stack_lock_key(int $itemid, int $userid): string {
         return 'stack_usr_' . $userid . '_item_' . $itemid;
     }
 
