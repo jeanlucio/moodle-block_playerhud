@@ -18,6 +18,7 @@ namespace block_playerhud;
 
 use advanced_testcase;
 use block_playerhud\game;
+use block_playerhud\local\external_items;
 use block_playerhud\utils;
 
 /**
@@ -31,6 +32,7 @@ use block_playerhud\utils;
  * @covers     \block_playerhud\event\xp_changed
  * @covers     \block_playerhud\event\item_collected
  * @covers     \block_playerhud\utils
+ * @covers     \block_playerhud\local\external_items
  */
 final class game_test extends advanced_testcase {
     /** @var int Dummy block instance ID for testing. */
@@ -95,15 +97,17 @@ final class game_test extends advanced_testcase {
      * @param int $itemid The item ID.
      * @param int $maxusage Maximum collections allowed (0 for infinite).
      * @param int $respawntime Cooldown in seconds.
+     * @param int $value Quantity granted per collection.
      * @return \stdClass The created drop.
      */
-    protected function create_dummy_drop(int $itemid, int $maxusage, int $respawntime = 0): \stdClass {
+    protected function create_dummy_drop(int $itemid, int $maxusage, int $respawntime = 0, int $value = 1): \stdClass {
         global $DB;
         $drop = new \stdClass();
         $drop->blockinstanceid = $this->instanceid;
         $drop->itemid = $itemid;
         $drop->name = 'Test Location';
         $drop->maxusage = $maxusage;
+        $drop->value = $value;
         $drop->respawntime = $respawntime;
         $drop->code = utils::generate_drop_code($this->instanceid);
         $drop->timecreated = time();
@@ -349,6 +353,62 @@ final class game_test extends advanced_testcase {
     }
 
     /**
+     * A single collection of a drop configured with value > 1 grants that many units at once
+     * (one balance update, one ledger row) and awards XP scaled by the same quantity.
+     */
+    public function test_process_collection_value_grants_multiple_units_at_once(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Diamante', 10);
+        $drop = $this->create_dummy_drop($item->id, 5, 0, 1000);
+
+        $result = game::process_collection($this->instanceid, $drop->id, $user->id);
+
+        $this->assertTrue($result['success']);
+        $this->assertTrue(game::has_item($user->id, $item->id));
+        $this->assertSame(1000, external_items::get_available_quantity($this->instanceid, $item->id, $user->id));
+        $this->assertSame(1, $DB->count_records('block_playerhud_stack_log', ['userid' => $user->id, 'itemid' => $item->id]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+
+        // XP is the item's per-unit value multiplied by the quantity granted this collection.
+        $player = game::get_player($this->instanceid, $user->id);
+        $this->assertSame(10000, (int) $player->currentxp);
+    }
+
+    /**
+     * maxusage and value are independent axes that multiply: maxusage limits how many
+     * collection EVENTS are allowed, value defines how much each event grants. A drop with
+     * maxusage=3 and value=2 lets the student collect 3 times, 2 units each, 6 total — the
+     * 4th attempt is blocked by maxusage regardless of value.
+     */
+    public function test_process_collection_maxusage_and_value_multiply_independently(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Gema', 0);
+        $drop = $this->create_dummy_drop($item->id, 3, 0, 2);
+
+        game::process_collection($this->instanceid, $drop->id, $user->id);
+        game::process_collection($this->instanceid, $drop->id, $user->id);
+        game::process_collection($this->instanceid, $drop->id, $user->id);
+
+        $this->assertSame(6, external_items::get_available_quantity($this->instanceid, $item->id, $user->id));
+
+        try {
+            game::process_collection($this->instanceid, $drop->id, $user->id);
+            $this->fail('Expected moodle_exception with errorcode limitreached');
+        } catch (\moodle_exception $e) {
+            $this->assertEquals('limitreached', $e->errorcode);
+        }
+        // Still 6 — the blocked 4th attempt must not have granted anything.
+        $this->assertSame(6, external_items::get_available_quantity($this->instanceid, $item->id, $user->id));
+    }
+
+    /**
      * get_avatar_item returns the record when the item is enabled and belongs to the instance.
      */
     public function test_get_avatar_item_returns_record_for_enabled_item(): void {
@@ -452,7 +512,7 @@ final class game_test extends advanced_testcase {
         $this->assertEquals(150, $player->currentxp, 'Collecting a finite drop must award the full item XP.');
 
         global $DB;
-        $this->assertSame(150, (int) $DB->get_field('block_playerhud_inventory', 'xpawarded', ['userid' => $user->id]));
+        $this->assertSame(150, (int) $DB->get_field('block_playerhud_stack_log', 'xpawarded', ['userid' => $user->id]));
     }
 
     /**
@@ -475,12 +535,12 @@ final class game_test extends advanced_testcase {
         $this->assertSame(0, (int) game::get_player($this->instanceid, $user->id)->currentxp);
 
         global $DB;
-        $this->assertSame(0, (int) $DB->get_field('block_playerhud_inventory', 'xpawarded', ['userid' => $user->id]));
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_stack_log', 'xpawarded', ['userid' => $user->id]));
     }
 
     /**
-     * process_collection fires item_collected with the new inventory row as objectid and
-     * the item/drop/xp actually awarded in the other payload.
+     * process_collection fires item_collected with the new block_playerhud_stack_log row as
+     * objectid and the item/drop/xp actually awarded in the other payload.
      */
     public function test_process_collection_fires_item_collected_event(): void {
         $this->resetAfterTest(true);
@@ -507,8 +567,8 @@ final class game_test extends advanced_testcase {
         $this->assertSame(40, $event->other['xp']);
 
         global $DB;
-        $invid = (int) $DB->get_field('block_playerhud_inventory', 'id', ['userid' => $user->id]);
-        $this->assertSame($invid, (int) $event->objectid);
+        $logid = (int) $DB->get_field('block_playerhud_stack_log', 'id', ['userid' => $user->id]);
+        $this->assertSame($logid, (int) $event->objectid);
     }
 
     /**

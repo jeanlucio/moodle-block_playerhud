@@ -62,26 +62,46 @@ class external_items {
     }
 
     /**
-     * Grants $qty units of $itemid to $userid, awarding the item's own XP unless $suppressxp
-     * is set. A no-op (returns false) when the item does not belong to $blockinstanceid or is
-     * disabled — disabled stops new acquisition through every channel, including this one.
+     * Returns the per-user-per-item lock key shared by grant() and consume(), so a concurrent
+     * grant and consume of the same item can never race each other's read-modify-write of
+     * block_playerhud_stack.qty.
+     *
+     * @param int $itemid PlayerHUD item ID.
+     * @param int $userid User ID.
+     * @return string
+     */
+    private static function stack_lock_key(int $itemid, int $userid): string {
+        return 'stack_usr_' . $userid . '_item_' . $itemid;
+    }
+
+    /**
+     * Grants $qty units of $itemid to $userid, awarding the item's own XP (multiplied by
+     * $qty) unless $suppressxp is set. A no-op (returns 0) when the item does not belong to
+     * $blockinstanceid, is disabled, or $qty is not positive — disabled stops new acquisition
+     * through every channel, including this one.
      *
      * $suppressxp exists to mirror block_playerhud's own "infinite drop gives no XP"
      * anti-farming rule: since an external grant never goes through a real drop, block_playerhud
      * has no way to know on its own whether the caller represents an unbounded source — callers
      * must decide that themselves and pass it in.
      *
-     * Each granted unit is its own inventory row carrying its own xpawarded, mirroring how
-     * block_playerhud records its own grants — the audit log and any future revoke/delete
-     * reversal read xpawarded per row, never the item's current xp.
+     * Every grant increments a single balance row (block_playerhud_stack) and appends one
+     * ledger row (block_playerhud_stack_log) carrying this action's own xpawarded — the audit
+     * log and any future single-action revoke read xpawarded per log row, never the item's
+     * current xp. block_playerhud_inventory is never written here; it holds only quantity
+     * granted before this mechanism existed, and is summed alongside the new balance by
+     * get_available_quantity().
      *
      * @param int $blockinstanceid Block instance ID the item must belong to.
      * @param int $itemid PlayerHUD item ID.
      * @param int $userid Recipient user ID.
      * @param int $qty Number of units to grant.
-     * @param string $source Inventory source tag identifying the calling plugin.
+     * @param string $source Ledger source tag identifying the calling plugin or feature.
      * @param bool $suppressxp Whether to withhold the item's XP even though it was granted.
-     * @return bool True on success, false on no-op.
+     * @param int $dropid Originating drop ID, if this grant came from a map collection (0 for
+     *        any other source). Recorded on the ledger row so drop_guard can enforce a
+     *        drop's own pickup limit/cooldown regardless of storage generation.
+     * @return int The new block_playerhud_stack_log row ID on success, 0 on no-op.
      */
     public static function grant(
         int $blockinstanceid,
@@ -89,45 +109,81 @@ class external_items {
         int $userid,
         int $qty,
         string $source,
-        bool $suppressxp
-    ): bool {
+        bool $suppressxp,
+        int $dropid = 0
+    ): int {
         global $DB;
 
         if ($qty <= 0 || !self::belongs_to_instance($itemid, $blockinstanceid)) {
-            return false;
+            return 0;
         }
 
         $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], '*', MUST_EXIST);
         if (!$item->enabled) {
-            return false;
+            return 0;
         }
 
         $xpperunit = (!$suppressxp && (int)$item->xp > 0) ? (int)$item->xp : 0;
+        $xptotal = $xpperunit * $qty;
 
-        $now = time();
-        $rows = [];
-        for ($i = 0; $i < $qty; $i++) {
-            $rows[] = (object)[
-                'userid'      => $userid,
-                'itemid'      => $itemid,
-                'dropid'      => 0,
-                'source'      => $source,
-                'timecreated' => $now,
-                'xpawarded'   => $xpperunit,
-            ];
+        $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
+        $lock = $lockfactory->get_lock(self::stack_lock_key($itemid, $userid), 5);
+        if (!$lock) {
+            return 0;
         }
-        $DB->insert_records('block_playerhud_inventory', $rows);
 
-        if ($xpperunit > 0) {
+        try {
+            $now = time();
+            $transaction = $DB->start_delegated_transaction();
+            try {
+                $stack = $DB->get_record('block_playerhud_stack', ['userid' => $userid, 'itemid' => $itemid]);
+                if ($stack) {
+                    $stack->qty = (int)$stack->qty + $qty;
+                    $stack->timemodified = $now;
+                    $DB->update_record('block_playerhud_stack', $stack);
+                } else {
+                    $DB->insert_record('block_playerhud_stack', (object)[
+                        'userid'       => $userid,
+                        'itemid'       => $itemid,
+                        'qty'          => $qty,
+                        'timemodified' => $now,
+                    ]);
+                }
+
+                $logid = (int) $DB->insert_record('block_playerhud_stack_log', (object)[
+                    'userid'      => $userid,
+                    'itemid'      => $itemid,
+                    'dropid'      => $dropid,
+                    'delta'       => $qty,
+                    'source'      => $source,
+                    'xpawarded'   => $xptotal,
+                    'timecreated' => $now,
+                ]);
+
+                $transaction->allow_commit();
+            } catch (\Exception $e) {
+                $transaction->rollback($e);
+                throw $e;
+            }
+        } finally {
+            $lock->release();
+        }
+
+        if ($xptotal > 0) {
             $player = \block_playerhud\game::get_player($blockinstanceid, $userid);
-            \block_playerhud\game::change_xp($player, $xpperunit * $qty, $blockinstanceid);
+            \block_playerhud\game::change_xp($player, $xptotal, $blockinstanceid);
         }
 
-        return true;
+        return $logid;
     }
 
     /**
-     * Atomically consumes $qty units of $itemid from $userid's inventory, FIFO (oldest first).
+     * Atomically consumes $qty units of $itemid from $userid.
+     *
+     * Spends from block_playerhud_stack first (up to its current balance), then falls back to
+     * FIFO-consuming block_playerhud_inventory rows (oldest first, same mechanism this method
+     * always used) for any remainder — a user whose entire balance still sits in the legacy
+     * table must be able to spend it, since nothing migrates it forward on its own.
      *
      * Returns null, not false, when the item does not belong to $blockinstanceid — a foreign or
      * deleted item can never be restocked, so the caller should waive the cost instead of
@@ -152,29 +208,66 @@ class external_items {
         }
 
         $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
-        $lockkey = 'consume_usr_' . $userid . '_item_' . $itemid;
-        $lock = $lockfactory->get_lock($lockkey, 5);
+        $lock = $lockfactory->get_lock(self::stack_lock_key($itemid, $userid), 5);
 
         if (!$lock) {
             return false;
         }
 
         try {
-            $sql = "SELECT id
-                      FROM {block_playerhud_inventory}
-                     WHERE userid = :uid AND itemid = :iid
-                           AND source NOT IN ('revoked', 'consumed')
-                  ORDER BY timecreated ASC";
+            $stack = $DB->get_record('block_playerhud_stack', ['userid' => $userid, 'itemid' => $itemid]);
+            $stackqty = $stack ? (int)$stack->qty : 0;
 
-            $records = $DB->get_records_sql($sql, ['uid' => $userid, 'iid' => $itemid], 0, $qty);
+            $legacycount = $DB->count_records_select(
+                'block_playerhud_inventory',
+                "userid = :userid AND itemid = :itemid AND source NOT IN ('revoked', 'consumed')",
+                ['userid' => $userid, 'itemid' => $itemid]
+            );
 
-            if (count($records) < $qty) {
+            if (($stackqty + $legacycount) < $qty) {
                 return false;
             }
 
-            $ids = array_keys($records);
-            [$insql, $inparams] = $DB->get_in_or_equal($ids, SQL_PARAMS_NAMED, 'ci');
-            $DB->set_field_select('block_playerhud_inventory', 'source', 'consumed', "id $insql", $inparams);
+            $fromstack = min($qty, $stackqty);
+            $fromlegacy = $qty - $fromstack;
+            $now = time();
+
+            $transaction = $DB->start_delegated_transaction();
+            try {
+                if ($fromstack > 0) {
+                    $stack->qty = $stackqty - $fromstack;
+                    $stack->timemodified = $now;
+                    $DB->update_record('block_playerhud_stack', $stack);
+
+                    $DB->insert_record('block_playerhud_stack_log', (object)[
+                        'userid'      => $userid,
+                        'itemid'      => $itemid,
+                        'dropid'      => 0,
+                        'delta'       => -$fromstack,
+                        'source'      => 'consumed',
+                        'xpawarded'   => 0,
+                        'timecreated' => $now,
+                    ]);
+                }
+
+                if ($fromlegacy > 0) {
+                    $sql = "SELECT id
+                              FROM {block_playerhud_inventory}
+                             WHERE userid = :uid AND itemid = :iid
+                                   AND source NOT IN ('revoked', 'consumed')
+                          ORDER BY timecreated ASC";
+
+                    $records = $DB->get_records_sql($sql, ['uid' => $userid, 'iid' => $itemid], 0, $fromlegacy);
+                    $ids = array_keys($records);
+                    [$insql, $inparams] = $DB->get_in_or_equal($ids, SQL_PARAMS_NAMED, 'ci');
+                    $DB->set_field_select('block_playerhud_inventory', 'source', 'consumed', "id $insql", $inparams);
+                }
+
+                $transaction->allow_commit();
+            } catch (\Exception $e) {
+                $transaction->rollback($e);
+                throw $e;
+            }
 
             return true;
         } finally {
@@ -223,9 +316,14 @@ class external_items {
     }
 
     /**
-     * Returns how many available (not consumed or revoked) units of an item a user currently
-     * holds, using the same eligibility filter as consume(). Zero if the item does not belong
-     * to $blockinstanceid.
+     * Returns how many units of an item a user currently holds — the single source of truth
+     * every read path in the plugin (and any external caller) should use instead of counting
+     * block_playerhud_inventory directly.
+     *
+     * Sums two sources: block_playerhud_inventory (every unit granted before quantity tracking
+     * moved to block_playerhud_stack, using the same eligibility filter consume() always used,
+     * frozen and never written to again) and block_playerhud_stack.qty (every unit granted or
+     * consumed since). Zero if the item does not belong to $blockinstanceid.
      *
      * @param int $blockinstanceid Block instance ID the item must belong to.
      * @param int $itemid PlayerHUD item ID.
@@ -239,10 +337,13 @@ class external_items {
             return 0;
         }
 
-        return $DB->count_records_select(
+        $legacycount = $DB->count_records_select(
             'block_playerhud_inventory',
             "userid = :userid AND itemid = :itemid AND source NOT IN ('revoked', 'consumed')",
             ['userid' => $userid, 'itemid' => $itemid]
         );
+        $stackqty = $DB->get_field('block_playerhud_stack', 'qty', ['userid' => $userid, 'itemid' => $itemid]);
+
+        return $legacycount + ($stackqty !== false ? (int)$stackqty : 0);
     }
 }

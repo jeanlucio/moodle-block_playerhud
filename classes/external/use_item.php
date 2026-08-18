@@ -93,12 +93,8 @@ class use_item extends external_api {
             MUST_EXIST
         );
 
-        $hasinv = $DB->record_exists_select(
-            'block_playerhud_inventory',
-            "userid = :uid AND itemid = :iid AND source NOT IN ('revoked','consumed')",
-            ['uid' => $USER->id, 'iid' => $itemid]
-        );
-        if (!$hasinv) {
+        $hasitem = external_items::get_available_quantity($instanceid, $itemid, $USER->id) > 0;
+        if (!$hasitem) {
             throw new \moodle_exception('itemnotfound', 'block_playerhud');
         }
 

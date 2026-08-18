@@ -583,12 +583,10 @@ final class manage_entry_points_test extends advanced_testcase {
     // Collect — the non-AJAX pickup path.
 
     /**
-     * A student collecting a finite drop gets the inventory row and the item's XP, then is
-     * redirected back to the course.
+     * A student collecting a finite drop gets the item and its XP, then is redirected back to
+     * the course.
      */
     public function test_collect_awards_the_item_and_its_xp(): void {
-        global $DB;
-
         $itemid = $this->make_item($this->instanceid, 'Rare Gem', 50);
         $dropid = $this->make_drop($this->instanceid, $itemid);
         $student = $this->login_as_student();
@@ -602,10 +600,7 @@ final class manage_entry_points_test extends advanced_testcase {
 
         $this->assert_redirects(fn() => (new collect())->execute());
 
-        $this->assertTrue($DB->record_exists('block_playerhud_inventory', [
-            'userid' => $student->id,
-            'itemid' => $itemid,
-        ]));
+        $this->assertTrue(\block_playerhud\game::has_item((int) $student->id, $itemid));
         $player = \block_playerhud\game::get_player($this->instanceid, (int) $student->id);
         $this->assertSame(50, (int) $player->currentxp);
     }
@@ -615,8 +610,6 @@ final class manage_entry_points_test extends advanced_testcase {
      * here through the real request path rather than against game::process_collection() directly.
      */
     public function test_collect_from_an_infinite_drop_pays_no_xp(): void {
-        global $DB;
-
         $itemid = $this->make_item($this->instanceid, 'Endless Berry', 30);
         $dropid = $this->make_drop($this->instanceid, $itemid, 'Bush', 0);
         $student = $this->login_as_student();
@@ -630,10 +623,7 @@ final class manage_entry_points_test extends advanced_testcase {
 
         $this->assert_redirects(fn() => (new collect())->execute());
 
-        $this->assertTrue($DB->record_exists('block_playerhud_inventory', [
-            'userid' => $student->id,
-            'itemid' => $itemid,
-        ]));
+        $this->assertTrue(\block_playerhud\game::has_item((int) $student->id, $itemid));
         $player = \block_playerhud\game::get_player($this->instanceid, (int) $student->id);
         $this->assertSame(0, (int) $player->currentxp);
     }

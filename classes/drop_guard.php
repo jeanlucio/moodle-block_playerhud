@@ -28,10 +28,55 @@ namespace block_playerhud;
  */
 class drop_guard {
     /**
-     * Checks whether a user is allowed to pick up a drop right now.
+     * Returns how many times a user has picked up a given drop.
      *
-     * Counts ALL inventory records for the drop (including source='consumed')
-     * so that items traded away do not reset the pickup counter.
+     * Sums two sources: block_playerhud_inventory (every pickup recorded before item
+     * quantity tracking moved to block_playerhud_stack_log, frozen and never touched again)
+     * and block_playerhud_stack_log (every pickup since). Counts ALL records regardless of
+     * source/sign so that items later traded away, or a stackable balance later spent, do
+     * not reset the pickup counter — a drop's own usage limit is about how many times it was
+     * collected, not about what the user still holds today.
+     *
+     * @param int $dropid The drop ID.
+     * @param int $userid The user ID.
+     * @return int
+     */
+    public static function get_pickup_count(int $dropid, int $userid): int {
+        global $DB;
+
+        $legacy = $DB->count_records('block_playerhud_inventory', ['userid' => $userid, 'dropid' => $dropid]);
+        $new = $DB->count_records('block_playerhud_stack_log', ['userid' => $userid, 'dropid' => $dropid]);
+
+        return $legacy + $new;
+    }
+
+    /**
+     * Returns the timestamp of a user's most recent pickup of a given drop, or 0 if none.
+     *
+     * Same two-source sum as get_pickup_count(), taking the latest timestamp across both.
+     *
+     * @param int $dropid The drop ID.
+     * @param int $userid The user ID.
+     * @return int
+     */
+    public static function get_last_pickup_time(int $dropid, int $userid): int {
+        global $DB;
+
+        $params = ['userid' => $userid, 'dropid' => $dropid];
+        $legacy = $DB->get_field_sql(
+            "SELECT MAX(timecreated) FROM {block_playerhud_inventory} WHERE userid = :userid AND dropid = :dropid",
+            $params
+        );
+        $new = $DB->get_field_sql(
+            "SELECT MAX(timecreated) FROM {block_playerhud_stack_log} WHERE userid = :userid AND dropid = :dropid",
+            $params
+        );
+
+        return max((int)$legacy, (int)$new);
+    }
+
+    /**
+     * Checks whether a user is allowed to pick up a drop right now.
      *
      * @param int $dropid The drop ID.
      * @param int $userid The user ID.
@@ -45,23 +90,14 @@ class drop_guard {
         int $maxusage,
         int $respawntime
     ): void {
-        global $DB;
-
-        $inventory = $DB->get_records(
-            'block_playerhud_inventory',
-            ['userid' => $userid, 'dropid' => $dropid],
-            'timecreated DESC'
-        );
-
-        $count = count($inventory);
-        $lastcollected = reset($inventory);
+        $count = self::get_pickup_count($dropid, $userid);
 
         if ($maxusage > 0 && $count >= $maxusage) {
             throw new \moodle_exception('limitreached', 'block_playerhud');
         }
 
-        if ($lastcollected && $respawntime > 0) {
-            $readytime = $lastcollected->timecreated + $respawntime;
+        if ($count > 0 && $respawntime > 0) {
+            $readytime = self::get_last_pickup_time($dropid, $userid) + $respawntime;
             if (time() < $readytime) {
                 $minutesleft = ceil(($readytime - time()) / 60);
                 throw new \moodle_exception('waitmore', 'block_playerhud', '', $minutesleft);
