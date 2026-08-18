@@ -17,6 +17,7 @@
 namespace block_playerhud;
 
 use advanced_testcase;
+use block_playerhud\local\external_items;
 use block_playerhud\trade_manager;
 
 /**
@@ -28,6 +29,7 @@ use block_playerhud\trade_manager;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\trade_manager
  * @covers     \block_playerhud\event\trade_completed
+ * @covers     \block_playerhud\local\external_items
  */
 final class trade_test extends advanced_testcase {
     /** @var int Dummy block instance ID for testing. */
@@ -274,8 +276,81 @@ final class trade_test extends advanced_testcase {
         );
         $this->assertEquals(5, $consumedcoins, 'Spent coins must be retained as consumed.');
 
-        $potionsowned = $DB->count_records('block_playerhud_inventory', ['userid' => $user->id, 'itemid' => $potion->id]);
+        $potionsowned = external_items::get_available_quantity($this->instanceid, $potion->id, $user->id);
         $this->assertEquals(1, $potionsowned, 'Potion should be awarded.');
+    }
+
+    /**
+     * A trade costing and rewarding a high quantity settles in O(1) storage — one
+     * block_playerhud_stack_log row on each side, never a row per unit — and never touches
+     * block_playerhud_inventory.
+     */
+    public function test_trade_high_quantity_does_not_scale_inventory_rows(): void {
+        global $DB;
+        $user = $this->getDataGenerator()->create_user();
+        $coin = $this->create_dummy_item('PlayerCoin');
+        $diamante = $this->create_dummy_item('Diamante');
+
+        external_items::grant($this->instanceid, $coin->id, $user->id, 500, 'playerwords', false);
+
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object)[
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'Buy Diamante',
+            'groupid'         => 0,
+            'onetime'         => 0,
+            'timecreated'     => time(),
+        ]);
+        $DB->insert_record('block_playerhud_trade_reqs', (object)[
+            'tradeid' => $tradeid, 'itemid' => $coin->id, 'qty' => 500,
+        ]);
+        $DB->insert_record('block_playerhud_trade_rewards', (object)[
+            'tradeid' => $tradeid, 'itemid' => $diamante->id, 'qty' => 1000,
+        ]);
+
+        trade_manager::execute_trade($tradeid, $user->id, $this->instanceid, $this->course->id);
+
+        $this->assertSame(0, external_items::get_available_quantity($this->instanceid, $coin->id, $user->id));
+        $this->assertSame(1000, external_items::get_available_quantity($this->instanceid, $diamante->id, $user->id));
+        $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+        $this->assertSame(1, $DB->count_records('block_playerhud_stack_log', [
+            'userid' => $user->id, 'itemid' => $diamante->id,
+        ]));
+    }
+
+    /**
+     * The delicate case flagged in the design: a trade cost split across both storage
+     * generations must still succeed by spending everything available in
+     * block_playerhud_stack before falling back to legacy inventory rows for the remainder.
+     */
+    public function test_trade_pays_cost_split_across_both_storage_generations(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $coin = $this->create_dummy_item('PlayerCoin');
+        $potion = $this->create_dummy_item('Health Potion');
+
+        // 3 units already sitting in legacy inventory (pre-cutover), 2 more via the new engine.
+        $this->give_item_to_user($user->id, $coin->id, 3);
+        external_items::grant($this->instanceid, $coin->id, $user->id, 2, 'playerwords', false);
+
+        global $DB;
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object)[
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'Buy Potion',
+            'groupid'         => 0,
+            'onetime'         => 0,
+            'timecreated'     => time(),
+        ]);
+        $DB->insert_record('block_playerhud_trade_reqs', (object)[
+            'tradeid' => $tradeid, 'itemid' => $coin->id, 'qty' => 5,
+        ]);
+        $DB->insert_record('block_playerhud_trade_rewards', (object)[
+            'tradeid' => $tradeid, 'itemid' => $potion->id, 'qty' => 1,
+        ]);
+
+        $result = trade_manager::execute_trade($tradeid, $user->id, $this->instanceid, $this->course->id);
+
+        $this->assertStringContainsString('Health Potion', $result);
+        $this->assertSame(0, external_items::get_available_quantity($this->instanceid, $coin->id, $user->id));
+        $this->assertSame(1, external_items::get_available_quantity($this->instanceid, $potion->id, $user->id));
     }
 
     /**
