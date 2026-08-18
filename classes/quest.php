@@ -618,7 +618,11 @@ class quest {
                     set_user_preference('block_playerhud_celebration', $celebration, $userid);
                 }
 
-                $separator = get_string('connector_and', 'block_playerhud');
+                // Padded explicitly rather than trusting the lang string to carry its own
+                // surrounding spaces: AMOS trims leading/trailing whitespace from translated
+                // values on save, so a translation cannot reliably keep them (observed live:
+                // "+20 XPe3x Reward Gem" with no spacing at all around the connector).
+                $separator = ' ' . trim(get_string('connector_and', 'block_playerhud')) . ' ';
                 return implode($separator, $rewardstxt);
             } catch (\Exception $e) {
                 $transaction->rollback($e);
