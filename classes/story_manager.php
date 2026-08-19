@@ -653,9 +653,20 @@ class story_manager {
         $classes = !empty($classids)
             ? $DB->get_records_list('block_playerhud_classes', 'id', $classids)
             : [];
-        $items = !empty($itemids)
-            ? $DB->get_records_list('block_playerhud_items', 'id', $itemids)
-            : [];
+
+        // Scoped by blockinstanceid, not just the primary key: a cost_itemid stored before the
+        // generate_story web service validated it (or any other stray foreign id) must render
+        // as unknown ('?' below) rather than leak another instance's item name.
+        $items = [];
+        if (!empty($itemids)) {
+            [$iteminsql, $itemparams] = $DB->get_in_or_equal(array_values($itemids), SQL_PARAMS_NAMED, 'itm');
+            $itemparams['instanceid'] = $instanceid;
+            $items = $DB->get_records_select(
+                'block_playerhud_items',
+                "id $iteminsql AND blockinstanceid = :instanceid",
+                $itemparams
+            );
+        }
 
         // Bulk-fetch available quantities for cost items (two queries total, not N+1 — see
         // external_items::get_available_quantities_bulk()), summing both storage generations

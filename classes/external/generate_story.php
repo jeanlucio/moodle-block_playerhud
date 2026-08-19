@@ -92,12 +92,24 @@ class generate_story extends external_api {
         self::validate_context($context);
         require_capability('block/playerhud:manage', $context);
 
+        // Resolve the cost item against this instance before it is handed to the generator,
+        // which persists it verbatim as every generated choice's cost_itemid — an unvalidated
+        // id would let a teacher's own generation request enumerate/leak item names from
+        // another instance (see story_manager::prepare_node_data()'s own instance scoping).
+        $costitemid = 0;
+        if ($params['itemid'] > 0) {
+            $costitemid = $DB->record_exists('block_playerhud_items', [
+                'id'              => $params['itemid'],
+                'blockinstanceid' => $params['instanceid'],
+            ]) ? $params['itemid'] : 0;
+        }
+
         try {
             $generator = new \block_playerhud\ai\generator($params['instanceid']);
             $options   = [
                 'karma_gain' => $params['karmagain'],
                 'karma_loss' => $params['karmaloss'],
-                'item_id'    => $params['itemid'],
+                'item_id'    => $costitemid,
                 'item_qty'   => $params['itemqty'],
             ];
             $result = $generator->generate_story($params['theme'], $options);

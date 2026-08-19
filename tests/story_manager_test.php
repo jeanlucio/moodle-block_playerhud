@@ -795,6 +795,34 @@ final class story_manager_test extends advanced_testcase {
     }
 
     /**
+     * Regression test for the security-audit finding: prepare_node_data() (via load_scene())
+     * must never resolve another instance's item name for a choice's cost_itemid. If a foreign
+     * id ever ends up stored there, the item lookup is scoped by blockinstanceid, so it renders
+     * as unknown ('?') instead of leaking the real name — mirrors the same scoping
+     * generate_story::execute() applies before persisting a new choice.
+     */
+    public function test_load_scene_hides_the_name_of_a_cross_instance_cost_item(): void {
+        $this->resetAfterTest(true);
+
+        $this->setup_block_instance();
+        $foreignitem = $this->create_item('Secret Relic');
+
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Local Chapter');
+        $node = $this->create_node($chapter->id, 'Start', true);
+        $this->create_choice($node->id, 'Pay with foreign item', 0, 0, $foreignitem->id, 1);
+
+        $result = story_manager::load_scene($this->instanceid, $user->id, $chapter->id);
+
+        $this->assertSame(
+            '?',
+            $result['node']['choices'][0]['cost_item_name'],
+            'A cross-instance cost item must never resolve to its real name.'
+        );
+    }
+
+    /**
      * Regression test for the security-audit finding: load_scene() previously only checked
      * that the chapter belonged to the instance, never its unlock_date/required_level — a
      * direct web service call could read (and via make_choice(), complete) a chapter the UI
