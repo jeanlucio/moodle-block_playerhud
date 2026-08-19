@@ -80,13 +80,18 @@ class export {
             $excludeclause = "AND pu.userid $insql";
         }
 
+        // The export mirrors whatever the site allows a manager to see for a student's
+        // identity, same as the Reports tab's own user selector.
+        $showemail = in_array('email', \core_user\fields::get_identity_fields($coursecontext), true);
+
         $userfieldsapi = \core_user\fields::for_name();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
+        $emailfield = $showemail ? ', u.email' : '';
 
         // 3. Bulk Query (Zero N+1 Queries) to fetch all relevant student data. total_items sums
         // current active holdings across both storage generations, mirroring
         // output/manage/tab_reports.php's own students table query.
-        $sql = "SELECT u.id, $userfields, u.email, pu.currentxp, pu.timemodified,
+        $sql = "SELECT u.id, $userfields $emailfield, pu.currentxp, pu.timemodified,
                        (SELECT COUNT(inv.id)
                           FROM {block_playerhud_inventory} inv
                           JOIN {block_playerhud_items} it ON inv.itemid = it.id
@@ -121,15 +126,16 @@ class export {
                 $rawlevel = floor($user->currentxp / $xpperlevel) + 1;
                 $level = ($rawlevel > $maxlevels) ? $maxlevels : (int)$rawlevel;
 
-                $exportdata[] = [
-                    $user->firstname,
-                    $user->lastname,
-                    $user->email,
-                    $level,
-                    (int)$user->currentxp,
-                    (int)$user->total_items,
-                    userdate($user->timemodified, get_string('strftimedatetime', 'langconfig')),
-                ];
+                $row = [$user->firstname, $user->lastname];
+                if ($showemail) {
+                    $row[] = $user->email;
+                }
+                $row[] = $level;
+                $row[] = (int)$user->currentxp;
+                $row[] = (int)$user->total_items;
+                $row[] = userdate($user->timemodified, get_string('strftimedatetime', 'langconfig'));
+
+                $exportdata[] = $row;
             }
         }
 
@@ -137,12 +143,14 @@ class export {
         $columns = [
             get_string('firstname'),
             get_string('lastname'),
-            get_string('email'),
-            get_string('level', 'block_playerhud'),
-            get_string('xp', 'block_playerhud'),
-            get_string('items', 'block_playerhud'),
-            get_string('report_last_action', 'block_playerhud'),
         ];
+        if ($showemail) {
+            $columns[] = get_string('email');
+        }
+        $columns[] = get_string('level', 'block_playerhud');
+        $columns[] = get_string('xp', 'block_playerhud');
+        $columns[] = get_string('items', 'block_playerhud');
+        $columns[] = get_string('report_last_action', 'block_playerhud');
 
         return [$columns, $exportdata];
     }

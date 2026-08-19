@@ -44,6 +44,17 @@ final class export_test extends advanced_testcase {
     protected int $instanceid;
 
     /**
+     * Runs as admin, since build_export() only shows email when the current user holds
+     * moodle/site:viewuseridentity — the default PHPUnit user has no role at all, which would
+     * otherwise make every test here fail on that dimension regardless of showuseridentity.
+     */
+    protected function setUp(): void {
+        parent::setUp();
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+    }
+
+    /**
      * Creates a course and a block instance carrying the given level settings.
      *
      * @param int $xpperlevel XP required to advance one level.
@@ -132,7 +143,6 @@ final class export_test extends advanced_testcase {
      * and the formatted last-action date.
      */
     public function test_build_export_row_fields_and_level(): void {
-        $this->resetAfterTest();
         $this->make_instance(100, 20);
 
         $student = $this->getDataGenerator()->create_and_enrol($this->course, 'student', [
@@ -160,10 +170,28 @@ final class export_test extends advanced_testcase {
     }
 
     /**
+     * When the site removes email from showuseridentity, the exported file omits the email
+     * column entirely instead of leaking it regardless of that setting.
+     */
+    public function test_build_export_omits_email_when_hidden_by_site_policy(): void {
+        $this->make_instance();
+        set_config('showuseridentity', 'idnumber');
+
+        $student = $this->getDataGenerator()->create_and_enrol($this->course, 'student', [
+            'email' => 'ana@example.com',
+        ]);
+        $this->seed_player($student->id, 100);
+
+        [$columns, $rows] = (new export())->build_export($this->course->id, $this->instanceid);
+
+        $this->assertNotContains(get_string('email'), $columns);
+        $this->assertNotContains('ana@example.com', $rows[0]);
+    }
+
+    /**
      * Rows are ordered by XP descending.
      */
     public function test_build_export_orders_by_xp_descending(): void {
-        $this->resetAfterTest();
         $this->make_instance();
 
         $low = $this->getDataGenerator()->create_and_enrol($this->course, 'student', ['email' => 'low@example.com']);
@@ -182,7 +210,6 @@ final class export_test extends advanced_testcase {
      * The derived level never exceeds the configured maximum.
      */
     public function test_build_export_caps_level_at_max(): void {
-        $this->resetAfterTest();
         $this->make_instance(100, 5);
 
         $student = $this->getDataGenerator()->create_and_enrol($this->course, 'student');
@@ -197,7 +224,6 @@ final class export_test extends advanced_testcase {
      * Teachers and managers are excluded from the export.
      */
     public function test_build_export_excludes_managers(): void {
-        $this->resetAfterTest();
         $this->make_instance();
 
         $student = $this->getDataGenerator()->create_and_enrol($this->course, 'student', ['email' => 'student@example.com']);
@@ -216,7 +242,6 @@ final class export_test extends advanced_testcase {
      * With no players the rows are empty and the localized columns are returned.
      */
     public function test_build_export_without_players_returns_localized_columns(): void {
-        $this->resetAfterTest();
         $this->make_instance();
 
         [$columns, $rows] = (new export())->build_export($this->course->id, $this->instanceid);
@@ -231,7 +256,6 @@ final class export_test extends advanced_testcase {
      * Players who are no longer enrolled in the course are excluded.
      */
     public function test_build_export_excludes_unenrolled_players(): void {
-        $this->resetAfterTest();
         $this->make_instance();
 
         $enrolled = $this->getDataGenerator()->create_and_enrol($this->course, 'student', ['email' => 'in@example.com']);
@@ -250,7 +274,6 @@ final class export_test extends advanced_testcase {
      * Players tied on XP are ordered by their last-action time, oldest first.
      */
     public function test_build_export_breaks_xp_ties_by_timemodified(): void {
-        $this->resetAfterTest();
         $this->make_instance();
 
         $recent = $this->getDataGenerator()->create_and_enrol($this->course, 'student', ['email' => 'recent@example.com']);

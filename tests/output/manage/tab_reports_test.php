@@ -133,6 +133,34 @@ final class tab_reports_test extends advanced_testcase {
     }
 
     /**
+     * The audit user selector omits email from every option's label once the site removes
+     * it from showuseridentity, mirroring what the participants list already does.
+     */
+    public function test_export_for_template_user_selector_omits_email_when_hidden_by_site_policy(): void {
+        $this->setAdminUser();
+        set_config('showuseridentity', 'idnumber');
+
+        $student = $this->getDataGenerator()->create_user(['email' => 'ana@example.com']);
+        $this->getDataGenerator()->enrol_user($student->id, $this->course->id, 'student');
+        global $DB;
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'userid'          => $student->id,
+            'currentxp'       => 10,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+
+        $labels = array_column($data['user_selector']['options'], 'label');
+        foreach ($labels as $label) {
+            $this->assertStringNotContainsString('ana@example.com', $label);
+        }
+    }
+
+    /**
      * display() renders real HTML end to end, going through the global $OUTPUT.
      */
     public function test_display_renders_html(): void {

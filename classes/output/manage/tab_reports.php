@@ -556,10 +556,14 @@ class tab_reports implements renderable, templatable {
     private function get_user_selector_data(): array {
         global $DB;
 
+        $coursecontext = \context_course::instance($this->courseid);
+        $showemail = in_array('email', \core_user\fields::get_identity_fields($coursecontext), true);
+
         $userfieldsapi = \core_user\fields::for_name();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
+        $emailfield = $showemail ? ', u.email' : '';
 
-        $sql = "SELECT u.id, $userfields, u.email
+        $sql = "SELECT u.id, $userfields $emailfield
                   FROM {user} u
                   JOIN {block_playerhud_user} p ON p.userid = u.id
                  WHERE p.blockinstanceid = ?
@@ -574,9 +578,13 @@ class tab_reports implements renderable, templatable {
         ]];
 
         foreach ($users as $u) {
+            $label = fullname($u);
+            if ($showemail) {
+                $label .= ' (' . $u->email . ')';
+            }
             $options[] = [
                 'value'    => $u->id,
-                'label'    => fullname($u) . ' (' . $u->email . ')',
+                'label'    => $label,
                 'selected' => ($u->id == $this->selecteduserid),
             ];
         }
