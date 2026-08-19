@@ -51,6 +51,14 @@ class collect {
         $context = \context_block::instance($instanceid);
         require_capability('block/playerhud:view', $context);
 
+        // Verify the block instance actually belongs to the supplied course, so a mismatched
+        // courseid from another page request cannot land this page on the wrong course's
+        // "return to course" redirect after collecting.
+        $blockcoursectx = $context->get_course_context(false);
+        if (!$blockcoursectx || (int) $blockcoursectx->instanceid !== $courseid) {
+            throw new \moodle_exception('accessdenied', 'admin');
+        }
+
         $returnurl = new moodle_url('/course/view.php', ['id' => $courseid]);
 
         try {
