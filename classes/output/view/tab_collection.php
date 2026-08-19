@@ -273,6 +273,17 @@ class tab_collection implements renderable, templatable {
                         $itemobj['has_origins'] = true;
                     }
 
+                    // Compact display counterpart, mirroring count/count_display: a large
+                    // origin count (e.g. a currency item bought many times) must not inflate
+                    // the card the same way the main count badge already avoids it. The raw
+                    // origin_* values stay untouched — the mustache section tags gating each
+                    // badge ({{#origin_map}}...) key off them.
+                    foreach (['origin_map', 'origin_shop', 'origin_quest', 'origin_teacher', 'origin_game'] as $originkey) {
+                        $itemobj[$originkey . '_display'] = \block_playerhud\utils::format_compact_number(
+                            $itemobj[$originkey]
+                        );
+                    }
+
                     // New Badge.
                     $lastview = $this->player->last_inventory_view ?? 0;
                     if ($lastts > $lastview) {
@@ -313,13 +324,21 @@ class tab_collection implements renderable, templatable {
                 $itemobj['count_display'] = \block_playerhud\utils::format_compact_number($totalcount);
                 $itemobj['timestamp'] = $lastts;
 
-                // Power action data (only for owned items with a configured power).
-                if ($totalcount > 0 && !empty($item->action_type)) {
+                // Power action data (only for owned items with a configured power this card
+                // actually knows how to render — an action_type the template has no matching
+                // block for, e.g. 'playercoin', must not open an empty bordered actions strip).
+                $isavatar = ($item->action_type === 'avatar_profile');
+                $isdeadline = (
+                    $item->action_type === 'deadline_extension'
+                    && class_exists('\local_latepenalty\recalculator')
+                );
+
+                if ($totalcount > 0 && !empty($item->action_type) && ($isavatar || $isdeadline)) {
                     $itemobj['has_power']   = true;
                     $itemobj['action_type'] = $item->action_type;
                     $itemobj['itemid']      = $item->id;
 
-                    if ($item->action_type === 'avatar_profile') {
+                    if ($isavatar) {
                         $itemobj['is_avatar']   = true;
                         $itemobj['is_deadline'] = false;
                         $equippedid = (int) get_user_preferences(
@@ -327,10 +346,7 @@ class tab_collection implements renderable, templatable {
                             0
                         );
                         $itemobj['is_equipped'] = ($equippedid == (int)$item->id);
-                    } else if (
-                        $item->action_type === 'deadline_extension'
-                        && class_exists('\local_latepenalty\recalculator')
-                    ) {
+                    } else {
                         $itemobj['is_avatar']   = false;
                         $itemobj['is_deadline'] = true;
                         $av   = !empty($item->action_value) ? json_decode($item->action_value, true) : [];

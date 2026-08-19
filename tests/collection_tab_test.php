@@ -200,6 +200,60 @@ final class collection_tab_test extends advanced_testcase {
     }
 
     /**
+     * An owned item with an action_type the card has no matching block for (e.g. 'playercoin',
+     * a currency item with no avatar/deadline power of its own) must not set has_power — that
+     * flag opens a bordered actions strip in the template that would otherwise render empty,
+     * showing as a stray divider line with no content.
+     */
+    public function test_has_power_false_for_unrecognized_action_type(): void {
+        $item = $this->create_item('PlayerCoin', 'playercoin');
+        $this->grant_copy($item->id, 'map');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertArrayNotHasKey('has_power', $found);
+    }
+
+    /**
+     * A deadline_extension item still sets has_power = false (not just an unset key) when the
+     * companion plugin (local_latepenalty) is not installed — the recognised-action_type check
+     * must gate has_power itself, not just which inner block renders.
+     */
+    public function test_has_power_false_for_deadline_extension_without_companion_plugin(): void {
+        if (class_exists('\local_latepenalty\recalculator')) {
+            $this->markTestSkipped('local_latepenalty is installed in this environment.');
+        }
+
+        $item = $this->create_item('Scroll', 'deadline_extension');
+        $this->grant_copy($item->id, 'map');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertArrayNotHasKey('has_power', $found);
+    }
+
+    /**
+     * A large origin count (e.g. a currency item bought many times) gets a compact display
+     * counterpart, mirroring count/count_display, without losing the exact value used for the
+     * accessible title/aria-label text.
+     */
+    public function test_origin_display_is_compact_for_large_counts(): void {
+        $item = $this->create_item('Gold Coin', '');
+        $this->grant_stack($item->id, 4000, 'shop');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame(4000, $found['origin_shop']);
+        $this->assertSame('4k', $found['origin_shop_display']);
+    }
+
+    /**
      * An inventory row whose source is outside PlayerHUD's own 4 (map/shop/quest/teacher) is
      * classified as origin_game, so external game plugins (e.g. mod_playerwords) are labelled
      * as such instead of falling into an unexplained "Others" bucket.
