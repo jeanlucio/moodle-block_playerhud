@@ -34,6 +34,7 @@ require_login($course);
 
 $context = context_block::instance($instanceid);
 require_capability('block/playerhud:manage', $context);
+\block_playerhud\local\wizard::require_course_matches_instance($context, $courseid);
 
 $manageurl = new moodle_url('/blocks/playerhud/manage.php', [
     'id'         => $courseid,

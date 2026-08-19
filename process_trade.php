@@ -37,6 +37,7 @@ require_sesskey();
 
 $context = \context_block::instance($instanceid);
 require_capability('block/playerhud:view', $context);
+\block_playerhud\local\wizard::require_course_matches_instance($context, $courseid);
 
 $returnparam = optional_param('returnurl', '', PARAM_LOCALURL);
 

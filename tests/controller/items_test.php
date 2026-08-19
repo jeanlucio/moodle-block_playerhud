@@ -233,7 +233,7 @@ final class items_test extends advanced_testcase {
         $this->getDataGenerator()->enrol_user($user->id, $courseid);
         $this->seed_player($instanceid, (int) $user->id, 50);
 
-        items::grant_item($itemid, (int) $user->id, $instanceid, $courseid);
+        items::grant_item($itemid, (int) $user->id, $instanceid);
 
         $log = $DB->get_record('block_playerhud_stack_log', ['userid' => $user->id], '*', MUST_EXIST);
         $this->assertSame($itemid, (int) $log->itemid);
@@ -262,7 +262,7 @@ final class items_test extends advanced_testcase {
         $this->getDataGenerator()->enrol_user($user->id, $courseid);
         $this->seed_player($instanceid, (int) $user->id, 50);
 
-        items::grant_item($itemid, (int) $user->id, $instanceid, $courseid);
+        items::grant_item($itemid, (int) $user->id, $instanceid);
 
         $this->assertSame(1, (int) $DB->get_field('block_playerhud_stack', 'qty', [
             'userid' => $user->id, 'itemid' => $itemid,
@@ -288,7 +288,7 @@ final class items_test extends advanced_testcase {
         $this->getDataGenerator()->enrol_user($user->id, $courseb);
 
         try {
-            items::grant_item($itemid, (int) $user->id, $instanceb, $courseb);
+            items::grant_item($itemid, (int) $user->id, $instanceb);
             $this->fail('Expected a dml_missing_record_exception.');
         } catch (\dml_missing_record_exception $e) {
             $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
@@ -309,7 +309,7 @@ final class items_test extends advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
 
         try {
-            items::grant_item($itemid, (int) $user->id, $instanceid, $courseid);
+            items::grant_item($itemid, (int) $user->id, $instanceid);
             $this->fail('Expected a moodle_exception for an unenrolled user.');
         } catch (\moodle_exception $e) {
             $this->assertSame('invaliduserid', $e->errorcode);
@@ -426,7 +426,7 @@ final class items_test extends advanced_testcase {
         $this->getDataGenerator()->enrol_user($user->id, $courseid);
         $this->seed_player($instanceid, (int) $user->id, 0);
 
-        items::grant_item($itemid, (int) $user->id, $instanceid, $courseid, 5);
+        items::grant_item($itemid, (int) $user->id, $instanceid, 5);
 
         $this->assertSame(5, external_items::get_available_quantity($instanceid, $itemid, (int) $user->id));
         $this->assertSame(50, (int) $DB->get_field('block_playerhud_user', 'currentxp', [

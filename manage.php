@@ -48,6 +48,7 @@ require_login($course);
 // Set block context.
 $context = context_block::instance($instanceid);
 require_capability('block/playerhud:manage', $context);
+\block_playerhud\local\wizard::require_course_matches_instance($context, $courseid);
 
 // Base URL for redirects.
 $baseurl = new moodle_url('/blocks/playerhud/manage.php', [
@@ -532,7 +533,7 @@ if ($action === 'grant_item' && confirm_sesskey()) {
     $itemid = required_param('itemid', PARAM_INT);
     $qty = optional_param('qty', 1, PARAM_INT);
 
-    \block_playerhud\controller\items::grant_item($itemid, $ruserid, $instanceid, $courseid, max(1, $qty));
+    \block_playerhud\controller\items::grant_item($itemid, $ruserid, $instanceid, max(1, $qty));
 
     $url = new moodle_url($baseurl, ['tab' => 'reports', 'r_userid' => $ruserid]);
     redirect($url, get_string('item_granted', 'block_playerhud'), null, \core\output\notification::NOTIFY_SUCCESS);

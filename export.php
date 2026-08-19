@@ -36,6 +36,7 @@ $bi     = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EX
 require_login($course);
 $context = \context_block::instance($instanceid);
 require_capability('block/playerhud:manage', $context);
+\block_playerhud\local\wizard::require_course_matches_instance($context, $courseid);
 
 // Note: require_sesskey() is intentionally omitted here because data export
 // is a read-only GET request and does not modify database state.

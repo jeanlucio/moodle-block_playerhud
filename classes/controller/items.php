@@ -61,14 +61,17 @@ class items {
      * @param int $itemid The item to grant.
      * @param int $userid The recipient user ID.
      * @param int $instanceid The owning block instance ID.
-     * @param int $courseid The course the block instance belongs to.
      * @param int $qty Number of units to grant.
      * @return void
      */
-    public static function grant_item(int $itemid, int $userid, int $instanceid, int $courseid, int $qty = 1): void {
+    public static function grant_item(int $itemid, int $userid, int $instanceid, int $qty = 1): void {
         global $DB;
 
-        if (!is_enrolled(\context_course::instance($courseid), $userid, '', true)) {
+        // The enrolment check is scoped to the block instance's own course, derived here
+        // rather than trusted from a caller-supplied courseid, so a mismatched id from another
+        // page request can never make this look up enrolment in the wrong course.
+        $coursecontext = \context_block::instance($instanceid)->get_course_context(false);
+        if (!$coursecontext || !is_enrolled($coursecontext, $userid, '', true)) {
             throw new \moodle_exception('invaliduserid');
         }
 
