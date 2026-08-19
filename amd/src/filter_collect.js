@@ -682,17 +682,27 @@ export const init = () => {
                 modalEls.dropProgress.html(`${iconHtml}${textStr}`).show();
                 showStats = true;
             } else if (!isNaN(maxUsage) && data.progressText) {
-                // Server-computed (utils::format_drop_progress()): correctly distinguishes
-                // collection events (compared against maxUsage) from total units granted,
-                // which differ once a drop's value-per-collection is greater than 1.
+                // Server-computed (utils::format_drop_progress()): reports the collection
+                // event count against maxUsage plus the drop's own per-collection value —
+                // never a running total of what the student accumulated from this specific
+                // drop, which is a different question answered by the inventory view instead.
                 modalEls.dropProgress.text(data.progressText).show();
                 showStats = true;
             } else {
                 modalEls.dropProgress.hide();
             }
 
-            // 2. Cooldown Badge (Single, Immediate, or Timer).
-            if (maxUsage === 1) {
+            // 2. Cooldown Badge (Single, Immediate, or Timer) — or, for an unlimited drop
+            // (maxUsage === 0), the per-collection value using the slot this badge would
+            // otherwise leave empty (an unlimited drop has no cooldown/single-use state).
+            if (maxUsage === 0) {
+                if (data.progressText) {
+                    modalEls.dropCooldown.text(data.progressText).show();
+                    showStats = true;
+                } else {
+                    modalEls.dropCooldown.hide();
+                }
+            } else if (maxUsage === 1) {
                 const textStr = appStrings.singleCollection || 'Single collection';
                 const iconHtml = '<i class="fa fa-lock me-1" aria-hidden="true"></i>';
                 modalEls.dropCooldown.html(`${iconHtml}${textStr}`).show();

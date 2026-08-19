@@ -374,32 +374,32 @@ class utils {
     }
 
     /**
-     * Builds the collection-progress text for a drop, e.g. "2/2 collections (4 items)".
+     * Builds the collection-progress text for a drop, e.g. "Collection 1 of 2 - Quantity per
+     * collection: 2".
      *
-     * $events (how many times the drop was collected) and $units (total quantity granted
-     * across those collections) are independent axes once a drop's "value per collection" can
-     * be greater than 1: a maxusage of 2 limits collection EVENTS, not units. Callers must pass
-     * the event count here, never a raw unit sum, or a drop with value > 1 appears to reach its
-     * usage limit after fewer real collections than configured.
+     * Deliberately reports the drop's configured value-per-collection, not a running total of
+     * what the student has accumulated from it — this describes the collection POINT itself
+     * (what collecting it now would grant, and how many collections remain), which is a
+     * different question from "how much do I own in total" (answered by the inventory/backpack
+     * view, which does sum across every source). $events (how many times the drop was
+     * collected) is compared against maxusage, never a unit total: maxusage limits collection
+     * EVENTS, not units, so a drop with value > 1 would otherwise appear to reach its usage
+     * limit after fewer real collections than configured.
      *
      * @param int $events Number of times the drop was collected.
      * @param int $maxusage Maximum collection events allowed (0 = unlimited).
-     * @param int $units Total quantity granted across those collections.
+     * @param int $value Quantity granted per collection (the drop's own configured value).
      * @return string Human-readable progress text.
      */
-    public static function format_drop_progress(int $events, int $maxusage, int $units): string {
+    public static function format_drop_progress(int $events, int $maxusage, int $value): string {
         if ($maxusage <= 0) {
-            return get_string('report_collected_times', 'block_playerhud', $units);
+            return get_string('drop_qty_per_collection', 'block_playerhud', $value);
         }
 
-        if ($units !== $events) {
-            return get_string('drop_progress_with_units', 'block_playerhud', (object) [
-                'count' => $events,
-                'maxusage' => $maxusage,
-                'units' => $units,
-            ]);
-        }
-
-        return $events . '/' . $maxusage . ' ' . get_string('collected', 'block_playerhud');
+        return get_string('drop_progress_count_and_value', 'block_playerhud', (object) [
+            'count' => $events,
+            'maxusage' => $maxusage,
+            'value' => $value,
+        ]);
     }
 }

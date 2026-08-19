@@ -427,7 +427,7 @@ final class game_test extends advanced_testcase {
         $this->assertSame(2, $result['item_data']['qty']);
         $this->assertFalse($result['limit_reached']);
         $this->assertSame(
-            utils::format_drop_progress(2, 3, 4),
+            utils::format_drop_progress(2, 3, 2),
             $result['item_data']['progress_text']
         );
     }

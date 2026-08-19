@@ -247,33 +247,27 @@ final class utils_test extends advanced_testcase {
     }
 
     /**
-     * Equal event/unit counts render the plain "N/M Collected" phrasing — the pre-item-quantity
-     * behaviour, unchanged for every drop whose value-per-collection is 1.
+     * A finite drop reports the collection event count against maxusage, plus the drop's own
+     * configured value-per-collection — never a running total of what the student accumulated
+     * from it. That "how much do I own in total" question belongs to the inventory/backpack
+     * view, which does sum across every source; this describes the collection point itself.
      */
-    public function test_format_drop_progress_equal_counts_uses_plain_text(): void {
-        $expected = '1/2 ' . get_string('collected', 'block_playerhud');
-        $this->assertSame($expected, utils::format_drop_progress(1, 2, 1));
-    }
-
-    /**
-     * Differing event/unit counts append the unit total, distinguishing collection events
-     * (compared against maxusage) from the quantity each one granted.
-     */
-    public function test_format_drop_progress_differing_counts_includes_units(): void {
-        $expected = get_string('drop_progress_with_units', 'block_playerhud', (object) [
+    public function test_format_drop_progress_finite_reports_count_and_value(): void {
+        $expected = get_string('drop_progress_count_and_value', 'block_playerhud', (object) [
             'count' => 1,
             'maxusage' => 2,
-            'units' => 2,
+            'value' => 2,
         ]);
         $this->assertSame($expected, utils::format_drop_progress(1, 2, 2));
     }
 
     /**
-     * An unlimited drop (maxusage = 0) has no fraction to show — only a running unit total.
+     * An unlimited drop (maxusage = 0) has no event/maxusage fraction to show — only the
+     * per-collection value.
      */
-    public function test_format_drop_progress_unlimited_shows_unit_total_only(): void {
-        $expected = get_string('report_collected_times', 'block_playerhud', 6);
-        $this->assertSame($expected, utils::format_drop_progress(3, 0, 6));
+    public function test_format_drop_progress_unlimited_shows_value_only(): void {
+        $expected = get_string('drop_qty_per_collection', 'block_playerhud', 2);
+        $this->assertSame($expected, utils::format_drop_progress(3, 0, 2));
     }
 
     /**
