@@ -139,7 +139,7 @@ final class backup_restore_test extends advanced_testcase {
         $instanceid = $DB->insert_record('block_instances', $bi);
 
         // 2. Seed RPG data.
-        $DB->insert_record('block_playerhud_classes', (object) [
+        $wizardclassid = $DB->insert_record('block_playerhud_classes', (object) [
             'blockinstanceid' => $instanceid,
             'name'            => 'Wizard',
             'description'     => '',
@@ -149,13 +149,16 @@ final class backup_restore_test extends advanced_testcase {
             'timemodified'    => time(),
         ]);
 
+        // The required_class_id column is a CSV of class IDs (security-audit finding: must be
+        // remapped, not left pointing at a foreign/nonexistent class after restore).
         $scrollitemid = $DB->insert_record('block_playerhud_items', (object) [
-            'blockinstanceid' => $instanceid,
-            'name'            => 'Scroll of Reprieve',
-            'action_type'     => 'deadline_extension',
-            'action_value'    => json_encode(['days' => 2, 'cmid' => $sourcecmid]),
-            'timecreated'     => time(),
-            'timemodified'    => time(),
+            'blockinstanceid'    => $instanceid,
+            'name'               => 'Scroll of Reprieve',
+            'action_type'        => 'deadline_extension',
+            'action_value'       => json_encode(['days' => 2, 'cmid' => $sourcecmid]),
+            'required_class_id'  => (string) $wizardclassid,
+            'timecreated'        => time(),
+            'timemodified'       => time(),
         ]);
 
         $DB->insert_record('block_playerhud_items', (object) [
@@ -173,6 +176,29 @@ final class backup_restore_test extends advanced_testcase {
             'timecreated'     => time(),
         ]);
 
+        // The groupid column is overloaded: positive references a group, negative references a
+        // grouping (security-audit finding: both must be remapped, never left pointing at a
+        // group/grouping that happens to share the old numeric ID in the target course).
+        $restrictedgroup = $this->getDataGenerator()->create_group([
+            'courseid' => $course->id, 'name' => 'Alpha Group',
+        ]);
+        $grouptradeid = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'Group-Restricted Trade',
+            'groupid'         => $restrictedgroup->id,
+            'timecreated'     => time(),
+        ]);
+
+        $restrictedgrouping = $this->getDataGenerator()->create_grouping([
+            'courseid' => $course->id, 'name' => 'Alpha Grouping',
+        ]);
+        $groupingtradeid = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'Grouping-Restricted Trade',
+            'groupid'         => -$restrictedgrouping->id,
+            'timecreated'     => time(),
+        ]);
+
         $DB->insert_record('block_playerhud_quests', (object) [
             'blockinstanceid' => $instanceid,
             'name'            => 'Conquistar: Arquivo Mestre',
@@ -186,12 +212,13 @@ final class backup_restore_test extends advanced_testcase {
         ]);
 
         $DB->insert_record('block_playerhud_quests', (object) [
-            'blockinstanceid' => $instanceid,
-            'name'            => 'Ler a Página Sagrada',
-            'type'            => \block_playerhud\quest::TYPE_ACTIVITY,
-            'requirement'     => (string) $sourcecmid,
-            'timecreated'     => time(),
-            'timemodified'    => time(),
+            'blockinstanceid'   => $instanceid,
+            'name'              => 'Ler a Página Sagrada',
+            'type'              => \block_playerhud\quest::TYPE_ACTIVITY,
+            'requirement'       => (string) $sourcecmid,
+            'required_class_id' => (string) $wizardclassid,
+            'timecreated'       => time(),
+            'timemodified'      => time(),
         ]);
 
         $chapterid = $DB->insert_record('block_playerhud_chapters', (object) [
@@ -207,6 +234,17 @@ final class backup_restore_test extends advanced_testcase {
             'chapterid' => $chapterid,
             'content'   => 'It was a dark and stormy night.',
             'is_start'  => 1,
+        ]);
+
+        // TYPE_CHAPTER stores a raw chapter ID directly in requirement (security-audit finding:
+        // must be remapped, chapters are restored after quests in XML order).
+        $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'Finish the Beginning',
+            'type'            => \block_playerhud\quest::TYPE_CHAPTER,
+            'requirement'     => (string) $chapterid,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
         ]);
 
         // 2b. Seed item quantity balance + ledger (new-engine storage) for an enrolled user,
@@ -437,6 +475,78 @@ final class backup_restore_test extends advanced_testcase {
             (int) $restoreddrop->id,
             (int) $restoredstacklog->dropid,
             'Ledger entry dropid must be remapped to the restored drop, not the old one.'
+        );
+
+        // 9. Security-audit finding: a trade's groupid/grouping restriction, an item/quest's
+        // required_class_id and a TYPE_CHAPTER quest's requirement must all be remapped to
+        // their restored counterparts, never left pointing at whatever old numeric ID happens
+        // to exist in the target course.
+        $restoredgroup = $DB->get_record('groups', ['courseid' => $newcourse->id, 'name' => 'Alpha Group']);
+        $this->assertNotFalse($restoredgroup, 'Group must be restored.');
+        $this->assertNotSame((int) $restrictedgroup->id, (int) $restoredgroup->id, 'Group must get a new id.');
+
+        $restoredgrouptrade = $DB->get_record(
+            'block_playerhud_trades',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'Group-Restricted Trade']
+        );
+        $this->assertNotFalse($restoredgrouptrade, 'Group-restricted trade must be restored.');
+        $this->assertSame(
+            (int) $restoredgroup->id,
+            (int) $restoredgrouptrade->groupid,
+            'Trade groupid must be remapped to the restored group, not the old site-wide id.'
+        );
+
+        $restoredgrouping = $DB->get_record(
+            'groupings',
+            ['courseid' => $newcourse->id, 'name' => 'Alpha Grouping']
+        );
+        $this->assertNotFalse($restoredgrouping, 'Grouping must be restored.');
+        $this->assertNotSame(
+            (int) $restrictedgrouping->id,
+            (int) $restoredgrouping->id,
+            'Grouping must get a new id.'
+        );
+
+        $restoredgroupingtrade = $DB->get_record(
+            'block_playerhud_trades',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'Grouping-Restricted Trade']
+        );
+        $this->assertNotFalse($restoredgroupingtrade, 'Grouping-restricted trade must be restored.');
+        $this->assertSame(
+            -(int) $restoredgrouping->id,
+            (int) $restoredgroupingtrade->groupid,
+            'Trade groupid must be remapped to the restored grouping, keeping the negative sign.'
+        );
+
+        $restoredwizardclass = $DB->get_record(
+            'block_playerhud_classes',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'Wizard']
+        );
+        $this->assertSame(
+            (string) $restoredwizardclass->id,
+            $restoredscrollitem->required_class_id,
+            'Item required_class_id must be remapped to the restored class, not the old id.'
+        );
+
+        $restoredactivityclassquest = $DB->get_record(
+            'block_playerhud_quests',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'Ler a Página Sagrada']
+        );
+        $this->assertSame(
+            (string) $restoredwizardclass->id,
+            $restoredactivityclassquest->required_class_id,
+            'Quest required_class_id must be remapped to the restored class, not the old id.'
+        );
+
+        $restoredchapterquest = $DB->get_record(
+            'block_playerhud_quests',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'Finish the Beginning']
+        );
+        $this->assertNotFalse($restoredchapterquest, 'TYPE_CHAPTER quest must be restored.');
+        $this->assertSame(
+            (int) $restoredchapter->id,
+            (int) $restoredchapterquest->requirement,
+            'TYPE_CHAPTER quest requirement must be remapped to the restored chapter, not the old id.'
         );
     }
 }

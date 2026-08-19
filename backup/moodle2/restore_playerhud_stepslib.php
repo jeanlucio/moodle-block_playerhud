@@ -60,6 +60,32 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
     private array $deferreditemcmids = [];
 
     /**
+     * Deferred required_class_id fixups for items: new item ID → old required_class_id CSV.
+     * Classes are restored after items (later sibling under /block/playerhud), so the
+     * 'playerhud_class' mapping does not exist yet when the item is processed.
+     *
+     * @var array<int,string>
+     */
+    private array $deferreditemclasses = [];
+
+    /**
+     * Deferred required_class_id fixups for quests, same reason and shape as
+     * $deferreditemclasses.
+     *
+     * @var array<int,string>
+     */
+    private array $deferredquestclasses = [];
+
+    /**
+     * Deferred requirement fixups for TYPE_CHAPTER quests: new quest ID → old chapter ID.
+     * Chapters are restored after quests (later sibling under /block/playerhud), so the
+     * 'playerhud_chapter' mapping does not exist yet when the quest is processed.
+     *
+     * @var array<int,int>
+     */
+    private array $deferredquestchapters = [];
+
+    /**
      * Define the structure of the restore step.
      *
      * @return array Array of restore_path_element.
@@ -153,10 +179,22 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
             }
         }
 
+        // The required_class_id column is a CSV of block_playerhud_classes IDs, read by
+        // utils::is_visible_for_class() — not a single FK column, so it is not covered by any
+        // mapping table yet. Classes are restored after items, so blank it out here and remap
+        // each ID in after_execute() once the 'playerhud_class' mapping is complete.
+        $oldrequiredclassid = (string)($data->required_class_id ?? '');
+        if ($oldrequiredclassid !== '') {
+            $data->required_class_id = '';
+        }
+
         $newitemid = $DB->insert_record('block_playerhud_items', $data);
 
         if ($oldcmid > 0) {
             $this->deferreditemcmids[$newitemid] = $oldcmid;
+        }
+        if ($oldrequiredclassid !== '') {
+            $this->deferreditemclasses[$newitemid] = $oldrequiredclassid;
         }
 
         // Namespaced mapping to prevent ID collision with Moodle Core during restore.
@@ -370,6 +408,22 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
             $data->requirement = '0';
         }
 
+        // TYPE_CHAPTER stores a raw chapter ID directly in requirement, same overload pattern
+        // as TYPE_ACTIVITY above. Chapters are restored after quests, so blank it out here and
+        // resolve it in after_execute() once the 'playerhud_chapter' mapping is complete.
+        $oldrequirementchapterid = 0;
+        if ((int)$data->type === \block_playerhud\quest::TYPE_CHAPTER) {
+            $oldrequirementchapterid = (int)$data->requirement;
+            $data->requirement = '0';
+        }
+
+        // The required_class_id column is a CSV of block_playerhud_classes IDs — same overload
+        // and ordering constraint as process_item()'s own required_class_id handling.
+        $oldrequiredclassid = (string)($data->required_class_id ?? '');
+        if ($oldrequiredclassid !== '') {
+            $data->required_class_id = '';
+        }
+
         $newid = $DB->insert_record('block_playerhud_quests', $data);
         $this->set_mapping('playerhud_quest', $oldid, $newid);
 
@@ -379,6 +433,14 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
 
         if ($oldactivitycmid > 0) {
             $this->deferredactivityquests[$newid] = $oldactivitycmid;
+        }
+
+        if ($oldrequirementchapterid > 0) {
+            $this->deferredquestchapters[$newid] = $oldrequirementchapterid;
+        }
+
+        if ($oldrequiredclassid !== '') {
+            $this->deferredquestclasses[$newid] = $oldrequiredclassid;
         }
     }
 
@@ -414,6 +476,22 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
 
         $data->blockinstanceid = $this->task->get_blockid();
         unset($data->id);
+
+        // The groupid column is overloaded: a positive value references a group directly, a
+        // negative value references a grouping by its absolute value (see execute_trade()
+        // and groups_get_all_groups() call sites). Group/grouping IDs are global to the site,
+        // so an unmapped old ID surviving the restore could coincidentally match a real but
+        // unrelated group/grouping in the target course. Groups/groupings are restored earlier
+        // in restore_root_task (restore_groups_structure_step), so the mapping already exists
+        // by the time this runs. No mapping (e.g. a backup taken without groups, or the group
+        // since deleted) zeroes the restriction explicitly rather than persisting a foreign ID.
+        $groupid = (int) $data->groupid;
+        if ($groupid > 0) {
+            $data->groupid = $this->get_mappingid('group', $groupid) ?: 0;
+        } else if ($groupid < 0) {
+            $newgroupingid = $this->get_mappingid('grouping', abs($groupid));
+            $data->groupid = $newgroupingid ? -$newgroupingid : 0;
+        }
 
         $newid = $DB->insert_record('block_playerhud_trades', $data);
         $this->set_mapping('playerhud_trade', $oldid, $newid);
@@ -647,6 +725,61 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
                 $DB->set_field('block_playerhud_quests', 'req_itemid', $newtradeid, ['id' => $questid]);
             }
         }
+
+        foreach ($this->deferredquestchapters as $questid => $oldchapterid) {
+            $newchapterid = $this->get_mappingid('playerhud_chapter', $oldchapterid);
+            if ($newchapterid) {
+                $DB->set_field('block_playerhud_quests', 'requirement', (string) $newchapterid, ['id' => $questid]);
+            }
+        }
+
+        foreach ($this->deferreditemclasses as $itemid => $oldcsv) {
+            $DB->set_field(
+                'block_playerhud_items',
+                'required_class_id',
+                $this->remap_class_id_csv($oldcsv),
+                ['id' => $itemid]
+            );
+        }
+
+        foreach ($this->deferredquestclasses as $questid => $oldcsv) {
+            $DB->set_field(
+                'block_playerhud_quests',
+                'required_class_id',
+                $this->remap_class_id_csv($oldcsv),
+                ['id' => $questid]
+            );
+        }
+    }
+
+    /**
+     * Remaps a CSV of old block_playerhud_classes IDs to their restored counterparts.
+     *
+     * A "0" entry is a visibility sentinel (see utils::is_visible_for_class()), not a real
+     * class reference, and is passed through unchanged. Any other ID with no mapping (the
+     * referenced class was not included in the backup) is dropped rather than left pointing at
+     * a foreign or nonexistent class.
+     *
+     * @param string $csv Comma-separated old class IDs.
+     * @return string Comma-separated new class IDs, possibly empty.
+     */
+    private function remap_class_id_csv(string $csv): string {
+        $newids = [];
+        foreach (explode(',', $csv) as $oldid) {
+            $oldid = trim($oldid);
+            if ($oldid === '') {
+                continue;
+            }
+            if ($oldid === '0') {
+                $newids[] = '0';
+                continue;
+            }
+            $newid = $this->get_mappingid('playerhud_class', (int) $oldid);
+            if ($newid) {
+                $newids[] = (string) $newid;
+            }
+        }
+        return implode(',', $newids);
     }
 
     /**
