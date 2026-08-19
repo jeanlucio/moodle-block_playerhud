@@ -342,6 +342,7 @@ $string['enable_rpg_mode_help'] = 'When enabled, students can choose a character
 $string['enabled'] = 'Enabled?';
 $string['enabled_help'] = 'If unchecked, this item will not appear in the game, cannot be collected, and will disappear from students\' inventories if they already have it (until enabled again).';
 $string['err_clipboard'] = 'Unable to copy to clipboard. Your browser might block this action.';
+$string['error_class_already_selected'] = 'You have already selected a character. This choice is permanent.';
 $string['error_collect_lock'] = 'Collection in progress. Please wait a moment and try again.';
 $string['error_connection'] = 'Connection error.';
 $string['error_msg'] = 'Error: {$a}';
