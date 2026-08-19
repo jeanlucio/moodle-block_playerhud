@@ -692,17 +692,11 @@ export const init = () => {
                 modalEls.dropProgress.hide();
             }
 
-            // 2. Cooldown Badge (Single, Immediate, or Timer) — or, for an unlimited drop
-            // (maxUsage === 0), the per-collection value using the slot this badge would
-            // otherwise leave empty (an unlimited drop has no cooldown/single-use state).
-            if (maxUsage === 0) {
-                if (data.progressText) {
-                    modalEls.dropCooldown.text(data.progressText).show();
-                    showStats = true;
-                } else {
-                    modalEls.dropCooldown.hide();
-                }
-            } else if (maxUsage === 1) {
+            // 2. Cooldown Badge (Single, Timer, or Immediate) — a respawn timer takes priority
+            // regardless of maxUsage (an unlimited drop can still have a cooldown between
+            // collections). Only once none of those apply does an unlimited drop (maxUsage
+            // === 0) fill this otherwise-empty slot with its per-collection value instead.
+            if (maxUsage === 1) {
                 const textStr = appStrings.singleCollection || 'Single collection';
                 const iconHtml = '<i class="fa fa-lock me-1" aria-hidden="true"></i>';
                 modalEls.dropCooldown.html(`${iconHtml}${textStr}`).show();
@@ -716,6 +710,9 @@ export const init = () => {
                 const textStr = appStrings.immediate || 'Immediate';
                 const iconHtml = '<i class="fa fa-bolt text-warning me-1" aria-hidden="true"></i>';
                 modalEls.dropCooldown.html(`${iconHtml}${textStr}`).show();
+                showStats = true;
+            } else if (maxUsage === 0 && data.progressText) {
+                modalEls.dropCooldown.text(data.progressText).show();
                 showStats = true;
             } else {
                 modalEls.dropCooldown.hide();
