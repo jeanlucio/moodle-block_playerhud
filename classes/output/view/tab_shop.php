@@ -83,13 +83,6 @@ class tab_shop implements renderable, templatable {
         $trades = \block_playerhud\game::get_full_trades($this->instanceid);
         $tradesdata = [];
 
-        // Fetch user inventory counts in a single query.
-        $sqlinv = "SELECT itemid, COUNT(id) as qty
-                     FROM {block_playerhud_inventory}
-                    WHERE userid = :userid AND source NOT IN ('revoked', 'consumed')
-                 GROUP BY itemid";
-        $myinventory = $DB->get_records_sql_menu($sqlinv, ['userid' => $this->player->userid]);
-
         // Fetch completed trades (Distinct to avoid Moodle debugging warning on duplicates).
         $sql = "SELECT DISTINCT tradeid, 1 as completed
                   FROM {block_playerhud_trade_log}
@@ -109,6 +102,16 @@ class tab_shop implements renderable, templatable {
             }
         }
         $allmedia = \block_playerhud\utils::get_items_display_data($fakeitems, $context);
+
+        // Fetch user quantities for every requirement/reward item shown on this page, in one
+        // batched call summing both storage generations (see
+        // external_items::get_available_quantities_bulk()) — narrower and cheaper than the
+        // unscoped "every item the user owns" query this replaces.
+        $myinventory = \block_playerhud\local\external_items::get_available_quantities_bulk(
+            $this->instanceid,
+            array_keys($fakeitems),
+            $this->player->userid
+        );
 
         if ($trades) {
             foreach ($trades as $trade) {

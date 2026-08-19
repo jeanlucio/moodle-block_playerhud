@@ -129,6 +129,7 @@ class tab_quests implements renderable {
             $record->enabled           = (int)$data->enabled;
             $record->reward_xp         = max(0, (int)$data->reward_xp);
             $record->reward_itemid     = in_array($rewarditemid, $validitemids, true) ? $rewarditemid : 0;
+            $record->reward_itemqty    = $record->reward_itemid > 0 ? max(1, (int)($data->reward_itemqty ?? 1)) : 1;
             $record->required_class_id = '0';
             $record->image_todo        = trim($data->image_todo ?? '');
             $record->image_done        = trim($data->image_done ?? '');
@@ -396,7 +397,11 @@ class tab_quests implements renderable {
                 $rewardtext .= $q->reward_xp . ' ' . get_string('xp', 'block_playerhud');
             }
             if ($q->reward_itemid > 0 && isset($itemnames[$q->reward_itemid])) {
+                $itemqty = max(1, (int)$q->reward_itemqty);
                 $rewardtext .= ($rewardtext ? ' + ' : '') . $itemnames[$q->reward_itemid];
+                if ($itemqty > 1) {
+                    $rewardtext .= ' x' . $itemqty;
+                }
             }
 
             $requirementtext = '';

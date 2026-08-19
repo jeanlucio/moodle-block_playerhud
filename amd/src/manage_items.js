@@ -253,6 +253,8 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                     // eslint-disable-next-line camelcase
                     drop_max: parseInt($('#ai-maxusage').val()) || 0,
                     // eslint-disable-next-line camelcase
+                    drop_value: parseInt($('#ai-value').val()) || 1,
+                    // eslint-disable-next-line camelcase
                     drop_time: parseInt($('#ai-respawn').val()) || 0
                 };
 

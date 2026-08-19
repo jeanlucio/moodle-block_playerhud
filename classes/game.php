@@ -81,18 +81,41 @@ class game {
     /**
      * Get user inventory for this block instance.
      *
+     * Unions two sources: block_playerhud_inventory (legacy, one row per unit, frozen) and
+     * block_playerhud_stack (one synthetic row per item type currently held with qty > 0) —
+     * every item granted through external_items::grant() from now on lives only in the
+     * latter. The caller (block_playerhud.php's "recent items" widget) already deduplicates
+     * by item id itself, so a single synthetic row per item type here is sufficient; the
+     * legacy branch is left as one row per unit, unchanged. unique_inventory_id is negated
+     * for stack-derived rows so it never collides with a real inventory row id.
+     *
      * @param int $userid The user ID.
      * @param int $blockinstanceid The block instance ID.
      * @return array List of items.
      */
     public static function get_inventory(int $userid, int $blockinstanceid): array {
         global $DB;
-        $sql = "SELECT inv.id as unique_inventory_id, i.*, inv.timecreated as collecteddate
+        $sql = "SELECT inv.id AS unique_inventory_id, i.id, i.blockinstanceid, i.name, i.description,
+                       i.image, i.xp, i.enabled, i.required_class_id, i.secret, i.tradable,
+                       i.action_type, i.action_value, i.timecreated, i.timemodified,
+                       inv.timecreated AS collecteddate
                   FROM {block_playerhud_items} i
                   JOIN {block_playerhud_inventory} inv ON inv.itemid = i.id
-                 WHERE inv.userid = :userid AND i.blockinstanceid = :pid AND inv.source NOT IN ('revoked', 'consumed')
-              ORDER BY inv.timecreated DESC, inv.id DESC";
-        return $DB->get_records_sql($sql, ['userid' => $userid, 'pid' => $blockinstanceid]);
+                 WHERE inv.userid = :userid1 AND i.blockinstanceid = :pid1
+                       AND inv.source NOT IN ('revoked', 'consumed')
+                UNION ALL
+                SELECT -s.id AS unique_inventory_id, i.id, i.blockinstanceid, i.name, i.description,
+                       i.image, i.xp, i.enabled, i.required_class_id, i.secret, i.tradable,
+                       i.action_type, i.action_value, i.timecreated, i.timemodified,
+                       s.timemodified AS collecteddate
+                  FROM {block_playerhud_items} i
+                  JOIN {block_playerhud_stack} s ON s.itemid = i.id
+                 WHERE s.userid = :userid2 AND i.blockinstanceid = :pid2 AND s.qty > 0
+              ORDER BY collecteddate DESC, unique_inventory_id DESC";
+        return $DB->get_records_sql($sql, [
+            'userid1' => $userid, 'pid1' => $blockinstanceid,
+            'userid2' => $userid, 'pid2' => $blockinstanceid,
+        ]);
     }
 
     /**
@@ -104,10 +127,11 @@ class game {
      */
     public static function has_item(int $userid, int $itemid): bool {
         global $DB;
-        return $DB->record_exists('block_playerhud_inventory', [
-            'userid' => $userid,
-            'itemid' => $itemid,
-        ]);
+        $blockinstanceid = (int) $DB->get_field('block_playerhud_items', 'blockinstanceid', ['id' => $itemid]);
+        if ($blockinstanceid <= 0) {
+            return false;
+        }
+        return \block_playerhud\local\external_items::get_available_quantity($blockinstanceid, $itemid, $userid) > 0;
     }
 
     /**
@@ -184,43 +208,41 @@ class game {
             throw new \moodle_exception('error_collect_lock', 'block_playerhud');
         }
 
+        // 3. Check Limits & Cooldown (sums block_playerhud_inventory and
+        // block_playerhud_stack_log — see drop_guard::get_pickup_count()).
+        $qty = max(1, (int)$drop->value);
+        // Infinite drops (0 maxusage) give 0 XP to prevent farming.
+        $isinfinitedrop = ((int)$drop->maxusage === 0);
+
         try {
-            // 3. Check Limits & Cooldown.
             drop_guard::check_pickup_allowed($drop->id, $userid, (int)$drop->maxusage, (int)$drop->respawntime);
-            $count = $DB->count_records('block_playerhud_inventory', ['userid' => $userid, 'dropid' => $drop->id]);
+            $count = drop_guard::get_pickup_count($drop->id, $userid);
 
-            // 4. Transaction.
-            // Infinite drops (0 maxusage) give 0 XP to prevent farming.
-            $isinfinitedrop = ((int)$drop->maxusage === 0);
-            $earnedxp = ($item->xp > 0 && !$isinfinitedrop) ? (int)$item->xp : 0;
-
-            $transaction = $DB->start_delegated_transaction();
-            try {
-                $newinv = new \stdClass();
-                $newinv->userid = $userid;
-                $newinv->itemid = $item->id;
-                $newinv->dropid = $drop->id;
-                $newinv->timecreated = time();
-                $newinv->source = 'map';
-                $newinv->xpawarded = $earnedxp;
-                $newinv->id = $DB->insert_record('block_playerhud_inventory', $newinv);
-
-                event\item_collected::create([
-                    'context' => \context_block::instance($instanceid),
-                    'objectid' => (int)$newinv->id,
-                    'relateduserid' => (int)$userid,
-                    'other' => ['itemid' => (int)$item->id, 'dropid' => (int)$drop->id, 'xp' => $earnedxp],
-                ])->trigger();
-
-                if ($earnedxp > 0) {
-                    $player = self::get_player($instanceid, $userid);
-                    self::change_xp($player, $earnedxp, $instanceid);
-                }
-                $transaction->allow_commit();
-            } catch (\Exception $e) {
-                $transaction->rollback($e);
-                throw $e;
+            // 4. Grant. external_items::grant() owns its own transaction/lock around the
+            // balance+ledger write and applies the XP change once it commits.
+            $logid = \block_playerhud\local\external_items::grant(
+                $instanceid,
+                $item->id,
+                $userid,
+                $qty,
+                'map',
+                $isinfinitedrop,
+                $drop->id
+            );
+            if ($logid <= 0) {
+                // Item enabled/ownership were already validated above, so a no-op here can only
+                // mean grant()'s own internal lock could not be acquired.
+                throw new \moodle_exception('error_collect_lock', 'block_playerhud');
             }
+
+            $earnedxp = ($item->xp > 0 && !$isinfinitedrop) ? (int)$item->xp * $qty : 0;
+
+            event\item_collected::create([
+                'context' => \context_block::instance($instanceid),
+                'objectid' => $logid,
+                'relateduserid' => (int)$userid,
+                'other' => ['itemid' => (int)$item->id, 'dropid' => (int)$drop->id, 'xp' => $earnedxp],
+            ])->trigger();
         } finally {
             $lock->release();
         }
@@ -231,10 +253,9 @@ class game {
         $msgparams->xp = ($earnedxp > 0) ? " (+{$earnedxp} XP)" : "";
         $message = get_string('collected_msg', 'block_playerhud', $msgparams);
 
-        // Player is only set inside the transaction when XP was awarded; fetch it for the xp=0/infinite case.
-        if (!isset($player)) {
-            $player = self::get_player($instanceid, $userid);
-        }
+        // Grant() already applied any XP change internally; fetch the player fresh for its
+        // current currentxp regardless of whether XP was awarded this collection.
+        $player = self::get_player($instanceid, $userid);
 
         $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
         $rawconfig = base64_decode($bi->configdata ?? '', true);
@@ -275,9 +296,13 @@ class game {
         $context = \context_block::instance($instanceid);
         $media = \block_playerhud\utils::get_item_display_data($item, $context);
 
+        // The event count includes this collection.
+        $newcount = $count + 1;
+
         $itemdata = [
             'name' => format_string($item->name),
-            'xp' => ((int)$drop->maxusage === 0) ? 0 : (int)$item->xp,
+            'xp' => $earnedxp,
+            'qty' => $qty,
             'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
             'isimage' => $media['is_image'] ? 1 : 0,
             'description' => !empty($item->description)
@@ -285,13 +310,14 @@ class game {
                 : '',
             'date' => userdate(time(), get_string('strftimedatefullshort', 'langconfig')),
             'timestamp' => time(),
+            'progress_text' => \block_playerhud\utils::format_drop_progress_count($newcount, (int)$drop->maxusage),
+            'qty_text' => \block_playerhud\utils::format_drop_qty_per_collection($qty),
         ];
 
         // Cooldown Calculation.
         $cooldowndeadline = 0;
         $limitreached = false;
 
-        $newcount = $count + 1;
         if ($drop->maxusage > 0 && $newcount >= $drop->maxusage) {
             $limitreached = true;
         }

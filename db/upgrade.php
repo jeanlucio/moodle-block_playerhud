@@ -373,5 +373,84 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026070903, 'playerhud');
     }
 
+    if ($oldversion < 2026081800) {
+        // Add value to block_playerhud_drops: quantity granted per collection, independent
+        // of maxusage (how many times the drop can be collected). Default 1 preserves the
+        // exact behaviour of every drop that already exists.
+        $table = new \xmldb_table('block_playerhud_drops');
+        $field = new \xmldb_field(
+            'value',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '1',
+            'maxusage'
+        );
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add reward_itemqty to block_playerhud_quests: quantity of reward_itemid granted on
+        // claim. Default 1 preserves the exact behaviour of every quest that already exists.
+        $table = new \xmldb_table('block_playerhud_quests');
+        $field = new \xmldb_field(
+            'reward_itemqty',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '1',
+            'reward_itemid'
+        );
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Create block_playerhud_stack: current owned quantity of an item per user, one row
+        // per user+item. Alongside block_playerhud_stack_log below, this is the new storage
+        // for every quantity granted/consumed from now on. block_playerhud_inventory is left
+        // untouched — no data is migrated into these tables; existing quantity keeps being
+        // read from it. See get_available_quantity() in classes/local/external_items.php.
+        $table = new \xmldb_table('block_playerhud_stack');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('itemid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('qty', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_index('user_item', XMLDB_INDEX_UNIQUE, ['userid', 'itemid']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Create block_playerhud_stack_log: append-only ledger, one row per grant/consume
+        // action (not per unit) — feeds the audit history tab and, via dropid, the drop
+        // pickup-limit/cooldown check (drop_guard::check_pickup_allowed()).
+        $table = new \xmldb_table('block_playerhud_stack_log');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('itemid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('dropid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('delta', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('source', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('xpawarded', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_index('user_item_time', XMLDB_INDEX_NOTUNIQUE, ['userid', 'itemid', 'timecreated']);
+        $table->add_index('drop_user', XMLDB_INDEX_NOTUNIQUE, ['dropid', 'userid']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_block_savepoint(true, 2026081800, 'playerhud');
+    }
+
     return true;
 }

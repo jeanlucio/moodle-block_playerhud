@@ -18,6 +18,7 @@ namespace block_playerhud;
 
 use advanced_testcase;
 use block_playerhud\controller\items;
+use block_playerhud\local\external_items;
 use context_block;
 
 /**
@@ -28,6 +29,7 @@ use context_block;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\controller\items
+ * @covers     \block_playerhud\local\external_items
  */
 final class item_delete_cascade_test extends advanced_testcase {
     /** @var int Block instance ID. */
@@ -321,6 +323,53 @@ final class item_delete_cascade_test extends advanced_testcase {
             'blockinstanceid' => $this->instanceid,
             'userid'          => $user->id,
         ]));
+    }
+
+    /**
+     * Deleting an item also removes block_playerhud_stack/block_playerhud_stack_log rows —
+     * the storage generation every grant now uses — and reverses the XP they recorded, not
+     * just what is left in block_playerhud_inventory.
+     */
+    public function test_delete_item_removes_stack_rows_and_reverts_xp(): void {
+        global $DB;
+
+        $item = $this->make_item_with_xp('Diamante', 30);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player((int) $user->id, 500);
+        external_items::grant($this->instanceid, $item->id, (int) $user->id, 2, 'teacher', false);
+
+        $xpcolumn = ['blockinstanceid' => $this->instanceid, 'userid' => $user->id];
+        // The grant itself already applied +60 (2 x 30xp) — confirmed here so the final
+        // assertion below proves delete_item() actually reversed it, rather than coincidentally
+        // landing back on the seed value because nothing happened on either side.
+        $this->assertSame(560, (int) $DB->get_field('block_playerhud_user', 'currentxp', $xpcolumn));
+
+        items::delete_item($item, $this->instanceid, $this->context);
+
+        $this->assertSame(0, $DB->count_records('block_playerhud_stack', ['itemid' => $item->id]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_stack_log', ['itemid' => $item->id]));
+        $this->assertSame(500, (int) $DB->get_field('block_playerhud_user', 'currentxp', $xpcolumn));
+    }
+
+    /**
+     * Same as above through bulk_delete_items().
+     */
+    public function test_bulk_delete_removes_stack_rows_and_reverts_xp(): void {
+        global $DB;
+
+        $item = $this->make_item_with_xp('Diamante', 30);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player((int) $user->id, 500);
+        external_items::grant($this->instanceid, $item->id, (int) $user->id, 2, 'teacher', false);
+
+        $xpcolumn = ['blockinstanceid' => $this->instanceid, 'userid' => $user->id];
+        $this->assertSame(560, (int) $DB->get_field('block_playerhud_user', 'currentxp', $xpcolumn));
+
+        items::bulk_delete_items([$item->id => $item], $this->instanceid, $this->context);
+
+        $this->assertSame(0, $DB->count_records('block_playerhud_stack', ['itemid' => $item->id]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_stack_log', ['itemid' => $item->id]));
+        $this->assertSame(500, (int) $DB->get_field('block_playerhud_user', 'currentxp', $xpcolumn));
     }
 
     // Helper methods.

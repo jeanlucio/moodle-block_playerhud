@@ -31,6 +31,12 @@ use stdClass;
 /**
  * Tests for external_items — requires database.
  *
+ * grant() writes only to block_playerhud_stack/block_playerhud_stack_log from now on;
+ * block_playerhud_inventory is never written here again — it only ever holds quantity
+ * granted before this mechanism existed. Several tests below insert directly into
+ * block_playerhud_inventory (bypassing grant()) specifically to simulate that pre-existing
+ * "legacy" state, since nothing in this plugin migrates it forward on its own.
+ *
  * @package block_playerhud
  * @covers     \block_playerhud\local\external_items
  */
@@ -84,6 +90,53 @@ final class external_items_test extends advanced_testcase {
             'timecreated'     => time(),
             'timemodified'    => time(),
         ]);
+    }
+
+    /**
+     * Creates an item with a given XP value, belonging to the given block instance.
+     *
+     * @param int $instanceid Owning block instance ID.
+     * @param int $xp XP awarded per unit.
+     * @param int $enabled Enabled flag (1 or 0).
+     * @return int The new item ID.
+     */
+    private function make_item_with_xp(int $instanceid, int $xp, int $enabled = 1): int {
+        global $DB;
+
+        return (int) $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => 'Gold Key',
+            'xp'              => $xp,
+            'enabled'         => $enabled,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+    }
+
+    /**
+     * Inserts $qty legacy block_playerhud_inventory rows directly, bypassing grant(), to
+     * simulate quantity a user already held before block_playerhud_stack existed.
+     *
+     * @param int $userid User ID.
+     * @param int $itemid Item ID.
+     * @param int $qty Number of rows to insert.
+     * @param int $offset Seconds to subtract from time() on every row, so callers can control
+     *        FIFO order relative to other rows inserted separately.
+     * @return void
+     */
+    private function make_legacy_inventory(int $userid, int $itemid, int $qty, int $offset = 0): void {
+        global $DB;
+
+        for ($i = 0; $i < $qty; $i++) {
+            $DB->insert_record('block_playerhud_inventory', (object) [
+                'userid'      => $userid,
+                'itemid'      => $itemid,
+                'dropid'      => 0,
+                'source'      => 'map',
+                'timecreated' => time() - $offset,
+                'xpawarded'   => 0,
+            ]);
+        }
     }
 
     /**
@@ -148,60 +201,61 @@ final class external_items_test extends advanced_testcase {
     }
 
     /**
-     * Creates an item with a given XP value, belonging to the given block instance.
-     *
-     * @param int $instanceid Owning block instance ID.
-     * @param int $xp XP awarded per unit.
-     * @param int $enabled Enabled flag (1 or 0).
-     * @return int The new item ID.
-     */
-    private function make_item_with_xp(int $instanceid, int $xp, int $enabled = 1): int {
-        global $DB;
-
-        return (int) $DB->insert_record('block_playerhud_items', (object) [
-            'blockinstanceid' => $instanceid,
-            'name'            => 'Gold Key',
-            'xp'              => $xp,
-            'enabled'         => $enabled,
-            'timecreated'     => time(),
-            'timemodified'    => time(),
-        ]);
-    }
-
-    /**
-     * Granting a valid, enabled item inserts one row per unit, each carrying its own
-     * xpawarded, and credits the total XP once.
+     * Granting a valid, enabled item increments block_playerhud_stack.qty, appends one
+     * block_playerhud_stack_log row carrying the total xpawarded for this action, credits the
+     * total XP once, and never touches block_playerhud_inventory.
      *
      * @return void
      */
-    public function test_grant_inserts_rows_and_awards_xp_for_own_enabled_item(): void {
+    public function test_grant_updates_stack_and_awards_xp_for_own_enabled_item(): void {
         global $DB;
 
         $instanceid = $this->make_instance();
         $itemid = $this->make_item_with_xp($instanceid, 30);
         $user = $this->getDataGenerator()->create_user();
 
-        $result = external_items::grant($instanceid, $itemid, $user->id, 2, 'playerwords', false);
+        $logid = external_items::grant($instanceid, $itemid, $user->id, 2, 'playerwords', false);
 
-        $this->assertTrue($result);
-        $rows = array_values($DB->get_records('block_playerhud_inventory', ['userid' => $user->id, 'itemid' => $itemid]));
-        $this->assertCount(2, $rows);
-        $this->assertSame(30, (int)$rows[0]->xpawarded);
-        $this->assertSame(30, (int)$rows[1]->xpawarded);
-        $this->assertSame('playerwords', $rows[0]->source);
+        $this->assertGreaterThan(0, $logid);
+        $this->assertSame(2, (int) $DB->get_field('block_playerhud_stack', 'qty', [
+            'userid' => $user->id, 'itemid' => $itemid,
+        ]));
+
+        $log = $DB->get_record('block_playerhud_stack_log', ['id' => $logid], '*', MUST_EXIST);
+        $this->assertSame(2, (int) $log->delta);
+        $this->assertSame('playerwords', $log->source);
+        $this->assertSame(60, (int) $log->xpawarded);
+
+        $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
 
         $currentxp = $DB->get_field('block_playerhud_user', 'currentxp', [
             'blockinstanceid' => $instanceid,
             'userid'          => $user->id,
         ]);
-        $this->assertSame(60, (int)$currentxp);
+        $this->assertSame(60, (int) $currentxp);
     }
 
     /**
-     * Regression test for the security-audit N+1 finding: grant() used to insert one row per
-     * unit inside a for loop. Granting a larger quantity must not scale the query count
-     * linearly with $qty — the batch insert should cost roughly the same regardless of how
-     * many units are granted.
+     * A grant carrying a dropid records it on the ledger row, so drop_guard can enforce a
+     * drop's own pickup limit/cooldown regardless of storage generation.
+     *
+     * @return void
+     */
+    public function test_grant_records_dropid_on_log_row(): void {
+        global $DB;
+
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid);
+        $user = $this->getDataGenerator()->create_user();
+
+        $logid = external_items::grant($instanceid, $itemid, $user->id, 1, 'map', false, 42);
+
+        $this->assertSame(42, (int) $DB->get_field('block_playerhud_stack_log', 'dropid', ['id' => $logid]));
+    }
+
+    /**
+     * Regression guard: granting a larger quantity must not cost more queries — the balance
+     * upsert and the single ledger row are the same shape regardless of $qty.
      *
      * @return void
      */
@@ -224,22 +278,21 @@ final class external_items_test extends advanced_testcase {
         $smallqty = $DB->perf_get_queries() - $before;
 
         $before = $DB->perf_get_queries();
-        external_items::grant($instanceid, $itemid, $userlarge->id, 20, 'playerwords', false);
+        external_items::grant($instanceid, $itemid, $userlarge->id, 2000, 'playerwords', false);
         $largeqty = $DB->perf_get_queries() - $before;
 
-        $this->assertSame(
-            20,
-            $DB->count_records('block_playerhud_inventory', ['userid' => $userlarge->id, 'itemid' => $itemid])
-        );
+        $this->assertSame(2000, (int) $DB->get_field('block_playerhud_stack', 'qty', [
+            'userid' => $userlarge->id, 'itemid' => $itemid,
+        ]));
         $this->assertSame(
             $smallqty,
             $largeqty,
-            'Granting 10x more units must not cost more queries — the insert is batched, not looped.'
+            'Granting 1000x more units must not cost more queries.'
         );
     }
 
     /**
-     * Granting with $suppressxp still creates the inventory rows, but withholds XP — the
+     * Granting with $suppressxp still updates the balance, but withholds XP — the
      * anti-farming rule an external plugin applies for its own unbounded sources.
      *
      * @return void
@@ -251,11 +304,10 @@ final class external_items_test extends advanced_testcase {
         $itemid = $this->make_item_with_xp($instanceid, 30);
         $user = $this->getDataGenerator()->create_user();
 
-        $result = external_items::grant($instanceid, $itemid, $user->id, 1, 'playerwords', true);
+        $logid = external_items::grant($instanceid, $itemid, $user->id, 1, 'playerwords', true);
 
-        $this->assertTrue($result);
-        $row = $DB->get_record('block_playerhud_inventory', ['userid' => $user->id, 'itemid' => $itemid]);
-        $this->assertSame(0, (int)$row->xpawarded);
+        $this->assertGreaterThan(0, $logid);
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_stack_log', 'xpawarded', ['id' => $logid]));
         $currentxp = $DB->get_field('block_playerhud_user', 'currentxp', [
             'blockinstanceid' => $instanceid,
             'userid'          => $user->id,
@@ -279,8 +331,8 @@ final class external_items_test extends advanced_testcase {
 
         $result = external_items::grant($instanceid, $itemid, $user->id, 1, 'playerwords', false);
 
-        $this->assertFalse($result);
-        $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+        $this->assertSame(0, $result);
+        $this->assertSame(0, $DB->count_records('block_playerhud_stack', ['userid' => $user->id]));
     }
 
     /**
@@ -298,16 +350,17 @@ final class external_items_test extends advanced_testcase {
 
         $result = external_items::grant($instanceid, $itemid, $user->id, 1, 'playerwords', false);
 
-        $this->assertFalse($result);
-        $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+        $this->assertSame(0, $result);
+        $this->assertSame(0, $DB->count_records('block_playerhud_stack', ['userid' => $user->id]));
     }
 
     /**
-     * Consuming a valid item with enough balance marks the oldest rows as consumed.
+     * Consuming with enough balance in block_playerhud_stack alone spends from it, appends a
+     * negative-delta ledger row, and never touches block_playerhud_inventory.
      *
      * @return void
      */
-    public function test_consume_success_marks_rows_consumed(): void {
+    public function test_consume_spends_from_stack_first(): void {
         global $DB;
 
         $instanceid = $this->make_instance();
@@ -318,29 +371,96 @@ final class external_items_test extends advanced_testcase {
         $result = external_items::consume($instanceid, $itemid, $user->id, 1);
 
         $this->assertTrue($result);
-        $this->assertSame(1, $DB->count_records('block_playerhud_inventory', [
-            'userid' => $user->id,
-            'itemid' => $itemid,
-            'source' => 'consumed',
+        $this->assertSame(1, (int) $DB->get_field('block_playerhud_stack', 'qty', [
+            'userid' => $user->id, 'itemid' => $itemid,
         ]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+        $this->assertSame(1, external_items::get_available_quantity($instanceid, $itemid, $user->id));
     }
 
     /**
-     * Consuming more than the user holds returns false and leaves the inventory untouched.
+     * A user whose entire balance sits in the legacy inventory table (nothing migrates it
+     * forward automatically) can still spend it — consume() falls back to the same FIFO
+     * mark-as-consumed mechanism it always used once block_playerhud_stack has nothing to
+     * offer.
      *
      * @return void
      */
-    public function test_consume_returns_false_when_insufficient(): void {
+    public function test_consume_falls_back_to_legacy_inventory_when_stack_is_empty(): void {
         global $DB;
 
         $instanceid = $this->make_instance();
         $itemid = $this->make_item($instanceid);
         $user = $this->getDataGenerator()->create_user();
+        $this->make_legacy_inventory($user->id, $itemid, 3);
 
-        $result = external_items::consume($instanceid, $itemid, $user->id, 1);
+        $result = external_items::consume($instanceid, $itemid, $user->id, 2);
+
+        $this->assertTrue($result);
+        $this->assertSame(0, $DB->count_records('block_playerhud_stack', ['userid' => $user->id]));
+        $this->assertSame(2, $DB->count_records_select(
+            'block_playerhud_inventory',
+            "userid = :uid AND itemid = :iid AND source = 'consumed'",
+            ['uid' => $user->id, 'iid' => $itemid]
+        ));
+        $this->assertSame(1, external_items::get_available_quantity($instanceid, $itemid, $user->id));
+    }
+
+    /**
+     * The delicate case flagged in the design: a balance split across both tables must spend
+     * everything available in block_playerhud_stack before falling back to legacy rows for the
+     * remainder — never insufficient just because one source alone would not cover it.
+     *
+     * @return void
+     */
+    public function test_consume_spends_across_both_sources_when_split(): void {
+        global $DB;
+
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid);
+        $user = $this->getDataGenerator()->create_user();
+        $this->make_legacy_inventory($user->id, $itemid, 2);
+        external_items::grant($instanceid, $itemid, $user->id, 1, 'playerwords', false);
+
+        // Total available is 3 (2 legacy + 1 new); consume 3 to force both sources to empty.
+        $result = external_items::consume($instanceid, $itemid, $user->id, 3);
+
+        $this->assertTrue($result);
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_stack', 'qty', [
+            'userid' => $user->id, 'itemid' => $itemid,
+        ]));
+        $this->assertSame(2, $DB->count_records_select(
+            'block_playerhud_inventory',
+            "userid = :uid AND itemid = :iid AND source = 'consumed'",
+            ['uid' => $user->id, 'iid' => $itemid]
+        ));
+        $this->assertSame(0, external_items::get_available_quantity($instanceid, $itemid, $user->id));
+    }
+
+    /**
+     * Consuming more than the combined balance across both sources returns false and leaves
+     * both tables untouched.
+     *
+     * @return void
+     */
+    public function test_consume_returns_false_when_insufficient_across_both_sources(): void {
+        global $DB;
+
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid);
+        $user = $this->getDataGenerator()->create_user();
+        $this->make_legacy_inventory($user->id, $itemid, 1);
+        external_items::grant($instanceid, $itemid, $user->id, 1, 'playerwords', false);
+
+        $result = external_items::consume($instanceid, $itemid, $user->id, 3);
 
         $this->assertFalse($result);
-        $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+        $this->assertSame(2, external_items::get_available_quantity($instanceid, $itemid, $user->id));
+        $this->assertSame(0, $DB->count_records_select(
+            'block_playerhud_inventory',
+            "userid = :uid AND itemid = :iid AND source = 'consumed'",
+            ['uid' => $user->id, 'iid' => $itemid]
+        ));
     }
 
     /**
@@ -412,19 +532,22 @@ final class external_items_test extends advanced_testcase {
     }
 
     /**
-     * get_available_quantity() counts only rows not revoked or consumed, for an item
-     * belonging to the given instance.
+     * get_available_quantity() sums block_playerhud_inventory (legacy, excluding
+     * revoked/consumed) and block_playerhud_stack.qty, for an item belonging to the given
+     * instance.
      *
      * @return void
      */
-    public function test_get_available_quantity_counts_only_active_rows(): void {
+    public function test_get_available_quantity_sums_both_sources(): void {
         $instanceid = $this->make_instance();
         $itemid = $this->make_item($instanceid);
         $user = $this->getDataGenerator()->create_user();
+        $this->make_legacy_inventory($user->id, $itemid, 2);
         external_items::grant($instanceid, $itemid, $user->id, 3, 'playerwords', false);
         external_items::consume($instanceid, $itemid, $user->id, 1);
 
-        $this->assertSame(2, external_items::get_available_quantity($instanceid, $itemid, $user->id));
+        // 2 legacy + 3 granted - 1 consumed (from the new balance first) = 4.
+        $this->assertSame(4, external_items::get_available_quantity($instanceid, $itemid, $user->id));
     }
 
     /**

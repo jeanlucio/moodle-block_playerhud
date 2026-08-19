@@ -42,7 +42,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
 
         $drops = new backup_nested_element('drops');
         $drop = new backup_nested_element('drop', ['id'], [
-            'itemid', 'code', 'name', 'maxusage', 'respawntime',
+            'itemid', 'code', 'name', 'maxusage', 'value', 'respawntime',
             'timecreated', 'timemodified',
         ]);
 
@@ -50,7 +50,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $quests = new backup_nested_element('quests');
         $quest = new backup_nested_element('quest', ['id'], [
             'name', 'description', 'type', 'requirement', 'req_itemid',
-            'reward_xp', 'reward_itemid', 'required_class_id',
+            'reward_xp', 'reward_itemid', 'reward_itemqty', 'required_class_id',
             'image_todo', 'image_done', 'enabled', 'timecreated', 'timemodified',
         ]);
 
@@ -117,6 +117,16 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
             'userid', 'itemid', 'dropid', 'source', 'timecreated', 'xpawarded',
         ]);
 
+        $stacks = new backup_nested_element('stacks');
+        $stack = new backup_nested_element('stack', ['id'], [
+            'userid', 'itemid', 'qty', 'timemodified',
+        ]);
+
+        $stacklogs = new backup_nested_element('stack_logs');
+        $stacklog = new backup_nested_element('stack_log', ['id'], [
+            'userid', 'itemid', 'dropid', 'delta', 'source', 'xpawarded', 'timecreated',
+        ]);
+
         $tradelogs = new backup_nested_element('trade_logs');
         $tradelog = new backup_nested_element('trade_log', ['id'], ['userid', 'tradeid', 'timecreated']);
 
@@ -161,6 +171,12 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $playerhud->add_child($inventories);
         $inventories->add_child($inventory);
 
+        $playerhud->add_child($stacks);
+        $stacks->add_child($stack);
+
+        $playerhud->add_child($stacklogs);
+        $stacklogs->add_child($stacklog);
+
         $playerhud->add_child($tradelogs);
         $tradelogs->add_child($tradelog);
 
@@ -200,6 +216,16 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
                         WHERE i.blockinstanceid = :blockid";
             $inventory->set_source_sql($sqlinv, ['blockid' => backup::VAR_BLOCKID]);
 
+            $sqlstack = "SELECT s.* FROM {block_playerhud_stack} s
+                           JOIN {block_playerhud_items} i ON s.itemid = i.id
+                          WHERE i.blockinstanceid = :blockid";
+            $stack->set_source_sql($sqlstack, ['blockid' => backup::VAR_BLOCKID]);
+
+            $sqlstacklog = "SELECT sl.* FROM {block_playerhud_stack_log} sl
+                              JOIN {block_playerhud_items} i ON sl.itemid = i.id
+                             WHERE i.blockinstanceid = :blockid";
+            $stacklog->set_source_sql($sqlstacklog, ['blockid' => backup::VAR_BLOCKID]);
+
             $sqltradelog = "SELECT tl.* FROM {block_playerhud_trade_log} tl
                               JOIN {block_playerhud_trades} t ON tl.tradeid = t.id
                              WHERE t.blockinstanceid = :blockid";
@@ -215,6 +241,8 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
             $player->annotate_ids('user', 'userid');
             $inventory->annotate_ids('user', 'userid');
             $tradelog->annotate_ids('user', 'userid');
+            $stack->annotate_ids('user', 'userid');
+            $stacklog->annotate_ids('user', 'userid');
         }
 
         // 6. File annotations.

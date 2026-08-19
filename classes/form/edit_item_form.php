@@ -61,9 +61,15 @@ class edit_item_form extends \moodleform {
 
         $itemid = (int) ($this->_customdata['itemid'] ?? 0);
         if ($itemid > 0) {
+            // Combines both storage generations, so a holder who only received this item
+            // through the new engine (block_playerhud_stack) is not missed here.
             $holdercount = $DB->count_records_sql(
-                'SELECT COUNT(DISTINCT userid) FROM {block_playerhud_inventory} WHERE itemid = ?',
-                [$itemid]
+                'SELECT COUNT(DISTINCT userid) FROM (
+                     SELECT userid FROM {block_playerhud_inventory} WHERE itemid = :itemid1
+                     UNION
+                     SELECT userid FROM {block_playerhud_stack} WHERE itemid = :itemid2
+                 ) combined',
+                ['itemid1' => $itemid, 'itemid2' => $itemid]
             );
             if ($holdercount > 0) {
                 $xpeditwarning = \html_writer::tag(

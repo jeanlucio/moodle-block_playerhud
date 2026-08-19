@@ -55,6 +55,7 @@ class generate_ai_content extends external_api {
             'create_drop' => new external_value(PARAM_BOOL, 'Create drop location?', VALUE_DEFAULT, false),
             'drop_location' => new external_value(PARAM_TEXT, 'Drop location name', VALUE_DEFAULT, ''),
             'drop_max' => new external_value(PARAM_INT, 'Max usage count', VALUE_DEFAULT, 0),
+            'drop_value' => new external_value(PARAM_INT, 'Quantity granted per collection', VALUE_DEFAULT, 1),
             'drop_time' => new external_value(PARAM_INT, 'Respawn time in minutes', VALUE_DEFAULT, 0),
         ]);
     }
@@ -71,6 +72,7 @@ class generate_ai_content extends external_api {
      * @param bool $createdrop Create drop flag.
      * @param string $droplocation Drop location name.
      * @param int $dropmax Max usage.
+     * @param int $dropvalue Quantity granted per collection.
      * @param int $droptime Respawn time.
      * @return array Result structure.
      */
@@ -84,6 +86,7 @@ class generate_ai_content extends external_api {
         bool $createdrop = false,
         string $droplocation = '',
         int $dropmax = 0,
+        int $dropvalue = 1,
         int $droptime = 0
     ): array {
         global $DB, $USER;
@@ -99,6 +102,7 @@ class generate_ai_content extends external_api {
             'create_drop' => $createdrop,
             'drop_location' => $droplocation,
             'drop_max' => $dropmax,
+            'drop_value' => $dropvalue,
             'drop_time' => $droptime,
         ]);
 
@@ -127,6 +131,7 @@ class generate_ai_content extends external_api {
             'tone' => $params['tone'],
             'drop_location' => $params['drop_location'],
             'drop_max' => $params['drop_max'],
+            'drop_value' => $params['drop_value'],
             'drop_time' => $params['drop_time'],
             'balance_context' => $balancecontext,
         ];

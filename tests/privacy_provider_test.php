@@ -160,6 +160,23 @@ final class privacy_provider_test extends advanced_testcase {
             'timecreated' => time(),
         ]);
 
+        $DB->insert_record('block_playerhud_stack', (object) [
+            'userid' => $userid,
+            'itemid' => $this->itemid,
+            'qty' => 3,
+            'timemodified' => time(),
+        ]);
+
+        $DB->insert_record('block_playerhud_stack_log', (object) [
+            'userid' => $userid,
+            'itemid' => $this->itemid,
+            'dropid' => 0,
+            'delta' => 3,
+            'source' => 'test',
+            'xpawarded' => 0,
+            'timecreated' => time(),
+        ]);
+
         $DB->insert_record('block_playerhud_ai_logs', (object) [
             'blockinstanceid' => $this->instanceid,
             'userid' => $userid,
@@ -204,6 +221,8 @@ final class privacy_provider_test extends advanced_testcase {
         return $DB->count_records('block_playerhud_user', ['userid' => $userid])
             + $DB->count_records('block_playerhud_rpg_progress', ['userid' => $userid])
             + $DB->count_records('block_playerhud_inventory', ['userid' => $userid])
+            + $DB->count_records('block_playerhud_stack', ['userid' => $userid])
+            + $DB->count_records('block_playerhud_stack_log', ['userid' => $userid])
             + $DB->count_records('block_playerhud_ai_logs', ['userid' => $userid])
             + $DB->count_records('block_playerhud_wizard_runs', ['userid' => $userid])
             + $DB->count_records('block_playerhud_quest_log', ['userid' => $userid])
@@ -493,6 +512,68 @@ final class privacy_provider_test extends advanced_testcase {
     }
 
     /**
+     * Test that every column of block_playerhud_stack is declared in the privacy metadata.
+     * A per-key assertion would not catch a column added later without a matching declaration,
+     * so this compares the declared fields against the table's real columns instead.
+     */
+    public function test_get_metadata_declares_all_stack_columns(): void {
+        global $DB;
+
+        $collection = provider::get_metadata(new collection('block_playerhud'));
+
+        $tableitem = null;
+        foreach ($collection->get_collection() as $item) {
+            if ($item->get_name() === 'block_playerhud_stack') {
+                $tableitem = $item;
+                break;
+            }
+        }
+        $this->assertNotNull($tableitem, 'block_playerhud_stack must be declared in the privacy metadata.');
+
+        $declaredfields = array_keys($tableitem->get_privacy_fields());
+        $realcolumns = array_diff(array_keys($DB->get_columns('block_playerhud_stack')), ['id']);
+
+        sort($declaredfields);
+        sort($realcolumns);
+        $this->assertEquals(
+            $realcolumns,
+            $declaredfields,
+            'Every column of block_playerhud_stack, except id, must be declared in the privacy metadata.'
+        );
+    }
+
+    /**
+     * Test that every column of block_playerhud_stack_log is declared in the privacy metadata.
+     * A per-key assertion would not catch a column added later without a matching declaration,
+     * so this compares the declared fields against the table's real columns instead.
+     */
+    public function test_get_metadata_declares_all_stack_log_columns(): void {
+        global $DB;
+
+        $collection = provider::get_metadata(new collection('block_playerhud'));
+
+        $tableitem = null;
+        foreach ($collection->get_collection() as $item) {
+            if ($item->get_name() === 'block_playerhud_stack_log') {
+                $tableitem = $item;
+                break;
+            }
+        }
+        $this->assertNotNull($tableitem, 'block_playerhud_stack_log must be declared in the privacy metadata.');
+
+        $declaredfields = array_keys($tableitem->get_privacy_fields());
+        $realcolumns = array_diff(array_keys($DB->get_columns('block_playerhud_stack_log')), ['id']);
+
+        sort($declaredfields);
+        sort($realcolumns);
+        $this->assertEquals(
+            $realcolumns,
+            $declaredfields,
+            'Every column of block_playerhud_stack_log, except id, must be declared in the privacy metadata.'
+        );
+    }
+
+    /**
      * Test that every column of block_playerhud_ai_logs is declared in the privacy metadata.
      * A per-key assertion would not catch a column added later without a matching declaration,
      * so this compares the declared fields against the table's real columns instead.
@@ -747,6 +828,23 @@ final class privacy_provider_test extends advanced_testcase {
         $this->assertEquals('test', $inventory->items[0]['source']);
         $this->assertEquals(0, $inventory->items[0]['xp_awarded']);
 
+        // C2. Item quantity balance (new-engine storage).
+        $balance = $writer->get_data([$pluginname, get_string('privacy_export_stack_balance', 'block_playerhud')]);
+        $this->assertCount(1, $balance->balances);
+        $this->assertEquals($this->itemid, $balance->balances[0]['item_id']);
+        $this->assertEquals(3, $balance->balances[0]['quantity']);
+        $this->assertNotEmpty($balance->balances[0]['last_updated']);
+
+        // C3. Item quantity ledger (new-engine storage).
+        $ledger = $writer->get_data([$pluginname, get_string('privacy_export_stack_log', 'block_playerhud')]);
+        $this->assertCount(1, $ledger->entries);
+        $this->assertEquals($this->itemid, $ledger->entries[0]['item_id']);
+        $this->assertEquals(0, $ledger->entries[0]['drop_id']);
+        $this->assertEquals(3, $ledger->entries[0]['delta']);
+        $this->assertEquals('test', $ledger->entries[0]['source']);
+        $this->assertEquals(0, $ledger->entries[0]['xp_awarded']);
+        $this->assertNotEmpty($ledger->entries[0]['recorded_on']);
+
         // D. Quest logs. xp_gained is a regression check: this column was added to
         // get_metadata() by the security-audit fix but was never populated by
         // export_user_data() before this fix.
@@ -781,8 +879,8 @@ final class privacy_provider_test extends advanced_testcase {
         $this->seed_user($usera->id);
         $this->seed_user($userb->id);
 
-        $this->assertEquals(7, $this->total_user_rows($usera->id));
-        $this->assertEquals(7, $this->total_user_rows($userb->id));
+        $this->assertEquals(9, $this->total_user_rows($usera->id));
+        $this->assertEquals(9, $this->total_user_rows($userb->id));
 
         provider::delete_data_for_all_users_in_context($this->context);
 
@@ -885,7 +983,7 @@ final class privacy_provider_test extends advanced_testcase {
 
         $this->assertEquals(0, $this->total_user_rows($usera->id));
         $this->assertEquals(0, $this->total_user_rows($userb->id));
-        $this->assertEquals(7, $this->total_user_rows($survivor->id), 'Untargeted user must keep all data.');
+        $this->assertEquals(9, $this->total_user_rows($survivor->id), 'Untargeted user must keep all data.');
     }
 
     /**
@@ -906,6 +1004,6 @@ final class privacy_provider_test extends advanced_testcase {
         provider::delete_data_for_user($exportlist);
         provider::delete_data_for_users(new approved_userlist($coursecontext, 'block_playerhud', [$user->id]));
 
-        $this->assertEquals(7, $this->total_user_rows($user->id), 'Non-block contexts must never delete data.');
+        $this->assertEquals(9, $this->total_user_rows($user->id), 'Non-block contexts must never delete data.');
     }
 }

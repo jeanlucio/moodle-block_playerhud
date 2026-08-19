@@ -67,6 +67,7 @@
                 "icon_url": "https://example.com/icon.png",
                 "icon_emoji": "",
                 "object_name": "Magic Sword",
+                "qty_badge": "<span class=\"badge bg-success text-white ph-text-xs ms-1\">+2</span>",
                 "xp_badge": "<span class=\"badge bg-success text-white\">+100 XP</span>",
                 "details_html": "Found on map"
             }
@@ -146,7 +147,7 @@
                                     {{#is_image_icon}}<img src="{{icon_url}}" class="ph-img-xs" alt="">{{/is_image_icon}}
                                     {{^is_image_icon}}<span class="fs-5" aria-hidden="true">{{icon_emoji}}</span>{{/is_image_icon}}
                                 </div>
-                                <div>{{object_name}}</div>
+                                <div>{{object_name}}{{{qty_badge}}}</div>
                             </div>
                         </td>
                         <td class="text-center">{{{xp_badge}}}</td>

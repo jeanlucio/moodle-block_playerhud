@@ -345,4 +345,71 @@ class utils {
         $stripped = strip_tags($html, $allowedtags);
         return clean_param($stripped, PARAM_CLEANHTML);
     }
+
+    /**
+     * Format an item quantity compactly for display (1000 -> "1k", 1500 -> "1.5k",
+     * 1000000 -> "1M"), leaving values under a thousand as plain numbers.
+     *
+     * The exact value is never lost by this call — callers keep it available separately
+     * (e.g. in a data-count attribute) for tooltips or accessible text.
+     *
+     * @param int $value Value to format.
+     * @return string Compact representation.
+     */
+    public static function format_compact_number(int $value): string {
+        $abs  = abs($value);
+        $sign = $value < 0 ? '-' : '';
+
+        if ($abs >= 1000000) {
+            $short = rtrim(rtrim(number_format($abs / 1000000, 1), '0'), '.');
+            return $sign . $short . 'M';
+        }
+
+        if ($abs >= 1000) {
+            $short = rtrim(rtrim(number_format($abs / 1000, 1), '0'), '.');
+            return $sign . $short . 'k';
+        }
+
+        return (string)$value;
+    }
+
+    /**
+     * Builds the collection-count text for a drop, e.g. "Collection 1 of 2" or, for an
+     * unlimited drop, "Collection 7 of ∞" — the real collection count is shown either way,
+     * only the denominator differs.
+     *
+     * $events (how many times the drop was collected) is compared against maxusage, never a
+     * unit total: maxusage limits collection EVENTS, not units, so a drop whose value-per-
+     * collection is greater than 1 would otherwise appear to reach its usage limit after fewer
+     * real collections than configured.
+     *
+     * @param int $events Number of times the drop was collected.
+     * @param int $maxusage Maximum collection events allowed (0 = unlimited).
+     * @return string Human-readable collection-count text.
+     */
+    public static function format_drop_progress_count(int $events, int $maxusage): string {
+        if ($maxusage <= 0) {
+            return get_string('drop_progress_count_infinite', 'block_playerhud', $events);
+        }
+
+        return get_string('drop_progress_count', 'block_playerhud', (object) [
+            'count' => $events,
+            'maxusage' => $maxusage,
+        ]);
+    }
+
+    /**
+     * Builds the per-collection quantity text for a drop, e.g. "Qty/collection: 2".
+     *
+     * Deliberately the drop's configured value-per-collection, not a running total of what the
+     * student has accumulated from it — this describes the collection POINT itself (what
+     * collecting it now would grant), which is a different question from "how much do I own in
+     * total" (answered by the inventory/backpack view, which does sum across every source).
+     *
+     * @param int $value Quantity granted per collection (the drop's own configured value).
+     * @return string Human-readable quantity text.
+     */
+    public static function format_drop_qty_per_collection(int $value): string {
+        return get_string('drop_qty_per_collection', 'block_playerhud', $value);
+    }
 }

@@ -102,6 +102,14 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
                 '/block/playerhud/inventories/inventory'
             );
             $paths[] = new restore_path_element(
+                'stack',
+                '/block/playerhud/stacks/stack'
+            );
+            $paths[] = new restore_path_element(
+                'stack_log',
+                '/block/playerhud/stack_logs/stack_log'
+            );
+            $paths[] = new restore_path_element(
                 'quest_log',
                 '/block/playerhud/quests/quest/quest_logs/quest_log'
             );
@@ -253,6 +261,73 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         unset($data->id);
 
         $DB->insert_record('block_playerhud_inventory', $data);
+    }
+
+    /**
+     * Process item quantity balance rows (new-engine storage).
+     *
+     * @param array $data
+     */
+    public function process_stack($data) {
+        global $DB;
+        $data = (object)$data;
+
+        $newuserid = $this->get_mappingid('user', $data->userid);
+        if (!$newuserid) {
+            return;
+        }
+
+        $newitemid = $this->get_mappingid('playerhud_item', $data->itemid);
+        if (!$newitemid) {
+            return;
+        }
+
+        $data->userid = $newuserid;
+        $data->itemid = $newitemid;
+        unset($data->id);
+
+        // Avoid a duplicate row on the table's UNIQUE(userid, itemid) key if restore is run
+        // multiple times or merged.
+        $exists = $DB->record_exists('block_playerhud_stack', [
+            'userid' => $newuserid,
+            'itemid' => $newitemid,
+        ]);
+        if (!$exists) {
+            $DB->insert_record('block_playerhud_stack', $data);
+        }
+    }
+
+    /**
+     * Process item quantity ledger entries (new-engine storage).
+     *
+     * @param array $data
+     */
+    public function process_stack_log($data) {
+        global $DB;
+        $data = (object)$data;
+        $olddropid = $data->dropid;
+
+        $newuserid = $this->get_mappingid('user', $data->userid);
+        if (!$newuserid) {
+            return;
+        }
+
+        $newitemid = $this->get_mappingid('playerhud_item', $data->itemid);
+        if (!$newitemid) {
+            return;
+        }
+
+        $newdropid = 0;
+        if (!empty($olddropid)) {
+            $newdropid = $this->get_mappingid('playerhud_drop', $olddropid) ?: 0;
+        }
+
+        $data->userid = $newuserid;
+        $data->itemid = $newitemid;
+        $data->dropid = $newdropid;
+        unset($data->id);
+
+        $DB->insert_record('block_playerhud_stack_log', $data);
     }
 
     /**

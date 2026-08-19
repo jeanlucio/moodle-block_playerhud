@@ -74,6 +74,26 @@ class provider implements
             'timecreated' => 'privacy:metadata:timecreated',
         ], 'privacy:metadata:inventory');
 
+        // Item quantity balance (new-engine storage; frozen legacy inventory rows above are
+        // never migrated into it — see block_playerhud_inventory).
+        $collection->add_database_table('block_playerhud_stack', [
+            'userid' => 'privacy:metadata:stack:userid',
+            'itemid' => 'privacy:metadata:stack:itemid',
+            'qty' => 'privacy:metadata:stack:qty',
+            'timemodified' => 'privacy:metadata:timemodified',
+        ], 'privacy:metadata:stack');
+
+        // Item quantity ledger (append-only history of grants/consumptions for the balance above).
+        $collection->add_database_table('block_playerhud_stack_log', [
+            'userid' => 'privacy:metadata:stack_log:userid',
+            'itemid' => 'privacy:metadata:stack_log:itemid',
+            'dropid' => 'privacy:metadata:stack_log:dropid',
+            'delta' => 'privacy:metadata:stack_log:delta',
+            'source' => 'privacy:metadata:stack_log:source',
+            'xpawarded' => 'privacy:metadata:stack_log:xpawarded',
+            'timecreated' => 'privacy:metadata:timecreated',
+        ], 'privacy:metadata:stack_log');
+
         // RPG Progress (Karma, Classes, Story).
         $collection->add_database_table('block_playerhud_rpg_progress', [
             'blockinstanceid' => 'privacy:metadata:rpg:blockinstanceid',
@@ -263,6 +283,46 @@ class provider implements
             }
         }
 
+        // 4b. Bulk fetch current item quantity balances (new-engine storage).
+        $sqlstack = "SELECT s.id, it.blockinstanceid, s.itemid, s.qty, s.timemodified
+                       FROM {block_playerhud_stack} s
+                       JOIN {block_playerhud_items} it ON s.itemid = it.id
+                      WHERE s.userid = :userid AND it.blockinstanceid $insql";
+        $stackrecords = $DB->get_records_sql($sqlstack, $params);
+        $stackbyinstance = [];
+
+        if ($stackrecords) {
+            foreach ($stackrecords as $stack) {
+                $stackbyinstance[$stack->blockinstanceid][] = [
+                    'item_id' => $stack->itemid,
+                    'quantity' => $stack->qty,
+                    'last_updated' => transform::datetime($stack->timemodified),
+                ];
+            }
+        }
+
+        // 4c. Bulk fetch item quantity ledger entries (new-engine storage).
+        $sqlstacklog = "SELECT sl.id, it.blockinstanceid, sl.itemid, sl.dropid, sl.delta,
+                                sl.source, sl.xpawarded, sl.timecreated
+                           FROM {block_playerhud_stack_log} sl
+                           JOIN {block_playerhud_items} it ON sl.itemid = it.id
+                          WHERE sl.userid = :userid AND it.blockinstanceid $insql";
+        $stacklogrecords = $DB->get_records_sql($sqlstacklog, $params);
+        $stacklogbyinstance = [];
+
+        if ($stacklogrecords) {
+            foreach ($stacklogrecords as $log) {
+                $stacklogbyinstance[$log->blockinstanceid][] = [
+                    'item_id' => $log->itemid,
+                    'drop_id' => $log->dropid,
+                    'delta' => $log->delta,
+                    'source' => $log->source,
+                    'xp_awarded' => $log->xpawarded,
+                    'recorded_on' => transform::datetime($log->timecreated),
+                ];
+            }
+        }
+
         // 5. Bulk fetch Quest Logs.
         $sqlql = "SELECT ql.id, q.blockinstanceid, q.name AS questname, ql.xpawarded, ql.timecreated
                     FROM {block_playerhud_quest_log} ql
@@ -388,6 +448,24 @@ class provider implements
                 );
             }
 
+            // C2. Item quantity balance (new-engine storage).
+            if (!empty($stackbyinstance[$instid])) {
+                writer::with_context($context)->export_data(
+                    [get_string('pluginname', 'block_playerhud'),
+                        get_string('privacy_export_stack_balance', 'block_playerhud')],
+                    (object) ['balances' => $stackbyinstance[$instid]]
+                );
+            }
+
+            // C3. Item quantity ledger (new-engine storage).
+            if (!empty($stacklogbyinstance[$instid])) {
+                writer::with_context($context)->export_data(
+                    [get_string('pluginname', 'block_playerhud'),
+                        get_string('privacy_export_stack_log', 'block_playerhud')],
+                    (object) ['entries' => $stacklogbyinstance[$instid]]
+                );
+            }
+
             // D. Quest Logs (Claimed Quests).
             if (!empty($questlogsbyinstance[$instid])) {
                 writer::with_context($context)->export_data(
@@ -457,12 +535,14 @@ class provider implements
         );
         $DB->delete_records('block_playerhud_wizard_runs', ['blockinstanceid' => $instanceid]);
 
-        // Delete inventory (Fetch block items).
+        // Delete inventory, item quantity balance and ledger (Fetch block items).
         $items = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $instanceid], '', 'id');
         if ($items) {
             $itemids = array_keys($items);
             [$insql, $inparams] = $DB->get_in_or_equal($itemids);
             $DB->delete_records_select('block_playerhud_inventory', "itemid $insql", $inparams);
+            $DB->delete_records_select('block_playerhud_stack', "itemid $insql", $inparams);
+            $DB->delete_records_select('block_playerhud_stack_log', "itemid $insql", $inparams);
         }
 
         // Delete Quest logs.
@@ -574,6 +654,28 @@ class provider implements
             $invids = array_keys($invrecords);
             [$delsql, $delparams] = $DB->get_in_or_equal($invids);
             $DB->delete_records_select('block_playerhud_inventory', "id $delsql", $delparams);
+        }
+
+        // 2b. Delete item quantity balance (JOIN with Items).
+        $sqlstack = "SELECT s.id FROM {block_playerhud_stack} s
+                      JOIN {block_playerhud_items} it ON s.itemid = it.id
+                      WHERE it.blockinstanceid = :instanceid AND s.userid $usql";
+        $stackrecords = $DB->get_records_sql($sqlstack, $params);
+        if ($stackrecords) {
+            $stackids = array_keys($stackrecords);
+            [$sdelsql, $sdelparams] = $DB->get_in_or_equal($stackids);
+            $DB->delete_records_select('block_playerhud_stack', "id $sdelsql", $sdelparams);
+        }
+
+        // 2c. Delete item quantity ledger (JOIN with Items).
+        $sqlstacklog = "SELECT sl.id FROM {block_playerhud_stack_log} sl
+                          JOIN {block_playerhud_items} it ON sl.itemid = it.id
+                         WHERE it.blockinstanceid = :instanceid AND sl.userid $usql";
+        $stacklogrecords = $DB->get_records_sql($sqlstacklog, $params);
+        if ($stacklogrecords) {
+            $stacklogids = array_keys($stacklogrecords);
+            [$sldelsql, $sldelparams] = $DB->get_in_or_equal($stacklogids);
+            $DB->delete_records_select('block_playerhud_stack_log', "id $sldelsql", $sldelparams);
         }
 
         // 3. Delete Quest Logs.

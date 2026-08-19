@@ -118,11 +118,22 @@ class collect_item extends external_api {
             'item_data' => new external_single_structure([
                 'name' => new external_value(PARAM_TEXT, 'Item Name', VALUE_OPTIONAL),
                 'xp' => new external_value(PARAM_INT, 'XP Value', VALUE_OPTIONAL),
+                'qty' => new external_value(PARAM_INT, 'Quantity granted by this collection', VALUE_OPTIONAL),
                 'image' => new external_value(PARAM_RAW, 'Image URL or Emoji', VALUE_OPTIONAL),
                 'isimage' => new external_value(PARAM_INT, 'Is Image Flag', VALUE_OPTIONAL),
                 'description' => new external_value(PARAM_RAW, 'Description', VALUE_OPTIONAL),
                 'date' => new external_value(PARAM_TEXT, 'Date formatted', VALUE_OPTIONAL),
                 'timestamp' => new external_value(PARAM_INT, 'Timestamp', VALUE_OPTIONAL),
+                'progress_text' => new external_value(
+                    PARAM_TEXT,
+                    'Human-readable collection count, e.g. "Collection 1 of 2"',
+                    VALUE_OPTIONAL
+                ),
+                'qty_text' => new external_value(
+                    PARAM_TEXT,
+                    'Human-readable per-collection quantity, e.g. "Qty/collection: 2"',
+                    VALUE_OPTIONAL
+                ),
             ], 'Item Details', VALUE_OPTIONAL),
         ]);
     }

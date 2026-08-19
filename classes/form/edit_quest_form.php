@@ -173,6 +173,17 @@ class edit_quest_form extends \moodleform {
         $mform->setDefault('reward_itemid', 0);
         $mform->addHelpButton('reward_itemid', 'quest_reward_item', 'block_playerhud');
 
+        $mform->addElement(
+            'text',
+            'reward_itemqty',
+            get_string('quest_reward_itemqty', 'block_playerhud'),
+            ['type' => 'number', 'min' => '1']
+        );
+        $mform->setType('reward_itemqty', PARAM_INT);
+        $mform->setDefault('reward_itemqty', 1);
+        $mform->addHelpButton('reward_itemqty', 'quest_reward_itemqty', 'block_playerhud');
+        $mform->hideIf('reward_itemqty', 'reward_itemid', 'eq', 0);
+
         // Visual identity header.
         $mform->addElement('header', 'visual_hdr', get_string('visualrules', 'block_playerhud'));
 
@@ -247,6 +258,10 @@ class edit_quest_form extends \moodleform {
 
         if (!is_numeric($data['reward_xp']) || (int)$data['reward_xp'] < 0) {
             $errors['reward_xp'] = get_string('validate_number', 'core');
+        }
+
+        if (!empty($data['reward_itemid']) && (!is_numeric($data['reward_itemqty']) || (int)$data['reward_itemqty'] < 1)) {
+            $errors['reward_itemqty'] = get_string('validate_number', 'core');
         }
 
         return $errors;

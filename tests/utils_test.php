@@ -215,6 +215,69 @@ final class utils_test extends advanced_testcase {
     }
 
     /**
+     * Values under a thousand are shown as plain integers, unchanged.
+     */
+    public function test_format_compact_number_below_thousand_is_unchanged(): void {
+        $this->assertSame('0', utils::format_compact_number(0));
+        $this->assertSame('999', utils::format_compact_number(999));
+    }
+
+    /**
+     * Thousands compact to "k", dropping a trailing ".0" when the value is exact.
+     */
+    public function test_format_compact_number_thousands_use_k_suffix(): void {
+        $this->assertSame('1k', utils::format_compact_number(1000));
+        $this->assertSame('1.5k', utils::format_compact_number(1500));
+        $this->assertSame('999.9k', utils::format_compact_number(999900));
+    }
+
+    /**
+     * Millions compact to "M", same trailing-zero trimming rule as thousands.
+     */
+    public function test_format_compact_number_millions_use_m_suffix(): void {
+        $this->assertSame('1M', utils::format_compact_number(1000000));
+        $this->assertSame('1.2M', utils::format_compact_number(1200000));
+    }
+
+    /**
+     * A negative value keeps its sign in front of the compacted magnitude.
+     */
+    public function test_format_compact_number_preserves_negative_sign(): void {
+        $this->assertSame('-1k', utils::format_compact_number(-1000));
+    }
+
+    /**
+     * A finite drop reports the collection event count against maxusage.
+     */
+    public function test_format_drop_progress_count_finite(): void {
+        $expected = get_string('drop_progress_count', 'block_playerhud', (object) [
+            'count' => 1,
+            'maxusage' => 2,
+        ]);
+        $this->assertSame($expected, utils::format_drop_progress_count(1, 2));
+    }
+
+    /**
+     * An unlimited drop (maxusage = 0) still reports the real collection count, against an
+     * infinity symbol instead of a numeric denominator.
+     */
+    public function test_format_drop_progress_count_unlimited(): void {
+        $expected = get_string('drop_progress_count_infinite', 'block_playerhud', 7);
+        $this->assertSame($expected, utils::format_drop_progress_count(7, 0));
+    }
+
+    /**
+     * The per-collection quantity is the drop's own configured value — never a running total
+     * of what the student accumulated from it. That "how much do I own in total" question
+     * belongs to the inventory/backpack view, which does sum across every source; this
+     * describes the collection point itself.
+     */
+    public function test_format_drop_qty_per_collection(): void {
+        $expected = get_string('drop_qty_per_collection', 'block_playerhud', 2);
+        $this->assertSame($expected, utils::format_drop_qty_per_collection(2));
+    }
+
+    /**
      * Insert a minimal block_instances row and return its ID.
      *
      * @return int The new instance ID.

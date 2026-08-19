@@ -72,12 +72,14 @@ final class analytics_test extends advanced_testcase {
      *
      * @param int $itemid The item ID.
      * @param int $maxusage Maximum collections (0 = infinite).
+     * @param int $value Units granted per collection.
      */
-    protected function create_drop(int $itemid, int $maxusage): void {
+    protected function create_drop(int $itemid, int $maxusage, int $value = 1): void {
         global $DB;
         $DB->insert_record('block_playerhud_drops', (object) [
             'blockinstanceid' => $this->instanceid, 'itemid' => $itemid, 'name' => 'Loc',
-            'maxusage' => $maxusage, 'respawntime' => 0, 'code' => utils::generate_drop_code($this->instanceid),
+            'maxusage' => $maxusage, 'value' => $value, 'respawntime' => 0,
+            'code' => utils::generate_drop_code($this->instanceid),
             'timecreated' => time(), 'timemodified' => time(),
         ]);
     }
@@ -107,6 +109,25 @@ final class analytics_test extends advanced_testcase {
         $this->assertEqualsWithDelta(25.0, $health->ratio, 0.01);
         $this->assertCount(1, $health->breakdown);
         $this->assertEquals(250, $health->breakdown[0]['xp_total']);
+    }
+
+    /**
+     * A drop's earnable XP multiplies maxusage by value, not just maxusage — a drop worth 2
+     * units per collection with a limit of 2 collections pays out 4 units (400 XP at 100 XP
+     * each), not 2 units (200 XP). Regression test for a real gap found live: the formula was
+     * never updated when the "value per collection" field was added, so the economy-health
+     * panel under-reported the true XP ceiling for any drop with value > 1.
+     */
+    public function test_economy_health_accounts_for_drop_value(): void {
+        // 1 item x (2 maxusage x 2 value) uses x 100 XP = 400, ceiling 1000 -> 40% -> hard.
+        $item = $this->create_item('Gem', 100);
+        $this->create_drop($item, 2, 2);
+
+        $health = analytics::economy_health($this->instanceid, 100, 10);
+        $this->assertEquals(400, $health->total_items_xp);
+        $this->assertCount(1, $health->breakdown);
+        $this->assertEquals(400, $health->breakdown[0]['xp_total']);
+        $this->assertEquals(4, $health->breakdown[0]['total_uses']);
     }
 
     /**

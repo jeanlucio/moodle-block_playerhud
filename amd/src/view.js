@@ -216,6 +216,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                 const date = trigger.attr('data-date'); // Fallback (PHP Text).
                 const timestamp = trigger.attr('data-timestamp'); // Raw Timestamp.
                 const count = trigger.attr('data-count');
+                const countDisplay = trigger.attr('data-count-display');
                 const desc = trigger.find('.ph-item-description-content').html();
 
                 // Populate Modal.
@@ -230,7 +231,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
 
                 const badgeEl = $('#phModalCountBadgeView');
                 if (count && count > 0) {
-                    badgeEl.text('x' + count).show();
+                    badgeEl.text('x' + (countDisplay || count)).attr('title', count).show();
                 } else {
                     badgeEl.hide();
                 }

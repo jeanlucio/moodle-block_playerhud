@@ -87,6 +87,33 @@ class tab_collection implements renderable, templatable {
             }
         }
 
+        // 2b. New-engine current balance per item (block_playerhud_stack), scoped to instance.
+        $stacksql = "SELECT s.itemid, s.qty
+                       FROM {block_playerhud_stack} s
+                       JOIN {block_playerhud_items} it ON it.id = s.itemid
+                      WHERE s.userid = :userid AND it.blockinstanceid = :instanceid AND s.qty > 0";
+        $stackbalances = $DB->get_records_sql_menu($stacksql, [
+            'userid' => $this->player->userid,
+            'instanceid' => $this->instanceid,
+        ]);
+
+        // 2c. New-engine grant history (positive, non-revoked), to feed last-activity timestamp
+        // and origin breakdown for items obtained only through the new engine — mirroring what
+        // the legacy per-copy loop below derives from $usercopies.
+        $stacklogsql = "SELECT sl.id, sl.itemid, sl.source, sl.delta, sl.timecreated
+                           FROM {block_playerhud_stack_log} sl
+                           JOIN {block_playerhud_items} it ON it.id = sl.itemid
+                          WHERE sl.userid = :userid AND it.blockinstanceid = :instanceid
+                                AND sl.delta > 0 AND sl.source <> 'revoked'";
+        $stacklograws = $DB->get_records_sql($stacklogsql, [
+            'userid' => $this->player->userid,
+            'instanceid' => $this->instanceid,
+        ]);
+        $stacklogbyitem = [];
+        foreach ($stacklograws as $lograw) {
+            $stacklogbyitem[$lograw->itemid][] = $lograw;
+        }
+
         // Fetch all items.
         $allitems = $DB->get_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid], 'xp ASC');
 
@@ -117,7 +144,9 @@ class tab_collection implements renderable, templatable {
 
             foreach ($allitems as $item) {
                 $usercopies = isset($inventorybyitem[$item->id]) ? $inventorybyitem[$item->id] : [];
-                $totalcount = count($usercopies);
+                $stackentries = $stacklogbyitem[$item->id] ?? [];
+                $newbalance = (int)($stackbalances[$item->id] ?? 0);
+                $totalcount = count($usercopies) + $newbalance;
 
                 // Visibility Rules (If item not owned).
                 if ($totalcount == 0) {
@@ -148,6 +177,11 @@ class tab_collection implements renderable, templatable {
                         $countinfinite++;
                     } else {
                         $countfinite++;
+                    }
+                }
+                foreach ($stackentries as $entry) {
+                    if ($entry->timecreated > $lastts) {
+                        $lastts = $entry->timecreated;
                     }
                 }
 
@@ -214,6 +248,21 @@ class tab_collection implements renderable, templatable {
                             $itemobj['origin_game']++;
                         }
                     }
+                    foreach ($stackentries as $entry) {
+                        $src = $entry->source ?? '';
+                        $delta = (int)$entry->delta;
+                        if ($src == 'map') {
+                            $itemobj['origin_map'] += $delta;
+                        } else if ($src == 'shop') {
+                            $itemobj['origin_shop'] += $delta;
+                        } else if ($src == 'quest') {
+                            $itemobj['origin_quest'] += $delta;
+                        } else if ($src == 'teacher') {
+                            $itemobj['origin_teacher'] += $delta;
+                        } else {
+                            $itemobj['origin_game'] += $delta;
+                        }
+                    }
                     if (
                         $itemobj['origin_map'] ||
                         $itemobj['origin_shop'] ||
@@ -222,6 +271,17 @@ class tab_collection implements renderable, templatable {
                         $itemobj['origin_game']
                     ) {
                         $itemobj['has_origins'] = true;
+                    }
+
+                    // Compact display counterpart, mirroring count/count_display: a large
+                    // origin count (e.g. a currency item bought many times) must not inflate
+                    // the card the same way the main count badge already avoids it. The raw
+                    // origin_* values stay untouched — the mustache section tags gating each
+                    // badge ({{#origin_map}}...) key off them.
+                    foreach (['origin_map', 'origin_shop', 'origin_quest', 'origin_teacher', 'origin_game'] as $originkey) {
+                        $itemobj[$originkey . '_display'] = \block_playerhud\utils::format_compact_number(
+                            $itemobj[$originkey]
+                        );
                     }
 
                     // New Badge.
@@ -261,15 +321,24 @@ class tab_collection implements renderable, templatable {
                 }
 
                 $itemobj['count'] = $totalcount;
+                $itemobj['count_display'] = \block_playerhud\utils::format_compact_number($totalcount);
                 $itemobj['timestamp'] = $lastts;
 
-                // Power action data (only for owned items with a configured power).
-                if ($totalcount > 0 && !empty($item->action_type)) {
+                // Power action data (only for owned items with a configured power this card
+                // actually knows how to render — an action_type the template has no matching
+                // block for, e.g. 'playercoin', must not open an empty bordered actions strip).
+                $isavatar = ($item->action_type === 'avatar_profile');
+                $isdeadline = (
+                    $item->action_type === 'deadline_extension'
+                    && class_exists('\local_latepenalty\recalculator')
+                );
+
+                if ($totalcount > 0 && !empty($item->action_type) && ($isavatar || $isdeadline)) {
                     $itemobj['has_power']   = true;
                     $itemobj['action_type'] = $item->action_type;
                     $itemobj['itemid']      = $item->id;
 
-                    if ($item->action_type === 'avatar_profile') {
+                    if ($isavatar) {
                         $itemobj['is_avatar']   = true;
                         $itemobj['is_deadline'] = false;
                         $equippedid = (int) get_user_preferences(
@@ -277,10 +346,7 @@ class tab_collection implements renderable, templatable {
                             0
                         );
                         $itemobj['is_equipped'] = ($equippedid == (int)$item->id);
-                    } else if (
-                        $item->action_type === 'deadline_extension'
-                        && class_exists('\local_latepenalty\recalculator')
-                    ) {
+                    } else {
                         $itemobj['is_avatar']   = false;
                         $itemobj['is_deadline'] = true;
                         $av   = !empty($item->action_value) ? json_decode($item->action_value, true) : [];

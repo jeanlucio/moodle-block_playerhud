@@ -88,7 +88,7 @@ final class drop_guard_test extends advanced_testcase {
     }
 
     /**
-     * Inserts N inventory records for the configured drop and user.
+     * Inserts N legacy inventory records for the configured drop and user.
      *
      * @param int $qty Number of records to insert.
      * @param string $source Source value for each record.
@@ -106,6 +106,31 @@ final class drop_guard_test extends advanced_testcase {
             ];
         }
         $DB->insert_records('block_playerhud_inventory', $records);
+    }
+
+    /**
+     * Inserts N block_playerhud_stack_log pickup records for the configured drop and user —
+     * the storage generation every new collection uses from now on.
+     *
+     * @param int $qty Number of records to insert.
+     * @param int $offset Seconds to subtract from time() on the first record (each subsequent
+     *        one one second older), so callers can control ordering relative to legacy rows.
+     */
+    protected function seed_new_pickup_records(int $qty, int $offset = 0): void {
+        global $DB;
+        $records = [];
+        for ($i = 0; $i < $qty; $i++) {
+            $records[] = (object)[
+                'userid'      => $this->userid,
+                'itemid'      => 0,
+                'dropid'      => $this->dropid,
+                'delta'       => 1,
+                'source'      => 'map',
+                'xpawarded'   => 0,
+                'timecreated' => time() - $offset - $i,
+            ];
+        }
+        $DB->insert_records('block_playerhud_stack_log', $records);
     }
 
     /**
@@ -201,5 +226,61 @@ final class drop_guard_test extends advanced_testcase {
         // 1-hour cooldown has passed — must not throw.
         drop_guard::check_pickup_allowed($this->dropid, $this->userid, 5, 3600);
         $this->assertTrue(true);
+    }
+
+    /**
+     * Test 8: the limit is enforced from block_playerhud_stack_log alone — the storage
+     * generation every new collection writes to.
+     */
+    public function test_pickup_blocked_at_limit_from_new_storage_alone(): void {
+        $this->seed_new_pickup_records(5);
+
+        $this->expectException(\moodle_exception::class);
+        drop_guard::check_pickup_allowed($this->dropid, $this->userid, 5, 0);
+    }
+
+    /**
+     * Test 9: the limit is enforced by summing legacy inventory rows and new ledger rows — a
+     * user who collected before and after the storage cutover cannot exceed maxusage across
+     * the two combined. This is the exact scenario drop_guard::get_pickup_count() exists for:
+     * without it, a drop with maxusage reached partly via legacy rows would look like it still
+     * has pickups left, because the new storage alone would undercount.
+     */
+    public function test_pickup_blocked_by_combining_legacy_and_new_storage(): void {
+        $this->seed_pickup_records(3, 'map');
+        $this->seed_new_pickup_records(2);
+
+        $this->expectException(\moodle_exception::class);
+        drop_guard::check_pickup_allowed($this->dropid, $this->userid, 5, 0);
+    }
+
+    /**
+     * Test 10: below the limit when combining both sources, pickup is still allowed.
+     */
+    public function test_pickup_allowed_below_limit_combining_both_sources(): void {
+        $this->seed_pickup_records(2, 'map');
+        $this->seed_new_pickup_records(1);
+
+        drop_guard::check_pickup_allowed($this->dropid, $this->userid, 5, 0);
+        $this->assertTrue(true);
+    }
+
+    /**
+     * Test 11: cooldown is enforced against the most recent pickup across both sources, even
+     * when that most recent pickup is the new one and older rows are legacy.
+     */
+    public function test_pickup_blocked_by_cooldown_from_most_recent_new_pickup(): void {
+        $this->seed_pickup_records(1, 'map');
+        // The legacy helper always timestamps "now"; simulate the new pickup happening after
+        // it by not offsetting it at all while the legacy row already carries an offset of 0 —
+        // insert the legacy row further in the past explicitly instead.
+        global $DB;
+        $DB->set_field('block_playerhud_inventory', 'timecreated', time() - 7200, [
+            'userid' => $this->userid, 'dropid' => $this->dropid,
+        ]);
+        $this->seed_new_pickup_records(1);
+
+        $this->expectException(\moodle_exception::class);
+        drop_guard::check_pickup_allowed($this->dropid, $this->userid, 5, 3600);
     }
 }

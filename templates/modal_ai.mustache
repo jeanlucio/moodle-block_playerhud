@@ -36,7 +36,8 @@
                 "ai_drop_settings": "Drop Settings",
                 "drop_name_label": "Location Name",
                 "drop_name_default": "Forest",
-                "drop_max_qty": "Max Quantity",
+                "maxusage": "Collection Limit",
+                "drop_value": "Value per collection",
                 "unlimited": "Unlimited",
                 "drop_interval": "Respawn Interval",
                 "drops_immediate": "Immediate",
@@ -102,10 +103,16 @@
 
                 <div class="row">
                     <div class="col-6">
-                        <label for="ai-maxusage" class="form-label small">{{#str}} drop_max_qty, block_playerhud {{/str}}</label>
+                        <label for="ai-maxusage" class="form-label small">{{#str}} maxusage, block_playerhud {{/str}}</label>
                         <input type="number" class="form-control form-control-sm" id="ai-maxusage" value="0">
                         <small class="text-muted ph-text-xs">0 = {{#str}} unlimited, block_playerhud {{/str}}</small>
                     </div>
+                    <div class="col-6">
+                        <label for="ai-value" class="form-label small">{{#str}} drop_value, block_playerhud {{/str}}</label>
+                        <input type="number" class="form-control form-control-sm" id="ai-value" value="1" min="1">
+                    </div>
+                </div>
+                <div class="row mt-2">
                     <div class="col-6">
                         <label for="ai-respawn" class="form-label small">{{#str}} respawntime, block_playerhud {{/str}} (min)</label>
                         <input type="number" class="form-control form-control-sm" id="ai-respawn" value="0">

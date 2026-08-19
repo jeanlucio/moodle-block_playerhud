@@ -196,57 +196,60 @@ class trade_manager {
                 }
             }
 
-            $itemstoremove = [];
-            $userinventorymap = [];
-
-            if ($requirements && !empty($allitemids)) {
-                [$invinsql, $invinparams] = $DB->get_in_or_equal($allitemids, SQL_PARAMS_NAMED, 'rinv');
-                $invparams = array_merge(['userid' => $userid], $invinparams);
-
-                $sql = "SELECT id, itemid
-                          FROM {block_playerhud_inventory}
-                         WHERE userid = :userid AND itemid $invinsql
-                               AND source NOT IN ('revoked', 'consumed')
-                      ORDER BY timecreated ASC";
-
-                $invrecords = $DB->get_records_sql($sql, $invparams);
-
-                if ($invrecords) {
-                    foreach ($invrecords as $inv) {
-                        $userinventorymap[$inv->itemid][] = $inv->id;
-                    }
-                }
-
+            // Sum requirement quantities per item first — a trade could in principle carry two
+            // separate requirement rows for the same item, and checking each row's own qty
+            // against the same fresh get_available_quantity() call independently (instead of
+            // against what earlier rows in the same trade already claim) would let both pass
+            // even when the combined need exceeds the user's balance.
+            $neededbyitem = [];
+            if ($requirements) {
                 foreach ($requirements as $req) {
-                    $countuserhas = isset($userinventorymap[$req->itemid]) ? count($userinventorymap[$req->itemid]) : 0;
+                    $neededbyitem[$req->itemid] = ($neededbyitem[$req->itemid] ?? 0) + (int) $req->qty;
+                }
+            }
 
-                    if ($countuserhas < $req->qty) {
-                        $itemname = isset($itemsmap[$req->itemid]) ?
-                            format_string($itemsmap[$req->itemid]->name) : get_string('item', 'block_playerhud');
+            foreach ($neededbyitem as $reqitemid => $needed) {
+                $available = \block_playerhud\local\external_items::get_available_quantity(
+                    $instanceid,
+                    $reqitemid,
+                    $userid
+                );
 
-                        $a = new \stdClass();
-                        $a->missing = $req->qty - $countuserhas;
-                        $a->name = $itemname;
-                        throw new \moodle_exception('error_trade_insufficient', 'block_playerhud', '', $a);
-                    }
+                if ($available < $needed) {
+                    $itemname = isset($itemsmap[$reqitemid]) ?
+                        format_string($itemsmap[$reqitemid]->name) : get_string('item', 'block_playerhud');
 
-                    $sliced = array_slice($userinventorymap[$req->itemid], 0, $req->qty);
-                    $itemstoremove = array_merge($itemstoremove, $sliced);
+                    $a = new \stdClass();
+                    $a->missing = $needed - $available;
+                    $a->name = $itemname;
+                    throw new \moodle_exception('error_trade_insufficient', 'block_playerhud', '', $a);
                 }
             }
 
             $transaction = $DB->start_delegated_transaction();
 
-            if (!empty($itemstoremove)) {
-                [$delsql, $delparams] = $DB->get_in_or_equal($itemstoremove, SQL_PARAMS_NAMED, 'del');
-                $DB->set_field_select('block_playerhud_inventory', 'source', 'consumed', "id $delsql", $delparams);
+            if ($requirements) {
+                foreach ($requirements as $req) {
+                    $consumed = \block_playerhud\local\external_items::consume(
+                        $instanceid,
+                        $req->itemid,
+                        $userid,
+                        (int) $req->qty
+                    );
+                    if ($consumed !== true) {
+                        // The aggregate check above already verified the combined balance is
+                        // enough; a false/null here means it changed from under us between that
+                        // check and this write (e.g. a concurrent external grant/consume on the
+                        // same item) — treat it as insufficient rather than silently short the
+                        // requirement and still hand over the reward.
+                        throw new \moodle_exception('error_trade_insufficient', 'block_playerhud');
+                    }
+                }
             }
 
             $rewardsnames = [];
-            $newinventories = [];
 
             if ($rewards) {
-                $now = time();
                 foreach ($rewards as $rew) {
                     if (!isset($itemsmap[$rew->itemid])) {
                         continue;
@@ -254,22 +257,18 @@ class trade_manager {
 
                     $rewarditem = $itemsmap[$rew->itemid];
 
-                    for ($i = 0; $i < $rew->qty; $i++) {
-                        $newinv = new \stdClass();
-                        $newinv->userid = $userid;
-                        $newinv->itemid = $rew->itemid;
-                        $newinv->dropid = 0;
-                        $newinv->source = 'shop';
-                        $newinv->timecreated = $now;
-
-                        $newinventories[] = $newinv;
-                    }
+                    // Trade rewards never award the item's own XP — a shop purchase is a spend,
+                    // not an earn, the same as this code has always behaved.
+                    \block_playerhud\local\external_items::grant(
+                        $instanceid,
+                        $rew->itemid,
+                        $userid,
+                        (int) $rew->qty,
+                        'shop',
+                        true
+                    );
                     $rewardsnames[] = "{$rew->qty}x " . format_string($rewarditem->name);
                 }
-            }
-
-            if (!empty($newinventories)) {
-                $DB->insert_records('block_playerhud_inventory', $newinventories);
             }
 
             $log = new \stdClass();

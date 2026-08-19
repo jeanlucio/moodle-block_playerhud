@@ -58,6 +58,7 @@ const getModalElements = () => {
         dateContainer: $(`#phModalDateContainer${suffix}`),
         dropStats: $(`#phModalDropStats${suffix}`),
         dropProgress: $(`#phModalDropProgress${suffix}`),
+        dropQty: $(`#phModalDropQty${suffix}`),
         dropCooldown: $(`#phModalDropCooldown${suffix}`)
     };
 };
@@ -340,9 +341,13 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
             container = trigger;
         }
 
-        // Increment count badge if exists.
-        let currentCount = parseInt(container.attr('data-count')) || 0;
-        container.attr('data-count', currentCount + 1);
+        // Refresh the modal's progress/quantity text (server-computed — see collect_item.php).
+        if (resp.item_data.progress_text !== undefined) {
+            container.attr('data-progress-text', resp.item_data.progress_text);
+        }
+        if (resp.item_data.qty_text !== undefined) {
+            container.attr('data-qty-text', resp.item_data.qty_text);
+        }
         const card = trigger.closest('.playerhud-item-card');
         if (card.length) {
             card.attr('data-date', resp.item_data.date);
@@ -493,8 +498,7 @@ export const init = () => {
     // Handlers are registered synchronously below, so this must never throw.
     appStrings = {
         collected: M.util.get_string('collected', 'block_playerhud'),
-        respawntime: M.util.get_string('respawntime', 'block_playerhud'),
-        infinite: M.util.get_string('infinite', 'block_playerhud'),
+        cooldownBadge: M.util.get_string('drop_cooldown_badge', 'block_playerhud'),
         immediate: M.util.get_string('drops_immediate', 'block_playerhud'),
         singleCollection: M.util.get_string('single_collection', 'block_playerhud'),
         error: M.util.get_string('error_connection', 'block_playerhud'),
@@ -517,8 +521,7 @@ export const init = () => {
     try {
         Str.get_strings([
             {key: 'collected', component: 'block_playerhud'},
-            {key: 'respawntime', component: 'block_playerhud'},
-            {key: 'infinite', component: 'block_playerhud'},
+            {key: 'drop_cooldown_badge', component: 'block_playerhud'},
             {key: 'drops_immediate', component: 'block_playerhud'},
             {key: 'single_collection', component: 'block_playerhud'},
             {key: 'error_connection', component: 'block_playerhud'},
@@ -531,12 +534,11 @@ export const init = () => {
             {key: 'cancel', component: 'moodle'},
             {key: 'error', component: 'moodle'},
             {key: 'ok', component: 'moodle'},
-        ]).then(([collected, respawntime, infinite, immediate, singleCollection,
+        ]).then(([collected, cooldownBadge, immediate, singleCollection,
                   strError, lastCollected, level, xp, noDescription,
                   confirmTitle, yes, cancel, errorTitle, ok]) => {
             appStrings.collected = collected;
-            appStrings.respawntime = respawntime;
-            appStrings.infinite = infinite;
+            appStrings.cooldownBadge = cooldownBadge;
             appStrings.immediate = immediate;
             appStrings.singleCollection = singleCollection;
             appStrings.error = strError;
@@ -619,7 +621,8 @@ export const init = () => {
             xp: container.attr('data-xp'),
             date: container.attr('data-date'),
             timestamp: container.attr('data-timestamp'),
-            count: container.attr('data-count'),
+            progressText: container.attr('data-progress-text'),
+            qtyText: container.attr('data-qty-text'),
             maxusage: container.attr('data-maxusage'),
             respawntimeStr: container.attr('data-respawntime-str')
         };
@@ -679,28 +682,37 @@ export const init = () => {
         if (data.maxusage !== undefined) {
             const maxUsage = parseInt(data.maxusage, 10);
 
-            // 1. Progress Badge (Infinite or X/Y count).
-            if (maxUsage === 0) {
-                const textStr = appStrings.infinite || 'Infinite';
-                const iconHtml = '<i class="fa fa-infinity me-1" aria-hidden="true"></i>';
-                modalEls.dropProgress.html(`${iconHtml}${textStr}`).show();
-                showStats = true;
-            } else if (!isNaN(maxUsage) && data.count !== undefined) {
-                const textStr = appStrings.collected || 'Collected';
-                modalEls.dropProgress.text(`${data.count}/${maxUsage} ${textStr}`).show();
+            // 1. Progress Badge — collection count against maxUsage, or against ∞ for an
+            // unlimited drop. Server-computed (utils::format_drop_progress_count()); picking
+            // the right denominator is entirely server-side, so this is a plain text badge
+            // either way.
+            if (!isNaN(maxUsage) && data.progressText) {
+                modalEls.dropProgress.text(data.progressText).show();
                 showStats = true;
             } else {
                 modalEls.dropProgress.hide();
             }
 
-            // 2. Cooldown Badge (Single, Immediate, or Timer).
+            // 2. Quantity Badge — the drop's own configured value-per-collection, never a
+            // running total of what the student accumulated from it (see
+            // utils::format_drop_qty_per_collection()). Its own dedicated slot, so it never
+            // competes with the cooldown badge below regardless of maxUsage.
+            if (data.qtyText) {
+                modalEls.dropQty.text(data.qtyText).show();
+                showStats = true;
+            } else {
+                modalEls.dropQty.hide();
+            }
+
+            // 3. Cooldown Badge (Single, Timer, or Immediate) — unrelated to the item-quantity
+            // engine, unchanged from before it existed.
             if (maxUsage === 1) {
                 const textStr = appStrings.singleCollection || 'Single collection';
                 const iconHtml = '<i class="fa fa-lock me-1" aria-hidden="true"></i>';
                 modalEls.dropCooldown.html(`${iconHtml}${textStr}`).show();
                 showStats = true;
             } else if (data.respawntimeStr && data.respawntimeStr.trim() !== '') {
-                const textStr = appStrings.respawntime || 'Cooldown';
+                const textStr = appStrings.cooldownBadge || 'Cooldown';
                 const iconHtml = '<i class="fa fa-clock-o me-1" aria-hidden="true"></i>';
                 modalEls.dropCooldown.html(`${iconHtml}${textStr}: ${data.respawntimeStr}`).show();
                 showStats = true;

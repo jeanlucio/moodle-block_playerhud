@@ -130,6 +130,33 @@ final class use_item_test extends external_base_testcase {
     }
 
     /**
+     * Regression test: an avatar granted via external_items::grant() (block_playerhud_stack,
+     * the storage every new grant uses from now on) is recognised as owned, not just one
+     * granted the legacy way via give_item_to_user()/block_playerhud_inventory directly. Before
+     * use_item switched to external_items::get_available_quantity(), this ownership check read
+     * block_playerhud_inventory only and would have wrongly thrown itemnotfound here.
+     */
+    public function test_use_item_equips_avatar_granted_via_new_storage(): void {
+        global $USER;
+
+        $item = $this->create_item($this->instanceid, 'Test Avatar', ['action_type' => 'avatar_profile']);
+        $granted = \block_playerhud\local\external_items::grant(
+            $this->instanceid,
+            $item->id,
+            (int) $USER->id,
+            1,
+            'quest',
+            true
+        );
+        $this->assertGreaterThan(0, $granted, 'Setup failed: grant() did not record the item.');
+
+        $result = use_item::execute($this->instanceid, $this->course->id, $item->id, 0);
+
+        $this->assertTrue($result['success'], 'use_item failed: ' . $result['message']);
+        $this->assertTrue($result['equipped']);
+    }
+
+    /**
      * When no cmid is resolvable use_item returns pick_activity message.
      * Runs as admin (the default after setUp::setAdminUser).
      */

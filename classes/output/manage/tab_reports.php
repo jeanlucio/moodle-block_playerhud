@@ -284,6 +284,7 @@ class tab_reports implements renderable, templatable {
             'col_object'        => get_string('report_col_object', 'block_playerhud'),
             'col_ai'            => get_string('report_col_ai', 'block_playerhud'),
             'grant_item_select' => get_string('grant_item_select', 'block_playerhud'),
+            'qty'               => get_string('qty', 'block_playerhud'),
             'revoke_item'       => get_string('revoke_item', 'block_playerhud'),
             'confirm_revoke'    => get_string('confirm_revoke', 'block_playerhud'),
             'delete'            => get_string('delete'),
@@ -392,16 +393,46 @@ class tab_reports implements renderable, templatable {
             IGNORE_MULTIPLE
         );
 
-        $topitem = $DB->get_record_sql(
-            "SELECT i.name, COUNT(inv.id) as qtd
+        // The "most collected" stat is a cumulative, all-time count (every unit ever granted, whether
+        // still held or since consumed/revoked) — the legacy side already reflects that by not
+        // filtering source; the new-storage side sums only positive-delta (grant) ledger rows
+        // for the same reason, since current block_playerhud_stack.qty would net out spending
+        // and undercount how many times the item was actually collected.
+        $legacycounts = $DB->get_records_sql(
+            "SELECT i.id, i.name, COUNT(inv.id) as qtd
                FROM {block_playerhud_inventory} inv
                JOIN {block_playerhud_items} i ON inv.itemid = i.id
               WHERE i.blockinstanceid = ?
-           GROUP BY i.id, i.name
-           ORDER BY qtd DESC",
-            [$this->instanceid],
-            IGNORE_MULTIPLE
+           GROUP BY i.id, i.name",
+            [$this->instanceid]
         );
+        $newcounts = $DB->get_records_sql(
+            "SELECT i.id, i.name, SUM(sl.delta) as qtd
+               FROM {block_playerhud_stack_log} sl
+               JOIN {block_playerhud_items} i ON sl.itemid = i.id
+              WHERE i.blockinstanceid = ? AND sl.delta > 0
+           GROUP BY i.id, i.name",
+            [$this->instanceid]
+        );
+
+        $itemtotals = [];
+        foreach ($legacycounts as $row) {
+            $itemtotals[(int) $row->id] = ['name' => $row->name, 'qtd' => (int) $row->qtd];
+        }
+        foreach ($newcounts as $row) {
+            $id = (int) $row->id;
+            if (isset($itemtotals[$id])) {
+                $itemtotals[$id]['qtd'] += (int) $row->qtd;
+            } else {
+                $itemtotals[$id] = ['name' => $row->name, 'qtd' => (int) $row->qtd];
+            }
+        }
+
+        $topitem = null;
+        if (!empty($itemtotals)) {
+            usort($itemtotals, static fn(array $a, array $b): int => $b['qtd'] <=> $a['qtd']);
+            $topitem = (object) reset($itemtotals);
+        }
 
         return [
             [
@@ -594,13 +625,20 @@ class tab_reports implements renderable, templatable {
                 break;
         }
 
+        // Total_items sums current active holdings across both storage generations — legacy
+        // inventory rows not revoked/consumed, plus the new engine's current balance (never
+        // negative, already nets out what was spent).
         $sql = "
             SELECT u.id, $userfields, u.email,
                    pu.currentxp, pu.enable_gamification, pu.timemodified,
                    (SELECT COUNT(inv.id) FROM {block_playerhud_inventory} inv
                     JOIN {block_playerhud_items} it ON inv.itemid = it.id
                    WHERE inv.userid = u.id AND it.blockinstanceid = :p1
-                         AND inv.source NOT IN ('revoked', 'consumed')) as total_items
+                         AND inv.source NOT IN ('revoked', 'consumed'))
+                   +
+                   (SELECT COALESCE(SUM(s.qty), 0) FROM {block_playerhud_stack} s
+                    JOIN {block_playerhud_items} it2 ON s.itemid = it2.id
+                   WHERE s.userid = u.id AND it2.blockinstanceid = :p3) as total_items
               FROM {user} u
               JOIN {block_playerhud_user} pu ON pu.userid = u.id
               JOIN {user_enrolments} ue ON ue.userid = u.id AND ue.status = 0
@@ -612,6 +650,7 @@ class tab_reports implements renderable, templatable {
         $params = [
             'p1' => $this->instanceid,
             'p2' => $this->instanceid,
+            'p3' => $this->instanceid,
             'enrolcourseid' => $this->courseid,
         ];
 
@@ -762,6 +801,7 @@ class tab_reports implements renderable, templatable {
                         $iconemoji = $media['is_image'] ? '' : strip_tags($media['content']);
                     }
                     $log->inventory_id = 0;
+                    $log->stack_log_id = 0;
                 } else if ($log->event_type === 'item_consumed') {
                     $badgeclass = 'bg-warning text-dark';
                     $badgetext  = get_string('report_type_consumed', 'block_playerhud');
@@ -772,6 +812,7 @@ class tab_reports implements renderable, templatable {
                         $iconemoji = $media['is_image'] ? '' : strip_tags($media['content']);
                     }
                     $log->inventory_id = 0;
+                    $log->stack_log_id = 0;
                 } else if ($log->event_type === 'trade') {
                     $badgeclass = 'bg-success text-white';
                     $badgetext  = get_string('report_type_trade', 'block_playerhud');
@@ -810,6 +851,15 @@ class tab_reports implements renderable, templatable {
                         'r_userid' => $userid,
                         'sesskey' => sesskey(),
                     ]);
+                } else if ($log->stack_log_id > 0 && property_exists($this, 'courseid')) {
+                    $urldelete = new \moodle_url('/blocks/playerhud/manage.php', [
+                        'id' => $this->courseid,
+                        'instanceid' => $this->instanceid,
+                        'action' => 'revoke_stack_entry',
+                        'logid' => $log->stack_log_id,
+                        'r_userid' => $userid,
+                        'sesskey' => sesskey(),
+                    ]);
                 }
 
                 $results[] = [
@@ -821,10 +871,11 @@ class tab_reports implements renderable, templatable {
                     'icon_url'      => $iconurl,
                     'icon_emoji'    => $iconemoji,
                     'object_name'   => format_string($log->object_name),
+                    'qty_badge'     => \block_playerhud\local\audit_log::format_qty_badge((int) $log->qty),
                     'xp_badge'      => $xpbadge,
                     'details_html'  => $detailtext,
                     'url_revoke'    => $urldelete ? $urldelete->out(false) : '',
-                    'has_revoke'    => ($log->inventory_id > 0),
+                    'has_revoke'    => ($log->inventory_id > 0 || $log->stack_log_id > 0),
                 ];
             }
         }

@@ -340,23 +340,24 @@ class story_manager {
             throw new \moodle_exception('story_error_karma_required', 'block_playerhud');
         }
 
-        // Item cost: validate and consume. Excludes 'revoked'/'consumed' rows, matching
-        // trade_manager::execute_trade() and game::get_inventory() — otherwise a copy already
-        // spent in a trade (source flipped to 'consumed', row not deleted) or soft-revoked by
-        // a teacher could be spent here a second time.
+        // Item cost: validate and consume through the shared engine — it spends from
+        // block_playerhud_stack first, falling back to FIFO-marking legacy
+        // block_playerhud_inventory rows as 'consumed' for any remainder, the same soft-consume
+        // discipline this code always used (drop_guard::check_pickup_allowed() still counts a
+        // consumed row against the origin drop, and its xpawarded survives for
+        // items::delete_item()'s XP rollback), now also covering a balance held in the new
+        // table — otherwise a copy already spent elsewhere or soft-revoked by a teacher could
+        // be spent here a second time, or a balance granted through the new engine (quest/
+        // trade/drop reward) would look unaffordable even when the player has enough.
         if ($choice->cost_itemid > 0) {
             $qtyneeded = max(1, (int) $choice->cost_item_qty);
-            $inventory = $DB->get_records_select(
-                'block_playerhud_inventory',
-                "userid = :userid AND itemid = :itemid AND source NOT IN ('revoked', 'consumed')",
-                ['userid' => $userid, 'itemid' => $choice->cost_itemid],
-                'timecreated ASC',
-                'id',
-                0,
-                $qtyneeded
+            $available = \block_playerhud\local\external_items::get_available_quantity(
+                $instanceid,
+                $choice->cost_itemid,
+                $userid
             );
 
-            if (count($inventory) < $qtyneeded) {
+            if ($available < $qtyneeded) {
                 $itemname = $DB->get_field('block_playerhud_items', 'name', ['id' => $choice->cost_itemid]);
                 throw new \moodle_exception(
                     'story_error_need_item',
@@ -366,12 +367,7 @@ class story_manager {
                 );
             }
 
-            // Soft-consume (flip source instead of deleting) so drop_guard::check_pickup_allowed()
-            // still counts these rows against the origin drop's maxusage/cooldown, and their
-            // xpawarded value survives for items::delete_item()'s XP rollback — the same
-            // consumption pattern trade_manager::execute_trade() already uses.
-            [$idinsql, $idinparams] = $DB->get_in_or_equal(array_keys($inventory), SQL_PARAMS_NAMED);
-            $DB->set_field_select('block_playerhud_inventory', 'source', 'consumed', "id $idinsql", $idinparams);
+            \block_playerhud\local\external_items::consume($instanceid, $choice->cost_itemid, $userid, $qtyneeded);
             $itemname = $DB->get_field('block_playerhud_items', 'name', ['id' => $choice->cost_itemid]);
             $events[] = [
                 'type' => 'item_loss',
@@ -661,20 +657,16 @@ class story_manager {
             ? $DB->get_records_list('block_playerhud_items', 'id', $itemids)
             : [];
 
-        // Bulk-fetch inventory counts for cost items (one query, not N+1). Excludes
-        // 'revoked'/'consumed' rows so the affordability shown here agrees with what
-        // make_choice() actually accepts as payment.
+        // Bulk-fetch available quantities for cost items (two queries total, not N+1 — see
+        // external_items::get_available_quantities_bulk()), summing both storage generations
+        // so the affordability shown here agrees with what make_choice() actually accepts.
         $invcounts = [];
         if (!$ispreview && !empty($itemids)) {
-            [$insql, $inparams] = $DB->get_in_or_equal(array_values($itemids));
-            $inparams[] = $userid;
-            $sql = "SELECT itemid, COUNT(id) AS cnt
-                      FROM {block_playerhud_inventory}
-                     WHERE itemid $insql AND userid = ? AND source NOT IN ('revoked', 'consumed')
-                  GROUP BY itemid";
-            foreach ($DB->get_records_sql($sql, $inparams) as $row) {
-                $invcounts[(int) $row->itemid] = (int) $row->cnt;
-            }
+            $invcounts = \block_playerhud\local\external_items::get_available_quantities_bulk(
+                $instanceid,
+                array_values($itemids),
+                $userid
+            );
         }
 
         // Player class and karma (one query, not per-choice).

@@ -191,7 +191,7 @@ function block_playerhud_get_drop_details_by_code($code, $blockinstanceid) {
     global $DB;
 
     // We add AND d.blockinstanceid = :bi to avoid collision with restored backups.
-    $sql = "SELECT d.id as dropid, d.maxusage, d.respawntime, d.blockinstanceid,
+    $sql = "SELECT d.id as dropid, d.maxusage, d.value, d.respawntime, d.blockinstanceid,
                    i.id as itemid, i.name as itemname, i.image, i.xp, i.description,
                    i.secret, i.required_class_id
               FROM {block_playerhud_drops} d

@@ -201,6 +201,7 @@
                                 <option value="{{value}}">{{label}}</option>
                             {{/available_items}}
                         </select>
+                        <input type="number" name="qty" value="1" min="1" class="form-control border-success ph-grant-qty-input" aria-label="{{str.qty}}">
                         <button type="submit" class="btn btn-success fw-bold" aria-label="{{str.grant_item_select}}">
                             <i class="fa fa-gift" aria-hidden="true"></i>
                         </button>
@@ -255,7 +256,7 @@
                                         {{#is_image_icon}}<img src="{{icon_url}}" class="ph-img-xs" alt="">{{/is_image_icon}}
                                         {{^is_image_icon}}<span class="fs-5" aria-hidden="true">{{icon_emoji}}</span>{{/is_image_icon}}
                                     </div>
-                                    <div>{{object_name}}</div>
+                                    <div>{{object_name}}{{{qty_badge}}}</div>
                                 </div>
                             </td>
                             <td class="text-center">{{{xp_badge}}}</td>

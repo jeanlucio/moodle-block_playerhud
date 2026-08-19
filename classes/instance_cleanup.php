@@ -65,9 +65,19 @@ class instance_cleanup {
             $params
         );
 
-        // Inventory -> items.
+        // Inventory, item quantity balance and ledger -> items.
         $DB->delete_records_select(
             'block_playerhud_inventory',
+            'itemid IN (SELECT id FROM {block_playerhud_items} WHERE blockinstanceid = :biid)',
+            $params
+        );
+        $DB->delete_records_select(
+            'block_playerhud_stack',
+            'itemid IN (SELECT id FROM {block_playerhud_items} WHERE blockinstanceid = :biid)',
+            $params
+        );
+        $DB->delete_records_select(
+            'block_playerhud_stack_log',
             'itemid IN (SELECT id FROM {block_playerhud_items} WHERE blockinstanceid = :biid)',
             $params
         );

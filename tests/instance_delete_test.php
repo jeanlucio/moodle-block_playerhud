@@ -105,6 +105,23 @@ final class instance_delete_test extends advanced_testcase {
             'timecreated' => $now,
         ]);
 
+        $DB->insert_record('block_playerhud_stack', (object) [
+            'userid' => $this->userid,
+            'itemid' => $itemid,
+            'qty' => 5,
+            'timemodified' => $now,
+        ]);
+
+        $DB->insert_record('block_playerhud_stack_log', (object) [
+            'userid' => $this->userid,
+            'itemid' => $itemid,
+            'dropid' => $dropid,
+            'delta' => 5,
+            'source' => 'map',
+            'xpawarded' => 0,
+            'timecreated' => $now,
+        ]);
+
         $classid = $DB->insert_record('block_playerhud_classes', (object) [
             'blockinstanceid' => $this->instanceid,
             'name' => 'Class',
@@ -255,6 +272,8 @@ final class instance_delete_test extends advanced_testcase {
         }
 
         $this->assertEquals(0, $DB->count_records('block_playerhud_inventory'));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_stack'));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_stack_log'));
         $this->assertEquals(0, $DB->count_records('block_playerhud_quest_log'));
         $this->assertEquals(0, $DB->count_records('block_playerhud_story_nodes'));
         $this->assertEquals(0, $DB->count_records('block_playerhud_choices'));

@@ -42,6 +42,7 @@
         "headers": {
             "name": { "url": "#", "label": "Location", "icon_class": "fa-sort" },
             "qty": { "url": "#", "label": "Qty", "icon_class": "fa-sort" },
+            "value": { "url": "#", "label": "Value", "icon_class": "fa-sort" },
             "time": { "url": "#", "label": "Time", "icon_class": "fa-sort" }
         },
         "str_col_gen": "Code Generator",
@@ -53,6 +54,7 @@
                 "name": "Library",
                 "is_infinite": false,
                 "maxusage": 5,
+                "value": 1,
                 "is_immediate": false,
                 "respawntime_fmt": "1h",
                 "full_default_code": "[PLAYERHUD_DROP code=ABC]",
@@ -144,6 +146,11 @@
                                 {{headers.qty.label}} <i class="fa {{headers.qty.icon_class}} ms-1" aria-hidden="true"></i>
                             </a>
                         </th>
+                        <th scope="col" class="ph-col-value">
+                            <a href="{{headers.value.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
+                                {{headers.value.label}} <i class="fa {{headers.value.icon_class}} ms-1" aria-hidden="true"></i>
+                            </a>
+                        </th>
                         <th scope="col" class="ph-col-time">
                             <a href="{{headers.time.url}}" class="text-dark text-decoration-none fw-bold d-flex align-items-center">
                                 {{headers.time.label}} <i class="fa {{headers.time.icon_class}} ms-1" aria-hidden="true"></i>
@@ -170,6 +177,9 @@
                             {{^is_infinite}}
                                 <span class="badge bg-light text-dark border border-secondary">{{#str}} max, block_playerhud {{/str}}: {{maxusage}}</span>
                             {{/is_infinite}}
+                        </td>
+                        <td class="align-middle">
+                            <span class="badge bg-light text-dark border">{{value}}x</span>
                         </td>
                         <td class="align-middle">
                             {{#is_immediate}}
@@ -216,7 +226,7 @@
                     </tr>
                     {{/drops}}
                     {{^drops}}
-                        <tr><td colspan="7" class="text-center p-3">{{str_empty_drops}}</td></tr>
+                        <tr><td colspan="8" class="text-center p-3">{{str_empty_drops}}</td></tr>
                     {{/drops}}
                 </tbody>
             </table>

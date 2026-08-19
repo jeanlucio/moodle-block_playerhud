@@ -34,6 +34,7 @@
                 "id": 1,
                 "name": "Sword",
                 "count": 5,
+                "count_display": "5",
                 "badge_new": true,
                 "is_image": false,
                 "image_content": "⚔️",
@@ -82,6 +83,7 @@
          data-id="{{id}}"
          data-name="{{name}}"
          data-count="{{count}}"
+         data-count-display="{{count_display}}"
          data-image="{{data_image_payload}}"
          data-isimage="{{is_image_bool}}"
          {{#count}}
@@ -106,8 +108,8 @@
         {{! MODAL STYLE ITEM COUNTER (Dark with "x") }}
         {{#count}}
             <span class="badge bg-dark text-white rounded-pill position-absolute shadow-sm ph-count-badge"
-                  title="{{#str}} qty, block_playerhud {{/str}}">
-                x{{count}}
+                  title="{{#str}} qty, block_playerhud {{/str}}: {{count}}">
+                x{{count_display}}
             </span>
         {{/count}}
 
@@ -201,11 +203,11 @@
                 {{/power_hint_deadline}}
                  {{#has_origins}}
                 <div class="ph-card-origins mb-1 mt-2">
-                    {{#origin_map}}<span class="me-1" title="{{#str}} legend_origins, block_playerhud {{/str}}" aria-label="{{origin_map}} {{#str}} legend_origins, block_playerhud {{/str}}"><i class="fa fa-map-o text-primary" aria-hidden="true"></i> {{origin_map}}</span>{{/origin_map}}
-                    {{#origin_shop}}<span class="me-1" title="{{#str}} tab_shop, block_playerhud {{/str}}" aria-label="{{origin_shop}} {{#str}} tab_shop, block_playerhud {{/str}}"><i class="fa fa-shopping-cart text-success" aria-hidden="true"></i> {{origin_shop}}</span>{{/origin_shop}}
-                    {{#origin_quest}}<span class="me-1" title="{{#str}} report_src_quest, block_playerhud {{/str}}" aria-label="{{origin_quest}} {{#str}} report_src_quest, block_playerhud {{/str}}"><i class="fa fa-bullseye text-danger" aria-hidden="true"></i> {{origin_quest}}</span>{{/origin_quest}}
-                    {{#origin_teacher}}<span class="me-1" title="{{#str}} report_src_teacher, block_playerhud {{/str}}" aria-label="{{origin_teacher}} {{#str}} report_src_teacher, block_playerhud {{/str}}"><i class="fa fa-gift text-info" aria-hidden="true"></i> {{origin_teacher}}</span>{{/origin_teacher}}
-                    {{#origin_game}}<span title="{{#str}} legend_games, block_playerhud {{/str}}" aria-label="{{origin_game}} {{#str}} legend_games, block_playerhud {{/str}}"><i class="fa fa-gamepad ph-icon-game" aria-hidden="true"></i> {{origin_game}}</span>{{/origin_game}}
+                    {{#origin_map}}<span class="ph-origin-badge me-1" title="{{#str}} legend_origins, block_playerhud {{/str}}" aria-label="{{origin_map}} {{#str}} legend_origins, block_playerhud {{/str}}"><i class="fa fa-map-o text-primary" aria-hidden="true"></i> {{origin_map_display}}</span>{{/origin_map}}
+                    {{#origin_shop}}<span class="ph-origin-badge me-1" title="{{#str}} tab_shop, block_playerhud {{/str}}" aria-label="{{origin_shop}} {{#str}} tab_shop, block_playerhud {{/str}}"><i class="fa fa-shopping-cart text-success" aria-hidden="true"></i> {{origin_shop_display}}</span>{{/origin_shop}}
+                    {{#origin_quest}}<span class="ph-origin-badge me-1" title="{{#str}} report_src_quest, block_playerhud {{/str}}" aria-label="{{origin_quest}} {{#str}} report_src_quest, block_playerhud {{/str}}"><i class="fa fa-bullseye text-danger" aria-hidden="true"></i> {{origin_quest_display}}</span>{{/origin_quest}}
+                    {{#origin_teacher}}<span class="ph-origin-badge me-1" title="{{#str}} report_src_teacher, block_playerhud {{/str}}" aria-label="{{origin_teacher}} {{#str}} report_src_teacher, block_playerhud {{/str}}"><i class="fa fa-gift text-info" aria-hidden="true"></i> {{origin_teacher_display}}</span>{{/origin_teacher}}
+                    {{#origin_game}}<span class="ph-origin-badge" title="{{#str}} legend_games, block_playerhud {{/str}}" aria-label="{{origin_game}} {{#str}} legend_games, block_playerhud {{/str}}"><i class="fa fa-gamepad ph-icon-game" aria-hidden="true"></i> {{origin_game_display}}</span>{{/origin_game}}
                 </div>
                 {{/has_origins}}
 

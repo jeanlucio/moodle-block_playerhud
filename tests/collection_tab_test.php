@@ -200,6 +200,60 @@ final class collection_tab_test extends advanced_testcase {
     }
 
     /**
+     * An owned item with an action_type the card has no matching block for (e.g. 'playercoin',
+     * a currency item with no avatar/deadline power of its own) must not set has_power — that
+     * flag opens a bordered actions strip in the template that would otherwise render empty,
+     * showing as a stray divider line with no content.
+     */
+    public function test_has_power_false_for_unrecognized_action_type(): void {
+        $item = $this->create_item('PlayerCoin', 'playercoin');
+        $this->grant_copy($item->id, 'map');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertArrayNotHasKey('has_power', $found);
+    }
+
+    /**
+     * A deadline_extension item still sets has_power = false (not just an unset key) when the
+     * companion plugin (local_latepenalty) is not installed — the recognised-action_type check
+     * must gate has_power itself, not just which inner block renders.
+     */
+    public function test_has_power_false_for_deadline_extension_without_companion_plugin(): void {
+        if (class_exists('\local_latepenalty\recalculator')) {
+            $this->markTestSkipped('local_latepenalty is installed in this environment.');
+        }
+
+        $item = $this->create_item('Scroll', 'deadline_extension');
+        $this->grant_copy($item->id, 'map');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertArrayNotHasKey('has_power', $found);
+    }
+
+    /**
+     * A large origin count (e.g. a currency item bought many times) gets a compact display
+     * counterpart, mirroring count/count_display, without losing the exact value used for the
+     * accessible title/aria-label text.
+     */
+    public function test_origin_display_is_compact_for_large_counts(): void {
+        $item = $this->create_item('Gold Coin', '');
+        $this->grant_stack($item->id, 4000, 'shop');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame(4000, $found['origin_shop']);
+        $this->assertSame('4k', $found['origin_shop_display']);
+    }
+
+    /**
      * An inventory row whose source is outside PlayerHUD's own 4 (map/shop/quest/teacher) is
      * classified as origin_game, so external game plugins (e.g. mod_playerwords) are labelled
      * as such instead of falling into an unexplained "Others" bucket.
@@ -230,6 +284,61 @@ final class collection_tab_test extends advanced_testcase {
         $this->assertNotNull($found);
         $this->assertSame(1, $found['origin_map']);
         $this->assertSame(0, $found['origin_game']);
+    }
+
+    /**
+     * An item obtained only through the new stacking engine (no legacy inventory rows at all)
+     * still counts, dates, and badges correctly — count comes from block_playerhud_stack, the
+     * "new" badge and date come from block_playerhud_stack_log, not from the (empty) legacy
+     * per-copy loop.
+     */
+    public function test_new_engine_only_item_counts_and_shows_new_badge(): void {
+        $item = $this->create_item('Diamond', '');
+        $this->grant_stack($item->id, 5, 'shop');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame(5, $found['count']);
+        $this->assertSame('5', $found['count_display']);
+        $this->assertTrue($found['badge_new']);
+        $this->assertSame(5, $found['origin_shop']);
+    }
+
+    /**
+     * A user with balance split across both storage generations (legacy rows plus a new-engine
+     * balance for the same item) sees the two sources summed into a single count.
+     */
+    public function test_combined_legacy_and_new_engine_balance_sums_correctly(): void {
+        $item = $this->create_item('Ruby', '');
+        $this->grant_copy($item->id, 'map');
+        $this->grant_copy($item->id, 'map');
+        $this->grant_stack($item->id, 3, 'quest');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame(5, $found['count']);
+        $this->assertSame(2, $found['origin_map']);
+        $this->assertSame(3, $found['origin_quest']);
+    }
+
+    /**
+     * A quantity in the thousands is rendered compactly (count_display), while the exact value
+     * is preserved separately in count for JS/data-attribute consumers.
+     */
+    public function test_high_quantity_uses_compact_display(): void {
+        $item = $this->create_item('PlayerCoin', '');
+        $this->grant_stack($item->id, 1500, 'shop');
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame(1500, $found['count']);
+        $this->assertSame('1.5k', $found['count_display']);
     }
 
     /**
@@ -331,5 +440,24 @@ final class collection_tab_test extends advanced_testcase {
             'source'      => $source,
             'timecreated' => time(),
         ]);
+    }
+
+    /**
+     * Grant the current test user a quantity via the new stacking engine.
+     *
+     * @param int $itemid Item ID to grant.
+     * @param int $qty Quantity to grant.
+     * @param string $source Grant source value (e.g. 'shop', 'quest').
+     * @return void
+     */
+    private function grant_stack(int $itemid, int $qty, string $source): void {
+        \block_playerhud\local\external_items::grant(
+            $this->instanceid,
+            $itemid,
+            $this->user->id,
+            $qty,
+            $source,
+            true
+        );
     }
 }

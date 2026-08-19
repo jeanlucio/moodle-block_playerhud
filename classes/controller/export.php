@@ -83,14 +83,22 @@ class export {
         $userfieldsapi = \core_user\fields::for_name();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
 
-        // 3. Bulk Query (Zero N+1 Queries) to fetch all relevant student data.
+        // 3. Bulk Query (Zero N+1 Queries) to fetch all relevant student data. total_items sums
+        // current active holdings across both storage generations, mirroring
+        // output/manage/tab_reports.php's own students table query.
         $sql = "SELECT u.id, $userfields, u.email, pu.currentxp, pu.timemodified,
                        (SELECT COUNT(inv.id)
                           FROM {block_playerhud_inventory} inv
                           JOIN {block_playerhud_items} it ON inv.itemid = it.id
                          WHERE inv.userid = u.id
                            AND it.blockinstanceid = :p1
-                           AND inv.source NOT IN ('revoked', 'consumed')) AS total_items
+                           AND inv.source NOT IN ('revoked', 'consumed'))
+                       +
+                       (SELECT COALESCE(SUM(s.qty), 0)
+                          FROM {block_playerhud_stack} s
+                          JOIN {block_playerhud_items} it2 ON s.itemid = it2.id
+                         WHERE s.userid = u.id
+                           AND it2.blockinstanceid = :p3) AS total_items
                   FROM {user} u
                   JOIN {block_playerhud_user} pu ON pu.userid = u.id
                   JOIN {user_enrolments} ue ON ue.userid = u.id AND ue.status = 0
@@ -99,7 +107,7 @@ class export {
                    $excludeclause
               ORDER BY pu.currentxp DESC, pu.timemodified ASC, u.lastname ASC";
 
-        $params = ['p1' => $instanceid, 'p2' => $instanceid, 'enrolcourseid' => $courseid];
+        $params = ['p1' => $instanceid, 'p2' => $instanceid, 'p3' => $instanceid, 'enrolcourseid' => $courseid];
         if (!empty($excludeparams)) {
             $params = array_merge($params, $excludeparams);
         }

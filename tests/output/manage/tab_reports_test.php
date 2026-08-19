@@ -41,6 +41,7 @@ use advanced_testcase;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\output\manage\tab_reports
+ * @covers     \block_playerhud\local\external_items
  */
 final class tab_reports_test extends advanced_testcase {
     /** @var \stdClass Shared course. */
@@ -217,5 +218,91 @@ final class tab_reports_test extends advanced_testcase {
         $this->assertNotEmpty($data['audit_logs']);
         $this->assertStringNotContainsString('<img', $data['audit_logs'][0]['details_html']);
         $this->assertStringContainsString('&lt;img', $data['audit_logs'][0]['details_html']);
+    }
+
+    /**
+     * The "most collected item" KPI sums how many times an item was ever granted across both
+     * storage generations — legacy inventory rows and the new engine's ledger.
+     */
+    public function test_kpi_most_collected_item_sums_both_storage_generations(): void {
+        global $DB;
+
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Diamante', 'xp' => 0,
+            'enabled' => 1, 'tradable' => 1, 'secret' => 0,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        // 3 legacy rows.
+        for ($i = 0; $i < 3; $i++) {
+            $DB->insert_record('block_playerhud_inventory', (object) [
+                'userid' => 2, 'itemid' => $itemid, 'dropid' => 0, 'source' => 'map',
+                'timecreated' => time(), 'xpawarded' => 0,
+            ]);
+        }
+        // 40 more via the new engine, in one grant.
+        \block_playerhud\local\external_items::grant($this->instanceid, $itemid, 2, 40, 'teacher', true);
+
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+
+        $mostcollected = null;
+        foreach ($data['kpis'] as $card) {
+            if ($card['title'] === get_string('report_most_collected', 'block_playerhud')) {
+                $mostcollected = $card;
+            }
+        }
+
+        $this->assertNotNull($mostcollected);
+        $this->assertSame('Diamante', $mostcollected['value']);
+        $this->assertSame(
+            get_string('report_collected_times', 'block_playerhud', 43),
+            $mostcollected['subtitle']
+        );
+    }
+
+    /**
+     * The students table's total_items sums current active holdings across both storage
+     * generations for an enrolled student.
+     */
+    public function test_students_table_total_items_sums_both_storage_generations(): void {
+        global $DB;
+
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $this->course->id, 'student');
+
+        $legacyitem = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Iron Ore', 'xp' => 0,
+            'enabled' => 1, 'tradable' => 1, 'secret' => 0,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid' => $student->id, 'itemid' => $legacyitem, 'dropid' => 0, 'source' => 'map',
+            'timecreated' => time(), 'xpawarded' => 0,
+        ]);
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid' => $student->id, 'itemid' => $legacyitem, 'dropid' => 0, 'source' => 'map',
+            'timecreated' => time(), 'xpawarded' => 0,
+        ]);
+
+        $newitem = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Diamante', 'xp' => 0,
+            'enabled' => 1, 'tradable' => 1, 'secret' => 0,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        \block_playerhud\local\external_items::grant($this->instanceid, $newitem, $student->id, 40, 'teacher', true);
+        \block_playerhud\game::get_player($this->instanceid, $student->id);
+
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+
+        $row = null;
+        foreach ($data['students'] as $studentrow) {
+            if ((int) $studentrow['id'] === (int) $student->id) {
+                $row = $studentrow;
+            }
+        }
+
+        $this->assertNotNull($row, 'Enrolled student must appear in the students table.');
+        $this->assertSame(42, (int) $row['total_items']);
     }
 }

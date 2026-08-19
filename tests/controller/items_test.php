@@ -26,6 +26,7 @@
 namespace block_playerhud\controller;
 
 use advanced_testcase;
+use block_playerhud\local\external_items;
 use stdClass;
 
 /**
@@ -35,6 +36,7 @@ use stdClass;
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\controller\items
+ * @covers     \block_playerhud\local\external_items
  */
 final class items_test extends advanced_testcase {
     /** @var int Course ID created by the most recent make_instance() call. */
@@ -219,7 +221,7 @@ final class items_test extends advanced_testcase {
     }
 
     /**
-     * Granting an item stores a teacher-sourced inventory row and awards its XP.
+     * Granting an item records a teacher-sourced ledger entry and awards its XP.
      */
     public function test_grant_item_adds_inventory_and_xp(): void {
         global $DB;
@@ -233,11 +235,14 @@ final class items_test extends advanced_testcase {
 
         items::grant_item($itemid, (int) $user->id, $instanceid, $courseid);
 
-        $inv = $DB->get_record('block_playerhud_inventory', ['userid' => $user->id], '*', MUST_EXIST);
-        $this->assertSame($itemid, (int) $inv->itemid);
-        $this->assertSame(0, (int) $inv->dropid);
-        $this->assertSame('teacher', $inv->source);
-        $this->assertSame(30, (int) $inv->xpawarded);
+        $log = $DB->get_record('block_playerhud_stack_log', ['userid' => $user->id], '*', MUST_EXIST);
+        $this->assertSame($itemid, (int) $log->itemid);
+        $this->assertSame(0, (int) $log->dropid);
+        $this->assertSame('teacher', $log->source);
+        $this->assertSame(30, (int) $log->xpawarded);
+        $this->assertSame(1, (int) $DB->get_field('block_playerhud_stack', 'qty', [
+            'userid' => $user->id, 'itemid' => $itemid,
+        ]));
         $this->assertSame(80, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
             'blockinstanceid' => $instanceid,
             'userid'          => $user->id,
@@ -245,7 +250,7 @@ final class items_test extends advanced_testcase {
     }
 
     /**
-     * Granting a zero-XP item stores the row without changing player XP.
+     * Granting a zero-XP item records the ledger entry without changing player XP.
      */
     public function test_grant_item_zero_xp_keeps_xp(): void {
         global $DB;
@@ -259,8 +264,10 @@ final class items_test extends advanced_testcase {
 
         items::grant_item($itemid, (int) $user->id, $instanceid, $courseid);
 
-        $this->assertSame(1, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
-        $this->assertSame(0, (int) $DB->get_field('block_playerhud_inventory', 'xpawarded', ['userid' => $user->id]));
+        $this->assertSame(1, (int) $DB->get_field('block_playerhud_stack', 'qty', [
+            'userid' => $user->id, 'itemid' => $itemid,
+        ]));
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_stack_log', 'xpawarded', ['userid' => $user->id]));
         $this->assertSame(50, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
             'blockinstanceid' => $instanceid,
             'userid'          => $user->id,
@@ -403,6 +410,149 @@ final class items_test extends advanced_testcase {
             'blockinstanceid' => $instancea,
             'userid'          => $user->id,
         ]));
+    }
+
+    /**
+     * grant_item() with $qty > 1 grants that many units in one ledger entry and awards XP
+     * scaled by the same quantity.
+     */
+    public function test_grant_item_with_qty_grants_multiple_units(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $courseid = $this->lastcourseid;
+        $itemid = $this->make_item($instanceid, 10);
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $courseid);
+        $this->seed_player($instanceid, (int) $user->id, 0);
+
+        items::grant_item($itemid, (int) $user->id, $instanceid, $courseid, 5);
+
+        $this->assertSame(5, external_items::get_available_quantity($instanceid, $itemid, (int) $user->id));
+        $this->assertSame(50, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
+     * Revoking a block_playerhud_stack_log entry decrements the balance by its delta and
+     * deducts its recorded xpawarded — the storage generation every grant_item()/quest
+     * reward/trade reward/drop collection writes to from now on.
+     */
+    public function test_revoke_stack_log_entry_decrements_balance_and_deducts_xp(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 30);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 100);
+        $logid = external_items::grant($instanceid, $itemid, (int) $user->id, 2, 'teacher', false);
+
+        $this->assertTrue(items::revoke_stack_log_entry($logid, $instanceid));
+
+        $this->assertSame(0, external_items::get_available_quantity($instanceid, $itemid, (int) $user->id));
+        // Net zero: the grant of 2x30xp added 60, the revoke deducts that same 60 back.
+        $this->assertSame(100, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+        // Revoking is recorded as a new negative-delta row, never by deleting the original.
+        $this->assertSame(2, $DB->count_records('block_playerhud_stack_log', [
+            'userid' => $user->id, 'itemid' => $itemid,
+        ]));
+    }
+
+    /**
+     * Revoking a stack_log entry only removes what remains in the balance — an item already
+     * partly spent since this grant is capped at the current balance rather than driving it
+     * negative. The XP deducted still matches this entry's full recorded amount (the accepted
+     * simplification: revoke does not reconstruct XP per remaining unit).
+     */
+    public function test_revoke_stack_log_entry_caps_removal_at_current_balance(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 30);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 200);
+        $logid = external_items::grant($instanceid, $itemid, (int) $user->id, 5, 'teacher', false);
+        external_items::consume($instanceid, $itemid, (int) $user->id, 3);
+
+        $this->assertTrue(items::revoke_stack_log_entry($logid, $instanceid));
+
+        $this->assertSame(0, external_items::get_available_quantity($instanceid, $itemid, (int) $user->id));
+        // Net zero: the grant of 5x30xp added 150, the revoke deducts that same full 150 back
+        // even though only 2 of the 5 units were still in the balance to actually remove.
+        $this->assertSame(200, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
+     * A negative-delta (consume) log row has nothing to give back and is a no-op.
+     */
+    public function test_revoke_stack_log_entry_noop_for_consume_row(): void {
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 30);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 100);
+        external_items::grant($instanceid, $itemid, (int) $user->id, 3, 'teacher', false);
+        external_items::consume($instanceid, $itemid, (int) $user->id, 1);
+
+        global $DB;
+        $consumelogid = (int) $DB->get_field('block_playerhud_stack_log', 'id', [
+            'userid' => $user->id, 'itemid' => $itemid, 'delta' => -1,
+        ]);
+
+        $this->assertFalse(items::revoke_stack_log_entry($consumelogid, $instanceid));
+
+        $this->assertSame(2, external_items::get_available_quantity($instanceid, $itemid, (int) $user->id));
+    }
+
+    /**
+     * Revoking the same grant entry twice is a safe no-op the second time — it must not remove
+     * a second batch of units from an unrelated later grant, nor deduct XP twice. This is the
+     * exact scenario a teacher can trigger by clicking an already-processed revoke link again
+     * (the UI leaves the button visible after a revoke, since the append-only ledger design
+     * does not retroactively mark the original grant row as spent).
+     */
+    public function test_revoke_stack_log_entry_twice_is_idempotent_noop(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 30);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 100);
+        $logid = external_items::grant($instanceid, $itemid, (int) $user->id, 2, 'teacher', false);
+
+        $this->assertTrue(items::revoke_stack_log_entry($logid, $instanceid));
+        $this->assertFalse(items::revoke_stack_log_entry($logid, $instanceid));
+
+        $this->assertSame(0, external_items::get_available_quantity($instanceid, $itemid, (int) $user->id));
+        $this->assertSame(100, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
+     * Revoking a stack_log entry belonging to another instance changes nothing.
+     */
+    public function test_revoke_stack_log_entry_foreign_instance_is_noop(): void {
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $instanceb = $this->make_instance();
+        $itemid = $this->make_item($instancea, 30);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instancea, (int) $user->id, 100);
+        $logid = external_items::grant($instancea, $itemid, (int) $user->id, 1, 'teacher', false);
+
+        $this->assertFalse(items::revoke_stack_log_entry($logid, $instanceb));
+
+        $this->assertSame(1, external_items::get_available_quantity($instancea, $itemid, (int) $user->id));
     }
 
     /**

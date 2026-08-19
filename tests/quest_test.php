@@ -17,6 +17,7 @@
 namespace block_playerhud;
 
 use advanced_testcase;
+use block_playerhud\local\external_items;
 use block_playerhud\quest;
 
 /**
@@ -28,6 +29,7 @@ use block_playerhud\quest;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\quest
  * @covers     \block_playerhud\event\quest_collected
+ * @covers     \block_playerhud\local\external_items
  */
 final class quest_test extends advanced_testcase {
     /** @var int Block instance ID. */
@@ -413,6 +415,58 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
+     * TYPE_SPECIFIC_ITEM: possession is met by a balance split across legacy inventory rows
+     * and the new block_playerhud_stack table — neither source alone would reach the target.
+     */
+    public function test_check_status_specific_item_met_via_combined_balance(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Iron Ore');
+
+        $this->give_item($user->id, $item->id, 2);
+        external_items::grant($this->instanceid, $item->id, $user->id, 3, 'teacher', true);
+
+        $quest  = $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '5', 0, 0, $item->id);
+        $status = quest::check_status($quest, $user->id, $this->course->id, 0, 1);
+
+        $this->assertTrue($status->completed);
+    }
+
+    /**
+     * TYPE_UNIQUE_ITEMS: an item held only through the new engine still counts as a distinct
+     * type reached, alongside one held only through legacy inventory.
+     */
+    public function test_check_status_unique_items_met_via_combined_balance(): void {
+        $user   = $this->getDataGenerator()->create_user();
+        $legacy = $this->create_dummy_item('Iron Ore');
+        $newone = $this->create_dummy_item('Diamante');
+
+        $this->give_item($user->id, $legacy->id, 1);
+        external_items::grant($this->instanceid, $newone->id, $user->id, 1, 'teacher', true);
+
+        $quest  = $this->create_quest(quest::TYPE_UNIQUE_ITEMS, '2');
+        $status = quest::check_status($quest, $user->id, $this->course->id, 0, 1);
+
+        $this->assertTrue($status->completed);
+    }
+
+    /**
+     * TYPE_TOTAL_ITEMS: the total sums quantity held across both storage generations.
+     */
+    public function test_check_status_total_items_met_via_combined_balance(): void {
+        $user   = $this->getDataGenerator()->create_user();
+        $legacy = $this->create_dummy_item('Iron Ore');
+        $newone = $this->create_dummy_item('Diamante');
+
+        $this->give_item($user->id, $legacy->id, 2);
+        external_items::grant($this->instanceid, $newone->id, $user->id, 3, 'teacher', true);
+
+        $quest  = $this->create_quest(quest::TYPE_TOTAL_ITEMS, '5');
+        $status = quest::check_status($quest, $user->id, $this->course->id, 0, 1);
+
+        $this->assertTrue($status->completed);
+    }
+
+    /**
      * TYPE_TRADES: player has not completed enough trades.
      */
     public function test_check_status_trades_not_met(): void {
@@ -718,7 +772,7 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
-     * Successful claim: item is added to inventory and log entry is written.
+     * Successful claim: item is granted (one qty-1 ledger entry, source 'quest').
      */
     public function test_claim_reward_grants_item(): void {
         global $DB;
@@ -731,12 +785,55 @@ final class quest_test extends advanced_testcase {
 
         quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
 
-        $invinventory = $DB->count_records('block_playerhud_inventory', [
-            'userid' => $user->id,
-            'itemid' => $reward->id,
-            'source' => 'quest',
-        ]);
-        $this->assertEquals(1, $invinventory);
+        $this->assertSame(
+            1,
+            \block_playerhud\local\external_items::get_available_quantity($this->instanceid, $reward->id, $user->id)
+        );
+        $this->assertSame(1, $DB->count_records('block_playerhud_stack_log', [
+            'userid' => $user->id, 'itemid' => $reward->id, 'source' => 'quest',
+        ]));
+    }
+
+    /**
+     * A quest's reward_itemqty > 1 grants that many units in a single ledger entry.
+     */
+    public function test_claim_reward_grants_configured_item_quantity(): void {
+        global $DB;
+
+        $user   = $this->getDataGenerator()->create_user();
+        $reward = $this->create_dummy_item('Diamante');
+        $quest  = $this->create_quest(quest::TYPE_XP_TOTAL, '50', 0, $reward->id);
+        $DB->set_field('block_playerhud_quests', 'reward_itemqty', 500, ['id' => $quest->id]);
+
+        $this->set_player_xp($user->id, 50);
+
+        quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+
+        $this->assertSame(
+            500,
+            \block_playerhud\local\external_items::get_available_quantity($this->instanceid, $reward->id, $user->id)
+        );
+    }
+
+    /**
+     * The reward summary message must have real spacing around the "and" connector, even
+     * though AMOS trims leading/trailing whitespace from a translated string's value on save —
+     * meaning connector_and can never reliably carry its own surrounding spaces. Regression
+     * test for a real bug found live: a quest with both XP and an item reward rendered
+     * "+20 XPe3x Golden Crown" with no spacing at all once the translated string lost its
+     * spaces, because the separator was built by trusting the lang string alone.
+     */
+    public function test_claim_reward_message_has_spacing_around_connector(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $reward = $this->create_dummy_item('Golden Crown');
+        $quest = $this->create_quest(quest::TYPE_XP_TOTAL, '50', 20, $reward->id);
+
+        $this->set_player_xp($user->id, 50);
+
+        $result = quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+
+        $connector = trim(get_string('connector_and', 'block_playerhud'));
+        $this->assertStringContainsString(" {$connector} ", $result);
     }
 
     /**
@@ -777,7 +874,7 @@ final class quest_test extends advanced_testcase {
 
         quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
 
-        $xpawarded = $DB->get_field('block_playerhud_inventory', 'xpawarded', [
+        $xpawarded = $DB->get_field('block_playerhud_stack_log', 'xpawarded', [
             'userid' => $user->id,
             'itemid' => $reward->id,
         ]);

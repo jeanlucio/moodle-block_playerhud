@@ -59,11 +59,11 @@ final class collect_item_test extends external_base_testcase {
     }
 
     /**
-     * Success path: the item is added to the user's inventory and the return
-     * structure matches the declared external definition.
+     * Success path: the item is granted to the user and the return structure matches the
+     * declared external definition.
      */
     public function test_collect_item_success(): void {
-        global $DB, $USER;
+        global $USER;
 
         $item   = $this->create_item($this->instanceid, 'Gem', ['xp' => 10]);
         $dropid = $this->create_drop($item->id, 5);
@@ -72,12 +72,8 @@ final class collect_item_test extends external_base_testcase {
 
         $this->assertTrue($result['success']);
         $this->assertTrue(
-            $DB->record_exists('block_playerhud_inventory', [
-                'userid' => $USER->id,
-                'dropid' => $dropid,
-                'itemid' => $item->id,
-            ]),
-            'A new inventory record must be created on a successful collection.'
+            \block_playerhud\game::has_item((int) $USER->id, $item->id),
+            'The item must be granted on a successful collection.'
         );
 
         // The response must validate against the declared return structure.
