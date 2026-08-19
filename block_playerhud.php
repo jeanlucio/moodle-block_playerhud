@@ -188,8 +188,7 @@ class block_playerhud extends block_base {
                     $rank = \block_playerhud\game::get_user_rank(
                         $this->instance->id,
                         $USER->id,
-                        $player->currentxp,
-                        $COURSE->id
+                        $player->currentxp
                     );
                     $rankdisplay = $rank;
                     $ranktooltip = "#{$rank} - " . get_string('view_ranking', 'block_playerhud');

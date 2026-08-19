@@ -439,11 +439,16 @@ class game {
      * @param int $blockinstanceid Instance ID.
      * @param int $userid User ID.
      * @param int $currentxp Current XP.
-     * @param int $courseid Course ID for SEPARATEGROUPS support (0 = disabled).
      * @return int The rank.
      */
-    public static function get_user_rank(int $blockinstanceid, int $userid, int $currentxp, int $courseid = 0): int {
+    public static function get_user_rank(int $blockinstanceid, int $userid, int $currentxp): int {
         global $DB;
+
+        // The course that decides SEPARATEGROUPS is always the block instance's own course —
+        // derived here rather than trusted from a caller-supplied id, so a mismatched courseid
+        // from another page request can never make this look up the wrong course's group mode.
+        $coursectx = \context_block::instance($blockinstanceid)->get_course_context(false);
+        $courseid = $coursectx ? (int) $coursectx->instanceid : 0;
 
         // Search for 'timemodified' of current user for tie-breaking.
         $usertime = $DB->get_field('block_playerhud_user', 'timemodified', [
@@ -558,7 +563,6 @@ class game {
      * Fetch complete Leaderboard for block instance.
      *
      * @param int $blockinstanceid The instance ID.
-     * @param int $courseid The course ID.
      * @param int $currentuserid Current user ID.
      * @param bool $isteacher Is user teacher?
      * @param int $filtergroup Group ID to filter individual ranking (teacher only, 0 = no filter).
@@ -566,12 +570,17 @@ class game {
      */
     public static function get_leaderboard(
         int $blockinstanceid,
-        int $courseid,
         int $currentuserid,
         bool $isteacher,
         int $filtergroup = 0
     ): array {
         global $DB;
+
+        // The course this ranking is scoped to is always the block instance's own course —
+        // derived here rather than trusted from a caller-supplied id, so a mismatched courseid
+        // from another page request can never pull enrolments/groups from the wrong course.
+        $coursectx = \context_block::instance($blockinstanceid)->get_course_context(false);
+        $courseid = $coursectx ? (int) $coursectx->instanceid : 0;
 
         // 1. Groups Map.
         $usergroupsmap = [];

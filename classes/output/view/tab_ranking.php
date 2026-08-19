@@ -165,7 +165,6 @@ class tab_ranking implements renderable, templatable {
             $showcontent = true;
             $data = \block_playerhud\game::get_leaderboard(
                 $this->instanceid,
-                $this->courseid,
                 $this->player->userid,
                 $this->isteacher,
                 $filtergroup

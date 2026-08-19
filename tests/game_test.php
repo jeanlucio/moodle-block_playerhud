@@ -709,7 +709,7 @@ final class game_test extends advanced_testcase {
             ]);
         }
 
-        $result = game::get_leaderboard($instanceid, $course->id, $student1->id, false);
+        $result = game::get_leaderboard($instanceid, $student1->id, false);
         $rankeduserids = array_map('intval', array_column($result['individual'], 'userid'));
 
         $this->assertContains((int) $student1->id, $rankeduserids, 'Student 1 must appear in the ranking.');
@@ -756,7 +756,7 @@ final class game_test extends advanced_testcase {
             ]);
         }
 
-        $result = game::get_leaderboard($instanceid, $course->id, $student->id, false);
+        $result = game::get_leaderboard($instanceid, $student->id, false);
         $groupsbyid = [];
         foreach ($result['groups'] as $g) {
             $groupsbyid[$g->id] = $g;
@@ -808,7 +808,7 @@ final class game_test extends advanced_testcase {
             ]);
         }
 
-        $result = game::get_leaderboard($instanceid, $course->id, $teacher->id, true, (int) $targetgroup->id);
+        $result = game::get_leaderboard($instanceid, $teacher->id, true, (int) $targetgroup->id);
         $rankeduserids = array_map('intval', array_column($result['individual'], 'userid'));
 
         $this->assertContains((int) $inmember->id, $rankeduserids, 'Member of the filtered group must appear.');
@@ -1035,6 +1035,9 @@ final class game_test extends advanced_testcase {
         $earlytie = $this->getDataGenerator()->create_user();
         $latetie = $this->getDataGenerator()->create_user();
         $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($leader->id, $course->id, 'student');
+        $this->getDataGenerator()->enrol_user($earlytie->id, $course->id, 'student');
+        $this->getDataGenerator()->enrol_user($latetie->id, $course->id, 'student');
         $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
 
         $now = time();
@@ -1089,7 +1092,7 @@ final class game_test extends advanced_testcase {
         }
 
         // The higher-XP ghost is not enrolled, so the enrolled student still ranks 1.
-        $this->assertEquals(1, game::get_user_rank($instanceid, $enrolled->id, 100, $course->id));
+        $this->assertEquals(1, game::get_user_rank($instanceid, $enrolled->id, 100));
     }
 
     /**

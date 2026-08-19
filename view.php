@@ -39,6 +39,14 @@ $context = context_block::instance($instanceid);
 // Check permissions.
 require_capability('block/playerhud:view', $context);
 
+// Verify the block instance actually belongs to the supplied course, so a student enrolled
+// in a second, unrelated course cannot use its id to bypass this instance's group-based
+// ranking restrictions (both ids are otherwise validated independently of each other).
+$blockcoursectx = $context->get_course_context(false);
+if (!$blockcoursectx || (int) $blockcoursectx->instanceid !== $courseid) {
+    throw new moodle_exception('accessdenied', 'admin');
+}
+
 // Load Block Configuration.
 $config = unserialize_object(base64_decode($bi->configdata));
 if (!$config) {

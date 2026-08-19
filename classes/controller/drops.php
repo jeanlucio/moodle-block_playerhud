@@ -113,8 +113,16 @@ class drops {
         // 2. Security.
         require_login($courseid);
         $context = \context_block::instance($instanceid);
-        $coursecontext = \context_course::instance($courseid);
         require_capability('block/playerhud:manage', $context);
+
+        // Verify the block instance actually belongs to the supplied course, so an unrelated
+        // course id cannot be used to filter drop descriptions through the wrong course's
+        // format_text() context.
+        $blockcoursectx = $context->get_course_context(false);
+        if (!$blockcoursectx || (int) $blockcoursectx->instanceid !== $courseid) {
+            throw new \moodle_exception('accessdenied', 'admin');
+        }
+        $coursecontext = $blockcoursectx;
 
         $baseurl = new moodle_url('/blocks/playerhud/manage_drops.php', [
             'instanceid' => $instanceid,

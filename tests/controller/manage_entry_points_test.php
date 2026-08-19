@@ -356,6 +356,27 @@ final class manage_entry_points_test extends advanced_testcase {
         (new drops())->view_manage_page();
     }
 
+    /**
+     * The drops management page rejects an "id" that does not belong to this block instance's
+     * own course, even for an otherwise-authorised manager — an unrelated course id must never
+     * be accepted for format_text() filtering or any other course-scoped lookup on this page.
+     */
+    public function test_drops_page_rejects_a_mismatched_courseid(): void {
+        $this->setAdminUser();
+        $itemid = $this->make_item($this->instanceid);
+
+        $othercourse = $this->getDataGenerator()->create_course();
+
+        $_POST = [
+            'instanceid' => $this->instanceid,
+            'id'         => $othercourse->id,
+            'itemid'     => $itemid,
+        ];
+
+        $this->expectException(\moodle_exception::class);
+        (new drops())->view_manage_page();
+    }
+
     // Drops — listing render.
 
     /**
@@ -652,6 +673,30 @@ final class manage_entry_points_test extends advanced_testcase {
         $this->assert_redirects(fn() => (new collect())->execute());
 
         $this->assertFalse($DB->record_exists('block_playerhud_inventory', ['userid' => $student->id]));
+    }
+
+    /**
+     * A courseid that does not belong to the block instance is rejected outright, even when
+     * the student is legitimately enrolled in that other course — closing the gap where a
+     * mismatched courseid could otherwise land the redirect on an unrelated course.
+     */
+    public function test_collect_rejects_a_mismatched_courseid(): void {
+        $itemid = $this->make_item($this->instanceid, 'Rare Gem', 50);
+        $dropid = $this->make_drop($this->instanceid, $itemid);
+        $student = $this->login_as_student();
+
+        $othercourse = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->enrol_user($student->id, $othercourse->id, 'student');
+
+        $_POST = [
+            'instanceid' => $this->instanceid,
+            'dropid'     => $dropid,
+            'courseid'   => $othercourse->id,
+            'sesskey'    => sesskey(),
+        ];
+
+        $this->expectException(\moodle_exception::class);
+        (new collect())->execute();
     }
 
     /**
