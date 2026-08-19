@@ -871,6 +871,7 @@ class tab_reports implements renderable, templatable {
                     'icon_url'      => $iconurl,
                     'icon_emoji'    => $iconemoji,
                     'object_name'   => format_string($log->object_name),
+                    'qty_badge'     => \block_playerhud\local\audit_log::format_qty_badge((int) $log->qty),
                     'xp_badge'      => $xpbadge,
                     'details_html'  => $detailtext,
                     'url_revoke'    => $urldelete ? $urldelete->out(false) : '',

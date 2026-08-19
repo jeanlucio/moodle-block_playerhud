@@ -260,4 +260,121 @@ final class audit_log_test extends advanced_testcase {
         $this->assertCount(1, $revoked);
         $this->assertEquals(-50, $revoked[0]->xp_gained);
     }
+
+    /**
+     * A legacy inventory row always represents exactly one unit, so a plain grant reports a
+     * qty of +1 regardless of the item's xp value.
+     */
+    public function test_legacy_grant_reports_qty_of_one(): void {
+        $itemid = $this->create_item(10);
+        $this->grant_copy($itemid, 'map', 10);
+
+        $logs = array_values($this->get_logs()['logs']);
+        $this->assertCount(1, $logs);
+        $this->assertEquals(1, $logs[0]->qty);
+    }
+
+    /**
+     * A legacy inventory row marked as consumed reports a qty of -1, the unit it represents
+     * being spent.
+     */
+    public function test_legacy_consumed_reports_qty_of_negative_one(): void {
+        global $DB;
+
+        $itemid = $this->create_item(0);
+        $this->grant_copy($itemid, 'map', 0);
+        $DB->set_field('block_playerhud_inventory', 'source', 'consumed', ['userid' => $this->user->id]);
+
+        $logs = array_values($this->get_logs()['logs']);
+        $this->assertCount(1, $logs);
+        $this->assertEquals('item_consumed', $logs[0]->event_type);
+        $this->assertEquals(-1, $logs[0]->qty);
+    }
+
+    /**
+     * A new-engine grant reports the exact qty that was granted, not just +1 — the whole point
+     * of the stack ledger over the legacy one-row-per-unit inventory.
+     */
+    public function test_new_engine_grant_reports_qty_matching_amount(): void {
+        $itemid = $this->create_item(0);
+        external_items::grant($this->instanceid, $itemid, $this->user->id, 5, 'teacher', true);
+
+        $logs = array_values($this->get_logs()['logs']);
+        $this->assertCount(1, $logs);
+        $this->assertEquals(5, $logs[0]->qty);
+    }
+
+    /**
+     * A new-engine consume reports the negative of the exact qty consumed.
+     */
+    public function test_new_engine_consume_reports_negative_qty_matching_amount(): void {
+        $itemid = $this->create_item(0);
+        external_items::grant($this->instanceid, $itemid, $this->user->id, 5, 'teacher', true);
+        external_items::consume($this->instanceid, $itemid, $this->user->id, 3);
+
+        $logs = array_values($this->get_logs()['logs']);
+        $consumed = array_values(array_filter($logs, static fn($log) => $log->event_type === 'item_consumed'));
+        $this->assertCount(1, $consumed);
+        $this->assertEquals(-3, $consumed[0]->qty);
+    }
+
+    /**
+     * Revoking a new-engine grant reports the negative of the exact qty that grant put in,
+     * mirroring the legacy revoke's -1 but for an arbitrary amount.
+     */
+    public function test_new_engine_revoke_reports_negative_qty_matching_grant(): void {
+        $itemid = $this->create_item(0);
+        $logid = external_items::grant($this->instanceid, $itemid, $this->user->id, 4, 'teacher', true);
+
+        \block_playerhud\controller\items::revoke_stack_log_entry($logid, $this->instanceid);
+
+        $logs = array_values($this->get_logs()['logs']);
+        $revoked = array_values(array_filter($logs, static fn($log) => $log->event_type === 'item_revoked'));
+        $this->assertCount(1, $revoked);
+        $this->assertEquals(-4, $revoked[0]->qty);
+    }
+
+    /**
+     * Trade and quest rows are event markers, not item movements — they always report a qty of
+     * 0, leaving the qty badge with nothing to show.
+     */
+    public function test_trade_and_quest_events_report_zero_qty(): void {
+        global $DB;
+
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Barter', 'groupid' => 0,
+            'centralized' => 1, 'onetime' => 0, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_trade_log', (object) [
+            'tradeid' => $tradeid, 'userid' => $this->user->id, 'timecreated' => time(),
+        ]);
+
+        $questid = $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Bonus', 'description' => '',
+            'type' => 1, 'requirement' => '1', 'req_itemid' => 0, 'reward_xp' => 0,
+            'reward_itemid' => 0, 'required_class_id' => '0', 'image_todo' => '', 'image_done' => '',
+            'enabled' => 1, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_quest_log', (object) [
+            'questid' => $questid, 'userid' => $this->user->id, 'timecreated' => time(), 'xpawarded' => 0,
+        ]);
+
+        $logs = array_values($this->get_logs()['logs']);
+        $this->assertCount(2, $logs);
+        foreach ($logs as $log) {
+            $this->assertEquals(0, $log->qty);
+        }
+    }
+
+    /**
+     * The qty badge helper renders nothing for zero, a green "+N" for a gain, and a red "-N"
+     * (the sign already carried by the negative int) for a loss.
+     */
+    public function test_format_qty_badge_renders_expected_html(): void {
+        $this->assertSame('', audit_log::format_qty_badge(0));
+        $this->assertStringContainsString('bg-success', audit_log::format_qty_badge(2));
+        $this->assertStringContainsString('+2', audit_log::format_qty_badge(2));
+        $this->assertStringContainsString('bg-danger', audit_log::format_qty_badge(-3));
+        $this->assertStringContainsString('-3', audit_log::format_qty_badge(-3));
+    }
 }
