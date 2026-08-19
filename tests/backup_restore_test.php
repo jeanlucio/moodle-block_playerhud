@@ -149,7 +149,7 @@ final class backup_restore_test extends advanced_testcase {
             'timemodified'    => time(),
         ]);
 
-        $DB->insert_record('block_playerhud_items', (object) [
+        $scrollitemid = $DB->insert_record('block_playerhud_items', (object) [
             'blockinstanceid' => $instanceid,
             'name'            => 'Scroll of Reprieve',
             'action_type'     => 'deadline_extension',
@@ -179,6 +179,8 @@ final class backup_restore_test extends advanced_testcase {
             'type'            => \block_playerhud\quest::TYPE_SPECIFIC_TRADE,
             'requirement'     => '1',
             'req_itemid'      => $tradeid,
+            'reward_itemid'   => $scrollitemid,
+            'reward_itemqty'  => 7,
             'timecreated'     => time(),
             'timemodified'    => time(),
         ]);
@@ -361,6 +363,12 @@ final class backup_restore_test extends advanced_testcase {
         );
         $this->assertNotFalse($restoredtrade, 'Trade must be restored.');
 
+        $restoredscrollitem = $DB->get_record(
+            'block_playerhud_items',
+            ['blockinstanceid' => $restoredblock->id, 'name' => 'Scroll of Reprieve']
+        );
+        $this->assertNotFalse($restoredscrollitem, 'Scroll of Reprieve item must be restored.');
+
         $restoredquest = $DB->get_record(
             'block_playerhud_quests',
             ['blockinstanceid' => $restoredblock->id, 'name' => 'Conquistar: Arquivo Mestre']
@@ -370,6 +378,16 @@ final class backup_restore_test extends advanced_testcase {
             (int) $restoredtrade->id,
             (int) $restoredquest->req_itemid,
             'Specific-trade quest must point at the remapped trade, not the item mapping.'
+        );
+        $this->assertSame(
+            (int) $restoredscrollitem->id,
+            (int) $restoredquest->reward_itemid,
+            'Quest reward_itemid must point at the remapped item.'
+        );
+        $this->assertSame(
+            7,
+            (int) $restoredquest->reward_itemqty,
+            'Quest reward_itemqty must survive backup/restore, not reset to the DEFAULT of 1.'
         );
 
         $restoredactivityquest = $DB->get_record(
@@ -396,6 +414,11 @@ final class backup_restore_test extends advanced_testcase {
             ['blockinstanceid' => $restoredblock->id, 'itemid' => $restoredcoin->id]
         );
         $this->assertNotFalse($restoreddrop, 'Treasure Vault drop must be restored.');
+        $this->assertSame(
+            1500,
+            (int) $restoreddrop->value,
+            'Drop value must survive backup/restore, not reset to the DEFAULT of 1.'
+        );
 
         $restoredstack = $DB->get_record('block_playerhud_stack', [
             'userid' => $student->id,

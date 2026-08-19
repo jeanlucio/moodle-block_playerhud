@@ -42,7 +42,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
 
         $drops = new backup_nested_element('drops');
         $drop = new backup_nested_element('drop', ['id'], [
-            'itemid', 'code', 'name', 'maxusage', 'respawntime',
+            'itemid', 'code', 'name', 'maxusage', 'value', 'respawntime',
             'timecreated', 'timemodified',
         ]);
 
@@ -50,7 +50,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $quests = new backup_nested_element('quests');
         $quest = new backup_nested_element('quest', ['id'], [
             'name', 'description', 'type', 'requirement', 'req_itemid',
-            'reward_xp', 'reward_itemid', 'required_class_id',
+            'reward_xp', 'reward_itemid', 'reward_itemqty', 'required_class_id',
             'image_todo', 'image_done', 'enabled', 'timecreated', 'timemodified',
         ]);
 
