@@ -310,7 +310,8 @@ class game {
                 : '',
             'date' => userdate(time(), get_string('strftimedatefullshort', 'langconfig')),
             'timestamp' => time(),
-            'progress_text' => \block_playerhud\utils::format_drop_progress($newcount, (int)$drop->maxusage, $qty),
+            'progress_text' => \block_playerhud\utils::format_drop_progress_count($newcount, (int)$drop->maxusage),
+            'qty_text' => \block_playerhud\utils::format_drop_qty_per_collection($qty),
         ];
 
         // Cooldown Calculation.

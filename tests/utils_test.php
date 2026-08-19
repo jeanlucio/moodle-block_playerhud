@@ -247,27 +247,34 @@ final class utils_test extends advanced_testcase {
     }
 
     /**
-     * A finite drop reports the collection event count against maxusage, plus the drop's own
-     * configured value-per-collection — never a running total of what the student accumulated
-     * from it. That "how much do I own in total" question belongs to the inventory/backpack
-     * view, which does sum across every source; this describes the collection point itself.
+     * A finite drop reports the collection event count against maxusage.
      */
-    public function test_format_drop_progress_finite_reports_count_and_value(): void {
-        $expected = get_string('drop_progress_count_and_value', 'block_playerhud', (object) [
+    public function test_format_drop_progress_count_finite(): void {
+        $expected = get_string('drop_progress_count', 'block_playerhud', (object) [
             'count' => 1,
             'maxusage' => 2,
-            'value' => 2,
         ]);
-        $this->assertSame($expected, utils::format_drop_progress(1, 2, 2));
+        $this->assertSame($expected, utils::format_drop_progress_count(1, 2));
     }
 
     /**
-     * An unlimited drop (maxusage = 0) has no event/maxusage fraction to show — only the
-     * per-collection value.
+     * An unlimited drop (maxusage = 0) still reports the real collection count, against an
+     * infinity symbol instead of a numeric denominator.
      */
-    public function test_format_drop_progress_unlimited_shows_value_only(): void {
+    public function test_format_drop_progress_count_unlimited(): void {
+        $expected = get_string('drop_progress_count_infinite', 'block_playerhud', 7);
+        $this->assertSame($expected, utils::format_drop_progress_count(7, 0));
+    }
+
+    /**
+     * The per-collection quantity is the drop's own configured value — never a running total
+     * of what the student accumulated from it. That "how much do I own in total" question
+     * belongs to the inventory/backpack view, which does sum across every source; this
+     * describes the collection point itself.
+     */
+    public function test_format_drop_qty_per_collection(): void {
         $expected = get_string('drop_qty_per_collection', 'block_playerhud', 2);
-        $this->assertSame($expected, utils::format_drop_progress(3, 0, 2));
+        $this->assertSame($expected, utils::format_drop_qty_per_collection(2));
     }
 
     /**

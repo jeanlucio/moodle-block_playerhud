@@ -126,7 +126,12 @@ class collect_item extends external_api {
                 'timestamp' => new external_value(PARAM_INT, 'Timestamp', VALUE_OPTIONAL),
                 'progress_text' => new external_value(
                     PARAM_TEXT,
-                    'Human-readable drop collection progress, e.g. "2/2 collections (4 items)"',
+                    'Human-readable collection count, e.g. "Collection 1 of 2"',
+                    VALUE_OPTIONAL
+                ),
+                'qty_text' => new external_value(
+                    PARAM_TEXT,
+                    'Human-readable per-collection quantity, e.g. "Qty/collection: 2"',
                     VALUE_OPTIONAL
                 ),
             ], 'Item Details', VALUE_OPTIONAL),
