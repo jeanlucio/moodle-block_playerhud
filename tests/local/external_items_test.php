@@ -565,4 +565,77 @@ final class external_items_test extends advanced_testcase {
 
         $this->assertSame(0, external_items::get_available_quantity($instanceid, $itemid, $user->id));
     }
+
+    /**
+     * get_available_quantities_bulk() returns the same figure get_available_quantity() would
+     * for each item, keyed by item ID, and silently omits an item belonging to another
+     * instance rather than throwing or returning a bogus zero-keyed entry for it.
+     *
+     * @return void
+     */
+    public function test_get_available_quantities_bulk_matches_individual_lookups(): void {
+        $instanceid = $this->make_instance();
+        $otherinstanceid = $this->make_instance();
+        $itema = $this->make_item($instanceid);
+        $itemb = $this->make_item($instanceid);
+        $foreignitem = $this->make_item($otherinstanceid);
+        $user = $this->getDataGenerator()->create_user();
+
+        $this->make_legacy_inventory($user->id, $itema, 2);
+        external_items::grant($instanceid, $itemb, $user->id, 5, 'playerwords', false);
+        external_items::grant($otherinstanceid, $foreignitem, $user->id, 9, 'playerwords', false);
+
+        $result = external_items::get_available_quantities_bulk(
+            $instanceid,
+            [$itema, $itemb, $foreignitem],
+            $user->id
+        );
+
+        $this->assertSame(2, $result[$itema]);
+        $this->assertSame(5, $result[$itemb]);
+        $this->assertArrayNotHasKey($foreignitem, $result);
+    }
+
+    /**
+     * Checking N items' availability in bulk costs the same number of queries regardless of N
+     * — the fix for trade_manager::execute_trade()'s requirement check, which used to call
+     * get_available_quantity() once per distinct requirement item (a real, measured N+1: 3
+     * queries per item in a loop, confirmed via perf_get_reads() before this fix).
+     *
+     * @return void
+     */
+    public function test_get_available_quantities_bulk_does_not_scale_queries_with_item_count(): void {
+        global $DB;
+
+        $instanceid = $this->make_instance();
+        $user = $this->getDataGenerator()->create_user();
+
+        $fewitems = [];
+        for ($i = 0; $i < 2; $i++) {
+            $itemid = $this->make_item($instanceid);
+            external_items::grant($instanceid, $itemid, $user->id, 1, 'playerwords', false);
+            $fewitems[] = $itemid;
+        }
+
+        $manyitems = [];
+        for ($i = 0; $i < 20; $i++) {
+            $itemid = $this->make_item($instanceid);
+            external_items::grant($instanceid, $itemid, $user->id, 1, 'playerwords', false);
+            $manyitems[] = $itemid;
+        }
+
+        // Warm up caches shared by every call below, so the comparison is not skewed by
+        // first-call-only overhead.
+        external_items::get_available_quantities_bulk($instanceid, $fewitems, $user->id);
+
+        $before = $DB->perf_get_queries();
+        external_items::get_available_quantities_bulk($instanceid, $fewitems, $user->id);
+        $few = $DB->perf_get_queries() - $before;
+
+        $before = $DB->perf_get_queries();
+        external_items::get_available_quantities_bulk($instanceid, $manyitems, $user->id);
+        $many = $DB->perf_get_queries() - $before;
+
+        $this->assertSame($few, $many, 'Checking 10x more items must not cost more queries.');
+    }
 }

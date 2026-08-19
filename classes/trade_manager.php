@@ -208,12 +208,14 @@ class trade_manager {
                 }
             }
 
+            $availablemap = \block_playerhud\local\external_items::get_available_quantities_bulk(
+                $instanceid,
+                array_keys($neededbyitem),
+                $userid
+            );
+
             foreach ($neededbyitem as $reqitemid => $needed) {
-                $available = \block_playerhud\local\external_items::get_available_quantity(
-                    $instanceid,
-                    $reqitemid,
-                    $userid
-                );
+                $available = $availablemap[$reqitemid] ?? 0;
 
                 if ($available < $needed) {
                     $itemname = isset($itemsmap[$reqitemid]) ?
