@@ -372,4 +372,34 @@ class utils {
 
         return (string)$value;
     }
+
+    /**
+     * Builds the collection-progress text for a drop, e.g. "2/2 collections (4 items)".
+     *
+     * $events (how many times the drop was collected) and $units (total quantity granted
+     * across those collections) are independent axes once a drop's "value per collection" can
+     * be greater than 1: a maxusage of 2 limits collection EVENTS, not units. Callers must pass
+     * the event count here, never a raw unit sum, or a drop with value > 1 appears to reach its
+     * usage limit after fewer real collections than configured.
+     *
+     * @param int $events Number of times the drop was collected.
+     * @param int $maxusage Maximum collection events allowed (0 = unlimited).
+     * @param int $units Total quantity granted across those collections.
+     * @return string Human-readable progress text.
+     */
+    public static function format_drop_progress(int $events, int $maxusage, int $units): string {
+        if ($maxusage <= 0) {
+            return get_string('report_collected_times', 'block_playerhud', $units);
+        }
+
+        if ($units !== $events) {
+            return get_string('drop_progress_with_units', 'block_playerhud', (object) [
+                'count' => $events,
+                'maxusage' => $maxusage,
+                'units' => $units,
+            ]);
+        }
+
+        return $events . '/' . $maxusage . ' ' . get_string('collected', 'block_playerhud');
+    }
 }

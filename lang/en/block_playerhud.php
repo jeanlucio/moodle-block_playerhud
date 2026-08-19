@@ -294,6 +294,7 @@ $string['drop_max_qty'] = 'Max Quantity';
 $string['drop_name_default'] = 'Ex: inside the castle';
 $string['drop_name_label'] = 'Location / Name';
 $string['drop_new_title'] = 'New Location';
+$string['drop_progress_with_units'] = '{$a->count}/{$a->maxusage} collections ({$a->units} items)';
 $string['drop_rules_header'] = 'Collection Rules';
 $string['drop_save_btn'] = 'Save Location';
 $string['drop_supplies_label'] = 'Supplies';

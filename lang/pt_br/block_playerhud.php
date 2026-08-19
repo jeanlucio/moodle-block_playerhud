@@ -294,6 +294,7 @@ $string['drop_max_qty'] = 'Qtd Máxima';
 $string['drop_name_default'] = 'Ex: dentro do castelo';
 $string['drop_name_label'] = 'Localização / Nome';
 $string['drop_new_title'] = 'Nova Localização';
+$string['drop_progress_with_units'] = '{$a->count}/{$a->maxusage} coletas ({$a->units} itens)';
 $string['drop_rules_header'] = 'Regras de Coleta';
 $string['drop_save_btn'] = 'Salvar Localização';
 $string['drop_supplies_label'] = 'Suprimentos';

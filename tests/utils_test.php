@@ -247,6 +247,36 @@ final class utils_test extends advanced_testcase {
     }
 
     /**
+     * Equal event/unit counts render the plain "N/M Collected" phrasing — the pre-item-quantity
+     * behaviour, unchanged for every drop whose value-per-collection is 1.
+     */
+    public function test_format_drop_progress_equal_counts_uses_plain_text(): void {
+        $expected = '1/2 ' . get_string('collected', 'block_playerhud');
+        $this->assertSame($expected, utils::format_drop_progress(1, 2, 1));
+    }
+
+    /**
+     * Differing event/unit counts append the unit total, distinguishing collection events
+     * (compared against maxusage) from the quantity each one granted.
+     */
+    public function test_format_drop_progress_differing_counts_includes_units(): void {
+        $expected = get_string('drop_progress_with_units', 'block_playerhud', (object) [
+            'count' => 1,
+            'maxusage' => 2,
+            'units' => 2,
+        ]);
+        $this->assertSame($expected, utils::format_drop_progress(1, 2, 2));
+    }
+
+    /**
+     * An unlimited drop (maxusage = 0) has no fraction to show — only a running unit total.
+     */
+    public function test_format_drop_progress_unlimited_shows_unit_total_only(): void {
+        $expected = get_string('report_collected_times', 'block_playerhud', 6);
+        $this->assertSame($expected, utils::format_drop_progress(3, 0, 6));
+    }
+
+    /**
      * Insert a minimal block_instances row and return its ID.
      *
      * @return int The new instance ID.

@@ -409,6 +409,30 @@ final class game_test extends advanced_testcase {
     }
 
     /**
+     * item_data.qty and item_data.progress_text let a caller (the collect_item web service,
+     * consumed by filter_playerhud's modal) refresh its UI after a successful collection
+     * without re-deriving the drop's per-collection value or re-fetching totals itself.
+     */
+    public function test_process_collection_item_data_reports_qty_and_progress_text(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Gema', 0);
+        $drop = $this->create_dummy_drop($item->id, 3, 0, 2);
+
+        game::process_collection($this->instanceid, $drop->id, $user->id);
+        $result = game::process_collection($this->instanceid, $drop->id, $user->id);
+
+        $this->assertSame(2, $result['item_data']['qty']);
+        $this->assertFalse($result['limit_reached']);
+        $this->assertSame(
+            utils::format_drop_progress(2, 3, 4),
+            $result['item_data']['progress_text']
+        );
+    }
+
+    /**
      * get_avatar_item returns the record when the item is enabled and belongs to the instance.
      */
     public function test_get_avatar_item_returns_record_for_enabled_item(): void {

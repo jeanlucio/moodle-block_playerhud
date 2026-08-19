@@ -296,9 +296,16 @@ class game {
         $context = \context_block::instance($instanceid);
         $media = \block_playerhud\utils::get_item_display_data($item, $context);
 
+        // The event count includes this collection; the resulting unit total is derived
+        // rather than queried, since the per-collection value is constant for this drop
+        // throughout the whole request.
+        $newcount = $count + 1;
+        $totalunits = $newcount * $qty;
+
         $itemdata = [
             'name' => format_string($item->name),
             'xp' => $earnedxp,
+            'qty' => $qty,
             'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
             'isimage' => $media['is_image'] ? 1 : 0,
             'description' => !empty($item->description)
@@ -306,13 +313,17 @@ class game {
                 : '',
             'date' => userdate(time(), get_string('strftimedatefullshort', 'langconfig')),
             'timestamp' => time(),
+            'progress_text' => \block_playerhud\utils::format_drop_progress(
+                $newcount,
+                (int)$drop->maxusage,
+                $totalunits
+            ),
         ];
 
         // Cooldown Calculation.
         $cooldowndeadline = 0;
         $limitreached = false;
 
-        $newcount = $count + 1;
         if ($drop->maxusage > 0 && $newcount >= $drop->maxusage) {
             $limitreached = true;
         }

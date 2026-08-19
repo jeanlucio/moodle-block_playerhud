@@ -340,9 +340,11 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
             container = trigger;
         }
 
-        // Increment count badge if exists.
-        let currentCount = parseInt(container.attr('data-count')) || 0;
-        container.attr('data-count', currentCount + 1);
+        // Refresh the modal's progress text (server-computed, so it stays correct even
+        // when a drop's value-per-collection differs from 1 — see collect_item.php).
+        if (resp.item_data.progress_text !== undefined) {
+            container.attr('data-progress-text', resp.item_data.progress_text);
+        }
         const card = trigger.closest('.playerhud-item-card');
         if (card.length) {
             card.attr('data-date', resp.item_data.date);
@@ -613,7 +615,7 @@ export const init = () => {
             xp: container.attr('data-xp'),
             date: container.attr('data-date'),
             timestamp: container.attr('data-timestamp'),
-            count: container.attr('data-count'),
+            progressText: container.attr('data-progress-text'),
             maxusage: container.attr('data-maxusage'),
             respawntimeStr: container.attr('data-respawntime-str')
         };
@@ -679,9 +681,11 @@ export const init = () => {
                 const iconHtml = '<i class="fa fa-infinity me-1" aria-hidden="true"></i>';
                 modalEls.dropProgress.html(`${iconHtml}${textStr}`).show();
                 showStats = true;
-            } else if (!isNaN(maxUsage) && data.count !== undefined) {
-                const textStr = appStrings.collected || 'Collected';
-                modalEls.dropProgress.text(`${data.count}/${maxUsage} ${textStr}`).show();
+            } else if (!isNaN(maxUsage) && data.progressText) {
+                // Server-computed (utils::format_drop_progress()): correctly distinguishes
+                // collection events (compared against maxUsage) from total units granted,
+                // which differ once a drop's value-per-collection is greater than 1.
+                modalEls.dropProgress.text(data.progressText).show();
                 showStats = true;
             } else {
                 modalEls.dropProgress.hide();
