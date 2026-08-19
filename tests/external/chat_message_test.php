@@ -26,6 +26,7 @@
 namespace block_playerhud\external;
 
 use block_playerhud\tests\external\external_base_testcase;
+use core_external\external_api;
 
 /**
  * Tests for the chat_message web service.
@@ -48,6 +49,19 @@ final class chat_message_test extends external_base_testcase {
 
         $this->expectException(\moodle_exception::class);
         chat_message::execute($this->instanceid, $this->course->id, $history);
+    }
+
+    /**
+     * The 'message' field is declared PARAM_TEXT, so a value still carrying markup fails the
+     * response validation instead of ever reaching the client — the defense-in-depth layer for
+     * a compromised or malicious AI provider echoing HTML in its own error response, which
+     * would otherwise land in the teacher's Notification.alert() modal (rendered via .html()).
+     */
+    public function test_chat_message_message_field_rejects_unclean_html(): void {
+        $malicious = ['message' => '<img src=x onerror=alert(1)>'];
+
+        $this->expectException(\core\exception\invalid_response_exception::class);
+        external_api::clean_returnvalue(chat_message::execute_returns(), $malicious);
     }
 
     /**

@@ -130,7 +130,7 @@ class chat_message extends external_api {
             'reply'    => new external_value(PARAM_RAW, 'AI reply text', VALUE_DEFAULT, ''),
             'action'   => new external_value(PARAM_RAW, 'JSON-encoded action object or empty', VALUE_DEFAULT, ''),
             'provider' => new external_value(PARAM_TEXT, 'AI provider used', VALUE_DEFAULT, ''),
-            'message'  => new external_value(PARAM_RAW, 'Error message if any', VALUE_DEFAULT, ''),
+            'message'  => new external_value(PARAM_TEXT, 'Error message if any', VALUE_DEFAULT, ''),
         ]);
     }
 }

@@ -137,7 +137,7 @@ class generate_story extends external_api {
             'success'       => new external_value(PARAM_BOOL, 'Success status'),
             'chapter_title' => new external_value(PARAM_TEXT, 'Title of the generated chapter', VALUE_DEFAULT, ''),
             'provider'      => new external_value(PARAM_TEXT, 'AI provider used', VALUE_DEFAULT, ''),
-            'message'       => new external_value(PARAM_RAW, 'Error message if any', VALUE_DEFAULT, ''),
+            'message'       => new external_value(PARAM_TEXT, 'Error message if any', VALUE_DEFAULT, ''),
         ]);
     }
 }

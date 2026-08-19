@@ -197,7 +197,7 @@ class generate_ai_content extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Success status'),
-            'message' => new external_value(PARAM_RAW, 'Message or error', VALUE_OPTIONAL),
+            'message' => new external_value(PARAM_TEXT, 'Message or error', VALUE_OPTIONAL),
             'created_items' => new external_multiple_structure(
                 new external_value(PARAM_TEXT, 'Item name'),
                 'List of created items',

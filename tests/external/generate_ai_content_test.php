@@ -57,6 +57,19 @@ final class generate_ai_content_test extends external_base_testcase {
     }
 
     /**
+     * The 'message' field is declared PARAM_TEXT, so a value still carrying markup fails the
+     * response validation instead of ever reaching the client — the defense-in-depth layer for
+     * a compromised or malicious AI provider echoing HTML in its own error response, which
+     * would otherwise land in the teacher's Notification.alert() modal (rendered via .html()).
+     */
+    public function test_generate_ai_content_message_field_rejects_unclean_html(): void {
+        $malicious = ['success' => false, 'message' => '<img src=x onerror=alert(1)>'];
+
+        $this->expectException(\core\exception\invalid_response_exception::class);
+        external_api::clean_returnvalue(generate_ai_content::execute_returns(), $malicious);
+    }
+
+    /**
      * A student without block/playerhud:manage must be rejected.
      */
     public function test_generate_ai_content_requires_manage_capability(): void {

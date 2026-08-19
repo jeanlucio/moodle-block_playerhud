@@ -1145,7 +1145,9 @@ class generator {
             if (!empty($response)) {
                 $decodederror = json_decode($response, true);
                 if (isset($decodederror['error']['message'])) {
-                    $errormsg = ': ' . $decodederror['error']['message'];
+                    // The remote provider's error text is untrusted input: it reaches the
+                    // teacher's Notification.alert() modal, which renders its body as HTML.
+                    $errormsg = ': ' . clean_param($decodederror['error']['message'], PARAM_TEXT);
                 }
             }
 

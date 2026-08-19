@@ -111,7 +111,7 @@ class generate_class_oracle extends external_api {
             'success'    => new external_value(PARAM_BOOL, 'Success status'),
             'class_name' => new external_value(PARAM_TEXT, 'Name of the generated class', VALUE_DEFAULT, ''),
             'provider'   => new external_value(PARAM_TEXT, 'AI provider used', VALUE_DEFAULT, ''),
-            'message'    => new external_value(PARAM_RAW, 'Error message if any', VALUE_DEFAULT, ''),
+            'message'    => new external_value(PARAM_TEXT, 'Error message if any', VALUE_DEFAULT, ''),
         ]);
     }
 }
