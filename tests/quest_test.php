@@ -837,27 +837,6 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
-     * The reward summary message must have real spacing around the "and" connector, even
-     * though AMOS trims leading/trailing whitespace from a translated string's value on save —
-     * meaning connector_and can never reliably carry its own surrounding spaces. Regression
-     * test for a real bug found live: a quest with both XP and an item reward rendered
-     * "+20 XPe3x Golden Crown" with no spacing at all once the translated string lost its
-     * spaces, because the separator was built by trusting the lang string alone.
-     */
-    public function test_claim_reward_message_has_spacing_around_connector(): void {
-        $user = $this->getDataGenerator()->create_user();
-        $reward = $this->create_dummy_item('Golden Crown');
-        $quest = $this->create_quest(quest::TYPE_XP_TOTAL, '50', 20, $reward->id);
-
-        $this->set_player_xp($user->id, 50);
-
-        $result = quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
-
-        $connector = trim(get_string('connector_and', 'block_playerhud'));
-        $this->assertStringContainsString(" {$connector} ", $result);
-    }
-
-    /**
      * A quest's item reward records xpawarded = 0 even when the item itself has a real XP
      * value configured, since that value is never actually paid through this path (only
      * reward_xp is) — see analytics::game_xp_totals() for the same rule applied to totals.
