@@ -31,8 +31,21 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+/*
+ * Two-line clamp, split across an outer and an inner element on purpose: in Chromium, applying
+ * -webkit-line-clamp and border-radius + overflow: hidden to the SAME element lets the clamped-
+ * away line leak past the rounded corner instead of being clipped (confirmed live, e.g. on the
+ * rounded reward badge in view_quests.mustache). Moving overflow: hidden to a plain outer
+ * element and the -webkit-box clamp to an unstyled inner span keeps the clip and the rounded
+ * corner on separate boxes, so nothing leaks. Every use of -inner must be nested inside its own
+ * -2lines wrapper, never applied alone.
+ */
 .block_playerhud .ph-text-truncate-2lines,
 .path-blocks-playerhud .ph-text-truncate-2lines {
+    overflow: hidden;
+}
+.block_playerhud .ph-text-truncate-2lines-inner,
+.path-blocks-playerhud .ph-text-truncate-2lines-inner {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;

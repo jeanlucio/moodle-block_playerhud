@@ -111,20 +111,22 @@
             </div>
 
             {{! Title }}
-            <div class="fw-bold mb-1 ph-text-md w-100 lh-sm flex-shrink-0 ph-text-truncate-2lines" title="{{name}}">{{name}}</div>
+            <div class="fw-bold mb-1 ph-text-md w-100 lh-sm flex-shrink-0 ph-text-truncate-2lines" title="{{name}}">
+                <span class="ph-text-truncate-2lines-inner">{{name}}</span>
+            </div>
 
             {{! Reward lines: Single badge with text wrap and 2-line truncation. }}
             {{#has_reward}}
             <div class="w-100 text-center flex-shrink-0 mb-2 px-1">
                 {{#is_claimed}}
                     <span class="badge bg-warning text-dark border border-warning fw-bold mb-1 text-wrap lh-sm shadow-sm ph-text-truncate-2lines" title="{{reward_combined}}">
-                        {{reward_combined}}
+                        <span class="ph-text-truncate-2lines-inner">{{reward_combined}}</span>
                     </span>
                 {{/is_claimed}}
 
                 {{^is_claimed}}
                     <span class="badge bg-light text-success border border-success fw-bold mb-1 text-wrap lh-sm shadow-sm ph-text-truncate-2lines" title="{{reward_combined}}">
-                        {{reward_combined}}
+                        <span class="ph-text-truncate-2lines-inner">{{reward_combined}}</span>
                     </span>
                 {{/is_claimed}}
             </div>
