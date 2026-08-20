@@ -426,7 +426,6 @@ class wizard {
             } catch (\Throwable $e) {
                 // The activity may have been deleted or edited independently since the
                 // shortcode was inserted — never let that block the rest of the rollback.
-                diagnostics::increment('wizard_rollback_cleanup_failed');
                 continue;
             }
         }

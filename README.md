@@ -42,13 +42,6 @@ prompts when a feature is explicitly used.
 * **Demo credentials:** Not applicable — no credentials are required to install or use
   PlayerHUD; every AI feature is entirely opt-in.
 
-PlayerHUD also periodically sends an **anonymous usage report** — aggregate, non-personal
-site and plugin statistics (Moodle/PHP version, country, language, approximate active user
-count, courses using the block, installed companion plugins, internal error counters) — to
-the developer's own telemetry service, to help prioritise fixes and improvements. This is
-**on by default** and can be turned off at **Site administration > Plugins > Blocks >
-PlayerHUD**. No personal data is included; no student data is ever sent.
-
 Full disclosure:
 [Security & Compliance](https://jeanlucio.github.io/moodle-block_playerhud/#security).
 
@@ -123,14 +116,6 @@ usado explicitamente.
   — veja a ordem completa de resolução na documentação.
 * **Credenciais de demonstração:** Não aplicável — nenhuma credencial é exigida para instalar ou
   usar o PlayerHUD; todo recurso de IA é totalmente opcional.
-
-O PlayerHUD também envia periodicamente um **relatório de uso anônimo** — estatísticas
-agregadas e não-pessoais do site e do plugin (versão do Moodle/PHP, país, idioma, número
-aproximado de usuários ativos, cursos usando o bloco, plugins complementares instalados,
-contadores internos de erro) — para o próprio serviço de telemetria do desenvolvedor, para
-ajudar a priorizar correções e melhorias. Isso vem **ativado por padrão** e pode ser
-desligado em **Administração do site > Plugins > Blocos > PlayerHUD**. Nenhum dado pessoal
-é incluído; nenhum dado de estudante é enviado.
 
 Divulgação completa:
 [Segurança e Conformidade](https://jeanlucio.github.io/moodle-block_playerhud/pt.html#security).

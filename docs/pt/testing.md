@@ -39,13 +39,11 @@ Lógica reutilizada por mais de um ponto de entrada (as próprias web services d
 |-----------------|------:|----------------|
 | `analytics_test.php` | 12 | Economy Health: razão entre XP total ganhável e o teto (vazio/difícil/perfeito/fácil), recompensas de quest e itens infinitos/sem drop no detalhamento, guarda de teto zero; histograma de distribuição de níveis, ordenação do overflow do cap (`N+`), percentual da barra mais alta, guarda de XP-por-nível zero, conjunto de jogadores vazio não produz linhas; o XP atual de `balance_context()` sempre bate com o total do próprio `economy_health()`; o teto de XP alcançável considera o `value` de um drop, não só sua contagem de itens |
 | `audit_log_test.php` | 15 | Consulta compartilhada de log de auditoria (`get_logs()`) usada pela aba Relatórios do professor e pela aba Histórico do estudante: o `xp_gained` de um item reflete o valor `xpawarded` registrado no momento da concessão, não o XP atual do item (e bate quando nunca editado); um item concedido por quest reporta `xp_gained` zero, já que seu próprio XP nunca é pago por esse caminho; uma linha revogada reporta o negativo do valor originalmente registrado, não o XP atual do item; a reivindicação de uma quest reflete o valor registrado, não o `reward_xp` atual da quest; uma concessão/consumo/revogação do motor novo aparece cada uma como seu próprio tipo de evento, com a revogação reportando um valor negativo; uma concessão legada reporta quantidade um e um consumo legado reporta quantidade menos um; uma concessão/consumo/revogação do motor novo reportam sua quantidade real (positiva/negativa) em vez de sempre um; eventos de troca e quest sempre reportam quantidade zero; `format_qty_badge()` renderiza o HTML esperado |
-| `diagnostics_test.php` | 6 | Armazenamento de contadores de erro por trás do payload de telemetria de uso: `get_all()` retorna um array vazio quando nunca foi escrito e quando a config armazenada está corrompida; `increment()` inicia um contador em um, acumula em chamadas repetidas, e mantém contadores distintos isolados entre si; `clear()` zera todos os contadores |
 | `drop_distribution_test.php` | 12 | Descoberta de módulos elegíveis: inclui fóruns, exclui módulos em exclusão e o fórum de avisos do curso (reservado para PlayerCoin/Item Secreto), vazio para curso sem atividades; sugestão por melhor correspondência de nome incl. caso sem correspondência; busca de cmid por shortcode já inserido incl. não encontrado e entrada vazia; divisão de cotas por atividade sempre soma o alvo, limita ao número de atividades, casos de borda |
 | `external_items_test.php` | 24 | API de itens entre plugins usada por outros plugins da família Player (ex.: PlayerWords): `belongs_to_instance()` aceita a própria instância de um item (habilitado ou desabilitado) e rejeita instância estrangeira, id inexistente, ou ids zero/negativos sem consultar o banco; `grant()` atualiza o saldo do motor novo de quantidade e concede XP para o próprio item habilitado de quem chama, e registra o `dropid` que disparou a concessão na linha do log; `consume()` gasta primeiro do saldo novo, cai para linhas legadas de inventário quando o saldo novo está vazio, gasta corretamente quando o saldo está dividido entre as duas gerações, e retorna false quando insuficiente nas duas; `get_available_quantity()` soma as duas gerações de armazenamento; `get_available_quantities_bulk()` bate com o que consultar cada item individualmente retornaria, e sua contagem de leituras se mantém estável conforme a lista de itens cresce em vez de escalar; `get_name()`/`get_xp()` resolvem para a própria instância do item e retornam vazio/zero para uma estrangeira |
-| `usage_reporter_test.php` | 17 | Telemetria anônima de uso opcional: `is_due()` é falso quando a config do admin está desabilitada, verdadeiro numa primeira execução nunca enviada, falso logo após um envio, e verdadeiro de novo depois de decorrido o intervalo de report; `build_payload()` contém as chaves esperadas e os contadores de erro, tem contadores vazios quando nada falhou, reporta uma flavour `null` num Moodle vanilla, lista os plugins companheiros da família Player instalados, e conta `course_count` só a partir de posicionamentos de bloco num contexto de curso real; `size_bucket()` mapeia um total de usuários pro bucket certo, testado via `@dataProvider` em 8 casos de fronteira (o arquivo tem 10 métodos de teste, mas as 8 linhas de dado deste único método disparam como 8 testes separados do PHPUnit, então roda 17 testes no total) |
 | `wizard_test.php` | 20 | Manifesto da rodada: status de início/fim; desfazer exclui objetos registrados em todas as tabelas, remove o shortcode registrado, reverte XP e limpa o histórico de jogo, rejeita instância incompatível; desfazer exclui trocas e capítulos registrados (com seus `trade_reqs` e `story_nodes`) pelos mesmos caminhos em lote `bulk_delete_trades()`/`bulk_delete_chapters()` que os controladores de trocas/capítulos já têm, exercitado de ponta a ponta via `wizard::rollback()` em vez de chamar os métodos do controlador direto; listagem de rodadas ativas com contagens e limite; detecção de "já gerado" por mecânica incl. rodadas obsoletas sem conteúdo, itens só no manifesto, itens só logados pela IA e a checagem só-de-config do Ranking; `ensure_config_flag` liga uma flag sem tocar em config irmã e não faz nada quando já está ligada; `require_course_matches_instance()` aceita o curso real da instância do bloco e rejeita um courseid de qualquer outro curso |
 | `xp_budget_test.php` | 15 | Contagens de item/missão/capítulo por tamanho de jornada incl. fallback pra curta; `distribute_share` divide a folga igualmente, espalha o resto nos primeiros elementos, limita à folga quando há mais elementos que ela, casos de borda; mapeamento de níveis-máximos sugeridos; rodízio balanceado de missões entre tipos, preservação de ordem dentro de um tipo, todas selecionadas quando o limite as cobre, casos de borda |
-| **Subtotal** | **121** | |
+| **Subtotal** | **98** | |
 
 ### Testes de Web Services (`tests/external/`)
 
@@ -117,7 +115,7 @@ Cobrem a lógica de negócio extraída do `manage.php` para os controladores (re
 | `view/tab_shop_test.php` | 4 | Aba Loja: sem trocas renderiza o estado vazio em vez de quebrar; um estudante com o item exigido em quantidade suficiente pode pagar a troca; um estudante sem o item exigido não pode pagar; uma troca de uso único já concluída é marcada como tal |
 | **Subtotal** | **56** | |
 
-| **Total geral** | **807** | |
+| **Total geral** | **784** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -172,11 +170,9 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `instance_cleanup` | 100% |
 | `local\analytics` | 92% |
 | `local\audit_log` | 81% |
-| `local\diagnostics` | 82% |
 | `local\drop_distribution` | 97% |
 | `local\external_items` | 94% |
 | `local\rpg_archetypes` | 92% |
-| `local\usage_reporter` | 72% |
 | `local\wizard` | 97% |
 | `local\xp_budget` | 98% |
 | `output\manage\item_delete_confirm` | 100% |
@@ -202,7 +198,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `utils` | 59% |
 | **Total** | **66%** |
 
-73 das 89 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
+71 das 86 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
 observadores de evento e wrappers finos de output nunca carregados via `require` durante a
 execução desta suíte) não têm nenhum dado de cobertura e são omitidas em vez de aparecerem
 como um 0% enganoso.

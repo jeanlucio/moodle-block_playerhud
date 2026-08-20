@@ -39,13 +39,11 @@ Shared logic reused by more than one entry point (the wizard's own web services,
 |-----------|------:|----------------|
 | `analytics_test.php` | 12 | Economy Health: total earnable XP vs ceiling ratio (empty/hard/perfect/easy), quest rewards and infinite/dropless items in the breakdown, zero-ceiling guard; level-distribution histogram bucketing, cap overflow (`N+`) ordering, percent of tallest bar, zero-XP-per-level guard, empty player set produces no rows; `balance_context()`'s current XP always matches `economy_health()`'s own total; the achievable-XP ceiling accounts for a drop's `value`, not just its item count |
 | `audit_log_test.php` | 15 | Shared audit-log query (`get_logs()`) behind the teacher Reports tab and the student History tab: an item's `xp_gained` reflects the recorded `xpawarded` value at grant time, not the item's current XP (and matches when never edited); a quest-granted item reports zero `xp_gained` since its own XP is never paid through that path; a revoked row reports the negative of its originally recorded value, not the item's current XP; a quest claim's `xp_gained` reflects the recorded value, not the quest's current `reward_xp`; a new-engine grant/consume/revoke each surface as their own event type, with a revoke reporting a negative value; a legacy grant reports a quantity of one and a legacy consume reports a quantity of negative one; a new-engine grant/consume/revoke report their real quantity (positive/negative) instead of always one; trade and quest events always report zero quantity; `format_qty_badge()` renders the expected HTML |
-| `diagnostics_test.php` | 6 | Error-counter store behind the usage-telemetry payload: `get_all()` returns an empty array when nothing was ever written and when the stored config is corrupted; `increment()` starts a counter at one, accumulates across repeated calls, and tracks distinct counters independently; `clear()` resets every counter |
 | `drop_distribution_test.php` | 12 | Eligible-modules discovery: includes forums, excludes modules pending deletion and the course's own news forum (reserved for PlayerCoin/Secret Item), empty for an activity-less course; best-name-match suggestion incl. no-match case; inserted-shortcode cmid lookup incl. not-found and empty-input cases; activity-quota splitting always sums to target, caps at activity count, edge cases |
 | `external_items_test.php` | 24 | Cross-plugin item API used by other Player-family plugins (e.g. PlayerWords): `belongs_to_instance()` accepts an item's own instance (enabled or disabled) and rejects a foreign instance, a nonexistent id, or zero/negative ids without querying the database; `grant()` updates the new quantity-engine stack and awards XP for the caller's own enabled item, and records the triggering `dropid` on the log row; `consume()` spends from the new stack first, falls back to legacy inventory rows when the stack is empty, spends correctly when the balance is split across both storage generations, and returns false when insufficient across both; `get_available_quantity()` sums both storage generations; `get_available_quantities_bulk()` matches what looking each item up individually would return, and its read count stays flat as the item list grows instead of scaling; `get_name()`/`get_xp()` resolve for the item's own instance and return empty/zero for a foreign one |
-| `usage_reporter_test.php` | 17 | Opt-in anonymous usage telemetry: `is_due()` is false when the admin setting is disabled, true on a never-sent first run, false immediately after a send, and true again once the report interval has elapsed; `build_payload()` contains the expected keys and error counters, has empty counters when nothing failed, reports a `null` flavour on vanilla Moodle, lists installed companion Player-family plugins, and counts `course_count` only from block placements in a real course context; `size_bucket()` maps a total-user count to the right bucket, tested via `@dataProvider` across 8 boundary cases (the file has 10 test methods, but the 8 data rows on this one dispatch as 8 separate PHPUnit tests, so it runs 17 tests in total) |
 | `wizard_test.php` | 20 | Run manifest: start/finish status; rollback deletes recorded objects across tables, strips the recorded shortcode, reverts XP and clears play history, rejects a mismatched instance; rollback deletes recorded trades and chapters (with their `trade_reqs` and `story_nodes`) through the same bulk paths `bulk_delete_trades()`/`bulk_delete_chapters()` give the trades/chapters controllers, exercised end to end via `wizard::rollback()` rather than the controller methods directly; active-runs listing with counts and a limit; per-module "already generated" detection incl. stale runs without content, manifest-only items, AI-logged-only items and Ranking's config-only check; `ensure_config_flag` turns a flag on without touching sibling config and is a no-op when already on; `require_course_matches_instance()` accepts the block instance's real course and rejects a courseid belonging to any other course |
 | `xp_budget_test.php` | 15 | Item/mission/chapter counts per journey size incl. fallback to short; `distribute_share` divides a gap evenly, spreads the remainder on the first elements, caps at the gap when elements outnumber it, edge cases; suggested max-levels mapping; balanced-mission round-robin across types, order preservation within a type, all-selected when the limit covers them, edge cases |
-| **Subtotal** | **121** | |
+| **Subtotal** | **98** | |
 
 ### Web Services Tests (`tests/external/`)
 
@@ -117,7 +115,7 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `view/tab_shop_test.php` | 4 | Shop tab: no trades renders the empty state instead of crashing; a student holding enough of the required item can afford the trade; a student with none of the required item cannot afford it; a one-time trade already completed is marked as such |
 | **Subtotal** | **56** | |
 
-| **Grand Total** | **807** | |
+| **Grand Total** | **784** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -172,11 +170,9 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `instance_cleanup` | 100% |
 | `local\analytics` | 92% |
 | `local\audit_log` | 81% |
-| `local\diagnostics` | 82% |
 | `local\drop_distribution` | 97% |
 | `local\external_items` | 94% |
 | `local\rpg_archetypes` | 92% |
-| `local\usage_reporter` | 72% |
 | `local\wizard` | 97% |
 | `local\xp_budget` | 98% |
 | `output\manage\item_delete_confirm` | 100% |
@@ -202,7 +198,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `utils` | 59% |
 | **Overall** | **66%** |
 
-73 of the plugin's 89 classes are listed above — the rest (mostly exception classes, event
+71 of the plugin's 86 classes are listed above — the rest (mostly exception classes, event
 subscribers and thin output wrappers never `require`'d during this suite's run) carry no
 coverage data at all and are omitted rather than shown as a misleading 0%.
 

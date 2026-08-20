@@ -140,7 +140,6 @@ class generator {
 
         if (!$aidata) {
             // Error: Parsing failed.
-            \block_playerhud\local\diagnostics::increment('ai_error_parsing_generate');
             throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
         }
 
@@ -782,7 +781,6 @@ class generator {
             $errormsg = !empty($result['message']) ?
                 $result['message'] :
                 get_string('ai_error_no_keys', 'block_playerhud');
-            \block_playerhud\local\diagnostics::increment('ai_all_providers_failed');
             throw new \moodle_exception('ai_error_offline', 'block_playerhud', '', $errormsg);
         }
 
@@ -959,7 +957,6 @@ class generator {
         $aidata = json_decode($cleanjson, true);
 
         if (!$aidata || empty($aidata['beats']) || count($aidata['beats']) < $chaptercount) {
-            \block_playerhud\local\diagnostics::increment('ai_error_parsing_story_outline');
             throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
         }
 
@@ -987,7 +984,6 @@ class generator {
         $aidata = json_decode($cleanjson, true);
 
         if (!$aidata || empty($aidata['name'])) {
-            \block_playerhud\local\diagnostics::increment('ai_error_parsing_class');
             throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
         }
 
@@ -1040,7 +1036,6 @@ class generator {
         $aidata = json_decode($cleanjson, true);
 
         if (!$aidata || empty($aidata['title']) || empty($aidata['nodes'])) {
-            \block_playerhud\local\diagnostics::increment('ai_error_parsing_story');
             throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
         }
 
@@ -1152,7 +1147,6 @@ class generator {
         if ($curlerror) {
             // 1.1 $curl->error contains the error message.
             $msg = get_string('error_connection', 'block_playerhud') . ' (' . $curl->error . ')';
-            \block_playerhud\local\diagnostics::increment('ai_curl_transport_error');
             return ['success' => false, 'message' => $msg, 'provider' => $source];
         }
 
@@ -1174,7 +1168,6 @@ class generator {
                 'block_playerhud',
                 ['service' => $source, 'code' => $code . $errormsg]
             );
-            \block_playerhud\local\diagnostics::increment('ai_http_error_response');
             return ['success' => false, 'message' => $msg, 'provider' => $source];
         }
 

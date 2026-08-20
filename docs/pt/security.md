@@ -75,57 +75,9 @@ O plugin:
 - Não armazena respostas brutas da IA
 - Apenas salva os objetos do jogo criados dentro do Moodle (itens, missões, capítulos)
 
-Nenhuma comunicação externa relacionada aos recursos de IA ocorre sem ativação explícita de um
-deles — veja [Estatísticas de Uso Anônimas](#-estatísticas-de-uso-anônimas) abaixo para o único
-relatório em segundo plano que o plugin envia independente do uso de IA.
+Nenhuma comunicação externa ocorre sem ativação explícita de um recurso de IA.
 
 ### Credenciais de Demonstração
 
 Não aplicável — o PlayerHUD não exige nenhuma credencial para instalar ou usar. Todo recurso
 de IA é totalmente opcional e o bloco funciona plenamente sem nenhuma chave configurada.
-
-## 📊 Estatísticas de Uso Anônimas
-
-O PlayerHUD envia periodicamente um relatório de uso anônimo e agregado para o próprio
-serviço de telemetria do desenvolvedor, para ajudar a priorizar correções e melhorias. É um
-mecanismo separado dos recursos de IA acima e não exige que nenhum deles esteja configurado.
-
-### É obrigatório?
-
-Não. Vem **ativado por padrão**, mas é totalmente opcional: pode ser desligado a qualquer
-momento em **Administração do site > Plugins > Blocos > PlayerHUD** ("Enviar estatísticas de
-uso anônimas"). Nada nos recursos do plugin muda se for desligado.
-
-### O que é enviado
-
-Um único payload JSON, no máximo uma vez a cada 21 dias:
-
-- **Informações do site:** versão/release do Moodle, versão do PHP, país e idioma do site, se
-  o site roda um fork não-padrão do Moodle (Totara/IOMAD/Workplace) e sua versão.
-- **Uso do plugin:** versão/release do próprio PlayerHUD instalado, uma contagem aproximada de
-  usuários ativos (usuários cujo registro de gamificação mudou nos últimos 90 dias), quantos
-  cursos têm o bloco adicionado, e quais plugins complementares (Filtro PlayerHUD, Restrição
-  de Disponibilidade PlayerHUD) estão instalados e suas versões.
-- **Contadores internos de erro:** contagens agregadas de alguns pontos de código já
-  conhecidos como frágeis (a cadeia de fallback de provedor de IA, o parsing do JSON da IA,
-  algumas ramificações de falha de commit de transação) — nunca o conteúdo do erro em si, só
-  quantas vezes cada um aconteceu.
-- **Identificador do site:** o identificador anônimo próprio do Moodle
-  (`get_site_identifier()`) e a URL do site, para que relatórios repetidos do mesmo site sejam
-  reconhecidos como uma única instalação ao longo do tempo, em vez de contados como instalações
-  novas.
-
-### O que nunca é enviado
-
-Nenhum dado de estudante, nenhum dado pessoal de qualquer usuário (nome, e-mail, ID), nenhum
-conteúdo de item/missão/história, nenhum prompt ou resposta de IA, e nenhum dado de cursos que
-não têm o bloco adicionado.
-
-### Para onde os relatórios são enviados
-
-Os relatórios são enviados para `https://plugintelemetry.duckdns.org/report.php`, um serviço
-operado pelo próprio desenvolvedor do plugin — não um fornecedor de análise de terceiros.
-
-Declarado no próprio Provedor de Privacidade do plugin (`classes/privacy/provider.php`) como
-um destino externo, seguindo a prática padrão da API de Privacidade do Moodle para qualquer
-plugin que transmite dados para fora do site.

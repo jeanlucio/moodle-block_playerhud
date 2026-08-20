@@ -84,53 +84,9 @@ The plugin:
 - Does not store raw AI responses
 - Only stores the game objects created inside Moodle (items, quests, chapters)
 
-No external communication related to the AI features occurs unless one of them is explicitly
-used — see [Anonymous Usage Statistics](#-anonymous-usage-statistics) below for the one
-background report the plugin sends regardless of AI usage.
+No external communication occurs unless an AI feature is explicitly used.
 
 ### Demo Credentials
 
 Not applicable — PlayerHUD requires no credentials to install or use. Every AI feature is
 entirely opt-in and the block works fully without any key configured.
-
-## 📊 Anonymous Usage Statistics
-
-PlayerHUD periodically sends an anonymous, aggregate usage report to the developer's own
-telemetry service, to help prioritise fixes and improvements. This is a separate mechanism
-from the AI features above and does not require any of them to be configured.
-
-### Is it required?
-
-No. It is **on by default** but fully opt-out: disable it at any time from
-**Site administration > Plugins > Blocks > PlayerHUD** ("Send anonymous usage statistics").
-Nothing about the plugin's own features changes if it is disabled.
-
-### What is sent
-
-A single JSON payload, at most once every 21 days:
-
-- **Site info:** Moodle version/release, PHP version, site country and language, whether the
-  site runs a non-vanilla Moodle fork (Totara/IOMAD/Workplace) and its version.
-- **Plugin usage:** PlayerHUD's own installed version/release, an approximate active-user
-  count (users whose gamification record changed in the last 90 days), how many courses have
-  the block placed, and which companion plugins (PlayerHUD Filter, PlayerHUD Availability
-  Restriction) are installed and their versions.
-- **Internal error counters:** aggregate counts of a handful of known-fragile code paths (the
-  AI provider fallback chain, AI JSON parsing, a few transaction-commit failure branches) —
-  never the error content itself, only how many times each happened.
-- **Site identifier:** Moodle's own anonymous site identifier (`get_site_identifier()`) and
-  the site's URL, so repeated reports from the same site can be recognised as one deployment
-  over time rather than counted as new installs.
-
-### What is never sent
-
-No student data, no personal data of any user (name, email, ID), no item/quest/story content,
-no AI prompts or responses, and no data from courses that do not have the block added.
-
-### Where reports are sent
-
-Reports are sent to `https://plugintelemetry.duckdns.org/report.php`, a service operated by
-the plugin's own developer — not a third-party analytics vendor.
-
-Declared in the plugin's own Privacy Provider (`classes/privacy/provider.php`) as an external
-location, per standard Moodle Privacy API practice for any plugin that transmits data off-site.
