@@ -622,6 +622,7 @@ class quest {
                 return implode($separator, $rewardstxt);
             } catch (\Exception $e) {
                 $transaction->rollback($e);
+                \block_playerhud\local\diagnostics::increment('quest_claim_unexpected_error');
                 throw $e;
             }
         } finally {

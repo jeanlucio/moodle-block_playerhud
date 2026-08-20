@@ -151,6 +151,13 @@ class provider implements
             'prompt' => 'privacy:metadata:external:prompt',
         ], 'privacy:metadata:external:openai_summary');
 
+        // Anonymous usage telemetry: aggregate site/plugin statistics only (no personal
+        // data of any user). Declared here anyway, for transparency and to stay
+        // consistent with the pattern already established above for the AI providers.
+        $collection->add_external_location_link('plugin_usage_service', [
+            'sitedata' => 'privacy:metadata:external:usagereport_fields',
+        ], 'privacy:metadata:external:usagereport_summary');
+
         return $collection;
     }
 

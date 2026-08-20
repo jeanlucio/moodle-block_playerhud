@@ -122,4 +122,12 @@ if ($ADMIN->fulltree) {
         get_string('companion_plugins_title', 'block_playerhud'),
         get_string('companion_plugins_desc', 'block_playerhud') . $companionhtml
     ));
+
+    // Usage Report.
+    $settings->add(new admin_setting_configcheckbox(
+        'block_playerhud/usagereport',
+        get_string('usagereport', 'block_playerhud'),
+        get_string('usagereport_desc', 'block_playerhud'),
+        '1'
+    ));
 }
