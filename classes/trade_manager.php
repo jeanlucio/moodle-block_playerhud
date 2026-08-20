@@ -293,6 +293,7 @@ class trade_manager {
             if ($transaction !== null) {
                 $transaction->rollback($e);
             }
+            \block_playerhud\local\diagnostics::increment('trade_commit_unexpected_error');
             throw $e;
         } finally {
             $lock->release();

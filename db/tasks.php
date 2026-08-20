@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * Scheduled task definitions.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
@@ -24,9 +24,14 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'block_playerhud';
-$plugin->version   = 2026082000;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2024100700;        // Requires: Moodle 4.5+.
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v1.8.2';         // User-friendly version number.
+$tasks = [
+    [
+        'classname' => 'block_playerhud\task\usage_report',
+        'blocking' => 0,
+        'minute' => 'R',
+        'hour' => 'R',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*',
+    ],
+];
