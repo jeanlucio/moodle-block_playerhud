@@ -67,8 +67,22 @@ class usage_reporter {
     public static function build_payload(): array {
         global $CFG, $DB;
 
-        $plugininfo = \core_plugin_manager::instance()->get_plugin_info('block_playerhud');
+        $pluginman = \core_plugin_manager::instance();
+        $plugininfo = $pluginman->get_plugin_info('block_playerhud');
         $totalusers = $DB->count_records_select('user', 'deleted = 0 AND id != ?', [$CFG->siteguest]);
+        $flavour = self::get_flavour();
+
+        // How many courses actually have the block added — deployment breadth, distinct from
+        // active_users (engagement depth). Joins block_instances (core) to context rather than
+        // counting block_playerhud's own tables, since a course can have the block placed with
+        // nobody having earned XP yet.
+        $coursecount = $DB->count_records_sql(
+            'SELECT COUNT(bi.id)
+               FROM {block_instances} bi
+               JOIN {context} ctx ON ctx.id = bi.parentcontextid
+              WHERE bi.blockname = ? AND ctx.contextlevel = ?',
+            ['playerhud', CONTEXT_COURSE]
+        );
 
         // Active users of THIS plugin: touched their gamification record in the last
         // 90 days (~4 report cycles) — timemodified changes on XP/milestone updates,
@@ -90,12 +104,78 @@ class usage_reporter {
             'php_version' => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . '.' . PHP_RELEASE_VERSION,
             'plugin_version' => $plugininfo ? $plugininfo->versiondisk : null,
             'plugin_release' => $plugininfo ? $plugininfo->release : null,
-            'country' => $CFG->country,
+            // Moodle's own country select stores '0' (not an empty string) for "not set" —
+            // treat it the same as unset, or the dashboard would group these sites under a
+            // literal "0" bucket instead of alongside the other sites with no country.
+            'country' => !empty($CFG->country) && $CFG->country !== '0' ? $CFG->country : null,
             'lang' => $CFG->lang,
             'active_users' => $activeusers,
+            'course_count' => $coursecount,
             'site_size_bucket' => self::size_bucket((int) $totalusers),
+            'moodle_flavour' => $flavour,
+            'moodle_flavour_version' => self::get_flavour_version($flavour),
+            'companion_plugins' => self::get_companion_plugins($pluginman),
             'error_counters' => diagnostics::get_all(),
         ];
+    }
+
+    /**
+     * Detect whether this site runs a Moodle fork rather than vanilla Moodle.
+     *
+     * Same detection block_xp itself uses (classes/local/plugin/usage_report_maker.php) — a
+     * plugin bug that only reproduces on Totara/IOMAD/Workplace is otherwise invisible in the
+     * aggregate report.
+     *
+     * @return string|null
+     */
+    protected static function get_flavour(): ?string {
+        if (array_key_exists('totara', \core_component::get_plugin_types())) {
+            return 'totara';
+        } else if (array_key_exists('iomad', \core_component::get_plugin_list('local'))) {
+            return 'iomad';
+        } else if (array_key_exists('workplace', \core_component::get_plugin_list('theme'))) {
+            return 'workplace';
+        }
+        return null;
+    }
+
+    /**
+     * Get the flavour's own version number, when it exposes one.
+     *
+     * @param string|null $flavour
+     * @return string|int|float|null
+     */
+    protected static function get_flavour_version(?string $flavour) {
+        global $CFG;
+        if ($flavour !== 'totara') {
+            return null;
+        }
+
+        // @codingStandardsIgnoreStart
+        $TOTARA = new \stdClass();
+        include($CFG->dirroot . '/version.php');
+        return isset($TOTARA->version) ? $TOTARA->version : null;
+        // @codingStandardsIgnoreEnd
+    }
+
+    /**
+     * Presence and version of the companion plugins already surfaced in this plugin's own
+     * "Companion Plugins" admin settings section — mirrors that exact list rather than
+     * duplicating a second one, so the two never drift apart.
+     *
+     * @param \core_plugin_manager $pluginman
+     * @return array<string,array{r:string,v:string}>
+     */
+    protected static function get_companion_plugins(\core_plugin_manager $pluginman): array {
+        $components = ['availability_playerhud', 'filter_playerhud'];
+        $companions = [];
+        foreach ($components as $component) {
+            $info = $pluginman->get_plugin_info($component);
+            if ($info) {
+                $companions[$component] = ['r' => (string) $info->release, 'v' => (string) $info->versiondisk];
+            }
+        }
+        return $companions;
     }
 
     /**

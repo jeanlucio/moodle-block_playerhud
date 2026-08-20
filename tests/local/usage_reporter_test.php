@@ -106,7 +106,11 @@ final class usage_reporter_test extends advanced_testcase {
         $this->assertArrayHasKey('country', $payload);
         $this->assertArrayHasKey('lang', $payload);
         $this->assertArrayHasKey('active_users', $payload);
+        $this->assertArrayHasKey('course_count', $payload);
         $this->assertArrayHasKey('site_size_bucket', $payload);
+        $this->assertArrayHasKey('moodle_flavour', $payload);
+        $this->assertArrayHasKey('moodle_flavour_version', $payload);
+        $this->assertArrayHasKey('companion_plugins', $payload);
         $this->assertSame(['ai_all_providers_failed' => 1], $payload['error_counters']);
     }
 
@@ -116,6 +120,78 @@ final class usage_reporter_test extends advanced_testcase {
     public function test_build_payload_has_empty_error_counters_when_nothing_failed(): void {
         $payload = usage_reporter::build_payload();
         $this->assertSame([], $payload['error_counters']);
+    }
+
+    /**
+     * moodle_flavour/moodle_flavour_version detect Totara/IOMAD/Workplace forks — on the
+     * vanilla Moodle this test suite runs against, both must come back null, never a false
+     * positive that would misreport a real site's platform.
+     */
+    public function test_build_payload_flavour_is_null_on_vanilla_moodle(): void {
+        $payload = usage_reporter::build_payload();
+        $this->assertNull($payload['moodle_flavour']);
+        $this->assertNull($payload['moodle_flavour_version']);
+    }
+
+    /**
+     * companion_plugins mirrors exactly the list already shown in this plugin's own
+     * "Companion Plugins" admin settings section (settings.php), so the two can never drift
+     * apart. Cross-checks against the live core_plugin_manager rather than hardcoding
+     * presence/versions, so the test holds regardless of which companion plugins happen to be
+     * installed in whichever environment runs it.
+     */
+    public function test_build_payload_reports_installed_companion_plugins(): void {
+        $payload = usage_reporter::build_payload();
+        $this->assertArrayHasKey('companion_plugins', $payload);
+
+        $pluginman = \core_plugin_manager::instance();
+        foreach (['availability_playerhud', 'filter_playerhud'] as $component) {
+            $info = $pluginman->get_plugin_info($component);
+            if ($info === null) {
+                $this->assertArrayNotHasKey($component, $payload['companion_plugins']);
+                continue;
+            }
+            $this->assertArrayHasKey($component, $payload['companion_plugins']);
+            $this->assertSame((string) $info->release, $payload['companion_plugins'][$component]['r']);
+            $this->assertSame((string) $info->versiondisk, $payload['companion_plugins'][$component]['v']);
+        }
+    }
+
+    /**
+     * course_count reflects deployment breadth (how many courses have the block added), not
+     * engagement — a course with the block placed but nobody having earned XP yet still counts.
+     * Only course-context placements count; a placement outside a course (e.g. system context)
+     * must not be mistaken for a course deployment.
+     */
+    public function test_build_payload_course_count_only_counts_course_context_placements(): void {
+        global $DB;
+
+        $this->assertSame(0, usage_reporter::build_payload()['course_count']);
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+
+        $bi = new \stdClass();
+        $bi->blockname = 'playerhud';
+        $bi->parentcontextid = $coursecontext->id;
+        $bi->showinsubcontexts = 0;
+        $bi->pagetypepattern = 'course-view-*';
+        $bi->defaultregion = 'side-pre';
+        $bi->defaultweight = 0;
+        $bi->timecreated = time();
+        $bi->timemodified = time();
+        $DB->insert_record('block_instances', $bi);
+
+        $this->assertSame(1, usage_reporter::build_payload()['course_count']);
+
+        // A placement outside a course context (system, in this case) must not inflate the
+        // count — it is not a course deployment.
+        $systembi = clone $bi;
+        $systembi->parentcontextid = \context_system::instance()->id;
+        $systembi->pagetypepattern = 'site-index';
+        $DB->insert_record('block_instances', $systembi);
+
+        $this->assertSame(1, usage_reporter::build_payload()['course_count']);
     }
 
     /**
