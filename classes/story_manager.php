@@ -367,7 +367,25 @@ class story_manager {
                 );
             }
 
-            \block_playerhud\local\external_items::consume($instanceid, $choice->cost_itemid, $userid, $qtyneeded);
+            $consumed = \block_playerhud\local\external_items::consume(
+                $instanceid,
+                $choice->cost_itemid,
+                $userid,
+                $qtyneeded
+            );
+            if ($consumed !== true) {
+                // The pre-check above already verified the balance is enough; false/null here
+                // means it changed from under us between that check and this write (e.g. a
+                // concurrent trade consuming the same item) — mirrors the same guard already
+                // applied in trade_manager::execute_trade().
+                $itemname = $DB->get_field('block_playerhud_items', 'name', ['id' => $choice->cost_itemid]);
+                throw new \moodle_exception(
+                    'story_error_need_item',
+                    'block_playerhud',
+                    '',
+                    $qtyneeded . 'x ' . format_string((string) $itemname)
+                );
+            }
             $itemname = $DB->get_field('block_playerhud_items', 'name', ['id' => $choice->cost_itemid]);
             $events[] = [
                 'type' => 'item_loss',
