@@ -250,7 +250,7 @@ class generator {
         $item = new \stdClass();
         $item->blockinstanceid = $this->instanceid;
         $item->name = \core_text::substr((string) $data['name'], 0, 255);
-        $item->description = (string) $data['description'];
+        $item->description = \block_playerhud\utils::sanitize_rich_description((string) $data['description']);
         $item->image = clean_param((string) $data['emoji'], PARAM_TEXT);
         $item->xp = $targetxp;
 
@@ -996,8 +996,8 @@ class generator {
 
         $class = new \stdClass();
         $class->blockinstanceid = $this->instanceid;
-        $class->name            = $aidata['name'];
-        $class->description     = $aidata['description'] ?? '';
+        $class->name            = clean_param((string) $aidata['name'], PARAM_TEXT);
+        $class->description     = \block_playerhud\utils::sanitize_rich_description((string) ($aidata['description'] ?? ''));
         $class->base_hp         = isset($aidata['hp']) ? max(1, (int)$aidata['hp']) : 100;
         $class->timecreated     = time();
         $class->timemodified    = time();
@@ -1043,8 +1043,8 @@ class generator {
 
         $chapter = new \stdClass();
         $chapter->blockinstanceid = $this->instanceid;
-        $chapter->title           = $aidata['title'];
-        $chapter->intro_text      = $aidata['intro'] ?? '';
+        $chapter->title           = clean_param((string) $aidata['title'], PARAM_TEXT);
+        $chapter->intro_text      = clean_param((string) ($aidata['intro'] ?? ''), PARAM_TEXT);
         $chapter->unlock_date     = 0;
         $chapter->required_level  = 0;
         $chapter->sortorder       = $DB->count_records(
@@ -1059,7 +1059,10 @@ class generator {
         foreach ($aidata['nodes'] as $nodedata) {
             $node           = new \stdClass();
             $node->chapterid = $chapterid;
-            $node->content  = $nodedata['content'];
+            // The content field mirrors scenes::handle_edit_form()'s own treatment of the same
+            // field (controller/scenes.php), which keeps rich formatting rather than stripping
+            // to plain text — the AI-authored path must not be more restrictive than the manual one.
+            $node->content  = \block_playerhud\utils::sanitize_rich_description((string) $nodedata['content']);
             $node->is_start = !empty($nodedata['is_start']) ? 1 : 0;
             $nid = $DB->insert_record('block_playerhud_story_nodes', $node);
             $idxmap[(int)($nodedata['index'] ?? count($idxmap))] = $nid;
@@ -1087,7 +1090,7 @@ class generator {
                 $choiceitemid         = (int)($options['item_id'] ?? 0);
                 $choice               = new \stdClass();
                 $choice->nodeid       = $nodeid;
-                $choice->text         = $choicedata['text'];
+                $choice->text         = clean_param((string) $choicedata['text'], PARAM_TEXT);
                 $choice->next_nodeid  = $nextnodeid;
                 $choice->req_class_id = 0;
                 $choice->req_karma_min = 0;

@@ -75,6 +75,32 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * Regression test for the security-audit finding: an AI-generated description must go
+     * through the same sanitize_rich_description() the professor-authored path applies
+     * (tab_items.php) — a modal skeleton embedded in the response must not survive intact, since
+     * the plugin's own format_text() rendering keeps structural HTML (div/class) alive.
+     */
+    public function test_save_item_sanitizes_a_malicious_description(): void {
+        global $DB;
+
+        $generator = new generator($this->instanceid);
+        $poisoned = '<script>alert(document.cookie)</script>'
+            . '<div class="modal show d-block"><div class="modal-content">A real potion.</div></div>';
+
+        $this->call_save_item($generator, [
+            'name' => 'Poison',
+            'description' => $poisoned,
+            'emoji' => '🧪',
+        ]);
+
+        $item = $DB->get_record('block_playerhud_items', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
+        $this->assertStringNotContainsString('<script>', $item->description);
+        $this->assertStringNotContainsString('<div', $item->description);
+        $this->assertStringNotContainsString('modal', $item->description);
+        $this->assertStringContainsString('A real potion.', $item->description);
+    }
+
+    /**
      * A malformed AI response (non-string name/description) must not crash the insert — coerced
      * to string defensively instead of trusting the JSON's declared shape.
      */
