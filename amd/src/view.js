@@ -124,9 +124,14 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
             if (shopPopoverEls.length) {
                 require(['theme_boost/bootstrap/popover'], function(BSPopover) {
                     shopPopoverEls.forEach(function(el) {
+                        // The title is always plain text; pass it as a DOM node so Bootstrap
+                        // inserts it directly instead of through the html:true/innerHTML path
+                        // that 'content' below still needs (the requirement/reward badge).
+                        const titleNode = document.createElement('span');
+                        titleNode.textContent = el.dataset.phTitle || '';
                         const opts = {
                             trigger: 'hover click focus',
-                            title: el.dataset.phTitle || '',
+                            title: titleNode,
                             content: el.dataset.phContent || '',
                             html: true,
                             placement: 'top'
