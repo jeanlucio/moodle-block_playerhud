@@ -76,4 +76,18 @@ final class generate_class_oracle_test extends external_base_testcase {
         $this->expectException(\required_capability_exception::class);
         generate_class_oracle::execute($this->instanceid, $this->course->id, 'Necromancer');
     }
+
+    /**
+     * A courseid belonging to another course is rejected before any AI call is attempted.
+     */
+    public function test_generate_class_oracle_rejects_a_mismatched_courseid(): void {
+        $othercourse = $this->getDataGenerator()->create_course();
+
+        try {
+            generate_class_oracle::execute($this->instanceid, $othercourse->id, 'Necromancer');
+            $this->fail('Expected an accessdenied moodle_exception.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('accessdenied', $e->errorcode);
+        }
+    }
 }

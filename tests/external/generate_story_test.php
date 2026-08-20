@@ -76,4 +76,18 @@ final class generate_story_test extends external_base_testcase {
         $this->expectException(\required_capability_exception::class);
         generate_story::execute($this->instanceid, $this->course->id, 'A haunted forest');
     }
+
+    /**
+     * A courseid belonging to another course is rejected before any AI call is attempted.
+     */
+    public function test_generate_story_rejects_a_mismatched_courseid(): void {
+        $othercourse = $this->getDataGenerator()->create_course();
+
+        try {
+            generate_story::execute($this->instanceid, $othercourse->id, 'A haunted forest');
+            $this->fail('Expected an accessdenied moodle_exception.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('accessdenied', $e->errorcode);
+        }
+    }
 }

@@ -1444,10 +1444,10 @@ final class wizard_run_step_test extends external_base_testcase {
      * directly since generate_rpg_classes() itself (not the step dispatch) owns this behavior.
      */
     public function test_rpg_ensures_enable_rpg_is_on_even_when_already_generated(): void {
-        wizard_generate::generate_rpg_classes($this->instanceid, 'fantasy', 0);
+        wizard_generate::generate_rpg_classes($this->instanceid, $this->course->id, 'fantasy', 0);
         \block_instance_by_id($this->instanceid)->instance_config_save((object) ['enable_rpg' => 0]);
 
-        $result = wizard_generate::generate_rpg_classes($this->instanceid, 'fantasy', 0);
+        $result = wizard_generate::generate_rpg_classes($this->instanceid, $this->course->id, 'fantasy', 0);
 
         $this->assertSame('', $result['chapter_title'], 'Idempotent skip: nothing new created.');
         $blockinstance = \block_instance_by_id($this->instanceid);

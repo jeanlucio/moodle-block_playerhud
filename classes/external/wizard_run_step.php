@@ -295,6 +295,7 @@ class wizard_run_step extends external_api {
                 case 'rpg':
                     $rpgresult = wizard_generate::generate_rpg_classes(
                         $params['instanceid'],
+                        $params['courseid'],
                         $params['tone_key'],
                         $params['runid']
                     );

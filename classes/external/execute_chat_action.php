@@ -24,6 +24,7 @@
 
 namespace block_playerhud\external;
 
+use block_playerhud\local\wizard;
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_value;
@@ -80,6 +81,7 @@ class execute_chat_action extends external_api {
         $context = context_block::instance($params['instanceid']);
         self::validate_context($context);
         require_capability('block/playerhud:manage', $context);
+        wizard::require_course_matches_instance($context, $params['courseid']);
 
         // Validate action type against explicit allow-list.
         $allowedtypes = ['create_item', 'create_quest', 'create_chapter', 'open_tab'];

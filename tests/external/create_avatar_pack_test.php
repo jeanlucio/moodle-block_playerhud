@@ -128,4 +128,18 @@ final class create_avatar_pack_test extends external_base_testcase {
         $this->expectException(\required_capability_exception::class);
         create_avatar_pack::execute($this->instanceid, $this->course->id);
     }
+
+    /**
+     * A courseid belonging to another course is rejected before any write happens.
+     */
+    public function test_create_avatar_pack_rejects_a_mismatched_courseid(): void {
+        $othercourse = $this->getDataGenerator()->create_course();
+
+        try {
+            create_avatar_pack::execute($this->instanceid, $othercourse->id);
+            $this->fail('Expected an accessdenied moodle_exception.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('accessdenied', $e->errorcode);
+        }
+    }
 }

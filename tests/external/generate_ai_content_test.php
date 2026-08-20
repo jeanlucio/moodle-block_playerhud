@@ -80,4 +80,18 @@ final class generate_ai_content_test extends external_base_testcase {
         $this->expectException(\required_capability_exception::class);
         generate_ai_content::execute($this->instanceid, $this->course->id, 'A magic sword');
     }
+
+    /**
+     * A courseid belonging to another course is rejected before any AI call is attempted.
+     */
+    public function test_generate_ai_content_rejects_a_mismatched_courseid(): void {
+        $othercourse = $this->getDataGenerator()->create_course();
+
+        try {
+            generate_ai_content::execute($this->instanceid, $othercourse->id, 'A magic sword');
+            $this->fail('Expected an accessdenied moodle_exception.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('accessdenied', $e->errorcode);
+        }
+    }
 }

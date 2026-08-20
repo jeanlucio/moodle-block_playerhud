@@ -128,4 +128,20 @@ final class collect_item_test extends external_base_testcase {
         $this->expectException(\required_capability_exception::class);
         collect_item::execute($this->instanceid, $dropid, $this->course->id);
     }
+
+    /**
+     * A courseid belonging to another course is rejected before any collection is processed.
+     */
+    public function test_collect_item_rejects_a_mismatched_courseid(): void {
+        $item        = $this->create_item($this->instanceid, 'Gem', ['xp' => 10]);
+        $dropid      = $this->create_drop($item->id, 5);
+        $othercourse = $this->getDataGenerator()->create_course();
+
+        try {
+            collect_item::execute($this->instanceid, $dropid, $othercourse->id);
+            $this->fail('Expected an accessdenied moodle_exception.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('accessdenied', $e->errorcode);
+        }
+    }
 }

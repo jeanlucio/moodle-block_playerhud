@@ -90,7 +90,7 @@ $capabilities = [
 
     // Ability to manage game content (items, quests, chapters) via the management panel.
     'block/playerhud:manage' => [
-        'riskbitmask' => RISK_SPAM | RISK_XSS | RISK_PERSONAL,
+        'riskbitmask' => RISK_SPAM | RISK_XSS | RISK_PERSONAL | RISK_DATALOSS,
         'captype' => 'write',
         'contextlevel' => CONTEXT_BLOCK,
         'archetypes' => [

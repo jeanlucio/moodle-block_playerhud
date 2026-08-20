@@ -611,19 +611,20 @@ class wizard_generate {
      * checking this box is the teacher's intent to see the Classes/Chapters tabs.
      *
      * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID owning the block instance.
      * @param string $tonekey Narrative tone key.
      * @param int $runid Wizard run ID.
      * @return array{class_names: string[], chapter_title: string} Names of the created classes,
      *     and the chapter title, empty when Chapter 1 already existed for this tone.
      */
-    public static function generate_rpg_classes(int $instanceid, string $tonekey, int $runid): array {
+    public static function generate_rpg_classes(int $instanceid, int $courseid, string $tonekey, int $runid): array {
         global $DB;
 
         \block_playerhud\local\wizard::ensure_config_flag($instanceid, 'enable_rpg');
 
         $pack = \block_playerhud\local\rpg_archetypes::get_pack($tonekey);
 
-        $classresult = \block_playerhud\external\create_class_pack::execute($instanceid, 0, $tonekey);
+        $classresult = \block_playerhud\external\create_class_pack::execute($instanceid, $courseid, $tonekey);
         if (!empty($classresult['created_class_ids'])) {
             \block_playerhud\local\wizard::record_objects(
                 $runid,

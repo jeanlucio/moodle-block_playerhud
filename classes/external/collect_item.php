@@ -24,6 +24,7 @@
 
 namespace block_playerhud\external;
 
+use block_playerhud\local\wizard;
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_value;
@@ -71,6 +72,7 @@ class collect_item extends external_api {
         $context = \context_block::instance($params['instanceid']);
         self::validate_context($context);
         require_capability('block/playerhud:interact', $context);
+        wizard::require_course_matches_instance($context, $params['courseid']);
 
         try {
             // Call the centralized logic in Game class.

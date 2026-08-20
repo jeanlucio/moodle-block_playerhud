@@ -24,6 +24,7 @@
 
 namespace block_playerhud\external;
 
+use block_playerhud\local\wizard;
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_value;
@@ -69,6 +70,7 @@ class create_playercoin extends external_api {
         $context = \context_block::instance($instanceid);
         self::validate_context($context);
         require_capability('block/playerhud:manage', $context);
+        wizard::require_course_matches_instance($context, $courseid);
 
         $existing = $DB->get_record('block_playerhud_items', [
             'blockinstanceid' => $instanceid,

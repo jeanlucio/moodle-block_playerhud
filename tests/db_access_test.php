@@ -29,9 +29,10 @@ use advanced_testcase;
 
 /**
  * block/playerhud:manage exposes other users' XP, inventory and class assignments through the
- * management panel, so its risk profile must include RISK_PERSONAL alongside RISK_SPAM/RISK_XSS
- * — this is a pure metadata declaration, checked directly against the raw file rather than
- * through any code path.
+ * management panel, and its bulk-delete actions can destroy that same data for every student in
+ * a course, so its risk profile must include RISK_PERSONAL and RISK_DATALOSS alongside
+ * RISK_SPAM/RISK_XSS — this is a pure metadata declaration, checked directly against the raw
+ * file rather than through any code path.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
@@ -40,9 +41,10 @@ use advanced_testcase;
  */
 final class db_access_test extends advanced_testcase {
     /**
-     * block/playerhud:manage's riskbitmask flags it as exposing personal data.
+     * block/playerhud:manage's riskbitmask flags it as exposing personal data and capable of
+     * data loss.
      */
-    public function test_manage_capability_flags_risk_personal(): void {
+    public function test_manage_capability_flags_risk_personal_and_dataloss(): void {
         global $CFG;
 
         $capabilities = [];
@@ -51,5 +53,6 @@ final class db_access_test extends advanced_testcase {
         $this->assertArrayHasKey('block/playerhud:manage', $capabilities);
         $riskbitmask = $capabilities['block/playerhud:manage']['riskbitmask'];
         $this->assertNotSame(0, $riskbitmask & RISK_PERSONAL, 'RISK_PERSONAL must be set.');
+        $this->assertNotSame(0, $riskbitmask & RISK_DATALOSS, 'RISK_DATALOSS must be set.');
     }
 }

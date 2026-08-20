@@ -106,4 +106,23 @@ final class execute_chat_action_test extends external_base_testcase {
             json_encode(['tab' => 'items'])
         );
     }
+
+    /**
+     * A courseid belonging to another course is rejected before the action runs.
+     */
+    public function test_execute_chat_action_rejects_a_mismatched_courseid(): void {
+        $othercourse = $this->getDataGenerator()->create_course();
+
+        try {
+            execute_chat_action::execute(
+                $this->instanceid,
+                $othercourse->id,
+                'open_tab',
+                json_encode(['tab' => 'quests'])
+            );
+            $this->fail('Expected an accessdenied moodle_exception.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('accessdenied', $e->errorcode);
+        }
+    }
 }
