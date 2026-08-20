@@ -47,6 +47,7 @@ use stdClass;
  * @covers     \block_playerhud\controller\collect
  * @covers     \block_playerhud\controller\classes
  * @covers     \block_playerhud\controller\trades
+ * @covers     \block_playerhud\controller\chapters
  */
 final class manage_entry_points_test extends advanced_testcase {
     /** @var stdClass The shared course. */
@@ -873,6 +874,99 @@ final class manage_entry_points_test extends advanced_testcase {
 
         $this->expectException(\required_capability_exception::class);
         (new trades())->handle_edit_form();
+    }
+
+    // Chapter, class, trade and scene entry points — courseid/instanceid binding.
+
+    /**
+     * The chapter editor rejects an "id" that does not belong to this block instance's own
+     * course, even for an otherwise-authorised manager — mirrors the same guard already
+     * enforced on manage.php, export.php, help.php, process_trade.php and drops.php.
+     */
+    public function test_chapters_editor_rejects_a_mismatched_courseid(): void {
+        $this->setAdminUser();
+        $othercourse = $this->getDataGenerator()->create_course();
+
+        $_POST = [
+            'courseid'   => $othercourse->id,
+            'instanceid' => $this->instanceid,
+        ];
+
+        $this->expectException(\moodle_exception::class);
+        (new chapters())->handle_edit_form();
+    }
+
+    /**
+     * The class editor rejects an "id" that does not belong to this block instance's own
+     * course, even for an otherwise-authorised manager.
+     */
+    public function test_class_editor_rejects_a_mismatched_courseid(): void {
+        $this->setAdminUser();
+        $othercourse = $this->getDataGenerator()->create_course();
+
+        $_POST = [
+            'courseid'   => $othercourse->id,
+            'instanceid' => $this->instanceid,
+        ];
+
+        $this->expectException(\moodle_exception::class);
+        (new classes())->handle_edit_form();
+    }
+
+    /**
+     * The trade editor rejects an "id" that does not belong to this block instance's own
+     * course, even for an otherwise-authorised manager — an unrelated course id must never be
+     * accepted for the group/grouping selector populated from it in edit_trade_form.php.
+     */
+    public function test_trade_editor_rejects_a_mismatched_courseid(): void {
+        $this->setAdminUser();
+        $othercourse = $this->getDataGenerator()->create_course();
+
+        $_POST = [
+            'courseid'   => $othercourse->id,
+            'instanceid' => $this->instanceid,
+        ];
+
+        $this->expectException(\moodle_exception::class);
+        (new trades())->handle_edit_form();
+    }
+
+    /**
+     * The scenes management page rejects an "id" that does not belong to this block instance's
+     * own course, even for an otherwise-authorised manager.
+     */
+    public function test_scenes_page_rejects_a_mismatched_courseid(): void {
+        $this->setAdminUser();
+        $othercourse = $this->getDataGenerator()->create_course();
+        $chapterid   = $this->make_chapter($this->instanceid);
+
+        $_POST = [
+            'courseid'   => $othercourse->id,
+            'instanceid' => $this->instanceid,
+            'chapterid'  => $chapterid,
+        ];
+
+        $this->expectException(\moodle_exception::class);
+        (new scenes())->view_manage_page();
+    }
+
+    /**
+     * The scene editor rejects an "id" that does not belong to this block instance's own
+     * course, even for an otherwise-authorised manager.
+     */
+    public function test_scenes_edit_form_rejects_a_mismatched_courseid(): void {
+        $this->setAdminUser();
+        $othercourse = $this->getDataGenerator()->create_course();
+        $chapterid   = $this->make_chapter($this->instanceid);
+
+        $_POST = [
+            'courseid'   => $othercourse->id,
+            'instanceid' => $this->instanceid,
+            'chapterid'  => $chapterid,
+        ];
+
+        $this->expectException(\moodle_exception::class);
+        (new scenes())->handle_edit_form();
     }
 
     /**

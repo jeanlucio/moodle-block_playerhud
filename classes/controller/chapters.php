@@ -16,6 +16,7 @@
 
 namespace block_playerhud\controller;
 
+use block_playerhud\local\wizard;
 use context_block;
 use moodle_url;
 
@@ -45,6 +46,7 @@ class chapters {
         require_login($course);
         $context = context_block::instance($instanceid);
         require_capability('block/playerhud:manage', $context);
+        wizard::require_course_matches_instance($context, $courseid);
 
         $returnurl = new moodle_url('/blocks/playerhud/manage.php', [
             'id'         => $courseid,
