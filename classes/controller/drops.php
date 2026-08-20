@@ -104,7 +104,7 @@ class drops {
         $sort       = optional_param('sort', 'id', PARAM_ALPHA);
         $dir        = optional_param('dir', 'DESC', PARAM_ALPHA);
 
-        $allowedsorts = ['id', 'mapcode', 'maxusage', 'value', 'respawntime', 'timecreated'];
+        $allowedsorts = ['id', 'code', 'name', 'maxusage', 'value', 'respawntime', 'timecreated'];
         if (!in_array($sort, $allowedsorts, true)) {
             $sort = 'id';
         }

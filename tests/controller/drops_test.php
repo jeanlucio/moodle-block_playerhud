@@ -84,12 +84,13 @@ final class drops_test extends advanced_testcase {
      *
      * @param int $instanceid Owning block instance ID.
      * @param int $itemid Item the drop belongs to.
+     * @param array $overrides Field overrides merged over the defaults.
      * @return int The new drop ID.
      */
-    protected function seed_drop(int $instanceid, int $itemid): int {
+    protected function seed_drop(int $instanceid, int $itemid, array $overrides = []): int {
         global $DB;
 
-        return (int) $DB->insert_record('block_playerhud_drops', (object) [
+        return (int) $DB->insert_record('block_playerhud_drops', (object) array_merge([
             'blockinstanceid' => $instanceid,
             'itemid'          => $itemid,
             'name'            => 'Old spot',
@@ -98,7 +99,7 @@ final class drops_test extends advanced_testcase {
             'code'            => \block_playerhud\utils::generate_drop_code($instanceid),
             'timecreated'     => time(),
             'timemodified'    => time(),
-        ]);
+        ], $overrides));
     }
 
     /**
@@ -364,6 +365,87 @@ final class drops_test extends advanced_testcase {
         $_GET['instanceid'] = $instanceid;
         $_GET['id'] = $course->id;
         $_GET['itemid'] = $itemid;
+
+        $html = (new drops())->view_manage_page();
+
+        $this->assertIsString($html);
+        $this->assertStringContainsString('Old spot', $html);
+    }
+
+    /**
+     * Sorting by the "Nome" column header (sort=name, the value the header itself links to)
+     * must actually reorder the table instead of silently falling back to the id order.
+     */
+    public function test_view_manage_page_sorts_by_name(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname'         => 'playerhud',
+            'parentcontextid'   => $coursecontext->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern'   => 'course-view-*',
+            'defaultregion'     => 'side-pre',
+            'defaultweight'     => 0,
+            'configdata'        => base64_encode(serialize(new stdClass())),
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ]);
+        $itemid = $this->make_item($instanceid);
+        // Insert "Zulu" first (lower id) and "Alpha" second (higher id), so id order and
+        // alphabetical order disagree — a real sort=name is the only way Alpha ends up first.
+        $this->seed_drop($instanceid, $itemid, ['name' => 'Zulu spot']);
+        $this->seed_drop($instanceid, $itemid, ['name' => 'Alpha spot']);
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        $this->setUser($teacher);
+
+        $_GET['instanceid'] = $instanceid;
+        $_GET['id'] = $course->id;
+        $_GET['itemid'] = $itemid;
+        $_GET['sort'] = 'name';
+        $_GET['dir'] = 'ASC';
+
+        $html = (new drops())->view_manage_page();
+
+        $this->assertLessThan(
+            strpos($html, 'Zulu spot'),
+            strpos($html, 'Alpha spot'),
+            'sort=name must place "Alpha spot" before "Zulu spot" in the rendered table.'
+        );
+    }
+
+    /**
+     * A sort value outside the allow-list (including the removed, never-real 'mapcode' entry)
+     * must fall back to the safe default instead of reaching the database as an ORDER BY column.
+     */
+    public function test_view_manage_page_rejects_an_unknown_sort_column_safely(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname'         => 'playerhud',
+            'parentcontextid'   => $coursecontext->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern'   => 'course-view-*',
+            'defaultregion'     => 'side-pre',
+            'defaultweight'     => 0,
+            'configdata'        => base64_encode(serialize(new stdClass())),
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ]);
+        $itemid = $this->make_item($instanceid);
+        $this->seed_drop($instanceid, $itemid);
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        $this->setUser($teacher);
+
+        $_GET['instanceid'] = $instanceid;
+        $_GET['id'] = $course->id;
+        $_GET['itemid'] = $itemid;
+        $_GET['sort'] = 'mapcode';
 
         $html = (new drops())->view_manage_page();
 
