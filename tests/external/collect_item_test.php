@@ -115,14 +115,14 @@ final class collect_item_test extends external_base_testcase {
     }
 
     /**
-     * A user without block/playerhud:view must not be able to collect.
+     * A user without block/playerhud:interact must not be able to collect.
      */
-    public function test_collect_item_requires_view_capability(): void {
+    public function test_collect_item_requires_interact_capability(): void {
         $item   = $this->create_item($this->instanceid, 'Gem', ['xp' => 10]);
         $dropid = $this->create_drop($item->id, 5);
 
-        // Enrolled student whose view capability is prohibited on the block context.
-        $student = $this->create_student_without_view();
+        // Enrolled student whose interact capability is prohibited on the block context.
+        $student = $this->create_student_without_interact();
         $this->setUser($student);
 
         $this->expectException(\required_capability_exception::class);

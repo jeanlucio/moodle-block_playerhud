@@ -578,6 +578,7 @@ $string['playercoin_drop_noforum'] = 'Fórum de Avisos não encontrado neste cur
 $string['playercoin_drop_title'] = 'Criar PlayerCoin';
 $string['playercoin_drop_yes'] = 'Sim, criar o item e drop';
 $string['playerhud:addinstance'] = 'Adicionar um novo PlayerHUD';
+$string['playerhud:interact'] = 'Interagir com os recursos de gamificação';
 $string['playerhud:manage'] = 'Gerenciar Conteúdo do Jogo';
 $string['playerhud:myaddinstance'] = 'Adicionar um novo bloco PlayerHUD ao Painel';
 $string['playerhud:view'] = 'Ver PlayerHUD';

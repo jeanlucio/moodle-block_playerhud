@@ -73,7 +73,7 @@ class make_choice extends external_api {
 
         $context = context_block::instance($params['instanceid']);
         self::validate_context($context);
-        require_capability('block/playerhud:view', $context);
+        require_capability('block/playerhud:interact', $context);
 
         if ($params['preview']) {
             require_capability('block/playerhud:manage', $context);

@@ -70,7 +70,7 @@ class collect_item extends external_api {
 
         $context = \context_block::instance($params['instanceid']);
         self::validate_context($context);
-        require_capability('block/playerhud:view', $context);
+        require_capability('block/playerhud:interact', $context);
 
         try {
             // Call the centralized logic in Game class.

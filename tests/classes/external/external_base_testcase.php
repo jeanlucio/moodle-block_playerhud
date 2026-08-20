@@ -144,6 +144,27 @@ abstract class external_base_testcase extends advanced_testcase {
     }
 
     /**
+     * Create a student enrolled in the course but explicitly denied the interact
+     * capability on the block context.
+     *
+     * Enrolment lets the user pass require_login (so validate_context succeeds),
+     * while the prohibited capability triggers a required_capability_exception at
+     * the write-path check shared by collect_item, use_item and make_choice.
+     *
+     * @return \stdClass The created user record.
+     */
+    protected function create_student_without_interact(): \stdClass {
+        global $DB;
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $this->course->id, 'student');
+        $studentrole = $DB->get_record('role', ['shortname' => 'student'], '*', MUST_EXIST);
+        $blockcontext = \context_block::instance($this->instanceid);
+        assign_capability('block/playerhud:interact', CAP_PROHIBIT, $studentrole->id, $blockcontext->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+        return $student;
+    }
+
+    /**
      * Insert a story chapter for the shared block instance.
      *
      * @param string $title Chapter title.

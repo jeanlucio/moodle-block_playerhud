@@ -68,14 +68,14 @@ final class make_choice_test extends external_base_testcase {
     }
 
     /**
-     * A user without block/playerhud:view must not be able to make a choice.
+     * A user without block/playerhud:interact must not be able to make a choice.
      */
-    public function test_make_choice_requires_view_capability(): void {
+    public function test_make_choice_requires_interact_capability(): void {
         $chapter = $this->create_chapter('Chapter 1');
         $start   = $this->create_node($chapter->id, 'Start', true);
         $choice  = $this->create_choice($start->id, 'Continue');
 
-        $student = $this->create_student_without_view();
+        $student = $this->create_student_without_interact();
         $this->setUser($student);
 
         $this->expectException(\required_capability_exception::class);

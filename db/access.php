@@ -49,7 +49,7 @@ $capabilities = [
         'clonepermissionsfrom' => 'moodle/my:manageblocks',
     ],
 
-    // Ability to view the PlayerHUD content and interact with gamification features.
+    // Ability to view the PlayerHUD content only (render the block and its read-only tabs).
     'block/playerhud:view' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_BLOCK,
@@ -59,6 +59,33 @@ $capabilities = [
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW,
         ],
+    ],
+
+    // Ability to write gamification state: collect drops, consume/equip items, make story
+    // choices and process trades. Declared separately from block/playerhud:view (which stays
+    // read-only) so an admin can grant read access without also granting write access, and so
+    // the contextlocking/guest-role protections the Moodle core applies to 'write' capabilities
+    // actually cover these actions. clonepermissionsfrom copies every existing role/context
+    // grant of block/playerhud:view onto this capability during upgrade of a site that already
+    // has the plugin installed (see lib/accesslib.php::update_capabilities()) — do not add an
+    // assign_capability() call for this in db/upgrade.php, the capability does not exist yet at
+    // the point db/upgrade.php runs and that call would fatal on every upgrading site.
+    // archetypes is also required here, mirroring block/playerhud:view's own list: on a brand
+    // new install both capabilities are registered in the same batch, so
+    // block/playerhud:view is not yet in update_capabilities()'s pre-batch snapshot and the
+    // clone is silently skipped for that case — archetypes is what grants :interact its
+    // defaults there. Same dual-declaration pattern as mod/quiz:reviewattempt cloning from
+    // mod/quiz:attempt in mod/quiz/db/access.php.
+    'block/playerhud:interact' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_BLOCK,
+        'archetypes' => [
+            'student' => CAP_ALLOW,
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+        'clonepermissionsfrom' => 'block/playerhud:view',
     ],
 
     // Ability to manage game content (items, quests, chapters) via the management panel.

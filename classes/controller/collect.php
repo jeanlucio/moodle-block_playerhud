@@ -49,7 +49,7 @@ class collect {
         require_login($courseid);
         require_sesskey();
         $context = \context_block::instance($instanceid);
-        require_capability('block/playerhud:view', $context);
+        require_capability('block/playerhud:interact', $context);
 
         // Verify the block instance actually belongs to the supplied course, so a mismatched
         // courseid from another page request cannot land this page on the wrong course's

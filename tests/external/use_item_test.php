@@ -57,12 +57,12 @@ final class use_item_test extends external_base_testcase {
     }
 
     /**
-     * A user without block/playerhud:view must not be able to use an item.
+     * A user without block/playerhud:interact must not be able to use an item.
      */
-    public function test_use_item_requires_view_capability(): void {
+    public function test_use_item_requires_interact_capability(): void {
         $item = $this->create_deadline_item();
 
-        $student = $this->create_student_without_view();
+        $student = $this->create_student_without_interact();
         $this->give_item_to_user((int) $student->id, $item->id);
         $this->setUser($student);
 
