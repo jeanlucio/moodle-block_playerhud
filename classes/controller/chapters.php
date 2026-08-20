@@ -168,12 +168,13 @@ class chapters {
     private function set_chapter_position(int $chapterid, int $instanceid, int $position): void {
         global $DB;
 
-        $ids = array_map('intval', $DB->get_fieldset_sql(
-            "SELECT id FROM {block_playerhud_chapters}
+        $oldorder = $DB->get_records_sql_menu(
+            "SELECT id, sortorder FROM {block_playerhud_chapters}
               WHERE blockinstanceid = ?
            ORDER BY sortorder ASC, id ASC",
             [$instanceid]
-        ));
+        );
+        $ids = array_map('intval', array_keys($oldorder));
         if (!in_array($chapterid, $ids, true)) {
             return;
         }
@@ -185,7 +186,13 @@ class chapters {
         $transaction = $DB->start_delegated_transaction();
         try {
             foreach ($ids as $i => $id) {
-                $DB->set_field('block_playerhud_chapters', 'sortorder', $i + 1, ['id' => $id]);
+                $newsortorder = $i + 1;
+                // A move only ever swaps two chapters — skip rows whose position did not
+                // actually change, so a reorder writes only the ones that moved instead of
+                // rewriting every chapter of the instance on every call.
+                if ((int) ($oldorder[$id] ?? -1) !== $newsortorder) {
+                    $DB->set_field('block_playerhud_chapters', 'sortorder', $newsortorder, ['id' => $id]);
+                }
             }
             $transaction->allow_commit();
         } catch (\Throwable $e) {

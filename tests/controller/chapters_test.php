@@ -347,6 +347,43 @@ final class chapters_test extends advanced_testcase {
     }
 
     /**
+     * Regression test for the security-audit performance finding: moving a chapter only ever
+     * swaps two neighbours, so the query cost of a move must not grow with how many other
+     * chapters the instance has — before the fix, set_chapter_position() rewrote every
+     * chapter's sortorder unconditionally, one $DB->set_field() per row.
+     */
+    public function test_move_chapter_does_not_scale_writes_with_chapter_count(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $fewinstance = $this->make_instance();
+        $fewchapters = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $fewchapters[] = $this->seed_chapter($fewinstance, "Chapter $i", $i);
+        }
+
+        $manyinstance = $this->make_instance();
+        $manychapters = [];
+        for ($i = 1; $i <= 20; $i++) {
+            $manychapters[] = $this->seed_chapter($manyinstance, "Chapter $i", $i);
+        }
+
+        // Warm up caches shared by every call below, so the comparison is not skewed by
+        // first-call-only overhead.
+        (new chapters())->move_chapter($fewchapters[0], $fewinstance, 'down');
+
+        $before = $DB->perf_get_queries();
+        (new chapters())->move_chapter($fewchapters[1], $fewinstance, 'down');
+        $few = $DB->perf_get_queries() - $before;
+
+        $before = $DB->perf_get_queries();
+        (new chapters())->move_chapter($manychapters[1], $manyinstance, 'down');
+        $many = $DB->perf_get_queries() - $before;
+
+        $this->assertSame($few, $many, 'Moving a chapter among 20 must not cost more queries than among 5.');
+    }
+
+    /**
      * A new chapter can be inserted at a requested position, shifting the rest.
      */
     public function test_save_chapter_inserts_at_requested_position(): void {
