@@ -75,4 +75,26 @@ final class chat_message_test extends external_base_testcase {
         $this->expectException(\required_capability_exception::class);
         chat_message::execute($this->instanceid, $this->course->id, [['role' => 'user', 'content' => 'Hi']]);
     }
+
+    /**
+     * Regression test for the security-audit finding: a courseid that does not belong to this
+     * block instance must be rejected, so the AI system prompt can never be built with another
+     * course's fullname — including a course the caller has no access to.
+     *
+     * Asserts the specific 'accessdenied' errorcode wizard::require_course_matches_instance()
+     * throws, not just \moodle_exception — without the fix, execute() still ends in a
+     * moodle_exception anyway (no AI provider key configured in the test environment), which
+     * would make a bare exception-class assertion pass regardless of whether the courseid guard
+     * ran at all.
+     */
+    public function test_chat_message_rejects_a_mismatched_courseid(): void {
+        $othercourse = $this->getDataGenerator()->create_course();
+
+        try {
+            chat_message::execute($this->instanceid, $othercourse->id, [['role' => 'user', 'content' => 'Hi']]);
+            $this->fail('Expected an accessdenied moodle_exception.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('accessdenied', $e->errorcode);
+        }
+    }
 }
