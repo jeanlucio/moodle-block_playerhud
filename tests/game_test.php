@@ -770,6 +770,164 @@ final class game_test extends advanced_testcase {
     }
 
     /**
+     * Regression test for the security-audit finding: the group ranking must honor
+     * SEPARATEGROUPS the same way the individual ranking already does — a student must not see
+     * another group's name, member count or aggregate XP.
+     */
+    public function test_get_leaderboard_group_ranking_honors_separategroups(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course([
+            'groupmode' => SEPARATEGROUPS,
+            'groupmodeforce' => 1,
+        ]);
+        $coursecontext = \context_course::instance($course->id);
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => $coursecontext->id,
+            'showinsubcontexts' => 0, 'pagetypepattern' => 'course-view-*', 'subpagepattern' => null,
+            'defaultregion' => 'side-pre', 'defaultweight' => 0,
+            'configdata' => base64_encode(serialize(new \stdClass())),
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        $student = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $this->getDataGenerator()->enrol_user($other->id, $course->id, 'student');
+
+        $mygroup = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $othergroup = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $this->getDataGenerator()->create_group_member(['groupid' => $mygroup->id, 'userid' => $student->id]);
+        $this->getDataGenerator()->create_group_member(['groupid' => $othergroup->id, 'userid' => $other->id]);
+
+        $now = time();
+        foreach ([$student->id, $other->id] as $uid) {
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid' => $instanceid, 'userid' => $uid, 'currentxp' => 100,
+                'ranking_visibility' => 1, 'enable_gamification' => 1,
+                'timecreated' => $now, 'timemodified' => $now,
+            ]);
+        }
+
+        $result = game::get_leaderboard($instanceid, $student->id, false);
+        $groupids = array_column($result['groups'], 'id');
+
+        $this->assertContains($mygroup->id, $groupids, 'The viewing user\'s own group must still appear.');
+        $this->assertNotContains(
+            $othergroup->id,
+            $groupids,
+            'SEPARATEGROUPS must hide another group\'s aggregate XP from the group ranking.'
+        );
+    }
+
+    /**
+     * A teacher (or anyone with moodle/site:accessallgroups) must still see every group's
+     * ranking under SEPARATEGROUPS — the restriction is per-student, not global.
+     */
+    public function test_get_leaderboard_group_ranking_teacher_sees_all_groups_under_separategroups(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course([
+            'groupmode' => SEPARATEGROUPS,
+            'groupmodeforce' => 1,
+        ]);
+        $coursecontext = \context_course::instance($course->id);
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => $coursecontext->id,
+            'showinsubcontexts' => 0, 'pagetypepattern' => 'course-view-*', 'subpagepattern' => null,
+            'defaultregion' => 'side-pre', 'defaultweight' => 0,
+            'configdata' => base64_encode(serialize(new \stdClass())),
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        $teacher = $this->getDataGenerator()->create_user();
+        $studenta = $this->getDataGenerator()->create_user();
+        $studentb = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->getDataGenerator()->enrol_user($studenta->id, $course->id, 'student');
+        $this->getDataGenerator()->enrol_user($studentb->id, $course->id, 'student');
+
+        $groupa = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $groupb = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $this->getDataGenerator()->create_group_member(['groupid' => $groupa->id, 'userid' => $studenta->id]);
+        $this->getDataGenerator()->create_group_member(['groupid' => $groupb->id, 'userid' => $studentb->id]);
+
+        $now = time();
+        foreach ([$studenta->id, $studentb->id] as $uid) {
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid' => $instanceid, 'userid' => $uid, 'currentxp' => 100,
+                'ranking_visibility' => 1, 'enable_gamification' => 1,
+                'timecreated' => $now, 'timemodified' => $now,
+            ]);
+        }
+
+        $result = game::get_leaderboard($instanceid, $teacher->id, true);
+        $groupids = array_column($result['groups'], 'id');
+
+        $this->assertContains($groupa->id, $groupids);
+        $this->assertContains($groupb->id, $groupids);
+    }
+
+    /**
+     * A student holding moodle/site:accessallgroups — the core capability for bypassing
+     * SEPARATEGROUPS — must see every group's ranking, matching core convention even though
+     * $isteacher is false for this call.
+     */
+    public function test_get_leaderboard_group_ranking_honors_accessallgroups(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course([
+            'groupmode' => SEPARATEGROUPS,
+            'groupmodeforce' => 1,
+        ]);
+        $coursecontext = \context_course::instance($course->id);
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => $coursecontext->id,
+            'showinsubcontexts' => 0, 'pagetypepattern' => 'course-view-*', 'subpagepattern' => null,
+            'defaultregion' => 'side-pre', 'defaultweight' => 0,
+            'configdata' => base64_encode(serialize(new \stdClass())),
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        $viewer = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($viewer->id, $course->id, 'student');
+        $this->getDataGenerator()->enrol_user($other->id, $course->id, 'student');
+
+        $mygroup = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $othergroup = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $this->getDataGenerator()->create_group_member(['groupid' => $mygroup->id, 'userid' => $viewer->id]);
+        $this->getDataGenerator()->create_group_member(['groupid' => $othergroup->id, 'userid' => $other->id]);
+
+        $studentrole = $DB->get_record('role', ['shortname' => 'student'], '*', MUST_EXIST);
+        assign_capability('moodle/site:accessallgroups', CAP_ALLOW, $studentrole->id, $coursecontext->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+
+        // The capability check inside get_leaderboard() reads the session user, matching the
+        // real call site (view.php always derives $currentuserid from $USER->id) — must be set
+        // here for the same reason.
+        $this->setUser($viewer);
+
+        $now = time();
+        foreach ([$viewer->id, $other->id] as $uid) {
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid' => $instanceid, 'userid' => $uid, 'currentxp' => 100,
+                'ranking_visibility' => 1, 'enable_gamification' => 1,
+                'timecreated' => $now, 'timemodified' => $now,
+            ]);
+        }
+
+        $result = game::get_leaderboard($instanceid, $viewer->id, false);
+        $groupids = array_column($result['groups'], 'id');
+
+        $this->assertContains($mygroup->id, $groupids);
+        $this->assertContains($othergroup->id, $groupids);
+    }
+
+    /**
      * Regression test for the teacher group filter, refactored from a per-user
      * groups_is_member() DB call to a lookup against the already-loaded membership map
      * (performance finding from the security audit). Must still correctly restrict the

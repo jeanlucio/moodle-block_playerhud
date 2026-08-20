@@ -605,11 +605,20 @@ class game {
             $groupbadges = \mod_playergroup\api\group_info::get_badges_for_groups(array_keys($allgroupids));
         }
 
-        // SEPARATEGROUPS: build the set of allowed user IDs for individual ranking.
+        // SEPARATEGROUPS: build the set of allowed user IDs for individual ranking, and the
+        // group filter for the group ranking below — both driven by the same groupmode check,
+        // so a student never sees another group's members OR another group's aggregate XP.
+        // moodle/site:accessallgroups is the core capability for bypassing this, same as core
+        // itself uses elsewhere (e.g. groups_get_activity_group()).
+        $coursecontext = \context_course::instance($courseid);
         $alloweduserids = null; // Null = no restriction.
+        $groupfilteruserid = 0; // 0 = no restriction (groups_get_all_groups()'s own "all" value).
         if (!$isteacher) {
             $course = get_course($courseid);
-            if (groups_get_course_groupmode($course) == SEPARATEGROUPS) {
+            if (
+                groups_get_course_groupmode($course) == SEPARATEGROUPS
+                && !has_capability('moodle/site:accessallgroups', $coursecontext)
+            ) {
                 $usergroups = groups_get_user_groups($courseid, $currentuserid);
                 $usergroupids = $usergroups[0] ?? [];
                 if (!empty($usergroupids)) {
@@ -625,6 +634,7 @@ class game {
                     // No groups: show only the current user.
                     $alloweduserids = [$currentuserid => true];
                 }
+                $groupfilteruserid = $currentuserid;
             }
         }
 
@@ -658,7 +668,6 @@ class game {
         }
 
         $individualranking = [];
-        $coursecontext = \context_course::instance($courseid);
 
         $managers = get_users_by_capability($coursecontext, 'block/playerhud:manage', 'u.id');
         $managerids = array_fill_keys(array_keys($managers), true);
@@ -757,7 +766,7 @@ class game {
 
         // Groups logic (Optimized Zero N+1 query).
         $groupranking = [];
-        $groups = groups_get_all_groups($courseid);
+        $groups = groups_get_all_groups($courseid, $groupfilteruserid);
 
         if ($groups) {
             $groupids = array_keys($groups);
