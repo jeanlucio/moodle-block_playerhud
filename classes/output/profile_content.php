@@ -176,7 +176,7 @@ class profile_content implements \renderable, \templatable {
                 'isimage' => (bool)$media['is_image'],
                 'isimageint' => $media['is_image'] ? 1 : 0,
                 'imageurl' => $media['is_image'] ? $media['url'] : '',
-                'imagecontent' => !$media['is_image'] ? $media['content'] : '',
+                'imagecontent' => !$media['is_image'] ? strip_tags($media['content']) : '',
                 'description' => format_text($item->description, FORMAT_HTML, ['context' => $context]),
                 'lasttimestamp' => $lastts,
                 'lastdate' => $lastts > 0 ? userdate($lastts, get_string('strftimedatefullshort', 'langconfig')) : '',
