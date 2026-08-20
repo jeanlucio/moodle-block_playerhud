@@ -151,6 +151,15 @@ class use_item extends external_api {
                 ];
             }
 
+            // Validate cmid belongs to this block's own course unconditionally, before it is
+            // used for anything else — including the local_latepenalty_rules lookup right
+            // below, whose two distinguishable outcomes (item_lp_warning vs this throw) would
+            // otherwise let a cmid from outside the course be probed for whether an enabled
+            // rule exists there. get_cm() throws moodle_exception when cmid is not part of
+            // $courseid.
+            $modinfo = get_fast_modinfo($courseid);
+            $cm      = $modinfo->get_cm($cmid);
+
             $rule = $DB->get_record('local_latepenalty_rules', ['cmid' => $cmid, 'enabled' => 1]);
             if (!$rule) {
                 return [
@@ -162,14 +171,6 @@ class use_item extends external_api {
                     'new_deadline' => '',
                 ];
             }
-
-            // Validate cmid belongs to this block's own course unconditionally — not only in
-            // the branch below that needs $cm to compute $base. Skipping this check whenever
-            // an override already exists (e.g. one set up in a different course) would let a
-            // deadline-extension item bound to this course's economy be spent against a cmid
-            // outside it. get_cm() throws moodle_exception when cmid is not part of $courseid.
-            $modinfo = get_fast_modinfo($courseid);
-            $cm      = $modinfo->get_cm($cmid);
 
             // Atomically consume the item before touching the override. Two concurrent
             // requests both pass the record_exists_select() ownership check above (it is

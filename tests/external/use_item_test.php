@@ -420,4 +420,29 @@ final class use_item_test extends external_base_testcase {
         $override->id = $DB->insert_record('local_latepenalty_overrides', $override);
         return $override;
     }
+
+    /**
+     * Regression test for the security-audit finding: a cmid outside the block's own course
+     * must be rejected before the local_latepenalty_rules lookup runs, not after. Before the
+     * fix, a foreign cmid with no rule returned the item_lp_warning JSON (success=false)
+     * instead of throwing — the ownership check only ran afterwards, so its outcome ("no rule
+     * here") was observable for any cmid site-wide without ever confirming ownership. A foreign
+     * cmid must always be rejected the same way regardless of whether a rule exists for it.
+     */
+    public function test_use_item_rejects_a_foreign_cmid_before_probing_the_latepenalty_rule(): void {
+        global $USER;
+
+        if (!class_exists('\local_latepenalty\recalculator')) {
+            $this->markTestSkipped('Requires local_latepenalty.');
+        }
+
+        $othercourse = $this->getDataGenerator()->create_course();
+        $foreignassign = $this->getDataGenerator()->create_module('assign', ['course' => $othercourse->id]);
+
+        $item = $this->create_deadline_item(1, 0);
+        $this->give_item_to_user((int) $USER->id, $item->id);
+
+        $this->expectException(\moodle_exception::class);
+        use_item::execute($this->instanceid, $this->course->id, $item->id, $foreignassign->cmid);
+    }
 }
