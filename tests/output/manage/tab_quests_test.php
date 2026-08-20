@@ -189,4 +189,29 @@ final class tab_quests_test extends advanced_testcase {
         $this->assertStringContainsString('<strong>dungeon boss</strong>', $quest->description);
         $this->assertStringContainsString('<em>bonus XP</em>', $quest->description);
     }
+
+    /**
+     * Regression test for the security-audit finding: item names feeding the reward-item select
+     * must be escaped via format_string() before reaching the moodleform, since the core select
+     * template renders option text with the unescaped {{{text}}} triple-mustache.
+     */
+    public function test_render_form_escapes_a_malicious_item_name_in_the_reward_select(): void {
+        global $DB;
+
+        $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'name'            => '<script>alert(document.cookie)</script>Malicious Item',
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        $_GET = ['action' => 'add'];
+
+        $tab = new tab_quests($this->instanceid, $this->course->id);
+        $tab->process();
+        $html = $tab->display();
+
+        $this->assertStringNotContainsString('<script>alert(document.cookie)', $html);
+        $this->assertStringContainsString('Malicious Item', $html);
+    }
 }

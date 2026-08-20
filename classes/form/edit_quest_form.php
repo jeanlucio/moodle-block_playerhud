@@ -53,7 +53,7 @@ class edit_quest_form extends \moodleform {
             'id, name'
         );
         $nooption    = [0 => '— ' . get_string('none', 'block_playerhud') . ' —'];
-        $itemoptions = $nooption + ($allitems ?: []);
+        $itemoptions = $nooption + array_map('format_string', $allitems ?: []);
 
         // Trades for specific trade quest.
         $alltrades   = $DB->get_records_menu(
@@ -62,7 +62,7 @@ class edit_quest_form extends \moodleform {
             'name ASC',
             'id, name'
         );
-        $tradeoptions = $nooption + ($alltrades ?: []);
+        $tradeoptions = $nooption + array_map('format_string', $alltrades ?: []);
 
         // Chapters for story-chapter quest.
         $allchapters = $DB->get_records_menu(
@@ -71,7 +71,7 @@ class edit_quest_form extends \moodleform {
             'sortorder ASC',
             'id, title'
         );
-        $chapteroptions = [0 => '— ' . get_string('select') . ' —'] + ($allchapters ?: []);
+        $chapteroptions = [0 => '— ' . get_string('select') . ' —'] + array_map('format_string', $allchapters ?: []);
 
         // Quest type options.
         $typeoptions = [

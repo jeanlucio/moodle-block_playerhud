@@ -38,7 +38,7 @@ class edit_drop_form extends \moodleform {
         $mform->addElement(
             'header',
             'general',
-            get_string('drop_config_header', 'block_playerhud', $this->_customdata['itemname'])
+            get_string('drop_config_header', 'block_playerhud', format_string($this->_customdata['itemname']))
         );
 
         $mform->addElement('text', 'name', get_string('drop_name_label', 'block_playerhud'), [

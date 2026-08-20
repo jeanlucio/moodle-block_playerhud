@@ -80,7 +80,7 @@ class edit_trade_form extends \moodleform {
             'name ASC',
             'id, name'
         );
-        $itemoptions = [0 => '--- ' . get_string('select') . ' ---'] + ($allitems ? $allitems : []);
+        $itemoptions = [0 => '--- ' . get_string('select') . ' ---'] + array_map('format_string', $allitems ?: []);
 
         // Fetch Groups.
         $groups = groups_get_all_groups($courseid);

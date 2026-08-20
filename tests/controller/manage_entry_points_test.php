@@ -876,6 +876,48 @@ final class manage_entry_points_test extends advanced_testcase {
         (new trades())->handle_edit_form();
     }
 
+    /**
+     * Regression test for the security-audit finding: item names feeding the trade's
+     * requirement/reward select must be escaped via format_string() before reaching the
+     * moodleform, since the core select template renders option text with the unescaped
+     * {{{text}}} triple-mustache.
+     */
+    public function test_trade_editor_escapes_a_malicious_item_name_in_the_item_select(): void {
+        $this->setAdminUser();
+        $this->make_item($this->instanceid, '<script>alert(document.cookie)</script>Malicious Item');
+
+        $_GET = [
+            'courseid'   => $this->course->id,
+            'instanceid' => $this->instanceid,
+        ];
+
+        $html = (new trades())->handle_edit_form();
+
+        $this->assertStringNotContainsString('<script>alert(document.cookie)', $html);
+        $this->assertStringContainsString('Malicious Item', $html);
+    }
+
+    /**
+     * Regression test for the security-audit finding: the item name interpolated into the drop
+     * editor's header must be escaped via format_string(), since it is passed straight into a
+     * get_string() placeholder that the moodleform header template renders unescaped.
+     */
+    public function test_drop_editor_escapes_a_malicious_item_name_in_the_header(): void {
+        $this->setAdminUser();
+        $itemid = $this->make_item($this->instanceid, '<script>alert(document.cookie)</script>Malicious Item');
+
+        $_GET = [
+            'instanceid' => $this->instanceid,
+            'courseid'   => $this->course->id,
+            'itemid'     => $itemid,
+        ];
+
+        $html = (new drops())->handle_edit_form();
+
+        $this->assertStringNotContainsString('<script>alert(document.cookie)', $html);
+        $this->assertStringContainsString('Malicious Item', $html);
+    }
+
     // Chapter, class, trade and scene entry points — courseid/instanceid binding.
 
     /**
