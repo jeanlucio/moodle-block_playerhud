@@ -85,7 +85,7 @@ class edit_drop_form extends \moodleform {
         $mform->hideIf('maxusage', 'unlimited', 'checked');
         $mform->addHelpButton('maxusage', 'maxusage', 'block_playerhud');
 
-        // Value per collection: how many units are granted each time, independent of maxusage
+        // Quantity per collection: how many units are granted each time, independent of maxusage
         // (how many times the drop can be collected).
         $mform->addElement(
             'text',
