@@ -15,7 +15,8 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Tests for the AI content generator's DB-writing helpers (no network involved).
+ * Tests for the AI content generator's DB-writing helpers and its anti-SSRF URL guard
+ * (no call to an actual AI provider involved).
  *
  * @package    block_playerhud
  * @category   test
@@ -28,8 +29,9 @@ namespace block_playerhud\ai;
 use block_playerhud\tests\external\external_base_testcase;
 
 /**
- * Tests for generator::save_item(), reached via reflection since it is protected and never
- * calls the AI itself — it only persists an already-parsed data array.
+ * Tests for generator::save_item() and generator::is_safe_url(), both reached via reflection
+ * since they are protected/private and neither one calls the AI itself — save_item() only
+ * persists an already-parsed data array, and is_safe_url() only resolves/inspects a host.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
@@ -90,5 +92,40 @@ final class generator_test extends external_base_testcase {
         $item = $DB->get_record('block_playerhud_items', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
         $this->assertSame('12345', $item->name);
         $this->assertSame('', $item->description);
+    }
+
+    /**
+     * Calls the private is_safe_url() method via reflection.
+     *
+     * @param string $url The URL to check.
+     * @return bool
+     */
+    private function call_is_safe_url(string $url): bool {
+        $generator = new generator($this->instanceid);
+        $method = new \ReflectionMethod($generator, 'is_safe_url');
+        $method->setAccessible(true);
+
+        return $method->invoke($generator, $url);
+    }
+
+    /**
+     * Regression test for the security-audit SSRF finding: a host that does not resolve to any
+     * A/AAAA record must be rejected, not silently treated as safe. Uses a .invalid TLD
+     * (RFC 2606 — guaranteed to never resolve), the same failure shape a typo, a stale DNS
+     * record or a transient resolver failure would produce.
+     */
+    public function test_is_safe_url_rejects_a_host_that_does_not_resolve(): void {
+        $this->assertFalse($this->call_is_safe_url('https://nonexistent-host-xyz.invalid/v1'));
+    }
+
+    /**
+     * Regression test for the security-audit SSRF finding: '127.000.000.1' is rejected by
+     * filter_var(FILTER_VALIDATE_IP) for its leading zeros (PHP avoids octal ambiguity), so it
+     * falls into the hostname branch — where it also fails to resolve via DNS, since it isn't a
+     * real hostname either. curl's own resolver still connects it to 127.0.0.1, so the fail-open
+     * fallback previously let this bypass the loopback/private-range check entirely.
+     */
+    public function test_is_safe_url_rejects_a_non_canonical_ip_literal(): void {
+        $this->assertFalse($this->call_is_safe_url('https://127.000.000.1/v1'));
     }
 }

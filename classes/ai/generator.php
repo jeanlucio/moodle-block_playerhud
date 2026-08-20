@@ -615,6 +615,15 @@ class generator {
                     }
                 }
             }
+            if (empty($resolvedips)) {
+                // Fail closed: a host that does not resolve to any A/AAAA record must never be
+                // treated as safe. Without this, a non-canonical IP-literal string that
+                // filter_var() rejects but curl's own resolver still accepts as an address (e.g.
+                // '127.000.000.1', rejected here for its leading zeros yet connected to
+                // 127.0.0.1 by curl) falls through both loops below and reaches the 'return
+                // true' at the end of this method untested.
+                return false;
+            }
             foreach ($resolvedips as $resolvedip) {
                 $ispublic = filter_var(
                     $resolvedip,
