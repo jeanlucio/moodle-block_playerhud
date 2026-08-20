@@ -4,6 +4,7 @@
 * 🏅 **Level Tiers:** Visual color-coded progression (every 5 levels).
 * 🎛 **Configurable Progression:** Teachers define the number of levels and XP required for each level.
 * 🎒 **Inventory System:** Collectible items with configurable **Cooldown (Recharge Time)** and usage limits.
+* 🔢 **Item Quantities:** Items track a real numeric balance instead of one row per unit collected. A drop's **Value per collection** controls how many units it grants each time (independent of its collection limit), quests can reward any quantity of their item, and trades can require/give any quantity per item. Large balances display compactly (e.g. `1.5k`) throughout the Collection tab, item details, and audit history.
 * 🎯 **Item Powers:** An item can carry a special effect beyond XP — become the student's profile avatar, grant a deadline extension on a chosen activity (requires the optional [Late Penalty](latepenalty.html) plugin), or act as the collectible PlayerCoin.
 * 📜 **Quest System:** Manual (level/XP), collection, activity-completion, trade, and chapter quests, with a built-in heuristic suggestion tool.
 * 📍 **Drop System:** Place collectible items across course sections via shortcodes.
