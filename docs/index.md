@@ -10,7 +10,7 @@ lang: en
 [![Latest Release](https://img.shields.io/github/v/release/jeanlucio/moodle-block_playerhud?style=flat)](https://github.com/jeanlucio/moodle-block_playerhud/releases)
 [![PlayerGames Ecosystem](https://img.shields.io/badge/PlayerGames-Ecosystem-6f42c1?style=flat&logo=gamepad&logoColor=white)](https://jeanlucio.github.io/playergames/)
 ![Core Component](https://img.shields.io/badge/Role-Core_Component-198754?style=flat)
-[![Author](https://img.shields.io/badge/by-Jean_Lucio-6f42c1?style=flat)](https://marketplace.moodle.com/user/984)
+[![Author](https://img.shields.io/badge/by-Jean_Lucio-6f42c1?style=flat)](https://github.com/jeanlucio/)
 
 [![Moodle Plugin CI](https://github.com/jeanlucio/moodle-block_playerhud/actions/workflows/ci.yml/badge.svg)](https://github.com/jeanlucio/moodle-block_playerhud/actions/workflows/ci.yml)
 [![MDL Shield](https://img.shields.io/endpoint?url=https%3A%2F%2Fmdlshield.com%2Fapi%2Fbadge%2Fblock_playerhud)](https://mdlshield.com/plugins/block_playerhud)
@@ -24,9 +24,7 @@ It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing student
 progress in real time while teachers configure engagement mechanics aligned with pedagogical
 objectives.
 
-Use the sidebar to jump to any section on this page.
-
-Source code: [github.com/jeanlucio/moodle-block_playerhud](https://github.com/jeanlucio/moodle-block_playerhud)
+<p class="page-hint">👈 Use the sidebar to jump to any section on this page.</p>
 
 ---
 
