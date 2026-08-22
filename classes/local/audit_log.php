@@ -54,6 +54,15 @@ class audit_log {
      *        from the teacher's Reports tab, since manage.php builds tab content before calling
      *        $OUTPUT->header().
      * @return array {logs: \stdClass[], paging_bar: string, total: int, limitfrom: int}.
+     *
+     * The returned 'details' column doubles as a report_src_<details> lang string key (resolved
+     * by the two view/renderer classes). block_playerhud_stack_log's own 'source' column is
+     * reused both as a grant's origin tag ('map', 'playerwords'...) and, via external_items::
+     * consume(), as a spend's origin tag — the same literal tag either way. A 'consumed_' prefix
+     * is added here whenever the row is a spend (delta < 0) from anything other than the generic
+     * 'consumed'/'revoked' sources, so a caller-specific tag like 'playerwords' resolves to a
+     * distinct report_src_consumed_playerwords string instead of colliding with the grant-side
+     * report_src_playerwords string.
      */
     public static function get_logs(
         int $instanceid,
@@ -73,6 +82,7 @@ class audit_log {
         $concattrade = $DB->sql_concat("'trade_'", "tl.id");
         $concatquest = $DB->sql_concat("'quest_'", "ql.id");
         $concatstack = $DB->sql_concat("'stack_'", "sl.id");
+        $concatconsumedsrc = $DB->sql_concat("'consumed_'", "sl.source");
 
         $innersql = "
             SELECT {$concatitem} AS uniqueid,
@@ -110,7 +120,10 @@ class audit_log {
                         WHEN sl.delta < 0 THEN 'item_consumed'
                         ELSE 'item' END AS event_type,
                    i.name AS object_name, sl.timecreated,
-                   sl.source AS details, i.image AS icon,
+                   CASE
+                       WHEN sl.delta < 0 AND sl.source NOT IN ('consumed', 'revoked') THEN {$concatconsumedsrc}
+                       ELSE sl.source
+                   END AS details, i.image AS icon,
                    CASE
                        WHEN sl.source = 'revoked' THEN -sl.xpawarded
                        ELSE sl.xpawarded

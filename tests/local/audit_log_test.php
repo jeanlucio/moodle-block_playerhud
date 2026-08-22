@@ -243,6 +243,46 @@ final class audit_log_test extends advanced_testcase {
     }
 
     /**
+     * A grant and a consume can share the same caller-identifying $source tag (e.g. a game
+     * plugin passes 'playerwords' to both grant() and consume()), but must resolve to distinct
+     * report_src_* lang string keys: 'details' carries the raw source for a grant, and a
+     * 'consumed_' prefixed variant for a consume, so the history/report views never render a
+     * spend with the same wording as an earn.
+     */
+    public function test_consume_details_is_disambiguated_from_grant_with_same_source(): void {
+        $itemid = $this->create_item(0);
+        external_items::grant($this->instanceid, $itemid, $this->user->id, 2, 'playerwords', true);
+        external_items::consume($this->instanceid, $itemid, $this->user->id, 1, 'playerwords');
+
+        $logs = array_values($this->get_logs()['logs']);
+        $this->assertCount(2, $logs);
+
+        $granted = array_values(array_filter($logs, static fn($log) => $log->event_type === 'item'));
+        $consumed = array_values(array_filter($logs, static fn($log) => $log->event_type === 'item_consumed'));
+
+        $this->assertCount(1, $granted);
+        $this->assertCount(1, $consumed);
+        $this->assertEquals('playerwords', $granted[0]->details);
+        $this->assertEquals('consumed_playerwords', $consumed[0]->details);
+    }
+
+    /**
+     * A consume() call without an explicit $source keeps the original generic 'consumed' details
+     * value — the default must stay untouched for every pre-existing caller (trade, story items,
+     * the student's own "Use" button) that never had a caller identity to disambiguate.
+     */
+    public function test_consume_without_source_keeps_generic_details(): void {
+        $itemid = $this->create_item(0);
+        external_items::grant($this->instanceid, $itemid, $this->user->id, 1, 'teacher', true);
+        external_items::consume($this->instanceid, $itemid, $this->user->id, 1);
+
+        $logs = array_values($this->get_logs()['logs']);
+        $consumed = array_values(array_filter($logs, static fn($log) => $log->event_type === 'item_consumed'));
+        $this->assertCount(1, $consumed);
+        $this->assertEquals('consumed', $consumed[0]->details);
+    }
+
+    /**
      * Revoking a new-engine grant appears as its own 'item_revoked' event reporting the
      * negative of the original grant's recorded xpawarded — the regression this test guards:
      * revoke_stack_log_entry() must carry that amount onto its own compensating log row, not
