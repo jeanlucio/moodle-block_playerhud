@@ -190,13 +190,27 @@ class external_items {
      * blocking the user forever. Returns false only for a genuine insufficient balance on a
      * valid item.
      *
+     * $source only tags the block_playerhud_stack_log ledger row read by the audit/history
+     * report, mirroring grant()'s own $source param. It is never written to
+     * block_playerhud_inventory: that table overloads its own 'source' column as a status flag
+     * ('consumed'/'revoked' marks a row already spent, read back by the availability count
+     * above) rather than as an origin tag, so legacy rows always keep the literal 'consumed'
+     * value regardless of who triggered this call.
+     *
      * @param int $blockinstanceid Block instance ID the item must belong to.
      * @param int $itemid PlayerHUD item ID.
      * @param int $userid User ID.
      * @param int $qty Number of units to consume.
+     * @param string $source Ledger source tag identifying the calling plugin or feature.
      * @return bool|null True on success, false if insufficient, null if the item is invalid.
      */
-    public static function consume(int $blockinstanceid, int $itemid, int $userid, int $qty): ?bool {
+    public static function consume(
+        int $blockinstanceid,
+        int $itemid,
+        int $userid,
+        int $qty,
+        string $source = 'consumed'
+    ): ?bool {
         global $DB;
 
         if (!self::belongs_to_instance($itemid, $blockinstanceid)) {
@@ -244,7 +258,7 @@ class external_items {
                         'itemid'      => $itemid,
                         'dropid'      => 0,
                         'delta'       => -$fromstack,
-                        'source'      => 'consumed',
+                        'source'      => $source,
                         'xpawarded'   => 0,
                         'timecreated' => $now,
                     ]);
