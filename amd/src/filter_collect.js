@@ -716,7 +716,7 @@ export const init = () => {
                 const iconHtml = '<i class="fa fa-clock-o me-1" aria-hidden="true"></i>';
                 modalEls.dropCooldown.html(`${iconHtml}${textStr}: ${data.respawntimeStr}`).show();
                 showStats = true;
-            } else if (maxUsage > 1) {
+            } else if (maxUsage > 1 || maxUsage === 0) {
                 const textStr = appStrings.immediate || 'Immediate';
                 const iconHtml = '<i class="fa fa-bolt text-warning me-1" aria-hidden="true"></i>';
                 modalEls.dropCooldown.html(`${iconHtml}${textStr}`).show();
