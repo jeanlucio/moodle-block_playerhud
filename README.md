@@ -74,6 +74,7 @@ documentation.
 
 Found a bug or have a question? Open an issue on the
 [issue tracker](https://github.com/jeanlucio/moodle-block_playerhud/issues).
+For general questions or ideas, use [GitHub Discussions](https://github.com/jeanlucio/moodle-block_playerhud/discussions).
 
 ### 📄 License
 
@@ -150,6 +151,7 @@ completa.
 
 Encontrou um bug ou tem alguma dúvida? Abra uma issue no
 [rastreador de issues](https://github.com/jeanlucio/moodle-block_playerhud/issues).
+Para perguntas gerais ou ideias, use as [Discussions do GitHub](https://github.com/jeanlucio/moodle-block_playerhud/discussions).
 
 ### 📄 Licença
 
