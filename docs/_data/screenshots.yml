@@ -1,0 +1,12 @@
+# Each entry needs an image at docs/assets/img/screenshots/<file>, plus an
+# English and a Portuguese caption. The screenshots.md pages (en/pt) loop over
+# this list, so adding a new screenshot never touches the gallery markup.
+- file: student-sidebar.png
+  caption_en: "The student's HUD sidebar: avatar, level, XP bar, and recent item stash, always in view alongside the course"
+  caption_pt: "A barra lateral do HUD do estudante: avatar, nível, barra de XP e estoque de itens recentes, sempre visível ao lado do curso"
+- file: item-modal.png
+  caption_en: "Clicking any item opens a details modal with its description, XP value and collection progress"
+  caption_pt: "Clicar em qualquer item abre um modal de detalhes com descrição, valor de XP e progresso de coleta"
+- file: teacher-panel.png
+  caption_en: "The Game Master panel lets teachers manage items, drops, quests and trades without leaving the course"
+  caption_pt: "O painel do Mestre do Jogo permite ao professor gerenciar itens, drops, missões e trocas sem sair do curso"

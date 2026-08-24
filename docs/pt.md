@@ -29,6 +29,9 @@ engajamento de acordo com seus objetivos pedagógicos.
 
 ---
 
+<span id="screenshots"></span>
+{% include_relative pt/screenshots.md %}
+
 <span id="features"></span>
 {% include_relative pt/features.md %}
 
