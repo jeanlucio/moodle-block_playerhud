@@ -267,6 +267,27 @@ final class utils_test extends advanced_testcase {
     }
 
     /**
+     * The compact badge text carries the same figures as format_drop_progress_count(), just
+     * without the leading "Collection" word — meant for a corner badge with little room.
+     */
+    public function test_format_drop_progress_badge_finite(): void {
+        $expected = get_string('drop_progress_badge', 'block_playerhud', (object) [
+            'count' => 1,
+            'maxusage' => 2,
+        ]);
+        $this->assertSame($expected, utils::format_drop_progress_badge(1, 2));
+    }
+
+    /**
+     * An unlimited drop's compact badge text also drops the leading word, keeping the real
+     * collection count against the infinity symbol.
+     */
+    public function test_format_drop_progress_badge_unlimited(): void {
+        $expected = get_string('drop_progress_badge_infinite', 'block_playerhud', 7);
+        $this->assertSame($expected, utils::format_drop_progress_badge(7, 0));
+    }
+
+    /**
      * The per-collection quantity is the drop's own configured value — never a running total
      * of what the student accumulated from it. That "how much do I own in total" question
      * belongs to the inventory/backpack view, which does sum across every source; this

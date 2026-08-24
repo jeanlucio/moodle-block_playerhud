@@ -399,6 +399,27 @@ class utils {
     }
 
     /**
+     * Builds the compact collection-count text for a drop's corner badge, e.g. "1 of 2" or,
+     * for an unlimited drop, "7 of ∞" — the same figures as format_drop_progress_count(), just
+     * without the leading "Collection" word. The card badge has little horizontal room, and the
+     * word is redundant once the number already sits next to the item's icon and collect button.
+     *
+     * @param int $events Number of times the drop was collected.
+     * @param int $maxusage Maximum collection events allowed (0 = unlimited).
+     * @return string Compact collection-count text.
+     */
+    public static function format_drop_progress_badge(int $events, int $maxusage): string {
+        if ($maxusage <= 0) {
+            return get_string('drop_progress_badge_infinite', 'block_playerhud', $events);
+        }
+
+        return get_string('drop_progress_badge', 'block_playerhud', (object) [
+            'count' => $events,
+            'maxusage' => $maxusage,
+        ]);
+    }
+
+    /**
      * Builds the per-collection quantity text for a drop, e.g. "Qty/collection: 2".
      *
      * Deliberately the drop's configured value-per-collection, not a running total of what the
