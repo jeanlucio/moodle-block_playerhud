@@ -360,9 +360,10 @@ class behat_block_playerhud extends behat_base {
         $courseid = (int) $matches[1];
         $course   = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
 
-        // Ensure filter_playerhud is active so the shortcode renders as a collect button.
-        filter_set_global_state('playerhud', TEXTFILTER_ON);
-
+        // The PlayerHUD filter enables itself on install (see filter_playerhud/db/install.php),
+        // so no explicit filter_set_global_state() call is needed here. Relying on that default
+        // state, rather than forcing it, is what lets this scenario also prove the filter is
+        // actually on out of the box.
         \testing_util::get_data_generator()->create_module('label', [
             'course'      => $course->id,
             'section'     => 0,
