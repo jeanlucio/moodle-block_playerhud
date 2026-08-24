@@ -409,10 +409,10 @@ final class game_test extends advanced_testcase {
     }
 
     /**
-     * item_data.qty, item_data.progress_text and item_data.qty_text let a caller (the
-     * collect_item web service, consumed by filter_playerhud's modal) refresh its UI after a
-     * successful collection without re-deriving the drop's per-collection value or re-fetching
-     * totals itself.
+     * item_data.qty, item_data.progress_text, item_data.progress_badge_text and
+     * item_data.qty_text let a caller (the collect_item web service, consumed by
+     * filter_playerhud's modal and drop card) refresh its UI after a successful collection
+     * without re-deriving the drop's per-collection value or re-fetching totals itself.
      */
     public function test_process_collection_item_data_reports_qty_and_progress_text(): void {
         $this->resetAfterTest(true);
@@ -430,6 +430,10 @@ final class game_test extends advanced_testcase {
         $this->assertSame(
             utils::format_drop_progress_count(2, 3),
             $result['item_data']['progress_text']
+        );
+        $this->assertSame(
+            utils::format_drop_progress_badge(2, 3),
+            $result['item_data']['progress_badge_text']
         );
         $this->assertSame(
             utils::format_drop_qty_per_collection(2),

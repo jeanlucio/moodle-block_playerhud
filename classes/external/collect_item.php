@@ -131,6 +131,11 @@ class collect_item extends external_api {
                     'Human-readable collection count, e.g. "Collection 1 of 2"',
                     VALUE_OPTIONAL
                 ),
+                'progress_badge_text' => new external_value(
+                    PARAM_TEXT,
+                    'Compact collection count for the card badge, e.g. "1 of 2"',
+                    VALUE_OPTIONAL
+                ),
                 'qty_text' => new external_value(
                     PARAM_TEXT,
                     'Human-readable per-collection quantity, e.g. "Qty/collection: 2"',

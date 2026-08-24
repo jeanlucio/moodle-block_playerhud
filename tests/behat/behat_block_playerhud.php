@@ -190,18 +190,41 @@ class behat_block_playerhud extends behat_base {
     }
 
     /**
-     * Shared insert logic for the two "PlayerHUD item with drop" Given steps above.
+     * Creates a PlayerHUD item and associated drop with the given code and collection limit in
+     * the given course. Distinct from the plain "drop code" step above, which always hardcodes
+     * maxusage=1 — a scenario asserting on the collection-count badge needs a limit greater
+     * than 1 for the badge to render at all (see render::render_drop()'s show_progress_badge).
+     *
+     * @param string $itemname Display name for the item.
+     * @param string $dropcode Short alphanumeric code used in the [PLAYERHUD_DROP] shortcode.
+     * @param int $maxusage Maximum number of collection events allowed for this drop.
+     * @param string $shortname Course shortname.
+     * @Given a PlayerHUD item :itemname with drop code :dropcode and collection limit :maxusage exists in course :shortname
+     */
+    public function playerhud_item_with_drop_and_limit_exists(
+        string $itemname,
+        string $dropcode,
+        int $maxusage,
+        string $shortname
+    ): void {
+        $this->create_playerhud_item_with_drop($itemname, $dropcode, $shortname, '', $maxusage);
+    }
+
+    /**
+     * Shared insert logic for the "PlayerHUD item with drop" Given steps above.
      *
      * @param string $itemname Display name for the item.
      * @param string $dropcode Short alphanumeric code used in the [PLAYERHUD_DROP] shortcode.
      * @param string $shortname Course shortname.
      * @param string $description Raw item description.
+     * @param int $maxusage Maximum number of collection events allowed for this drop.
      */
     private function create_playerhud_item_with_drop(
         string $itemname,
         string $dropcode,
         string $shortname,
-        string $description
+        string $description,
+        int $maxusage = 1
     ): void {
         global $DB;
 
@@ -231,7 +254,7 @@ class behat_block_playerhud extends behat_base {
             'blockinstanceid' => $instance->id,
             'itemid'          => $itemid,
             'code'            => strtoupper($dropcode),
-            'maxusage'        => 1,
+            'maxusage'        => $maxusage,
             'respawntime'     => 0,
             'timecreated'     => time(),
             'timemodified'    => time(),

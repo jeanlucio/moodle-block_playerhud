@@ -348,6 +348,15 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
         if (resp.item_data.qty_text !== undefined) {
             container.attr('data-qty-text', resp.item_data.qty_text);
         }
+
+        // The card/image mode's own visible progress badge (server-rendered on page load) is a
+        // separate element from the data-progress-text attribute above, which only feeds the
+        // modal on its next open. Without this, the badge kept showing the pre-collection count
+        // until the page was reloaded, even though the collection itself succeeded.
+        if (resp.item_data.progress_badge_text !== undefined) {
+            container.find('.ph-badge-progress').text(resp.item_data.progress_badge_text);
+            container.find('.ph-badge-progress-sr').text(resp.item_data.progress_text);
+        }
         const card = trigger.closest('.playerhud-item-card');
         if (card.length) {
             card.attr('data-date', resp.item_data.date);
