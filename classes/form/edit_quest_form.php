@@ -257,11 +257,11 @@ class edit_quest_form extends \moodleform {
         }
 
         if (!is_numeric($data['reward_xp']) || (int)$data['reward_xp'] < 0) {
-            $errors['reward_xp'] = get_string('validate_number', 'core');
+            $errors['reward_xp'] = get_string('validate_number', 'block_playerhud');
         }
 
         if (!empty($data['reward_itemid']) && (!is_numeric($data['reward_itemqty']) || (int)$data['reward_itemqty'] < 1)) {
-            $errors['reward_itemqty'] = get_string('validate_number', 'core');
+            $errors['reward_itemqty'] = get_string('validate_number', 'block_playerhud');
         }
 
         return $errors;

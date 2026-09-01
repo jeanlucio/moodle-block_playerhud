@@ -218,7 +218,7 @@ class edit_item_form extends \moodleform {
             $errors['name'] = get_string('required');
         }
         if (!is_numeric($data['xp'])) {
-            $errors['xp'] = get_string('validate_number', 'core');
+            $errors['xp'] = get_string('validate_number', 'block_playerhud');
         }
         // Defense in depth: the image field can hold a raw URL (rendered as an <img src>
         // client-side), so reject anything that does not survive PARAM_URL cleaning.
