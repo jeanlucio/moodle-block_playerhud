@@ -5,6 +5,58 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.9.0] — 2026-09-03
+
+### Added
+- **Item quantities.** Items can now be granted, spent and checked in any amount per
+  action instead of one unit at a time: a drop grants a configurable "Quantity per
+  collection", a quest reward grants a configurable number of units, and trades move
+  stacks. Teachers set the amounts on the drop and quest forms; students see a quantity
+  badge on each collection card and in the audit log. An append-only ledger records every
+  grant and consumption.
+- **New "Interact with gamification features" capability (`block/playerhud:interact`).**
+  Collecting drops, spending/equipping items, making story choices and processing trades
+  are now governed by their own write capability, split out of the read-only
+  `block/playerhud:view`. Existing role assignments are copied across automatically on
+  upgrade — no site in use changes behaviour.
+- Reports and the audit log now attribute item grants and consumption to the PlayerGames
+  activity that caused them (PlayerCross, PlayerWords).
+
+### Security
+- **Cross-instance data access (IDOR) closed across the block:** eight web services, every
+  remaining management entry point, the chat assistant, the chapter/class/trade/scene
+  editors, the leaderboard/ranking reads and the AI story cost item now all verify the ID
+  they are handed belongs to the course's own block instance before acting on it.
+- AI-generated content is sanitised before storage, and the AI provider's raw error text
+  is sanitised before it reaches the browser.
+- Item, trade and chapter names are escaped in quest, trade and drop form labels; the
+  profile section's item image content is stripped of tags; the shop/trade popover title
+  is no longer treated as HTML.
+- The RPG class choice's permanence is enforced on the server, not only hidden in the UI.
+- The SSRF guard now fails closed when a host does not resolve.
+- A story choice can no longer be applied when the item consumption backing it fails.
+- Trade `groupid`, `required_class_id` and chapter-type references are remapped correctly
+  on course restore; drop quantity and quest reward quantity are carried through backup.
+- `block/playerhud:manage` is now flagged with the data-loss risk it carries.
+
+### Fixed
+- The drop progress badge shows the per-collection value and refreshes immediately after a
+  collection, with clearer wording and a compact form for narrow cards.
+- The "Immediate" and respawn-cooldown badges are no longer hidden behind the
+  unlimited-drop badge.
+- Economy-health XP totals account for a drop's quantity value, not just its collection
+  limit; the "collected N times" report label and the unlimited-drop help text are fixed.
+- Group rankings honour the course's "Separate groups" setting.
+- Student emails in Reports follow the site's user-identity policy; the audit student
+  selector is sorted by the displayed name.
+- The Gamification Wizard spreads auto-distributed drops evenly across all activities and
+  no longer places them inside labels.
+- Collection cards: partial third line bleeding past the rounded border, a stray empty
+  actions divider, an origin-badge wrap, and the filter/sort toolbar overflowing
+  off-screen on a phone.
+- The trade-requirement availability check is no longer run once per trade.
+- Fixed a JavaScript error on the drop-collection failure path.
+
 ## [v1.8.2] — 2026-08-12
 
 ### Security
