@@ -114,6 +114,31 @@ final class drop_distribution_test extends advanced_testcase {
     }
 
     /**
+     * A label is eligible by default but excluded when $includelabels is false — the mode the
+     * wizard's automatic distribution uses so drop cards never land inside an inline media banner.
+     */
+    public function test_get_eligible_modules_excludes_labels_on_request(): void {
+        $this->getDataGenerator()->create_module('label', [
+            'course' => $this->course->id,
+            'intro' => 'Banner com imagens',
+        ]);
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'name' => 'Introdução',
+        ]);
+        $pagecm = get_coursemodule_from_instance('page', $page->id, $this->course->id);
+
+        $withlabels = drop_distribution::get_eligible_modules($this->course->id);
+        $this->assertCount(2, $withlabels);
+        $this->assertContains('label', array_column($withlabels, 'modname'));
+
+        $nolabels = drop_distribution::get_eligible_modules($this->course->id, false);
+        $this->assertCount(1, $nolabels);
+        $this->assertSame((int) $pagecm->id, (int) $nolabels[0]['cmid']);
+        $this->assertNotContains('label', array_column($nolabels, 'modname'));
+    }
+
+    /**
      * The module whose name best matches the haystack text is suggested.
      */
     public function test_suggest_module_returns_best_name_match(): void {
@@ -195,15 +220,25 @@ final class drop_distribution_test extends advanced_testcase {
     }
 
     /**
-     * More eligible activities than the target: only the first $target of them get a quota
-     * of 1, the rest get none — never spreading below 1 per activity.
+     * More eligible activities than the target: the $target single-unit quotas are spread
+     * evenly across the whole activity list (one entry per activity, some 0), never piled onto
+     * the first $target activities and leaving the rest empty.
      */
-    public function test_compute_activity_quotas_caps_activity_count_at_target(): void {
+    public function test_compute_activity_quotas_spreads_evenly_when_more_activities(): void {
         $quotas = drop_distribution::compute_activity_quotas(11, 15);
-
-        $this->assertCount(11, $quotas);
-        $this->assertSame(array_fill(0, 11, 1), $quotas);
+        $this->assertCount(15, $quotas);
         $this->assertSame(11, array_sum($quotas));
+        $this->assertContains(0, $quotas);
+        $this->assertContains(1, array_slice($quotas, -4), 'the last activities must not be starved');
+        $this->assertLessThanOrEqual(1, max($quotas), 'no activity gets more than one when target < count');
+
+        // 12 drops over 20 activities: evenly spaced, last drop well past the 12th activity.
+        $quotas = drop_distribution::compute_activity_quotas(12, 20);
+        $this->assertCount(20, $quotas);
+        $this->assertSame(12, array_sum($quotas));
+        $this->assertSame(1, $quotas[0]);
+        $lastwithdrop = max(array_keys(array_filter($quotas)));
+        $this->assertGreaterThan(12, $lastwithdrop);
     }
 
     /**

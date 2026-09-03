@@ -873,7 +873,7 @@ class wizard_generate {
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$pillid, $bookid]);
 
         if ($distribute) {
-            $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
+            $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid, false);
             $quotas = \block_playerhud\local\drop_distribution::compute_activity_quotas(
                 self::PILL_TARGET,
                 count($modules)
@@ -882,6 +882,11 @@ class wizard_generate {
             $dropids = [];
             $items = [];
             foreach ($quotas as $i => $quota) {
+                if ($quota === 0) {
+                    // More eligible activities than PILL_TARGET: the evenly-spread quotas leave
+                    // some activities at 0 — skip them rather than plant a maxusage-0 drop.
+                    continue;
+                }
                 $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
                     'blockinstanceid' => $instanceid,
                     'itemid' => $pillid,
@@ -1483,7 +1488,7 @@ class wizard_generate {
     public static function distribute_drops(int $instanceid, int $courseid, array $dropids, int $runid): string {
         global $DB;
 
-        $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid);
+        $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid, false);
         if (empty($modules)) {
             return get_string('wizard_distribute_no_activities', 'block_playerhud');
         }

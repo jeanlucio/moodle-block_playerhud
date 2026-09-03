@@ -44,11 +44,17 @@ class drop_distribution {
      * as the "only eligible activity" for generic item distribution too, dumping unrelated
      * item cards right next to those two mechanics' own discreet shortcodes.
      *
+     * Labels are eligible by default (the manual distribution screen lists them, flagged, so a
+     * teacher can still pick one on purpose), but the wizard's automatic distribution passes
+     * `$includelabels = false`: a label is usually an inline banner of images/video on the course
+     * page, where an auto-planted drop card reads as visual clutter rather than a reward.
+     *
      * @param int $courseid Course ID.
+     * @param bool $includelabels Whether label modules count as eligible (default true).
      * @return array<int, array{cmid: int, instance: int, name: string, modname: string,
      *     modname_translated: string, supports_content: bool, is_label: bool}>
      */
-    public static function get_eligible_modules(int $courseid): array {
+    public static function get_eligible_modules(int $courseid, bool $includelabels = true): array {
         global $DB;
 
         $course = get_course($courseid);
@@ -61,6 +67,9 @@ class drop_distribution {
                 continue;
             }
             if ($newsforumcmid !== null && (int) $cm->id === $newsforumcmid) {
+                continue;
+            }
+            if (!$includelabels && $cm->modname === 'label') {
                 continue;
             }
             $columns = $DB->get_columns($cm->modname);
@@ -88,23 +97,35 @@ class drop_distribution {
      * Every activity gets the same base quota (`intdiv($target, $activitycount)`); activities
      * whose maxusage/respawntime cooldown gives students the most elapsed course time to reach
      * it get first pick of the remainder (`$target % $activitycount`), so the first activities
-     * in course order — the ones students reach earliest — carry the extra unit. When there are
-     * more eligible activities than the target itself, only the first `$target` of them get a
-     * quota of 1 each; the rest get none.
+     * in course order — the ones students reach earliest — carry the extra unit.
+     *
+     * When there are more eligible activities than the target, the `$target` single-unit quotas
+     * are spread evenly across the whole activity list (`intdiv($i * $activitycount, $target)`)
+     * rather than piled onto the first `$target` activities — otherwise a course with more
+     * activities than drops leaves every activity past the `$target`-th with nothing.
      *
      * @param int $target Total quantity to split across activities.
      * @param int $activitycount Number of eligible activities, in course order.
-     * @return int[] Quota per activity, one entry per activity that gets a drop (0-indexed,
-     *     same order as the caller's activity list; fewer entries than $activitycount when
-     *     $activitycount > $target).
+     * @return int[] Quota per activity, one entry per activity (0-indexed, same order as the
+     *     caller's activity list). Always exactly $activitycount entries; some are 0 when
+     *     $activitycount > $target.
      */
     public static function compute_activity_quotas(int $target, int $activitycount): array {
         if ($target <= 0 || $activitycount <= 0) {
             return [];
         }
 
-        if ($activitycount >= $target) {
+        if ($activitycount === $target) {
             return array_fill(0, $target, 1);
+        }
+
+        if ($activitycount > $target) {
+            $quotas = array_fill(0, $activitycount, 0);
+            for ($i = 0; $i < $target; $i++) {
+                $quotas[intdiv($i * $activitycount, $target)] = 1;
+            }
+
+            return $quotas;
         }
 
         $base = intdiv($target, $activitycount);

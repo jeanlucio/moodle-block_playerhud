@@ -257,6 +257,74 @@ final class wizard_generate_helpers_test extends external_base_testcase {
     }
 
     /**
+     * With fewer drops than eligible activities, distribute_drops() must spread them across the
+     * whole course — not pile the first N activities and leave every later one empty — and must
+     * never target a label, whose inline media banner is no place for an auto-planted drop card.
+     * Eight drops over a course of 14 pages + 2 labels: labels get nothing, and at least one
+     * drop lands in the final third of the page list.
+     */
+    public function test_distribute_drops_spreads_across_all_activities_and_skips_labels(): void {
+        global $DB;
+
+        $pageids = [];
+        for ($i = 0; $i < 16; $i++) {
+            if ($i === 2 || $i === 13) {
+                $this->getDataGenerator()->create_module('label', [
+                    'course' => $this->course->id,
+                    'intro' => 'Banner de mídia ' . $i,
+                ]);
+                continue;
+            }
+            $page = $this->getDataGenerator()->create_module('page', [
+                'course' => $this->course->id,
+                'name' => 'Módulo ' . $i,
+                'content' => 'Corpo original ' . $i,
+            ]);
+            $pageids[] = (int) $page->id;
+        }
+
+        $runid = \block_playerhud\local\wizard::start_run($this->instanceid, 2, []);
+        $dropids = [];
+        for ($i = 1; $i <= 8; $i++) {
+            $item = $this->create_item($this->instanceid, 'Troféu ' . $i);
+            $dropids[] = (int) $DB->insert_record('block_playerhud_drops', (object) [
+                'blockinstanceid' => $this->instanceid,
+                'itemid' => $item->id,
+                'name' => $item->name,
+                'maxusage' => 1,
+                'respawntime' => 0,
+                'code' => \block_playerhud\utils::generate_drop_code($this->instanceid),
+                'timecreated' => time(),
+                'timemodified' => time(),
+            ]);
+        }
+
+        $message = wizard_generate::distribute_drops($this->instanceid, $this->course->id, $dropids, $runid);
+        $this->assertSame('', $message);
+
+        $has = fn(string $text): bool => strpos($text, '[PLAYERHUD_DROP') !== false;
+
+        // No label received a shortcode.
+        foreach ($DB->get_records('label', ['course' => $this->course->id]) as $label) {
+            $this->assertFalse($has((string) $label->intro), 'A label must never receive an auto-distributed drop.');
+        }
+
+        // Exactly the 8 drops landed, and they reached beyond the first 8 pages.
+        $pagehits = [];
+        foreach ($pageids as $index => $pageid) {
+            if ($has((string) $DB->get_field('page', 'content', ['id' => $pageid]))) {
+                $pagehits[] = $index;
+            }
+        }
+        $this->assertCount(8, $pagehits);
+        $this->assertGreaterThanOrEqual(
+            9,
+            max($pagehits),
+            'Drops must spread across the whole course, not concentrate on the first activities.'
+        );
+    }
+
+    /**
      * A drop id belonging to another block instance must never be looked up or distributed —
      * distribute_drops() receives $dropids straight from the client (accumulated across wizard
      * steps), so a foreign id mixed into the list must be silently dropped instead of leaking
