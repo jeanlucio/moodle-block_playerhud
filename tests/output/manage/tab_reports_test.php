@@ -161,6 +161,45 @@ final class tab_reports_test extends advanced_testcase {
     }
 
     /**
+     * The audit user selector lists students in the order they are actually read — collated by
+     * the visible label — not by the SQL lastname/firstname order, which looks shuffled once the
+     * label renders as "Firstname Lastname". The placeholder stays first.
+     */
+    public function test_export_for_template_user_selector_is_alphabetical_by_label(): void {
+        global $DB;
+
+        $names = [
+            ['firstname' => 'Eve', 'lastname' => 'Adaga'],
+            ['firstname' => 'Bob', 'lastname' => 'Arco'],
+            ['firstname' => 'Alice', 'lastname' => 'Espada'],
+            ['firstname' => 'Dave', 'lastname' => 'Escudo'],
+        ];
+        foreach ($names as $name) {
+            $student = $this->getDataGenerator()->create_user($name);
+            $this->getDataGenerator()->enrol_user($student->id, $this->course->id, 'student');
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid' => $this->instanceid,
+                'userid'          => $student->id,
+                'currentxp'       => 10,
+                'timecreated'     => time(),
+                'timemodified'    => time(),
+            ]);
+        }
+
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+
+        $options = $data['user_selector']['options'];
+        $this->assertSame(0, $options[0]['value'], 'The placeholder option must stay first.');
+
+        $studentlabels = array_column(array_slice($options, 1), 'label');
+        $sorted = $studentlabels;
+        \core_collator::asort($sorted);
+        $this->assertSame(array_values($sorted), $studentlabels);
+        $this->assertStringStartsWith('Alice Espada', reset($studentlabels));
+    }
+
+    /**
      * display() renders real HTML end to end, going through the global $OUTPUT.
      */
     public function test_display_renders_html(): void {

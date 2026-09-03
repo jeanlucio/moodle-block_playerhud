@@ -566,28 +566,34 @@ class tab_reports implements renderable, templatable {
         $sql = "SELECT u.id, $userfields $emailfield
                   FROM {user} u
                   JOIN {block_playerhud_user} p ON p.userid = u.id
-                 WHERE p.blockinstanceid = ?
-              ORDER BY u.lastname, u.firstname";
+                 WHERE p.blockinstanceid = ?";
 
         $users = $DB->get_records_sql($sql, [$this->instanceid]);
+
+        $useroptions = [];
+        foreach ($users as $u) {
+            $label = fullname($u);
+            if ($showemail) {
+                $label .= ' (' . $u->email . ')';
+            }
+            $useroptions[] = [
+                'value'    => $u->id,
+                'label'    => $label,
+                'selected' => ($u->id == $this->selecteduserid),
+            ];
+        }
+
+        // Sort by the visible label (which follows the site's fullname format), locale-aware so
+        // accented names collate correctly — the SQL lastname/firstname order does not match what
+        // the user actually reads in the list.
+        \core_collator::asort_array_of_arrays_by_key($useroptions, 'label');
 
         $options = [[
             'value'    => 0,
             'label'    => get_string('report_select_user', 'block_playerhud'),
             'selected' => ($this->selecteduserid == 0),
         ]];
-
-        foreach ($users as $u) {
-            $label = fullname($u);
-            if ($showemail) {
-                $label .= ' (' . $u->email . ')';
-            }
-            $options[] = [
-                'value'    => $u->id,
-                'label'    => $label,
-                'selected' => ($u->id == $this->selecteduserid),
-            ];
-        }
+        array_push($options, ...array_values($useroptions));
 
         return ['options' => $options];
     }
