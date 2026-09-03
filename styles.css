@@ -1143,6 +1143,16 @@
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 1rem;
 }
+/* Collection filter/sort toolbar: the two control groups wrap onto separate lines on a narrow
+   viewport (the block column on mobile) instead of the first one overflowing off-screen. */
+.block_playerhud .ph-collection-toolbar,
+.path-blocks-playerhud .ph-collection-toolbar {
+    gap: 0.5rem 1rem;
+}
+.block_playerhud .ph-collection-toolbar-group,
+.path-blocks-playerhud .ph-collection-toolbar-group {
+    max-width: 100%;
+}
 .block_playerhud .playerhud-item-card.ph-quest-card-pending,
 .block_playerhud .playerhud-item-card.ph-quest-card-ready,
 .block_playerhud .playerhud-item-card.ph-quest-card-claimed,
