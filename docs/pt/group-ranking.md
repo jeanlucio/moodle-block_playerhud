@@ -22,3 +22,14 @@ As duas funcionalidades são independentes:
 | PlayerGroup não instalado | ✅ Funciona com qualquer grupo do Moodle | — Não exibido |
 | PlayerGroup instalado, estudante tem grupo do PlayerGroup | ✅ Grupo aparece no ranking | ✅ Badge + nome + vagas exibidos |
 | PlayerGroup instalado, estudante está só em grupo manual | ✅ Grupo aparece no ranking | — Não exibido (grupos manuais não estão na API do PlayerGroup) |
+
+### Estudante em mais de um grupo do PlayerGroup
+
+Um curso pode ter várias instâncias da atividade **PlayerGroup**, cada uma com seu próprio
+agrupamento. Dentro de uma mesma instância o estudante só pode pertencer a um grupo, mas nada
+impede que ele participe de um grupo em cada instância diferente do mesmo curso.
+
+Quando isso acontece, o cabeçalho do bloco exibe o **grupo em que o estudante entrou por
+último** (o de `timeadded` mais recente na tabela `groups_members`), não um grupo "principal"
+ou de uma instância específica. A aba de Ranking de Grupos não tem essa limitação — como lê
+diretamente das tabelas nativas do Moodle, todos os grupos do estudante aparecem normalmente.

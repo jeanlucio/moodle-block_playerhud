@@ -22,3 +22,14 @@ The two features are independent:
 | No PlayerGroup installed | ✅ Works with any Moodle group | — Not shown |
 | PlayerGroup installed, student has a PlayerGroup group | ✅ Group appears in ranking | ✅ Badge + name + slots displayed |
 | PlayerGroup installed, student is in a manual group only | ✅ Group appears in ranking | — Not shown (manual groups not in PlayerGroup API) |
+
+### Student in more than one PlayerGroup group
+
+A course can host multiple **PlayerGroup** activity instances, each with its own grouping.
+Within a single instance a student can only belong to one group, but nothing stops them from
+joining a group in each different instance within the same course.
+
+When that happens, the HUD header shows the group the student **joined most recently** (the
+highest `timeadded` in the `groups_members` table), not a "primary" group or one tied to a
+specific instance. The Group Ranking tab has no such limitation — since it reads directly from
+Moodle's native group tables, all of the student's groups appear normally.
