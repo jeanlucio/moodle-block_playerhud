@@ -214,7 +214,6 @@ class block_playerhud extends block_base {
             // RPG character identity data (portrait, tier, karma) — only when RPG mode is on.
             $classdata = null;
             $karmadata = null;
-            $urlclassselect = null;
             if (!empty($config->enable_rpg)) {
                 $rpgprogress = \block_playerhud\game::get_player_class($this->instance->id, $USER->id);
                 if ($rpgprogress && (int) $rpgprogress->classid > 0) {
@@ -277,12 +276,6 @@ class block_playerhud extends block_base {
                     'icon_class'    => $karmaiconclass,
                     'label'         => get_string('karma', 'block_playerhud'),
                 ];
-
-                $urlclassselect = (new \moodle_url('/blocks/playerhud/view.php', [
-                    'id'         => $COURSE->id,
-                    'instanceid' => $this->instance->id,
-                    'tab'        => 'class_select',
-                ]))->out(false);
             }
 
             // Quest notification dot: show when a reward is waiting to be claimed.
@@ -334,7 +327,6 @@ class block_playerhud extends block_base {
                 'enable_quests'    => !empty($config->enable_quests),
                 'classdata'        => $classdata,
                 'karma_data'       => $karmadata,
-                'url_class_select' => $urlclassselect,
                 'xp'          => $xpdisplay,
                 'level'       => $stats['level'] . '/' . $stats['max_levels'],
                 'level_class' => $stats['level_class'],

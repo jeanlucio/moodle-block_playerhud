@@ -124,19 +124,6 @@ if ($tab == 'toggle_ranking_pref' && confirm_sesskey()) {
     );
 }
 
-// Logic: Select RPG Class.
-if ($action === 'select_class' && confirm_sesskey()) {
-    $classid = required_param('classid', PARAM_INT);
-    $DB->get_record('block_playerhud_classes', ['id' => $classid, 'blockinstanceid' => $instanceid], '*', MUST_EXIST);
-    \block_playerhud\game::assign_class($instanceid, $USER->id, $classid);
-    redirect(
-        new moodle_url($PAGE->url, ['tab' => 'class_select']),
-        get_string('class_selected_success', 'block_playerhud'),
-        null,
-        \core\output\notification::NOTIFY_SUCCESS
-    );
-}
-
 // Logic: Claim Quest Reward.
 if ($action === 'claim_quest' && !empty($config->enable_quests) && confirm_sesskey()) {
     $questid  = required_param('questid', PARAM_INT);
@@ -208,17 +195,6 @@ if ($isoptin) {
                     'block_playerhud/view_collection',
                     $render->export_for_template($OUTPUT)
                 );
-            }
-            break;
-        case 'class_select':
-            if (class_exists('\block_playerhud\output\view\tab_class_select')) {
-                $render = new \block_playerhud\output\view\tab_class_select(
-                    $config,
-                    $player,
-                    $instanceid,
-                    $courseid
-                );
-                $tabcontenthtml = $render->display();
             }
             break;
         case 'chapters':

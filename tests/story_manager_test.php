@@ -29,6 +29,7 @@ use block_playerhud\story_manager;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\story_manager
  * @covers     \block_playerhud\local\external_items
+ * @covers     \block_playerhud\event\character_selected
  */
 final class story_manager_test extends advanced_testcase {
     /** @var int Block instance ID shared across test methods. */
@@ -138,6 +139,27 @@ final class story_manager_test extends advanced_testcase {
         ];
         $choice->id = $DB->insert_record('block_playerhud_choices', $choice);
         return $choice;
+    }
+
+    /**
+     * Inserts an RPG class row for this block instance.
+     *
+     * @param string $name Class name.
+     * @return \stdClass The created class record.
+     */
+    protected function create_class(string $name): \stdClass {
+        global $DB;
+
+        $class = (object) [
+            'blockinstanceid' => $this->instanceid,
+            'name'            => $name,
+            'description'     => '',
+            'base_hp'         => 100,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ];
+        $class->id = $DB->insert_record('block_playerhud_classes', $class);
+        return $class;
     }
 
     /**
@@ -506,6 +528,62 @@ final class story_manager_test extends advanced_testcase {
         story_manager::make_choice($this->instanceid, $user->id, $choice->id);
 
         $this->assertEquals(50, game::get_player_karma($this->instanceid, $user->id));
+    }
+
+    /**
+     * make_choice assigns the choice's set_class_id to the player — the Story is the only
+     * path an RPG class is ever assigned; there is no standalone character-selection screen.
+     */
+    public function test_make_choice_assigns_class_from_set_class_id(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Character Chapter');
+        $nodea = $this->create_node($chapter->id, 'Pick who you are.', true);
+        $mage = $this->create_class('Mage');
+        $choice = $this->create_choice($nodea->id, 'Become the Mage');
+        $DB->set_field('block_playerhud_choices', 'set_class_id', $mage->id, ['id' => $choice->id]);
+
+        story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+
+        $progress = game::get_player_class($this->instanceid, $user->id);
+        $this->assertEquals($mage->id, (int) $progress->classid);
+    }
+
+    /**
+     * make_choice fires character_selected when the choice assigns a class, with the progress
+     * row as objectid and the assigned classid in the other payload.
+     */
+    public function test_make_choice_fires_character_selected_event(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Character Chapter');
+        $nodea = $this->create_node($chapter->id, 'Pick who you are.', true);
+        $mage = $this->create_class('Mage');
+        $choice = $this->create_choice($nodea->id, 'Become the Mage');
+        $DB->set_field('block_playerhud_choices', 'set_class_id', $mage->id, ['id' => $choice->id]);
+
+        $sink = $this->redirectEvents();
+        story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+        $events = array_filter(
+            $sink->get_events(),
+            static fn($e) => $e instanceof \block_playerhud\event\character_selected
+        );
+
+        $this->assertCount(1, $events);
+        $event = array_values($events)[0];
+        $this->assertSame((int) $user->id, $event->relateduserid);
+        $this->assertSame((int) $mage->id, $event->other['classid']);
+
+        $progress = game::get_player_class($this->instanceid, $user->id);
+        $this->assertSame((int) $progress->id, (int) $event->objectid);
     }
 
     /**

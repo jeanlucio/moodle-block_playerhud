@@ -2029,48 +2029,6 @@ div.modal-dialog .visually-hidden {
     max-height: 2.8em;
     overflow: hidden;
 }
-.block_playerhud .ph-class-select-grid,
-.path-blocks-playerhud .ph-class-select-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1.25rem;
-}
-.block_playerhud .ph-class-select-card,
-.path-blocks-playerhud .ph-class-select-card {
-    background-color: var(--card-bg, #fff);
-    border: 2px solid var(--border-color, #dee2e6);
-    border-radius: 0.75rem;
-    padding: 1.25rem 1rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.block_playerhud .ph-class-select-card:hover,
-.path-blocks-playerhud .ph-class-select-card:hover {
-    border-color: var(--primary, #0d6efd);
-    box-shadow: 0 0.25rem 0.75rem rgba(13, 110, 253, 0.12);
-}
-.block_playerhud .ph-class-select-card--active,
-.path-blocks-playerhud .ph-class-select-card--active {
-    border-color: var(--success, #198754);
-    background-color: var(--bs-success-bg-subtle, #d1e7dd);
-}
-.block_playerhud .ph-class-select-card .ph-class-portrait,
-.path-blocks-playerhud .ph-class-select-card .ph-class-portrait {
-    width: 80px;
-    height: 80px;
-}
-.block_playerhud .ph-class-select-card .ph-class-no-portrait,
-.path-blocks-playerhud .ph-class-select-card .ph-class-no-portrait {
-    font-size: 2.2rem;
-}
-.block_playerhud .ph-class-selected-badge,
-.path-blocks-playerhud .ph-class-selected-badge {
-    background-color: var(--success, #198754);
-    color: #fff;
-    font-size: 0.8rem;
-    padding: 0.3em 0.7em;
-    border-radius: 50rem;
-}
-
 .block_playerhud .ph-chapter-item,
 .path-blocks-playerhud .ph-chapter-item {
     cursor: default;

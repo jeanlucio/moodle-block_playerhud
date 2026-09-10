@@ -21,14 +21,16 @@ use block_playerhud\game;
 use block_playerhud\utils;
 
 /**
- * Tests for RPG class assignment and portrait tier logic.
+ * Tests for RPG class lookup and portrait tier logic.
+ *
+ * Class assignment itself is driven exclusively by the Story (a choice's set_class_id
+ * consequence) and is covered by story_manager_test.
  *
  * @package    block_playerhud
  * @category   test
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \block_playerhud\game
- * @covers     \block_playerhud\event\character_selected
  * @covers     \block_playerhud\utils
  */
 final class rpg_classes_test extends advanced_testcase {
@@ -60,26 +62,6 @@ final class rpg_classes_test extends advanced_testcase {
     }
 
     /**
-     * Inserts a dummy RPG class row for testing.
-     *
-     * @param string $name Class name.
-     * @return \stdClass The created class record including id.
-     */
-    protected function create_dummy_class(string $name): \stdClass {
-        global $DB;
-
-        $class = new \stdClass();
-        $class->blockinstanceid = $this->instanceid;
-        $class->name = $name;
-        $class->description = '';
-        $class->base_hp = 100;
-        $class->timecreated = time();
-        $class->timemodified = time();
-        $class->id = $DB->insert_record('block_playerhud_classes', $class);
-        return $class;
-    }
-
-    /**
      * get_player_class returns false when no progress record exists yet.
      */
     public function test_get_player_class_returns_false_for_new_user(): void {
@@ -91,115 +73,6 @@ final class rpg_classes_test extends advanced_testcase {
         $result = game::get_player_class($this->instanceid, $user->id);
 
         $this->assertFalse($result);
-    }
-
-    /**
-     * assign_class creates a progress record with the correct classid.
-     */
-    public function test_assign_class_creates_progress_record(): void {
-        $this->resetAfterTest(true);
-        $this->setup_block_instance();
-
-        $user = $this->getDataGenerator()->create_user();
-        $class = $this->create_dummy_class('Mage');
-
-        game::assign_class($this->instanceid, $user->id, $class->id);
-
-        $progress = game::get_player_class($this->instanceid, $user->id);
-
-        $this->assertNotFalse($progress);
-        $this->assertEquals($class->id, (int) $progress->classid);
-    }
-
-    /**
-     * assign_class fires character_selected with the progress row as objectid and the
-     * assigned classid in the other payload, on the record-creating first assignment.
-     */
-    public function test_assign_class_fires_character_selected_event(): void {
-        $this->resetAfterTest(true);
-        $this->setup_block_instance();
-
-        $user = $this->getDataGenerator()->create_user();
-        $mage = $this->create_dummy_class('Mage');
-
-        $sink = $this->redirectEvents();
-        game::assign_class($this->instanceid, $user->id, $mage->id);
-        $events = array_values($sink->get_events());
-
-        $this->assertCount(1, $events);
-        $this->assertInstanceOf(\block_playerhud\event\character_selected::class, $events[0]);
-        $this->assertSame((int) $user->id, $events[0]->relateduserid);
-        $this->assertSame((int) $mage->id, $events[0]->other['classid']);
-
-        $progress = game::get_player_class($this->instanceid, $user->id);
-        $this->assertSame((int) $progress->id, (int) $events[0]->objectid);
-    }
-
-    /**
-     * The choice is permanent: once a player has a real classid, assign_class rejects a second
-     * call outright instead of switching them to a different class — the fix for the security
-     * finding where the template's own hidden-button affordance was the only barrier, and a
-     * crafted request to view.php could cycle through every class to farm class-gated content.
-     */
-    public function test_assign_class_rejects_reassignment_to_a_different_class(): void {
-        $this->resetAfterTest(true);
-        $this->setup_block_instance();
-
-        $user = $this->getDataGenerator()->create_user();
-        $mage = $this->create_dummy_class('Mage');
-        $warrior = $this->create_dummy_class('Warrior');
-
-        game::assign_class($this->instanceid, $user->id, $mage->id);
-
-        $this->expectException(\moodle_exception::class);
-        game::assign_class($this->instanceid, $user->id, $warrior->id);
-    }
-
-    /**
-     * assign_class does not create duplicate records on repeated calls — the rejection of a
-     * second call happens before any write, even when reselecting the very same class.
-     */
-    public function test_assign_class_does_not_duplicate_records(): void {
-        global $DB;
-
-        $this->resetAfterTest(true);
-        $this->setup_block_instance();
-
-        $user = $this->getDataGenerator()->create_user();
-        $class = $this->create_dummy_class('Rogue');
-
-        game::assign_class($this->instanceid, $user->id, $class->id);
-
-        try {
-            game::assign_class($this->instanceid, $user->id, $class->id);
-            $this->fail('Expected the second assignment to be rejected.');
-        } catch (\moodle_exception $e) {
-            unset($e);
-        }
-
-        $count = $DB->count_records(
-            'block_playerhud_rpg_progress',
-            ['blockinstanceid' => $this->instanceid, 'userid' => $user->id]
-        );
-
-        $this->assertEquals(1, $count);
-    }
-
-    /**
-     * assign_class initialises karma at 0 for new records.
-     */
-    public function test_assign_class_initialises_karma_at_zero(): void {
-        $this->resetAfterTest(true);
-        $this->setup_block_instance();
-
-        $user = $this->getDataGenerator()->create_user();
-        $class = $this->create_dummy_class('Cleric');
-
-        game::assign_class($this->instanceid, $user->id, $class->id);
-
-        $progress = game::get_player_class($this->instanceid, $user->id);
-
-        $this->assertEquals(0, (int) $progress->karma);
     }
 
     /**

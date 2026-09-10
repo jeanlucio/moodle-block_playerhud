@@ -24,12 +24,12 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `lib_test.php` | 27 |
 | `privacy_provider_test.php` | 21 |
 | `quest_test.php` | 45 |
-| `rpg_classes_test.php` | 8 |
-| `story_manager_test.php` | 29 |
+| `rpg_classes_test.php` | 3 |
+| `story_manager_test.php` | 31 |
 | `suggest_trades_state_test.php` | 4 |
 | `trade_test.php` | 11 |
 | `utils_test.php` | 17 |
-| **Subtotal** | **320** |
+| **Subtotal** | **317** |
 
 ### Testes de Lógica de Negócio Compartilhada (`tests/local/`)
 
@@ -101,15 +101,14 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `profile_content_test.php` | 1 |
 | `view/header_test.php` | 2 |
 | `view/tab_chapters_test.php` | 5 |
-| `view/tab_class_select_test.php` | 3 |
 | `view/tab_history_test.php` | 2 |
 | `view/tab_quests_test.php` | 4 |
 | `view/tab_ranking_test.php` | 4 |
 | `view/tab_rules_test.php` | 2 |
 | `view/tab_shop_test.php` | 4 |
-| **Subtotal** | **56** |
+| **Subtotal** | **53** |
 
-| **Total geral** | **784** |
+| **Total geral** | **778** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
