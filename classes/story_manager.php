@@ -393,7 +393,9 @@ class story_manager {
             ];
         }
 
-        // Class assignment.
+        // Class assignment. This choice consequence is the only path a player is assigned an
+        // RPG class — the character pick is driven entirely by the Story, never by a
+        // standalone selection screen.
         if ($choice->set_class_id > 0) {
             $DB->set_field(
                 'block_playerhud_rpg_progress',
@@ -401,6 +403,12 @@ class story_manager {
                 $choice->set_class_id,
                 ['id' => $progress->id]
             );
+            event\character_selected::create([
+                'context' => \context_block::instance($instanceid),
+                'objectid' => (int) $progress->id,
+                'relateduserid' => (int) $userid,
+                'other' => ['classid' => (int) $choice->set_class_id],
+            ])->trigger();
             $classname = $DB->get_field('block_playerhud_classes', 'name', ['id' => $choice->set_class_id]);
             $events[] = [
                 'type' => 'class',

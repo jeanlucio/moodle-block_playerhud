@@ -855,46 +855,6 @@ class game {
     }
 
     /**
-     * Assign an RPG class to a player, creating the progress record if needed.
-     *
-     * The choice is meant to be permanent (the UI's own warning says so): once a player has a
-     * real classid, this always rejects reassignment, regardless of caller, rather than relying
-     * on the template hiding the "choose" button for whichever character is already selected.
-     *
-     * @param int $blockinstanceid The block instance ID.
-     * @param int $userid The user ID.
-     * @param int $classid The class ID to assign.
-     * @throws \moodle_exception If the player already has a class assigned.
-     */
-    public static function assign_class(int $blockinstanceid, int $userid, int $classid): void {
-        global $DB;
-        $progress = self::get_player_class($blockinstanceid, $userid);
-        if ($progress) {
-            if ((int) $progress->classid > 0) {
-                throw new \moodle_exception('error_class_already_selected', 'block_playerhud');
-            }
-            $progress->classid = $classid;
-            $DB->update_record('block_playerhud_rpg_progress', $progress);
-        } else {
-            $progress = new \stdClass();
-            $progress->blockinstanceid = $blockinstanceid;
-            $progress->userid = $userid;
-            $progress->classid = $classid;
-            $progress->karma = 0;
-            $progress->current_nodes = null;
-            $progress->completed_chapters = null;
-            $progress->id = $DB->insert_record('block_playerhud_rpg_progress', $progress);
-        }
-
-        event\character_selected::create([
-            'context' => \context_block::instance($blockinstanceid),
-            'objectid' => (int)$progress->id,
-            'relateduserid' => (int)$userid,
-            'other' => ['classid' => (int)$classid],
-        ])->trigger();
-    }
-
-    /**
      * Get all RPG classes for a block instance, ordered by name.
      *
      * @param int $blockinstanceid The block instance ID.
