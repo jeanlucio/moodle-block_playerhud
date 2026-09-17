@@ -459,7 +459,8 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                 if ($select.is('[type=hidden]')) {
                     actname = $select.attr('data-actname') || '';
                 } else if ($select.is('select') && targetcmid) {
-                    actname = $select.find('option:selected').text() || '';
+                    const $selectedopt = $select.find('option:selected');
+                    actname = $selectedopt.attr('data-fullname') || $selectedopt.text() || '';
                 }
                 const daysstr = $btn.attr('data-daysstr') || '';
                 if (actname) {

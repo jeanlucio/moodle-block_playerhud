@@ -29,6 +29,15 @@ use moodle_url;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class tab_collection implements renderable, templatable {
+    /**
+     * Max length for an activity name shown in the deadline-extension <option> label.
+     *
+     * A native <select> popup sizes itself to the widest option and renders outside the
+     * normal page flow, so a long activity name overflows past neighbouring cards no matter
+     * what CSS is applied to the select or its ancestors.
+     */
+    private const LP_ACTIVITY_NAME_MAXLEN = 45;
+
     /** @var \stdClass Block configuration. */
     protected $config;
 
@@ -375,7 +384,14 @@ class tab_collection implements renderable, templatable {
                             $lpacts = $this->get_lp_activities();
                             $itemobj['lp_has_multiple'] = count($lpacts) > 1;
                             $itemobj['lp_activities']   = array_map(
-                                fn($c, $n) => ['cmid' => $c, 'name' => $n, 'days_str' => $daysstr],
+                                fn($c, $n) => [
+                                    'cmid' => $c,
+                                    // Shortened for the <option> label: a long activity name would
+                                    // otherwise make the native select popup overflow past the card.
+                                    'name' => shorten_text($n, self::LP_ACTIVITY_NAME_MAXLEN),
+                                    'fullname' => $n,
+                                    'days_str' => $daysstr,
+                                ],
                                 array_keys($lpacts),
                                 array_values($lpacts)
                             );

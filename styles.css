@@ -1153,6 +1153,14 @@
 .path-blocks-playerhud .ph-collection-toolbar-group {
     max-width: 100%;
 }
+/* A <select> carries a non-zero intrinsic min-width based on its own content in some
+   browsers, which "width: 100%" alone does not override; on the narrowest grid column
+   (140px, see .playerhud-inventory-grid above) that pushes the box past the card edge. */
+.block_playerhud .ph-lp-activity-select,
+.path-blocks-playerhud .ph-lp-activity-select {
+    min-width: 0;
+    max-width: 100%;
+}
 .block_playerhud .playerhud-item-card.ph-quest-card-pending,
 .block_playerhud .playerhud-item-card.ph-quest-card-ready,
 .block_playerhud .playerhud-item-card.ph-quest-card-claimed,

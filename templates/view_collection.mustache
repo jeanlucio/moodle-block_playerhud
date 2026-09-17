@@ -163,7 +163,7 @@
                         aria-label="{{#str}} item_use_pick_activity, block_playerhud {{/str}}">
                     <option value="">{{#str}} item_use_pick_short, block_playerhud {{/str}}</option>
                     {{#lp_activities}}
-                    <option value="{{cmid}}">{{name}}</option>
+                    <option value="{{cmid}}" data-fullname="{{fullname}}" title="{{fullname}}">{{name}}</option>
                     {{/lp_activities}}
                 </select>
                 {{/lp_has_multiple}}
