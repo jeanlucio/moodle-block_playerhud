@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.9.1] — 2026-09-17
+
+### Security
+- The unreachable standalone character-selection screen let a student assign their RPG
+  class outside the intended Story gate by requesting its URL directly; the screen, its
+  action handler and the dead code path have been removed. Class assignment now only
+  happens through a story choice, which is also where the "character selected" event
+  now fires from.
+
+### Fixed
+- The deadline-extension item's activity picker could visually overflow past its card
+  when an eligible activity had a long name.
+
 ## [v1.9.0] — 2026-09-03
 
 ### Added
