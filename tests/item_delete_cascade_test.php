@@ -372,6 +372,76 @@ final class item_delete_cascade_test extends advanced_testcase {
         $this->assertSame(500, (int) $DB->get_field('block_playerhud_user', 'currentxp', $xpcolumn));
     }
 
+    /**
+     * Deleting an item after a teacher revoked one of its stack_log grants only reverses the
+     * XP the student still holds from it. The revoke already took the revoked grant's XP back
+     * once; its compensating 'revoked' row repeats that amount, and summing it as a positive
+     * figure used to deduct it twice more on delete — out of XP earned somewhere else.
+     */
+    public function test_delete_item_after_stack_revoke_reverts_only_remaining_xp(): void {
+        global $DB;
+
+        $item = $this->make_item_with_xp('Diamante', 50);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player((int) $user->id, 100);
+        $revoked = external_items::grant($this->instanceid, $item->id, (int) $user->id, 1, 'teacher', false);
+        external_items::grant($this->instanceid, $item->id, (int) $user->id, 1, 'map', false);
+        items::revoke_stack_log_entry($revoked, $this->instanceid);
+
+        $xpcolumn = ['blockinstanceid' => $this->instanceid, 'userid' => $user->id];
+        $this->assertSame(150, (int) $DB->get_field('block_playerhud_user', 'currentxp', $xpcolumn));
+        $impact = items::find_xp_impact([$item->id]);
+        $this->assertSame(1, $impact->studentcount);
+        $this->assertSame(50, $impact->totalxp);
+
+        items::delete_item($item, $this->instanceid, $this->context);
+
+        $this->assertSame(100, (int) $DB->get_field('block_playerhud_user', 'currentxp', $xpcolumn));
+    }
+
+    /**
+     * A legacy inventory copy revoked with revoke_item() keeps its xpawarded, so deleting the
+     * item must leave it out of the sum rather than deduct that XP a second time. Also run
+     * through bulk_delete_items(), which shares the same helper.
+     */
+    public function test_bulk_delete_after_legacy_revoke_reverts_only_remaining_xp(): void {
+        global $DB;
+
+        $item = $this->make_item_with_xp('Relic', 100);
+        $user = $this->getDataGenerator()->create_user();
+        // 500 = 200 from other sources + the 3 x 100 copies granted below.
+        $this->seed_player((int) $user->id, 500);
+        $invid = $this->grant_copy((int) $user->id, $item->id, 100);
+        $this->grant_copy((int) $user->id, $item->id, 100);
+        $this->grant_copy((int) $user->id, $item->id, 100);
+        items::revoke_item($invid, $this->instanceid);
+
+        $xpcolumn = ['blockinstanceid' => $this->instanceid, 'userid' => $user->id];
+        $this->assertSame(400, (int) $DB->get_field('block_playerhud_user', 'currentxp', $xpcolumn));
+        $this->assertSame(200, items::find_xp_impact([$item->id])->totalxp);
+
+        items::bulk_delete_items([$item->id => $item], $this->instanceid, $this->context);
+
+        $this->assertSame(200, (int) $DB->get_field('block_playerhud_user', 'currentxp', $xpcolumn));
+    }
+
+    /**
+     * A student whose only grant of the item was revoked holds no XP from it any more, so the
+     * delete confirmation must not list them as affected at all.
+     */
+    public function test_find_xp_impact_ignores_fully_revoked_holder(): void {
+        $item = $this->make_item_with_xp('Diamante', 50);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player((int) $user->id, 0);
+        $logid = external_items::grant($this->instanceid, $item->id, (int) $user->id, 2, 'teacher', false);
+        items::revoke_stack_log_entry($logid, $this->instanceid);
+
+        $impact = items::find_xp_impact([$item->id]);
+
+        $this->assertSame(0, $impact->studentcount);
+        $this->assertSame(0, $impact->totalxp);
+    }
+
     // Helper methods.
 
     /**
@@ -513,11 +583,11 @@ final class item_delete_cascade_test extends advanced_testcase {
      * @param int $userid Holder user ID.
      * @param int $itemid Item held.
      * @param int $xpawarded XP actually paid out for this copy.
-     * @return void
+     * @return int The new inventory row ID.
      */
-    private function grant_copy(int $userid, int $itemid, int $xpawarded): void {
+    private function grant_copy(int $userid, int $itemid, int $xpawarded): int {
         global $DB;
-        $DB->insert_record('block_playerhud_inventory', (object) [
+        return (int) $DB->insert_record('block_playerhud_inventory', (object) [
             'userid'      => $userid,
             'itemid'      => $itemid,
             'dropid'      => 0,

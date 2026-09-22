@@ -336,9 +336,14 @@ class items {
      * Returns each holder's total recorded XP for the given items, summed across both
      * block_playerhud_inventory (legacy, frozen) and block_playerhud_stack_log (every grant
      * since) — deleting an item must reverse XP earned through either storage generation, not
-     * just the one that happened to exist when this code was first written. A negative-delta
-     * (consume/revoked) log row always carries xpawarded = 0, so summing every row regardless
-     * of delta sign never double-counts a reversal.
+     * just the one that happened to exist when this code was first written.
+     *
+     * The sum is the XP each holder still has from these items, net of any teacher revoke —
+     * that XP was already deducted once, so it must not be deducted again here:
+     * - a revoked legacy inventory copy keeps its original xpawarded, so it is left out;
+     * - a stack_log 'revoked' row repeats its grant's xpawarded (for the audit log), so it
+     *   counts negatively and cancels that grant out;
+     * - a consume row always carries xpawarded = 0, and spending an item never gives XP back.
      *
      * @param int[] $itemids Item IDs.
      * @return \stdClass[] Records with userid and totalxp, keyed by userid.
@@ -358,9 +363,14 @@ class items {
         [$insql2, $inparams2] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED, 'xh2');
         $sql = "SELECT userid, SUM(xpawarded) AS totalxp
                   FROM (
-                      SELECT userid, xpawarded FROM {block_playerhud_inventory} WHERE itemid $insql1
+                      SELECT userid, xpawarded
+                        FROM {block_playerhud_inventory}
+                       WHERE itemid $insql1 AND source <> 'revoked'
                        UNION ALL
-                      SELECT userid, xpawarded FROM {block_playerhud_stack_log} WHERE itemid $insql2
+                      SELECT userid,
+                             CASE WHEN source = 'revoked' THEN -xpawarded ELSE xpawarded END AS xpawarded
+                        FROM {block_playerhud_stack_log}
+                       WHERE itemid $insql2
                   ) combined
               GROUP BY userid";
 
