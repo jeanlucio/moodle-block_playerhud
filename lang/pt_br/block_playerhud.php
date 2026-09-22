@@ -631,6 +631,7 @@ $string['privacy:metadata:stack_log:delta'] = 'A variação de quantidade: posit
 $string['privacy:metadata:stack_log:dropid'] = 'O ID do drop de onde veio a concessão, se houver.';
 $string['privacy:metadata:stack_log:itemid'] = 'O ID do item ao qual este lançamento se refere.';
 $string['privacy:metadata:stack_log:source'] = 'Como a variação de quantidade aconteceu (ex.: coletado, concessão do professor, troca, missão, consumido, revogado).';
+$string['privacy:metadata:stack_log:timerevoked'] = 'O momento em que um professor revogou esta concessão, se ela foi revogada.';
 $string['privacy:metadata:stack_log:userid'] = 'O ID do usuário a quem pertence este lançamento.';
 $string['privacy:metadata:stack_log:xpawarded'] = 'A quantidade de XP associada a este lançamento.';
 $string['privacy:metadata:timecreated'] = 'O momento em que o registro foi criado.';

@@ -855,6 +855,12 @@ class tab_reports implements renderable, templatable {
                     $xpbadge = '<span class="text-muted small">-</span>';
                 }
 
+                // A grant a teacher already revoked stays listed as history, but can never be
+                // revoked again.
+                if ($log->timerevoked > 0) {
+                    $log->stack_log_id = 0;
+                }
+
                 $urldelete = '';
                 if ($log->inventory_id > 0 && property_exists($this, 'courseid')) {
                     $urldelete = new \moodle_url('/blocks/playerhud/manage.php', [

@@ -452,5 +452,19 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026081800, 'playerhud');
     }
 
+    if ($oldversion < 2026092200) {
+        // Flags a stack_log grant entry once a teacher revokes it, so the same grant can never
+        // be revoked (and its XP deducted) a second time. Revocations recorded before this
+        // step cannot be tied back to their grant reliably, so existing rows keep the default.
+        $table = new \xmldb_table('block_playerhud_stack_log');
+        $field = new \xmldb_field('timerevoked', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'timecreated');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_block_savepoint(true, 2026092200, 'playerhud');
+    }
+
     return true;
 }

@@ -283,4 +283,33 @@ final class db_upgrade_test extends advanced_testcase {
             new \xmldb_field('reward_itemqty')
         ));
     }
+
+    /**
+     * The 2026092200 step adds stack_log.timerevoked. As in the test above, the column is
+     * dropped first so the assertion can only pass if the upgrade step itself added it back,
+     * and an existing ledger row must come out with the "never revoked" default.
+     */
+    public function test_upgrade_adds_stack_log_timerevoked(): void {
+        global $DB;
+
+        $dbman = $DB->get_manager();
+        $table = new \xmldb_table('block_playerhud_stack_log');
+        $field = new \xmldb_field('timerevoked');
+        $dbman->drop_field($table, $field);
+        $logid = $DB->insert_record('block_playerhud_stack_log', (object) [
+            'userid'      => 2,
+            'itemid'      => $this->create_item('Gem'),
+            'dropid'      => 0,
+            'delta'       => 1,
+            'source'      => 'teacher',
+            'xpawarded'   => 10,
+            'timecreated' => time(),
+        ]);
+
+        $this->set_current_version(2026091700);
+        xmldb_block_playerhud_upgrade(2026091700);
+
+        $this->assertTrue($dbman->field_exists($table, $field));
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_stack_log', 'timerevoked', ['id' => $logid]));
+    }
 }

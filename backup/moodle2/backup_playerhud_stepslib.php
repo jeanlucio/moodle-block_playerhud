@@ -124,7 +124,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
 
         $stacklogs = new backup_nested_element('stack_logs');
         $stacklog = new backup_nested_element('stack_log', ['id'], [
-            'userid', 'itemid', 'dropid', 'delta', 'source', 'xpawarded', 'timecreated',
+            'userid', 'itemid', 'dropid', 'delta', 'source', 'xpawarded', 'timecreated', 'timerevoked',
         ]);
 
         $tradelogs = new backup_nested_element('trade_logs');

@@ -516,8 +516,7 @@ final class items_test extends advanced_testcase {
      * Revoking the same grant entry twice is a safe no-op the second time — it must not remove
      * a second batch of units from an unrelated later grant, nor deduct XP twice. This is the
      * exact scenario a teacher can trigger by clicking an already-processed revoke link again
-     * (the UI leaves the button visible after a revoke, since the append-only ledger design
-     * does not retroactively mark the original grant row as spent).
+     * (a double click, a second tab or the browser history).
      */
     public function test_revoke_stack_log_entry_twice_is_idempotent_noop(): void {
         global $DB;
@@ -536,6 +535,58 @@ final class items_test extends advanced_testcase {
             'blockinstanceid' => $instanceid,
             'userid'          => $user->id,
         ]));
+    }
+
+    /**
+     * Revoking a grant again while the balance still holds units from other, legitimate grants
+     * is a no-op — the second call must not strip one of those units nor deduct the revoked
+     * grant's XP a second time. Before the grant row carried timerevoked, only a balance that
+     * had already dropped to zero stopped the repeat, so every extra click here cost the
+     * student another unit and another full xpawarded.
+     */
+    public function test_revoke_stack_log_entry_twice_keeps_units_from_other_grants(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 50);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 0);
+        $logid = external_items::grant($instanceid, $itemid, (int) $user->id, 1, 'teacher', false);
+        external_items::grant($instanceid, $itemid, (int) $user->id, 3, 'map', false);
+
+        $this->assertTrue(items::revoke_stack_log_entry($logid, $instanceid));
+        $this->assertFalse(items::revoke_stack_log_entry($logid, $instanceid));
+        $this->assertFalse(items::revoke_stack_log_entry($logid, $instanceid));
+
+        $this->assertSame(3, external_items::get_available_quantity($instanceid, $itemid, (int) $user->id));
+        // Grants paid 50 + 150; only the revoked grant's 50 comes back off, exactly once.
+        $this->assertSame(150, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+        $this->assertGreaterThan(0, (int) $DB->get_field('block_playerhud_stack_log', 'timerevoked', ['id' => $logid]));
+        $this->assertSame(1, $DB->count_records('block_playerhud_stack_log', [
+            'userid' => $user->id, 'itemid' => $itemid, 'source' => 'revoked',
+        ]));
+    }
+
+    /**
+     * A revoke that finds nothing left in the balance changes nothing, so the grant is not
+     * stamped as revoked either — the flag only ever marks a revoke that actually happened.
+     */
+    public function test_revoke_stack_log_entry_on_spent_balance_leaves_grant_unflagged(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 30);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 100);
+        $logid = external_items::grant($instanceid, $itemid, (int) $user->id, 1, 'teacher', false);
+        external_items::consume($instanceid, $itemid, (int) $user->id, 1);
+
+        $this->assertFalse(items::revoke_stack_log_entry($logid, $instanceid));
+
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_stack_log', 'timerevoked', ['id' => $logid]));
     }
 
     /**

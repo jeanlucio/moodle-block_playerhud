@@ -130,12 +130,15 @@ class items {
      * Soft-revokes a single block_playerhud_stack_log grant entry — the storage generation
      * every grant_item()/quest reward/trade reward/drop collection uses from now on.
      *
-     * Only a positive-delta (grant) entry can be revoked; a consume/revoked entry has nothing
-     * left to give back and is a no-op, same as a foreign log row. The amount actually removed
-     * from the balance is capped at whatever remains there — the item may have been partly or
-     * fully spent since this specific grant — but the XP deducted is always this entry's full
-     * recorded xpawarded, not a proportional share; see the design note on this simplification
-     * (revoke does not attempt to reconstruct XP per remaining unit).
+     * Only a positive-delta (grant) entry can be revoked, and only once: the grant row itself is
+     * stamped with timerevoked, re-checked under the per-user+item lock, so a double click, a
+     * second tab or a replayed URL can never deduct its XP (or units from a later grant) again.
+     * A consume/revoked entry has nothing left to give back and is a no-op, same as a foreign
+     * log row. The amount actually removed from the balance is capped at whatever remains there
+     * — the item may have been partly or fully spent since this specific grant — but the XP
+     * deducted is always this entry's full recorded xpawarded, not a proportional share; see the
+     * design note on this simplification (revoke does not attempt to reconstruct XP per
+     * remaining unit).
      *
      * Returns whether anything was actually reverted — false is a normal outcome (e.g. the
      * caller double-clicking an already-fully-spent-or-revoked entry), not an error, and lets
@@ -155,7 +158,7 @@ class items {
               WHERE sl.id = :logid AND i.blockinstanceid = :instanceid",
             ['logid' => $logid, 'instanceid' => $instanceid]
         );
-        if (!$log || (int) $log->delta <= 0) {
+        if (!$log || (int) $log->delta <= 0 || (int) $log->timerevoked > 0) {
             return false;
         }
 
@@ -169,6 +172,11 @@ class items {
         }
 
         try {
+            // A concurrent request holding the lock before us may have revoked this same entry.
+            if ((int) $DB->get_field('block_playerhud_stack_log', 'timerevoked', ['id' => $log->id]) > 0) {
+                return false;
+            }
+
             $stack = $DB->get_record('block_playerhud_stack', ['userid' => $log->userid, 'itemid' => $log->itemid]);
             $currentqty = $stack ? (int) $stack->qty : 0;
             $toremove = min((int) $log->delta, $currentqty);
@@ -196,6 +204,7 @@ class items {
                     'xpawarded'   => (int) $log->xpawarded,
                     'timecreated' => $now,
                 ]);
+                $DB->set_field('block_playerhud_stack_log', 'timerevoked', $now, ['id' => $log->id]);
 
                 $player = $DB->get_record(
                     'block_playerhud_user',

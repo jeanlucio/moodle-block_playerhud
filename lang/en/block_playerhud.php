@@ -631,6 +631,7 @@ $string['privacy:metadata:stack_log:delta'] = 'The quantity change: positive for
 $string['privacy:metadata:stack_log:dropid'] = 'The ID of the drop the grant came from, if any.';
 $string['privacy:metadata:stack_log:itemid'] = 'The ID of the item this ledger entry is for.';
 $string['privacy:metadata:stack_log:source'] = 'How the quantity change happened (e.g. collected, teacher grant, trade, quest, consumed, revoked).';
+$string['privacy:metadata:stack_log:timerevoked'] = 'The time a teacher revoked this grant entry, if it was revoked.';
 $string['privacy:metadata:stack_log:userid'] = 'The ID of the user this ledger entry belongs to.';
 $string['privacy:metadata:stack_log:xpawarded'] = 'The amount of XP associated with this ledger entry.';
 $string['privacy:metadata:timecreated'] = 'The time when the record was created.';

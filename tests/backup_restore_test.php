@@ -271,7 +271,7 @@ final class backup_restore_test extends advanced_testcase {
             'timemodified'    => time(),
         ]);
 
-        \block_playerhud\local\external_items::grant(
+        $coinlogid = \block_playerhud\local\external_items::grant(
             $instanceid,
             $coinid,
             $student->id,
@@ -280,6 +280,7 @@ final class backup_restore_test extends advanced_testcase {
             true,
             $coindropid
         );
+        $DB->set_field('block_playerhud_stack_log', 'timerevoked', 1700000000, ['id' => $coinlogid]);
 
         // 3. Backup.
         $bc = new \backup_controller(
@@ -471,6 +472,11 @@ final class backup_restore_test extends advanced_testcase {
         ]);
         $this->assertNotFalse($restoredstacklog, 'Item quantity ledger entry must be restored.');
         $this->assertSame(1500, (int) $restoredstacklog->delta, 'Ledger delta must be preserved.');
+        $this->assertSame(
+            1700000000,
+            (int) $restoredstacklog->timerevoked,
+            'A revoked grant must stay revoked after restore, or it could be revoked a second time.'
+        );
         $this->assertSame(
             (int) $restoreddrop->id,
             (int) $restoredstacklog->dropid,

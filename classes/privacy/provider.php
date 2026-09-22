@@ -92,6 +92,7 @@ class provider implements
             'source' => 'privacy:metadata:stack_log:source',
             'xpawarded' => 'privacy:metadata:stack_log:xpawarded',
             'timecreated' => 'privacy:metadata:timecreated',
+            'timerevoked' => 'privacy:metadata:stack_log:timerevoked',
         ], 'privacy:metadata:stack_log');
 
         // RPG Progress (Karma, Classes, Story).
@@ -303,7 +304,7 @@ class provider implements
 
         // 4c. Bulk fetch item quantity ledger entries (new-engine storage).
         $sqlstacklog = "SELECT sl.id, it.blockinstanceid, sl.itemid, sl.dropid, sl.delta,
-                                sl.source, sl.xpawarded, sl.timecreated
+                                sl.source, sl.xpawarded, sl.timecreated, sl.timerevoked
                            FROM {block_playerhud_stack_log} sl
                            JOIN {block_playerhud_items} it ON sl.itemid = it.id
                           WHERE sl.userid = :userid AND it.blockinstanceid $insql";
@@ -319,6 +320,7 @@ class provider implements
                     'source' => $log->source,
                     'xp_awarded' => $log->xpawarded,
                     'recorded_on' => transform::datetime($log->timecreated),
+                    'revoked_on' => $log->timerevoked ? transform::datetime($log->timerevoked) : null,
                 ];
             }
         }

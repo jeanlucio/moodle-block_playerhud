@@ -372,4 +372,50 @@ final class tab_reports_test extends advanced_testcase {
         $this->assertNotNull($row, 'Enrolled student must appear in the students table.');
         $this->assertSame(42, (int) $row['total_items']);
     }
+
+    /**
+     * Once a new-engine grant has been revoked, its row stays in the audit drill-down as
+     * history but no longer offers a revoke link — clicking it again used to strip units from
+     * the student's other grants and deduct the same XP once more.
+     */
+    public function test_export_for_template_audit_drilldown_hides_revoke_on_revoked_grant(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $this->course->id, 'student');
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'Test Item',
+            'xp'              => 10,
+            'enabled'         => 1,
+            'tradable'        => 1,
+            'secret'          => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+        $revokedid = \block_playerhud\local\external_items::grant(
+            $this->instanceid,
+            $itemid,
+            (int) $user->id,
+            1,
+            'teacher',
+            false
+        );
+        $keptid = \block_playerhud\local\external_items::grant($this->instanceid, $itemid, (int) $user->id, 2, 'map', false);
+        \block_playerhud\controller\items::revoke_stack_log_entry($revokedid, $this->instanceid);
+
+        $_GET['r_userid'] = $user->id;
+
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+
+        $grants = array_values(array_filter(
+            $data['audit_logs'],
+            static fn(array $log): bool => $log['badge_text'] === get_string('report_type_item', 'block_playerhud')
+        ));
+        $this->assertCount(2, $grants);
+        $revokeurls = array_values(array_filter(array_column($grants, 'url_revoke')));
+        $this->assertCount(1, $revokeurls, 'Only the grant still standing may offer a revoke link.');
+        $this->assertStringContainsString('logid=' . $keptid, $revokeurls[0]);
+    }
 }
