@@ -331,7 +331,7 @@ final class items_test extends advanced_testcase {
         $this->seed_player($instanceid, (int) $user->id, 100);
         $invid = $this->seed_inventory((int) $user->id, $itemid, $dropid, 'map', 30);
 
-        items::revoke_item($invid, $instanceid);
+        $this->assertTrue(items::revoke_item($invid, $instanceid));
 
         $this->assertSame('revoked', $DB->get_field('block_playerhud_inventory', 'source', ['id' => $invid]));
         $this->assertSame(70, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
@@ -390,6 +390,53 @@ final class items_test extends advanced_testcase {
     }
 
     /**
+     * Revoking the same legacy copy again (double click, second tab, replayed URL) is a no-op:
+     * the copy is already 'revoked', so its XP must not be deducted a second time.
+     */
+    public function test_revoke_item_twice_deducts_xp_once(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 30);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 100);
+        $invid = $this->seed_inventory((int) $user->id, $itemid, 0, 'teacher', 30);
+
+        $this->assertTrue(items::revoke_item($invid, $instanceid));
+        $this->assertFalse(items::revoke_item($invid, $instanceid));
+        $this->assertFalse(items::revoke_item($invid, $instanceid));
+
+        $this->assertSame(70, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
+     * A legacy copy the student already spent (consumed) has nothing left to take back: the
+     * revoke is refused, keeping both the XP and the 'consumed' state the audit log reads.
+     */
+    public function test_revoke_item_consumed_copy_is_noop(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid, 30);
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_player($instanceid, (int) $user->id, 100);
+        $invid = $this->seed_inventory((int) $user->id, $itemid, 0, 'map', 30);
+        external_items::consume($instanceid, $itemid, (int) $user->id, 1);
+        $this->assertSame('consumed', $DB->get_field('block_playerhud_inventory', 'source', ['id' => $invid]));
+
+        $this->assertFalse(items::revoke_item($invid, $instanceid));
+
+        $this->assertSame('consumed', $DB->get_field('block_playerhud_inventory', 'source', ['id' => $invid]));
+        $this->assertSame(100, (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+            'blockinstanceid' => $instanceid,
+            'userid'          => $user->id,
+        ]));
+    }
+
+    /**
      * Revoking an inventory row of another instance changes nothing.
      */
     public function test_revoke_item_foreign_instance_is_noop(): void {
@@ -403,7 +450,7 @@ final class items_test extends advanced_testcase {
         $this->seed_player($instancea, (int) $user->id, 100);
         $invid = $this->seed_inventory((int) $user->id, $itemid, $dropid, 'map');
 
-        items::revoke_item($invid, $instanceb);
+        $this->assertFalse(items::revoke_item($invid, $instanceb));
 
         $this->assertSame('map', $DB->get_field('block_playerhud_inventory', 'source', ['id' => $invid]));
         $this->assertSame(100, (int) $DB->get_field('block_playerhud_user', 'currentxp', [

@@ -502,10 +502,18 @@ if ($action === 'revoke_item' && confirm_sesskey()) {
     $invid = required_param('invid', PARAM_INT);
     $ruserid = required_param('r_userid', PARAM_INT);
 
-    \block_playerhud\controller\items::revoke_item($invid, $instanceid);
+    $reverted = \block_playerhud\controller\items::revoke_item($invid, $instanceid);
 
     $url = new moodle_url($baseurl, ['tab' => 'reports', 'r_userid' => $ruserid]);
-    redirect($url, get_string('item_revoked', 'block_playerhud'), null, \core\output\notification::NOTIFY_SUCCESS);
+    if ($reverted) {
+        redirect($url, get_string('item_revoked', 'block_playerhud'), null, \core\output\notification::NOTIFY_SUCCESS);
+    }
+    redirect(
+        $url,
+        get_string('stack_entry_already_revoked', 'block_playerhud'),
+        null,
+        \core\output\notification::NOTIFY_INFO
+    );
 }
 
 // Action: Revoke Stack Log Entry (Teacher manually reverts a new-engine grant/consume entry).

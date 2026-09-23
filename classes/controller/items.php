@@ -95,35 +95,71 @@ class items {
      *
      * Deducting the recorded xpawarded (rather than the item's current xp) means an infinite
      * drop's copy (xpawarded = 0) is naturally a no-op, with no separate drop lookup needed.
-     * A foreign inventory row is a no-op.
+     *
+     * Only a copy the student still holds can be revoked: a copy already revoked or consumed
+     * has nothing left to give back. That state is re-read under the same per-user+item lock
+     * consume() takes, so a double click, a second tab or a replayed URL can never deduct the
+     * same copy's XP twice. A foreign inventory row is a no-op.
      *
      * @param int $invid The inventory row to revoke.
      * @param int $instanceid The owning block instance ID.
-     * @return void
+     * @return bool True if the copy was revoked, false if it was a no-op.
      */
-    public static function revoke_item(int $invid, int $instanceid): void {
+    public static function revoke_item(int $invid, int $instanceid): bool {
         global $DB;
 
-        $inv = $DB->get_record_sql(
-            "SELECT inv.*
-               FROM {block_playerhud_inventory} inv
-               JOIN {block_playerhud_items} i ON i.id = inv.itemid
-              WHERE inv.id = :invid AND i.blockinstanceid = :instanceid",
-            ['invid' => $invid, 'instanceid' => $instanceid]
+        $sql = "SELECT inv.*
+                  FROM {block_playerhud_inventory} inv
+                  JOIN {block_playerhud_items} i ON i.id = inv.itemid
+                 WHERE inv.id = :invid AND i.blockinstanceid = :instanceid";
+        $params = ['invid' => $invid, 'instanceid' => $instanceid];
+
+        $inv = $DB->get_record_sql($sql, $params);
+        if (!$inv || in_array($inv->source, ['revoked', 'consumed'], true)) {
+            return false;
+        }
+
+        $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
+        $lock = $lockfactory->get_lock(
+            \block_playerhud\local\external_items::stack_lock_key((int) $inv->itemid, (int) $inv->userid),
+            5
         );
-        if (!$inv) {
-            return;
+        if (!$lock) {
+            throw new \moodle_exception('error_collect_lock', 'block_playerhud');
         }
 
-        $player = $DB->get_record('block_playerhud_user', ['blockinstanceid' => $instanceid, 'userid' => $inv->userid]);
-        if ($player && (int)$inv->xpawarded > 0) {
-            \block_playerhud\game::change_xp($player, -(int)$inv->xpawarded, $instanceid);
+        try {
+            // A concurrent revoke or consume holding the lock before us may have spent this copy.
+            $inv = $DB->get_record_sql($sql, $params);
+            if (!$inv || in_array($inv->source, ['revoked', 'consumed'], true)) {
+                return false;
+            }
+
+            $transaction = $DB->start_delegated_transaction();
+            try {
+                $player = $DB->get_record(
+                    'block_playerhud_user',
+                    ['blockinstanceid' => $instanceid, 'userid' => $inv->userid]
+                );
+                if ($player && (int) $inv->xpawarded > 0) {
+                    \block_playerhud\game::change_xp($player, -(int) $inv->xpawarded, $instanceid);
+                }
+
+                // Soft revoke: mark the inventory record as revoked instead of deleting.
+                $inv->source      = 'revoked';
+                $inv->timecreated = time();
+                $DB->update_record('block_playerhud_inventory', $inv);
+
+                $transaction->allow_commit();
+            } catch (\Exception $e) {
+                $transaction->rollback($e);
+                throw $e;
+            }
+        } finally {
+            $lock->release();
         }
 
-        // Soft revoke: mark the inventory record as revoked instead of deleting.
-        $inv->source      = 'revoked';
-        $inv->timecreated = time();
-        $DB->update_record('block_playerhud_inventory', $inv);
+        return true;
     }
 
     /**
