@@ -5,6 +5,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.9.2] — 2026-09-23
+
+### Security
+- Privacy data requests missed students whose only data in the block was an item balance or
+  its history, such as items granted by another plugin without XP: their export left the
+  block out and a deletion request completed while that data stayed in the database. Every
+  table holding personal data is now included.
+- Two template attributes (the drop distribution list and the Master Panel link) are now
+  escaped. Neither carried unsafe values, so this is hardening only.
+
+### Fixed
+- Revoking an item from the Reports tab could be applied more than once — a double click, a
+  second tab or reopening the link — each time removing further units the student had
+  earned elsewhere and deducting the same XP again. An item grant can now be revoked only
+  once, and its revoke button disappears afterwards. Grants revoked before this version are
+  not marked and may still show the button.
+- Deleting an item, or undoing the wizard run that created it, after one of its grants had
+  been revoked took that grant's XP back a second time, and the delete confirmation
+  overstated the XP impact.
+
+### Changed
+- Undoing a wizard run removes all of its drop shortcodes in a single pass instead of
+  rebuilding the course cache once per shortcode.
+
 ## [v1.9.1] — 2026-09-17
 
 ### Security
