@@ -753,6 +753,66 @@ final class privacy_provider_test extends advanced_testcase {
     }
 
     /**
+     * A user whose only data lives in a single table — any one of the nine — must still be
+     * discovered by both discovery methods. Discovery used to start from block_playerhud_user
+     * alone (plus a few extra tables for the userlist), so a user with, say, only an item
+     * balance was never offered for export or deletion.
+     */
+    public function test_discovery_finds_user_with_data_in_a_single_table(): void {
+        global $DB;
+
+        $tables = [
+            'block_playerhud_user', 'block_playerhud_rpg_progress', 'block_playerhud_inventory',
+            'block_playerhud_stack', 'block_playerhud_stack_log', 'block_playerhud_ai_logs',
+            'block_playerhud_wizard_runs', 'block_playerhud_quest_log', 'block_playerhud_trade_log',
+        ];
+
+        foreach ($tables as $kept) {
+            $user = $this->getDataGenerator()->create_user();
+            $this->seed_user($user->id);
+            foreach ($tables as $table) {
+                if ($table !== $kept) {
+                    $DB->delete_records($table, ['userid' => $user->id]);
+                }
+            }
+            $this->assertSame(1, $this->total_user_rows($user->id), $kept);
+
+            $contextids = array_map('intval', provider::get_contexts_for_userid($user->id)->get_contextids());
+            $this->assertSame([(int) $this->context->id], $contextids, "Context not found from {$kept}.");
+
+            $userlist = new userlist($this->context, 'block_playerhud');
+            provider::get_users_in_context($userlist);
+            $this->assertContains((int) $user->id, array_map('intval', $userlist->get_userids()), "User not found from {$kept}.");
+        }
+    }
+
+    /**
+     * An item granted without XP (another plugin passing $suppressxp, or a zero-XP item) never
+     * creates a player row. A privacy request for that user must still export the balance and
+     * ledger, and then delete them.
+     */
+    public function test_request_reaches_grant_without_player_row(): void {
+        global $DB;
+
+        $this->ensure_content();
+        $user = $this->getDataGenerator()->create_user();
+        \block_playerhud\local\external_items::grant($this->instanceid, $this->itemid, (int) $user->id, 2, 'playerwords', true);
+        $this->assertFalse($DB->record_exists('block_playerhud_user', ['userid' => $user->id]));
+
+        $contextlist = provider::get_contexts_for_userid($user->id);
+        $approved = new approved_contextlist($user, 'block_playerhud', $contextlist->get_contextids());
+
+        provider::export_user_data($approved);
+        $writer = writer::with_context($this->context);
+        $pluginname = get_string('pluginname', 'block_playerhud');
+        $this->assertNotEmpty($writer->get_data([$pluginname, get_string('privacy_export_stack_balance', 'block_playerhud')]));
+        $this->assertNotEmpty($writer->get_data([$pluginname, get_string('privacy_export_stack_log', 'block_playerhud')]));
+
+        provider::delete_data_for_user($approved);
+        $this->assertSame(0, $this->total_user_rows($user->id));
+    }
+
+    /**
      * Test that every user with data in the block context is discovered.
      */
     public function test_get_users_in_context(): void {

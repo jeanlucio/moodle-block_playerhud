@@ -158,19 +158,24 @@ class provider implements
     /**
      * Get the list of contexts where a user has data.
      *
+     * Every table holding a userid is a source, not just block_playerhud_user: an item granted
+     * without XP (e.g. by another plugin through external_items::grant()) or an AI/wizard log
+     * can exist for a user who never got a player row.
+     *
      * @param int $userid The user ID.
      * @return contextlist The list of contexts.
      */
     public static function get_contexts_for_userid(int $userid): contextlist {
         $contextlist = new contextlist();
+        $params = ['userid' => $userid, 'blocklevel' => CONTEXT_BLOCK];
 
-        $sql = "SELECT ctx.id
-                  FROM {block_playerhud_user} u
-                  JOIN {block_instances} bi ON u.blockinstanceid = bi.id
-                  JOIN {context} ctx ON (ctx.instanceid = bi.id AND ctx.contextlevel = :blocklevel)
-                 WHERE u.userid = :userid";
-
-        $contextlist->add_from_sql($sql, ['userid' => $userid, 'blocklevel' => CONTEXT_BLOCK]);
+        foreach (self::get_user_sources() as $source) {
+            $sql = "SELECT ctx.id
+                      FROM {$source['from']}
+                      JOIN {context} ctx ON ctx.instanceid = {$source['instance']} AND ctx.contextlevel = :blocklevel
+                     WHERE {$source['user']} = :userid";
+            $contextlist->add_from_sql($sql, $params);
+        }
 
         return $contextlist;
     }
@@ -189,28 +194,54 @@ class provider implements
 
         $params = ['instanceid' => $context->instanceid];
 
-        // Users with profile.
-        $sql = "SELECT userid FROM {block_playerhud_user} WHERE blockinstanceid = :instanceid";
-        $userlist->add_from_sql('userid', $sql, $params);
+        foreach (self::get_user_sources() as $source) {
+            $sql = "SELECT {$source['user']} AS userid
+                      FROM {$source['from']}
+                     WHERE {$source['instance']} = :instanceid";
+            $userlist->add_from_sql('userid', $sql, $params);
+        }
+    }
 
-        // Users with RPG progress.
-        $sqlrpg = "SELECT userid FROM {block_playerhud_rpg_progress} WHERE blockinstanceid = :instanceid";
-        $userlist->add_from_sql('userid', $sqlrpg, $params);
-
-        // Users with AI logs.
-        $sqlai = "SELECT userid FROM {block_playerhud_ai_logs} WHERE blockinstanceid = :instanceid";
-        $userlist->add_from_sql('userid', $sqlai, $params);
-
-        // Users with wizard runs.
-        $sqlwizard = "SELECT userid FROM {block_playerhud_wizard_runs} WHERE blockinstanceid = :instanceid";
-        $userlist->add_from_sql('userid', $sqlwizard, $params);
-
-        // Users with quest logs.
-        $sqlql = "SELECT ql.userid
-                    FROM {block_playerhud_quest_log} ql
-                    JOIN {block_playerhud_quests} q ON ql.questid = q.id
-                   WHERE q.blockinstanceid = :instanceid";
-        $userlist->add_from_sql('userid', $sqlql, $params);
+    /**
+     * Every table holding personal data, and how to reach its user and its block instance.
+     *
+     * Shared by both discovery methods so they can never drift apart — the export and delete
+     * methods already cover each of these tables.
+     *
+     * @return array[] Each entry has 'from' (FROM/JOIN clause), 'user' and 'instance' (columns).
+     */
+    private static function get_user_sources(): array {
+        return [
+            ['from' => '{block_playerhud_user} u', 'user' => 'u.userid', 'instance' => 'u.blockinstanceid'],
+            ['from' => '{block_playerhud_rpg_progress} rp', 'user' => 'rp.userid', 'instance' => 'rp.blockinstanceid'],
+            ['from' => '{block_playerhud_ai_logs} al', 'user' => 'al.userid', 'instance' => 'al.blockinstanceid'],
+            ['from' => '{block_playerhud_wizard_runs} wr', 'user' => 'wr.userid', 'instance' => 'wr.blockinstanceid'],
+            [
+                'from' => '{block_playerhud_inventory} inv JOIN {block_playerhud_items} it ON it.id = inv.itemid',
+                'user' => 'inv.userid',
+                'instance' => 'it.blockinstanceid',
+            ],
+            [
+                'from' => '{block_playerhud_stack} s JOIN {block_playerhud_items} it ON it.id = s.itemid',
+                'user' => 's.userid',
+                'instance' => 'it.blockinstanceid',
+            ],
+            [
+                'from' => '{block_playerhud_stack_log} sl JOIN {block_playerhud_items} it ON it.id = sl.itemid',
+                'user' => 'sl.userid',
+                'instance' => 'it.blockinstanceid',
+            ],
+            [
+                'from' => '{block_playerhud_quest_log} ql JOIN {block_playerhud_quests} q ON q.id = ql.questid',
+                'user' => 'ql.userid',
+                'instance' => 'q.blockinstanceid',
+            ],
+            [
+                'from' => '{block_playerhud_trade_log} tl JOIN {block_playerhud_trades} t ON t.id = tl.tradeid',
+                'user' => 'tl.userid',
+                'instance' => 't.blockinstanceid',
+            ],
+        ];
     }
 
     /**
