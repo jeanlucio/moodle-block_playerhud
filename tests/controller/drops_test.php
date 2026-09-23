@@ -526,4 +526,54 @@ final class drops_test extends advanced_testcase {
         $this->assertStringNotContainsString($payload, $html);
         $this->assertStringContainsString('&lt;script&gt;', $html);
     }
+
+    /**
+     * distribute_drops.mustache must escape the inserted-cmids JSON inside its data attribute.
+     * Today the list only ever holds integers, but a JSON string value carries double quotes
+     * that, rendered raw, close the attribute and let the rest become markup of its own.
+     */
+    public function test_distribute_drops_template_escapes_inserted_cmids_attribute(): void {
+        global $OUTPUT;
+        $this->resetAfterTest(true);
+
+        $html = $OUTPUT->render_from_template('block_playerhud/distribute_drops', [
+            'has_drops' => true,
+            'has_modules' => true,
+            'drops' => [[
+                'id' => 7,
+                'code' => 'ABC123',
+                'drop_name' => 'Spot',
+                'inserted_anywhere_int' => 1,
+                'inserted_field' => 'intro',
+                'inserted_cmids_json' => '["5" onmouseover="x"]',
+                'modules' => [],
+            ]],
+        ]);
+
+        $this->assertStringContainsString(
+            'data-inserted-cmids="[&quot;5&quot; onmouseover=&quot;x&quot;]"',
+            $html
+        );
+        $this->assertStringNotContainsString('onmouseover="x"', $html);
+    }
+
+    /**
+     * sidebar_view.mustache must escape the Master Panel link: a raw href is only safe for as
+     * long as the URL never carries a double quote.
+     */
+    public function test_sidebar_view_template_escapes_manage_url(): void {
+        global $OUTPUT;
+        $this->resetAfterTest(true);
+
+        $html = $OUTPUT->render_from_template('block_playerhud/sidebar_view', [
+            'isteacher' => true,
+            'manageurl' => 'https://example.com/blocks/playerhud/manage.php?id=1&instanceid=2" onclick="x',
+        ]);
+
+        $this->assertStringContainsString(
+            'href="https://example.com/blocks/playerhud/manage.php?id=1&amp;instanceid=2&quot; onclick=&quot;x"',
+            $html
+        );
+        $this->assertStringNotContainsString('onclick="x"', $html);
+    }
 }
