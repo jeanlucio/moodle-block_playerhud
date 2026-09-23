@@ -414,19 +414,19 @@ class wizard {
         );
 
         $shortcodes = $DB->get_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]);
-        foreach ($shortcodes as $shortcode) {
+        if ($shortcodes) {
+            $items = array_map(fn(\stdClass $shortcode): array => [
+                'dropid' => (int) $shortcode->dropid,
+                'cmid'   => (int) $shortcode->cmid,
+                'field'  => $shortcode->field,
+            ], array_values($shortcodes));
             try {
-                \block_playerhud\external\remove_drop_shortcode::execute(
-                    $blockinstanceid,
-                    $courseid,
-                    (int) $shortcode->dropid,
-                    (int) $shortcode->cmid,
-                    $shortcode->field
-                );
+                // A shortcode whose activity was deleted or edited independently since it was
+                // inserted just comes back as a failed entry, never an exception.
+                \block_playerhud\external\remove_drop_shortcode::execute_batch($blockinstanceid, $courseid, $items);
             } catch (\Throwable $e) {
-                // The activity may have been deleted or edited independently since the
-                // shortcode was inserted — never let that block the rest of the rollback.
-                continue;
+                // Leaving shortcodes behind must never block deleting the run's objects below.
+                debugging('Wizard rollback could not remove shortcodes: ' . $e->getMessage(), DEBUG_DEVELOPER);
             }
         }
 

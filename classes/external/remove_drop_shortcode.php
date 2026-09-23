@@ -24,6 +24,7 @@
 
 namespace block_playerhud\external;
 
+use block_playerhud\local\drop_distribution;
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_value;
@@ -64,8 +65,6 @@ class remove_drop_shortcode extends external_api {
      * @return array Result structure.
      */
     public static function execute(int $instanceid, int $courseid, int $dropid, int $cmid, string $field): array {
-        global $DB;
-
         $params = self::validate_parameters(self::execute_parameters(), [
             'instanceid' => $instanceid,
             'courseid'   => $courseid,
@@ -74,41 +73,154 @@ class remove_drop_shortcode extends external_api {
             'field'      => $field,
         ]);
 
-        $context = context_block::instance($params['instanceid']);
+        self::require_manage_and_course_match($params['instanceid'], $params['courseid']);
+
+        $columnscache = [];
+        return self::remove_one(
+            $params['instanceid'],
+            $params['courseid'],
+            $params['dropid'],
+            $params['cmid'],
+            $params['field'],
+            $columnscache,
+            false
+        );
+    }
+
+    /**
+     * Remove shortcodes for several drops in one call.
+     *
+     * Same authorisation and per-drop logic as {@see execute()}, but checked once for the
+     * whole batch, with the drops and field values preloaded in bulk and rebuild_course_cache()
+     * — the dominant cost — run once at the end instead of once per drop. Mirrors
+     * {@see insert_drop_shortcode::execute_batch()}; used by the wizard's rollback, which
+     * removes every shortcode a run inserted.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param array $items Each entry: ['dropid', 'cmid', 'field'].
+     * @return array Result structure per entry, keyed by the same index as $items.
+     */
+    public static function execute_batch(int $instanceid, int $courseid, array $items): array {
+        self::require_manage_and_course_match($instanceid, $courseid);
+
+        $columnscache = [];
+        $dropscache = drop_distribution::preload_drops($instanceid, array_map(
+            fn(array $item): int => (int) $item['dropid'],
+            $items
+        ));
+        $fieldvaluescache = drop_distribution::preload_field_values($courseid, $items);
+
+        $results = [];
+        $anychanged = false;
+
+        foreach ($items as $key => $item) {
+            $results[$key] = self::remove_one(
+                $instanceid,
+                $courseid,
+                (int) $item['dropid'],
+                (int) $item['cmid'],
+                (string) $item['field'],
+                $columnscache,
+                true,
+                $dropscache,
+                $fieldvaluescache,
+                $anychanged
+            );
+        }
+
+        if ($anychanged) {
+            rebuild_course_cache($courseid, true);
+        }
+
+        return $results;
+    }
+
+    /**
+     * Validates the caller can manage this block instance and edit activities in its course,
+     * and that the instance genuinely belongs to that course. Shared by execute() and
+     * execute_batch() so a batch call checks this once instead of once per drop.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @return void
+     */
+    protected static function require_manage_and_course_match(int $instanceid, int $courseid): void {
+        $context = context_block::instance($instanceid);
         self::validate_context($context);
         require_capability('block/playerhud:manage', $context);
 
-        $coursecontext = \context_course::instance($params['courseid']);
+        $coursecontext = \context_course::instance($courseid);
         require_capability('moodle/course:manageactivities', $coursecontext);
 
         // Verify the block instance actually belongs to the supplied course.
         $blockcoursectx = $context->get_course_context(false);
-        if (!$blockcoursectx || (int) $blockcoursectx->instanceid !== (int) $params['courseid']) {
+        if (!$blockcoursectx || (int) $blockcoursectx->instanceid !== $courseid) {
             throw new \moodle_exception('accessdenied', 'admin');
         }
+    }
+
+    /**
+     * Core single-drop removal logic, shared by execute() and execute_batch().
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $courseid Course ID.
+     * @param int $dropid Drop ID.
+     * @param int $cmid Course module ID.
+     * @param string $field Field name (intro or content).
+     * @param array $columnscache Column list per modname, reused across calls in the same batch.
+     * @param bool $deferrebuild When true, the caller is responsible for calling
+     *                           rebuild_course_cache() itself once, after every drop is removed.
+     * @param array|null $dropscache Drops preloaded by {@see drop_distribution::preload_drops()};
+     *                               null (the execute() single-call path) always queries.
+     * @param array|null $fieldvaluescache Field values preloaded by
+     *                                     {@see drop_distribution::preload_field_values()},
+     *                                     updated in place after each write so a later item in
+     *                                     the same batch on the same field sees it; null always
+     *                                     queries.
+     * @param bool $changed Set to true when this call actually rewrote a field.
+     * @return array Result structure.
+     */
+    protected static function remove_one(
+        int $instanceid,
+        int $courseid,
+        int $dropid,
+        int $cmid,
+        string $field,
+        array &$columnscache,
+        bool $deferrebuild,
+        ?array $dropscache = null,
+        ?array &$fieldvaluescache = null,
+        bool &$changed = false
+    ): array {
+        global $DB;
 
         // Validate field name.
-        if (!in_array($params['field'], ['intro', 'content'])) {
+        if (!in_array($field, ['intro', 'content'])) {
             return ['success' => false, 'message' => get_string('distribute_err_field', 'block_playerhud')];
         }
 
         // Load the drop and verify it belongs to this block instance.
-        $drop = $DB->get_record_sql(
-            "SELECT d.id, d.code, d.itemid
-               FROM {block_playerhud_drops} d
-               JOIN {block_playerhud_items} i ON d.itemid = i.id
-              WHERE d.id = :dropid AND i.blockinstanceid = :instanceid",
-            ['dropid' => $params['dropid'], 'instanceid' => $params['instanceid']]
-        );
+        if ($dropscache !== null) {
+            $drop = $dropscache[$dropid] ?? null;
+        } else {
+            $drop = $DB->get_record_sql(
+                "SELECT d.id, d.code, d.itemid
+                   FROM {block_playerhud_drops} d
+                   JOIN {block_playerhud_items} i ON d.itemid = i.id
+                  WHERE d.id = :dropid AND i.blockinstanceid = :instanceid",
+                ['dropid' => $dropid, 'instanceid' => $instanceid]
+            );
+        }
 
         if (!$drop) {
             return ['success' => false, 'message' => get_string('invalidrecord', 'error')];
         }
 
         // Load the course module.
-        $modinfo = get_fast_modinfo($params['courseid']);
+        $modinfo = get_fast_modinfo($courseid);
         try {
-            $cm = $modinfo->get_cm($params['cmid']);
+            $cm = $modinfo->get_cm($cmid);
         } catch (\moodle_exception $e) {
             return ['success' => false, 'message' => get_string('invalidrecord', 'error')];
         }
@@ -116,15 +228,22 @@ class remove_drop_shortcode extends external_api {
         $modname = $cm->modname;
 
         // Verify the field exists in the module table.
-        $columns = $DB->get_columns($modname);
-        if (!isset($columns[$params['field']])) {
+        if (!isset($columnscache[$modname])) {
+            $columnscache[$modname] = $DB->get_columns($modname);
+        }
+        $columns = $columnscache[$modname];
+        if (!isset($columns[$field])) {
             return ['success' => false, 'message' => get_string('distribute_err_field', 'block_playerhud')];
         }
 
         // Read current field value.
-        $currentval = $DB->get_field($modname, $params['field'], ['id' => $cm->instance]);
-        if ($currentval === false) {
-            $currentval = '';
+        if ($fieldvaluescache !== null && isset($fieldvaluescache[$modname][$field][$cm->instance])) {
+            $currentval = $fieldvaluescache[$modname][$field][$cm->instance];
+        } else {
+            $currentval = $DB->get_field($modname, $field, ['id' => $cm->instance]);
+            if ($currentval === false) {
+                $currentval = '';
+            }
         }
 
         // Matches the shortcode regardless of any mode=/text= attributes it may carry
@@ -157,13 +276,22 @@ class remove_drop_shortcode extends external_api {
         );
         $newval = trim($newval);
 
-        $DB->set_field($modname, $params['field'], $newval, ['id' => $cm->instance]);
+        $DB->set_field($modname, $field, $newval, ['id' => $cm->instance]);
+        $changed = true;
+
+        // Keep the preloaded cache in sync so a later item in the same batch removing another
+        // shortcode from the same field works on this result, not the stale starting value.
+        if ($fieldvaluescache !== null) {
+            $fieldvaluescache[$modname][$field][$cm->instance] = $newval;
+        }
 
         if (isset($columns['timemodified'])) {
             $DB->set_field($modname, 'timemodified', time(), ['id' => $cm->instance]);
         }
 
-        rebuild_course_cache($params['courseid'], true);
+        if (!$deferrebuild) {
+            rebuild_course_cache($courseid, true);
+        }
 
         return ['success' => true, 'message' => ''];
     }

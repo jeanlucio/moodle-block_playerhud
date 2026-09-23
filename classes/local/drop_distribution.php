@@ -248,4 +248,73 @@ class drop_distribution {
 
         return $result;
     }
+
+    /**
+     * Bulk-loads every drop referenced by a shortcode batch in a single query, scoped to the
+     * instance.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int[] $dropids Drop IDs to load.
+     * @return array Drop records (id, code, itemid) keyed by dropid.
+     */
+    public static function preload_drops(int $instanceid, array $dropids): array {
+        global $DB;
+
+        $dropids = array_unique(array_filter($dropids));
+        if (empty($dropids)) {
+            return [];
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($dropids, SQL_PARAMS_NAMED);
+        $inparams['instanceid'] = $instanceid;
+
+        return $DB->get_records_sql(
+            "SELECT d.id, d.code, d.itemid
+               FROM {block_playerhud_drops} d
+               JOIN {block_playerhud_items} i ON d.itemid = i.id
+              WHERE d.id $insql AND i.blockinstanceid = :instanceid",
+            $inparams
+        );
+    }
+
+    /**
+     * Bulk-loads the current value of every course module field referenced by a batch, grouped
+     * by module type and field so a batch spanning several activity types issues one query per
+     * (modname, field) pair instead of one query per item. Shared by the insert and remove
+     * shortcode batches.
+     *
+     * @param int $courseid Course ID.
+     * @param array $items Batch items, each with at least 'cmid' and 'field'.
+     * @return array Values keyed by [modname][field][course-module-instance id].
+     */
+    public static function preload_field_values(int $courseid, array $items): array {
+        global $DB;
+
+        $modinfo = get_fast_modinfo($courseid);
+        $wanted = [];
+        foreach ($items as $item) {
+            $field = (string) $item['field'];
+            if (!in_array($field, ['intro', 'content'], true)) {
+                continue;
+            }
+            try {
+                $cm = $modinfo->get_cm((int) $item['cmid']);
+            } catch (\moodle_exception $e) {
+                continue;
+            }
+            $wanted[$cm->modname][$field][] = $cm->instance;
+        }
+
+        $cache = [];
+        foreach ($wanted as $modname => $byfield) {
+            foreach ($byfield as $field => $instanceids) {
+                $rows = $DB->get_records_list($modname, 'id', array_unique($instanceids), '', 'id, ' . $field);
+                foreach ($rows as $row) {
+                    $cache[$modname][$field][$row->id] = (string) ($row->$field ?? '');
+                }
+            }
+        }
+
+        return $cache;
+    }
 }

@@ -200,6 +200,46 @@ final class wizard_test extends advanced_testcase {
     }
 
     /**
+     * Rolling back a run with several recorded shortcodes strips them all while rebuilding the
+     * course cache once, not once per shortcode as the per-drop removal it used to loop over.
+     */
+    public function test_rollback_strips_many_shortcodes_with_one_cache_rebuild(): void {
+        global $DB, $USER;
+
+        $itemid = $this->create_item();
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->courseid,
+            'content' => 'Keep this body',
+        ]);
+
+        $runid = wizard::start_run($this->instanceid, (int) $USER->id, ['items']);
+        $content = 'Keep this body';
+        foreach (range(1, 4) as $n) {
+            $code = \block_playerhud\utils::generate_drop_code($this->instanceid);
+            $dropid = $DB->insert_record('block_playerhud_drops', (object) [
+                'blockinstanceid' => $this->instanceid, 'itemid' => $itemid, 'name' => 'Spot ' . $n,
+                'maxusage' => 0, 'respawntime' => 0, 'code' => $code,
+                'timecreated' => time(), 'timemodified' => time(),
+            ]);
+            $content = '[PLAYERHUD_DROP code=' . $code . ']' . "\n" . $content;
+            wizard::record_objects($runid, 'block_playerhud_drops', [$dropid]);
+            wizard::record_shortcode($runid, $dropid, (int) $page->cmid, 'content');
+        }
+        wizard::record_objects($runid, 'block_playerhud_items', [$itemid]);
+        wizard::finish_run($runid, 'done');
+        $DB->set_field('page', 'content', $content, ['id' => $page->id]);
+
+        // Pinned ahead of the clock, every rebuild_course_cache() call adds exactly 1.
+        $DB->set_field('course', 'cacherev', time() + 1000, ['id' => $this->courseid]);
+        $cacherev = (int) $DB->get_field('course', 'cacherev', ['id' => $this->courseid]);
+
+        wizard::rollback($runid, $this->instanceid, $this->courseid);
+
+        $this->assertSame('Keep this body', $DB->get_field('page', 'content', ['id' => $page->id]));
+        $this->assertSame($cacherev + 1, (int) $DB->get_field('course', 'cacherev', ['id' => $this->courseid]));
+    }
+
+    /**
      * Rollback reverts the XP students earned from the objects it removes and clears
      * their play history, matching a manual delete rather than a raw wipe.
      */

@@ -186,4 +186,65 @@ final class remove_drop_shortcode_test extends external_base_testcase {
         $this->expectException(\required_capability_exception::class);
         remove_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $page->cmid, 'content');
     }
+
+    /**
+     * execute_batch() removes every listed shortcode — including two sitting in the same field,
+     * where the second removal must work on the first one's result — reports a vanished activity
+     * as a failed entry instead of aborting, and rebuilds the course cache once for the whole
+     * batch instead of once per shortcode.
+     */
+    public function test_execute_batch_removes_all_and_rebuilds_cache_once(): void {
+        global $DB;
+
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropa, $codea] = $this->create_drop($item->id);
+        [$dropb, $codeb] = $this->create_drop($item->id);
+        [$dropc, $codec] = $this->create_drop($item->id);
+
+        $pageone = $this->getDataGenerator()->create_module('page', [
+            'course'  => $this->course->id,
+            'content' => "[PLAYERHUD_DROP code={$codea}]\nKeep one\n[PLAYERHUD_DROP code={$codeb} mode=text]",
+        ]);
+        $pagetwo = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'intro'  => "[PLAYERHUD_DROP code={$codec}]\nKeep two",
+        ]);
+
+        // Pinned ahead of the clock, every rebuild_course_cache() call adds exactly 1.
+        $DB->set_field('course', 'cacherev', time() + 1000, ['id' => $this->course->id]);
+        $cacherev = (int) $DB->get_field('course', 'cacherev', ['id' => $this->course->id]);
+
+        $results = remove_drop_shortcode::execute_batch($this->instanceid, $this->course->id, [
+            ['dropid' => $dropa, 'cmid' => $pageone->cmid, 'field' => 'content'],
+            ['dropid' => $dropb, 'cmid' => $pageone->cmid, 'field' => 'content'],
+            ['dropid' => $dropc, 'cmid' => $pagetwo->cmid, 'field' => 'intro'],
+            ['dropid' => $dropa, 'cmid' => 999999, 'field' => 'content'],
+        ]);
+
+        $this->assertSame([true, true, true, false], array_column($results, 'success'));
+        $this->assertSame('Keep one', $DB->get_field('page', 'content', ['id' => $pageone->id]));
+        $this->assertSame('Keep two', $DB->get_field('page', 'intro', ['id' => $pagetwo->id]));
+        $this->assertSame($cacherev + 1, (int) $DB->get_field('course', 'cacherev', ['id' => $this->course->id]));
+    }
+
+    /**
+     * execute_batch() applies the same authorisation as execute(), once for the whole batch.
+     */
+    public function test_execute_batch_requires_manage_capability(): void {
+        $item     = $this->create_item($this->instanceid, 'Gem');
+        [$dropid] = $this->create_drop($item->id);
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course'  => $this->course->id,
+            'content' => '',
+        ]);
+
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $this->course->id, 'student');
+        $this->setUser($student);
+
+        $this->expectException(\required_capability_exception::class);
+        remove_drop_shortcode::execute_batch($this->instanceid, $this->course->id, [
+            ['dropid' => $dropid, 'cmid' => $page->cmid, 'field' => 'content'],
+        ]);
+    }
 }
