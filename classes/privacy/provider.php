@@ -167,15 +167,16 @@ class provider implements
      */
     public static function get_contexts_for_userid(int $userid): contextlist {
         $contextlist = new contextlist();
-        $params = ['userid' => $userid, 'blocklevel' => CONTEXT_BLOCK];
 
-        foreach (self::get_user_sources() as $source) {
-            $sql = "SELECT ctx.id
-                      FROM {$source['from']}
-                      JOIN {context} ctx ON ctx.instanceid = {$source['instance']} AND ctx.contextlevel = :blocklevel
-                     WHERE {$source['user']} = :userid";
-            $contextlist->add_from_sql($sql, $params);
-        }
+        // One query for every source: the UNION stays inside a subquery so contextlist can
+        // still join on ctx.id instead of falling back to a slower IN () wrapper.
+        [$union, $params] = self::get_user_sources_union('instanceid', 'userid', $userid);
+        $sql = "SELECT ctx.id
+                  FROM {context} ctx
+                  JOIN ({$union}) src ON src.instanceid = ctx.instanceid
+                 WHERE ctx.contextlevel = :blocklevel";
+        $params['blocklevel'] = CONTEXT_BLOCK;
+        $contextlist->add_from_sql($sql, $params);
 
         return $contextlist;
     }
@@ -192,14 +193,35 @@ class provider implements
             return;
         }
 
-        $params = ['instanceid' => $context->instanceid];
+        [$union, $params] = self::get_user_sources_union('userid', 'instanceid', (int) $context->instanceid);
+        $userlist->add_from_sql('userid', "SELECT src.userid FROM ({$union}) src", $params);
+    }
 
-        foreach (self::get_user_sources() as $source) {
-            $sql = "SELECT {$source['user']} AS userid
-                      FROM {$source['from']}
-                     WHERE {$source['instance']} = :instanceid";
-            $userlist->add_from_sql('userid', $sql, $params);
+    /**
+     * Builds one UNION over every personal-data source, returning one column filtered by the
+     * other: the block instances holding a given user's data, or the users holding data in a
+     * given block instance.
+     *
+     * Each branch gets its own placeholder name, since the pgsql driver needs one bound value
+     * per placeholder occurrence.
+     *
+     * @param string $select Column to return: 'instanceid' or 'userid'.
+     * @param string $filter Column to filter on: 'userid' or 'instanceid'.
+     * @param int $value Value the filter column must match.
+     * @return array [string $sql, array $params]
+     */
+    private static function get_user_sources_union(string $select, string $filter, int $value): array {
+        $branches = [];
+        $params = [];
+        foreach (self::get_user_sources() as $i => $source) {
+            $columns = ['userid' => $source['user'], 'instanceid' => $source['instance']];
+            $branches[] = "SELECT {$columns[$select]} AS {$select}
+                             FROM {$source['from']}
+                            WHERE {$columns[$filter]} = :src{$i}";
+            $params['src' . $i] = $value;
         }
+
+        return [implode(' UNION ', $branches), $params];
     }
 
     /**

@@ -787,6 +787,29 @@ final class privacy_provider_test extends advanced_testcase {
     }
 
     /**
+     * Both discovery methods reach all nine sources in a single UNION query, so their cost
+     * does not grow with the number of tables — one add_from_sql() per table cost 27 queries
+     * for the contexts and 9 for the user list.
+     */
+    public function test_discovery_uses_one_query_for_all_sources(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $this->seed_user($user->id);
+
+        $before = $DB->perf_get_queries();
+        $contextids = provider::get_contexts_for_userid($user->id)->get_contextids();
+        $this->assertLessThanOrEqual(3, $DB->perf_get_queries() - $before);
+        $this->assertSame([(int) $this->context->id], array_map('intval', $contextids));
+
+        $userlist = new userlist($this->context, 'block_playerhud');
+        $before = $DB->perf_get_queries();
+        provider::get_users_in_context($userlist);
+        $this->assertLessThanOrEqual(1, $DB->perf_get_queries() - $before);
+        $this->assertSame([(int) $user->id], array_map('intval', $userlist->get_userids()));
+    }
+
+    /**
      * An item granted without XP (another plugin passing $suppressxp, or a zero-XP item) never
      * creates a player row. A privacy request for that user must still export the balance and
      * ledger, and then delete them.
