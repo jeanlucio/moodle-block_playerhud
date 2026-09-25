@@ -102,8 +102,10 @@ if ($options['reset']) {
     }
     // Remove seed users. Scoped to this script's own prefix — the Portuguese seed script
     // uses a different one, so running --reset here never touches its accounts.
-    $seedusers = $DB->get_records_sql(
-        "SELECT * FROM {user} WHERE username LIKE '" . SEED_USER_PREFIX . "%' AND deleted = 0"
+    $seedusers = $DB->get_records_select(
+        'user',
+        $DB->sql_like('username', ':prefix') . ' AND deleted = 0',
+        ['prefix' => $DB->sql_like_escape(SEED_USER_PREFIX) . '%']
     );
     foreach ($seedusers as $u) {
         delete_user($u);
@@ -231,7 +233,12 @@ function seed_set_avatar(int $userid, string $initial, string $hexcolor): void {
 
 // Preloaded once so seed_create_user() below never re-queries per account.
 $existingseedusers = [];
-foreach ($DB->get_records_sql("SELECT * FROM {user} WHERE username LIKE '" . SEED_USER_PREFIX . "%' AND deleted = 0") as $u) {
+$preloadedseedusers = $DB->get_records_select(
+    'user',
+    $DB->sql_like('username', ':prefix') . ' AND deleted = 0',
+    ['prefix' => $DB->sql_like_escape(SEED_USER_PREFIX) . '%']
+);
+foreach ($preloadedseedusers as $u) {
     $existingseedusers[$u->username] = $u;
 }
 

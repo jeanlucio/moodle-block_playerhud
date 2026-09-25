@@ -260,7 +260,15 @@
                                 </div>
                             </td>
                             <td class="text-center">{{{xp_badge}}}</td>
-                            <td class="text-muted small text-wrap ph-table-details-col">{{{details_html}}}</td>
+                            <td class="text-muted small text-wrap ph-table-details-col">
+                                {{detail_text}}
+                                {{#has_trade_cost}}
+                                    <small class="text-danger d-block mt-1 text-wrap">
+                                        <i class="fa fa-minus-circle" aria-hidden="true"></i>
+                                        {{str.trade_cost}} {{trade_cost_text}}
+                                    </small>
+                                {{/has_trade_cost}}
+                            </td>
                             <td class="text-end pe-3">
                                 {{#has_revoke}}
                                     <a href="{{url_revoke}}" class="btn btn-sm btn-outline-danger js-delete-report-btn text-nowrap"

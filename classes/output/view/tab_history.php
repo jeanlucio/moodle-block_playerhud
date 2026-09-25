@@ -212,6 +212,7 @@ class tab_history implements renderable, templatable {
                 'btn_showpaged' => get_string('showperpage', 'moodle', 30),
                 'search_any'    => get_string('search_any_term', 'block_playerhud'),
                 'col_num'       => get_string('col_number', 'block_playerhud'),
+                'trade_cost'    => get_string('trade_cost', 'block_playerhud'),
             ],
         ];
     }
@@ -294,7 +295,9 @@ class tab_history implements renderable, templatable {
             foreach ($logs as $log) {
                 $srckey = 'report_src_' . $log->details;
                 $detailtext = get_string_manager()->string_exists($srckey, 'block_playerhud') ?
-                    get_string($srckey, 'block_playerhud') : s($log->details);
+                    get_string($srckey, 'block_playerhud') : $log->details;
+                $hastradecost = false;
+                $tradecosttext = '';
 
                 $badgeclass = 'bg-secondary text-white';
                 $badgetext  = get_string('report_type_other', 'block_playerhud');
@@ -337,11 +340,8 @@ class tab_history implements renderable, templatable {
                     $detailtext = get_string('report_status_transaction', 'block_playerhud');
 
                     if (isset($tradecosts[$log->trade_id])) {
-                        $coststr = implode(', ', $tradecosts[$log->trade_id]);
-                        $strcost = get_string('trade_cost', 'block_playerhud');
-                        $iconminus = '<i class="fa fa-minus-circle" aria-hidden="true"></i>';
-                        $detailtext .= "<small class=\"text-danger d-block mt-1 text-wrap\">" .
-                            "{$iconminus} {$strcost} {$coststr}</small>";
+                        $hastradecost = true;
+                        $tradecosttext = implode(', ', $tradecosts[$log->trade_id]);
                     }
                 } else if ($log->event_type === 'quest') {
                     $badgeclass = 'bg-warning text-dark';
@@ -360,17 +360,19 @@ class tab_history implements renderable, templatable {
                 }
 
                 $results[] = [
-                    'counter'       => $counter++,
-                    'date'          => userdate($log->timecreated, get_string('strftimedatetime', 'langconfig')),
-                    'badge_class'   => $badgeclass,
-                    'badge_text'    => $badgetext,
-                    'is_image_icon' => $isimageicon,
-                    'icon_url'      => $iconurl,
-                    'icon_emoji'    => $iconemoji,
-                    'object_name'   => format_string($log->object_name),
-                    'qty_badge'     => \block_playerhud\local\audit_log::format_qty_badge((int) $log->qty),
-                    'xp_badge'      => $xpbadge,
-                    'details_html'  => $detailtext,
+                    'counter'         => $counter++,
+                    'date'            => userdate($log->timecreated, get_string('strftimedatetime', 'langconfig')),
+                    'badge_class'     => $badgeclass,
+                    'badge_text'      => $badgetext,
+                    'is_image_icon'   => $isimageicon,
+                    'icon_url'        => $iconurl,
+                    'icon_emoji'      => $iconemoji,
+                    'object_name'     => format_string($log->object_name),
+                    'qty_badge'       => \block_playerhud\local\audit_log::format_qty_badge((int) $log->qty),
+                    'xp_badge'        => $xpbadge,
+                    'detail_text'     => $detailtext,
+                    'has_trade_cost'  => $hastradecost,
+                    'trade_cost_text' => $tradecosttext,
                 ];
             }
         }

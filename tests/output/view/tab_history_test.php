@@ -115,12 +115,14 @@ final class tab_history_test extends advanced_testcase {
 
     /**
      * Regression test for the security-audit finding: when inventory.source has no matching
-     * report_src_<source> lang string, the raw value was used unescaped as details_html, which
-     * the template renders via triple-mustache ({{{details_html}}}) — a live-HTML sink. The
-     * fallback must now be escaped, so a stray '<'/'>' in an unrecognised source value (e.g. a
-     * future third-party integrator's tag) can never be interpreted as markup.
+     * report_src_<source> lang string, export_for_template() must hand the raw value to the
+     * template as-is, in the detail_text key, and never pre-escape or wrap it in markup. The
+     * tab_history.mustache template renders detail_text through double-mustache ({{detail_text}}),
+     * which is the layer responsible for escaping — see
+     * test_tab_history_template_escapes_detail_text_fallback() for proof the render step actually
+     * does so.
      */
-    public function test_export_for_template_escapes_unknown_source_fallback(): void {
+    public function test_export_for_template_passes_unknown_source_fallback_raw(): void {
         global $DB;
 
         $itemid = $DB->insert_record('block_playerhud_items', (object) [
@@ -154,7 +156,57 @@ final class tab_history_test extends advanced_testcase {
         $data = $tab->export_for_template($this->createMock(\core\output\core_renderer::class));
 
         $this->assertTrue($data['has_logs']);
-        $this->assertStringNotContainsString('<img', $data['logs'][0]['details_html']);
-        $this->assertStringContainsString('&lt;img', $data['logs'][0]['details_html']);
+        $this->assertSame($payload, $data['logs'][0]['detail_text']);
+    }
+
+    /**
+     * The tab_history.mustache template must escape detail_text itself, since it is the only
+     * layer standing between a future unescaped upstream value and the DOM. A stray '<'/'>' in
+     * an unrecognised inventory.source value (e.g. a future third-party integrator's tag) must
+     * never be interpreted as markup once rendered.
+     */
+    public function test_tab_history_template_escapes_detail_text_fallback(): void {
+        global $OUTPUT;
+
+        $payload = '<img src=x onerror=alert(1)>';
+        $html = $OUTPUT->render_from_template('block_playerhud/tab_history', [
+            'str' => [
+                'desc' => 'Desc',
+                'search_any' => 'Search',
+                'btn_showall' => 'Show all',
+                'btn_showpaged' => 'Show paged',
+                'empty' => 'No logs.',
+                'col_num' => '#',
+            ],
+            'showall' => false,
+            'url_toggle_showall' => '#',
+            'has_logs' => true,
+            'headers' => [
+                'date' => ['url' => '#', 'label' => 'Date', 'icon_class' => 'fa-sort'],
+                'type' => ['url' => '#', 'label' => 'Type', 'icon_class' => 'fa-sort'],
+                'element' => ['url' => '#', 'label' => 'Element', 'icon_class' => 'fa-sort'],
+                'xp' => ['url' => '#', 'label' => 'XP', 'icon_class' => 'fa-sort'],
+                'details' => ['url' => '#', 'label' => 'Details', 'icon_class' => 'fa-sort'],
+            ],
+            'logs' => [[
+                'counter' => 1,
+                'date' => '10 Jan 2026',
+                'badge_class' => 'bg-primary',
+                'badge_text' => 'Item',
+                'is_image_icon' => false,
+                'icon_url' => '',
+                'icon_emoji' => '',
+                'object_name' => 'Test',
+                'qty_badge' => '',
+                'xp_badge' => '',
+                'detail_text' => $payload,
+                'has_trade_cost' => false,
+                'trade_cost_text' => '',
+            ]],
+            'paging_bar' => '',
+        ]);
+
+        $this->assertStringNotContainsString($payload, $html);
+        $this->assertStringContainsString('&lt;img', $html);
     }
 }

@@ -247,11 +247,14 @@ final class tab_reports_test extends advanced_testcase {
 
     /**
      * Regression test for the security-audit finding: when inventory.source has no matching
-     * report_src_<source> lang string, the raw value was used unescaped as details_html, which
-     * the template renders via triple-mustache ({{{details_html}}}) — a live-HTML sink on the
-     * teacher's own Reports tab. The fallback must now be escaped.
+     * report_src_<source> lang string, export_for_template() must hand the raw value to the
+     * template as-is, in the detail_text key, and never pre-escape or wrap it in markup. The
+     * tab_reports.mustache template renders detail_text through double-mustache
+     * ({{detail_text}}), which is the layer responsible for escaping — see
+     * test_tab_reports_template_escapes_detail_text_fallback() for proof the render step
+     * actually does so.
      */
-    public function test_export_for_template_audit_drilldown_escapes_unknown_source_fallback(): void {
+    public function test_export_for_template_audit_drilldown_passes_unknown_source_fallback_raw(): void {
         global $DB;
 
         $itemid = $DB->insert_record('block_playerhud_items', (object) [
@@ -283,8 +286,62 @@ final class tab_reports_test extends advanced_testcase {
 
         $this->assertTrue($data['is_audit']);
         $this->assertNotEmpty($data['audit_logs']);
-        $this->assertStringNotContainsString('<img', $data['audit_logs'][0]['details_html']);
-        $this->assertStringContainsString('&lt;img', $data['audit_logs'][0]['details_html']);
+        $this->assertSame($payload, $data['audit_logs'][0]['detail_text']);
+    }
+
+    /**
+     * The tab_reports.mustache template must escape detail_text itself, since it is the only
+     * layer standing between a future unescaped upstream value and the DOM on the teacher's own
+     * Reports tab. A stray '<'/'>' in an unrecognised inventory.source value (e.g. a future
+     * third-party integrator's tag) must never be interpreted as markup once rendered.
+     */
+    public function test_tab_reports_template_escapes_detail_text_fallback(): void {
+        global $OUTPUT;
+
+        $payload = '<img src=x onerror=alert(1)>';
+        $html = $OUTPUT->render_from_template('block_playerhud/tab_reports', [
+            'is_audit' => true,
+            'str' => [
+                'audit' => 'Audit',
+                'search_any' => 'Search',
+                'btn_showall' => 'Show all',
+                'btn_showpaged' => 'Show paged',
+                'no_logs' => 'No logs',
+                'col_num' => '#',
+                'action' => 'Action',
+            ],
+            'str_back' => 'Back',
+            'url_back' => '#',
+            'showall' => false,
+            'url_toggle_showall' => '#',
+            'has_audit_logs' => true,
+            'audit_headers' => [
+                'date' => ['url' => '#', 'label' => 'Date', 'icon_class' => 'fa-sort'],
+                'type' => ['url' => '#', 'label' => 'Type', 'icon_class' => 'fa-sort'],
+                'element' => ['url' => '#', 'label' => 'Element', 'icon_class' => 'fa-sort'],
+                'xp' => ['url' => '#', 'label' => 'XP', 'icon_class' => 'fa-sort'],
+                'details' => ['url' => '#', 'label' => 'Details', 'icon_class' => 'fa-sort'],
+            ],
+            'audit_logs' => [[
+                'counter' => 1,
+                'date' => '10 Jan 2026',
+                'badge_class' => 'bg-primary',
+                'badge_text' => 'Item',
+                'is_image_icon' => false,
+                'icon_url' => '',
+                'icon_emoji' => '',
+                'object_name' => 'Test',
+                'qty_badge' => '',
+                'xp_badge' => '',
+                'detail_text' => $payload,
+                'has_trade_cost' => false,
+                'trade_cost_text' => '',
+                'has_revoke' => false,
+            ]],
+        ]);
+
+        $this->assertStringNotContainsString($payload, $html);
+        $this->assertStringContainsString('&lt;img', $html);
     }
 
     /**

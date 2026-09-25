@@ -35,7 +35,8 @@
             "xp": "XP",
             "col_details": "Details",
             "btn_showall": "Show all",
-            "btn_showpaged": "Show 30 per page"
+            "btn_showpaged": "Show 30 per page",
+            "trade_cost": "Cost:"
         },
         "filters": {
             "action_url": "#",
@@ -69,7 +70,9 @@
                 "object_name": "Magic Sword",
                 "qty_badge": "<span class=\"badge bg-success text-white ph-text-xs ms-1\">+2</span>",
                 "xp_badge": "<span class=\"badge bg-success text-white\">+100 XP</span>",
-                "details_html": "Found on map"
+                "detail_text": "Found on map",
+                "has_trade_cost": false,
+                "trade_cost_text": ""
             }
         ],
         "paging_bar": "<nav>Pagination</nav>"
@@ -151,7 +154,15 @@
                             </div>
                         </td>
                         <td class="text-center">{{{xp_badge}}}</td>
-                        <td class="text-muted small text-wrap ph-table-details-col">{{{details_html}}}</td>
+                        <td class="text-muted small text-wrap ph-table-details-col">
+                            {{detail_text}}
+                            {{#has_trade_cost}}
+                                <small class="text-danger d-block mt-1 text-wrap">
+                                    <i class="fa fa-minus-circle" aria-hidden="true"></i>
+                                    {{str.trade_cost}} {{trade_cost_text}}
+                                </small>
+                            {{/has_trade_cost}}
+                        </td>
                     </tr>
                     {{/logs}}
                 </tbody>
