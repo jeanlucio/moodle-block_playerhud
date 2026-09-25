@@ -405,16 +405,4 @@ final class audit_log_test extends advanced_testcase {
             $this->assertEquals(0, $log->qty);
         }
     }
-
-    /**
-     * The qty badge helper renders nothing for zero, a green "+N" for a gain, and a red "-N"
-     * (the sign already carried by the negative int) for a loss.
-     */
-    public function test_format_qty_badge_renders_expected_html(): void {
-        $this->assertSame('', audit_log::format_qty_badge(0));
-        $this->assertStringContainsString('bg-success', audit_log::format_qty_badge(2));
-        $this->assertStringContainsString('+2', audit_log::format_qty_badge(2));
-        $this->assertStringContainsString('bg-danger', audit_log::format_qty_badge(-3));
-        $this->assertStringContainsString('-3', audit_log::format_qty_badge(-3));
-    }
 }

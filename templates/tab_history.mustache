@@ -68,8 +68,12 @@
                 "icon_url": "https://example.com/icon.png",
                 "icon_emoji": "",
                 "object_name": "Magic Sword",
-                "qty_badge": "<span class=\"badge bg-success text-white ph-text-xs ms-1\">+2</span>",
-                "xp_badge": "<span class=\"badge bg-success text-white\">+100 XP</span>",
+                "qty": 2,
+                "qty_positive": true,
+                "qty_negative": false,
+                "xp_gained": 100,
+                "xp_positive": true,
+                "xp_negative": false,
                 "detail_text": "Found on map",
                 "has_trade_cost": false,
                 "trade_cost_text": ""
@@ -150,10 +154,17 @@
                                     {{#is_image_icon}}<img src="{{icon_url}}" class="ph-img-xs" alt="">{{/is_image_icon}}
                                     {{^is_image_icon}}<span class="fs-5" aria-hidden="true">{{icon_emoji}}</span>{{/is_image_icon}}
                                 </div>
-                                <div>{{object_name}}{{{qty_badge}}}</div>
+                                <div>{{object_name}}
+                                    {{#qty_positive}}<span class="badge bg-success text-white ph-text-xs ms-1">+{{qty}}</span>{{/qty_positive}}
+                                    {{#qty_negative}}<span class="badge bg-danger text-white ph-text-xs ms-1">{{qty}}</span>{{/qty_negative}}
+                                </div>
                             </div>
                         </td>
-                        <td class="text-center">{{{xp_badge}}}</td>
+                        <td class="text-center">
+                            {{#xp_positive}}<span class="badge bg-success text-white ph-text-xs">+{{xp_gained}} XP</span>{{/xp_positive}}
+                            {{#xp_negative}}<span class="badge bg-danger text-white ph-text-xs">{{xp_gained}} XP</span>{{/xp_negative}}
+                            {{^xp_positive}}{{^xp_negative}}<span class="text-muted small">-</span>{{/xp_negative}}{{/xp_positive}}
+                        </td>
                         <td class="text-muted small text-wrap ph-table-details-col">
                             {{detail_text}}
                             {{#has_trade_cost}}

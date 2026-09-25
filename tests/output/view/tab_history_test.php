@@ -197,8 +197,12 @@ final class tab_history_test extends advanced_testcase {
                 'icon_url' => '',
                 'icon_emoji' => '',
                 'object_name' => 'Test',
-                'qty_badge' => '',
-                'xp_badge' => '',
+                'qty' => 0,
+                'qty_positive' => false,
+                'qty_negative' => false,
+                'xp_gained' => 0,
+                'xp_positive' => false,
+                'xp_negative' => false,
                 'detail_text' => $payload,
                 'has_trade_cost' => false,
                 'trade_cost_text' => '',
@@ -208,5 +212,84 @@ final class tab_history_test extends advanced_testcase {
 
         $this->assertStringNotContainsString($payload, $html);
         $this->assertStringContainsString('&lt;img', $html);
+    }
+
+    /**
+     * Regression test for the security-audit finding on xp_badge/qty_badge: these used to be
+     * HTML strings built in PHP and emitted via triple-mustache. tab_history.mustache must now
+     * build the badge markup itself from xp_gained/qty plus the *_positive/*_negative flags, so
+     * the sink is back under Mustache's auto-escape. Covers all three states (positive, negative,
+     * zero/absent) for both badges in one render.
+     */
+    public function test_tab_history_template_renders_xp_and_qty_badges(): void {
+        global $OUTPUT;
+
+        $baserow = [
+            'counter' => 1,
+            'date' => '10 Jan 2026',
+            'badge_class' => 'bg-primary',
+            'badge_text' => 'Item',
+            'is_image_icon' => false,
+            'icon_url' => '',
+            'icon_emoji' => '',
+            'object_name' => 'Test',
+            'detail_text' => '',
+            'has_trade_cost' => false,
+            'trade_cost_text' => '',
+        ];
+
+        $html = $OUTPUT->render_from_template('block_playerhud/tab_history', [
+            'str' => [
+                'desc' => 'Desc',
+                'search_any' => 'Search',
+                'btn_showall' => 'Show all',
+                'btn_showpaged' => 'Show paged',
+                'empty' => 'No logs.',
+                'col_num' => '#',
+            ],
+            'showall' => false,
+            'url_toggle_showall' => '#',
+            'has_logs' => true,
+            'headers' => [
+                'date' => ['url' => '#', 'label' => 'Date', 'icon_class' => 'fa-sort'],
+                'type' => ['url' => '#', 'label' => 'Type', 'icon_class' => 'fa-sort'],
+                'element' => ['url' => '#', 'label' => 'Element', 'icon_class' => 'fa-sort'],
+                'xp' => ['url' => '#', 'label' => 'XP', 'icon_class' => 'fa-sort'],
+                'details' => ['url' => '#', 'label' => 'Details', 'icon_class' => 'fa-sort'],
+            ],
+            'logs' => [
+                $baserow + [
+                    'qty' => 3, 'qty_positive' => true, 'qty_negative' => false,
+                    'xp_gained' => 50, 'xp_positive' => true, 'xp_negative' => false,
+                ],
+                $baserow + [
+                    'qty' => -1, 'qty_positive' => false, 'qty_negative' => true,
+                    'xp_gained' => -20, 'xp_positive' => false, 'xp_negative' => true,
+                ],
+                $baserow + [
+                    'qty' => 0, 'qty_positive' => false, 'qty_negative' => false,
+                    'xp_gained' => 0, 'xp_positive' => false, 'xp_negative' => false,
+                ],
+            ],
+            'paging_bar' => '',
+        ]);
+
+        $this->assertStringContainsString(
+            '<span class="badge bg-success text-white ph-text-xs ms-1">+3</span>',
+            $html
+        );
+        $this->assertStringContainsString(
+            '<span class="badge bg-danger text-white ph-text-xs ms-1">-1</span>',
+            $html
+        );
+        $this->assertStringContainsString(
+            '<span class="badge bg-success text-white ph-text-xs">+50 XP</span>',
+            $html
+        );
+        $this->assertStringContainsString(
+            '<span class="badge bg-danger text-white ph-text-xs">-20 XP</span>',
+            $html
+        );
+        $this->assertStringContainsString('<span class="text-muted small">-</span>', $html);
     }
 }

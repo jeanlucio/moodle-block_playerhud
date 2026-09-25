@@ -846,14 +846,7 @@ class tab_reports implements renderable, templatable {
                     $detailtext = get_string('quest_status_completed', 'block_playerhud');
                 }
 
-                $xpbadge = '';
-                if ($log->xp_gained > 0) {
-                    $xpbadge = '<span class="badge bg-success text-white ph-text-xs">+' . $log->xp_gained . ' XP</span>';
-                } else if ($log->xp_gained < 0) {
-                    $xpbadge = '<span class="badge bg-danger text-white ph-text-xs">' . $log->xp_gained . ' XP</span>';
-                } else {
-                    $xpbadge = '<span class="text-muted small">-</span>';
-                }
+                $qty = (int) $log->qty;
 
                 // A grant a teacher already revoked stays listed as history, but can never be
                 // revoked again.
@@ -891,8 +884,12 @@ class tab_reports implements renderable, templatable {
                     'icon_url'        => $iconurl,
                     'icon_emoji'      => $iconemoji,
                     'object_name'     => format_string($log->object_name),
-                    'qty_badge'       => \block_playerhud\local\audit_log::format_qty_badge((int) $log->qty),
-                    'xp_badge'        => $xpbadge,
+                    'qty'             => $qty,
+                    'qty_positive'    => $qty > 0,
+                    'qty_negative'    => $qty < 0,
+                    'xp_gained'       => (int) $log->xp_gained,
+                    'xp_positive'     => $log->xp_gained > 0,
+                    'xp_negative'     => $log->xp_gained < 0,
                     'detail_text'     => $detailtext,
                     'has_trade_cost'  => $hastradecost,
                     'trade_cost_text' => $tradecosttext,

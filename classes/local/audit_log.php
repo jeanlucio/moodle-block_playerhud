@@ -191,26 +191,4 @@ class audit_log {
             'limitfrom' => $limitfrom,
         ];
     }
-
-    /**
-     * Build the small "+2"/"-3" badge shown next to an item row's name.
-     *
-     * Only item grant/consume/revoke rows carry a meaningful qty (trade/quest rows are 0 and
-     * render nothing), covering both the frozen one-row-per-unit legacy inventory and the
-     * signed delta of the new stack ledger.
-     *
-     * @param int $qty Signed quantity for the log row (0 for non-item event types).
-     * @return string Badge HTML, or an empty string when there is nothing to show.
-     */
-    public static function format_qty_badge(int $qty): string {
-        if ($qty === 0) {
-            return '';
-        }
-
-        if ($qty > 0) {
-            return '<span class="badge bg-success text-white ph-text-xs ms-1">+' . $qty . '</span>';
-        }
-
-        return '<span class="badge bg-danger text-white ph-text-xs ms-1">' . $qty . '</span>';
-    }
 }
