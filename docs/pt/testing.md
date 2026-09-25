@@ -132,7 +132,7 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `controller\collect` | 100% |
 | `controller\drops` | 91% |
 | `controller\export` | 91% |
-| `controller\items` | 97% |
+| `controller\items` | 95% |
 | `controller\quests` | 97% |
 | `controller\scenes` | 45% |
 | `controller\suggestions` | 100% |
@@ -145,20 +145,20 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `event\xp_changed` | 43% |
 | `external\chat_message` | 79% |
 | `external\collect_item` | 100% |
-| `external\create_avatar_pack` | 84% |
-| `external\create_class_pack` | 79% |
+| `external\create_avatar_pack` | 85% |
+| `external\create_class_pack` | 80% |
 | `external\create_playercoin` | 91% |
-| `external\execute_chat_action` | 27% |
+| `external\execute_chat_action` | 28% |
 | `external\generate_ai_content` | 78% |
-| `external\generate_class_oracle` | 67% |
-| `external\generate_story` | 71% |
-| `external\insert_drop_shortcode` | 93% |
+| `external\generate_class_oracle` | 68% |
+| `external\generate_story` | 72% |
+| `external\insert_drop_shortcode` | 94% |
 | `external\load_recap` | 100% |
 | `external\load_scene` | 79% |
 | `external\make_choice` | 79% |
-| `external\remove_drop_shortcode` | 84% |
+| `external\remove_drop_shortcode` | 92% |
 | `external\setup_playercoin_drop` | 90% |
-| `external\use_item` | 81% |
+| `external\use_item` | 82% |
 | `external\wizard_apply_suggested_levels` | 83% |
 | `external\wizard_generate` | 85% |
 | `external\wizard_list_runs` | 100% |
@@ -169,8 +169,8 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `game` | 94% |
 | `instance_cleanup` | 100% |
 | `local\analytics` | 92% |
-| `local\audit_log` | 81% |
-| `local\drop_distribution` | 97% |
+| `local\audit_log` | 80% |
+| `local\drop_distribution` | 74% |
 | `local\external_items` | 94% |
 | `local\rpg_archetypes` | 92% |
 | `local\wizard` | 97% |
@@ -180,24 +180,24 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `output\manage\tab_chapters` | 7% |
 | `output\manage\tab_config` | 81% |
 | `output\manage\tab_quests` | 24% |
-| `output\manage\tab_reports` | 83% |
+| `output\manage\tab_reports` | 87% |
 | `output\profile_content` | 86% |
 | `output\view\header` | 95% |
 | `output\view\tab_chapters` | 100% |
-| `output\view\tab_collection` | 84% |
-| `output\view\tab_history` | 79% |
+| `output\view\tab_collection` | 88% |
+| `output\view\tab_history` | 81% |
 | `output\view\tab_quests` | 79% |
 | `output\view\tab_ranking` | 64% |
 | `output\view\tab_rules` | 78% |
 | `output\view\tab_shop` | 92% |
 | `privacy\provider` | 97% |
 | `quest` | 95% |
-| `story_manager` | 74% |
+| `story_manager` | 77% |
 | `trade_manager` | 90% |
-| `utils` | 59% |
-| **Total** | **66%** |
+| `utils` | 61% |
+| **Total** | **67%** |
 
-71 das 86 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
+70 das 85 classes do plugin aparecem acima — as demais (majoritariamente classes de exceção,
 observadores de evento e wrappers finos de output nunca carregados via `require` durante a
 execução desta suíte) não têm nenhum dado de cobertura e são omitidas em vez de aparecerem
 como um 0% enganoso.
@@ -209,7 +209,7 @@ Os percentuais mais baixos da tabela refletem limites estruturais, não lacunas 
 - A metade AJAX de `collect::execute()` termina em `die()`, submissões reais de `moodleform`
   dependem do navegador, e o comportamento movido por JavaScript não existe no lado do
   servidor — tudo isso é coberto pela suíte Behat abaixo.
-- `external\use_item` (81%) tem um ramo de gate atômico contra corrida (consumir o item antes de
+- `external\use_item` (82%) tem um ramo de gate atômico contra corrida (consumir o item antes de
   escrever a extensão de prazo) que só falha sob concorrência real de duas requisições — uma
   limitação estrutural do PHPUnit de processo único documentada no próprio teste, verificada ao
   vivo via requisições HTTP genuinamente concorrentes em vez de coberta aqui.
@@ -223,7 +223,7 @@ entram no percentual do **Total**; medidos isoladamente:
 | Arquivo | Casos | Cobertura de linhas |
 |---------|------:|:--------------------:|
 | `lib.php` | 27 | 95% |
-| `db/upgrade.php` | 9 | 71% |
+| `db/upgrade.php` | 9 | 78% |
 
 - `lib.php` (`tests/lib_test.php`): as quatro funções são testadas diretamente —
   `block_playerhud_myprofile_navigation()` em todo ramo (sem curso, curso do site, sem instância
