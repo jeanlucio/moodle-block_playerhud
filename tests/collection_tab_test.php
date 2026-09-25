@@ -133,6 +133,70 @@ final class collection_tab_test extends advanced_testcase {
     }
 
     /**
+     * Regression test for the security-audit finding: get_lp_activities() must not list an
+     * activity the student cannot currently see. A hidden activity with an enabled late-penalty
+     * rule must be excluded from the deadline-extension picker, while a visible one with the
+     * same rule still appears.
+     */
+    public function test_get_lp_activities_excludes_hidden_activities(): void {
+        global $DB;
+
+        if (!class_exists('\local_latepenalty\recalculator')) {
+            $this->markTestSkipped('Requires local_latepenalty.');
+        }
+
+        $visible = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'visible' => 1]);
+        $hidden  = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'visible' => 0]);
+
+        $this->enable_lp_rule($visible->cmid);
+        $this->enable_lp_rule($hidden->cmid);
+
+        $item = $this->create_item('Extra Time', 'deadline_extension');
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid' => $this->user->id, 'itemid' => $item->id, 'dropid' => 0,
+            'source' => 'test', 'timecreated' => time(),
+        ]);
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $cmids = array_column($found['lp_activities'], 'cmid');
+        $this->assertContains($visible->cmid, $cmids);
+        $this->assertNotContains($hidden->cmid, $cmids);
+    }
+
+    /**
+     * Same finding, other branch: when the item pins a single cmid (action_value.cmid) instead
+     * of listing every eligible activity, a hidden target must resolve to an empty activity
+     * list rather than leaking its name.
+     */
+    public function test_pinned_cmid_deadline_item_hides_name_of_hidden_activity(): void {
+        global $DB;
+
+        if (!class_exists('\local_latepenalty\recalculator')) {
+            $this->markTestSkipped('Requires local_latepenalty.');
+        }
+
+        $hidden = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'visible' => 0]);
+        $this->enable_lp_rule($hidden->cmid);
+
+        $item = $this->create_item('Extra Time (pinned)', 'deadline_extension');
+        $actionvalue = json_encode(['cmid' => $hidden->cmid, 'days' => 1]);
+        $DB->set_field('block_playerhud_items', 'action_value', $actionvalue, ['id' => $item->id]);
+        $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid' => $this->user->id, 'itemid' => $item->id, 'dropid' => 0,
+            'source' => 'test', 'timecreated' => time(),
+        ]);
+
+        $data  = $this->export_for_user($this->user->id);
+        $found = $this->find_item($data, $item->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame([], $found['lp_activities']);
+    }
+
+    /**
      * A plain item (no action_type) has filter_type = 'none'.
      */
     public function test_filter_type_none_for_plain_items(): void {
@@ -393,6 +457,23 @@ final class collection_tab_test extends advanced_testcase {
             'timecreated'       => time(),
             'timemodified'      => time(),
         ]);
+    }
+
+    /**
+     * Enable the latepenalty rule that local_latepenalty_coursemodule_edit_post_actions
+     * automatically creates (with enabled=0) when create_module runs.
+     *
+     * We never INSERT here to avoid duplicate-key conflicts on the unique cmid index.
+     *
+     * @param int $cmid Target course module ID.
+     */
+    private function enable_lp_rule(int $cmid): void {
+        global $DB;
+        $rule = $DB->get_record('local_latepenalty_rules', ['cmid' => $cmid], '*', MUST_EXIST);
+        $rule->enabled       = 1;
+        $rule->daily_penalty = 10.0;
+        $rule->max_penalty   = 50.0;
+        $DB->update_record('local_latepenalty_rules', $rule);
     }
 
     /**

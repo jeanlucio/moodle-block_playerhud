@@ -373,7 +373,9 @@ class tab_collection implements renderable, templatable {
                                 $coursecontext = \context_block::instance($this->instanceid)
                                     ->get_course_context();
                                 $cm = get_fast_modinfo($coursecontext->instanceid)->get_cm($cmid);
-                                $actname = format_string($cm->name);
+                                if ($cm->uservisible) {
+                                    $actname = format_string($cm->name);
+                                }
                             } catch (\moodle_exception $e) {
                                 debugging($e->getMessage(), DEBUG_DEVELOPER);
                             }
@@ -518,15 +520,23 @@ class tab_collection implements renderable, templatable {
         $coursecontext = \context_block::instance($this->instanceid)->get_course_context();
         $courseid      = $coursecontext->instanceid;
         $modinfo       = get_fast_modinfo($courseid);
-        $rules         = $DB->get_records('local_latepenalty_rules', ['enabled' => 1]);
+        $coursecmids   = array_keys($modinfo->get_cms());
 
         $activities = [];
-        foreach ($rules as $rule) {
-            try {
-                $cm = $modinfo->get_cm($rule->cmid);
-                $activities[$rule->cmid] = format_string($cm->name);
-            } catch (\moodle_exception $e) {
-                continue;
+        if (!empty($coursecmids)) {
+            [$insql, $inparams] = $DB->get_in_or_equal($coursecmids, SQL_PARAMS_NAMED);
+            $rules = $DB->get_records_select('local_latepenalty_rules', "enabled = 1 AND cmid $insql", $inparams);
+
+            foreach ($rules as $rule) {
+                try {
+                    $cm = $modinfo->get_cm($rule->cmid);
+                    if (!$cm->uservisible) {
+                        continue;
+                    }
+                    $activities[$rule->cmid] = format_string($cm->name);
+                } catch (\moodle_exception $e) {
+                    continue;
+                }
             }
         }
 

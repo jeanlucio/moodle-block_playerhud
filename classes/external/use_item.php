@@ -160,7 +160,12 @@ class use_item extends external_api {
             $modinfo = get_fast_modinfo($courseid);
             $cm      = $modinfo->get_cm($cmid);
 
-            $rule = $DB->get_record('local_latepenalty_rules', ['cmid' => $cmid, 'enabled' => 1]);
+            // A hidden/not-yet-available activity is rejected with the exact same message as
+            // "no rule configured" below — a distinct message here would let a student probe
+            // targetcmid to discover which cmids in the course are currently hidden.
+            $rule = $cm->uservisible
+                ? $DB->get_record('local_latepenalty_rules', ['cmid' => $cmid, 'enabled' => 1])
+                : false;
             if (!$rule) {
                 return [
                     'action'       => 'deadline_extension',

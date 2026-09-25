@@ -205,6 +205,39 @@ final class use_item_test extends external_base_testcase {
     }
 
     /**
+     * Regression test for the security-audit finding: a targetcmid the current user cannot see
+     * (hidden activity) must be rejected with the exact same message as "no rule configured",
+     * even though an enabled rule genuinely exists for it. A distinct message here would let a
+     * student use targetcmid to probe which cmids in the course are currently hidden. Runs as a
+     * student (not admin), since a manager/admin bypasses activity visibility via
+     * moodle/course:viewhiddenactivities and would not exercise the check at all.
+     */
+    public function test_use_item_deadline_rejects_hidden_activity_with_same_message_as_no_rule(): void {
+        if (!class_exists('\local_latepenalty\recalculator')) {
+            $this->markTestSkipped('Requires local_latepenalty.');
+        }
+
+        $hidden = $this->getDataGenerator()->create_module('assign', [
+            'course' => $this->course->id, 'visible' => 0,
+        ]);
+        $this->create_lp_rule($hidden->cmid);
+        $item = $this->create_deadline_item(1, 0);
+
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $this->course->id, 'student');
+        $this->give_item_to_user((int) $student->id, $item->id);
+        $this->setUser($student);
+
+        $result = use_item::execute($this->instanceid, $this->course->id, $item->id, $hidden->cmid);
+
+        $this->assertFalse($result['success']);
+        $this->assertEquals(
+            get_string('item_lp_warning', 'block_playerhud'),
+            $result['message']
+        );
+    }
+
+    /**
      * Happy path: creates an override and marks the item as consumed.
      * Runs as admin.
      */
