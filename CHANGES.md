@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.9.4] — 2026-09-26
+
+### Security
+- The Collection tab's deadline-extension activity picker listed the name of a hidden or
+  not-yet-available activity that had a late-penalty rule configured, and the server accepted
+  a request targeting one even though the student could never see it in the UI. Both the
+  picker and the server-side check now respect activity visibility.
+- The audit report's Details column and its XP/quantity badges were built as raw HTML in PHP
+  and inserted into the template without an escaping safety net. Every value they carried was
+  already safe, so this is hardening only.
+- The CLI demo-seed scripts' `--reset` matched account usernames with an unescaped SQL `LIKE`
+  pattern, which could delete accounts the script never created. The scripts are
+  development-only and excluded from the published package.
+
 ## [v1.9.3] — 2026-09-25
 
 ### Confirmed
