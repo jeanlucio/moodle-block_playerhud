@@ -25,6 +25,7 @@
 namespace block_playerhud\external;
 
 use block_playerhud\local\external_items;
+use block_playerhud\local\latepenalty_bridge;
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_value;
@@ -202,7 +203,7 @@ class use_item extends external_api {
             } else {
                 $cmrec = $cm->get_course_module_record();
                 $cmrec->modname = $cm->modname;
-                $base  = (int)(\local_latepenalty\penalty_helper::get_deadline($cmrec) ?? time());
+                $base  = latepenalty_bridge::get_deadline($cmrec, (int) $USER->id) ?? time();
             }
 
             $newdeadline = $base + ($days * DAYSECS);

@@ -68,6 +68,10 @@ jobs:
           - {moodle-branch: 'MOODLE_502_STABLE', php: '8.4', database: 'mariadb'}
           - {moodle-branch: 'MOODLE_501_STABLE', php: '8.3', database: 'pgsql'}
           - {moodle-branch: 'MOODLE_501_STABLE', php: '8.2', database: 'mariadb'}
+          # local_latepenalty is an optional dependency whose PHP API changed in 1.2.0
+          # (penalty_helper::get_deadline() became deadline_resolver); this leg pins the last
+          # release of the old API so latepenalty_bridge keeps being exercised against it.
+          - {moodle-branch: 'MOODLE_501_STABLE', php: '8.3', database: 'pgsql', latepenalty-ref: 'v1.1.2'}
           - {moodle-branch: 'MOODLE_500_STABLE', php: '8.2', database: 'pgsql'}
           - {moodle-branch: 'MOODLE_500_STABLE', php: '8.2', database: 'mariadb'}
           # 4.5 supports PHP 8.1-8.3 (docs.moodle.org/502/en/PHP); spread across its two legs
@@ -103,7 +107,10 @@ jobs:
 
       - name: Add local_latepenalty plugin
         if: ${{ !matrix.skip-latepenalty }}
-        run: moodle-plugin-ci add-plugin jeanlucio/moodle-local_latepenalty
+        run: >-
+          moodle-plugin-ci add-plugin
+          ${{ matrix.latepenalty-ref && format('--branch {0}', matrix.latepenalty-ref) || '' }}
+          jeanlucio/moodle-local_latepenalty
 
       - name: Add local_aihub plugin
         run: moodle-plugin-ci add-plugin jeanlucio/moodle-local_aihub
