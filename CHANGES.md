@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.9.5] — 2026-10-06
+
+### Fixed
+- Using a deadline-extension item raised a fatal error when Late Penalty 1.2.0 or later was
+  installed and the student had no Late Penalty override for that activity yet. The block now
+  works with any Late Penalty release, old or new.
+- With Late Penalty 1.2.0 or later, the extension is counted from the deadline the student
+  actually has, so group overrides, assignment extensions and quiz due dates are respected
+  instead of only the activity's own date.
+
 ## [v1.9.4] — 2026-09-26
 
 ### Security
