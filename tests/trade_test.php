@@ -227,6 +227,55 @@ final class trade_test extends advanced_testcase {
     }
 
     /**
+     * When the reward cannot be delivered mid-trade (stock lock held elsewhere past its
+     * timeout), nothing is charged: the consumed cost and the trade log roll back with it,
+     * instead of keeping the student's payment and recording a (possibly one-time) trade.
+     */
+    public function test_execute_trade_rolls_back_when_reward_grant_is_a_no_op(): void {
+        global $CFG, $DB;
+        // The code under test relies on a real transaction rollback, which the per-test outer
+        // transaction would otherwise turn into a no-op.
+        $this->preventResetByRollback();
+        $user = $this->getDataGenerator()->create_user();
+        $coin = $this->create_dummy_item('Coin');
+        $potion = $this->create_dummy_item('Health Potion');
+        $this->give_item_to_user($user->id, $coin->id, 5);
+
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object)[
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'Buy Potion',
+            'groupid'         => 0,
+            'onetime'         => 1,
+            'timecreated'     => time(),
+        ]);
+        $DB->insert_record('block_playerhud_trade_reqs', (object)[
+            'tradeid' => $tradeid, 'itemid' => $coin->id, 'qty' => 5,
+        ]);
+        $DB->insert_record('block_playerhud_trade_rewards', (object)[
+            'tradeid' => $tradeid, 'itemid' => $potion->id, 'qty' => 1,
+        ]);
+
+        // The default pgsql advisory locks are re-entrant inside one session, so contention is
+        // only observable with a lock type whose holders conflict within a single process.
+        $CFG->lock_factory = '\core\lock\file_lock_factory';
+        $factory = \core\lock\lock_config::get_lock_factory('block_playerhud');
+        $held = $factory->get_lock(external_items::stack_lock_key($potion->id, $user->id), 1);
+        $this->assertNotFalse($held);
+
+        try {
+            trade_manager::execute_trade($tradeid, $user->id, $this->instanceid, $this->course->id);
+            $this->fail('Expected moodle_exception when the reward could not be granted.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('error_reward_unavailable', $e->errorcode);
+        } finally {
+            $held->release();
+        }
+
+        $this->assertSame(0, $DB->count_records('block_playerhud_trade_log', ['tradeid' => $tradeid]));
+        $this->assertSame(5, external_items::get_available_quantity($this->instanceid, $coin->id, $user->id));
+    }
+
+    /**
      * Test 2: Atomic transaction success.
      */
     public function test_trade_success_atomic(): void {

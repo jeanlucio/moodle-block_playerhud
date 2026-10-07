@@ -345,6 +345,7 @@ $string['error_quest_already_claimed'] = 'Recompensa já resgatada.';
 $string['error_quest_invalid'] = 'Missão inválida.';
 $string['error_quest_lock'] = 'Resgate em andamento. Aguarde um momento e tente novamente.';
 $string['error_quest_requirements'] = 'Requisitos não atendidos.';
+$string['error_reward_unavailable'] = 'O item da recompensa está indisponível no momento, então nada foi resgatado nem gasto. Tente novamente mais tarde ou fale com o seu professor.';
 $string['error_service_code'] = 'Erro no serviço {$a->service}: {$a->code}';
 $string['error_story_lock'] = 'Escolha em andamento. Aguarde um momento e tente novamente.';
 $string['error_trade_class'] = 'Seu personagem não pode realizar esta troca.';

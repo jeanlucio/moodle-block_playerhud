@@ -345,6 +345,7 @@ $string['error_quest_already_claimed'] = 'Reward already claimed.';
 $string['error_quest_invalid'] = 'Invalid quest.';
 $string['error_quest_lock'] = 'Claim in progress. Please wait a moment and try again.';
 $string['error_quest_requirements'] = 'Requirements not met.';
+$string['error_reward_unavailable'] = 'The reward item is unavailable right now, so nothing was claimed or spent. Try again later or ask your teacher.';
 $string['error_service_code'] = '{$a->service} error {$a->code}';
 $string['error_story_lock'] = 'Choice in progress. Please wait a moment and try again.';
 $string['error_trade_class'] = 'Your character cannot perform this trade.';

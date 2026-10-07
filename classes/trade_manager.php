@@ -261,7 +261,7 @@ class trade_manager {
 
                     // Trade rewards never award the item's own XP — a shop purchase is a spend,
                     // not an earn, the same as this code has always behaved.
-                    \block_playerhud\local\external_items::grant(
+                    $granted = \block_playerhud\local\external_items::grant(
                         $instanceid,
                         $rew->itemid,
                         $userid,
@@ -269,6 +269,11 @@ class trade_manager {
                         'shop',
                         true
                     );
+                    // A no-op grant (stock lock timeout) must roll back the consumed cost and
+                    // the trade log instead of charging the student for nothing.
+                    if ($granted <= 0) {
+                        throw new \moodle_exception('error_reward_unavailable', 'block_playerhud');
+                    }
                     $rewardsnames[] = "{$rew->qty}x " . format_string($rewarditem->name);
                 }
             }

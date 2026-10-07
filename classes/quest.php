@@ -194,7 +194,7 @@ class quest {
         }
 
         if (!empty($specificitemids)) {
-            $totals['specific_items'] = self::count_specific_items($userid, array_values($specificitemids));
+            $totals['specific_items'] = self::count_specific_items($userid, $blockinstanceid, array_values($specificitemids));
         }
 
         if (!empty($specifictradeids)) {
@@ -208,20 +208,19 @@ class quest {
      * Returns available quantity per itemid, in one batched call instead of one per item —
      * thin wrapper kept here so every existing caller in this class stays unchanged.
      *
+     * The instance is passed in rather than inferred from one of the items: a quest can still
+     * point at an item that was deleted, and inferring from it would collapse every other
+     * quest's progress to zero.
+     *
      * @param int $userid The user ID.
+     * @param int $blockinstanceid The block instance the quests (and so the items) belong to.
      * @param int[] $itemids Distinct item IDs to count.
      * @return array Quantities keyed by itemid.
      */
-    private static function count_specific_items(int $userid, array $itemids): array {
+    private static function count_specific_items(int $userid, int $blockinstanceid, array $itemids): array {
         if (empty($itemids)) {
             return [];
         }
-
-        // Every quest here already belongs to the same block instance (the whole point of
-        // preload_totals()/has_claimable_quests() is scoping to one instance's quest list), so
-        // any one item's blockinstanceid works to satisfy the ownership check.
-        global $DB;
-        $blockinstanceid = (int) $DB->get_field('block_playerhud_items', 'blockinstanceid', ['id' => reset($itemids)]);
 
         return \block_playerhud\local\external_items::get_available_quantities_bulk(
             $blockinstanceid,
@@ -545,6 +544,15 @@ class quest {
             $oldxp = (int)$player->currentxp;
             $gametotal = (int)$stats['total_game_xp'];
 
+            // A reward item the teacher has since disabled cannot be delivered. Refuse before
+            // anything is written, so the quest stays claimable once it is enabled again.
+            $rewarditem = ($quest->reward_itemid > 0)
+                ? $DB->get_record('block_playerhud_items', ['id' => $quest->reward_itemid])
+                : false;
+            if ($rewarditem && !$rewarditem->enabled) {
+                throw new \moodle_exception('error_reward_unavailable', 'block_playerhud');
+            }
+
             // 5. Deliver Rewards (Transaction start).
             $transaction = $DB->start_delegated_transaction();
             try {
@@ -573,20 +581,22 @@ class quest {
 
                 // Item Reward. The item's own xp value is never paid here — only reward_xp
                 // above pays real XP — so xpawarded is always 0 for a quest-granted item.
-                if ($quest->reward_itemid > 0) {
-                    $item = $DB->get_record('block_playerhud_items', ['id' => $quest->reward_itemid]);
-                    if ($item) {
-                        $itemqty = max(1, (int)$quest->reward_itemqty);
-                        \block_playerhud\local\external_items::grant(
-                            $blockinstanceid,
-                            $item->id,
-                            $userid,
-                            $itemqty,
-                            'quest',
-                            true
-                        );
-                        $rewardstxt[] = ($itemqty > 1 ? "{$itemqty}x " : '') . format_string($item->name);
+                if ($rewarditem) {
+                    $itemqty = max(1, (int)$quest->reward_itemqty);
+                    $granted = \block_playerhud\local\external_items::grant(
+                        $blockinstanceid,
+                        $rewarditem->id,
+                        $userid,
+                        $itemqty,
+                        'quest',
+                        true
+                    );
+                    // A no-op grant (stock lock timeout, item no longer in this instance) must
+                    // undo the quest log and XP above, not announce an item nobody received.
+                    if ($granted <= 0) {
+                        throw new \moodle_exception('error_reward_unavailable', 'block_playerhud');
                     }
+                    $rewardstxt[] = ($itemqty > 1 ? "{$itemqty}x " : '') . format_string($rewarditem->name);
                 }
 
                 $transaction->allow_commit();
@@ -728,7 +738,7 @@ class quest {
                                 $itemids[(int) $uq->req_itemid] = (int) $uq->req_itemid;
                             }
                         }
-                        $specificitemcnt = self::count_specific_items($userid, array_values($itemids));
+                        $specificitemcnt = self::count_specific_items($userid, $instanceid, array_values($itemids));
                     }
                     $completed = (($specificitemcnt[$itemid] ?? 0) >= (int)$q->requirement);
                     break;

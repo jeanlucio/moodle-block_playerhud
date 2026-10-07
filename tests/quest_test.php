@@ -795,6 +795,81 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
+     * A reward item the teacher disabled cannot be delivered. The claim must be refused as a
+     * whole, leaving nothing recorded, so the student can claim again once it is re-enabled —
+     * instead of being told the item was delivered while the quest is burned.
+     */
+    public function test_claim_reward_refused_when_reward_item_is_disabled(): void {
+        global $DB;
+
+        $user   = $this->getDataGenerator()->create_user();
+        $reward = $this->create_dummy_item('Golden Crown');
+        $DB->set_field('block_playerhud_items', 'enabled', 0, ['id' => $reward->id]);
+        $quest  = $this->create_quest(quest::TYPE_XP_TOTAL, '50', 20, $reward->id);
+        $this->set_player_xp($user->id, 50);
+
+        try {
+            quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+            $this->fail('Expected moodle_exception for an undeliverable reward item.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('error_reward_unavailable', $e->errorcode);
+        }
+
+        $this->assertSame(0, $DB->count_records('block_playerhud_quest_log', ['questid' => $quest->id]));
+        $this->assertSame(
+            50,
+            (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+                'blockinstanceid' => $this->instanceid, 'userid' => $user->id,
+            ])
+        );
+
+        // Once the teacher re-enables the item the same claim goes through.
+        $DB->set_field('block_playerhud_items', 'enabled', 1, ['id' => $reward->id]);
+        quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+        $this->assertSame(1, $DB->count_records('block_playerhud_quest_log', ['questid' => $quest->id]));
+    }
+
+    /**
+     * When grant() cannot deliver the item mid-claim (stock lock held elsewhere past its
+     * timeout), the whole claim rolls back: no quest log, no XP, nothing announced as delivered.
+     */
+    public function test_claim_reward_rolls_back_when_item_grant_is_a_no_op(): void {
+        global $CFG, $DB;
+        // The code under test relies on a real transaction rollback, which the per-test outer
+        // transaction would otherwise turn into a no-op.
+        $this->preventResetByRollback();
+
+        $user   = $this->getDataGenerator()->create_user();
+        $reward = $this->create_dummy_item('Golden Crown');
+        $quest  = $this->create_quest(quest::TYPE_XP_TOTAL, '50', 20, $reward->id);
+        $this->set_player_xp($user->id, 50);
+
+        // The default pgsql advisory locks are re-entrant inside one session, so contention is
+        // only observable with a lock type whose holders conflict within a single process.
+        $CFG->lock_factory = '\core\lock\file_lock_factory';
+        $factory = \core\lock\lock_config::get_lock_factory('block_playerhud');
+        $held = $factory->get_lock(\block_playerhud\local\external_items::stack_lock_key($reward->id, $user->id), 1);
+        $this->assertNotFalse($held);
+
+        try {
+            quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+            $this->fail('Expected moodle_exception when the item could not be granted.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('error_reward_unavailable', $e->errorcode);
+        } finally {
+            $held->release();
+        }
+
+        $this->assertSame(0, $DB->count_records('block_playerhud_quest_log', ['questid' => $quest->id]));
+        $this->assertSame(
+            50,
+            (int) $DB->get_field('block_playerhud_user', 'currentxp', [
+                'blockinstanceid' => $this->instanceid, 'userid' => $user->id,
+            ])
+        );
+    }
+
+    /**
      * A quest's reward_itemqty > 1 grants that many units in a single ledger entry.
      */
     public function test_claim_reward_grants_configured_item_quantity(): void {
@@ -1205,6 +1280,35 @@ final class quest_test extends advanced_testcase {
         // Only quests for B exist, and the student holds none of B — must not be claimable
         // just because they hold plenty of the unrelated A.
         $this->assertFalse(
+            quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 0, 1)
+        );
+    }
+
+    /**
+     * Deleting the item required by the first specific-item quest leaves that quest dangling
+     * (delete_item() does not touch quests). The remaining specific-item quests must keep their
+     * progress: the block instance is passed in explicitly, never inferred from the first item
+     * of the list, which no longer exists.
+     */
+    public function test_specific_item_progress_survives_deleted_item_of_another_quest(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $itema = $this->create_dummy_item('Item A');
+        $itemb = $this->create_dummy_item('Item B');
+        $this->give_item($user->id, $itemb->id, 1);
+
+        $questa = $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '1', 0, 0, $itema->id);
+        $questb = $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '1', 0, 0, $itemb->id);
+
+        \block_playerhud\controller\items::delete_item(
+            $itema,
+            $this->instanceid,
+            \context_block::instance($this->instanceid)
+        );
+
+        $totals = quest::preload_totals($user->id, $this->instanceid, [$questa, $questb]);
+
+        $this->assertSame(1, $totals['specific_items'][$itemb->id] ?? 0);
+        $this->assertTrue(
             quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 0, 1)
         );
     }
