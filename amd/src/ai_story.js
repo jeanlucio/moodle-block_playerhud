@@ -24,7 +24,30 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
      * @copyright  2026 Jean Lúcio
      * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
      */
+    /**
+     * Builds the success panel shown after a chapter is generated.
+     *
+     * The title comes from the AI, so it is only ever set as text: it is never concatenated into
+     * markup, whatever the model answered with.
+     *
+     * @param {string} title Chapter title.
+     * @param {string} template Success message, with the '{$a}' placeholder for the title.
+     * @returns {jQuery} The panel element.
+     */
+    const renderResult = (title, template) => {
+        const $panel = $('<div class="text-center py-3 ph-animate-fadein" tabindex="-1" id="ph-story-result"></div>');
+        $panel.append(
+            $('<div class="mb-3 text-success" style="font-size:3rem" aria-hidden="true"></div>')
+                .append('<i class="fa fa-check-circle"></i>')
+        );
+        $panel.append($('<h5 class="fw-bold mb-1"></h5>').text(title));
+        $panel.append($('<p class="text-muted small"></p>').text(template.replace('{$a}', title)));
+        return $panel;
+    };
+
     return {
+        renderResult: renderResult,
+
         /**
          * Initialize the Story Generation module.
          *
@@ -80,16 +103,9 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], function($, Not
 
                     if (resp.success) {
                         // Replace modal body with success message.
-                        var successMsg = strings.story_success.replace('{$a}', resp.chapter_title);
-
-                        var html = '<div class="text-center py-3 ph-animate-fadein" tabindex="-1" id="ph-story-result">';
-                        html += '<div class="mb-3 text-success" style="font-size:3rem" aria-hidden="true">';
-                        html += '<i class="fa fa-check-circle"></i></div>';
-                        html += '<h5 class="fw-bold mb-1">' + resp.chapter_title + '</h5>';
-                        html += '<p class="text-muted small">' + successMsg + '</p>';
-                        html += '</div>';
-
-                        $('#ph-ai-story-modal .modal-body').html(html);
+                        $('#ph-ai-story-modal .modal-body').empty().append(
+                            renderResult(resp.chapter_title, strings.story_success)
+                        );
                         $('#ph-ai-story-modal .modal-footer').html(
                             '<button type="button" class="btn btn-success fw-bold px-4" ' +
                             'data-action="story-reload">' + strings.ok_reload + '</button>'

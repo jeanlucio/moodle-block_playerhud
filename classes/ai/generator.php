@@ -138,7 +138,7 @@ class generator {
         $cleanjson = preg_replace('/^\x60{3}json|\x60{3}$/m', '', $jsonraw);
         $aidata = json_decode($cleanjson, true);
 
-        if (!$aidata) {
+        if (!$aidata || !is_array($aidata)) {
             // Error: Parsing failed.
             throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
         }
@@ -146,12 +146,24 @@ class generator {
         // Normalization.
         if ($amount == 1 && isset($aidata['name'])) {
             $itemstosave = [$aidata];
-        } else if (isset($aidata['items'])) {
+        } else if (isset($aidata['items']) && is_array($aidata['items'])) {
             $itemstosave = $aidata['items'];
-        } else if (is_array($aidata) && isset($aidata[0]['name'])) {
+        } else if (isset($aidata['item']) && is_array($aidata['item'])) {
+            $itemstosave = [$aidata['item']];
+        } else if (isset($aidata[0]['name'])) {
             $itemstosave = $aidata;
         } else {
             $itemstosave = [$aidata];
+        }
+
+        // The answer is untrusted: keep only entries shaped like an item (an object with a name),
+        // so a stray string or a nameless entry can neither crash nor create an empty item.
+        $itemstosave = array_values(array_filter(
+            $itemstosave,
+            static fn($entry) => is_array($entry) && trim((string) ($entry['name'] ?? '')) !== ''
+        ));
+        if (empty($itemstosave)) {
+            throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
         }
 
         // 7. Save Loop.
@@ -250,8 +262,8 @@ class generator {
         $item = new \stdClass();
         $item->blockinstanceid = $this->instanceid;
         $item->name = \core_text::substr((string) $data['name'], 0, 255);
-        $item->description = \block_playerhud\utils::sanitize_rich_description((string) $data['description']);
-        $item->image = clean_param((string) $data['emoji'], PARAM_TEXT);
+        $item->description = \block_playerhud\utils::sanitize_rich_description((string) ($data['description'] ?? ''));
+        $item->image = clean_param((string) ($data['emoji'] ?? ''), PARAM_TEXT);
         $item->xp = $targetxp;
 
         $item->enabled = 1;
@@ -1037,15 +1049,40 @@ class generator {
         $cleanjson = preg_replace('/^\x60{3}json|\x60{3}$/m', '', $result['data']);
         $aidata = json_decode($cleanjson, true);
 
-        if (!$aidata || empty($aidata['title']) || empty($aidata['nodes'])) {
+        if (
+            !is_array($aidata)
+            || !isset($aidata['title']) || !is_string($aidata['title']) || trim($aidata['title']) === ''
+            || empty($aidata['nodes']) || !is_array($aidata['nodes'])
+        ) {
             throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
+        }
+
+        // Keep only scenes with text; a scene without it would be an empty page for students.
+        $scenes = array_values(array_filter(
+            $aidata['nodes'],
+            static fn($scene) => is_array($scene) && trim((string) ($scene['content'] ?? '')) !== ''
+        ));
+        if (empty($scenes)) {
+            throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
+        }
+
+        // A chapter without a start scene never shows up for students, and two start scenes are
+        // ambiguous: exactly one scene keeps the flag, the first flagged one or else the first scene.
+        $startfound = false;
+        foreach ($scenes as $i => $scene) {
+            $isstart = !empty($scene['is_start']) && !$startfound;
+            $startfound = $startfound || $isstart;
+            $scenes[$i]['is_start'] = $isstart;
+        }
+        if (!$startfound) {
+            $scenes[0]['is_start'] = true;
         }
 
         $transaction = $DB->start_delegated_transaction();
 
         $chapter = new \stdClass();
         $chapter->blockinstanceid = $this->instanceid;
-        $chapter->title           = clean_param((string) $aidata['title'], PARAM_TEXT);
+        $chapter->title           = \core_text::substr(clean_param($aidata['title'], PARAM_TEXT), 0, 255);
         $chapter->intro_text      = clean_param((string) ($aidata['intro'] ?? ''), PARAM_TEXT);
         $chapter->unlock_date     = 0;
         $chapter->required_level  = 0;
@@ -1058,7 +1095,7 @@ class generator {
 
         // First pass: insert all nodes and build index → real ID map.
         $idxmap = [];
-        foreach ($aidata['nodes'] as $nodedata) {
+        foreach ($scenes as $nodedata) {
             $node           = new \stdClass();
             $node->chapterid = $chapterid;
             // The content field mirrors scenes::handle_edit_form()'s own treatment of the same
@@ -1072,8 +1109,8 @@ class generator {
 
         // Second pass: insert choices with resolved next_nodeid.
         $choiceids = [];
-        foreach ($aidata['nodes'] as $nodedata) {
-            if (empty($nodedata['choices'])) {
+        foreach ($scenes as $nodedata) {
+            if (empty($nodedata['choices']) || !is_array($nodedata['choices'])) {
                 continue;
             }
 
@@ -1083,6 +1120,9 @@ class generator {
             }
 
             foreach ($nodedata['choices'] as $choicedata) {
+                if (!is_array($choicedata) || trim((string) ($choicedata['text'] ?? '')) === '') {
+                    continue;
+                }
                 $nextnodeid = $idxmap[(int)($choicedata['target_index'] ?? -1)] ?? 0;
                 if ($nextnodeid === 0) {
                     // Target_index out of range - skip to avoid false chapter completion.
@@ -1108,7 +1148,7 @@ class generator {
 
         return [
             'success'       => true,
-            'chapter_title' => $aidata['title'],
+            'chapter_title' => $chapter->title,
             'provider'      => $result['provider'],
             'chapter_id'    => (int) $chapterid,
             'node_ids'      => array_values($idxmap),

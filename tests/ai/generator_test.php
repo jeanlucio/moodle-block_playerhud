@@ -193,6 +193,121 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * Item answers that do not have the asked-for shape: only well-formed items are saved, and a
+     * response with none at all is a parsing error. A bare string used to raise a TypeError (not
+     * caught by the web services) after earlier items were already saved.
+     */
+    public function test_generate_items_saves_only_well_formed_items(): void {
+        global $DB;
+
+        $json = '{"items":[{"name":"Espada","description":"Afiada","emoji":"⚔️"},"Escudo",'
+            . '{"description":"sem nome","emoji":"🛡️"}]}';
+
+        $result = $this->make_generator_answering($json)->generate('item', 'armas', 10, false, [], 3);
+
+        $this->assertSame(['Espada'], $result['created_items']);
+        $this->assertSame(1, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
+     * Nothing usable in the answer: parsing error, nothing saved.
+     */
+    public function test_generate_items_rejects_an_answer_without_a_usable_item(): void {
+        global $DB;
+
+        try {
+            $this->make_generator_answering('{"items":["Espada","Escudo"]}')->generate('item', 'armas', 10, false, [], 2);
+            $this->fail('Expected a parsing error.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ai_error_parsing', $e->errorcode);
+        }
+        $this->assertSame(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
+     * A single item wrapped in an "item" key is accepted instead of being saved with no name.
+     */
+    public function test_generate_items_accepts_a_single_item_wrapper(): void {
+        global $DB;
+
+        $json = '{"item":{"name":"Espada","description":"Afiada","emoji":"⚔️"}}';
+
+        $result = $this->make_generator_answering($json)->generate('item', 'armas', 10, false);
+
+        $this->assertSame(['Espada'], $result['created_items']);
+        $this->assertSame(
+            'Espada',
+            $DB->get_field('block_playerhud_items', 'name', ['blockinstanceid' => $this->instanceid], MUST_EXIST)
+        );
+    }
+
+    /**
+     * The chapter title returned (and so logged and shown) is the sanitised one that was saved,
+     * not the raw text the model answered with.
+     */
+    public function test_generate_story_returns_the_saved_title(): void {
+        global $DB;
+
+        $json = '{"title":"<b>A Torre</b> Perdida","nodes":[{"index":0,"content":"Início","is_start":true}]}';
+
+        $result = $this->make_generator_answering($json)->generate_story('torre');
+
+        $saved = $DB->get_field('block_playerhud_chapters', 'title', ['id' => $result['chapter_id']], MUST_EXIST);
+        $this->assertSame('A Torre Perdida', $saved);
+        $this->assertSame($saved, $result['chapter_title']);
+    }
+
+    /**
+     * Without any scene flagged as the start the chapter would never show up for students, so the
+     * first scene becomes the start; and only one scene keeps the flag.
+     */
+    public function test_generate_story_guarantees_a_single_start_scene(): void {
+        global $DB;
+
+        $json = '{"title":"Sem início","nodes":[{"index":0,"content":"Primeira"},{"index":1,"content":"Segunda"}]}';
+        $result = $this->make_generator_answering($json)->generate_story('x');
+        $starts = $DB->get_records('block_playerhud_story_nodes', ['chapterid' => $result['chapter_id'], 'is_start' => 1]);
+        $this->assertCount(1, $starts);
+        $this->assertSame('Primeira', reset($starts)->content);
+
+        $json = '{"title":"Dois inícios","nodes":[{"index":0,"content":"A","is_start":true},'
+            . '{"index":1,"content":"B","is_start":true}]}';
+        $result = $this->make_generator_answering($json)->generate_story('y');
+        $this->assertCount(
+            1,
+            $DB->get_records('block_playerhud_story_nodes', ['chapterid' => $result['chapter_id'], 'is_start' => 1])
+        );
+    }
+
+    /**
+     * Scenes without text, and choices that are not objects or have no text, are skipped; a
+     * response with no usable scene is a parsing error and no chapter is created.
+     */
+    public function test_generate_story_skips_malformed_scenes_and_choices(): void {
+        global $DB;
+
+        $json = '{"title":"Mista","nodes":['
+            . '{"index":0,"content":"Boa","is_start":true,"choices":["texto solto",{"target_index":1},'
+            . '{"text":"Seguir","target_index":1}]},'
+            . '{"index":1,"content":"Fim"},'
+            . '{"index":2}]}';
+
+        $result = $this->make_generator_answering($json)->generate_story('z');
+
+        $this->assertCount(2, $result['node_ids']);
+        $this->assertCount(1, $result['choice_ids']);
+
+        $before = $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]);
+        try {
+            $this->make_generator_answering('{"title":"Vazia","nodes":[{"index":0},"x"]}')->generate_story('w');
+            $this->fail('Expected a parsing error.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ai_error_parsing', $e->errorcode);
+        }
+        $this->assertSame($before, $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
      * Calls the private is_safe_url() method via reflection.
      *
      * @param string $url The URL to check.
