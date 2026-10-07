@@ -121,6 +121,78 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * Builds a generator whose AI call is replaced by a canned response, so the parsing that
+     * follows the call can be exercised without any provider.
+     *
+     * @param string $json The raw text the "AI" answers with.
+     * @return generator
+     */
+    private function make_generator_answering(string $json): generator {
+        return new class ($this->instanceid, $json) extends generator {
+            /** @var string Canned AI answer. */
+            private string $canned;
+
+            /**
+             * Stores the canned answer.
+             *
+             * @param int $instanceid Block instance ID.
+             * @param string $canned The raw text the "AI" answers with.
+             */
+            public function __construct(int $instanceid, string $canned) {
+                parent::__construct($instanceid);
+                $this->canned = $canned;
+            }
+
+            #[\Override]
+            protected function call_with_fallback(array $parts, string $description = ''): array {
+                return ['success' => true, 'data' => $this->canned, 'provider' => 'Test'];
+            }
+        };
+    }
+
+    /**
+     * Some models wrap the class in an array or in a "classes" list, which the code documents
+     * and means to accept. The check for a top-level name used to run first and reject both.
+     *
+     * @dataProvider wrapped_class_response_provider
+     * @param string $json Raw AI answer.
+     */
+    public function test_generate_class_accepts_a_wrapped_response(string $json): void {
+        global $DB;
+
+        $result = $this->make_generator_answering($json)->generate_class('wizards');
+
+        $this->assertTrue($result['success']);
+        $class = $DB->get_record('block_playerhud_classes', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
+        $this->assertSame('Mago', $class->name);
+        $this->assertSame(80, (int) $class->base_hp);
+    }
+
+    /**
+     * Wrapped shapes a model may answer with.
+     *
+     * @return array
+     */
+    public static function wrapped_class_response_provider(): array {
+        $class = '{"name":"Mago","description":"Arcano","hp":80,"emoji":"🧙"}';
+        return [
+            'array of classes' => ['[' . $class . ']'],
+            'classes key' => ['{"classes":[' . $class . ']}'],
+            'plain object' => [$class],
+        ];
+    }
+
+    /**
+     * A response with no usable class at all is still rejected as a parsing error.
+     */
+    public function test_generate_class_rejects_a_response_without_a_name(): void {
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage(get_string('ai_error_parsing', 'block_playerhud'));
+
+        $this->make_generator_answering('{"classes":[{"description":"no name"}]}')->generate_class('wizards');
+    }
+
+    /**
      * Calls the private is_safe_url() method via reflection.
      *
      * @param string $url The URL to check.

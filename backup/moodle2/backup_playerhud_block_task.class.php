@@ -49,12 +49,16 @@ class backup_playerhud_block_task extends backup_block_task {
     }
 
     /**
-     * Get the file areas to be backed up.
+     * Get the file areas handled generically.
      *
-     * @return array Array of file areas.
+     * None: every image area here is keyed by the id of the item or class it belongs to, so the
+     * generic step (which cannot remap item ids) would restore each file a second time under its
+     * old id. They are annotated and restored by the structure steps instead, with the mapping.
+     *
+     * @return array An empty array.
      */
     public function get_fileareas() {
-        return ['item_image'];
+        return [];
     }
 
     /**

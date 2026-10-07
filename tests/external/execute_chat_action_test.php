@@ -125,4 +125,31 @@ final class execute_chat_action_test extends external_base_testcase {
             $this->assertSame('accessdenied', $e->errorcode);
         }
     }
+
+    /**
+     * The audit log keeps at most 255 characters of the quest name. Cutting at 255 BYTES instead
+     * split a multibyte character in two, which PostgreSQL (and strict MySQL) reject as invalid
+     * UTF-8 — the quest was created but the action ended in an exception.
+     */
+    public function test_create_quest_logs_a_long_multibyte_name_without_splitting_a_character(): void {
+        global $DB;
+
+        // 130 characters, 260 bytes: byte 255 falls in the middle of the 128th character.
+        $name = str_repeat('ç', 130);
+
+        $result = execute_chat_action::execute(
+            $this->instanceid,
+            $this->course->id,
+            'create_quest',
+            json_encode(['name' => $name, 'type' => \block_playerhud\quest::TYPE_LEVEL, 'target_value' => 2])
+        );
+
+        $this->assertTrue($result['success']);
+        $logged = $DB->get_field('block_playerhud_ai_logs', 'object_name', [
+            'blockinstanceid' => $this->instanceid,
+            'action_type'     => 'quest',
+        ], MUST_EXIST);
+        $this->assertSame($name, $logged);
+        $this->assertSame(1, preg_match('//u', $logged), 'The logged name must be valid UTF-8.');
+    }
 }

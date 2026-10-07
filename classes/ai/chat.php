@@ -335,8 +335,8 @@ class chat extends generator {
         $record->blockinstanceid = $this->instanceid;
         $record->userid          = (int) $USER->id;
         $record->action_type     = 'chat';
-        $record->object_name     = substr($lastuser, 0, 255);
-        $record->ai_provider     = substr($provider, 0, 50);
+        $record->object_name     = \core_text::substr($lastuser, 0, 255);
+        $record->ai_provider     = \core_text::substr($provider, 0, 50);
         $record->timecreated     = time();
         $DB->insert_record('block_playerhud_ai_logs', $record, false);
     }

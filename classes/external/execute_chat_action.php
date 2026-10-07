@@ -183,8 +183,8 @@ class execute_chat_action extends external_api {
         $log->blockinstanceid = $instanceid;
         $log->userid          = (int) $USER->id;
         $log->action_type     = 'item';
-        $log->object_name     = substr($itemname, 0, 255);
-        $log->ai_provider     = substr($result['provider'] ?? '', 0, 50);
+        $log->object_name     = \core_text::substr($itemname, 0, 255);
+        $log->ai_provider     = \core_text::substr($result['provider'] ?? '', 0, 50);
         $log->timecreated     = time();
         $DB->insert_record('block_playerhud_ai_logs', $log, false);
 
@@ -259,7 +259,7 @@ class execute_chat_action extends external_api {
         $log->blockinstanceid = $instanceid;
         $log->userid          = (int) $USER->id;
         $log->action_type     = 'quest';
-        $log->object_name     = substr($name, 0, 255);
+        $log->object_name     = \core_text::substr($name, 0, 255);
         $log->ai_provider     = 'assistant';
         $log->timecreated     = time();
         $DB->insert_record('block_playerhud_ai_logs', $log, false);
@@ -319,8 +319,8 @@ class execute_chat_action extends external_api {
         $log->blockinstanceid = $instanceid;
         $log->userid          = (int) $USER->id;
         $log->action_type     = 'chapter';
-        $log->object_name     = substr($chaptertitle, 0, 255);
-        $log->ai_provider     = substr($result['provider'] ?? '', 0, 50);
+        $log->object_name     = \core_text::substr($chaptertitle, 0, 255);
+        $log->ai_provider     = \core_text::substr($result['provider'] ?? '', 0, 50);
         $log->timecreated     = time();
         $DB->insert_record('block_playerhud_ai_logs', $log, false);
 

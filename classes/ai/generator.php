@@ -983,15 +983,17 @@ class generator {
         $cleanjson = preg_replace('/^\x60{3}json|\x60{3}$/m', '', $result['data']);
         $aidata = json_decode($cleanjson, true);
 
-        if (!$aidata || empty($aidata['name'])) {
-            throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
+        // Normalize first: some models wrap the class in an array or in a "classes" list.
+        if (is_array($aidata)) {
+            if (isset($aidata[0])) {
+                $aidata = $aidata[0];
+            } else if (isset($aidata['classes'][0])) {
+                $aidata = $aidata['classes'][0];
+            }
         }
 
-        // Normalize: some models wrap responses in an array.
-        if (isset($aidata[0])) {
-            $aidata = $aidata[0];
-        } else if (isset($aidata['classes'][0])) {
-            $aidata = $aidata['classes'][0];
+        if (!is_array($aidata) || empty($aidata['name'])) {
+            throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
         }
 
         $class = new \stdClass();
