@@ -143,9 +143,16 @@ class tab_quests implements renderable {
             'tab'        => 'quests',
         ]);
 
+        // Quests depending on a disabled/deleted item are hidden until claimed, like the shop does.
+        $unavailable = quest::get_unavailable_reasons($quests);
+
         $questsdata = [];
         foreach ($quests as $q) {
             $isclaimed = isset($claimedrows[$q->id]);
+
+            if (!$isclaimed && isset($unavailable[$q->id])) {
+                continue;
+            }
 
             // Disabled quest: only show if already claimed (archived state); otherwise hide.
             if (!$q->enabled && !$isclaimed) {

@@ -321,6 +321,76 @@ class items {
     }
 
     /**
+     * Returns the quests that depend on the given items, split by how they use them.
+     *
+     * 'requirement' lists specific-item quests that need one of the items to be completed;
+     * 'reward' lists quests that hand one of them out. Both are what a teacher must hear about
+     * before deleting or disabling an item, since the quest then cannot be completed (or loses
+     * its item reward) and is hidden from students.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int[] $itemids Item IDs being deleted or disabled.
+     * @return array{requirement: \stdClass[], reward: \stdClass[]} Quest records (id, name) keyed by ID.
+     */
+    public static function find_affected_quests(int $instanceid, array $itemids): array {
+        global $DB;
+
+        $result = ['requirement' => [], 'reward' => []];
+        if (empty($itemids)) {
+            return $result;
+        }
+
+        [$reqsql, $reqparams] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED, 'qr');
+        $reqparams['iid'] = $instanceid;
+        $reqparams['type'] = \block_playerhud\quest::TYPE_SPECIFIC_ITEM;
+        $result['requirement'] = $DB->get_records_select(
+            'block_playerhud_quests',
+            "blockinstanceid = :iid AND type = :type AND req_itemid $reqsql",
+            $reqparams,
+            'name ASC',
+            'id, name'
+        );
+
+        [$rewsql, $rewparams] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED, 'qw');
+        $rewparams['iid'] = $instanceid;
+        $result['reward'] = $DB->get_records_select(
+            'block_playerhud_quests',
+            "blockinstanceid = :iid AND reward_itemid $rewsql",
+            $rewparams,
+            'name ASC',
+            'id, name'
+        );
+
+        return $result;
+    }
+
+    /**
+     * Turns every quest that rewards one of the given items into an XP-only quest.
+     *
+     * Called when the items are deleted: a dangling reward id would otherwise stay behind,
+     * silently paying nothing for the item part.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int[] $itemids Item IDs being deleted.
+     */
+    private static function clear_quest_rewards(int $instanceid, array $itemids): void {
+        global $DB;
+
+        if (empty($itemids)) {
+            return;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED, 'cr');
+        $inparams['iid'] = $instanceid;
+        $select = "blockinstanceid = :iid AND reward_itemid $insql";
+
+        // The reward_itemid update goes last, because the selection depends on that column.
+        $DB->set_field_select('block_playerhud_quests', 'reward_itemqty', 1, $select, $inparams);
+        $DB->set_field_select('block_playerhud_quests', 'timemodified', time(), $select, $inparams);
+        $DB->set_field_select('block_playerhud_quests', 'reward_itemid', 0, $select, $inparams);
+    }
+
+    /**
      * Returns trades that reference the given items but would survive their
      * removal — i.e. the item is stripped from the trade, yet it keeps at least
      * one requirement and one reward, so it is NOT deleted.
@@ -456,6 +526,7 @@ class items {
         $transaction = $DB->start_delegated_transaction();
 
         self::delete_orphaned_trades($tradeids);
+        self::clear_quest_rewards($instanceid, [$itemid]);
 
         // Remove each holder's recorded XP for this item (both storage generations).
         $holders = self::get_xp_holders([$itemid]);
@@ -503,6 +574,7 @@ class items {
         $transaction = $DB->start_delegated_transaction();
 
         self::delete_orphaned_trades($tradeids);
+        self::clear_quest_rewards($instanceid, $itemids);
 
         $holders = self::get_xp_holders($itemids);
         if ($holders) {

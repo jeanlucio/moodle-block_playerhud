@@ -48,6 +48,8 @@ class item_delete_confirm {
      * @param array $urls URL strings keyed 'form', 'cancel', 'edit' and (single only) 'toggle'.
      * @param string $sort Current sort column, carried through the form.
      * @param string $dir Current sort direction, carried through the form.
+     * @param array $questimpact Quests affected by the deletion: 'requirement' and 'reward' lists
+     *        (each entry with ->name), from items::find_affected_quests().
      * @return array The template context.
      */
     public static function build_context(
@@ -59,8 +61,18 @@ class item_delete_confirm {
         array $ids,
         array $urls,
         string $sort,
-        string $dir
+        string $dir,
+        array $questimpact = []
     ): array {
+        $questrequirement = array_values(array_map(
+            static fn($quest) => ['name' => $quest->name],
+            $questimpact['requirement'] ?? []
+        ));
+        $questreward = array_values(array_map(
+            static fn($quest) => ['name' => $quest->name],
+            $questimpact['reward'] ?? []
+        ));
+
         $orphanedcount = count($orphanedtrades);
 
         $orphaned = [];
@@ -110,6 +122,13 @@ class item_delete_confirm {
             'surviving_notice'       => get_string('item_delete_trade_kept', 'block_playerhud'),
             'surviving_trades'       => $surviving,
             'has_trade_impact'       => $hasorphaned || $hassurviving,
+            'has_quest_impact'       => !empty($questrequirement) || !empty($questreward),
+            'has_quest_requirement'  => !empty($questrequirement),
+            'quest_requirement_warning' => get_string('item_delete_quest_requirement', 'block_playerhud'),
+            'quest_requirement_list' => $questrequirement,
+            'has_quest_reward'       => !empty($questreward),
+            'quest_reward_warning'   => get_string('item_delete_quest_reward', 'block_playerhud'),
+            'quest_reward_list'      => $questreward,
             'has_xp_impact'          => $hasxpimpact,
             'xp_impact_warning'      => $xpwarning,
             'has_disable_link'       => $hasdisablelink,

@@ -389,6 +389,13 @@ class tab_quests implements renderable {
             quest::TYPE_CHAPTER        => 'bg-light text-dark border',
         ];
 
+        // Quests students cannot see because an item they depend on is disabled or gone.
+        $hiddenreasons = quest::get_unavailable_reasons($quests);
+        $hiddenlabels = [
+            quest::UNAVAILABLE_REQUIREMENT => get_string('quest_hidden_item_requirement', 'block_playerhud'),
+            quest::UNAVAILABLE_REWARD => get_string('quest_hidden_item_reward', 'block_playerhud'),
+        ];
+
         $questsdata = [];
         $counter = ($page * $perpage) + 1;
         foreach ($quests as $q) {
@@ -420,6 +427,7 @@ class tab_quests implements renderable {
                 'counter'          => $counter++,
                 'image_todo'       => !empty($q->image_todo) ? $q->image_todo : '📋',
                 'name'             => format_string($q->name),
+                'hidden_reason'    => $hiddenlabels[$hiddenreasons[$q->id] ?? ''] ?? '',
                 'type_label'       => $typelabels[$q->type] ?? '-',
                 'type_badge_class' => $typebadges[$q->type] ?? 'bg-secondary text-white',
                 'requirement_text' => $requirementtext,

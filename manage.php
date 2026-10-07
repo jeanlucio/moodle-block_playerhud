@@ -102,6 +102,34 @@ if ($activetab === 'quests' && !$questsenabled) {
 
 // Action: Toggle Item Status.
 if ($action == 'toggle' && $itemid && confirm_sesskey()) {
+    // Disabling an item that quests or trades depend on hides them from students: ask first.
+    $toggleitem = $DB->get_record('block_playerhud_items', ['id' => $itemid, 'blockinstanceid' => $instanceid]);
+    if ($toggleitem && $toggleitem->enabled && !optional_param('confirmed', 0, PARAM_BOOL)) {
+        $questimpact = \block_playerhud\controller\items::find_affected_quests($instanceid, [$itemid]);
+        $usedtrades = \block_playerhud\controller\items::find_orphaned_trades($instanceid, [$itemid])
+            + \block_playerhud\controller\items::find_affected_surviving_trades($instanceid, [$itemid]);
+
+        if (!empty($questimpact['requirement']) || !empty($questimpact['reward']) || !empty($usedtrades)) {
+            $itemsurl = new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]);
+            $PAGE->set_url($itemsurl);
+
+            $confirmctx = \block_playerhud\output\manage\item_disable_confirm::build_context(
+                format_string($toggleitem->name),
+                $questimpact,
+                $usedtrades,
+                $itemid,
+                ['form' => $baseurl->out(false), 'cancel' => $itemsurl->out(false)],
+                $sort,
+                $dir
+            );
+
+            echo $OUTPUT->header();
+            echo $OUTPUT->render_from_template('block_playerhud/manage_item_disable_confirm', $confirmctx);
+            echo $OUTPUT->footer();
+            exit;
+        }
+    }
+
     if (\block_playerhud\controller\items::toggle_item($itemid, $instanceid)) {
         redirect(
             new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]),
@@ -131,8 +159,10 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
         $orphanedtrades  = \block_playerhud\controller\items::find_orphaned_trades($instanceid, [$itemid]);
         $survivingtrades = \block_playerhud\controller\items::find_affected_surviving_trades($instanceid, [$itemid]);
         $xpimpact        = \block_playerhud\controller\items::find_xp_impact([$itemid]);
+        $questimpact     = \block_playerhud\controller\items::find_affected_quests($instanceid, [$itemid]);
+        $hasquestimpact  = !empty($questimpact['requirement']) || !empty($questimpact['reward']);
 
-        if (!empty($orphanedtrades) || !empty($survivingtrades) || $xpimpact->studentcount > 0) {
+        if (!empty($orphanedtrades) || !empty($survivingtrades) || $xpimpact->studentcount > 0 || $hasquestimpact) {
             $itemsurl = new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]);
             $PAGE->set_url($itemsurl);
 
@@ -156,7 +186,8 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
                     ]))->out(false),
                 ],
                 $sort,
-                $dir
+                $dir,
+                $questimpact
             );
 
             echo $OUTPUT->header();
@@ -206,8 +237,10 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
             $orphanedtrades  = \block_playerhud\controller\items::find_orphaned_trades($instanceid, $itemids);
             $survivingtrades = \block_playerhud\controller\items::find_affected_surviving_trades($instanceid, $itemids);
             $xpimpact        = \block_playerhud\controller\items::find_xp_impact($itemids);
+            $questimpact     = \block_playerhud\controller\items::find_affected_quests($instanceid, $itemids);
+            $hasquestimpact  = !empty($questimpact['requirement']) || !empty($questimpact['reward']);
 
-            if (!empty($orphanedtrades) || !empty($survivingtrades) || $xpimpact->studentcount > 0) {
+            if (!empty($orphanedtrades) || !empty($survivingtrades) || $xpimpact->studentcount > 0 || $hasquestimpact) {
                 $itemsurl = new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]);
                 $PAGE->set_url($itemsurl);
 
@@ -224,7 +257,8 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
                         'edit'   => (new moodle_url($baseurl, ['tab' => 'trades']))->out(false),
                     ],
                     $sort,
-                    $dir
+                    $dir,
+                    $questimpact
                 );
 
                 echo $OUTPUT->header();

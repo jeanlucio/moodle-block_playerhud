@@ -121,6 +121,59 @@ final class item_delete_confirm_test extends advanced_testcase {
     }
 
     /**
+     * Quests that use the item are listed by role, and alone they are enough to need the
+     * confirmation (no trade impact flag, no XP impact).
+     */
+    public function test_build_context_lists_affected_quests(): void {
+        $this->resetAfterTest();
+
+        $ctx = item_delete_confirm::build_context(
+            'Gem',
+            [],
+            [],
+            $this->noimpact(),
+            false,
+            [5],
+            $this->urls(),
+            'id',
+            'DESC',
+            ['requirement' => [(object) ['name' => 'Collect gems']], 'reward' => [(object) ['name' => 'Big prize']]]
+        );
+
+        $this->assertTrue($ctx['has_quest_impact']);
+        $this->assertTrue($ctx['has_quest_requirement']);
+        $this->assertSame([['name' => 'Collect gems']], $ctx['quest_requirement_list']);
+        $this->assertSame(get_string('item_delete_quest_requirement', 'block_playerhud'), $ctx['quest_requirement_warning']);
+        $this->assertTrue($ctx['has_quest_reward']);
+        $this->assertSame([['name' => 'Big prize']], $ctx['quest_reward_list']);
+        $this->assertSame(get_string('item_delete_quest_reward', 'block_playerhud'), $ctx['quest_reward_warning']);
+        $this->assertFalse($ctx['has_trade_impact']);
+    }
+
+    /**
+     * Without affected quests the quest blocks stay off.
+     */
+    public function test_build_context_without_quests_has_no_quest_impact(): void {
+        $this->resetAfterTest();
+
+        $ctx = item_delete_confirm::build_context(
+            'X',
+            [(object) ['name' => 'T']],
+            [],
+            $this->noimpact(),
+            false,
+            [1],
+            $this->urls(),
+            'id',
+            'DESC'
+        );
+
+        $this->assertFalse($ctx['has_quest_impact']);
+        $this->assertFalse($ctx['has_quest_requirement']);
+        $this->assertFalse($ctx['has_quest_reward']);
+    }
+
+    /**
      * One orphaned trade selects the singular confirm label and warning.
      */
     public function test_build_context_singular_label(): void {

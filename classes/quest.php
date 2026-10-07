@@ -59,6 +59,58 @@ class quest {
     /** @var int Quest type: Complete a specific story chapter. */
     const TYPE_CHAPTER = 9;
 
+    /** @var string Unavailable because its required item is disabled or no longer exists. */
+    const UNAVAILABLE_REQUIREMENT = 'requirement';
+
+    /** @var string Unavailable because its reward item is disabled. */
+    const UNAVAILABLE_REWARD = 'reward';
+
+    /**
+     * Finds the quests that students cannot currently see or claim because an item they depend on
+     * is unavailable, the same rule the shop applies to trades: a disabled required or reward
+     * item, or a required item that no longer exists, hides the quest. A reward item that no
+     * longer exists does not (the quest then simply pays its XP).
+     *
+     * @param \stdClass[] $quests Quest records (type, req_itemid, reward_itemid, blockinstanceid).
+     * @return string[] UNAVAILABLE_* reason keyed by quest ID, only for the unavailable ones.
+     */
+    public static function get_unavailable_reasons(array $quests): array {
+        global $DB;
+
+        $itemids = [];
+        foreach ($quests as $q) {
+            if ((int) $q->type === self::TYPE_SPECIFIC_ITEM && (int) $q->req_itemid > 0) {
+                $itemids[(int) $q->req_itemid] = (int) $q->req_itemid;
+            }
+            if ((int) $q->reward_itemid > 0) {
+                $itemids[(int) $q->reward_itemid] = (int) $q->reward_itemid;
+            }
+        }
+        if (empty($itemids)) {
+            return [];
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal(array_values($itemids));
+        $items = $DB->get_records_select('block_playerhud_items', "id $insql", $inparams, '', 'id, blockinstanceid, enabled');
+
+        $reasons = [];
+        foreach ($quests as $q) {
+            if ((int) $q->type === self::TYPE_SPECIFIC_ITEM && (int) $q->req_itemid > 0) {
+                $item = $items[(int) $q->req_itemid] ?? null;
+                if (!$item || (int) $item->blockinstanceid !== (int) $q->blockinstanceid || !$item->enabled) {
+                    $reasons[$q->id] = self::UNAVAILABLE_REQUIREMENT;
+                    continue;
+                }
+            }
+            $reward = (int) $q->reward_itemid > 0 ? ($items[(int) $q->reward_itemid] ?? null) : null;
+            if ($reward && (int) $reward->blockinstanceid === (int) $q->blockinstanceid && !$reward->enabled) {
+                $reasons[$q->id] = self::UNAVAILABLE_REWARD;
+            }
+        }
+
+        return $reasons;
+    }
+
     /**
      * Build a quest DB record from a suggestion descriptor.
      *
@@ -515,6 +567,13 @@ class quest {
                 throw new \moodle_exception('error_quest_already_claimed', 'block_playerhud');
             }
 
+            // A quest hidden from students because its required item is unavailable cannot be
+            // claimed through a hand-built URL either.
+            $reasons = self::get_unavailable_reasons([$quest]);
+            if (($reasons[$quest->id] ?? '') === self::UNAVAILABLE_REQUIREMENT) {
+                throw new \moodle_exception('error_quest_invalid', 'block_playerhud');
+            }
+
             // 4. Re-verify requirements (Anti-cheat mechanism).
             $player = \block_playerhud\game::get_player($blockinstanceid, $userid);
 
@@ -809,7 +868,10 @@ class quest {
                     break;
             }
 
-            if ($completed) {
+            // A quest hidden from students (disabled/missing item) never counts as a waiting
+            // reward. Checked only for a quest that looks claimable, so the common early exit
+            // stays free (no item lookup at all when the quest depends on no item).
+            if ($completed && !isset(self::get_unavailable_reasons([$q])[$q->id])) {
                 return true;
             }
         }

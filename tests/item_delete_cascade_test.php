@@ -444,6 +444,100 @@ final class item_delete_cascade_test extends advanced_testcase {
 
     // Helper methods.
 
+    // Tests for quests that reference the item being deleted or disabled.
+
+    /**
+     * Inserts a quest and returns it with its id populated.
+     *
+     * @param string $name Quest name.
+     * @param int $instanceid Owning instance.
+     * @param int $reqitemid Required item (specific-item quest) or 0.
+     * @param int $rewarditemid Reward item or 0.
+     * @return \stdClass Inserted record.
+     */
+    private function make_quest(string $name, int $instanceid, int $reqitemid = 0, int $rewarditemid = 0): \stdClass {
+        global $DB;
+        $quest = (object) [
+            'blockinstanceid'   => $instanceid,
+            'name'              => $name,
+            'description'       => '',
+            'type'              => $reqitemid > 0 ? quest::TYPE_SPECIFIC_ITEM : quest::TYPE_XP_TOTAL,
+            'requirement'       => '1',
+            'req_itemid'        => $reqitemid,
+            'reward_xp'         => 10,
+            'reward_itemid'     => $rewarditemid,
+            'reward_itemqty'    => $rewarditemid > 0 ? 3 : 1,
+            'required_class_id' => '0',
+            'image_todo'        => '',
+            'image_done'        => '',
+            'enabled'           => 1,
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ];
+        $quest->id = $DB->insert_record('block_playerhud_quests', $quest);
+        return $quest;
+    }
+
+    /**
+     * Quests are split by how they use the item — requirement or reward — and quests of other
+     * instances or about other items are never reported.
+     */
+    public function test_find_affected_quests_splits_requirement_and_reward(): void {
+        $gem   = $this->make_item('Gem');
+        $other = $this->make_item('Other');
+        $needs = $this->make_quest('Needs gem', $this->instanceid, $gem->id);
+        $gives = $this->make_quest('Gives gem', $this->instanceid, 0, $gem->id);
+        $this->make_quest('Unrelated', $this->instanceid, $other->id);
+        $foreign = $this->create_block_instance();
+        $this->make_quest('Foreign', $foreign, $gem->id, $gem->id);
+
+        $affected = items::find_affected_quests($this->instanceid, [$gem->id]);
+
+        $this->assertSame([$needs->id], array_keys($affected['requirement']));
+        $this->assertSame([$gives->id], array_keys($affected['reward']));
+        $this->assertSame('Needs gem', $affected['requirement'][$needs->id]->name);
+    }
+
+    /**
+     * Deleting an item that is only a quest reward turns that quest into an XP-only quest
+     * instead of leaving a dangling reward id; quests of other instances stay untouched.
+     */
+    public function test_delete_item_turns_reward_quests_into_xp_only(): void {
+        global $DB;
+
+        $gem = $this->make_item('Gem');
+        $gives = $this->make_quest('Gives gem', $this->instanceid, 0, $gem->id);
+        $foreign = $this->create_block_instance();
+        $foreignquest = $this->make_quest('Foreign', $foreign, 0, $gem->id);
+
+        items::delete_item($gem, $this->instanceid, $this->context);
+
+        $row = $DB->get_record('block_playerhud_quests', ['id' => $gives->id]);
+        $this->assertSame(0, (int) $row->reward_itemid);
+        $this->assertSame(1, (int) $row->reward_itemqty);
+        $this->assertSame(10, (int) $row->reward_xp);
+        $this->assertSame($gem->id, (int) $DB->get_field('block_playerhud_quests', 'reward_itemid', [
+            'id' => $foreignquest->id,
+        ]));
+    }
+
+    /**
+     * The same clean-up applies to bulk deletion.
+     */
+    public function test_bulk_delete_items_turns_reward_quests_into_xp_only(): void {
+        global $DB;
+
+        $gem = $this->make_item('Gem');
+        $ring = $this->make_item('Ring');
+        $a = $this->make_quest('Gives gem', $this->instanceid, 0, $gem->id);
+        $b = $this->make_quest('Gives ring', $this->instanceid, 0, $ring->id);
+
+        items::bulk_delete_items([$gem->id => $gem, $ring->id => $ring], $this->instanceid, $this->context);
+
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_quests', 'reward_itemid', ['id' => $a->id]));
+        $this->assertSame(0, (int) $DB->get_field('block_playerhud_quests', 'reward_itemid', ['id' => $b->id]));
+    }
+
     /**
      * Creates a minimal block_instances row and returns its ID.
      *

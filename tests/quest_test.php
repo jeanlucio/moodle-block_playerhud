@@ -870,6 +870,78 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
+     * Quests whose required or reward item is unavailable are reported with the reason: a
+     * missing or disabled required item, or a disabled reward item. A missing reward item (the
+     * quest then simply pays XP) and quests without items are not unavailable.
+     */
+    public function test_get_unavailable_reasons(): void {
+        global $DB;
+
+        $ok = $this->create_dummy_item('Fine');
+        $disabledreq = $this->create_dummy_item('Disabled requirement');
+        $disabledreward = $this->create_dummy_item('Disabled reward');
+        $DB->set_field('block_playerhud_items', 'enabled', 0, ['id' => $disabledreq->id]);
+        $DB->set_field('block_playerhud_items', 'enabled', 0, ['id' => $disabledreward->id]);
+
+        $qok = $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '1', 5, $ok->id, $ok->id);
+        $qdisabledreq = $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '1', 0, 0, $disabledreq->id);
+        $qmissingreq = $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '1', 0, 0, 999999);
+        $qdisabledreward = $this->create_quest(quest::TYPE_XP_TOTAL, '10', 5, $disabledreward->id);
+        $qmissingreward = $this->create_quest(quest::TYPE_XP_TOTAL, '10', 5, 999999);
+        $qplain = $this->create_quest(quest::TYPE_XP_TOTAL, '10', 5);
+
+        $reasons = quest::get_unavailable_reasons([
+            $qok, $qdisabledreq, $qmissingreq, $qdisabledreward, $qmissingreward, $qplain,
+        ]);
+
+        $this->assertSame([
+            $qdisabledreq->id => quest::UNAVAILABLE_REQUIREMENT,
+            $qmissingreq->id => quest::UNAVAILABLE_REQUIREMENT,
+            $qdisabledreward->id => quest::UNAVAILABLE_REWARD,
+        ], $reasons);
+    }
+
+    /**
+     * A completed quest whose reward item is disabled must not light the "reward available"
+     * notice: students cannot see or claim it, the same way the shop hides such trades.
+     */
+    public function test_has_claimable_quests_skips_quest_with_disabled_reward_item(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $reward = $this->create_dummy_item('Golden Crown');
+        $DB->set_field('block_playerhud_items', 'enabled', 0, ['id' => $reward->id]);
+        $this->create_quest(quest::TYPE_XP_TOTAL, '10', 20, $reward->id);
+
+        $this->assertFalse(quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 50, 1));
+
+        $DB->set_field('block_playerhud_items', 'enabled', 1, ['id' => $reward->id]);
+        $this->assertTrue(quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 50, 1));
+    }
+
+    /**
+     * Claiming a quest whose required item was disabled is refused even when the student still
+     * holds copies — the quest is hidden from them, and a hand-built URL must not bypass that.
+     */
+    public function test_claim_reward_refused_when_required_item_is_disabled(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Beta');
+        $this->give_item($user->id, $item->id, 1);
+        $quest = $this->create_quest(quest::TYPE_SPECIFIC_ITEM, '1', 20, 0, $item->id);
+        $DB->set_field('block_playerhud_items', 'enabled', 0, ['id' => $item->id]);
+
+        try {
+            quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+            $this->fail('Expected moodle_exception for an unavailable requirement.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('error_quest_invalid', $e->errorcode);
+        }
+        $this->assertSame(0, $DB->count_records('block_playerhud_quest_log', ['questid' => $quest->id]));
+    }
+
+    /**
      * A quest's reward_itemqty > 1 grants that many units in a single ledger entry.
      */
     public function test_claim_reward_grants_configured_item_quantity(): void {

@@ -99,6 +99,43 @@ final class tab_quests_test extends advanced_testcase {
     }
 
     /**
+     * The teacher's list keeps every quest but tells which ones students cannot see, and why.
+     */
+    public function test_display_marks_quests_hidden_from_students(): void {
+        global $DB;
+
+        $disabled = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Sleeping Gem', 'xp' => 0, 'image' => '',
+            'description' => '', 'enabled' => 0, 'secret' => 0, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $base = [
+            'blockinstanceid' => $this->instanceid, 'description' => '', 'requirement' => '1', 'reward_xp' => 5,
+            'reward_itemqty' => 1, 'required_class_id' => '0', 'image_todo' => '', 'image_done' => '', 'enabled' => 1,
+            'timecreated' => time(), 'timemodified' => time(),
+        ];
+        $DB->insert_record('block_playerhud_quests', (object) ($base + [
+            'name' => 'Needs gem', 'type' => \block_playerhud\quest::TYPE_SPECIFIC_ITEM,
+            'req_itemid' => $disabled, 'reward_itemid' => 0,
+        ]));
+        $DB->insert_record('block_playerhud_quests', (object) ($base + [
+            'name' => 'Gives gem', 'type' => \block_playerhud\quest::TYPE_XP_TOTAL,
+            'req_itemid' => 0, 'reward_itemid' => $disabled,
+        ]));
+        $DB->insert_record('block_playerhud_quests', (object) ($base + [
+            'name' => 'Plain', 'type' => \block_playerhud\quest::TYPE_XP_TOTAL,
+            'req_itemid' => 0, 'reward_itemid' => 0,
+        ]));
+
+        $html = (new tab_quests($this->instanceid, $this->course->id))->display();
+
+        $this->assertStringContainsString('Needs gem', $html);
+        $this->assertStringContainsString('Gives gem', $html);
+        $this->assertStringContainsString('Plain', $html);
+        $this->assertSame(1, substr_count($html, get_string('quest_hidden_item_requirement', 'block_playerhud')));
+        $this->assertSame(1, substr_count($html, get_string('quest_hidden_item_reward', 'block_playerhud')));
+    }
+
+    /**
      * Builds a minimal valid POST payload for creating a level-type quest (no type-specific
      * required fields), with the given description HTML.
      *

@@ -53,6 +53,7 @@
                 "counter": 1,
                 "image_todo": "📋",
                 "name": "Reach Level 5",
+                "hidden_reason": "Hidden from students: the reward item is disabled.",
                 "type_label": "Reach Level",
                 "type_badge_class": "bg-primary text-white",
                 "requirement_text": "5",
@@ -172,6 +173,13 @@
                                 <td class="align-middle">
                                     <span class="ph-quest-icon-cell me-1" aria-hidden="true">{{image_todo}}</span>
                                     <span class="fw-semibold">{{name}}</span>
+                                    {{#hidden_reason}}
+                                        <div class="small mt-1">
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fa fa-eye-slash me-1" aria-hidden="true"></i>{{hidden_reason}}
+                                            </span>
+                                        </div>
+                                    {{/hidden_reason}}
                                 </td>
                                 <td class="align-middle">
                                     <span class="badge {{type_badge_class}}">{{type_label}} = {{requirement_text}}</span>

@@ -161,6 +161,33 @@ final class tab_quests_test extends advanced_testcase {
     }
 
     /**
+     * A quest whose reward item the teacher disabled is hidden from students until claimed,
+     * mirroring how the shop hides trades with a disabled item; a quest already claimed stays
+     * visible as history.
+     */
+    public function test_display_hides_unclaimed_quest_with_disabled_reward_item(): void {
+        global $DB;
+
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Sleeping Gem', 'xp' => 0, 'image' => '',
+            'description' => '', 'enabled' => 0, 'secret' => 0, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $hiddenid = $this->create_always_completable_quest('Gem Hunt');
+        $claimedid = $this->create_always_completable_quest('Archived Treasure');
+        $DB->set_field('block_playerhud_quests', 'reward_itemid', $itemid, ['id' => $hiddenid]);
+        $DB->set_field('block_playerhud_quests', 'reward_itemid', $itemid, ['id' => $claimedid]);
+        $DB->insert_record('block_playerhud_quest_log', (object) [
+            'questid' => $claimedid, 'userid' => $this->user->id, 'timecreated' => time(),
+        ]);
+
+        $tab = new tab_quests(new \stdClass(), $this->make_player(), $this->instanceid, $this->course->id);
+        $html = $tab->display();
+
+        $this->assertStringNotContainsString('Gem Hunt', $html);
+        $this->assertStringContainsString('Archived Treasure', $html);
+    }
+
+    /**
      * get_type_label() maps every quest type constant to a non-placeholder label, and
      * falls back to '-' for an unrecognised type.
      */
