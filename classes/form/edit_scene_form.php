@@ -68,7 +68,9 @@ class edit_scene_form extends \moodleform {
             -2 => get_string('choice_same_as_prev', 'block_playerhud'),
         ];
         foreach ($othernodes as $n) {
-            $snippet = substr(strip_tags($n->content), 0, 40) . '...';
+            // Plain-text preview: entities decoded, whitespace collapsed, cut by characters.
+            $plain = trim(preg_replace('/\s+/u', ' ', html_to_text((string) $n->content, 0, false)));
+            $snippet = shorten_text($plain, 40);
             $targetoptionsraw[$n->id] = get_string('scene_number', 'block_playerhud', $n->id) .
                 ' (' . $snippet . ')';
         }
