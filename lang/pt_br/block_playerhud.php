@@ -614,6 +614,7 @@ $string['privacy:metadata:playerhud_user:milestones'] = 'Quais celebrações de 
 $string['privacy:metadata:playerhud_user:ranking_visibility'] = 'Preferência do usuário sobre aparecer ou não no ranking público.';
 $string['privacy:metadata:playerhud_user:userid'] = 'O ID do usuário a quem este perfil pertence.';
 $string['privacy:metadata:preference:avatar'] = 'Armazena o item que o usuário equipou como avatar de perfil em cada instância do bloco.';
+$string['privacy:metadata:preference:celebration'] = 'Guarda uma comemoração pontual (subida de nível ou jogo concluído) para mostrar ao usuário na próxima visualização, depois de resgatar a recompensa de uma missão.';
 $string['privacy:metadata:preference:gemini_key'] = 'Armazena a chave pessoal da API Google Gemini fornecida pelo usuário.';
 $string['privacy:metadata:preference:groq_key'] = 'Armazena a chave pessoal da API Groq fornecida pelo usuário.';
 $string['privacy:metadata:preference:openai_key'] = 'Armazena a chave pessoal da API do provedor compatível com OpenAI fornecida pelo usuário.';

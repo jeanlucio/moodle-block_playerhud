@@ -614,6 +614,7 @@ $string['privacy:metadata:playerhud_user:milestones'] = 'Which one-time mileston
 $string['privacy:metadata:playerhud_user:ranking_visibility'] = 'User preference regarding visibility on the public leaderboard.';
 $string['privacy:metadata:playerhud_user:userid'] = 'The ID of the user this profile belongs to.';
 $string['privacy:metadata:preference:avatar'] = 'Stores the item the user has equipped as their profile avatar in each block instance.';
+$string['privacy:metadata:preference:celebration'] = 'Stores a one-time celebration (level-up or game completed) to show the user on the next page view after claiming a quest reward.';
 $string['privacy:metadata:preference:gemini_key'] = 'Stores the personal Google Gemini API key provided by the user.';
 $string['privacy:metadata:preference:groq_key'] = 'Stores the personal Groq API key provided by the user.';
 $string['privacy:metadata:preference:openai_key'] = 'Stores the personal API key for the custom OpenAI-compatible provider provided by the user.';

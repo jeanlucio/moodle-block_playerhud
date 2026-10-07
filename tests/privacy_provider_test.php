@@ -420,6 +420,66 @@ final class privacy_provider_test extends advanced_testcase {
     }
 
     /**
+     * The one-time celebration flag set when a quest claim levels the user up is a stored user
+     * preference, so it must be declared, exported and removed like the others.
+     */
+    public function test_celebration_preference_is_declared_exported_and_deleted(): void {
+        $this->resetAfterTest(true);
+        $user = $this->getDataGenerator()->create_user();
+
+        $names = array_map(
+            static fn($item) => $item->get_name(),
+            provider::get_metadata(new collection('block_playerhud'))->get_collection()
+        );
+        $this->assertContains('block_playerhud_celebration', $names);
+
+        set_user_preference('block_playerhud_celebration', 'levelup:3', $user->id);
+        provider::export_user_preferences($user->id);
+        $prefs = writer::with_context(\context_system::instance())->get_user_preferences('block_playerhud');
+        $this->assertEquals('levelup:3', $prefs->block_playerhud_celebration->value);
+
+        provider::delete_user_preferences($user->id);
+        $this->assertNull(get_user_preferences('block_playerhud_celebration', null, $user->id));
+    }
+
+    /**
+     * Every user preference the plugin sets under a literal key must be declared in the privacy
+     * metadata. A per-key assertion cannot notice a preference added later, so this reads the
+     * plugin's own code for set_user_preference() calls instead (dynamic per-instance keys, like
+     * the avatar one, are not literal and are covered by their own test).
+     */
+    public function test_every_literal_preference_key_is_declared(): void {
+        global $CFG;
+
+        $root = $CFG->dirroot . '/blocks/playerhud';
+        $found = [];
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(
+            $root,
+            \FilesystemIterator::SKIP_DOTS
+        ));
+        foreach ($iterator as $file) {
+            $path = $file->getPathname();
+            $inskipped = preg_match('#/(tests|amd|vendor|node_modules|\.plans|\.git|cli)/#', $path);
+            if ($file->getExtension() !== 'php' || $inskipped) {
+                continue;
+            }
+            $pattern = "/set_user_preference\(\s*'(block_playerhud_[a-z0-9_]+)'\s*,/";
+            if (preg_match_all($pattern, file_get_contents($path), $matches)) {
+                $found = array_merge($found, $matches[1]);
+            }
+        }
+        $this->assertNotEmpty($found, 'The scan must find the preferences the plugin sets.');
+
+        $declared = array_map(
+            static fn($item) => $item->get_name(),
+            provider::get_metadata(new collection('block_playerhud'))->get_collection()
+        );
+        foreach (array_unique($found) as $key) {
+            $this->assertContains($key, $declared, "Preference $key is set but not declared.");
+        }
+    }
+
+    /**
      * Test that the metadata declares every stored item, including the avatar preference.
      */
     public function test_get_metadata(): void {

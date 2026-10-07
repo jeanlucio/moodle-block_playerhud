@@ -50,6 +50,7 @@ class provider implements
         $collection->add_user_preference('block_playerhud_openai_model', 'privacy:metadata:preference:openai_model');
         $collection->add_user_preference('block_playerhud_openai_url', 'privacy:metadata:preference:openai_url');
         $collection->add_user_preference('block_playerhud_avatar', 'privacy:metadata:preference:avatar');
+        $collection->add_user_preference('block_playerhud_celebration', 'privacy:metadata:preference:celebration');
         // Main User Data.
         $collection->add_database_table('block_playerhud_user', [
             'blockinstanceid' => 'privacy:metadata:playerhud_user:blockinstanceid',
@@ -812,6 +813,16 @@ class provider implements
             );
         }
 
+        $celebration = get_user_preferences('block_playerhud_celebration', null, $userid);
+        if ($celebration !== null) {
+            writer::with_context(\context_system::instance())->export_user_preference(
+                'block_playerhud',
+                'block_playerhud_celebration',
+                $celebration,
+                get_string('privacy:metadata:preference:celebration', 'block_playerhud')
+            );
+        }
+
         // Equipped avatar preferences (one dynamic key per block instance).
         $allprefs = get_user_preferences(null, null, $userid);
         foreach ($allprefs as $name => $value) {
@@ -837,6 +848,7 @@ class provider implements
         unset_user_preference('block_playerhud_openai_key', $userid);
         unset_user_preference('block_playerhud_openai_model', $userid);
         unset_user_preference('block_playerhud_openai_url', $userid);
+        unset_user_preference('block_playerhud_celebration', $userid);
 
         // Equipped avatar preferences (one dynamic key per block instance).
         $allprefs = get_user_preferences(null, null, $userid);
