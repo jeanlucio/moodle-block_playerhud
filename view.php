@@ -78,6 +78,8 @@ if ($isteacher && empty($player->enable_gamification)) {
 
 // Logic: Opt-in / Opt-out Actions.
 if ($action === 'toggle_hud' && confirm_sesskey()) {
+    // Joining or leaving the game changes the user's own game state: that is a write.
+    require_capability('block/playerhud:interact', $context);
     $targetstate = optional_param('state', 0, PARAM_INT);
     $returnurl = optional_param('returnurl', '', PARAM_LOCALURL);
 
@@ -110,6 +112,7 @@ if ($tab === 'toggle_ranking_user' && confirm_sesskey()) {
 
 // Logic: Privacy Toggle.
 if ($tab == 'toggle_ranking_pref' && confirm_sesskey()) {
+    require_capability('block/playerhud:interact', $context);
     $newvis = ($player->ranking_visibility == 1) ? 0 : 1;
     \block_playerhud\game::toggle_ranking_visibility($instanceid, $USER->id, $newvis);
     redirect(
@@ -126,6 +129,8 @@ if ($tab == 'toggle_ranking_pref' && confirm_sesskey()) {
 
 // Logic: Claim Quest Reward.
 if ($action === 'claim_quest' && !empty($config->enable_quests) && confirm_sesskey()) {
+    // Claiming writes quest log, XP and items, like every other write path (collect, trade, use).
+    require_capability('block/playerhud:interact', $context);
     $questid  = required_param('questid', PARAM_INT);
     $questurl = new moodle_url($PAGE->url, ['tab' => 'quests']);
     try {
