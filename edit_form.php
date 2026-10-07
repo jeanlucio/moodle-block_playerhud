@@ -127,6 +127,26 @@ class block_playerhud_edit_form extends block_edit_form {
     }
 
     /**
+     * Validates the submitted block settings.
+     *
+     * A non-positive "XP per level" would freeze level progression for every student, so it is
+     * rejected here instead of being silently stored.
+     *
+     * @param array $data Submitted form data.
+     * @param array $files Submitted files.
+     * @return array Errors keyed by element name.
+     */
+    public function validation($data, $files): array {
+        $errors = parent::validation($data, $files);
+
+        if ((int) ($data['config_xp_per_level'] ?? 0) < 1) {
+            $errors['config_xp_per_level'] = get_string('error_xp_per_level_min', 'block_playerhud');
+        }
+
+        return $errors;
+    }
+
+    /**
      * Fill in data before displaying the form.
      * Ensures compatibility with Moodle's editor element which strictly requires an array.
      *

@@ -354,6 +354,7 @@ $string['error_trade_invalid'] = 'Invalid or inactive trade.';
 $string['error_trade_lock'] = 'Transaction in progress. Please wait a moment and try again.';
 $string['error_trade_onetime'] = 'You have already performed this trade. It can only be done once.';
 $string['error_unknown_mode'] = 'Unknown generation mode.';
+$string['error_xp_per_level_min'] = 'XP per level must be a whole number of at least 1.';
 $string['event_character_selected'] = 'PlayerHUD character selected';
 $string['event_item_collected'] = 'PlayerHUD item collected';
 $string['event_quest_collected'] = 'PlayerHUD quest reward claimed';

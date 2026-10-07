@@ -354,6 +354,7 @@ $string['error_trade_invalid'] = 'Troca inválida ou inativa.';
 $string['error_trade_lock'] = 'Transação em andamento. Aguarde um momento e tente novamente.';
 $string['error_trade_onetime'] = 'Você já realizou esta troca. Ela só pode ser feita uma vez.';
 $string['error_unknown_mode'] = 'Modo de geração desconhecido.';
+$string['error_xp_per_level_min'] = 'O XP por nível deve ser um número inteiro maior ou igual a 1.';
 $string['event_character_selected'] = 'Personagem do PlayerHUD selecionado';
 $string['event_item_collected'] = 'Item do PlayerHUD coletado';
 $string['event_quest_collected'] = 'Recompensa de missão do PlayerHUD resgatada';

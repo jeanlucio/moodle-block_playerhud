@@ -123,8 +123,7 @@ class export {
         $exportdata = [];
         if ($users) {
             foreach ($users as $user) {
-                $rawlevel = floor($user->currentxp / $xpperlevel) + 1;
-                $level = ($rawlevel > $maxlevels) ? $maxlevels : (int)$rawlevel;
+                $level = \block_playerhud\game::xp_to_level((int)$user->currentxp, $xpperlevel, $maxlevels);
 
                 $row = [$user->firstname, $user->lastname];
                 if ($showemail) {

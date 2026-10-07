@@ -221,6 +221,38 @@ final class export_test extends advanced_testcase {
     }
 
     /**
+     * A non-positive "XP per level" saved by an older release (the form did not validate it)
+     * must not crash the export with a division by zero, nor yield negative levels.
+     *
+     * @dataProvider invalid_xp_per_level_provider
+     * @param int $xpperlevel The invalid stored value.
+     */
+    public function test_build_export_survives_non_positive_xp_per_level(int $xpperlevel): void {
+        $this->make_instance($xpperlevel, 20);
+
+        $student = $this->getDataGenerator()->create_and_enrol($this->course, 'student');
+        $this->seed_player($student->id, 250);
+
+        [, $rows] = (new export())->build_export($this->course->id, $this->instanceid);
+
+        $this->assertCount(1, $rows);
+        // Same fallback as game::xp_to_level(): progression is disabled, everyone stays at level 1.
+        $this->assertSame(1, $rows[0][3]);
+    }
+
+    /**
+     * Invalid "XP per level" values.
+     *
+     * @return array
+     */
+    public static function invalid_xp_per_level_provider(): array {
+        return [
+            'zero' => [0],
+            'negative' => [-50],
+        ];
+    }
+
+    /**
      * Teachers and managers are excluded from the export.
      */
     public function test_build_export_excludes_managers(): void {
