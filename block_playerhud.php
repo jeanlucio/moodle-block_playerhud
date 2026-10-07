@@ -431,6 +431,27 @@ class block_playerhud extends block_base {
     }
 
     /**
+     * Keeps an instance left on a Dashboard by an earlier release removable.
+     *
+     * Core shows "Delete block" only when this returns true, and for Dashboard pages the default
+     * answer is false once the Dashboard is no longer an applicable format. Adding is not affected:
+     * core also requires the page format to be applicable, and the Dashboard is not.
+     *
+     * @param moodle_page $page The page being edited.
+     * @return bool
+     */
+    public function user_can_addto($page): bool {
+        global $CFG;
+        require_once($CFG->dirroot . '/user/lib.php');
+
+        if (array_key_exists($page->pagetype, my_page_type_list($page->pagetype))) {
+            return has_capability('moodle/my:manageblocks', $page->context);
+        }
+
+        return parent::user_can_addto($page);
+    }
+
+    /**
      * Enable block configuration.
      */
     public function has_config() {
