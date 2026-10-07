@@ -421,10 +421,12 @@ class block_playerhud extends block_base {
      * Define where this block can be added.
      */
     public function applicable_formats() {
+        // Every page of the plugin resolves the block's course, which a Dashboard block (whose
+        // parent context is the user) does not have, so the Dashboard is deliberately excluded.
         return [
             'course-view' => true,
             'site' => false,
-            'my' => true,
+            'my' => false,
         ];
     }
 

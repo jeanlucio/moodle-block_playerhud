@@ -584,7 +584,6 @@ $string['playercoin_drop_yes'] = 'Yes, create the item and drop';
 $string['playerhud:addinstance'] = 'Add a new PlayerHUD';
 $string['playerhud:interact'] = 'Interact with gamification features';
 $string['playerhud:manage'] = 'Manage Game Content';
-$string['playerhud:myaddinstance'] = 'Add a new PlayerHUD block to Dashboard';
 $string['playerhud:view'] = 'View PlayerHUD';
 $string['pluginadministration'] = 'PlayerHUD Administration';
 $string['pluginname'] = 'PlayerHUD';

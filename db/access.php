@@ -38,17 +38,6 @@ $capabilities = [
         'clonepermissionsfrom' => 'moodle/site:manageblocks',
     ],
 
-    // Ability to add a PlayerHUD block specifically to the My Moodle (Dashboard) page.
-    'block/playerhud:myaddinstance' => [
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => [
-            'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW,
-        ],
-        'clonepermissionsfrom' => 'moodle/my:manageblocks',
-    ],
-
     // Ability to view the PlayerHUD content only (render the block and its read-only tabs).
     'block/playerhud:view' => [
         'captype' => 'read',

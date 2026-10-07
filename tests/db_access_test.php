@@ -55,4 +55,24 @@ final class db_access_test extends advanced_testcase {
         $this->assertNotSame(0, $riskbitmask & RISK_PERSONAL, 'RISK_PERSONAL must be set.');
         $this->assertNotSame(0, $riskbitmask & RISK_DATALOSS, 'RISK_DATALOSS must be set.');
     }
+
+    /**
+     * The block is only usable inside a course (every page checks the course context), so it must
+     * not be offered on the Dashboard, and no permission for adding it there may linger in the
+     * role editor — it would grant nothing.
+     */
+    public function test_block_is_not_offered_on_the_dashboard(): void {
+        global $CFG;
+
+        $capabilities = [];
+        require($CFG->dirroot . '/blocks/playerhud/db/access.php');
+        require_once($CFG->dirroot . '/blocks/moodleblock.class.php');
+        require_once($CFG->dirroot . '/blocks/playerhud/block_playerhud.php');
+
+        $formats = (new \block_playerhud())->applicable_formats();
+
+        $this->assertFalse($formats['my'] ?? false, 'The Dashboard must not accept this block.');
+        $this->assertTrue($formats['course-view'] ?? false);
+        $this->assertArrayNotHasKey('block/playerhud:myaddinstance', $capabilities);
+    }
 }
