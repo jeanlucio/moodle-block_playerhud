@@ -472,6 +472,73 @@ final class tab_reports_test extends advanced_testcase {
     }
 
     /**
+     * Seeds a player row with the given XP.
+     *
+     * @param int $userid User ID.
+     * @param int $xp Current XP.
+     * @return void
+     */
+    private function seed_player_xp(int $userid, int $xp): void {
+        global $DB;
+
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid' => $this->instanceid, 'userid' => $userid, 'currentxp' => $xp,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+    }
+
+    /**
+     * Finds a KPI card by its title.
+     *
+     * @param array $data The template data.
+     * @param string $stringkey Language string key of the card title.
+     * @return array|null The card.
+     */
+    private function find_kpi(array $data, string $stringkey): ?array {
+        foreach ($data['kpis'] as $card) {
+            if ($card['title'] === get_string($stringkey, 'block_playerhud')) {
+                return $card;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The "leader" and "total XP" cards, and the level chart, describe the same population as the
+     * students table and the ranking: active students only. A teacher who tested the block, a
+     * site admin, a student whose enrolment is suspended and someone no longer enrolled used to be
+     * counted, so the card named a leader that the table right below did not list.
+     */
+    public function test_kpis_and_chart_count_only_active_students(): void {
+        $gen = $this->getDataGenerator();
+        $active = $gen->create_and_enrol($this->course, 'student', ['firstname' => 'Ativo', 'lastname' => 'Aluno']);
+        $second = $gen->create_and_enrol($this->course, 'student');
+        $teacher = $gen->create_and_enrol($this->course, 'editingteacher', ['firstname' => 'Prof', 'lastname' => 'Teste']);
+        $suspended = $gen->create_user(['firstname' => 'Suspenso', 'lastname' => 'Aluno']);
+        $gen->enrol_user($suspended->id, $this->course->id, 'student', 'manual', 0, 0, ENROL_USER_SUSPENDED);
+        $gone = $gen->create_user(['firstname' => 'Saiu', 'lastname' => 'Aluno']);
+
+        $this->seed_player_xp($active->id, 200);
+        $this->seed_player_xp($second->id, 50);
+        $this->seed_player_xp($teacher->id, 500);
+        $this->seed_player_xp($suspended->id, 800);
+        $this->seed_player_xp($gone->id, 900);
+        $this->seed_player_xp(get_admin()->id, 1000);
+
+        $data = (new tab_reports($this->instanceid, $this->course->id))->export_for_template($this->mock_output());
+
+        $total = $this->find_kpi($data, 'report_total_xp');
+        $leader = $this->find_kpi($data, 'report_leader');
+        $this->assertStringContainsString('250', $total['value']);
+        $this->assertStringContainsString('Ativo', $leader['value']);
+        $this->assertSame('200 XP', $leader['subtitle']);
+
+        $chartedstudents = array_sum(array_column($data['charts']['levels'], 'total'));
+        $this->assertSame(2, $chartedstudents);
+    }
+
+    /**
      * The students table's total_items sums current active holdings across both storage
      * generations for an enrolled student.
      */

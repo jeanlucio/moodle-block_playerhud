@@ -376,9 +376,11 @@ class tab_reports implements renderable, templatable {
     private function get_kpi_data(): array {
         global $DB;
 
+        [$populationsql, $populationparams] = $this->student_population_condition('p');
+
         $totalxp = $DB->get_field_sql(
-            "SELECT SUM(currentxp) FROM {block_playerhud_user} WHERE blockinstanceid = ?",
-            [$this->instanceid]
+            "SELECT SUM(p.currentxp) FROM {block_playerhud_user} p WHERE p.blockinstanceid = :iid AND $populationsql",
+            ['iid' => $this->instanceid] + $populationparams
         );
 
         $userfieldsapi = \core_user\fields::for_name();
@@ -388,9 +390,9 @@ class tab_reports implements renderable, templatable {
             "SELECT u.id, $userfields, p.currentxp
                FROM {block_playerhud_user} p
                JOIN {user} u ON p.userid = u.id
-              WHERE p.blockinstanceid = ?
+              WHERE p.blockinstanceid = :iid AND $populationsql
            ORDER BY p.currentxp DESC, p.timemodified ASC, u.lastname ASC",
-            [$this->instanceid],
+            ['iid' => $this->instanceid] + $populationparams,
             IGNORE_MULTIPLE
         );
 
@@ -467,7 +469,11 @@ class tab_reports implements renderable, templatable {
     private function get_charts_data(int $xpperlevel, int $maxlevel): array {
         global $DB;
 
-        $userxps = $DB->get_records('block_playerhud_user', ['blockinstanceid' => $this->instanceid], '', 'id, currentxp');
+        [$populationsql, $populationparams] = $this->student_population_condition('p');
+        $userxps = $DB->get_records_sql(
+            "SELECT p.id, p.currentxp FROM {block_playerhud_user} p WHERE p.blockinstanceid = :iid AND $populationsql",
+            ['iid' => $this->instanceid] + $populationparams
+        );
         $xpvalues = array_map(static fn($u) => (int)$u->currentxp, $userxps);
         $levelsdata = \block_playerhud\local\analytics::level_distribution($xpvalues, $xpperlevel, $maxlevel);
 
@@ -600,6 +606,42 @@ class tab_reports implements renderable, templatable {
     }
 
     /**
+     * Builds the condition that restricts player rows to the students the report talks about.
+     *
+     * The students table, the leader and total-XP cards and the level chart must describe the
+     * same people: players with an active enrolment in this course who do not hold
+     * block/playerhud:manage and are not site administrators (they bypass the capability system,
+     * so get_users_by_capability() does not list them).
+     *
+     * @param string $alias Alias of the block_playerhud_user table in the query.
+     * @return array [string $sql, array $params] Condition to append with AND.
+     */
+    private function student_population_condition(string $alias): array {
+        global $DB;
+
+        $coursecontext = \context_course::instance($this->courseid);
+        $managers = get_users_by_capability($coursecontext, 'block/playerhud:manage', 'u.id');
+        $excludedids = array_unique(array_merge(array_keys($managers), array_keys(get_admins())));
+
+        $sql = "EXISTS (SELECT 1
+                          FROM {user_enrolments} popue
+                          JOIN {enrol} pope ON pope.id = popue.enrolid
+                         WHERE popue.userid = {$alias}.userid
+                           AND popue.status = 0
+                           AND pope.status = 0
+                           AND pope.courseid = :popcourseid)";
+        $params = ['popcourseid' => $this->courseid];
+
+        if (!empty($excludedids)) {
+            [$insql, $inparams] = $DB->get_in_or_equal($excludedids, SQL_PARAMS_NAMED, 'popexm', false);
+            $sql .= " AND {$alias}.userid $insql";
+            $params += $inparams;
+        }
+
+        return [$sql, $params];
+    }
+
+    /**
      * Get main students table data.
      *
      * @param int $xpperlevel
@@ -609,19 +651,7 @@ class tab_reports implements renderable, templatable {
     private function get_students_data(int $xpperlevel, int $maxlevels): array {
         global $DB;
 
-        $coursecontext = \context_course::instance($this->courseid);
-        $managers = get_users_by_capability($coursecontext, 'block/playerhud:manage', 'u.id');
-        $managerids = array_keys($managers);
-        // Get_users_by_capability does not enumerate site admins (they bypass the capability
-        // system via $CFG->siteadmins). Merge them explicitly so they are excluded from the report.
-        $managerids = array_unique(array_merge($managerids, array_keys(get_admins())));
-
-        $excludeclause = '';
-        $excludeparams = [];
-        if (!empty($managerids)) {
-            [$insql, $excludeparams] = $DB->get_in_or_equal($managerids, SQL_PARAMS_NAMED, 'exm', false);
-            $excludeclause = "AND pu.userid $insql";
-        }
+        [$populationsql, $populationparams] = $this->student_population_condition('pu');
 
         $userfieldsapi = \core_user\fields::for_name();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
@@ -656,22 +686,15 @@ class tab_reports implements renderable, templatable {
                    WHERE s.userid = u.id AND it2.blockinstanceid = :p3) as total_items
               FROM {user} u
               JOIN {block_playerhud_user} pu ON pu.userid = u.id
-              JOIN {user_enrolments} ue ON ue.userid = u.id AND ue.status = 0
-              JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = :enrolcourseid AND e.status = 0
              WHERE pu.blockinstanceid = :p2
-               $excludeclause
+               AND $populationsql
           ORDER BY $sortsql";
 
         $params = [
             'p1' => $this->instanceid,
             'p2' => $this->instanceid,
             'p3' => $this->instanceid,
-            'enrolcourseid' => $this->courseid,
-        ];
-
-        if (!empty($excludeparams)) {
-            $params = array_merge($params, $excludeparams);
-        }
+        ] + $populationparams;
 
         $users = $DB->get_records_sql($sql, $params);
 
