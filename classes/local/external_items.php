@@ -293,6 +293,11 @@ class external_items {
      * Returns the formatted display name of an item, or empty string if it does not belong to
      * $blockinstanceid.
      *
+     * The result is HTML (format_string() escapes it). Use it where HTML is expected, such as a
+     * notification. For a double-mustache variable, an attribute, textContent or a get_string()
+     * parameter that is escaped later, use {@see self::get_name_plain()} instead, or the name is
+     * escaped twice and shows "&amp;" on screen.
+     *
      * @param int $blockinstanceid Block instance ID the item must belong to.
      * @param int $itemid PlayerHUD item ID.
      * @return string
@@ -306,6 +311,28 @@ class external_items {
 
         $name = $DB->get_field('block_playerhud_items', 'name', ['id' => $itemid]);
         return ($name !== false) ? format_string($name) : '';
+    }
+
+    /**
+     * Returns the display name of an item as plain text, or empty string if it does not belong to
+     * $blockinstanceid.
+     *
+     * String filters (multilang, ...) are applied, then markup is stripped and entities decoded, so a
+     * template, attribute or script that escapes its input does so exactly once.
+     *
+     * @param int $blockinstanceid Block instance ID the item must belong to.
+     * @param int $itemid PlayerHUD item ID.
+     * @return string
+     */
+    public static function get_name_plain(int $blockinstanceid, int $itemid): string {
+        global $DB;
+
+        if (!self::belongs_to_instance($itemid, $blockinstanceid)) {
+            return '';
+        }
+
+        $name = $DB->get_field('block_playerhud_items', 'name', ['id' => $itemid]);
+        return ($name !== false) ? \block_playerhud\utils::plain_string($name) : '';
     }
 
     /**

@@ -507,6 +507,47 @@ final class external_items_test extends advanced_testcase {
     }
 
     /**
+     * Provides both values of the site setting that changes what format_string() returns.
+     *
+     * @return array
+     */
+    public static function striptags_provider(): array {
+        return ['strip tags on' => [1], 'strip tags off' => [0]];
+    }
+
+    /**
+     * get_name_plain() returns the name as typed, where get_name() returns it escaped for HTML.
+     *
+     * @dataProvider striptags_provider
+     * @param int $striptags Value of formatstringstriptags.
+     * @return void
+     */
+    public function test_get_name_plain_returns_unescaped_name(int $striptags): void {
+        global $DB;
+
+        set_config('formatstringstriptags', $striptags);
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid);
+        $DB->set_field('block_playerhud_items', 'name', 'Cafe & "Co"', ['id' => $itemid]);
+
+        $this->assertSame('Cafe & "Co"', external_items::get_name_plain($instanceid, $itemid));
+        $this->assertSame('Cafe &amp; "Co"', external_items::get_name($instanceid, $itemid));
+    }
+
+    /**
+     * get_name_plain() returns an empty string for an item belonging to a different instance.
+     *
+     * @return void
+     */
+    public function test_get_name_plain_returns_empty_for_other_instance_item(): void {
+        $instanceid = $this->make_instance();
+        $otherinstanceid = $this->make_instance();
+        $itemid = $this->make_item($otherinstanceid);
+
+        $this->assertSame('', external_items::get_name_plain($instanceid, $itemid));
+    }
+
+    /**
      * get_xp() returns the item's own XP value for an item belonging to the given instance.
      *
      * @return void
