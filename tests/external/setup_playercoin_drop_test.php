@@ -137,14 +137,18 @@ final class setup_playercoin_drop_test extends external_base_testcase {
         $instanceb   = $this->create_block_instance();
         $foreignitem = $this->create_item($instanceb, 'PlayerCoin');
 
-        $this->expectException(\dml_missing_record_exception::class);
-        setup_playercoin_drop::execute($this->instanceid, $this->course->id, $foreignitem->id);
-
-        $this->assertEquals(
-            0,
-            $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid]),
-            'No drop must be created after a rejected cross-instance item.'
-        );
+        // A try/catch rather than expectException(): the exception ends the test there, and the
+        // check that nothing was written has to run after it.
+        try {
+            setup_playercoin_drop::execute($this->instanceid, $this->course->id, $foreignitem->id);
+            $this->fail('Expected a dml_missing_record_exception for an item of another instance.');
+        } catch (\dml_missing_record_exception $e) {
+            $this->assertEquals(
+                0,
+                $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid]),
+                'No drop must be created after a rejected cross-instance item.'
+            );
+        }
     }
 
     /**
@@ -157,14 +161,17 @@ final class setup_playercoin_drop_test extends external_base_testcase {
         $othercourse = $this->getDataGenerator()->create_course();
         $item = $this->create_item($this->instanceid, 'PlayerCoin');
 
-        $this->expectException(\moodle_exception::class);
-        setup_playercoin_drop::execute($this->instanceid, $othercourse->id, $item->id);
-
-        $this->assertEquals(
-            0,
-            $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid]),
-            'No drop must be created when courseid does not own the block instance.'
-        );
+        try {
+            setup_playercoin_drop::execute($this->instanceid, $othercourse->id, $item->id);
+            $this->fail('Expected an accessdenied exception for a course that does not own the instance.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('accessdenied', $e->errorcode);
+            $this->assertEquals(
+                0,
+                $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid]),
+                'No drop must be created when courseid does not own the block instance.'
+            );
+        }
     }
 
     /**
