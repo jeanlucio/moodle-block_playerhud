@@ -1173,9 +1173,9 @@ final class quest_test extends advanced_testcase {
     }
 
     /**
-     * has_claimable_quests resolves item, trade and chapter requirements.
+     * has_claimable_quests resolves a unique-items requirement.
      */
-    public function test_has_claimable_quests_item_trade_chapter(): void {
+    public function test_has_claimable_quests_unique_items(): void {
         global $DB;
         $user = $this->getDataGenerator()->create_user();
 
@@ -1195,6 +1195,44 @@ final class quest_test extends advanced_testcase {
         $this->assertTrue(
             quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 0, 1)
         );
+    }
+
+    /**
+     * has_claimable_quests resolves a trades requirement: not claimable before the trade is done,
+     * claimable right after, and a trade of another instance does not count.
+     */
+    public function test_has_claimable_quests_trades(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $this->create_quest(quest::TYPE_TRADES, '1', 50);
+        $trade = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Swap', 'groupid' => 0, 'onetime' => 0,
+            'timecreated' => time(),
+        ]);
+
+        $this->assertFalse(quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 0, 1));
+
+        $this->log_trade($user->id, $trade, 1);
+        $this->assertTrue(quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 0, 1));
+    }
+
+    /**
+     * has_claimable_quests resolves a chapter requirement from the player's completed chapters.
+     */
+    public function test_has_claimable_quests_chapter(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $this->create_quest(quest::TYPE_CHAPTER, '7', 50);
+
+        $this->assertFalse(quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 0, 1));
+
+        $DB->insert_record('block_playerhud_rpg_progress', (object) [
+            'blockinstanceid' => $this->instanceid, 'userid' => $user->id, 'classid' => 0, 'karma' => 0,
+            'completed_chapters' => json_encode([7]), 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $this->assertTrue(quest::has_claimable_quests($this->instanceid, $user->id, $this->course->id, 0, 1));
     }
 
     /**
