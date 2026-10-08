@@ -52,6 +52,7 @@
                 "id": 1,
                 "counter": 1,
                 "name": "Library",
+                "name_plain": "Library",
                 "is_infinite": false,
                 "maxusage": 5,
                 "value": 1,
@@ -166,7 +167,7 @@
                     <tr>
                         <td class="ph-col-select">
                             <input type="checkbox" name="bulk_ids[]" value="{{id}}" id="chk-{{id}}"
-                                class="form-check-input ph-bulk-check" aria-label="{{str_select}} {{name}}">
+                                class="form-check-input ph-bulk-check" aria-label="{{str_select}} {{name_plain}}">
                         </td>
                         <td class="align-middle text-muted small">{{counter}}</td>
                         <td class="align-middle fw-bold">{{{name}}}</td>
@@ -199,26 +200,26 @@
                                         data-action="copytoclipboard"
                                         data-clipboard-target="#ph-cp-{{display_code}}"
                                         title="{{str_quick_copy}}"
-                                        aria-label="{{str_quick_copy}} {{name}}">
+                                        aria-label="{{str_quick_copy}} {{name_plain}}">
                                     <i class="fa fa-copy" aria-hidden="true"></i> {{str_quick_copy}}
                                 </button>
 
                                 <button type="button" class="btn btn-outline-dark btn-sm js-open-gen-modal shadow-sm"
                                         data-dropcode="{{display_code}}"
                                         title="{{str_gen_title}}"
-                                        aria-label="{{str_gen_title}} {{name}}">
+                                        aria-label="{{str_gen_title}} {{name_plain}}">
                                     <i class="fa fa-magic" aria-hidden="true"></i> {{str_gen_title}}
                                 </button>
                             </div>
                         </td>
 
                         <td class="align-middle text-end text-nowrap">
-                            <a href="{{url_edit}}" class="btn btn-sm btn-primary me-1 shadow-sm" aria-label="{{str_edit}} {{name}}">
+                            <a href="{{url_edit}}" class="btn btn-sm btn-primary me-1 shadow-sm" aria-label="{{str_edit}} {{name_plain}}">
                                 <i class="fa fa-pencil" aria-hidden="true"></i>
                                 <span class="d-none d-xl-inline ms-1">{{str_edit}}</span>
                             </a>
                             <a href="{{url_delete}}" class="btn btn-sm btn-danger shadow-sm js-delete-btn"
-                               aria-label="{{str_delete}} {{name}}" data-confirm-msg="{{confirm_msg}}">
+                               aria-label="{{str_delete}} {{name_plain}}" data-confirm-msg="{{confirm_msg}}">
                                 <i class="fa fa-trash" aria-hidden="true"></i>
                                 <span class="d-none d-xl-inline ms-1">{{str_delete}}</span>
                             </a>

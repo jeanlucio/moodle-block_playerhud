@@ -155,18 +155,25 @@ final class player_screens_escaping_test extends escaping_testcase {
     }
 
     /**
-     * The drops page of an item shows the item name in its heading once-escaped.
+     * The drops page of an item shows the item name in its heading and the drop name in its labels once-escaped.
      *
      * @dataProvider striptags_provider
      * @param int $striptags Value of formatstringstriptags.
      */
     public function test_drops_page_escapes_item_name_once(int $striptags): void {
+        global $DB;
+
         set_config('formatstringstriptags', $striptags);
         $_GET['instanceid'] = $this->blockid;
         $_GET['id'] = $this->course->id;
         $_GET['itemid'] = $this->create_item();
+        $now = time();
+        $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $this->blockid, 'itemid' => $_GET['itemid'], 'name' => self::CANARY, 'maxusage' => 1,
+            'value' => 0, 'respawntime' => 0, 'code' => 'DRP123', 'timecreated' => $now, 'timemodified' => $now,
+        ]);
 
-        $this->assert_escaped_once((new drops())->view_manage_page());
+        $this->assert_escaped_once((new drops())->view_manage_page(), 'none');
     }
 
     /**

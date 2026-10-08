@@ -185,6 +185,7 @@ class drops {
                     'id' => $drop->id,
                     'counter' => $counter++,
                     'name' => format_text($drop->name, FORMAT_HTML, ['context' => $coursecontext]),
+                    'name_plain' => \block_playerhud\utils::plain_string($drop->name),
                     'is_infinite' => ($drop->maxusage == 0),
                     'maxusage' => $drop->maxusage,
                     'value' => $drop->value,
