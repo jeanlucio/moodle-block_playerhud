@@ -218,6 +218,24 @@ final class manage_entry_points_test extends advanced_testcase {
     }
 
     /**
+     * Asserts the user received nothing, in either storage generation of the item engine.
+     *
+     * Collection grants through the stack ledger (block_playerhud_stack and its log), and the
+     * legacy inventory table is no longer written by it, so checking the inventory alone passes
+     * whether or not the item was granted.
+     *
+     * @param int $userid The user.
+     * @return void
+     */
+    private function assert_nothing_granted(int $userid): void {
+        global $DB;
+
+        $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $userid]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_stack', ['userid' => $userid]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_stack_log', ['userid' => $userid]));
+    }
+
+    /**
      * Runs a controller callable that is expected to end in a redirect, and asserts it did.
      *
      * @param callable $action The controller call to run.
@@ -673,7 +691,7 @@ final class manage_entry_points_test extends advanced_testcase {
 
         $this->assert_redirects(fn() => (new collect())->execute());
 
-        $this->assertFalse($DB->record_exists('block_playerhud_inventory', ['userid' => $student->id]));
+        $this->assert_nothing_granted((int) $student->id);
     }
 
     /**
@@ -720,7 +738,7 @@ final class manage_entry_points_test extends advanced_testcase {
 
         $this->assert_redirects(fn() => (new collect())->execute());
 
-        $this->assertFalse($DB->record_exists('block_playerhud_inventory', ['userid' => $student->id]));
+        $this->assert_nothing_granted((int) $student->id);
     }
 
     // Class and trade edit forms — the guards reached before any submission.
@@ -1035,6 +1053,6 @@ final class manage_entry_points_test extends advanced_testcase {
             $this->assertSame('invalidsesskey', $e->errorcode);
         }
 
-        $this->assertFalse($DB->record_exists('block_playerhud_inventory', ['userid' => $student->id]));
+        $this->assert_nothing_granted((int) $student->id);
     }
 }

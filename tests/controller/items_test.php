@@ -292,6 +292,8 @@ final class items_test extends advanced_testcase {
             $this->fail('Expected a dml_missing_record_exception.');
         } catch (\dml_missing_record_exception $e) {
             $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+            $this->assertSame(0, $DB->count_records('block_playerhud_stack', ['userid' => $user->id]));
+            $this->assertSame(0, $DB->count_records('block_playerhud_stack_log', ['userid' => $user->id]));
         }
     }
 
@@ -314,6 +316,8 @@ final class items_test extends advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertSame('invaliduserid', $e->errorcode);
             $this->assertSame(0, $DB->count_records('block_playerhud_inventory', ['userid' => $user->id]));
+            $this->assertSame(0, $DB->count_records('block_playerhud_stack', ['userid' => $user->id]));
+            $this->assertSame(0, $DB->count_records('block_playerhud_stack_log', ['userid' => $user->id]));
             $this->assertSame(0, $DB->count_records('block_playerhud_user', ['userid' => $user->id]));
         }
     }
