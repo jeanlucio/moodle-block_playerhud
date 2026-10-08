@@ -64,25 +64,15 @@ class item_delete_confirm {
         string $dir,
         array $questimpact = []
     ): array {
-        $questrequirement = array_values(array_map(
-            static fn($quest) => ['name' => $quest->name],
-            $questimpact['requirement'] ?? []
-        ));
-        $questreward = array_values(array_map(
-            static fn($quest) => ['name' => $quest->name],
-            $questimpact['reward'] ?? []
-        ));
+        // Names are plain text with the string filters applied: the template escapes them once.
+        $plainname = static fn($record): array => ['name' => \block_playerhud\utils::plain_string($record->name)];
+        $questrequirement = array_values(array_map($plainname, $questimpact['requirement'] ?? []));
+        $questreward = array_values(array_map($plainname, $questimpact['reward'] ?? []));
 
         $orphanedcount = count($orphanedtrades);
 
-        $orphaned = [];
-        foreach ($orphanedtrades as $trade) {
-            $orphaned[] = ['name' => $trade->name];
-        }
-        $surviving = [];
-        foreach ($survivingtrades as $trade) {
-            $surviving[] = ['name' => $trade->name];
-        }
+        $orphaned = array_values(array_map($plainname, $orphanedtrades));
+        $surviving = array_values(array_map($plainname, $survivingtrades));
 
         // Only the bulk path posts the id list; the single path posts item_id.
         $bulkids = [];

@@ -77,10 +77,12 @@ class tab_config implements renderable, templatable {
         $totalitemsxp = $health->total_items_xp;
         $xpceiling = $health->xp_ceiling;
 
-        // Escape names for display; the helper returns raw values.
+        // Plain text with the string filters applied: the template escapes it once, and escaping
+        // here as well would show "&amp;" on the page.
+        $blockcontext = \context_block::instance($this->instanceid);
         $breakdownrows = [];
         foreach ($health->breakdown as $row) {
-            $row['name'] = s($row['name']);
+            $row['name'] = \block_playerhud\utils::plain_string($row['name'], $blockcontext);
             $breakdownrows[] = $row;
         }
 

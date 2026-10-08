@@ -365,4 +365,54 @@ final class utils_test extends advanced_testcase {
         $item->id = $DB->insert_record('block_playerhud_items', $item);
         return $item;
     }
+
+    /**
+     * Applies the "strip all tags from strings" site setting and refreshes the cached formatter.
+     *
+     * @param int $value 1 to strip tags (the default), 0 to run strings through the HTML cleaner.
+     */
+    private function set_strip_tags(int $value): void {
+        set_config('formatstringstriptags', $value);
+        \core\di::reset_container();
+    }
+
+    /**
+     * A name for a double-mustache template is plain text, whichever way the site formats strings:
+     * with the setting off, format_string() runs the text through the HTML cleaner and returns
+     * "&amp;" even when asked not to escape, which the template then escaped a second time.
+     */
+    public function test_plain_string_returns_unescaped_text_for_any_site_setting(): void {
+        foreach ([1, 0] as $striptags) {
+            $this->set_strip_tags($striptags);
+
+            $this->assertSame('Poção & Elixir', utils::plain_string('Poção & Elixir'), "striptags=$striptags");
+            $this->assertSame("O'Neil \"x\" < 3", utils::plain_string("O'Neil \"x\" < 3"), "striptags=$striptags");
+        }
+    }
+
+    /**
+     * String filters still apply (a multilang name resolves to one language) and any markup they
+     * or the stored value carry is removed, so only text is left.
+     */
+    public function test_plain_string_applies_filters_and_strips_markup(): void {
+        filter_set_global_state('multilang', TEXTFILTER_ON);
+        filter_set_applies_to_strings('multilang', true);
+        \filter_manager::reset_caches();
+        $multilang = '<span lang="en" class="multilang">Key</span><span lang="pt_br" class="multilang">Chave</span>';
+
+        foreach ([1, 0] as $striptags) {
+            $this->set_strip_tags($striptags);
+
+            $this->assertSame('Key', utils::plain_string($multilang), "striptags=$striptags");
+            $this->assertSame('bold', utils::plain_string('<b>bold</b>'), "striptags=$striptags");
+        }
+    }
+
+    /**
+     * Empty and null values give an empty string.
+     */
+    public function test_plain_string_handles_empty_values(): void {
+        $this->assertSame('', utils::plain_string(null));
+        $this->assertSame('', utils::plain_string(''));
+    }
 }

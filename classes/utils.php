@@ -257,6 +257,29 @@ class utils {
     }
 
     /**
+     * Returns a stored name or title as plain text, ready for a double-mustache template.
+     *
+     * The string filters (multilang, ...) are applied, then markup is stripped and entities are
+     * decoded so the template can escape the text exactly once. format_string() alone cannot do
+     * this: its result is HTML, and with the site setting "formatstringstriptags" off it goes
+     * through the HTML cleaner and carries "&amp;" even when asked not to escape.
+     *
+     * @param string|null $string The stored text.
+     * @param \context|null $context Context for the filters; defaults to the page context.
+     * @return string Plain text, unescaped.
+     */
+    public static function plain_string(?string $string, ?\context $context = null): string {
+        if ($string === null || $string === '') {
+            return '';
+        }
+
+        $options = $context === null ? [] : ['context' => $context];
+        $formatted = format_string($string, true, $options);
+
+        return html_entity_decode(strip_tags($formatted), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+
+    /**
      * Generates a unique drop code for a given block instance.
      *
      * Uses Moodle's random_string(6) (base-36, 2.17 billion combinations) and

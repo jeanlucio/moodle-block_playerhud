@@ -201,8 +201,9 @@ class tab_quests implements renderable {
                 'description_html'  => !empty($q->description)
                     ? format_text($q->description, FORMAT_HTML, ['filter' => false])
                     : '',
+                // Plain text for a title attribute: entities decoded, left unescaped for the template.
                 'description_plain' => !empty($q->description)
-                    ? s(strip_tags(format_text($q->description, FORMAT_HTML, ['filter' => false])))
+                    ? trim(html_to_text(format_text($q->description, FORMAT_HTML, ['filter' => false]), 0, false))
                     : '',
                 'image_todo'       => !empty($q->image_todo) ? $q->image_todo : '📋',
                 'image_done'       => !empty($q->image_done) ? $q->image_done : '🏅',

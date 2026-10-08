@@ -151,6 +151,43 @@ final class item_delete_confirm_test extends advanced_testcase {
     }
 
     /**
+     * Trade and quest names reach the template as plain text with the string filters applied
+     * (escaped once by the template): "&" stays "&" and a multilang name shows one language.
+     */
+    public function test_build_context_names_are_filtered_plain_text(): void {
+        $this->resetAfterTest();
+        filter_set_global_state('multilang', TEXTFILTER_ON);
+        filter_set_applies_to_strings('multilang', true);
+        \filter_manager::reset_caches();
+        $multilang = '<span lang="en" class="multilang">Key swap</span>'
+            . '<span lang="pt_br" class="multilang">Troca de chave</span>';
+
+        // The "strip all tags from strings" site setting changes how format_string() treats "&".
+        foreach ([1, 0] as $striptags) {
+            set_config('formatstringstriptags', $striptags);
+            \core\di::reset_container();
+
+            $ctx = item_delete_confirm::build_context(
+                'Gem',
+                [(object) ['name' => $multilang]],
+                [(object) ['name' => 'Poção & Elixir']],
+                $this->noimpact(),
+                false,
+                [5],
+                $this->urls(),
+                'id',
+                'DESC',
+                ['requirement' => [(object) ['name' => 'Tom & Jerry']], 'reward' => [(object) ['name' => $multilang]]]
+            );
+
+            $this->assertSame([['name' => 'Key swap']], $ctx['orphaned_trades']);
+            $this->assertSame([['name' => 'Poção & Elixir']], $ctx['surviving_trades']);
+            $this->assertSame([['name' => 'Tom & Jerry']], $ctx['quest_requirement_list']);
+            $this->assertSame([['name' => 'Key swap']], $ctx['quest_reward_list']);
+        }
+    }
+
+    /**
      * Without affected quests the quest blocks stay off.
      */
     public function test_build_context_without_quests_has_no_quest_impact(): void {

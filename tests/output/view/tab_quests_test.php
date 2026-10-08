@@ -188,6 +188,23 @@ final class tab_quests_test extends advanced_testcase {
     }
 
     /**
+     * The plain-text description in the info button title is escaped once by the template. It used
+     * to be escaped before as well, so an "&" in a description showed as "&amp;" in the tooltip.
+     */
+    public function test_display_escapes_the_description_tooltip_only_once(): void {
+        global $DB;
+
+        $questid = $this->create_always_completable_quest('Tooltip');
+        $DB->set_field('block_playerhud_quests', 'description', '<p>Tom &amp; Jerry</p>', ['id' => $questid]);
+
+        $tab = new tab_quests(new \stdClass(), $this->make_player(), $this->instanceid, $this->course->id);
+        $html = $tab->display();
+
+        $this->assertStringContainsString('title="Tom &amp; Jerry"', $html);
+        $this->assertStringNotContainsString('&amp;amp;', $html);
+    }
+
+    /**
      * get_type_label() maps every quest type constant to a non-placeholder label, and
      * falls back to '-' for an unrecognised type.
      */

@@ -89,4 +89,37 @@ final class item_disable_confirm_test extends advanced_testcase {
         $this->assertFalse($ctx['has_quest_reward']);
         $this->assertFalse($ctx['has_trades']);
     }
+
+    /**
+     * Quest and trade names are plain text with the string filters applied, so the template's own
+     * escaping is the only one.
+     */
+    public function test_build_context_names_are_filtered_plain_text(): void {
+        $this->resetAfterTest();
+        filter_set_global_state('multilang', TEXTFILTER_ON);
+        filter_set_applies_to_strings('multilang', true);
+        \filter_manager::reset_caches();
+        $multilang = '<span lang="en" class="multilang">Key swap</span>'
+            . '<span lang="pt_br" class="multilang">Troca de chave</span>';
+
+        // The "strip all tags from strings" site setting changes how format_string() treats "&".
+        foreach ([1, 0] as $striptags) {
+            set_config('formatstringstriptags', $striptags);
+            \core\di::reset_container();
+
+            $ctx = item_disable_confirm::build_context(
+                'Gem',
+                ['requirement' => [(object) ['name' => 'Tom & Jerry']], 'reward' => [(object) ['name' => $multilang]]],
+                [(object) ['name' => 'Poção & Elixir']],
+                5,
+                ['form' => 'f', 'cancel' => 'c'],
+                'id',
+                'DESC'
+            );
+
+            $this->assertSame([['name' => 'Tom & Jerry']], $ctx['quest_requirement_list']);
+            $this->assertSame([['name' => 'Key swap']], $ctx['quest_reward_list']);
+            $this->assertSame([['name' => 'Poção & Elixir']], $ctx['trades_list']);
+        }
+    }
 }

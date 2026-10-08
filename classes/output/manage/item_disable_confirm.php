@@ -57,8 +57,9 @@ class item_disable_confirm {
         string $sort,
         string $dir
     ): array {
+        // Names are plain text with the string filters applied: the template escapes them once.
         $names = static fn(array $records): array => array_values(array_map(
-            static fn($record) => ['name' => $record->name],
+            static fn($record) => ['name' => \block_playerhud\utils::plain_string($record->name)],
             $records
         ));
         $requirement = $names($questimpact['requirement'] ?? []);
