@@ -449,6 +449,7 @@ class wizard {
         self::rollback_quests($idsbytable['block_playerhud_quests'] ?? [], $blockinstanceid);
         self::rollback_items($idsbytable['block_playerhud_items'] ?? [], $blockinstanceid, $context);
         self::rollback_chapters($idsbytable['block_playerhud_chapters'] ?? [], $blockinstanceid);
+        self::rollback_classes($idsbytable['block_playerhud_classes'] ?? [], $blockinstanceid, $context);
 
         // Defensive sweep for the pure child rows the cascades above normally remove
         // already (trade req/reward, story node/choice, drop). Deleting an id that is
@@ -469,7 +470,13 @@ class wizard {
         // Safety net: any other recorded table a future module might add falls back to a
         // raw delete, so nothing the run created is ever left behind.
         $handled = array_merge(
-            ['block_playerhud_items', 'block_playerhud_quests', 'block_playerhud_trades', 'block_playerhud_chapters'],
+            [
+                'block_playerhud_items',
+                'block_playerhud_quests',
+                'block_playerhud_trades',
+                'block_playerhud_chapters',
+                'block_playerhud_classes',
+            ],
             $childtables
         );
         foreach ($idsbytable as $table => $ids) {
@@ -562,5 +569,39 @@ class wizard {
         }
 
         \block_playerhud\controller\chapters::bulk_delete_chapters($chapterids, $instanceid);
+    }
+
+    /**
+     * Deletes the RPG classes a run created through the class controller.
+     *
+     * The controller also removes the portraits uploaded for each tier, which a raw DELETE would
+     * leave in the file area with no owner. A class the teacher already deleted is skipped, so it
+     * cannot stop the rest of the undo.
+     *
+     * @param int[] $classids Recorded class IDs.
+     * @param int $instanceid The owning block instance ID.
+     * @param \context_block $context The block context holding the portraits.
+     * @return void
+     */
+    private static function rollback_classes(array $classids, int $instanceid, \context_block $context): void {
+        global $DB;
+
+        if (empty($classids)) {
+            return;
+        }
+
+        [$insql, $params] = $DB->get_in_or_equal($classids, SQL_PARAMS_NAMED);
+        $params['instanceid'] = $instanceid;
+        $existing = $DB->get_fieldset_select(
+            'block_playerhud_classes',
+            'id',
+            "id $insql AND blockinstanceid = :instanceid",
+            $params
+        );
+
+        $controller = new \block_playerhud\controller\classes();
+        foreach ($existing as $classid) {
+            $controller->delete_class((int) $classid, $instanceid, $context);
+        }
     }
 }

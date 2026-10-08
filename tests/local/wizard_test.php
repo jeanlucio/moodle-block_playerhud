@@ -125,6 +125,47 @@ final class wizard_test extends advanced_testcase {
     }
 
     /**
+     * Undoing a run removes the RPG classes it created the way deleting them by hand does: the
+     * portraits uploaded for each tier go with the class instead of staying behind in the file
+     * area with no owner. A class the teacher already deleted must not stop the undo.
+     */
+    public function test_rollback_deletes_classes_and_their_portraits(): void {
+        global $DB, $USER;
+
+        $classid = (int) $DB->insert_record('block_playerhud_classes', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Mago', 'description' => '', 'base_hp' => 80,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $goneid = (int) $DB->insert_record('block_playerhud_classes', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Já apagada', 'description' => '', 'base_hp' => 80,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $context = \context_block::instance($this->instanceid);
+        $fs = get_file_storage();
+        foreach ([1, 3] as $tier) {
+            $fs->create_file_from_string([
+                'contextid' => $context->id, 'component' => 'block_playerhud', 'filearea' => 'class_image_' . $tier,
+                'itemid' => $classid, 'filepath' => '/', 'filename' => "tier{$tier}.png",
+            ], 'portrait bytes');
+        }
+
+        $runid = wizard::start_run($this->instanceid, (int) $USER->id, ['rpg']);
+        wizard::record_objects($runid, 'block_playerhud_classes', [$classid, $goneid]);
+        wizard::finish_run($runid, 'done');
+        $DB->delete_records('block_playerhud_classes', ['id' => $goneid]);
+
+        wizard::rollback($runid, $this->instanceid, $this->courseid);
+
+        $this->assertFalse($DB->record_exists('block_playerhud_classes', ['id' => $classid]));
+        $orphans = 0;
+        foreach ([1, 2, 3, 4, 5] as $tier) {
+            $orphans += count($fs->get_area_files($context->id, 'block_playerhud', 'class_image_' . $tier, $classid, 'id', false));
+        }
+        $this->assertSame(0, $orphans, 'No portrait of a rolled-back class may remain.');
+        $this->assertSame('rolledback', $DB->get_field('block_playerhud_wizard_runs', 'status', ['id' => $runid]));
+    }
+
+    /**
      * Rollback deletes recorded trades and chapters through their bulk_delete_* paths —
      * regression test for the performance-audit finding: before it, rollback_trades()/
      * rollback_chapters() called delete_trade()/delete_chapter() once per row; this exercises
