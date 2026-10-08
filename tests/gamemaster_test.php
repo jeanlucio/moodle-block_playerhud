@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Game Master actions and XP recalculation tests.
+ * Tests for the game master actions and their effect on the leaderboard.
  *
  * @package    block_playerhud
  * @category   test
@@ -26,297 +26,242 @@
 namespace block_playerhud;
 
 use advanced_testcase;
+use block_playerhud\controller\items;
+use block_playerhud\controller\quests;
+use context_block;
 
 /**
- * Class gamemaster_test.
+ * The ranking breaks ties by the earliest time a player reached their XP, so a game master
+ * correcting a student's XP downwards (revoking an item, deleting an item or a quest) must not
+ * move that date, while a grant, being new progress, does. These tests drive the real controller
+ * actions the management panel calls.
  *
- * Tests for granting items, revoking items, and preserving leaderboard timestamps.
- *
- * @package block_playerhud
- * @coversNothing
+ * @package    block_playerhud
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \block_playerhud\controller\items
+ * @covers     \block_playerhud\controller\quests
  */
 final class gamemaster_test extends advanced_testcase {
+    /** @var int Block instance ID. */
+    private int $instanceid;
+
+    /** @var int Course ID the block belongs to. */
+    private int $courseid;
+
+    /** @var int Time the seeded player reached their XP: five days ago. */
+    private int $reachedat;
+
     /**
-     * Setup test environment.
+     * Creates a course with a block instance.
      */
-    public function setUp(): void {
+    protected function setUp(): void {
         parent::setUp();
+        global $DB;
+
         $this->resetAfterTest(true);
+        $course = $this->getDataGenerator()->create_course();
+        $this->courseid = (int) $course->id;
+        $this->instanceid = (int) $DB->insert_record('block_instances', (object) [
+            'blockname'         => 'playerhud',
+            'parentcontextid'   => \context_course::instance($course->id)->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern'   => 'course-view-*',
+            'subpagepattern'    => null,
+            'defaultregion'     => 'side-pre',
+            'defaultweight'     => 0,
+            'configdata'        => base64_encode(serialize(new \stdClass())),
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ]);
+        $this->reachedat = time() - (5 * DAYSECS);
     }
 
     /**
-     * Test granting an item to a user.
-     * Expected: Inventory is created, XP increases, timemodified is updated to NOW.
+     * Enrols a user and gives them a player row that reached the given XP five days ago.
+     *
+     * @param int $xp The player's XP.
+     * @return \stdClass The user.
      */
-    public function test_grant_item_updates_xp_and_date(): void {
+    private function make_player(int $xp): \stdClass {
         global $DB;
 
-        // 1. Setup: Create course, user, and fake block instance.
         $user = $this->getDataGenerator()->create_user();
-        $instanceid = 1; // Fake block instance.
+        $this->getDataGenerator()->enrol_user($user->id, $this->courseid);
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'userid'          => $user->id,
+            'currentxp'       => $xp,
+            'timecreated'     => $this->reachedat,
+            'timemodified'    => $this->reachedat,
+        ]);
 
-        // Create player with 0 XP and an old date.
-        $pastdate = time() - 86400; // Yesterday.
-        $player = new \stdClass();
-        $player->blockinstanceid = $instanceid;
-        $player->userid = $user->id;
-        $player->currentxp = 0;
-        $player->timecreated = $pastdate;
-        $player->timemodified = $pastdate;
-        $DB->insert_record('block_playerhud_user', $player);
+        return $user;
+    }
 
-        // Create an item worth 100 XP.
-        $item = new \stdClass();
-        $item->blockinstanceid = $instanceid;
-        $item->name = 'Test Sword';
-        $item->xp = 100;
-        $item->timecreated = time();
-        $item->timemodified = time();
-        $itemid = $DB->insert_record('block_playerhud_items', $item);
+    /**
+     * Creates an item of this instance.
+     *
+     * @param int $xp XP the item awards.
+     * @return int The item ID.
+     */
+    private function make_item(int $xp): int {
+        global $DB;
 
-        // 2. Action: Simulate grant_item from manage.php.
-        $now = time();
-        $newinv = new \stdClass();
-        $newinv->userid = $user->id;
-        $newinv->itemid = $itemid;
-        $newinv->dropid = 0;
-        $newinv->source = 'teacher';
-        $newinv->timecreated = $now;
-        $DB->insert_record('block_playerhud_inventory', $newinv);
+        return (int) $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid,
+            'name'            => 'Shield',
+            'xp'              => $xp,
+            'enabled'         => 1,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+    }
 
-        $dbplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $dbplayer->currentxp += $item->xp;
-        $dbplayer->timemodified = $now;
-        $DB->update_record('block_playerhud_user', $dbplayer);
+    /**
+     * Gives a user a legacy inventory copy that was worth the given XP.
+     *
+     * @param int $userid The holder.
+     * @param int $itemid The item.
+     * @param int $xp XP recorded for this copy.
+     * @return int The inventory row ID.
+     */
+    private function give_copy(int $userid, int $itemid, int $xp): int {
+        global $DB;
 
-        // 3. Assertions (Validations).
-        $updatedplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $inventory = $DB->get_records('block_playerhud_inventory', ['userid' => $user->id]);
+        return (int) $DB->insert_record('block_playerhud_inventory', (object) [
+            'userid'      => $userid,
+            'itemid'      => $itemid,
+            'dropid'      => 0,
+            'source'      => 'map',
+            'timecreated' => $this->reachedat,
+            'xpawarded'   => $xp,
+        ]);
+    }
 
-        $this->assertEquals(100, $updatedplayer->currentxp, 'XP should have increased to 100.');
-        $this->assertGreaterThan(
-            $pastdate,
-            $updatedplayer->timemodified,
-            'The timemodified date should have been updated to the exact time of the grant.'
+    /**
+     * Reads a player's XP and last-progress date.
+     *
+     * @param int $userid The user.
+     * @return \stdClass Row with currentxp and timemodified.
+     */
+    private function player(int $userid): \stdClass {
+        global $DB;
+
+        return $DB->get_record('block_playerhud_user', [
+            'blockinstanceid' => $this->instanceid, 'userid' => $userid,
+        ], 'currentxp, timemodified', MUST_EXIST);
+    }
+
+    /**
+     * A grant is new progress: it adds the item's XP and moves the date forward.
+     */
+    public function test_grant_item_adds_xp_and_moves_the_date(): void {
+        $user = $this->make_player(100);
+        $itemid = $this->make_item(50);
+
+        items::grant_item($itemid, (int) $user->id, $this->instanceid);
+
+        $player = $this->player((int) $user->id);
+        $this->assertSame(150, (int) $player->currentxp);
+        $this->assertGreaterThan($this->reachedat, (int) $player->timemodified);
+    }
+
+    /**
+     * Revoking a copy takes its XP back but leaves the date the player reached their XP alone, so
+     * the tie-breaker is not broken by a correction.
+     */
+    public function test_revoke_item_deducts_xp_and_keeps_the_date(): void {
+        global $DB;
+
+        $user = $this->make_player(500);
+        $invid = $this->give_copy((int) $user->id, $this->make_item(200), 200);
+
+        $this->assertTrue(items::revoke_item($invid, $this->instanceid));
+
+        $player = $this->player((int) $user->id);
+        $this->assertSame(300, (int) $player->currentxp);
+        $this->assertSame($this->reachedat, (int) $player->timemodified);
+        $this->assertSame('revoked', $DB->get_field('block_playerhud_inventory', 'source', ['id' => $invid]));
+    }
+
+    /**
+     * A revoke worth more than the player's XP stops at zero.
+     */
+    public function test_revoke_item_never_makes_xp_negative(): void {
+        $user = $this->make_player(100);
+        $invid = $this->give_copy((int) $user->id, $this->make_item(300), 300);
+
+        items::revoke_item($invid, $this->instanceid);
+
+        $this->assertSame(0, (int) $this->player((int) $user->id)->currentxp);
+    }
+
+    /**
+     * Deleting an item takes back the XP its holders earned from it, without moving their date.
+     */
+    public function test_delete_item_takes_back_xp_and_keeps_the_date(): void {
+        global $DB;
+
+        $user = $this->make_player(500);
+        $itemid = $this->make_item(200);
+        $this->give_copy((int) $user->id, $itemid, 200);
+
+        items::delete_item(
+            $DB->get_record('block_playerhud_items', ['id' => $itemid], '*', MUST_EXIST),
+            $this->instanceid,
+            context_block::instance($this->instanceid)
         );
-        $this->assertCount(1, $inventory, 'There should be 1 item in the inventory.');
-        $this->assertEquals('teacher', reset($inventory)->source, 'The item source must be from the teacher.');
+
+        $player = $this->player((int) $user->id);
+        $this->assertSame(300, (int) $player->currentxp);
+        $this->assertSame($this->reachedat, (int) $player->timemodified);
     }
 
     /**
-     * Test revoking an item from a user.
-     * Expected: Item status becomes 'revoked', XP decreases, timemodified remains UNCHANGED.
+     * The same for a bulk deletion of several items.
      */
-    public function test_revoke_item_preserves_leaderboard_date(): void {
+    public function test_bulk_delete_items_takes_back_xp_and_keeps_the_date(): void {
         global $DB;
 
-        // 1. Setup.
-        $user = $this->getDataGenerator()->create_user();
-        $instanceid = 1;
+        $user = $this->make_player(500);
+        $first = $this->make_item(100);
+        $second = $this->make_item(150);
+        $this->give_copy((int) $user->id, $first, 100);
+        $this->give_copy((int) $user->id, $second, 150);
 
-        // Player reached 500 XP 5 days ago.
-        $fivedaysago = time() - (5 * 86400);
-        $player = new \stdClass();
-        $player->blockinstanceid = $instanceid;
-        $player->userid = $user->id;
-        $player->currentxp = 500;
-        $player->timecreated = $fivedaysago;
-        $player->timemodified = $fivedaysago;
-        $DB->insert_record('block_playerhud_user', $player);
-
-        // 200 XP item that the student already owns.
-        $item = new \stdClass();
-        $item->blockinstanceid = $instanceid;
-        $item->name = 'Stolen Shield';
-        $item->xp = 200;
-        $item->timecreated = time();
-        $item->timemodified = time();
-        $itemid = $DB->insert_record('block_playerhud_items', $item);
-
-        $inv = new \stdClass();
-        $inv->userid = $user->id;
-        $inv->itemid = $itemid;
-        $inv->source = 'map';
-        $inv->timecreated = $fivedaysago;
-        $invid = $DB->insert_record('block_playerhud_inventory', $inv);
-
-        // 2. Action: Simulate revoke_item from manage.php (Soft Revoke).
-        $dbplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $dbplayer->currentxp = max(0, $dbplayer->currentxp - $item->xp);
-
-        // NOTE: We intentionally DO NOT update dbplayer->timemodified.
-        $DB->update_record('block_playerhud_user', $dbplayer);
-
-        $dbinv = $DB->get_record('block_playerhud_inventory', ['id' => $invid]);
-        $dbinv->source = 'revoked';
-        $dbinv->timecreated = time();
-        $DB->update_record('block_playerhud_inventory', $dbinv);
-
-        // 3. Assertions (Crucial Validations).
-        $updatedplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $updatedinv = $DB->get_record('block_playerhud_inventory', ['id' => $invid]);
-
-        $this->assertEquals(300, $updatedplayer->currentxp, 'XP should have dropped from 500 to 300.');
-        $this->assertEquals(
-            $fivedaysago,
-            $updatedplayer->timemodified,
-            'CATASTROPHIC: The timemodified date was changed! The tie-breaker criterion was broken.'
+        items::bulk_delete_items(
+            $DB->get_records_list('block_playerhud_items', 'id', [$first, $second]),
+            $this->instanceid,
+            context_block::instance($this->instanceid)
         );
-        $this->assertEquals('revoked', $updatedinv->source, 'The item status should be Soft Revoke (revoked).');
+
+        $player = $this->player((int) $user->id);
+        $this->assertSame(250, (int) $player->currentxp);
+        $this->assertSame($this->reachedat, (int) $player->timemodified);
     }
 
     /**
-     * Test XP does not drop below zero when deleting items.
+     * Deleting a quest takes back the XP it paid out, without moving the date.
      */
-    public function test_xp_never_negative_on_revoke(): void {
+    public function test_delete_quest_takes_back_xp_and_keeps_the_date(): void {
         global $DB;
 
-        // 1. Setup: Player with 50 XP.
-        $user = $this->getDataGenerator()->create_user();
-        $instanceid = 1;
-        $pastdate = time() - 3600;
+        $user = $this->make_player(500);
+        $questid = (int) $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Quest', 'description' => '', 'type' => 2,
+            'requirement' => '1', 'req_itemid' => 0, 'reward_xp' => 120, 'reward_itemid' => 0,
+            'reward_itemqty' => 1, 'required_class_id' => '0', 'image_todo' => '', 'image_done' => '',
+            'enabled' => 1, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_quest_log', (object) [
+            'questid' => $questid, 'userid' => $user->id, 'xpawarded' => 120, 'timecreated' => $this->reachedat,
+        ]);
 
-        $player = new \stdClass();
-        $player->blockinstanceid = $instanceid;
-        $player->userid = $user->id;
-        $player->currentxp = 50;
-        $player->timecreated = $pastdate;
-        $player->timemodified = $pastdate;
-        $DB->insert_record('block_playerhud_user', $player);
+        $this->assertTrue(quests::delete_quest($questid, $this->instanceid));
 
-        // Item is worth 100 XP (more than the player currently has).
-        $item = new \stdClass();
-        $item->blockinstanceid = $instanceid;
-        $item->name = 'Glitched Item';
-        $item->xp = 100;
-        $item->timecreated = time();
-        $item->timemodified = time();
-
-        // 2. Action: Remove 100 XP from the player.
-        $dbplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $dbplayer->currentxp = max(0, $dbplayer->currentxp - $item->xp);
-        $DB->update_record('block_playerhud_user', $dbplayer);
-
-        // 3. Assertions.
-        $updatedplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $this->assertEquals(0, $updatedplayer->currentxp, 'XP cannot be negative. It should have been capped at 0.');
-    }
-
-    /**
-     * Test Hard Delete (single item).
-     * Expected: Total XP from all instances of the item is deducted, timemodified remains UNCHANGED.
-     */
-    public function test_hard_delete_item_preserves_date(): void {
-        global $DB;
-
-        // 1. Setup.
-        $user = $this->getDataGenerator()->create_user();
-        $instanceid = 1;
-        $olddate = time() - (10 * 86400); // 10 days ago.
-
-        // Player with 1000 XP.
-        $player = new \stdClass();
-        $player->blockinstanceid = $instanceid;
-        $player->userid = $user->id;
-        $player->currentxp = 1000;
-        $player->timecreated = $olddate;
-        $player->timemodified = $olddate;
-        $DB->insert_record('block_playerhud_user', $player);
-
-        // 200 XP item.
-        $item = new \stdClass();
-        $item->blockinstanceid = $instanceid;
-        $item->name = 'Deleted Potion';
-        $item->xp = 200;
-        $item->timecreated = time();
-        $item->timemodified = time();
-        $itemid = $DB->insert_record('block_playerhud_items', $item);
-
-        // Student collected this item 2 times (earned 400 XP from it).
-        $qtd = 2;
-
-        // 2. Action: Simulate the exact logic of the 'delete' action in manage.php.
-        $dbplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $xptoremove = $item->xp * $qtd;
-        $dbplayer->currentxp = max(0, $dbplayer->currentxp - $xptoremove);
-
-        // NOTE: We intentionally DO NOT update dbplayer->timemodified.
-        $DB->update_record('block_playerhud_user', $dbplayer);
-
-        // 3. Assertions.
-        $updatedplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $this->assertEquals(600, $updatedplayer->currentxp, 'XP should have dropped from 1000 to 600.');
-        $this->assertEquals($olddate, $updatedplayer->timemodified, 'Item deletion altered the tie-breaker date!');
-    }
-
-    /**
-     * Test Bulk Delete (multiple items).
-     * Expected: Sum of XP from all deleted items is deducted, timemodified remains UNCHANGED.
-     */
-    public function test_bulk_delete_items_preserves_date(): void {
-        global $DB;
-
-        // 1. Setup.
-        $user = $this->getDataGenerator()->create_user();
-        $olddate = time() - 3600; // 1 hour ago.
-
-        $player = new \stdClass();
-        $player->blockinstanceid = 1;
-        $player->userid = $user->id;
-        $player->currentxp = 800;
-        $player->timecreated = $olddate;
-        $player->timemodified = $olddate;
-        $DB->insert_record('block_playerhud_user', $player);
-
-        // 2. Action: Simulate 'bulk_delete' action (Multiple items summing 350 XP to remove).
-        $totalxptoremove = 350;
-
-        $dbplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $dbplayer->currentxp = max(0, $dbplayer->currentxp - $totalxptoremove);
-        $DB->update_record('block_playerhud_user', $dbplayer);
-
-        // 3. Assertions.
-        $updatedplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $this->assertEquals(450, $updatedplayer->currentxp, 'XP should have dropped from 800 to 450.');
-        $this->assertEquals($olddate, $updatedplayer->timemodified, 'Bulk deletion altered the tie-breaker date!');
-    }
-
-    /**
-     * Test Delete Quest/Raid.
-     * Expected: Quest XP * completions is deducted, timemodified remains UNCHANGED.
-     */
-    public function test_delete_quest_preserves_date(): void {
-        global $DB;
-
-        // 1. Setup.
-        $user = $this->getDataGenerator()->create_user();
-        $olddate = time() - 86400; // 1 day ago.
-
-        $player = new \stdClass();
-        $player->blockinstanceid = 1;
-        $player->userid = $user->id;
-        $player->currentxp = 2000;
-        $player->timecreated = $olddate;
-        $player->timemodified = $olddate;
-        $DB->insert_record('block_playerhud_user', $player);
-
-        // 500 XP quest completed 1 time.
-        $questrewardxp = 500;
-        $completions = 1;
-
-        // 2. Action: Simulate 'delete_quest' action.
-        $dbplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $xptoremove = $questrewardxp * $completions;
-        $dbplayer->currentxp = max(0, $dbplayer->currentxp - $xptoremove);
-        $DB->update_record('block_playerhud_user', $dbplayer);
-
-        // 3. Assertions.
-        $updatedplayer = $DB->get_record('block_playerhud_user', ['userid' => $user->id]);
-        $this->assertEquals(
-            1500,
-            $updatedplayer->currentxp,
-            'The quest XP (500) should have been subtracted from the original 2000.'
-        );
-        $this->assertEquals($olddate, $updatedplayer->timemodified, 'Deleting the quest altered the tie-breaker date!');
+        $player = $this->player((int) $user->id);
+        $this->assertSame(380, (int) $player->currentxp);
+        $this->assertSame($this->reachedat, (int) $player->timemodified);
     }
 }

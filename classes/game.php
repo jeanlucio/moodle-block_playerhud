@@ -144,6 +144,10 @@ class game {
      * new total is floored at 0; the event carries the delta actually applied
      * (new - old), which differs from $delta only when the floor clamps a loss.
      *
+     * Only a gain advances the player's timemodified, the tie-breaker of the ranking (the
+     * earliest to reach an XP wins). A loss is a correction by the game master, so the player
+     * keeps the date they reached their XP instead of falling behind everyone they tied with.
+     *
      * @param \stdClass $player Player record (block_playerhud_user) with id, userid, currentxp.
      * @param int $delta Signed XP change (positive to award, negative to deduct).
      * @param int $instanceid Block instance ID (source of the event context and course).
@@ -160,7 +164,9 @@ class game {
         }
 
         $player->currentxp = $new;
-        $player->timemodified = time();
+        if ($applied > 0) {
+            $player->timemodified = time();
+        }
         $DB->update_record('block_playerhud_user', $player);
 
         $context = \context_block::instance($instanceid);
