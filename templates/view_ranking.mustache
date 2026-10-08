@@ -146,7 +146,7 @@
                                 <tr class="{{#is_me}}table-primary border-start border-primary border-4{{/is_me}}">
                                     <td class="text-center fw-bold lead">
                                         {{#medal_emoji}}
-                                            <span class="ph-rank-medal" role="img" aria-label="Rank {{rank}}">{{medal_emoji}}</span>
+                                            <span class="ph-rank-medal" role="img" aria-label="{{#str}} rank_position, block_playerhud, {{rank}} {{/str}}">{{medal_emoji}}</span>
                                         {{/medal_emoji}}
                                         {{^medal_emoji}}{{rank}}{{/medal_emoji}}
                                     </td>
@@ -233,7 +233,7 @@
                                 <tr class="{{#is_my_group}}table-info border-start border-info border-4{{/is_my_group}}">
                                     <td class="text-center fw-bold lead">
                                         {{#medal_emoji}}
-                                            <span class="ph-rank-medal" role="img" aria-label="Rank {{rank}}">{{medal_emoji}}</span>
+                                            <span class="ph-rank-medal" role="img" aria-label="{{#str}} rank_position, block_playerhud, {{rank}} {{/str}}">{{medal_emoji}}</span>
                                         {{/medal_emoji}}
                                         {{^medal_emoji}}{{rank}}{{/medal_emoji}}
                                     </td>
