@@ -60,10 +60,35 @@ final class wizard_rollback_test extends external_base_testcase {
     }
 
     /**
-     * A run ID belonging to a different block instance must never be rolled back through
-     * this entry point — the underlying wizard::rollback() enforces this by instanceid.
+     * A run that belongs to another existing block instance must never be rolled back through
+     * this entry point, even by a user who manages the instance they pass: the run is looked up
+     * by the instance the caller was authorised for, and the other instance's objects stay.
      */
-    public function test_wizard_rollback_rejects_mismatched_instance(): void {
+    public function test_wizard_rollback_rejects_a_run_of_another_instance(): void {
+        global $DB, $USER;
+
+        $otherinstance = $this->create_block_instance();
+        $otheritemid = $this->create_item($otherinstance, 'Foreign Wizard Item')->id;
+        $foreignrunid = wizard::start_run($otherinstance, (int) $USER->id, ['items']);
+        wizard::record_objects($foreignrunid, 'block_playerhud_items', [$otheritemid]);
+        wizard::finish_run($foreignrunid, 'done');
+
+        try {
+            wizard_rollback::execute($this->instanceid, $this->course->id, $foreignrunid);
+            $this->fail('Expected a dml_missing_record_exception for a run of another instance.');
+        } catch (\dml_missing_record_exception $e) {
+            $this->assertTrue($DB->record_exists('block_playerhud_items', ['id' => $otheritemid]));
+            $this->assertSame(
+                'done',
+                $DB->get_field('block_playerhud_wizard_runs', 'status', ['id' => $foreignrunid])
+            );
+        }
+    }
+
+    /**
+     * An instance id that does not exist is rejected as well, before anything else runs.
+     */
+    public function test_wizard_rollback_rejects_a_missing_instance(): void {
         global $USER;
 
         $runid = wizard::start_run($this->instanceid, (int) $USER->id, ['items']);
