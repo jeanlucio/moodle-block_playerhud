@@ -73,15 +73,6 @@ abstract class escaping_testcase extends advanced_testcase {
     }
 
     /**
-     * Provides both values of the site setting that changes what format_string() returns.
-     *
-     * @return array
-     */
-    public static function striptags_provider(): array {
-        return ['strip tags on' => [1], 'strip tags off' => [0]];
-    }
-
-    /**
      * Creates an item named with the canary.
      *
      * @param array $overrides Column values replacing the defaults.

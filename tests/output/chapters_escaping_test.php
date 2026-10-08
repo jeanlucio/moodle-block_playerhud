@@ -141,4 +141,13 @@ final class chapters_escaping_test extends escaping_testcase {
 
         $this->assert_escaped_once((new scenes())->view_manage_page(), 'none');
     }
+
+    /**
+     * Provides both values of the site setting that changes what format_string() returns.
+     *
+     * @return array
+     */
+    public static function striptags_provider(): array {
+        return ['strip tags on' => [1], 'strip tags off' => [0]];
+    }
 }

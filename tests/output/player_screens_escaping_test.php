@@ -278,4 +278,13 @@ final class player_screens_escaping_test extends escaping_testcase {
 
         $this->assertSame(self::CANARY, $DB->get_field('block_playerhud_drops', 'name', ['id' => $dropid]));
     }
+
+    /**
+     * Provides both values of the site setting that changes what format_string() returns.
+     *
+     * @return array
+     */
+    public static function striptags_provider(): array {
+        return ['strip tags on' => [1], 'strip tags off' => [0]];
+    }
 }

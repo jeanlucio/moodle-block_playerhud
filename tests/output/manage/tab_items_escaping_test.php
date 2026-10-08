@@ -106,4 +106,13 @@ final class tab_items_escaping_test extends escaping_testcase {
 
         $this->assert_escaped_once($this->render('render_distribute_view'));
     }
+
+    /**
+     * Provides both values of the site setting that changes what format_string() returns.
+     *
+     * @return array
+     */
+    public static function striptags_provider(): array {
+        return ['strip tags on' => [1], 'strip tags off' => [0]];
+    }
 }

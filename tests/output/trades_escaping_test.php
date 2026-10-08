@@ -91,4 +91,13 @@ final class trades_escaping_test extends escaping_testcase {
             $output->render_from_template('block_playerhud/tab_shop', $tab->export_for_template($output))
         );
     }
+
+    /**
+     * Provides both values of the site setting that changes what format_string() returns.
+     *
+     * @return array
+     */
+    public static function striptags_provider(): array {
+        return ['strip tags on' => [1], 'strip tags off' => [0]];
+    }
 }
