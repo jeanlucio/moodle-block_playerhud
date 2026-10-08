@@ -133,12 +133,15 @@ final class tab_quests_test extends advanced_testcase {
      * A completed, unclaimed quest is listed with a claim action.
      */
     public function test_display_lists_claimable_quest(): void {
-        $this->create_always_completable_quest('Reach the Summit');
+        $questid = $this->create_always_completable_quest('Reach the Summit');
         $tab = new tab_quests(new \stdClass(), $this->make_player(), $this->instanceid, $this->course->id);
 
         $html = $tab->display();
 
         $this->assertStringContainsString('Reach the Summit', $html);
+        // The claim link itself, not just the quest's name, is what makes it claimable.
+        $this->assertStringContainsString('action=claim_quest', $html);
+        $this->assertStringContainsString('questid=' . $questid, $html);
     }
 
     /**
@@ -158,6 +161,9 @@ final class tab_quests_test extends advanced_testcase {
         $html = $tab->display();
 
         $this->assertStringContainsString('Old Victory', $html);
+        // Claimed: shown as completed and offering no way to claim it again.
+        $this->assertStringContainsString(get_string('quest_status_completed', 'block_playerhud'), $html);
+        $this->assertStringNotContainsString('action=claim_quest', $html);
     }
 
     /**
