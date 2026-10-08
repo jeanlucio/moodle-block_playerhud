@@ -346,6 +346,31 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * The real-world case: a teacher whose role comes from a course enrolment, never from a system
+     * role. The hub accepts the capability in a course, so that teacher keeps the personal tier,
+     * and a student of the same course, who does not hold it, stays out.
+     */
+    public function test_hub_personal_key_follows_the_course_role_of_the_user(): void {
+        $this->require_hub();
+        set_config('enablepersonalkeys', 1, 'local_aihub');
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+
+        $this->setUser($teacher);
+        set_user_preference('local_aihub_gemini_key', 'AIza-teacher-personal');
+        [$gemini, , , , , $source] = $this->load_api_keys_for_current_user();
+        $this->assertSame('hub_personal', $source);
+        $this->assertSame('AIza-teacher-personal', $gemini);
+
+        $this->setUser($student);
+        set_user_preference('local_aihub_gemini_key', 'AIza-student-personal');
+        [$gemini, , , , , $source] = $this->load_api_keys_for_current_user();
+        $this->assertNotSame('hub_personal', $source);
+        $this->assertSame('', $gemini);
+    }
+
+    /**
      * When the administrator turns personal keys off, a key the user stored earlier must not be
      * used: the hub itself only reads it behind that switch, and this ladder skipped the check.
      */
