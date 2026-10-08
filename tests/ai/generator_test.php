@@ -308,6 +308,79 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * Runs the protected key ladder for the current user.
+     *
+     * @return array The ladder's result: [geminikey, groqkey, openaikey, openaiurl, openaimodel, keysource].
+     */
+    private function load_api_keys_for_current_user(): array {
+        $generator = new generator($this->instanceid);
+        $method = new \ReflectionMethod($generator, 'load_api_keys');
+        $method->setAccessible(true);
+
+        return $method->invoke($generator);
+    }
+
+    /**
+     * Skips the hub-dependent tests where local_aihub is not installed (the plugin does not
+     * require it).
+     */
+    private function require_hub(): void {
+        if (!class_exists(\local_aihub\local\keys::class)) {
+            $this->markTestSkipped('local_aihub is not installed.');
+        }
+    }
+
+    /**
+     * Control: with personal keys allowed, the hub's personal key is used (tier 2).
+     */
+    public function test_hub_personal_key_is_used_when_personal_keys_are_allowed(): void {
+        $this->require_hub();
+        set_config('enablepersonalkeys', 1, 'local_aihub');
+        $this->setAdminUser();
+        set_user_preference('local_aihub_gemini_key', 'AIza-hub-personal');
+
+        [$gemini, , , , , $source] = $this->load_api_keys_for_current_user();
+
+        $this->assertSame('hub_personal', $source);
+        $this->assertSame('AIza-hub-personal', $gemini);
+    }
+
+    /**
+     * When the administrator turns personal keys off, a key the user stored earlier must not be
+     * used: the hub itself only reads it behind that switch, and this ladder skipped the check.
+     */
+    public function test_hub_personal_key_is_ignored_when_the_admin_disables_personal_keys(): void {
+        $this->require_hub();
+        set_config('enablepersonalkeys', 0, 'local_aihub');
+        $this->setAdminUser();
+        set_user_preference('local_aihub_gemini_key', 'AIza-hub-personal');
+        set_user_preference('local_aihub_openai_url', 'https://hub-personal.example.com/v1');
+        set_user_preference('local_aihub_openai_model', 'hub-personal-model');
+
+        [$gemini, $groq, $openai, $url, $model, $source] = $this->load_api_keys_for_current_user();
+
+        $this->assertNotSame('hub_personal', $source);
+        $this->assertSame('', $gemini);
+        $this->assertNotSame('https://hub-personal.example.com/v1', $url);
+        $this->assertNotSame('hub-personal-model', $model);
+    }
+
+    /**
+     * Same when the switch is on but the user has lost the capability to use personal keys.
+     */
+    public function test_hub_personal_key_is_ignored_without_the_capability(): void {
+        $this->require_hub();
+        set_config('enablepersonalkeys', 1, 'local_aihub');
+        $this->setUser($this->getDataGenerator()->create_user());
+        set_user_preference('local_aihub_groq_key', 'gsk-hub-personal');
+
+        [, $groq, , , , $source] = $this->load_api_keys_for_current_user();
+
+        $this->assertNotSame('hub_personal', $source);
+        $this->assertSame('', $groq);
+    }
+
+    /**
      * Calls the private is_safe_url() method via reflection.
      *
      * @param string $url The URL to check.

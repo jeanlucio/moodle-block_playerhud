@@ -466,7 +466,8 @@ class generator {
      * is used exclusively (so an own personal key always wins over a hub key, even
      * for a different provider). core_ai is the institutional default and is
      * consulted by the caller only when no tier holds a key. The hub tiers are
-     * skipped when local_aihub is absent.
+     * skipped when local_aihub is absent, and the hub personal tier also when the hub does not
+     * allow this user personal keys.
      *
      * @return array Keys [geminikey, groqkey, openaikey, openaiurl, openaimodel, keysource].
      *               keysource is 'own_personal', 'hub_personal', 'own_site', 'hub_site' or ''.
@@ -490,7 +491,9 @@ class generator {
 
         // Tier 2: hub personal. URL and model prefer the hub's personal values,
         // falling back to the hub's site defaults when the user has not set them.
-        if ($hubinstalled) {
+        // Only when the hub lets this user use personal keys at all (site switch and capability):
+        // a key stored before the administrator turned that off must not keep being used.
+        if ($hubinstalled && \local_aihub\local\keys::personal_keys_allowed()) {
             $hubpersonalurl = \local_aihub\local\keys::get_personal_openai_url();
             $hubpersonalmodel = \local_aihub\local\keys::get_personal_openai_model();
             $tiers[] = [
