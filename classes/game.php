@@ -121,6 +121,9 @@ class game {
     /**
      * Check if user has a specific item.
      *
+     * A convenience for callers outside the item engine (the tests use it to assert holdings);
+     * the pages and web services read quantities from external_items directly.
+     *
      * @param int $userid User ID.
      * @param int $itemid Item ID.
      * @return bool True if exists.
@@ -852,17 +855,6 @@ class game {
             'blockinstanceid' => $blockinstanceid,
             'userid' => $userid,
         ]);
-    }
-
-    /**
-     * Get all RPG classes for a block instance, ordered by name.
-     *
-     * @param int $blockinstanceid The block instance ID.
-     * @return array Array of class objects keyed by ID.
-     */
-    public static function get_all_classes(int $blockinstanceid): array {
-        global $DB;
-        return $DB->get_records('block_playerhud_classes', ['blockinstanceid' => $blockinstanceid], 'name ASC');
     }
 
     /**

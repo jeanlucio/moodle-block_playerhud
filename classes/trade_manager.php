@@ -26,66 +26,6 @@ namespace block_playerhud;
  */
 class trade_manager {
     /**
-     * Get all trades with their requirements and rewards for a specific block instance.
-     * Optimized to avoid N+1 query problems using single batch queries.
-     *
-     * @param int $blockinstanceid The block instance ID.
-     * @return array Array of trade objects populated with requirements and rewards.
-     */
-    public static function get_full_trades(int $blockinstanceid): array {
-        global $DB;
-
-        $trades = $DB->get_records('block_playerhud_trades', ['blockinstanceid' => $blockinstanceid], 'name ASC');
-        if (!$trades) {
-            return [];
-        }
-
-        $tradeids = array_keys($trades);
-        [$insql, $inparams] = $DB->get_in_or_equal($tradeids, SQL_PARAMS_NAMED, 'trd');
-
-        foreach ($trades as $trade) {
-            $trade->requirements = [];
-            $trade->rewards = [];
-        }
-
-        $sqlreq = "SELECT req.id, req.tradeid, req.itemid, req.qty,
-                          i.name, i.image, i.required_class_id
-                     FROM {block_playerhud_trade_reqs} req
-                     JOIN {block_playerhud_items} i ON req.itemid = i.id
-                    WHERE req.tradeid $insql
-                 ORDER BY req.id ASC";
-
-        $requirements = $DB->get_records_sql($sqlreq, $inparams);
-
-        if ($requirements) {
-            foreach ($requirements as $req) {
-                if (isset($trades[$req->tradeid])) {
-                    $trades[$req->tradeid]->requirements[] = $req;
-                }
-            }
-        }
-
-        $sqlrew = "SELECT rew.id, rew.tradeid, rew.itemid, rew.qty,
-                          i.name, i.image, i.required_class_id
-                     FROM {block_playerhud_trade_rewards} rew
-                     JOIN {block_playerhud_items} i ON rew.itemid = i.id
-                    WHERE rew.tradeid $insql
-                 ORDER BY rew.id ASC";
-
-        $rewards = $DB->get_records_sql($sqlrew, $inparams);
-
-        if ($rewards) {
-            foreach ($rewards as $rew) {
-                if (isset($trades[$rew->tradeid])) {
-                    $trades[$rew->tradeid]->rewards[] = $rew;
-                }
-            }
-        }
-
-        return $trades;
-    }
-
-    /**
      * Executes a trade transaction securely, checking balances, limits, and enforcing atomic operations.
      *
      * @param int $tradeid The trade ID.

@@ -107,7 +107,7 @@ final class trade_test extends advanced_testcase {
     }
 
     /**
-     * Test the zero N+1 assembly of trades.
+     * Test the zero N+1 assembly of trades, through the implementation the shop and the trades tab use.
      */
     public function test_get_full_trades_assembly(): void {
         global $DB;
@@ -135,7 +135,7 @@ final class trade_test extends advanced_testcase {
         $rew->qty = 1;
         $DB->insert_record('block_playerhud_trade_rewards', $rew);
 
-        $trades = trade_manager::get_full_trades($this->instanceid);
+        $trades = \block_playerhud\game::get_full_trades($this->instanceid);
 
         $this->assertCount(1, $trades);
         $fetchedtrade = $trades[$tradeid];
