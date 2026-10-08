@@ -36,7 +36,7 @@ class export {
     public function execute(int $courseid, int $instanceid, string $format, string $courseshortname): void {
         [$columns, $exportdata] = $this->build_export($courseid, $instanceid);
 
-        $filename = 'playerhud_grades_' . format_string($courseshortname) . '_' . date('Ymd');
+        $filename = 'playerhud_grades_' . \block_playerhud\utils::plain_string($courseshortname) . '_' . date('Ymd');
 
         // Trigger download using Moodle Native API.
         // This handles all HTTP headers, buffering, and encoding automatically.

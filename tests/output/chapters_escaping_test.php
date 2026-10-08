@@ -25,6 +25,7 @@
 
 namespace block_playerhud\output;
 
+use block_playerhud\controller\scenes;
 use block_playerhud\output\manage\tab_chapters as manage_tab_chapters;
 use block_playerhud\output\view\tab_chapters as view_tab_chapters;
 use block_playerhud\story_manager;
@@ -40,6 +41,7 @@ use block_playerhud\tests\escaping_testcase;
  * @covers     \block_playerhud\output\manage\tab_chapters
  * @covers     \block_playerhud\output\view\tab_chapters
  * @covers     \block_playerhud\story_manager
+ * @covers     \block_playerhud\controller\scenes
  */
 final class chapters_escaping_test extends escaping_testcase {
     /** @var int The chapter id. */
@@ -122,5 +124,21 @@ final class chapters_escaping_test extends escaping_testcase {
         $this->assertSame(self::CANARY, $choice['cost_item_name']);
         $this->assertStringContainsString(self::CANARY, $choice['str_req_class']);
         $this->assertStringContainsString(self::CANARY, $choice['str_cost_item']);
+    }
+
+    /**
+     * The scene editor shows the chapter title and the flag badges (item cost, required class)
+     * once-escaped.
+     *
+     * @dataProvider striptags_provider
+     * @param int $striptags Value of formatstringstriptags.
+     */
+    public function test_scene_editor_escapes_names_once(int $striptags): void {
+        set_config('formatstringstriptags', $striptags);
+        $_GET['courseid'] = $this->course->id;
+        $_GET['instanceid'] = $this->blockid;
+        $_GET['chapterid'] = $this->chapterid;
+
+        $this->assert_escaped_once((new scenes())->view_manage_page(), 'none');
     }
 }

@@ -164,7 +164,7 @@ class scenes {
             'back_url'                 => $chaptersurl->out(false),
             'str_back'                 => get_string('back_to_chapters', 'block_playerhud'),
             'str_scene_editor'         => get_string('scene_editor', 'block_playerhud'),
-            'chapter_title'            => format_string($chapter->title),
+            'chapter_title'            => \block_playerhud\utils::plain_string($chapter->title),
             'new_scene_url'            => $newsceneurl->out(false),
             'str_new'                  => get_string('scene_new', 'block_playerhud'),
             'has_scenes'               => !empty($scenesdata),
@@ -498,12 +498,12 @@ class scenes {
             $costitemid = (int) $choice->cost_itemid;
             if ($costitemid > 0 && isset($itemnames[$costitemid])) {
                 $qty = max(1, (int) $choice->cost_item_qty);
-                $costvalues[$qty . 'x ' . format_string($itemnames[$costitemid])] = true;
+                $costvalues[$qty . 'x ' . \block_playerhud\utils::plain_string($itemnames[$costitemid])] = true;
             }
 
             $reqclassid = (int) $choice->req_class_id;
             if ($reqclassid > 0 && isset($classnames[$reqclassid])) {
-                $reqclassvalues[format_string($classnames[$reqclassid])] = true;
+                $reqclassvalues[\block_playerhud\utils::plain_string($classnames[$reqclassid])] = true;
             }
 
             $reqkarmamin = (int) $choice->req_karma_min;
@@ -518,7 +518,7 @@ class scenes {
 
             $setclassid = (int) $choice->set_class_id;
             if ($setclassid > 0 && isset($classnames[$setclassid])) {
-                $setclassvalues[format_string($classnames[$setclassid])] = true;
+                $setclassvalues[\block_playerhud\utils::plain_string($classnames[$setclassid])] = true;
             }
         }
 
