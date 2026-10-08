@@ -26,6 +26,7 @@ namespace block_playerhud\output\manage;
 
 use renderable;
 use moodle_url;
+use block_playerhud\utils;
 
 /**
  * Prepares data for the chapter management tab template.
@@ -120,8 +121,8 @@ class tab_chapters implements renderable {
 
             $data = [
                 'id'           => (int) $chap->id,
-                'title'        => format_string($chap->title),
-                'intro_text'   => format_string($chap->intro_text),
+                'title'        => utils::plain_string($chap->title),
+                'intro_text'   => utils::plain_string($chap->intro_text),
                 'unlock_label' => $chap->unlock_date
                     ? userdate($chap->unlock_date)
                     : get_string('drops_immediate', 'block_playerhud'),
@@ -146,7 +147,7 @@ class tab_chapters implements renderable {
                     'sesskey'   => sesskey(),
                     'tab'       => 'chapters',
                 ]))->out(false),
-                'confirm_msg'  => get_string('chapter_delete_confirm', 'block_playerhud', format_string($chap->title)),
+                'confirm_msg'  => get_string('chapter_delete_confirm', 'block_playerhud', utils::plain_string($chap->title)),
                 'can_move_up'   => !$isfirst,
                 'can_move_down' => !$islast,
                 'url_move_up'   => !$isfirst ? (new moodle_url($baseurl, [
@@ -174,7 +175,7 @@ class tab_chapters implements renderable {
         );
         $storyitems = [['id' => 0, 'name' => get_string('ai_story_item_none', 'block_playerhud'), 'selected' => true]];
         foreach ($itemrecords as $itemid => $itemname) {
-            $storyitems[] = ['id' => $itemid, 'name' => format_string($itemname), 'selected' => false];
+            $storyitems[] = ['id' => $itemid, 'name' => utils::plain_string($itemname), 'selected' => false];
         }
 
         $data = [

@@ -744,7 +744,7 @@ class story_manager {
             // Requirement: class.
             if ((int) $ch->req_class_id > 0) {
                 $reqclassname = isset($classes[$ch->req_class_id])
-                    ? format_string($classes[$ch->req_class_id]->name)
+                    ? utils::plain_string($classes[$ch->req_class_id]->name)
                     : '?';
 
                 if (!$ispreview && (int) $ch->req_class_id !== $myclass) {
@@ -768,7 +768,7 @@ class story_manager {
             if ((int) $ch->cost_itemid > 0) {
                 $costitemqty  = max(1, (int) $ch->cost_item_qty);
                 $costitemname = isset($items[$ch->cost_itemid])
-                    ? format_string($items[$ch->cost_itemid]->name)
+                    ? utils::plain_string($items[$ch->cost_itemid]->name)
                     : '?';
 
                 if (!$ispreview) {
@@ -783,7 +783,7 @@ class story_manager {
 
             $choices[] = [
                 'id'              => (int) $ch->id,
-                'text'            => format_string($ch->text),
+                'text'            => utils::plain_string($ch->text),
                 'btnclass'        => $btnclass,
                 'disabled'        => $disabled,
                 'req_class_name'  => $reqclassname,

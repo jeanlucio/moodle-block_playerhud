@@ -25,6 +25,7 @@
 namespace block_playerhud\output\view;
 
 use block_playerhud\game;
+use block_playerhud\utils;
 use renderable;
 
 /**
@@ -131,8 +132,8 @@ class tab_chapters implements renderable {
 
             $chaptersdata[] = [
                 'id'             => (int) $chap->id,
-                'title'          => format_string($chap->title),
-                'intro_text'     => format_string($chap->intro_text),
+                'title'          => utils::plain_string($chap->title),
+                'intro_text'     => utils::plain_string($chap->intro_text),
                 'status_icon'    => $statusicon,
                 'item_classes'   => $itemclasses,
                 'status_text'    => $statustext,
