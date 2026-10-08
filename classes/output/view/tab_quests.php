@@ -28,6 +28,7 @@ use renderable;
 use moodle_url;
 use block_playerhud\quest;
 use block_playerhud\game;
+use block_playerhud\utils;
 
 /**
  * Student quests tab renderer.
@@ -125,7 +126,7 @@ class tab_quests implements renderable {
                 'id, name'
             );
             foreach ($rows as $row) {
-                $rewarditems[$row->id] = format_string($row->name);
+                $rewarditems[$row->id] = utils::plain_string($row->name);
             }
         }
 
@@ -197,7 +198,7 @@ class tab_quests implements renderable {
 
             $questsdata[] = [
                 'id'               => $q->id,
-                'name'             => format_string($q->name),
+                'name'             => utils::plain_string($q->name),
                 'description_html'  => !empty($q->description)
                     ? format_text($q->description, FORMAT_HTML, ['filter' => false])
                     : '',
@@ -232,7 +233,7 @@ class tab_quests implements renderable {
                 'str_pending'      => get_string('quest_status_pending', 'block_playerhud'),
                 'str_claimed'      => get_string('quest_status_completed', 'block_playerhud'),
                 'str_go_activity'  => get_string('quest_go_activity', 'block_playerhud'),
-                'sort_name'        => strip_tags(format_string($q->name)),
+                'sort_name'        => utils::plain_string($q->name),
                 'reward_xp_val'    => (int)$q->reward_xp,
             ];
         }

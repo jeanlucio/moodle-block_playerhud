@@ -28,6 +28,7 @@ use renderable;
 use moodle_url;
 use block_playerhud\form\edit_quest_form;
 use block_playerhud\quest;
+use block_playerhud\utils;
 
 /**
  * Quests management tab renderer.
@@ -342,7 +343,7 @@ class tab_quests implements renderable {
             [$insql, $inparams] = $DB->get_in_or_equal(array_values($itemids));
             $rows = $DB->get_records_select('block_playerhud_items', "id $insql", $inparams, '', 'id, name');
             foreach ($rows as $row) {
-                $itemnames[$row->id] = format_string($row->name);
+                $itemnames[$row->id] = utils::plain_string($row->name);
             }
         }
 
@@ -351,7 +352,7 @@ class tab_quests implements renderable {
             [$tsql, $tparams] = $DB->get_in_or_equal(array_values($tradeids));
             $trows = $DB->get_records_select('block_playerhud_trades', "id $tsql", $tparams, '', 'id, name');
             foreach ($trows as $row) {
-                $tradenames[$row->id] = format_string($row->name);
+                $tradenames[$row->id] = utils::plain_string($row->name);
             }
         }
 
@@ -360,7 +361,7 @@ class tab_quests implements renderable {
             [$csql, $cparams] = $DB->get_in_or_equal(array_values($chapterids));
             $crows = $DB->get_records_select('block_playerhud_chapters', "id $csql", $cparams, '', 'id, title');
             foreach ($crows as $row) {
-                $chapternames[$row->id] = format_string($row->title);
+                $chapternames[$row->id] = utils::plain_string($row->title);
             }
         }
 
@@ -426,7 +427,7 @@ class tab_quests implements renderable {
                 'id'               => $q->id,
                 'counter'          => $counter++,
                 'image_todo'       => !empty($q->image_todo) ? $q->image_todo : '📋',
-                'name'             => format_string($q->name),
+                'name'             => utils::plain_string($q->name),
                 'hidden_reason'    => $hiddenlabels[$hiddenreasons[$q->id] ?? ''] ?? '',
                 'type_label'       => $typelabels[$q->type] ?? '-',
                 'type_badge_class' => $typebadges[$q->type] ?? 'bg-secondary text-white',
@@ -459,7 +460,7 @@ class tab_quests implements renderable {
                 'str_hide'           => get_string('click_to_hide', 'block_playerhud'),
                 'str_show'           => get_string('click_to_show', 'block_playerhud'),
                 'str_delete_confirm' => s(
-                    get_string('confirm_delete', 'block_playerhud') . " '" . format_string($q->name) . "'?"
+                    get_string('confirm_delete', 'block_playerhud') . " '" . utils::plain_string($q->name) . "'?"
                 ),
             ];
         }

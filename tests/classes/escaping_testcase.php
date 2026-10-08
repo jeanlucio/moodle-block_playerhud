@@ -54,7 +54,7 @@ abstract class escaping_testcase extends advanced_testcase {
      */
     protected function setUp(): void {
         parent::setUp();
-        global $PAGE;
+        global $DB, $PAGE;
 
         $this->resetAfterTest(true);
         $this->setAdminUser();
@@ -64,6 +64,9 @@ abstract class escaping_testcase extends advanced_testcase {
         $this->blockid = (int) $this->getDataGenerator()->create_block('playerhud', [
             'parentcontextid' => $context->id,
         ])->id;
+
+        // A block saved from the UI always has configdata; the generator leaves it null.
+        $DB->set_field('block_instances', 'configdata', base64_encode(serialize(new \stdClass())), ['id' => $this->blockid]);
 
         $PAGE->set_url('/blocks/playerhud/manage.php', ['id' => $this->course->id]);
         $PAGE->set_context($context);
