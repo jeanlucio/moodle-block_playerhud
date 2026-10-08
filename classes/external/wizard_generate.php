@@ -567,7 +567,7 @@ class wizard_generate {
             return ['trade_name' => '', 'quest_name' => ''];
         }
 
-        $tradename = format_string($book->name);
+        $tradename = \block_playerhud\utils::plain_string($book->name);
         $suggestion = [
             'name' => $tradename,
             'cost_itemid' => $pill->id,
@@ -1194,7 +1194,7 @@ class wizard_generate {
             return '';
         }
 
-        $tradename = format_string($item->name);
+        $tradename = \block_playerhud\utils::plain_string($item->name);
         $suggestion = [
             'name' => $tradename,
             'cost_itemid' => $coin->id,
@@ -1269,7 +1269,7 @@ class wizard_generate {
             if (!isset($modinfo->cms[$cmid])) {
                 return $suggestion['name'];
             }
-            $placeholder = format_string($modinfo->get_cm($cmid)->name);
+            $placeholder = \block_playerhud\utils::plain_string($modinfo->get_cm($cmid)->name);
         }
 
         $namestringkey = "wizard_mission_name_{$typekey}_{$tonekey}";

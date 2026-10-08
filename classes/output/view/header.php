@@ -111,7 +111,7 @@ class header implements renderable, templatable {
             'level_class' => !empty($stats['level_class']) ? $stats['level_class'] : 'bg-primary',
             'hasgroup' => $groupinfo !== null,
             'groupbadge' => $groupinfo ? $groupinfo->badge : '',
-            'groupname' => $groupinfo ? format_string($groupinfo->groupname) : '',
+            'groupname' => $groupinfo ? \block_playerhud\utils::plain_string($groupinfo->groupname) : '',
             'groupmembers' => $groupinfo ? $groupinfo->membercount . '/' . $groupinfo->maxmembers : '',
         ];
 

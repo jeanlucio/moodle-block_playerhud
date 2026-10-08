@@ -357,7 +357,7 @@ class insert_drop_shortcode extends external_api {
         // go through this same method) so neither can forget it.
         $DB->update_record('block_playerhud_drops', (object) [
             'id' => $drop->id,
-            'name' => format_string($cm->name),
+            'name' => \block_playerhud\utils::plain_string($cm->name),
             'timemodified' => time(),
         ]);
 

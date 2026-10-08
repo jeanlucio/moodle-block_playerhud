@@ -268,7 +268,7 @@ class drops {
             'media_content' => $mediadata['is_image'] ? '' : strip_tags($mediadata['content']),
 
             'str_managing' => get_string('drops_header_managedrops', 'block_playerhud'),
-            'item_name' => format_string($item->name),
+            'item_name' => \block_playerhud\utils::plain_string($item->name),
             'summary_text' => $summarytext,
 
             // Pass headers to template.
@@ -288,7 +288,7 @@ class drops {
         // JS Init.
         $jsconfig = [
             'item' => [
-                'name' => format_string($item->name),
+                'name' => \block_playerhud\utils::plain_string($item->name),
                 'isImage' => $mediadata['is_image'],
                 'url' => $mediadata['is_image'] ? $mediadata['url'] : '',
                 'content' => $mediadata['is_image'] ? '' : strip_tags($mediadata['content']),

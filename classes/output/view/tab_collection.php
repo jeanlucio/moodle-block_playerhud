@@ -195,8 +195,8 @@ class tab_collection implements renderable, templatable {
                 }
 
                 // Format name for sorting.
-                $visiblename = format_string($item->name);
-                $sortname = strip_tags($visiblename);
+                $visiblename = \block_playerhud\utils::plain_string($item->name);
+                $sortname = $visiblename;
 
                 // Uncollected Item Logic.
                 if ($totalcount == 0) {
@@ -374,7 +374,7 @@ class tab_collection implements renderable, templatable {
                                     ->get_course_context();
                                 $cm = get_fast_modinfo($coursecontext->instanceid)->get_cm($cmid);
                                 if ($cm->uservisible) {
-                                    $actname = format_string($cm->name);
+                                    $actname = \block_playerhud\utils::plain_string($cm->name);
                                 }
                             } catch (\moodle_exception $e) {
                                 debugging($e->getMessage(), DEBUG_DEVELOPER);
@@ -533,7 +533,7 @@ class tab_collection implements renderable, templatable {
                     if (!$cm->uservisible) {
                         continue;
                     }
-                    $activities[$rule->cmid] = format_string($cm->name);
+                    $activities[$rule->cmid] = \block_playerhud\utils::plain_string($cm->name);
                 } catch (\moodle_exception $e) {
                     continue;
                 }

@@ -911,7 +911,7 @@ class quest {
                     $suggestions[] = [
                         'type' => self::TYPE_ACTIVITY,
                         'requirement' => $cm->id,
-                        'name' => get_string('quest_sug_activity', 'block_playerhud', format_string($cm->name)),
+                        'name' => get_string('quest_sug_activity', 'block_playerhud', utils::plain_string($cm->name)),
                         'reward_xp' => 50,
                         'image_todo' => '📋',
                         'image_done' => '🏅',

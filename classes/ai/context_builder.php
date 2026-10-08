@@ -114,7 +114,7 @@ class context_builder {
         $questsen   = !empty($this->config->enable_quests) || !isset($this->config->enable_quests);
 
         $course = $DB->get_record('course', ['id' => $this->courseid], 'fullname', IGNORE_MISSING);
-        $coursename = $course ? format_string($course->fullname) : '';
+        $coursename = $course ? \block_playerhud\utils::plain_string($course->fullname) : '';
 
         $lines = ["## Current Game State"];
 

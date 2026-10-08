@@ -172,7 +172,7 @@ class profile_content implements \renderable, \templatable {
             $media = $mediamap[$iid] ?? ['is_image' => false, 'url' => '', 'content' => ''];
             $lastts = (int)$rows[$iid]->lastcollected;
             $result[] = [
-                'name' => format_string($item->name),
+                'name' => \block_playerhud\utils::plain_string($item->name),
                 'isimage' => (bool)$media['is_image'],
                 'isimageint' => $media['is_image'] ? 1 : 0,
                 'imageurl' => $media['is_image'] ? $media['url'] : '',

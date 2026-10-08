@@ -62,7 +62,7 @@ class suggest_trades_form extends \moodleform {
                          '<span class="text-muted me-1">' . $sug['cost_qty'] . 'x PlayerCoin</span>' .
                          '<span class="mx-1">→</span>' .
                          '<span aria-hidden="true" class="fs-5 me-1">' . $sug['reward_emoji'] . '</span>' .
-                         '<span class="fw-bold text-dark">' . $sug['reward_label'] . '</span>';
+                         '<span class="fw-bold text-dark">' . s($sug['reward_label']) . '</span>';
 
                 $mform->addElement('advcheckbox', 'sug_' . $sug['uid'], '', $label, null, [0, 1]);
                 $mform->setDefault('sug_' . $sug['uid'], 1);

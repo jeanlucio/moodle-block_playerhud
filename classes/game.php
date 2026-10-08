@@ -309,7 +309,7 @@ class game {
         $newcount = $count + 1;
 
         $itemdata = [
-            'name' => format_string($item->name),
+            'name' => utils::plain_string($item->name),
             'xp' => $earnedxp,
             'qty' => $qty,
             'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
@@ -603,7 +603,7 @@ class game {
         $memberships = $DB->get_recordset_sql($sqlgroups, ['courseid' => $courseid]);
         foreach ($memberships as $rec) {
             $groupid = (int) $rec->groupid;
-            $usergroupsmap[$rec->userid][] = ['id' => $groupid, 'name' => format_string($rec->name)];
+            $usergroupsmap[$rec->userid][] = ['id' => $groupid, 'name' => utils::plain_string($rec->name)];
             $allgroupids[$groupid] = true;
         }
         $memberships->close();
@@ -806,7 +806,7 @@ class game {
 
                     $gobj = new \stdClass();
                     $gobj->id = $grp->id;
-                    $gobj->name = format_string($grp->name);
+                    $gobj->name = utils::plain_string($grp->name);
                     $gobj->average_xp = $avg;
                     $gobj->last_xp_change = (int)$stat->last_xp_change;
                     $gobj->member_count = $stat->qtd;
@@ -1153,9 +1153,9 @@ class game {
                 // never let it through unsanitised (see get_items_display_data(), which
                 // callers must strip_tags() themselves for the same reason).
                 'reward_emoji' => strip_tags($avatar->image),
-                'reward_label' => format_string($avatar->name),
+                'reward_label' => utils::plain_string($avatar->name),
                 'rewards'      => [['id' => $avatar->id, 'qty' => 1]],
-                'name'         => format_string($avatar->name),
+                'name'         => utils::plain_string($avatar->name),
             ];
         }
 

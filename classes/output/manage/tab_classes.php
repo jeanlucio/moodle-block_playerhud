@@ -132,7 +132,7 @@ class tab_classes implements renderable {
 
             $classesdata[] = [
                 'id'             => $class->id,
-                'name'           => format_string($class->name),
+                'name'           => \block_playerhud\utils::plain_string($class->name),
                 'description'    => !empty($class->description)
                     ? format_text($class->description, FORMAT_HTML, ['noclean' => false])
                     : '',
