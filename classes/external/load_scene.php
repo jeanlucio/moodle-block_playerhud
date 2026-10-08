@@ -84,10 +84,12 @@ class load_scene extends external_api {
             );
         }
 
+        // Saving the start scene is a write: only for a user allowed to interact.
         return \block_playerhud\story_manager::load_scene(
             $params['instanceid'],
             $USER->id,
-            $params['chapterid']
+            $params['chapterid'],
+            has_capability('block/playerhud:interact', $context)
         );
     }
 

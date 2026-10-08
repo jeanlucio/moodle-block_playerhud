@@ -172,9 +172,11 @@ class story_manager {
      * @param int $instanceid Block instance ID.
      * @param int $userid User ID.
      * @param int $chapterid Chapter ID.
+     * @param bool $persist Whether entering the start scene may be saved as the player's progress.
+     *        False for a user who may view but not interact: the scene is shown, nothing is written.
      * @return array Response data for the web service.
      */
-    public static function load_scene(int $instanceid, int $userid, int $chapterid): array {
+    public static function load_scene(int $instanceid, int $userid, int $chapterid, bool $persist = true): array {
         global $DB;
 
         $chapter = $DB->get_record(
@@ -185,7 +187,14 @@ class story_manager {
         );
         self::require_chapter_available($instanceid, $userid, $chapter);
 
-        $progress = self::get_or_create_progress($instanceid, $userid);
+        if ($persist) {
+            $progress = self::get_or_create_progress($instanceid, $userid);
+        } else {
+            $progress = $DB->get_record(
+                'block_playerhud_rpg_progress',
+                ['blockinstanceid' => $instanceid, 'userid' => $userid]
+            ) ?: (object) ['id' => 0, 'current_nodes' => '[]', 'completed_chapters' => '[]'];
+        }
         $savednodesmap = json_decode($progress->current_nodes, true) ?: [];
 
         $nodeidtoload = 0;
@@ -202,7 +211,7 @@ class story_manager {
                 ['chapterid' => $chapterid, 'is_start' => 1]
             );
 
-            if ($node) {
+            if ($node && $persist) {
                 $savednodesmap[$chapterid] = [(int) $node->id];
                 $DB->set_field(
                     'block_playerhud_rpg_progress',

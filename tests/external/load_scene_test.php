@@ -59,6 +59,43 @@ final class load_scene_test extends external_base_testcase {
     }
 
     /**
+     * A role that can view but not interact must not have story progress written on its behalf:
+     * entering a chapter used to create the player's progress row and save the start scene even
+     * for such a role. The scene is still shown, and a role that may interact keeps the saved
+     * position.
+     */
+    public function test_load_scene_writes_progress_only_with_the_interact_capability(): void {
+        global $DB;
+
+        $chapter = $this->create_chapter('Chapter 1');
+        $start   = $this->create_node($chapter->id, 'You stand at a crossroads.', true);
+        $context = \context_block::instance($this->instanceid);
+        $student = $this->getDataGenerator()->create_and_enrol($this->course, 'student');
+        $this->setUser($student);
+
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'student'], MUST_EXIST);
+        assign_capability('block/playerhud:interact', CAP_PROHIBIT, $roleid, $context->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+
+        $result = load_scene::execute($this->instanceid, $this->course->id, (int) $chapter->id);
+
+        $this->assertStringContainsString('crossroads', $result['node']['content']);
+        $this->assertFalse($DB->record_exists('block_playerhud_rpg_progress', [
+            'blockinstanceid' => $this->instanceid, 'userid' => $student->id,
+        ]));
+
+        unassign_capability('block/playerhud:interact', $roleid, $context->id);
+        accesslib_clear_all_caches_for_unit_testing();
+
+        load_scene::execute($this->instanceid, $this->course->id, (int) $chapter->id);
+
+        $progress = $DB->get_record('block_playerhud_rpg_progress', [
+            'blockinstanceid' => $this->instanceid, 'userid' => $student->id,
+        ], '*', MUST_EXIST);
+        $this->assertSame([(int) $chapter->id => [(int) $start->id]], json_decode($progress->current_nodes, true));
+    }
+
+    /**
      * A chapter that does not belong to the instance triggers an exception.
      */
     public function test_load_scene_invalid_chapter_throws(): void {
