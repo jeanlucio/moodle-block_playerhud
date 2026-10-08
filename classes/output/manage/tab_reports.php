@@ -27,6 +27,7 @@ namespace block_playerhud\output\manage;
 use renderable;
 use templatable;
 use moodle_url;
+use block_playerhud\utils;
 
 /**
  * Class tab_reports
@@ -147,7 +148,7 @@ class tab_reports implements renderable, templatable {
             $itemoptions = [];
             if ($allitems) {
                 foreach ($allitems as $iid => $iname) {
-                    $itemoptions[] = ['value' => $iid, 'label' => format_string($iname)];
+                    $itemoptions[] = ['value' => $iid, 'label' => utils::plain_string($iname)];
                 }
             }
             $contextdata['available_items'] = $itemoptions;
@@ -452,7 +453,7 @@ class tab_reports implements renderable, templatable {
             ],
             [
                 'title'    => get_string('report_most_collected', 'block_playerhud'),
-                'value'    => $topitem ? format_string($topitem->name) : '-',
+                'value'    => $topitem ? utils::plain_string($topitem->name) : '-',
                 'subtitle' => $topitem ? get_string('report_collected_times', 'block_playerhud', $topitem->qtd) : '',
                 'bg_class' => 'ph-bg-gradient-info',
             ],
@@ -533,7 +534,7 @@ class tab_reports implements renderable, templatable {
         $questsdata = [];
         foreach ($rows as $row) {
             $questsdata[] = [
-                'label'     => format_string($row->name),
+                'label'     => utils::plain_string($row->name),
                 'total'     => (int)$row->claims,
                 'percent'   => ($maxclaims > 0) ? round(($row->claims / $maxclaims) * 100) : 0,
                 'no_claims' => ($row->claims == 0),
@@ -801,7 +802,7 @@ class tab_reports implements renderable, templatable {
                             WHERE req.tradeid $tinsql";
                 $reqs = $DB->get_records_sql($sqlreq, $tinparams);
                 foreach ($reqs as $req) {
-                    $tradecosts[$req->tradeid][] = $req->qty . 'x ' . format_string($req->name);
+                    $tradecosts[$req->tradeid][] = $req->qty . 'x ' . utils::plain_string($req->name);
                 }
             }
 
@@ -906,7 +907,7 @@ class tab_reports implements renderable, templatable {
                     'is_image_icon'   => $isimageicon,
                     'icon_url'        => $iconurl,
                     'icon_emoji'      => $iconemoji,
-                    'object_name'     => format_string($log->object_name),
+                    'object_name'     => utils::plain_string($log->object_name),
                     'qty'             => $qty,
                     'qty_positive'    => $qty > 0,
                     'qty_negative'    => $qty < 0,
@@ -1029,7 +1030,7 @@ class tab_reports implements renderable, templatable {
                 'is_image_icon' => $isimageicon,
                 'icon_url'      => $iconurl,
                 'icon_emoji'    => $iconemoji,
-                'object_name'   => format_string($log->object_name ?? ''),
+                'object_name'   => utils::plain_string($log->object_name),
                 'ai_class'      => $aiclass,
                 'ai_provider'   => $log->ai_provider,
             ];

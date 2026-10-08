@@ -83,7 +83,7 @@ final class chapters_escaping_test extends escaping_testcase {
 
         $tab = new manage_tab_chapters($this->blockid, (int) $this->course->id);
 
-        $this->assert_escaped_once($tab->display(), true);
+        $this->assert_escaped_once($tab->display(), 'text');
     }
 
     /**

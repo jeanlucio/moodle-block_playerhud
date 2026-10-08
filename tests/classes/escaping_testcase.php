@@ -100,18 +100,19 @@ abstract class escaping_testcase extends advanced_testcase {
      * Asserts that the canary appears escaped once and never twice.
      *
      * @param string $html The rendered HTML.
-     * @param bool $confirmastext Whether the delete confirmation is read back as plain text (textContent)
-     *     instead of HTML (Notification.confirm), which changes how many times its attribute is escaped.
+     * @param string $confirm How script reads the delete confirmation attribute: 'html' (Notification.confirm,
+     *     one more level of escaping than the page), 'text' (textContent, the raw name) or 'none' (the
+     *     message carries no name).
      */
-    protected function assert_escaped_once(string $html, bool $confirmastext = false): void {
-        // A delete confirmation travels in an attribute that script reads back: shown as HTML it holds one
-        // more level of escaping than the page, shown as text it holds the raw name.
+    protected function assert_escaped_once(string $html, string $confirm = 'html'): void {
         preg_match_all('/data-confirm-msg="([^"]*)"/', $html, $matches);
         foreach ($matches[1] as $message) {
-            $this->assertStringContainsString(
-                $confirmastext ? self::CANARY : self::ESCAPED,
-                html_entity_decode($message)
-            );
+            if ($confirm !== 'none') {
+                $this->assertStringContainsString(
+                    $confirm === 'text' ? self::CANARY : self::ESCAPED,
+                    html_entity_decode($message)
+                );
+            }
         }
         $html = preg_replace('/data-confirm-msg="[^"]*"/', '', $html);
 

@@ -27,6 +27,7 @@ namespace block_playerhud\output\view;
 use renderable;
 use templatable;
 use moodle_url;
+use block_playerhud\utils;
 
 /**
  * Class tab_history
@@ -284,7 +285,7 @@ class tab_history implements renderable, templatable {
                             WHERE req.tradeid $tinsql";
                 $reqs = $DB->get_records_sql($sqlreq, $tinparams);
                 foreach ($reqs as $req) {
-                    $tradecosts[$req->tradeid][] = $req->qty . 'x ' . format_string($req->name);
+                    $tradecosts[$req->tradeid][] = $req->qty . 'x ' . utils::plain_string($req->name);
                 }
             }
 
@@ -360,7 +361,7 @@ class tab_history implements renderable, templatable {
                     'is_image_icon'   => $isimageicon,
                     'icon_url'        => $iconurl,
                     'icon_emoji'      => $iconemoji,
-                    'object_name'     => format_string($log->object_name),
+                    'object_name'     => utils::plain_string($log->object_name),
                     'qty'             => $qty,
                     'qty_positive'    => $qty > 0,
                     'qty_negative'    => $qty < 0,
