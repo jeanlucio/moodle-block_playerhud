@@ -127,6 +127,38 @@ class quests {
     }
 
     /**
+     * Keeps only the quest IDs that belong to the given block instance.
+     *
+     * The management panel works from client-supplied IDs (a bulk selection), so every step that
+     * reads or reports on them, including the preview of how much XP a deletion would take back,
+     * must go through this first: without it a teacher could learn how many students completed,
+     * and how much XP was paid by, quests of another instance.
+     *
+     * @param int[] $questids Candidate quest IDs.
+     * @param int $instanceid The owning block instance ID.
+     * @return int[] The IDs that belong to the instance, in the order they were given.
+     */
+    public static function filter_owned_ids(array $questids, int $instanceid): array {
+        global $DB;
+
+        $questids = array_values(array_unique(array_map('intval', $questids)));
+        if (empty($questids)) {
+            return [];
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($questids, SQL_PARAMS_NAMED);
+        $inparams['instanceid'] = $instanceid;
+        $owned = array_map('intval', $DB->get_fieldset_select(
+            'block_playerhud_quests',
+            'id',
+            "id $insql AND blockinstanceid = :instanceid",
+            $inparams
+        ));
+
+        return array_values(array_filter($questids, static fn(int $id): bool => in_array($id, $owned, true)));
+    }
+
+    /**
      * Bulk-deletes quests of the given instance, reverting their reward XP.
      *
      * Each candidate id is filtered by blockinstanceid, so foreign ids are
@@ -139,18 +171,11 @@ class quests {
     public static function bulk_delete_quests(array $questids, int $instanceid): int {
         global $DB;
 
-        if (empty($questids)) {
+        $validids = self::filter_owned_ids($questids, $instanceid);
+        if (empty($validids)) {
             return 0;
         }
 
-        [$insql, $inparams] = $DB->get_in_or_equal($questids);
-        $params = array_merge($inparams, [$instanceid]);
-        $quests = $DB->get_records_select('block_playerhud_quests', "id $insql AND blockinstanceid = ?", $params);
-        if (!$quests) {
-            return 0;
-        }
-
-        $validids = array_keys($quests);
         [$qinsql, $qinparams] = $DB->get_in_or_equal($validids);
 
         $holders = $DB->get_records_sql(

@@ -375,10 +375,7 @@ if ($action === 'delete_quest_force' && $questid && confirm_sesskey()) {
 if ($action === 'bulk_delete_quests' && confirm_sesskey()) {
     $bulkids = optional_param_array('bulk_ids', [], PARAM_INT);
     if (!empty($bulkids)) {
-        [$insql, $inparams] = $DB->get_in_or_equal($bulkids);
-        $params = array_merge($inparams, [$instanceid]);
-        $quests = $DB->get_records_select('block_playerhud_quests', "id $insql AND blockinstanceid = ?", $params);
-        $questids = array_keys($quests);
+        $questids = \block_playerhud\controller\quests::filter_owned_ids($bulkids, $instanceid);
         $xpimpact = \block_playerhud\controller\quests::find_xp_impact($questids);
 
         if ($xpimpact->studentcount > 0) {

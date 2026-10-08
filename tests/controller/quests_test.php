@@ -361,37 +361,41 @@ final class quests_test extends advanced_testcase {
     }
 
     /**
-     * Regression test for the security-audit finding: manage.php's bulk_delete_quests preview
-     * used to pass the raw client-supplied bulk_ids straight to find_xp_impact() with no
-     * ownership check, letting a teacher discover how many students completed, and how much
-     * XP was awarded by, quests belonging to a completely different instance. Reproduces the
-     * exact scoping manage.php now applies before calling find_xp_impact(): filter the ids
-     * through "id IN (...) AND blockinstanceid = ?" first.
+     * The bulk-delete preview of the management panel works from client-supplied ids, so it
+     * filters them through quests::filter_owned_ids() before asking what the deletion would take
+     * back. A quest of another instance is dropped, and its students and XP are never counted,
+     * which used to let a teacher learn them. The ids come back in the order they were given.
      */
-    public function test_find_xp_impact_preview_excludes_a_foreign_instance_quest_when_scoped(): void {
-        global $DB;
-
+    public function test_filter_owned_ids_drops_a_foreign_instance_quest_before_the_preview(): void {
         $this->resetAfterTest();
         $instancea = $this->make_instance();
         $instanceb = $this->make_instance();
         $questa = $this->seed_quest($instancea, 50);
         $questb = $this->seed_quest($instanceb, 999);
+        $questa2 = $this->seed_quest($instancea, 10);
         $usera = $this->getDataGenerator()->create_user();
         $userb = $this->getDataGenerator()->create_user();
         $this->seed_log($questa, (int) $usera->id, 50);
         $this->seed_log($questb, (int) $userb->id, 999);
 
-        // The exact scoping manage.php's bulk_delete_quests action now applies before the preview.
-        $bulkids = [$questa, $questb];
-        [$insql, $inparams] = $DB->get_in_or_equal($bulkids);
-        $params = array_merge($inparams, [$instancea]);
-        $quests = $DB->get_records_select('block_playerhud_quests', "id $insql AND blockinstanceid = ?", $params);
-        $questids = array_keys($quests);
+        $questids = quests::filter_owned_ids([$questb, $questa2, $questa, $questa], $instancea);
 
+        $this->assertSame([$questa2, $questa], $questids);
         $impact = quests::find_xp_impact($questids);
-
-        $this->assertSame([$questa], $questids, 'Only the caller own-instance quest must survive the scoping.');
         $this->assertSame(1, $impact->studentcount);
         $this->assertSame(50, $impact->totalxp, 'The foreign instance quest XP must never be counted.');
+    }
+
+    /**
+     * Nothing to filter, or nothing owned, gives an empty list.
+     */
+    public function test_filter_owned_ids_returns_nothing_for_empty_or_foreign_input(): void {
+        $this->resetAfterTest();
+        $instancea = $this->make_instance();
+        $instanceb = $this->make_instance();
+        $foreign = $this->seed_quest($instanceb, 5);
+
+        $this->assertSame([], quests::filter_owned_ids([], $instancea));
+        $this->assertSame([], quests::filter_owned_ids([$foreign, 999999], $instancea));
     }
 }
