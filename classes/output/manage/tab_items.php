@@ -28,6 +28,7 @@ use renderable;
 use html_writer;
 use moodle_url;
 use block_playerhud\form\edit_item_form;
+use block_playerhud\utils;
 
 /**
  * Items tab management for Block PlayerHUD.
@@ -345,7 +346,7 @@ class tab_items implements renderable {
                 $itemsdata[] = [
                     'id' => $item->id,
                     'counter' => $counter++,
-                    'name' => format_string($item->name),
+                    'name' => utils::plain_string($item->name),
                     'xp' => $item->xp,
                     'enabled' => (bool)$item->enabled,
                     'secret' => (bool)$item->secret,
@@ -372,7 +373,9 @@ class tab_items implements renderable {
                     'drops_has_infinite' => $dropisinfinite,
                     'drops_has_finite' => ($dropstotaluses > 0),
                     'btn_drops_class' => ($dropscount > 0) ? 'btn-info text-white' : 'btn-outline-secondary',
-                    'confirm_msg' => s(get_string('confirm_delete', 'block_playerhud') . " '" . format_string($item->name) . "'?"),
+                    'confirm_msg' => s(
+                        get_string('confirm_delete', 'block_playerhud') . " '" . utils::plain_string($item->name) . "'?"
+                    ),
 
                     // URLs.
                     'url_toggle' => (new moodle_url($baseurl, [
@@ -413,7 +416,7 @@ class tab_items implements renderable {
                         $actlabel = get_string('item_lp_any_activity', 'block_playerhud');
                         if ($cmid > 0) {
                             try {
-                                $actlabel = format_string($modinfo->get_cm($cmid)->name);
+                                $actlabel = utils::plain_string($modinfo->get_cm($cmid)->name);
                             } catch (\moodle_exception $e) {
                                 debugging($e->getMessage(), DEBUG_DEVELOPER);
                             }
@@ -425,7 +428,7 @@ class tab_items implements renderable {
                         && !$haslpactivities,
 
                     // Item specific strings.
-                    'str_manage_drops' => get_string('manage_drops_title', 'block_playerhud', format_string($item->name)),
+                    'str_manage_drops' => get_string('manage_drops_title', 'block_playerhud', utils::plain_string($item->name)),
                     'str_secret' => $str['secret'],
                     'str_yes' => $str['yes'],
                     'str_no' => $str['no'],
@@ -566,9 +569,9 @@ class tab_items implements renderable {
         foreach ($pageslice as $drop) {
             $dropsdata[] = [
                 'item_number'     => $itemnumbers[$drop->itemid],
-                'item_name'       => format_string($drop->item_name),
+                'item_name'       => utils::plain_string($drop->item_name),
                 'drop_name'       => format_text(s($drop->drop_name), FORMAT_HTML, $fmtopts),
-                'drop_name_plain' => format_string($drop->drop_name),
+                'drop_name_plain' => utils::plain_string($drop->drop_name),
                 'code'            => s($drop->code),
                 'is_infinite'     => ($drop->maxusage == 0),
                 'maxusage'        => $drop->maxusage,
@@ -679,7 +682,7 @@ class tab_items implements renderable {
             $insertednames = [];
             foreach ($modules as $mod) {
                 if (in_array($mod['cmid'], $insertedcmids)) {
-                    $insertednames[] = format_string($mod['name']);
+                    $insertednames[] = $mod['name'];
                 }
             }
 
@@ -696,8 +699,8 @@ class tab_items implements renderable {
             $dropsdata[] = [
                 'id'                  => $drop->id,
                 'code'                => $drop->code,
-                'drop_name'           => format_string($drop->drop_name),
-                'item_name'           => format_string($drop->item_name),
+                'drop_name'           => utils::plain_string($drop->drop_name),
+                'item_name'           => utils::plain_string($drop->item_name),
                 'is_image'            => (bool)$mediadata['is_image'],
                 'image_url'           => $mediadata['is_image'] ? $mediadata['url'] : '',
                 'image_content'       => $mediadata['is_image'] ? '' : strip_tags($mediadata['content']),

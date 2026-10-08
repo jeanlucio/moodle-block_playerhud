@@ -24,6 +24,8 @@
 
 namespace block_playerhud\local;
 
+use block_playerhud\utils;
+
 /**
  * Finds course modules eligible to receive a drop shortcode and suggests the best match
  * by name, so the manual distribution screen and the wizard's auto-distribute step share
@@ -79,7 +81,7 @@ class drop_distribution {
             $modules[] = [
                 'cmid' => $cm->id,
                 'instance' => $cm->instance,
-                'name' => format_string($cm->name),
+                'name' => utils::plain_string($cm->name),
                 'modname' => $cm->modname,
                 'modname_translated' => get_string('modulename', 'mod_' . $cm->modname),
                 'supports_content' => ($cm->modname === 'page'),
