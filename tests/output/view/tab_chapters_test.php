@@ -134,6 +134,31 @@ final class tab_chapters_test extends advanced_testcase {
     }
 
     /**
+     * The story reader is started with the course the tab belongs to. It was started with a
+     * course id read from a column the player table does not have, so it always received 0.
+     */
+    public function test_display_starts_the_story_player_with_the_course_id(): void {
+        global $PAGE;
+
+        $this->create_chapter_with_start('The Awakening');
+        $player = (object) ['blockinstanceid' => $this->instanceid, 'userid' => $this->user->id, 'currentxp' => 0];
+
+        (new tab_chapters(new \stdClass(), $player, $this->instanceid, $this->course->id))->display();
+
+        $property = new \ReflectionProperty(\page_requirements_manager::class, 'amdjscode');
+        $property->setAccessible(true);
+        $code = implode("\n", (array) $property->getValue($PAGE->requires));
+        $this->assertStringContainsString(
+            'block_playerhud/story_player',
+            $code
+        );
+        $this->assertMatchesRegularExpression(
+            '/init\(' . $this->instanceid . ',\s*' . $this->course->id . ',/',
+            $code
+        );
+    }
+
+    /**
      * A chapter recorded in the player's completed_chapters list renders as completed.
      */
     public function test_display_marks_completed_chapter(): void {

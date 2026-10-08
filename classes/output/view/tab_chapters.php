@@ -164,7 +164,7 @@ class tab_chapters implements renderable {
             'init',
             [
                 $this->instanceid,
-                $this->player->courseid ?? 0,
+                $this->courseid,
                 [
                     'close'      => get_string('close', 'block_playerhud'),
                     'completed'  => get_string('story_chapter_completed', 'block_playerhud'),
