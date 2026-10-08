@@ -20,6 +20,7 @@ use renderable;
 use templatable;
 use renderer_base;
 use moodle_url;
+use block_playerhud\utils;
 
 /**
  * Trades tab management (Teacher View).
@@ -81,7 +82,7 @@ class tab_trades implements renderable, templatable {
                 foreach ($trade->requirements as $req) {
                     $media = $allmedia[$req->itemid];
 
-                    $reqname = format_string($req->name);
+                    $reqname = utils::plain_string($req->name);
                     $reqsdata[] = [
                         'qty' => $req->qty,
                         'name' => $reqname,
@@ -101,7 +102,7 @@ class tab_trades implements renderable, templatable {
                 foreach ($trade->rewards as $rew) {
                     $media = $allmedia[$rew->itemid];
 
-                    $rewname = format_string($rew->name);
+                    $rewname = utils::plain_string($rew->name);
                     $rewsdata[] = [
                         'qty' => $rew->qty,
                         'name' => $rewname,
@@ -131,14 +132,14 @@ class tab_trades implements renderable, templatable {
                     'sesskey' => sesskey(),
                 ]);
 
-                $msgraw = get_string('deletecheck', 'moodle', format_string($trade->name));
+                $msgraw = get_string('deletecheck', 'moodle', utils::plain_string($trade->name));
 
                 $secureraw = $trade->id . '_' . $trade->timecreated;
                 $securecode = strtoupper(substr(md5($secureraw), 0, 6));
 
                 $tradesdata[] = [
                     'id' => $trade->id,
-                    'name' => format_string($trade->name),
+                    'name' => utils::plain_string($trade->name),
                     'is_centralized' => ($trade->centralized == 1),
                     'is_onetime' => ($trade->onetime == 1),
                     'shortcode' => "[PLAYERHUD_TRADE code={$securecode}]",

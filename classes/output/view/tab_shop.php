@@ -20,6 +20,7 @@ use renderable;
 use templatable;
 use renderer_base;
 use moodle_url;
+use block_playerhud\utils;
 
 /**
  * Shop tab output renderer.
@@ -158,7 +159,7 @@ class tab_shop implements renderable, templatable {
                         $canafford = false;
                     }
 
-                    $itemname = format_string($req->name);
+                    $itemname = utils::plain_string($req->name);
                     $youhave = get_string('trade_you_have', 'block_playerhud', $myqty);
                     $colorclass = $hasenough ? 'text-success' : 'text-danger';
                     $reqsdata[] = [
@@ -180,7 +181,7 @@ class tab_shop implements renderable, templatable {
                 $rewsdata = [];
                 foreach ($trade->rewards as $rew) {
                     $media = $allmedia[$rew->itemid];
-                    $rewname = format_string($rew->name);
+                    $rewname = utils::plain_string($rew->name);
                     $rewsdata[] = [
                         'qty' => $rew->qty,
                         'name' => $rewname,
@@ -204,7 +205,7 @@ class tab_shop implements renderable, templatable {
                 // Compile data for this trade.
                 $tradesdata[] = [
                     'id' => $trade->id,
-                    'name' => format_string($trade->name),
+                    'name' => utils::plain_string($trade->name),
                     'requirements' => $reqsdata,
                     'rewards' => $rewsdata,
                     'compact_reqs' => count($reqsdata) > 3,
