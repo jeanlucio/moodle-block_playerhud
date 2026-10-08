@@ -308,19 +308,7 @@ class tab_items implements renderable {
 
         // Check LP activities once before the loop to avoid N+1 queries.
         $lpisinstalled = class_exists('\local_latepenalty\recalculator');
-        $haslpactivities = false;
-        if ($lpisinstalled) {
-            $lprules = $DB->get_records('local_latepenalty_rules', ['enabled' => 1]);
-            foreach ($lprules as $rule) {
-                try {
-                    $modinfo->get_cm($rule->cmid);
-                    $haslpactivities = true;
-                    break;
-                } catch (\moodle_exception $e) {
-                    continue;
-                }
-            }
-        }
+        $haslpactivities = $lpisinstalled && $this->course_has_lp_activities($modinfo);
 
         if ($items) {
             $dropscounts = [];
@@ -822,20 +810,42 @@ class tab_items implements renderable {
         global $DB;
 
         $modinfo = get_fast_modinfo($this->courseid);
-        $sql = "SELECT r.cmid, r.enabled
-                  FROM {local_latepenalty_rules} r
-                 WHERE r.enabled = 1";
-        $rules = $DB->get_records_sql($sql);
+        $coursecmids = array_keys($modinfo->get_cms());
 
+        // The rules table is site-wide: ask only for this course's activities.
         $activities = [];
-        foreach ($rules as $rule) {
-            try {
-                $cm = $modinfo->get_cm($rule->cmid);
-                $activities[$rule->cmid] = format_string($cm->name);
-            } catch (\moodle_exception $e) {
-                continue;
+        if (!empty($coursecmids)) {
+            [$insql, $inparams] = $DB->get_in_or_equal($coursecmids, SQL_PARAMS_NAMED);
+            $rules = $DB->get_records_select('local_latepenalty_rules', "enabled = 1 AND cmid $insql", $inparams);
+
+            foreach ($rules as $rule) {
+                try {
+                    $cm = $modinfo->get_cm($rule->cmid);
+                    $activities[$rule->cmid] = format_string($cm->name);
+                } catch (\moodle_exception $e) {
+                    continue;
+                }
             }
         }
         return $activities;
+    }
+
+    /**
+     * Whether any activity of this course has an enabled late penalty rule.
+     *
+     * @param \course_modinfo $modinfo The course's modinfo.
+     * @return bool
+     */
+    protected function course_has_lp_activities(\course_modinfo $modinfo): bool {
+        global $DB;
+
+        $coursecmids = array_keys($modinfo->get_cms());
+        if (empty($coursecmids)) {
+            return false;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($coursecmids, SQL_PARAMS_NAMED);
+
+        return $DB->record_exists_select('local_latepenalty_rules', "enabled = 1 AND cmid $insql", $inparams);
     }
 }
