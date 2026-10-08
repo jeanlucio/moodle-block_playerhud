@@ -74,6 +74,41 @@ final class setup_playercoin_drop_test extends external_base_testcase {
     }
 
     /**
+     * The news forum description is shown on the course page from the course cache, so the cache
+     * must be rebuilt: the shortcode used to appear only after some other action rebuilt it. The
+     * change is also announced to Moodle, and the forum records when it was modified.
+     */
+    public function test_setup_playercoin_drop_refreshes_the_course_page_and_announces_the_change(): void {
+        global $DB;
+
+        $forum = $this->getDataGenerator()->create_module('forum', [
+            'course' => $this->course->id, 'type' => 'news', 'intro' => 'Welcome', 'showdescription' => 1,
+        ]);
+        $DB->set_field('forum', 'timemodified', 1000, ['id' => $forum->id]);
+        // Build the course cache with the old description, as a visit to the course page does.
+        rebuild_course_cache($this->course->id, true);
+        $this->assertStringNotContainsString(
+            'PLAYERHUD_DROP',
+            get_fast_modinfo($this->course->id)->get_cm($forum->cmid)->content
+        );
+        $item = $this->create_item($this->instanceid, 'PlayerCoin');
+        $sink = $this->redirectEvents();
+
+        setup_playercoin_drop::execute($this->instanceid, $this->course->id, $item->id);
+
+        $this->assertStringContainsString(
+            'PLAYERHUD_DROP',
+            get_fast_modinfo($this->course->id)->get_cm($forum->cmid)->content
+        );
+        $events = array_filter(
+            $sink->get_events(),
+            static fn($event) => $event instanceof \core\event\course_module_updated
+        );
+        $this->assertCount(1, $events);
+        $this->assertGreaterThan(1000, (int) $DB->get_field('forum', 'timemodified', ['id' => $forum->id]));
+    }
+
+    /**
      * When the course has no news forum the WS returns success=false and
      * creates no drop record.
      */

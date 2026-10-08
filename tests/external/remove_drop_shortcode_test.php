@@ -87,6 +87,28 @@ final class remove_drop_shortcode_test extends external_base_testcase {
     }
 
     /**
+     * Removing the shortcode announces the activity change too, like inserting it does.
+     */
+    public function test_remove_triggers_course_module_updated(): void {
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid, $code] = $this->create_drop($item->id);
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course'  => $this->course->id,
+            'content' => '[PLAYERHUD_DROP code=' . $code . ']' . "\n" . 'Keep',
+        ]);
+        $sink = $this->redirectEvents();
+
+        remove_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $page->cmid, 'content');
+
+        $events = array_filter(
+            $sink->get_events(),
+            static fn($event) => $event instanceof \core\event\course_module_updated
+        );
+        $this->assertCount(1, $events);
+        $this->assertSame((int) $page->cmid, (int) reset($events)->objectid);
+    }
+
+    /**
      * The <br> separator used by setup_playercoin_drop for the news forum intro is stripped
      * cleanly too, not just the newline separator used by insert_drop_shortcode.
      */

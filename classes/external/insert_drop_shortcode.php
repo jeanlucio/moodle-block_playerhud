@@ -144,6 +144,9 @@ class insert_drop_shortcode extends external_api {
             $items
         ));
         $fieldvaluescache = drop_distribution::preload_field_values($courseid, $items);
+        // Each change below announces itself with an event that needs its activity's context:
+        // load the course's contexts once instead of reading one per item.
+        \context_helper::preload_course($courseid);
 
         $results = [];
         $anysucceeded = false;
@@ -341,6 +344,10 @@ class insert_drop_shortcode extends external_api {
         if (!$deferrebuild) {
             rebuild_course_cache($courseid, true);
         }
+
+        // The activity's text changed: tell Moodle, as editing it through the form would, so logs,
+        // event observers and the search indexer hear about it.
+        \core\event\course_module_updated::create_from_cm($cm)->trigger();
 
         // The drop's own name is its "Location / Name" in the drops management table — renaming
         // it to the activity it just landed in (instead of leaving whatever it was created with)

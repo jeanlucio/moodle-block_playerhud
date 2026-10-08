@@ -110,6 +110,9 @@ class remove_drop_shortcode extends external_api {
             $items
         ));
         $fieldvaluescache = drop_distribution::preload_field_values($courseid, $items);
+        // Each change below announces itself with an event that needs its activity's context:
+        // load the course's contexts once instead of reading one per item.
+        \context_helper::preload_course($courseid);
 
         $results = [];
         $anychanged = false;
@@ -292,6 +295,9 @@ class remove_drop_shortcode extends external_api {
         if (!$deferrebuild) {
             rebuild_course_cache($courseid, true);
         }
+
+        // The activity's text changed: tell Moodle, as editing it through the form would.
+        \core\event\course_module_updated::create_from_cm($cm)->trigger();
 
         return ['success' => true, 'message' => ''];
     }

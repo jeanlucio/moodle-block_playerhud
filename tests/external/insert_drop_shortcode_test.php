@@ -87,6 +87,27 @@ final class insert_drop_shortcode_test extends external_base_testcase {
     }
 
     /**
+     * Rewriting an activity's text announces the change to Moodle like any other edit of the
+     * activity, so logs, observers and the search indexer hear about it. The text used to be
+     * written straight to the table with no event.
+     */
+    public function test_insert_triggers_course_module_updated(): void {
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'content' => 'Body']);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid] = $this->create_drop($item->id);
+        $sink = $this->redirectEvents();
+
+        insert_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $page->cmid, 'content', 'top');
+
+        $events = array_filter(
+            $sink->get_events(),
+            static fn($event) => $event instanceof \core\event\course_module_updated
+        );
+        $this->assertCount(1, $events);
+        $this->assertSame((int) $page->cmid, (int) reset($events)->objectid);
+    }
+
+    /**
      * Regression test for the N+1 performance finding: execute_batch() must insert
      * shortcodes for several drops in one call, each into its own target activity, with the
      * same per-item success/failure semantics as calling execute() once per drop.
@@ -168,6 +189,10 @@ final class insert_drop_shortcode_test extends external_base_testcase {
             [$dropid] = $this->create_drop($item->id);
             $bigitems[] = ['dropid' => $dropid, 'cmid' => $page->cmid, 'field' => 'content', 'position' => 'top'];
         }
+
+        // The activity-updated events are redirected: their observers belong to other components
+        // and read per event, which says nothing about this plugin's own query pattern.
+        $this->redirectEvents();
 
         $readsbefore = $DB->perf_get_reads();
         insert_drop_shortcode::execute_batch($this->instanceid, $this->course->id, $smallitems);

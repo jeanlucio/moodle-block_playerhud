@@ -124,6 +124,12 @@ class setup_playercoin_drop extends external_api {
         $shortcode = '[PLAYERHUD_DROP code=' . $code . ']';
         $newintro  = $shortcode . ($forum->intro ? '<br>' . $forum->intro : '');
         $DB->set_field('forum', 'intro', $newintro, ['id' => $forum->id]);
+        $DB->set_field('forum', 'timemodified', time(), ['id' => $forum->id]);
+
+        // The description is shown on the course page from the course cache: rebuild it, and tell
+        // Moodle the activity changed, as editing it through the form would.
+        rebuild_course_cache($courseid, true);
+        \core\event\course_module_updated::create_from_cm(get_fast_modinfo($courseid)->get_cm($forum->cmid))->trigger();
 
         return [
             'success' => true,
