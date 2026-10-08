@@ -10,8 +10,6 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `ai/hub_usage_reporting_test.php` | 2 |
 | `backup_restore_test.php` | 3 |
 | `collection_tab_test.php` | 17 |
-| `content_crud_test.php` | 13 |
-| `cross_instance_security_test.php` | 12 |
 | `db_access_test.php` | 1 |
 | `db_upgrade_test.php` | 9 |
 | `drop_guard_test.php` | 11 |
@@ -30,7 +28,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `trade_test.php` | 11 |
 | `uninstall_test.php` | 2 |
 | `utils_test.php` | 19 |
-| **Subtotal** | **330** |
+| **Subtotal** | **305** |
 
 ### Local Business-Logic Tests (`tests/local/`)
 
@@ -109,7 +107,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `view/tab_shop_test.php` | 4 |
 | **Subtotal** | **59** |
 
-| **Grand Total** | **818** |
+| **Grand Total** | **793** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
