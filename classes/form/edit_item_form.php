@@ -219,6 +219,9 @@ class edit_item_form extends \moodleform {
         }
         if (!is_numeric($data['xp'])) {
             $errors['xp'] = get_string('validate_number', 'block_playerhud');
+        } else if ((float) $data['xp'] < 0) {
+            // Collecting an item never takes XP away, so a negative value only misleads.
+            $errors['xp'] = get_string('validate_xp_negative', 'block_playerhud');
         }
         // Defense in depth: the image field can hold a raw URL (rendered as an <img src>
         // client-side), so reject anything that does not survive PARAM_URL cleaning.

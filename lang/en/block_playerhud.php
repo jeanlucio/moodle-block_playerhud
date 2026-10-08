@@ -989,6 +989,7 @@ $string['trades_summary_hint'] = 'Trade offers define NPC negotiation rules: the
 $string['unlimited'] = 'Unlimited';
 $string['uploadfile'] = 'Upload File';
 $string['validate_number'] = 'Must be a valid number.';
+$string['validate_xp_negative'] = 'XP cannot be negative. Use 0 for an item that gives no XP.';
 $string['view_ranking'] = 'View Leaderboard';
 $string['visible'] = 'Visible';
 $string['visible_desc'] = 'You appear to your colleagues.';

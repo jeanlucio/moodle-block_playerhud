@@ -96,6 +96,23 @@ final class analytics_test extends advanced_testcase {
     }
 
     /**
+     * An item stored with a negative XP (the form used to accept it) gives no XP when collected,
+     * so it must not reduce what the game can pay out: the total stays what the other item pays.
+     */
+    public function test_economy_health_ignores_an_item_with_negative_xp(): void {
+        $paying = $this->create_item('Paying', 100);
+        $this->create_drop($paying, 1);
+        $negative = $this->create_item('Negative', -50);
+        $this->create_drop($negative, 2);
+
+        $health = analytics::game_xp_totals($this->instanceid);
+
+        $this->assertSame(100, $health['total_xp']);
+        $this->assertCount(1, $health['breakdown']);
+        $this->assertSame('Paying', $health['breakdown'][0]['name']);
+    }
+
+    /**
      * Total earnable XP below the ceiling is flagged as too hard.
      */
     public function test_economy_health_hard(): void {

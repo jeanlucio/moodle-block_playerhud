@@ -989,6 +989,7 @@ $string['trades_summary_hint'] = 'As ofertas de troca definem as regras de negoc
 $string['unlimited'] = 'Ilimitado';
 $string['uploadfile'] = 'Upload de Arquivo';
 $string['validate_number'] = 'Deve ser um número válido.';
+$string['validate_xp_negative'] = 'O XP não pode ser negativo. Use 0 para um item que não dá XP.';
 $string['view_ranking'] = 'Ver Ranking';
 $string['visible'] = 'Visível';
 $string['visible_desc'] = 'Você aparece para seus colegas.';

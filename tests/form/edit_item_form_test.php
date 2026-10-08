@@ -59,6 +59,46 @@ final class edit_item_form_test extends advanced_testcase {
     }
 
     /**
+     * A negative XP is rejected: collecting an item never takes XP away, so the value would only
+     * show as "-50 XP" on the card while the economy balance subtracted it.
+     */
+    public function test_negative_xp_is_rejected(): void {
+        $this->resetAfterTest();
+
+        $errors = $this->make_form()->validation(['xp' => -50] + $this->base_data(), []);
+
+        $this->assertArrayHasKey('xp', $errors);
+        $this->assertSame(get_string('validate_xp_negative', 'block_playerhud'), $errors['xp']);
+    }
+
+    /**
+     * Zero and positive XP, including a decimal string, still pass.
+     *
+     * @dataProvider valid_xp_provider
+     * @param mixed $xp Submitted value.
+     */
+    public function test_non_negative_xp_passes($xp): void {
+        $this->resetAfterTest();
+
+        $errors = $this->make_form()->validation(['xp' => $xp] + $this->base_data(), []);
+
+        $this->assertArrayNotHasKey('xp', $errors);
+    }
+
+    /**
+     * Acceptable XP values.
+     *
+     * @return array
+     */
+    public static function valid_xp_provider(): array {
+        return [
+            'zero' => [0],
+            'positive' => [25],
+            'zero as string' => ['0'],
+        ];
+    }
+
+    /**
      * A plain emoji value must pass validation untouched.
      */
     public function test_emoji_value_passes(): void {

@@ -91,7 +91,8 @@ class analytics {
                         // (value) — a drop worth 2 units per pickup with a limit of 2 pickups
                         // pays out 4 units total, not 2.
                         $units = $drop->maxusage * max(1, (int)$drop->value);
-                        $itemxp += ($item->xp * $units);
+                        // A negative stored XP is paid as 0 on collection, so it counts as 0 here.
+                        $itemxp += (max(0, (int) $item->xp) * $units);
                         $totaldropuses += $units;
                     } else {
                         $hasinfinite = true;
@@ -107,7 +108,7 @@ class analytics {
                 $totalxp += $itemxp;
                 $breakdown[] = [
                     'name' => $item->name,
-                    'xp_each' => $item->xp,
+                    'xp_each' => max(0, (int) $item->xp),
                     'drop_count' => count($dropsbyitem[$item->id]),
                     'total_uses' => $hasinfinite ? '∞' : $totaldropuses,
                     'xp_total' => $itemxp,
