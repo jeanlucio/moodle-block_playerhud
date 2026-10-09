@@ -417,6 +417,56 @@ class behat_block_playerhud extends behat_base {
     }
 
     /**
+     * Creates a one-scene story chapter whose single choice ends the chapter, and turns on the
+     * block's RPG mode so the Story tab is offered to students.
+     *
+     * @param string $title Chapter title.
+     * @param string $scene Text of the starting scene.
+     * @param string $choice Text of the choice that ends the chapter.
+     * @param string $shortname Course shortname.
+     * @Given a PlayerHUD story chapter :title with scene :scene and choice :choice exists in course :shortname
+     */
+    public function playerhud_story_chapter_exists(string $title, string $scene, string $choice, string $shortname): void {
+        global $DB;
+
+        $instance = $this->get_playerhud_instance($shortname);
+        $config = \block_playerhud\utils::get_block_config($instance);
+        $config->enable_rpg = 1;
+        $DB->set_field('block_instances', 'configdata', base64_encode(serialize($config)), ['id' => $instance->id]);
+
+        $chapterid = $DB->insert_record('block_playerhud_chapters', (object) [
+            'blockinstanceid' => $instance->id,
+            'title'           => $title,
+            'intro_text'      => '',
+            'unlock_date'     => 0,
+            'required_level'  => 0,
+            'sortorder'       => 1,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+        $nodeid = $DB->insert_record('block_playerhud_story_nodes', (object) [
+            'chapterid'    => $chapterid,
+            'content'      => $scene,
+            'is_start'     => 1,
+            'timecreated'  => time(),
+            'timemodified' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_choices', (object) [
+            'nodeid'        => $nodeid,
+            'text'          => $choice,
+            'next_nodeid'   => 0,
+            'req_class_id'  => 0,
+            'req_karma_min' => 0,
+            'karma_delta'   => 0,
+            'set_class_id'  => 0,
+            'cost_itemid'   => 0,
+            'cost_item_qty' => 0,
+            'timecreated'   => time(),
+            'timemodified'  => time(),
+        ]);
+    }
+
+    /**
      * Returns the PlayerHUD block instance placed in a course.
      *
      * @param string $shortname Course shortname.
