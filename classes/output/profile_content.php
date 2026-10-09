@@ -70,7 +70,7 @@ class profile_content implements \renderable, \templatable {
         }
 
         $bi = $DB->get_record('block_instances', ['id' => $this->blockinstanceid], 'configdata', MUST_EXIST);
-        $config = unserialize_object(base64_decode($bi->configdata));
+        $config = \block_playerhud\utils::get_block_config($bi);
 
         $stats = \block_playerhud\game::get_game_stats($config, $this->blockinstanceid, (int)$player->currentxp);
 

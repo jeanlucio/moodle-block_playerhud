@@ -199,10 +199,7 @@ class wizard_run_step extends external_api {
         );
 
         $bi = $DB->get_record('block_instances', ['id' => $params['instanceid']], '*', MUST_EXIST);
-        $config = unserialize_object(base64_decode($bi->configdata));
-        if (!$config) {
-            $config = new \stdClass();
-        }
+        $config = \block_playerhud\utils::get_block_config($bi);
 
         $counts = ['items' => 0, 'quests' => 0, 'trades' => 0, 'chapters' => 0, 'classes' => 0];
         $newdropids = [];

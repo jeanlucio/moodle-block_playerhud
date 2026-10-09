@@ -48,10 +48,7 @@ if (!$blockcoursectx || (int) $blockcoursectx->instanceid !== $courseid) {
 }
 
 // Load Block Configuration.
-$config = unserialize_object(base64_decode($bi->configdata));
-if (!$config) {
-    $config = new stdClass();
-}
+$config = \block_playerhud\utils::get_block_config($bi);
 $config->enable_rpg        = isset($config->enable_rpg) ? $config->enable_rpg : 1;
 $config->enable_ranking    = isset($config->enable_ranking) ? $config->enable_ranking : 1;
 $config->enable_items      = isset($config->enable_items) ? $config->enable_items : 1;

@@ -92,7 +92,7 @@ class tab_reports implements renderable, templatable {
         ]);
 
         $bi = $DB->get_record('block_instances', ['id' => $this->instanceid], '*', MUST_EXIST);
-        $config = unserialize_object(base64_decode($bi->configdata));
+        $config = \block_playerhud\utils::get_block_config($bi);
         $xpperlevel = $config->xp_per_level ?? 100;
         $maxlevels = $config->max_levels ?? 20;
 

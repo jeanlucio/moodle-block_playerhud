@@ -68,10 +68,7 @@ class generator {
         global $DB;
         $this->instanceid = $instanceid;
         $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
-        $this->config = unserialize_object(base64_decode($bi->configdata));
-        if (!$this->config) {
-            $this->config = new \stdClass();
-        }
+        $this->config = \block_playerhud\utils::get_block_config($bi);
         // The block's own context (CONTEXT_BLOCK) is not one of the levels core_ai's
         // per-course toggle checks — use the context of the page it is added to instead
         // (course, course category, or course module), exactly what is_action_enabled_in_context()

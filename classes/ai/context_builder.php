@@ -56,8 +56,7 @@ class context_builder {
         $this->instanceid = $instanceid;
         $this->courseid   = $courseid;
         $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
-        $cfg = unserialize_object(base64_decode($bi->configdata));
-        $this->config = $cfg ?: new \stdClass();
+        $this->config = \block_playerhud\utils::get_block_config($bi);
     }
 
     /**

@@ -456,4 +456,20 @@ class utils {
     public static function format_drop_qty_per_collection(int $value): string {
         return get_string('drop_qty_per_collection', 'block_playerhud', $value);
     }
+
+    /**
+     * Decodes a block instance's configuration, whatever state configdata is in.
+     *
+     * A block added through the interface stores an empty string until it is first configured,
+     * while one created by the data generator, a script or another plugin may store NULL. Both,
+     * and any value that does not decode to an object, give an empty configuration.
+     *
+     * @param \stdClass $blockinstance block_instances record (configdata is read).
+     * @return \stdClass The configuration; empty when there is none.
+     */
+    public static function get_block_config(\stdClass $blockinstance): \stdClass {
+        $raw = base64_decode($blockinstance->configdata ?? '', true);
+        $config = ($raw !== false && $raw !== '') ? unserialize_object($raw) : null;
+        return is_object($config) ? $config : new \stdClass();
+    }
 }

@@ -91,8 +91,8 @@ class tab_chapters implements renderable {
         $maxlevels = 20;
         $bi = $DB->get_record('block_instances', ['id' => $this->instanceid]);
         if ($bi && !empty($bi->configdata)) {
-            $config = unserialize_object(base64_decode($bi->configdata));
-            if ($config && isset($config->max_levels) && (int) $config->max_levels > 0) {
+            $config = \block_playerhud\utils::get_block_config($bi);
+            if (isset($config->max_levels) && (int) $config->max_levels > 0) {
                 $maxlevels = (int) $config->max_levels;
             }
         }
