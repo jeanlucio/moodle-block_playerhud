@@ -59,6 +59,7 @@ $sectionkeys = [
     'story',
     'reports',
     'config',
+    'removal',
 ];
 
 $sections = [];
