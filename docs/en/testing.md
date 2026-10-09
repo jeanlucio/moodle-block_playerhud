@@ -281,9 +281,10 @@ instrumented and folded into the **Overall** figure; measured on their own inste
 | `block_playerhud_wizard.feature` | 6 | Wizard opens showing the generation form; Help and External recommendations side views; generating PlayerCoin end-to-end shows the success report; the PlayerCoin card locks after being generated; undoing a run from the History view unlocks it again |
 | `block_playerhud_manage_crud.feature` | 7 | The management screens the PHP-level tests reach only in isolation: the Trades, Characters and Story tabs render on a real request; the item library links through to the drops screen; a drop is created through the real `moodleform`, appears in the listing and shows a success notification (locking the `redirect()` notification-type regression); a character is created through the real form (file-manager fields included); the bulk-selection master checkbox checks and clears every row (JavaScript) |
 | `block_playerhud_manage_js.feature` | 9 | The JavaScript of the character, settings and quest screens: deleting a character after confirming in the modal, or cancelling and keeping it; revealing and hiding an API key; deleting a quest after confirming or keeping it when declined; the bulk delete button counts the selected quests, goes back to disabled when the selection is cleared, and deletes the selection after confirming |
+| `block_playerhud_story_js.feature` | 5 | The story's JavaScript: a student reads a chapter to the ending scene and opens the story summary; the teacher previews a chapter to its end without saving progress and deletes a chapter and a scene through their confirmation modals |
 | `block_playerhud_pagination.feature` | 5 | With 61 ranked players: a student below the first page sees their own row pinned under it; the second page lists the next players and no longer pins the student who is on it; a teacher hiding a student stays on the same page; the reports table shows its second page; the name search finds one student |
 | `block_playerhud_diagnostics.feature` | 3 | The administrator finds the usage and diagnostics page under Reports and sees the figures; nothing is deleted without ticking the confirmation; confirming deletes the data left by a removed block and lists the saved copy |
-| **Total** | **53** | |
+| **Total** | **58** | |
 
 ```bash
 php admin/tool/behat/cli/init.php
