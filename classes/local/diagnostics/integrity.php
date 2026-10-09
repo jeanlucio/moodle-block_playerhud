@@ -70,6 +70,9 @@ class integrity {
         'block_playerhud_wizard_shortcodes' => ['runid', 'block_playerhud_wizard_runs'],
     ];
 
+    /** @var int Most orphan instances detailed (and offered for deletion) at once; the rest come next time. */
+    public const MAXLISTED = 100;
+
     /** @var int Seconds searched on each side of an orphan's last XP change to find its course in the log. */
     public const LOG_WINDOW = 300;
 
@@ -108,13 +111,22 @@ class integrity {
      * gain, searched only within LOG_WINDOW seconds of that gain so the lookup stays on the
      * log's timecreated index instead of scanning the whole table.
      *
+     * Only the first $limit orphans (by id) are detailed, which keeps the detail queries and the
+     * page bounded on a site with many removed blocks; the remaining ones are listed once these
+     * are cleaned. Instances whose course still exists come first.
+     *
+     * @param int $limit Most orphans to detail; 0 for all.
+     * @param int[]|null $ids Orphan ids already looked up by the caller, to avoid a second lookup.
      * @return array Objects with id, players, xp, firstactivity, lastactivity, deletedusers,
      *               items, courseid (0 when unknown) and courseexists (null when unknown).
      */
-    public static function get_orphan_instances(): array {
+    public static function get_orphan_instances(int $limit = self::MAXLISTED, ?array $ids = null): array {
         global $DB;
 
-        $ids = self::get_orphan_instance_ids();
+        $ids = $ids ?? self::get_orphan_instance_ids();
+        if ($limit > 0) {
+            $ids = array_slice($ids, 0, $limit);
+        }
         if (empty($ids)) {
             return [];
         }
@@ -167,7 +179,29 @@ class integrity {
             }
         }
 
+        // Instances whose course still exists first: they are the ones to look at before deleting.
+        usort($result, static fn($a, $b) => (int) ($b->courseexists === true) <=> (int) ($a->courseexists === true)
+            ?: $a->id <=> $b->id);
+
         return $result;
+    }
+
+    /**
+     * Counts the player rows of every orphan instance, listed or not.
+     *
+     * @return int Player rows whose block instance is gone.
+     */
+    public static function count_orphan_players(): int {
+        global $DB;
+        return $DB->count_records_sql(
+            "SELECT COUNT(1)
+               FROM {block_playerhud_user} u
+              WHERE NOT EXISTS (SELECT 1
+                                  FROM {block_instances} bi
+                                 WHERE bi.id = u.blockinstanceid
+                                   AND bi.blockname = :blockname)",
+            ['blockname' => 'playerhud']
+        );
     }
 
     /**

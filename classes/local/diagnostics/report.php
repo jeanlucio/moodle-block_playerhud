@@ -40,7 +40,8 @@ class report {
      * Returns the report, recounting it when stale, missing or explicitly refreshed.
      *
      * @param bool $refresh Whether to ignore the cached copy.
-     * @return array Keys: time, since, adoption, engagement, orphans and loose.
+     * @return array Keys: time, since, adoption, engagement, orphans (first MAXLISTED),
+     *               orphancount, orphanplayers and loose.
      */
     public static function get(bool $refresh = false): array {
         $cache = \cache::make('block_playerhud', 'diagnostics');
@@ -60,12 +61,15 @@ class report {
     public static function compute(): array {
         $now = time();
         $since = $now - usage::WINDOWDAYS * DAYSECS;
+        $orphanids = integrity::get_orphan_instance_ids();
         return [
             'time' => $now,
             'since' => $since,
             'adoption' => usage::get_adoption(),
             'engagement' => usage::get_engagement($since),
-            'orphans' => integrity::get_orphan_instances(),
+            'orphans' => integrity::get_orphan_instances(integrity::MAXLISTED, $orphanids),
+            'orphancount' => count($orphanids),
+            'orphanplayers' => integrity::count_orphan_players(),
             'loose' => integrity::count_loose_rows(),
         ];
     }

@@ -41,14 +41,17 @@ final class diagnostics_test extends advanced_testcase {
             'time' => time(),
             'since' => time() - 90 * DAYSECS,
             'adoption' => [
-                'courses' => 2, 'instances' => 3, 'inuse' => 2, 'withoutitems' => 1,
+                'courses' => 3, 'withitems' => 1, 'playersonly' => 1, 'empty' => 1,
                 'features' => ['enable_rpg' => 1, 'enable_quests' => 2, 'enable_ranking' => 3, 'enable_items' => 3],
+                'dashboard' => 0,
             ],
             'engagement' => [
                 'players' => 5, 'active' => 2, 'optedout' => 1, 'xp' => 300, 'itemsreceived' => 7,
                 'questscompleted' => 1, 'trades' => 0, 'airequests' => ['Gemini' => 2, 'Groq' => 1], 'wizardruns' => 0,
             ],
             'orphans' => $orphans,
+            'orphancount' => count($orphans),
+            'orphanplayers' => array_sum(array_map(static fn($orphan) => $orphan->players, $orphans)),
             'loose' => $loose + ['block_playerhud_choices' => 0],
         ];
     }
@@ -89,7 +92,7 @@ final class diagnostics_test extends advanced_testcase {
         $this->resetAfterTest(true);
         $data = $this->export($this->make_report());
 
-        $this->assertCount(8, $data['adoption']);
+        $this->assertCount(8, $data['adoption'], 'No Dashboard card when there are no such blocks.');
         $this->assertCount(9, $data['engagement']);
         $this->assertCount(3, $data['integrity']);
         $ai = $data['engagement'][7];
@@ -150,12 +153,51 @@ final class diagnostics_test extends advanced_testcase {
         $this->assertSame(1, preg_match('/<input[^>]*name="instances\[\]" value="100"[^>]*>/s', $html, $match));
         $this->assertStringNotContainsString('checked', $match[0], 'Its course still exists, so it starts unselected.');
         $this->assertStringContainsString(get_string('diag_select_instance', 'block_playerhud', 100), $html);
-        $this->assertStringContainsString('block_playerhud_inventory', $html);
+        $this->assertStringContainsString(get_string('diag_loose_inventory', 'block_playerhud'), $html);
+        $this->assertStringNotContainsString('block_playerhud_inventory', $html);
+        $this->assertSame('', $data['orphanspartial']);
         $this->assertStringContainsString('name="confirm"', $html);
         $this->assertStringContainsString('orphans-20261009-140000-ab12.json', $html);
 
         $download = new moodle_url(html_entity_decode($data['backups'][0]['downloadurl']));
         $this->assertSame('download', $download->get_param('action'));
         $this->assertSame(sesskey(), $download->get_param('sesskey'));
+    }
+
+    /**
+     * When more orphans exist than are listed, the page says how many are shown, and the
+     * integrity cards still count all of them.
+     */
+    public function test_partial_orphan_list(): void {
+        $this->resetAfterTest(true);
+        $report = $this->make_report([$this->make_orphan(100, null)]);
+        $report['orphancount'] = 140;
+        $report['orphanplayers'] = 600;
+
+        $data = $this->export($report);
+
+        $this->assertSame('140', $data['integrity'][0]['value']);
+        $this->assertSame('600', $data['integrity'][1]['value']);
+        $this->assertSame(
+            get_string('diag_orphans_partial', 'block_playerhud', (object) ['shown' => 1, 'total' => 140]),
+            $data['orphanspartial']
+        );
+    }
+
+    /**
+     * Blocks left on Dashboards get their own card, with a hint on how to remove them.
+     */
+    public function test_dashboard_card(): void {
+        $this->resetAfterTest(true);
+        $report = $this->make_report();
+        $report['adoption']['dashboard'] = 2;
+
+        $cards = $this->export($report)['adoption'];
+
+        $this->assertCount(9, $cards);
+        $last = end($cards);
+        $this->assertSame('2', $last['value']);
+        $this->assertSame(get_string('diag_dashboard_blocks', 'block_playerhud'), $last['label']);
+        $this->assertSame(get_string('diag_dashboard_hint', 'block_playerhud'), $last['subtitle']);
     }
 }

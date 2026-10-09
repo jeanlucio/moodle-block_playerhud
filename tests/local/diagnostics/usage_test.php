@@ -85,8 +85,9 @@ final class usage_test extends advanced_testcase {
     }
 
     /**
-     * Adoption counts courses, instances in use, instances without items and features left on
-     * (a missing flag counts as on, as view.php defaults it).
+     * Adoption counts courses, splits them into three groups that add up to the total, counts
+     * features left on (a missing flag counts as on, as view.php defaults it), and counts a block
+     * left on a Dashboard apart from all of that.
      */
     public function test_adoption(): void {
         $this->resetAfterTest(true);
@@ -97,12 +98,27 @@ final class usage_test extends advanced_testcase {
         $this->create_player($playersonly, 10, time());
         $this->create_instance();
 
+        // A block an earlier release let a user put on their Dashboard, with a player.
+        global $DB;
+        $user = $this->getDataGenerator()->create_user();
+        $dashboardid = $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => \context_user::instance($user->id)->id,
+            'showinsubcontexts' => 0, 'pagetypepattern' => 'my-index', 'defaultregion' => 'content',
+            'defaultweight' => 0, 'configdata' => '', 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $this->create_player($dashboardid, 5, time());
+
         $adoption = usage::get_adoption();
 
         $this->assertSame(3, $adoption['courses']);
-        $this->assertSame(3, $adoption['instances']);
-        $this->assertSame(2, $adoption['inuse']);
-        $this->assertSame(2, $adoption['withoutitems']);
+        $this->assertSame(1, $adoption['dashboard']);
+        $this->assertSame(1, $adoption['withitems']);
+        $this->assertSame(1, $adoption['playersonly']);
+        $this->assertSame(1, $adoption['empty']);
+        $this->assertSame(
+            $adoption['courses'],
+            $adoption['withitems'] + $adoption['playersonly'] + $adoption['empty']
+        );
         $this->assertSame(
             ['enable_rpg' => 2, 'enable_quests' => 3, 'enable_ranking' => 2, 'enable_items' => 3],
             $adoption['features']

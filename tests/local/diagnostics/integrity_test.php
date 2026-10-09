@@ -374,4 +374,47 @@ final class integrity_test extends advanced_testcase {
         $this->assertTrue(integrity::delete_backup($result['file']));
         $this->assertSame([], integrity::list_backups());
     }
+
+    /**
+     * Player rows of every orphan are counted, beyond the listed ones.
+     */
+    public function test_count_orphan_players(): void {
+        global $DB;
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid' => 987654, 'userid' => $this->student->id, 'currentxp' => 1,
+            'enable_gamification' => 1, 'ranking_visibility' => 1, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        $this->assertSame(2, integrity::count_orphan_players());
+    }
+
+    /**
+     * Only the requested number of orphans is detailed, and the total stays available.
+     */
+    public function test_orphan_list_is_bounded(): void {
+        global $DB;
+        $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => 987654, 'name' => 'Stray', 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        $this->assertCount(2, integrity::get_orphan_instance_ids());
+        $listed = integrity::get_orphan_instances(1);
+        $this->assertCount(1, $listed);
+        $this->assertSame($this->orphanid, $listed[0]->id, 'The lowest id is listed first.');
+        $this->assertCount(2, integrity::get_orphan_instances(0));
+    }
+
+    /**
+     * Orphans whose course still exists are listed before the others.
+     */
+    public function test_orphans_with_existing_course_come_first(): void {
+        $this->enable_standard_log();
+        $loggedid = $this->create_logged_orphan();
+
+        $orphans = integrity::get_orphan_instances();
+
+        $this->assertSame($loggedid, $orphans[0]->id);
+        $this->assertTrue($orphans[0]->courseexists);
+        $this->assertSame($this->orphanid, $orphans[1]->id);
+    }
 }

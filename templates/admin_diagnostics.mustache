@@ -33,13 +33,14 @@
         "engagement": [{"value": "3", "label": "AI requests", "subtitle": "Last 90 days · Gemini 2 · Groq 1"}],
         "integrity": [{"value": "1", "label": "Removed instances with data left", "subtitle": ""}],
         "hasorphans": true,
+        "orphanspartial": "Showing 100 of 140 removed instances. The others are listed after this cleanup.",
         "orphans": [{
             "id": 100, "players": 4, "xp": 1000, "items": 30, "activity": "23/06/26 – 30/06/26",
             "deletedusers": 0, "course": "Course 99 still exists", "courseexists": true,
             "checked": false, "selectlabel": "Include instance 100 in the cleanup"
         }],
         "hasloose": true,
-        "loose": [{"table": "block_playerhud_inventory", "count": 11}],
+        "loose": [{"label": "Inventory entries of items that no longer exist", "count": 11}],
         "hascleanup": true,
         "hasbackups": true,
         "backups": [{
@@ -88,6 +89,9 @@
             <input type="hidden" name="action" value="cleanup">
 
             {{#hasorphans}}
+            <h5 class="h6 mt-3">{{#str}} diag_orphans_heading, block_playerhud {{/str}}</h5>
+            <p class="mb-2">{{#str}} diag_orphans_desc, block_playerhud {{/str}}</p>
+            {{#orphanspartial}}<div class="alert alert-info py-2">{{orphanspartial}}</div>{{/orphanspartial}}
             <div class="table-responsive">
                 <table class="table table-sm align-middle">
                     <thead>
@@ -127,9 +131,10 @@
             {{/hasorphans}}
 
             {{#hasloose}}
+            <h5 class="h6 mt-3">{{#str}} diag_loose_heading, block_playerhud {{/str}}</h5>
             <p class="mb-1">{{#str}} diag_loose_desc, block_playerhud {{/str}}</p>
             <ul>
-                {{#loose}}<li><code>{{table}}</code>: {{count}}</li>{{/loose}}
+                {{#loose}}<li>{{label}}: {{count}}</li>{{/loose}}
             </ul>
             {{/hasloose}}
 

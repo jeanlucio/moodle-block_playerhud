@@ -69,7 +69,6 @@ class diagnostics implements renderable, templatable {
         $orphans = $this->report['orphans'];
         $loose = array_filter($this->report['loose']);
 
-        $orphanplayers = array_sum(array_map(static fn($orphan) => $orphan->players, $orphans));
         $hascleanup = !empty($orphans) || !empty($loose);
         $window = get_string('diag_lastdays', 'block_playerhud', usage::WINDOWDAYS);
 
@@ -81,16 +80,7 @@ class diagnostics implements renderable, templatable {
                 'block_playerhud',
                 userdate($this->report['time'], get_string('strftimedatetimeshort', 'langconfig'))
             ),
-            'adoption' => [
-                $this->card($adoption['courses'], 'diag_courses'),
-                $this->card($adoption['instances'], 'diag_instances'),
-                $this->card($adoption['inuse'], 'diag_instances_inuse'),
-                $this->card($adoption['withoutitems'], 'diag_instances_withoutitems'),
-                $this->card($adoption['features']['enable_rpg'], 'diag_feature_rpg'),
-                $this->card($adoption['features']['enable_quests'], 'diag_feature_quests'),
-                $this->card($adoption['features']['enable_ranking'], 'diag_feature_ranking'),
-                $this->card($adoption['features']['enable_items'], 'diag_feature_items'),
-            ],
+            'adoption' => $this->adoption_cards($adoption),
             'engagement' => [
                 $this->card($engagement['players'], 'diag_players'),
                 $this->card($engagement['optedout'], 'diag_players_optedout'),
@@ -107,15 +97,21 @@ class diagnostics implements renderable, templatable {
                 $this->card($engagement['wizardruns'], 'diag_wizard_runs', $window),
             ],
             'integrity' => [
-                $this->card(count($orphans), 'diag_orphan_instances'),
-                $this->card($orphanplayers, 'diag_orphan_players'),
+                $this->card($this->report['orphancount'], 'diag_orphan_instances'),
+                $this->card($this->report['orphanplayers'], 'diag_orphan_players'),
                 $this->card(array_sum($loose), 'diag_loose_rows'),
             ],
             'hasorphans' => !empty($orphans),
             'orphans' => array_map(fn($orphan) => $this->orphan_row($orphan), $orphans),
+            'orphanspartial' => count($orphans) < $this->report['orphancount']
+                ? get_string('diag_orphans_partial', 'block_playerhud', (object) [
+                    'shown' => count($orphans),
+                    'total' => $this->report['orphancount'],
+                ])
+                : '',
             'hasloose' => !empty($loose),
             'loose' => array_map(
-                static fn(string $table, int $count): array => ['table' => $table, 'count' => $count],
+                fn(string $table, int $count): array => ['label' => $this->loose_label($table), 'count' => $count],
                 array_keys($loose),
                 array_values($loose)
             ),
@@ -123,6 +119,33 @@ class diagnostics implements renderable, templatable {
             'hasbackups' => !empty($this->backups),
             'backups' => array_map(fn($backup) => $this->backup_row($backup), $this->backups),
         ];
+    }
+
+    /**
+     * Builds the adoption cards; the Dashboard card only appears when such blocks exist.
+     *
+     * @param array $adoption Adoption figures from usage::get_adoption().
+     * @return array Card contexts.
+     */
+    protected function adoption_cards(array $adoption): array {
+        $cards = [
+            $this->card($adoption['courses'], 'diag_courses'),
+            $this->card($adoption['withitems'], 'diag_courses_withitems'),
+            $this->card($adoption['playersonly'], 'diag_courses_playersonly'),
+            $this->card($adoption['empty'], 'diag_courses_empty'),
+            $this->card($adoption['features']['enable_rpg'], 'diag_feature_rpg'),
+            $this->card($adoption['features']['enable_quests'], 'diag_feature_quests'),
+            $this->card($adoption['features']['enable_ranking'], 'diag_feature_ranking'),
+            $this->card($adoption['features']['enable_items'], 'diag_feature_items'),
+        ];
+        if ($adoption['dashboard'] > 0) {
+            $cards[] = $this->card(
+                $adoption['dashboard'],
+                'diag_dashboard_blocks',
+                get_string('diag_dashboard_hint', 'block_playerhud')
+            );
+        }
+        return $cards;
     }
 
     /**
@@ -154,6 +177,20 @@ class diagnostics implements renderable, templatable {
             $parts[] = $name . ' ' . $count;
         }
         return implode(' · ', $parts);
+    }
+
+    /**
+     * Describes a group of loose rows in words instead of its table name.
+     *
+     * Keys used: diag_loose_story_nodes, diag_loose_choices, diag_loose_inventory, diag_loose_stack,
+     * diag_loose_stack_log, diag_loose_quest_log, diag_loose_trade_reqs, diag_loose_trade_rewards,
+     * diag_loose_trade_log, diag_loose_wizard_objects, diag_loose_wizard_shortcodes.
+     *
+     * @param string $table Child table name.
+     * @return string Description.
+     */
+    protected function loose_label(string $table): string {
+        return get_string('diag_loose_' . substr($table, strlen('block_playerhud_')), 'block_playerhud');
     }
 
     /**

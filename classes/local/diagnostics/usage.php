@@ -42,33 +42,34 @@ class usage {
     /**
      * How widely the block is deployed.
      *
-     * @return array Keys: courses, instances, inuse, withoutitems and features (flag => count).
+     * Counted per course: the block allows one instance per course and is only offered on course
+     * pages. Courses fall in exactly one of three groups (withitems, playersonly, empty), so the
+     * three add up to the course total. Blocks an earlier release let users put on their
+     * Dashboard are counted apart, as dashboard, and left out of everything else.
+     *
+     * @return array Keys: courses, withitems, playersonly, empty, features (flag => count) and dashboard.
      */
     public static function get_adoption(): array {
         global $DB;
 
-        $courses = $DB->count_records_sql(
-            "SELECT COUNT(DISTINCT ctx.instanceid)
-               FROM {block_instances} bi
-               JOIN {context} ctx ON ctx.id = bi.parentcontextid AND ctx.contextlevel = :courselevel
-              WHERE bi.blockname = :blockname",
-            ['courselevel' => CONTEXT_COURSE, 'blockname' => 'playerhud']
-        );
+        $incourse = "FROM {block_instances} bi
+                     JOIN {context} ctx ON ctx.id = bi.parentcontextid AND ctx.contextlevel = :courselevel
+                    WHERE bi.blockname = :blockname";
+        $params = ['courselevel' => CONTEXT_COURSE, 'blockname' => 'playerhud'];
 
+        $hasitems = "EXISTS (SELECT 1 FROM {block_playerhud_items} i WHERE i.blockinstanceid = bi.id)";
+        $hasplayers = "EXISTS (SELECT 1 FROM {block_playerhud_user} u WHERE u.blockinstanceid = bi.id)";
         $counts = $DB->get_record_sql(
-            "SELECT COUNT(1) AS instances,
-                    SUM(CASE WHEN EXISTS (SELECT 1 FROM {block_playerhud_items} i WHERE i.blockinstanceid = bi.id)
-                               OR EXISTS (SELECT 1 FROM {block_playerhud_user} u WHERE u.blockinstanceid = bi.id)
-                             THEN 1 ELSE 0 END) AS inuse,
-                    SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM {block_playerhud_items} i2 WHERE i2.blockinstanceid = bi.id)
-                             THEN 1 ELSE 0 END) AS withoutitems
-               FROM {block_instances} bi
-              WHERE bi.blockname = :blockname",
-            ['blockname' => 'playerhud']
+            "SELECT COUNT(DISTINCT ctx.instanceid) AS courses,
+                    SUM(CASE WHEN $hasitems THEN 1 ELSE 0 END) AS withitems,
+                    SUM(CASE WHEN NOT $hasitems AND $hasplayers THEN 1 ELSE 0 END) AS playersonly,
+                    SUM(CASE WHEN NOT $hasitems AND NOT $hasplayers THEN 1 ELSE 0 END) AS emptyinstances
+             $incourse",
+            $params
         );
 
         $features = array_fill_keys(self::FEATURES, 0);
-        $configs = $DB->get_recordset('block_instances', ['blockname' => 'playerhud'], '', 'id, configdata');
+        $configs = $DB->get_recordset_sql("SELECT bi.id, bi.configdata $incourse", $params);
         foreach ($configs as $instance) {
             $config = \block_playerhud\utils::get_block_config($instance);
             foreach (self::FEATURES as $flag) {
@@ -79,12 +80,21 @@ class usage {
         }
         $configs->close();
 
+        $dashboard = $DB->count_records_sql(
+            "SELECT COUNT(1)
+               FROM {block_instances} bi
+               JOIN {context} ctx ON ctx.id = bi.parentcontextid AND ctx.contextlevel = :userlevel
+              WHERE bi.blockname = :blockname",
+            ['userlevel' => CONTEXT_USER, 'blockname' => 'playerhud']
+        );
+
         return [
-            'courses' => (int) $courses,
-            'instances' => (int) $counts->instances,
-            'inuse' => (int) $counts->inuse,
-            'withoutitems' => (int) $counts->withoutitems,
+            'courses' => (int) $counts->courses,
+            'withitems' => (int) $counts->withitems,
+            'playersonly' => (int) $counts->playersonly,
+            'empty' => (int) $counts->emptyinstances,
             'features' => $features,
+            'dashboard' => (int) $dashboard,
         ];
     }
 

@@ -77,7 +77,8 @@ final class report_test extends advanced_testcase {
     public function test_compute_shape(): void {
         $report = report::compute();
 
-        foreach (['time', 'since', 'adoption', 'engagement', 'orphans', 'loose'] as $key) {
+        $keys = ['time', 'since', 'adoption', 'engagement', 'orphans', 'orphancount', 'orphanplayers', 'loose'];
+        foreach ($keys as $key) {
             $this->assertArrayHasKey($key, $report);
         }
         $this->assertSame(usage::WINDOWDAYS * DAYSECS, $report['time'] - $report['since']);
