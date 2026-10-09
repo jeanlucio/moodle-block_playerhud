@@ -460,7 +460,7 @@ class tab_quests implements renderable {
                 'str_hide'           => get_string('click_to_hide', 'block_playerhud'),
                 'str_show'           => get_string('click_to_show', 'block_playerhud'),
                 'str_delete_confirm' => s(
-                    get_string('confirm_delete', 'block_playerhud') . " '" . utils::plain_string($q->name) . "'?"
+                    get_string('quest_delete_confirm', 'block_playerhud', utils::plain_string($q->name))
                 ),
             ];
         }

@@ -84,6 +84,22 @@ final class tab_items_escaping_test extends escaping_testcase {
     }
 
     /**
+     * The delete confirmation is one complete sentence with the name inside it, not a generic
+     * question with the name appended in code.
+     *
+     * @return void
+     */
+    public function test_items_list_delete_confirmation_is_a_single_sentence(): void {
+        preg_match('/data-confirm-msg="([^"]*)"/', $this->render('render_list_view'), $matches);
+
+        // The attribute holds HTML for Notification.confirm(), so it is escaped one level deeper.
+        $this->assertSame(
+            'Are you sure you want to delete the item "' . self::CANARY . '"?',
+            html_entity_decode(html_entity_decode($matches[1]))
+        );
+    }
+
+    /**
      * The all-drops list shows the item and drop names once-escaped.
      *
      * @dataProvider striptags_provider

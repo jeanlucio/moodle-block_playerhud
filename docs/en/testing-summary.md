@@ -104,13 +104,13 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `manage/quest_delete_confirm_test.php` | 3 |
 | `manage/tab_chapters_test.php` | 4 |
 | `manage/tab_config_test.php` | 4 |
-| `manage/tab_items_escaping_test.php` | 6 |
+| `manage/tab_items_escaping_test.php` | 7 |
 | `manage/tab_items_test.php` | 3 |
 | `manage/tab_quests_test.php` | 4 |
 | `manage/tab_reports_test.php` | 13 |
 | `player_screens_escaping_test.php` | 18 |
 | `profile_content_test.php` | 1 |
-| `quests_escaping_test.php` | 4 |
+| `quests_escaping_test.php` | 5 |
 | `reports_escaping_test.php` | 6 |
 | `trades_escaping_test.php` | 4 |
 | `view/header_test.php` | 2 |
@@ -120,9 +120,9 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `view/tab_ranking_test.php` | 4 |
 | `view/tab_rules_test.php` | 2 |
 | `view/tab_shop_test.php` | 4 |
-| **Subtotal** | **121** |
+| **Subtotal** | **123** |
 
-| **Grand Total** | **924** |
+| **Grand Total** | **926** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud

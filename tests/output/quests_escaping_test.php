@@ -88,6 +88,24 @@ final class quests_escaping_test extends escaping_testcase {
     }
 
     /**
+     * The delete confirmation is one complete sentence with the name inside it, not a generic
+     * question with the name appended in code.
+     *
+     * @return void
+     */
+    public function test_manage_quests_delete_confirmation_is_a_single_sentence(): void {
+        $tab = new manage_tab_quests($this->blockid, (int) $this->course->id);
+
+        preg_match('/data-confirm-msg="([^"]*)"/', $tab->display(), $matches);
+
+        // The attribute holds HTML for Notification.confirm(), so it is escaped one level deeper.
+        $this->assertSame(
+            'Are you sure you want to delete the quest "' . self::CANARY . '"?',
+            html_entity_decode(html_entity_decode($matches[1]))
+        );
+    }
+
+    /**
      * The student's quest tab shows the quest and reward names once-escaped.
      *
      * @dataProvider striptags_provider

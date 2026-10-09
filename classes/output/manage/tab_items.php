@@ -374,7 +374,7 @@ class tab_items implements renderable {
                     'drops_has_finite' => ($dropstotaluses > 0),
                     'btn_drops_class' => ($dropscount > 0) ? 'btn-info text-white' : 'btn-outline-secondary',
                     'confirm_msg' => s(
-                        get_string('confirm_delete', 'block_playerhud') . " '" . utils::plain_string($item->name) . "'?"
+                        get_string('item_delete_confirm', 'block_playerhud', utils::plain_string($item->name))
                     ),
 
                     // URLs.

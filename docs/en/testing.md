@@ -110,13 +110,13 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `manage/quest_delete_confirm_test.php` | 3 | Quest-deletion confirmation context: single deletion produces the `delete_quest_force` action with the XP-impact warning and disable-instead link; bulk deletion produces `bulk_delete_quests_force` with the id list and never shows the disable-instead link even with a toggle URL supplied; no XP impact omits both the warning and the disable link |
 | `manage/tab_chapters_test.php` | 4 | Chapter-card visibility warnings: missing start-scene flag, required-level-above-maximum warning text and bounds |
 | `manage/tab_config_test.php` | 4 | Config tab (Economy Health summary): an instance with no items or quests still exports a well-formed empty summary instead of crashing on `economy_health()`; an item with XP contributes to the breakdown and the achievable total |
-| `manage/tab_items_escaping_test.php` | 6 | Names escaped exactly once: the items list (including the delete confirmation), the all-drops list and the distribute screen, with `formatstringstriptags` on and off |
+| `manage/tab_items_escaping_test.php` | 7 | Names escaped exactly once: the items list (including the delete confirmation), the all-drops list and the distribute screen, with `formatstringstriptags` on and off |
 | `manage/tab_items_test.php` | 3 | Items tab late-penalty lookups: only the course's own activities with an enabled rule are offered, and the rules query is restricted to the course's activity ids instead of reading the whole site |
 | `manage/tab_quests_test.php` | 4 | Quest form processing: a pasted modal skeleton in the description is sanitized before saving; basic formatting in the description is preserved; the reward-item select escapes a malicious item name |
 | `manage/tab_reports_test.php` | 13 | Reports tab: an instance with no players/items/quests still exports a well-formed summary with the audit drill-down inactive; `display()` renders real HTML end to end through the global `$OUTPUT`; more than 30 AI log rows only export the first page (30) by default, newest first, and `ai_showall=1` returns every row; the audit drill-down's `inventory.source` fallback is handed to the template raw as `detail_text` when no matching `report_src_*` lang string exists, and `tab_reports.mustache` is proven to escape it via double-mustache on render; `tab_reports.mustache` renders the `xp_gained`/`qty` badges itself from plain ints plus positive/negative flags (all three states: positive, negative, and the neutral "-" fallback), closing the same triple-mustache escape gap the `detail_text` fix closed; the student-selector export omits a student's email when hidden by the site's identity policy; the "most collected item" KPI and each student's total-items figure both sum across both storage generations |
 | `player_screens_escaping_test.php` | 18 | Names escaped exactly once: the student's collection and profile, the classes tab, the drops page and the leaderboard groups; names that suggestions and the wizard save (quest and trade suggestions, a drop renamed after its activity) stay plain text and the suggestion forms escape them when printing |
 | `profile_content_test.php` | 1 | `export_for_template()` strips tags from the item image content field |
-| `quests_escaping_test.php` | 4 | Names escaped exactly once: quest, reward, required item, trade and chapter names in the teacher's quest list and the student's quest tab |
+| `quests_escaping_test.php` | 5 | Names escaped exactly once: quest, reward, required item, trade and chapter names in the teacher's quest list and the student's quest tab |
 | `reports_escaping_test.php` | 6 | Names escaped exactly once: the reports overview, one student's audit log (items, trade costs, quests) and the student's own history |
 | `trades_escaping_test.php` | 4 | Names escaped exactly once: trade, requirement and reward names, popover titles and the delete confirmation in the teacher's trades tab and the student's shop |
 | `view/header_test.php` | 2 | HUD header: a player with no equipped avatar falls back to the standard user picture, carrying name/XP/level without a group badge (no mod_playergroup); an equipped avatar item replaces the standard user picture |
@@ -126,9 +126,9 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `view/tab_ranking_test.php` | 4 | Ranking tab: disabled in block config short-circuits before touching any player data; a visible student sees the leaderboard content; a hidden student sees their own privacy toggle but not the leaderboard; a teacher always sees content with teacher-only filter controls active |
 | `view/tab_rules_test.php` | 2 | Rules/help tab: a config with no `help_content` falls back to the system default template, carrying the enabled-feature flags for the default help cards; custom `help_content` with `use_default_help` disabled renders the teacher's own content instead |
 | `view/tab_shop_test.php` | 4 | Shop tab: no trades renders the empty state instead of crashing; a student holding enough of the required item can afford the trade; a student with none of the required item cannot afford it; a one-time trade already completed is marked as such |
-| **Subtotal** | **121** | |
+| **Subtotal** | **123** | |
 
-| **Grand Total** | **924** | |
+| **Grand Total** | **926** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
