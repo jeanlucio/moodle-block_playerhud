@@ -289,4 +289,53 @@ final class instance_delete_test extends advanced_testcase {
             $DB->count_records('user_preferences', ['name' => 'block_playerhud_avatar_' . $this->instanceid])
         );
     }
+
+    /**
+     * Lists every table the plugin declares in db/install.xml.
+     *
+     * @return string[] Table names without the Moodle prefix.
+     */
+    private function get_declared_tables(): array {
+        global $CFG;
+
+        $xmldb = new \xmldb_file($CFG->dirroot . '/blocks/playerhud/db/install.xml');
+        $xmldb->loadXMLStructure();
+        $tables = [];
+        foreach ($xmldb->getStructure()->getTables() as $table) {
+            $tables[] = $table->getName();
+        }
+        return $tables;
+    }
+
+    /**
+     * Guard against a table added to install.xml being forgotten here or in the cleanup: the
+     * fixture must hold a row in every declared table, and deleting the instance must leave
+     * every one of them empty. A new table fails the first assertion until the fixture covers
+     * it, and the second until instance_cleanup deletes it.
+     */
+    public function test_every_declared_table_is_populated_and_then_cleaned(): void {
+        global $DB;
+
+        $tables = $this->get_declared_tables();
+        $this->assertNotEmpty($tables);
+
+        foreach ($tables as $table) {
+            $this->assertGreaterThan(
+                0,
+                $DB->count_records($table),
+                "Table {$table} has no fixture row: extend setUp() so the cleanup can be verified for it."
+            );
+        }
+
+        $instance = $DB->get_record('block_instances', ['id' => $this->instanceid], '*', MUST_EXIST);
+        blocks_delete_instance($instance);
+
+        foreach ($tables as $table) {
+            $this->assertEquals(
+                0,
+                $DB->count_records($table),
+                "Table {$table} still has rows after the instance was deleted: add it to instance_cleanup."
+            );
+        }
+    }
 }
