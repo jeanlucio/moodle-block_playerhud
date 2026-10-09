@@ -570,19 +570,38 @@ class game {
     }
 
     /**
+     * Adds the display name and the last-score date to leaderboard entries.
+     *
+     * @param array $entries Entries from get_leaderboard(), modified in place.
+     * @return array The same entries.
+     */
+    public static function add_display_fields(array $entries): array {
+        $dateformat = get_string('strftimedatetimeshort', 'langconfig');
+        foreach ($entries as $entry) {
+            $entry->last_score_date = ($entry->currentxp > 0) ? userdate($entry->timemodified, $dateformat) : '-';
+            $entry->fullname = fullname($entry);
+        }
+        return $entries;
+    }
+
+    /**
      * Fetch complete Leaderboard for block instance.
      *
      * @param int $blockinstanceid The instance ID.
      * @param int $currentuserid Current user ID.
      * @param bool $isteacher Is user teacher?
      * @param int $filtergroup Group ID to filter individual ranking (teacher only, 0 = no filter).
+     * @param bool $withdisplay Whether to add each entry's display name and last-score date. A caller
+     *        showing one page passes false and runs add_display_fields() on that page only: on a large
+     *        course those two fields cost more than building the whole ranking.
      * @return array
      */
     public static function get_leaderboard(
         int $blockinstanceid,
         int $currentuserid,
         bool $isteacher,
-        int $filtergroup = 0
+        int $filtergroup = 0,
+        bool $withdisplay = true
     ): array {
         global $DB;
 
@@ -762,16 +781,16 @@ class game {
             }
             $usr->has_groups = !empty($usr->groups);
             $usr->group_name = empty($mygroups) ? '-' : implode(', ', array_column($mygroups, 'name'));
-            $usr->last_score_date = ($usr->currentxp > 0)
-                ? userdate($usr->timemodified, get_string('strftimedatetimeshort', 'langconfig'))
-                : '-';
 
             $usr->is_me = $isme;
             $usr->is_paused = $ispaused;
             $usr->is_hidden_marker = ($ishidden && !$ispaused);
-            $usr->fullname = fullname($usr);
 
             $individualranking[] = $usr;
+        }
+
+        if ($withdisplay) {
+            self::add_display_fields($individualranking);
         }
 
         // Groups logic (Optimized Zero N+1 query).

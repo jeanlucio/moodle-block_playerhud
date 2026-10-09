@@ -1,0 +1,191 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_playerhud/admin_diagnostics
+
+    Administrator's usage and diagnostics page: figure cards, removed-instance leftovers with
+    their cleanup form, and the copies saved before each cleanup.
+
+    @package    block_playerhud
+    @copyright  2026 Jean Lúcio
+    @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "actionurl": "#",
+        "sesskey": "abc",
+        "updated": "Updated 09/10/26, 14:00",
+        "adoption": [{"value": "12", "label": "Courses with the block", "subtitle": ""}],
+        "engagement": [{"value": "3", "label": "AI requests", "subtitle": "Last 90 days · Gemini 2 · Groq 1"}],
+        "integrity": [{"value": "1", "label": "Removed instances with data left", "subtitle": ""}],
+        "hasorphans": true,
+        "orphanspartial": "Showing 100 of 140 removed instances. The others are listed after this cleanup.",
+        "orphans": [{
+            "id": 100, "players": 4, "xp": 1000, "items": 30, "activity": "23/06/26 – 30/06/26",
+            "deletedusers": 0, "course": "Course 99 still exists", "courseexists": true,
+            "checked": false, "selectlabel": "Include instance 100 in the cleanup"
+        }],
+        "hasloose": true,
+        "loose": [{"label": "Inventory entries of items that no longer exist", "count": 11}],
+        "hascleanup": true,
+        "hasbackups": true,
+        "backups": [{
+            "name": "orphans-20261009-140000-ab12.json", "size": "12 KB", "time": "09/10/26, 14:00",
+            "downloadurl": "#", "downloadlabel": "Download orphans-20261009-140000-ab12.json",
+            "deletelabel": "Delete orphans-20261009-140000-ab12.json"
+        }]
+    }
+}}
+<div class="block-playerhud-diagnostics">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <p class="mb-2 me-3">{{#str}} diag_intro, block_playerhud {{/str}}</p>
+        <form method="post" action="{{actionurl}}" class="mb-2">
+            <input type="hidden" name="sesskey" value="{{sesskey}}">
+            <input type="hidden" name="action" value="refresh">
+            <span class="me-2">{{updated}}</span>
+            <button type="submit" class="btn btn-secondary btn-sm">{{#str}} refresh {{/str}}</button>
+        </form>
+    </div>
+
+    <h3 class="h4 mt-2">{{#str}} diag_section_adoption, block_playerhud {{/str}}</h3>
+    <div class="row">
+        {{#adoption}}{{> block_playerhud/admin_diagnostics_card }}{{/adoption}}
+    </div>
+
+    <h3 class="h4 mt-3">{{#str}} diag_section_engagement, block_playerhud {{/str}}</h3>
+    <div class="row">
+        {{#engagement}}{{> block_playerhud/admin_diagnostics_card }}{{/engagement}}
+    </div>
+
+    <h3 class="h4 mt-3">{{#str}} diag_section_integrity, block_playerhud {{/str}}</h3>
+    <div class="row">
+        {{#integrity}}{{> block_playerhud/admin_diagnostics_card }}{{/integrity}}
+    </div>
+
+    {{^hascleanup}}
+        <div class="alert alert-success">{{#str}} diag_orphans_none, block_playerhud {{/str}}</div>
+    {{/hascleanup}}
+
+    {{#hascleanup}}
+    <form method="post" action="{{actionurl}}" class="card mb-4">
+        <div class="card-body">
+            <h4 class="h5 card-title">{{#str}} diag_cleanup_title, block_playerhud {{/str}}</h4>
+            <p>{{#str}} diag_cleanup_desc, block_playerhud {{/str}}</p>
+            <input type="hidden" name="sesskey" value="{{sesskey}}">
+            <input type="hidden" name="action" value="cleanup">
+
+            {{#hasorphans}}
+            <h5 class="h6 mt-3">{{#str}} diag_orphans_heading, block_playerhud {{/str}}</h5>
+            <p class="mb-2">{{#str}} diag_orphans_desc, block_playerhud {{/str}}</p>
+            {{#orphanspartial}}<div class="alert alert-info py-2">{{orphanspartial}}</div>{{/orphanspartial}}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{#str}} diag_col_select, block_playerhud {{/str}}</th>
+                            <th scope="col">{{#str}} diag_col_instance, block_playerhud {{/str}}</th>
+                            <th scope="col">{{#str}} diag_players, block_playerhud {{/str}}</th>
+                            <th scope="col">{{#str}} xp, block_playerhud {{/str}}</th>
+                            <th scope="col">{{#str}} diag_col_items, block_playerhud {{/str}}</th>
+                            <th scope="col">{{#str}} diag_col_activity, block_playerhud {{/str}}</th>
+                            <th scope="col">{{#str}} diag_col_deletedusers, block_playerhud {{/str}}</th>
+                            <th scope="col">{{#str}} course {{/str}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#orphans}}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input" name="instances[]" value="{{id}}"
+                                       aria-label="{{selectlabel}}" {{#checked}}checked{{/checked}}>
+                            </td>
+                            <td>{{id}}</td>
+                            <td>{{players}}</td>
+                            <td>{{xp}}</td>
+                            <td>{{items}}</td>
+                            <td>{{activity}}</td>
+                            <td>{{deletedusers}}</td>
+                            <td>
+                                {{#courseexists}}<span class="badge bg-warning text-dark">{{course}}</span>{{/courseexists}}
+                                {{^courseexists}}{{course}}{{/courseexists}}
+                            </td>
+                        </tr>
+                        {{/orphans}}
+                    </tbody>
+                </table>
+            </div>
+            {{/hasorphans}}
+
+            {{#hasloose}}
+            <h5 class="h6 mt-3">{{#str}} diag_loose_heading, block_playerhud {{/str}}</h5>
+            <p class="mb-1">{{#str}} diag_loose_desc, block_playerhud {{/str}}</p>
+            <ul>
+                {{#loose}}<li>{{label}}: {{count}}</li>{{/loose}}
+            </ul>
+            {{/hasloose}}
+
+            <div class="form-check mb-3">
+                <input type="checkbox" class="form-check-input" id="ph-diag-confirm" name="confirm" value="1">
+                <label class="form-check-label" for="ph-diag-confirm">{{#str}} diag_cleanup_confirm, block_playerhud {{/str}}</label>
+            </div>
+            <button type="submit" class="btn btn-danger">{{#str}} diag_cleanup_title, block_playerhud {{/str}}</button>
+        </div>
+    </form>
+    {{/hascleanup}}
+
+    <h3 class="h4 mt-3">{{#str}} diag_backups_title, block_playerhud {{/str}}</h3>
+    <p>{{#str}} diag_backups_desc, block_playerhud {{/str}}</p>
+    {{^hasbackups}}
+        <p>{{#str}} diag_backups_none, block_playerhud {{/str}}</p>
+    {{/hasbackups}}
+    {{#hasbackups}}
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">{{#str}} diag_col_file, block_playerhud {{/str}}</th>
+                    <th scope="col">{{#str}} size {{/str}}</th>
+                    <th scope="col">{{#str}} date {{/str}}</th>
+                    <th scope="col">{{#str}} actions {{/str}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#backups}}
+                <tr>
+                    <td><code>{{name}}</code></td>
+                    <td>{{size}}</td>
+                    <td>{{time}}</td>
+                    <td>
+                        <a href="{{downloadurl}}" class="btn btn-outline-secondary btn-sm me-1" aria-label="{{downloadlabel}}">
+                            {{#str}} download {{/str}}
+                        </a>
+                        <form method="post" action="{{actionurl}}" class="d-inline">
+                            <input type="hidden" name="sesskey" value="{{sesskey}}">
+                            <input type="hidden" name="action" value="deletebackup">
+                            <input type="hidden" name="file" value="{{name}}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm" aria-label="{{deletelabel}}">
+                                {{#str}} delete {{/str}}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {{/backups}}
+            </tbody>
+        </table>
+    </div>
+    {{/hasbackups}}
+</div>

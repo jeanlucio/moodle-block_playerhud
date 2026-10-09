@@ -5,6 +5,7 @@
 * `require_sesskey()` protection
 * Moodle External API compliant
 * Privacy-aware ranking participation
+* Usage & Diagnostics page: aggregate figures only, counted on the site — nothing is sent outside it. A cleanup first saves a JSON copy of the deleted rows, which contains personal data (user IDs and XP), in `moodledata/block_playerhud/orphan_backups/`; it stays there until an administrator deletes it from the page
 
 ## 🔎 Third-party Service Disclosure
 

@@ -64,10 +64,7 @@ class tab_config implements renderable, templatable {
 
         // 1. Load Configuration.
         $bi = $DB->get_record('block_instances', ['id' => $this->instanceid], '*', MUST_EXIST);
-        $config = unserialize_object(base64_decode($bi->configdata));
-        if (!$config) {
-            $config = new \stdClass();
-        }
+        $config = \block_playerhud\utils::get_block_config($bi);
 
         // 2. Balance Logic (Health Check) — business rules live in the analytics helper.
         $xpperlevel = isset($config->xp_per_level) ? (int)$config->xp_per_level : 100;

@@ -10,7 +10,7 @@
 * 📍 **Drop System:** Place collectible items across course sections via shortcodes.
 * 🎁 **Auto Drop Distribution:** Bulk-insert pending drops into the best-matching course activity in one click, with per-item undo.
 * 🏪 **NPC Shop:** Item-to-reward exchange with configurable trade rules.
-* 🏆 **Ranking System:** Leaderboard with tie-breaker logic and visibility controls.
+* 🏆 **Ranking System:** Leaderboard with tie-breaker logic and visibility controls, shown 50 players per page; a student outside the page sees their own row pinned below it, with their real position.
 * 🔐 **Optional Participation:** Students may choose to opt in or opt out of the gamification system.
 * ⚡ **Real-Time Updates:** AJAX-based collection using Moodle’s `core/ajax`.
 * 🎉 **Mascot Celebration Popups:** Animated popups featuring the Huddy mascot mark key moments — Huddy **introduces himself** on the student's first visit to the dashboard, and then celebrates **leveling up** (showing the level reached), **beating the game** (reaching 100% of the course score), **completing your first quest** (a one-time nudge to go claim its reward), and **finding your first PlayerCoin**. Fully accessible (keyboard focus trap, focus restore, screen-reader labels). The introduction, first-quest and first-PlayerCoin popups are each shown only once. All mascot art ships as lightweight WebP. Teachers can disable all mascot animations via the block's configuration form (Mascot section).
@@ -18,7 +18,8 @@
 * 🧙 **RPG Characters:** Define characters with portraits, reputation alignment, and multi-tier evolution images.
 * 📖 **Story & Chapters:** Branching narrative system with choice nodes and per-character story paths.
 * ⚖️ **Reputation System:** Moral alignment mechanic that evolves the student’s character portrait over time.
-* 📊 **Analytics:** Audit logs, game economy tracking, a level-distribution histogram and a quest-completion chart, plus an Economy Health panel that flags an unbalanced XP budget.
+* 📊 **Analytics:** Audit logs, game economy tracking, a level-distribution histogram and a quest-completion chart, plus an Economy Health panel that flags an unbalanced XP budget. The students table of the Reports tab shows 50 students per page and has a name search; the one-click student dropdown is kept for courses with up to 200 players.
+* 🩺 **Usage & Diagnostics (administrators):** a site-wide page with adoption and engagement figures and a cleanup of data left by removed blocks, with a copy saved first — see [Usage & Diagnostics Page](#diagnostics).
 * 🪄 **Gamification Wizard:** A step-by-step assistant that builds a course's entire gamified structure in one run, with live progress, retry-on-failure and one-click undo per run from a history list.
   * **Eleven mechanics in three tiers** — Items, PlayerCoin, Avatar Pack, Trade, Ranking, Missions, Knowledge Collectible, Deadline Extension, Item RPG, RPG (characters + full story) and a hidden Secret Item, grouped into **Basic / Intermediate / Advanced** by how sophisticated the mechanic is, not by what it technically does.
   * **Shared XP budget** — keeps every generated mechanic inside the course's level ceiling.

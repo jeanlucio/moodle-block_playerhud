@@ -14,3 +14,5 @@
      - Limites de coleta
 4. Os alunos coletam itens diretamente nas seções do curso.
 5. O sistema atualiza automaticamente XP, níveis e ranking.
+
+**Remover o bloco** de um curso apaga na hora todo o jogo e o progresso de todos os estudantes, e não é possível desfazer pelo bloco. Faça antes um backup do curso com os dados dos usuários, ou use **Ocultar** no menu do bloco para tirar o jogo da vista sem perder nada. O Manual do Mestre (botão **?** do painel de gerenciamento) explica isso em *Remover o bloco*.

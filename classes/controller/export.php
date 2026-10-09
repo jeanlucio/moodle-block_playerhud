@@ -60,10 +60,7 @@ class export {
 
         // 1. Load block configuration.
         $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
-        $config = unserialize_object(base64_decode($bi->configdata));
-        if (!$config) {
-            $config = new \stdClass();
-        }
+        $config = \block_playerhud\utils::get_block_config($bi);
 
         $xpperlevel = isset($config->xp_per_level) ? (int)$config->xp_per_level : 100;
         $maxlevels  = isset($config->max_levels) ? (int)$config->max_levels : 20;

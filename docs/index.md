@@ -40,6 +40,9 @@ objectives.
 <span id="economy-health"></span>
 {% include_relative en/economy-health.md %}
 
+<span id="diagnostics"></span>
+{% include_relative en/diagnostics.md %}
+
 <span id="educational-purpose"></span>
 {% include_relative en/educational-purpose.md %}
 

@@ -92,7 +92,7 @@ class tab_reports implements renderable, templatable {
         ]);
 
         $bi = $DB->get_record('block_instances', ['id' => $this->instanceid], '*', MUST_EXIST);
-        $config = unserialize_object(base64_decode($bi->configdata));
+        $config = \block_playerhud\utils::get_block_config($bi);
         $xpperlevel = $config->xp_per_level ?? 100;
         $maxlevels = $config->max_levels ?? 20;
 
@@ -745,30 +745,53 @@ class tab_reports implements renderable, templatable {
         // Total_items sums current active holdings across both storage generations — legacy
         // inventory rows not revoked/consumed, plus the new engine's current balance (never
         // negative, already nets out what was spent).
-        $sql = "
-            SELECT u.id, $userfields, u.email,
-                   pu.currentxp, pu.enable_gamification, pu.timemodified,
-                   (SELECT COUNT(inv.id) FROM {block_playerhud_inventory} inv
-                    JOIN {block_playerhud_items} it ON inv.itemid = it.id
-                   WHERE inv.userid = u.id AND it.blockinstanceid = :p1
-                         AND inv.source NOT IN ('revoked', 'consumed'))
-                   +
-                   (SELECT COALESCE(SUM(s.qty), 0) FROM {block_playerhud_stack} s
-                    JOIN {block_playerhud_items} it2 ON s.itemid = it2.id
-                   WHERE s.userid = u.id AND it2.blockinstanceid = :p3) as total_items
-              FROM {user} u
-              JOIN {block_playerhud_user} pu ON pu.userid = u.id
-             WHERE pu.blockinstanceid = :p2
-               AND $populationsql $searchsql
-          ORDER BY $sortsql";
+        $select = "SELECT u.id, $userfields, u.email,
+                          pu.currentxp, pu.enable_gamification, pu.timemodified,
+                          (SELECT COUNT(inv.id) FROM {block_playerhud_inventory} inv
+                           JOIN {block_playerhud_items} it ON inv.itemid = it.id
+                          WHERE inv.userid = u.id AND it.blockinstanceid = :p1
+                                AND inv.source NOT IN ('revoked', 'consumed'))
+                          +
+                          (SELECT COALESCE(SUM(s.qty), 0) FROM {block_playerhud_stack} s
+                           JOIN {block_playerhud_items} it2 ON s.itemid = it2.id
+                          WHERE s.userid = u.id AND it2.blockinstanceid = :p3) as total_items
+                     FROM {user} u
+                     JOIN {block_playerhud_user} pu ON pu.userid = u.id
+                    WHERE pu.blockinstanceid = :p2";
+        $itemparams = ['p1' => $this->instanceid, 'p2' => $this->instanceid, 'p3' => $this->instanceid];
 
-        $params = [
-            'p1' => $this->instanceid,
-            'p2' => $this->instanceid,
-            'p3' => $this->instanceid,
-        ] + $populationparams + $searchparams;
-
-        $users = $DB->get_records_sql($sql, $params, $offset, self::PERPAGE);
+        if ($this->sort === 'items') {
+            // Ordering by the item total needs it for every student, so it is computed in one go.
+            $users = $DB->get_records_sql(
+                "$select AND $populationsql $searchsql ORDER BY $sortsql",
+                $itemparams + $populationparams + $searchparams,
+                $offset,
+                self::PERPAGE
+            );
+        } else {
+            // Any other order picks the page's students first and only then computes their item
+            // totals: with the totals in the paged query the database computes them for every row
+            // skipped by the offset too (2,550 times for page 51 instead of 50).
+            $pageids = array_keys($DB->get_records_sql(
+                "SELECT u.id
+                   FROM {user} u
+                   JOIN {block_playerhud_user} pu ON pu.userid = u.id
+                  WHERE pu.blockinstanceid = :p2
+                    AND $populationsql $searchsql
+               ORDER BY $sortsql",
+                ['p2' => $this->instanceid] + $populationparams + $searchparams,
+                $offset,
+                self::PERPAGE
+            ));
+            $users = [];
+            if (!empty($pageids)) {
+                [$idsql, $idparams] = $DB->get_in_or_equal($pageids, SQL_PARAMS_NAMED, 'pg');
+                $rows = $DB->get_records_sql("$select AND u.id $idsql", $itemparams + $idparams);
+                foreach ($pageids as $id) {
+                    $users[$id] = $rows[$id];
+                }
+            }
+        }
 
         $results = [];
         $counter = $offset + 1;

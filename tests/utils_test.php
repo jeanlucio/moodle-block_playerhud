@@ -415,4 +415,21 @@ final class utils_test extends advanced_testcase {
         $this->assertSame('', utils::plain_string(null));
         $this->assertSame('', utils::plain_string(''));
     }
+
+    /**
+     * Every state configdata can be in gives a configuration object: NULL (data generator),
+     * empty (added but never configured), invalid, and a real configuration.
+     */
+    public function test_get_block_config(): void {
+        $this->assertEquals(new \stdClass(), utils::get_block_config((object) ['configdata' => null]));
+        $this->assertEquals(new \stdClass(), utils::get_block_config((object) ['configdata' => '']));
+        $this->assertEquals(new \stdClass(), utils::get_block_config((object) []));
+        $this->assertEquals(new \stdClass(), utils::get_block_config((object) ['configdata' => 'not base64 !!']));
+
+        $config = utils::get_block_config((object) [
+            'configdata' => base64_encode(serialize((object) ['enable_ranking' => 0, 'xp_per_level' => 150])),
+        ]);
+        $this->assertSame(0, $config->enable_ranking);
+        $this->assertSame(150, $config->xp_per_level);
+    }
 }

@@ -24,6 +24,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+// Listed under Site administration > Reports even when only the admin tree, not the full
+// settings tree, is being built.
+$ADMIN->add('reports', new admin_externalpage(
+    'block_playerhud_diagnostics',
+    get_string('diag_title', 'block_playerhud'),
+    new moodle_url('/blocks/playerhud/admin/diagnostics.php'),
+    'moodle/site:config'
+));
+
 if ($ADMIN->fulltree) {
     // AI Settings Section.
     $settings->add(new admin_setting_heading(

@@ -256,10 +256,7 @@ class wizard_start extends external_api {
         wizard::require_course_matches_instance($context, $params['courseid']);
 
         $bi = $DB->get_record('block_instances', ['id' => $params['instanceid']], '*', MUST_EXIST);
-        $config = unserialize_object(base64_decode($bi->configdata));
-        if (!$config) {
-            $config = new \stdClass();
-        }
+        $config = \block_playerhud\utils::get_block_config($bi);
 
         $steptypes = wizard_generate::build_step_types($params);
         // The run's own manifest stores the logical module list (unexpanded) — a human reading

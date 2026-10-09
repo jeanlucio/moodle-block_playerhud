@@ -23,7 +23,7 @@ The **PlayerHUD Block** is a modular gamification system for Moodle that introdu
 
 It provides a dynamic **HUD (Head-Up Display)** inside courses, allowing students to track their progress in real time while teachers configure engagement mechanics aligned with pedagogical objectives.
 
-📚 **[Full documentation](https://jeanlucio.github.io/moodle-block_playerhud/)** — features, group ranking, the Economy Health panel, the PlayerGames ecosystem, the gamification wizard, AI tools, the demo environment, the full test suite, and security details.
+📚 **[Full documentation](https://jeanlucio.github.io/moodle-block_playerhud/)** — features, group ranking, the Economy Health panel, the usage and diagnostics page, the PlayerGames ecosystem, the gamification wizard, AI tools, the demo environment, the full test suite, and security details.
 
 ### 🔎 Third-party Service Disclosure
 
@@ -70,6 +70,13 @@ ranking — is configured per course through the block's own Management Panel, a
 [Usage](https://jeanlucio.github.io/moodle-block_playerhud/#usage) section of the full
 documentation.
 
+Administrators can follow how the block is used across the site, and clean data left by
+removed blocks, at **Site administration > Reports > PlayerHUD usage and diagnostics**. Its
+figures are counted on the site only; nothing is sent outside it. A cleanup first saves a JSON
+copy of the deleted rows — which contains personal data (user IDs and XP) — in
+`moodledata/block_playerhud/orphan_backups/`, until an administrator deletes it from the same
+page. See [Usage & Diagnostics](https://jeanlucio.github.io/moodle-block_playerhud/#diagnostics).
+
 ### 🆘 Support
 
 Found a bug or have a question? Open an issue on the
@@ -96,7 +103,7 @@ O **Bloco PlayerHUD** é um sistema modular de gamificação para o Moodle que i
 
 Ele fornece um **HUD (Head-Up Display)** dinâmico dentro do curso, permitindo que os alunos acompanhem seu progresso em tempo real, enquanto o professor configura as mecânicas de engajamento de acordo com seus objetivos pedagógicos.
 
-📚 **[Documentação completa](https://jeanlucio.github.io/moodle-block_playerhud/pt.html)** — funcionalidades, ranking de grupos, o painel de Saúde da Economia, o ecossistema PlayerGames, o assistente de gamificação, ferramentas de IA, o ambiente de demonstração, a suíte completa de testes, e detalhes de segurança.
+📚 **[Documentação completa](https://jeanlucio.github.io/moodle-block_playerhud/pt.html)** — funcionalidades, ranking de grupos, o painel de Saúde da Economia, a página de uso e diagnóstico, o ecossistema PlayerGames, o assistente de gamificação, ferramentas de IA, o ambiente de demonstração, a suíte completa de testes, e detalhes de segurança.
 
 ### 🔎 Divulgação de Serviço de Terceiros
 
@@ -146,6 +153,13 @@ níveis, quests, ranking — é configurado por curso através do próprio Paine
 do bloco, conforme explicado na seção
 [Como Usar](https://jeanlucio.github.io/moodle-block_playerhud/pt.html#usage) da documentação
 completa.
+
+Administradores podem acompanhar o uso do bloco no site, e limpar dados deixados por blocos
+removidos, em **Administração do site > Relatórios > PlayerHUD: uso e diagnóstico**. Os números
+são contados apenas no próprio site; nada é enviado para fora dele. A limpeza salva antes uma
+cópia JSON dos registros apagados — que contém dados pessoais (identificadores de usuários e
+XP) — em `moodledata/block_playerhud/orphan_backups/`, até um administrador apagá-la pela mesma
+página. Veja [Uso e Diagnóstico](https://jeanlucio.github.io/moodle-block_playerhud/pt.html#diagnostics).
 
 ### 🆘 Suporte
 

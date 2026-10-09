@@ -19,9 +19,9 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `edit_form_test.php` | 5 | Block configuration form validation: "XP per level" below one is rejected, a positive value is accepted |
 | `form/edit_item_form_test.php` | 8 | Server-side validation of the item image field: an emoji value passes; a valid HTTPS URL passes; an attribute-breakout payload (`http` followed by quotes/tags) is rejected; a malformed `http`-like value that is not really a URL is rejected |
 | `form/edit_scene_form_test.php` | 3 | Scene form "next scene" labels: cut by characters (valid UTF-8), HTML entities decoded, ellipsis only when actually cut |
-| `game_test.php` | 47 | `get_game_stats()` totals XP/level plus quest XP inclusion (and exclusion when the quest is disabled), cross-checked against `analytics::economy_health()`'s own total; collection anti-farm and cooldown; `get_avatar_item` (enabled, disabled, foreign instance, not found); XP award on finite drop; leaderboard manager exclusion; level-up, beat-the-game and first-PlayerCoin milestone flags on collection; `xp_to_level`; player auto-creation, gamification and ranking-visibility toggles, inventory (revoked/consumed excluded), `has_item`; `get_user_rank` XP order, tie-break by arrival, manager and enrolment exclusion; `get_full_trades` requirement/reward hydration, empty case, and availability gating when either side's item is disabled; trade-suggestion heuristics (discounted avatars, covered-avatar skip, prerequisites) and persistence, with the avatar emoji escaped (`strip_tags`) in `build_trade_suggestions`; `change_xp` emits the `xp_changed` event on award, on deduction (floored at zero) and stays silent on a true no-op; `get_leaderboard` correctly flags the current user's own group in the group ranking and restricts the teacher's group filter to actual members; `process_collection()` grants multiple units at once through a drop's `value` field; `maxusage` and `value` multiply independently (a 3-use, 2-per-use drop yields 6 total across 3 pickups, blocked on the 4th regardless of `value`); the collection response reports the granted quantity and progress text |
+| `game_test.php` | 48 | `get_game_stats()` totals XP/level plus quest XP inclusion (and exclusion when the quest is disabled), cross-checked against `analytics::economy_health()`'s own total; collection anti-farm and cooldown; `get_avatar_item` (enabled, disabled, foreign instance, not found); XP award on finite drop; leaderboard manager exclusion; level-up, beat-the-game and first-PlayerCoin milestone flags on collection; `xp_to_level`; player auto-creation, gamification and ranking-visibility toggles, inventory (revoked/consumed excluded), `has_item`; `get_user_rank` XP order, tie-break by arrival, manager and enrolment exclusion; `get_full_trades` requirement/reward hydration, empty case, and availability gating when either side's item is disabled; trade-suggestion heuristics (discounted avatars, covered-avatar skip, prerequisites) and persistence, with the avatar emoji escaped (`strip_tags`) in `build_trade_suggestions`; `change_xp` emits the `xp_changed` event on award, on deduction (floored at zero) and stays silent on a true no-op; `get_leaderboard` correctly flags the current user's own group in the group ranking and restricts the teacher's group filter to actual members; `process_collection()` grants multiple units at once through a drop's `value` field; `maxusage` and `value` multiply independently (a 3-use, 2-per-use drop yields 6 total across 3 pickups, blocked on the 4th regardless of `value`); the collection response reports the granted quantity and progress text; `get_leaderboard()` can skip the display name and date, which `add_display_fields()` then adds only for the entries shown |
 | `gamemaster_test.php` | 6 | Grant, revoke, delete item and quest through the real controllers: XP is applied, the ranking tie-breaker date moves only on a gain, XP floor at zero |
-| `instance_delete_test.php` | 1 | Deleting a block instance cleans every one of this plugin's own tables (`instance_cleanup`), incl. the new `block_playerhud_stack`/`block_playerhud_stack_log` tables |
+| `instance_delete_test.php` | 2 | Deleting a block instance cleans every one of this plugin's own tables (`instance_cleanup`), incl. the new `block_playerhud_stack`/`block_playerhud_stack_log` tables; a guard reads every table from `install.xml` and requires the fixture to cover it and the cleanup to empty it, so a table added later cannot be forgotten |
 | `item_delete_cascade_test.php` | 25 | Trade orphan detection when item deleted (sole req, one-of-two, sole reward, combined req+reward); bulk orphan checks; cross-instance isolation; delete removes item record and cascades orphaned trades without touching non-orphaned ones; deleting an item (single or bulk) reverts XP only for copies that actually earned it, leaving infinite-drop (zero-XP) copies untouched; single and bulk item deletion also remove the item's `block_playerhud_stack`/`block_playerhud_stack_log` rows and revert the XP they recorded; deleting an item after one of its stack units was already revoked (single or via a legacy bulk revoke) only reverts the XP still outstanding, never double-reverting the already-clawed-back share; `find_xp_impact` ignores a holder whose entire stack balance was already revoked |
 | `karma_test.php` | 11 | Karma read/write, positive/negative deltas, clamping at ±999 boundaries, successive accumulation |
 | `lib_test.php` | 27 | `block_playerhud_myprofile_navigation`: every no-op branch (no course, site course, no block instance, no player record, gamification disabled) and an active player with a collected item gets the profile section added, incl. a regular student viewer (not admin); the section only mounts when the viewer holds both `block/playerhud:view` and `moodle/block:view` in the block context (either capability denied is a no-op); respects the leaderboard's `ranking_visibility` opt-out — a fellow student cannot see another student's hidden profile, but the owner always sees their own and a teacher with `block/playerhud:manage` always sees anyone's; `block_playerhud_get_drop_details_by_code`: match, unknown code, foreign-instance rejection, disabled-item exclusion; `block_playerhud_is_visible_for_class`: public (empty/'0'), matching/non-matching class id, '0' inside a list; `block_playerhud_pluginfile`: non-block context, unknown file area, no stored file found, and the same `block/playerhud:view`/`moodle/block:view` capability gate as the profile section (either denied rejects the download, a regular student with both passes through) before item/class art is served |
@@ -33,8 +33,8 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `template_strings_test.php` | 3 | Templates take their visible and announced texts from language strings: the ranking medal labels, the shortcode generator's emoji label and the AI modal's respawn unit (checked with a custom `en_local` override) |
 | `trade_test.php` | 12 | Trade assembly, insufficient funds, atomic success, one-time limit, group restriction; a trade referencing a disabled reward item is rejected outright even with sufficient funds; a high-quantity trade grants/consumes through the quantity engine without inserting one inventory row per unit; a trade's cost is paid correctly when split across both storage generations |
 | `uninstall_test.php` | 2 | The pre-uninstallation hook (`xmldb_block_playerhud_uninstall()`) deletes only `block_playerhud_`-prefixed `user_preferences` rows, leaving another plugin's own preference (even one sharing the `playerhud` substring, e.g. `filter_playerhud_pref`) and an unrelated preference untouched; running the hook with nothing to delete is a harmless no-op |
-| `utils_test.php` | 22 | `get_avatar_html`: emoji produces `ph-avatar-emoji` div with aria-hidden span; HTTP URL produces `ph-avatar-img` img tag; a null image does not throw for `get_avatar_html` nor `get_items_display_data`; `generate_drop_code()` returns a 6-character uppercase alphanumeric code, and generating/persisting several codes in a row for the same instance never repeats one; `sanitize_rich_description()` strips a pasted modal skeleton, preserves basic formatting, strips a bare `<script>` tag, and neutralises a `javascript:` URI; `format_compact_number()` leaves a value under 1000 unchanged, uses a `k` suffix for thousands, an `M` suffix for millions, and preserves a negative sign; `format_drop_progress()` renders both the count and the badge for a finite and an unlimited collection limit; drop-quantity-per-collection formatting |
-| **Subtotal** | **358** | |
+| `utils_test.php` | 23 | `get_avatar_html`: emoji produces `ph-avatar-emoji` div with aria-hidden span; HTTP URL produces `ph-avatar-img` img tag; a null image does not throw for `get_avatar_html` nor `get_items_display_data`; `generate_drop_code()` returns a 6-character uppercase alphanumeric code, and generating/persisting several codes in a row for the same instance never repeats one; `sanitize_rich_description()` strips a pasted modal skeleton, preserves basic formatting, strips a bare `<script>` tag, and neutralises a `javascript:` URI; `format_compact_number()` leaves a value under 1000 unchanged, uses a `k` suffix for thousands, an `M` suffix for millions, and preserves a negative sign; `format_drop_progress()` renders both the count and the badge for a finite and an unlimited collection limit; drop-quantity-per-collection formatting; `get_block_config()` returns an empty configuration for a NULL, empty or invalid `configdata`, and the real one otherwise |
+| **Subtotal** | **361** | |
 
 ### Local Business-Logic Tests (`tests/local/`)
 
@@ -44,12 +44,15 @@ Shared logic reused by more than one entry point (the wizard's own web services,
 |-----------|------:|----------------|
 | `analytics_test.php` | 13 | Economy Health: total earnable XP vs ceiling ratio (empty/hard/perfect/easy), quest rewards and infinite/dropless items in the breakdown, zero-ceiling guard; level-distribution histogram bucketing, cap overflow (`N+`) ordering, percent of tallest bar, zero-XP-per-level guard, empty player set produces no rows; `balance_context()`'s current XP always matches `economy_health()`'s own total; the achievable-XP ceiling accounts for a drop's `value`, not just its item count |
 | `audit_log_test.php` | 16 | Shared audit-log query (`get_logs()`) behind the teacher Reports tab and the student History tab: an item's `xp_gained` reflects the recorded `xpawarded` value at grant time, not the item's current XP (and matches when never edited); a quest-granted item reports zero `xp_gained` since its own XP is never paid through that path; a revoked row reports the negative of its originally recorded value, not the item's current XP; a quest claim's `xp_gained` reflects the recorded value, not the quest's current `reward_xp`; a new-engine grant/consume/revoke each surface as their own event type, with a revoke reporting a negative value; a consume's `details` gets a `consumed_` prefix so it resolves to its own `report_src_consumed_*` string instead of colliding with the grant-side tag of the same name, while a consume with no source tag keeps the generic `consumed` details unprefixed; a legacy grant reports a quantity of one and a legacy consume reports a quantity of negative one; a new-engine grant/consume/revoke report their real quantity (positive/negative) instead of always one; trade and quest events always report zero quantity |
+| `diagnostics/integrity_test.php` | 14 | Diagnostics integrity: the orphan and loose-row table maps cover every `install.xml` table; an instance whose `block_instances` row is gone (or id 0) is reported, with its players, XP and items, and its course recovered from the real `xp_changed` log entry and flagged as existing or deleted; orphans whose course still exists are listed first and the list is bounded; loose rows are counted per table; the cleanup deletes only the selected orphan and every loose row (including a choice that becomes loose once its scene goes), leaves the live instance intact, ignores a live id submitted with the form, writes no copy when there is nothing to delete, and saves a JSON copy that can be listed, resolved only by its exact name, and deleted |
+| `diagnostics/report_test.php` | 3 | Diagnostics report: every section the page reads is present; a fresh report is reused until refreshed or invalidated; a report older than ten minutes is recounted |
+| `diagnostics/usage_test.php` | 2 | Diagnostics figures: adoption per course splits into three groups that add up to the total, counts features left on and keeps a Dashboard block apart; engagement counts players, opt-outs and XP across live instances and activity only within the 90-day window, leaving the rows of removed instances out |
 | `drop_distribution_test.php` | 13 | Eligible-modules discovery: includes forums, excludes modules pending deletion and the course's own news forum (reserved for PlayerCoin/Secret Item), excludes labels when requested, empty for an activity-less course; best-name-match suggestion incl. no-match case; inserted-shortcode cmid lookup incl. not-found and empty-input cases; activity-quota splitting always sums to target, caps at activity count, edge cases |
 | `external_items_test.php` | 27 | Cross-plugin item API used by other Player-family plugins (e.g. PlayerWords): `belongs_to_instance()` accepts an item's own instance (enabled or disabled) and rejects a foreign instance, a nonexistent id, or zero/negative ids without querying the database; `grant()` updates the new quantity-engine stack and awards XP for the caller's own enabled item, and records the triggering `dropid` on the log row; `consume()` spends from the new stack first, falls back to legacy inventory rows when the stack is empty, spends correctly when the balance is split across both storage generations, and returns false when insufficient across both; `get_available_quantity()` sums both storage generations; `get_available_quantities_bulk()` matches what looking each item up individually would return, and its read count stays flat as the item list grows instead of scaling; `get_name()`/`get_xp()` resolve for the item's own instance and return empty/zero for a foreign one |
 | `latepenalty_bridge_test.php` | 2 | `local_latepenalty` bridge: an activity's due date is reported as the student's deadline; no due date gives `null`, not a zero timestamp |
 | `wizard_test.php` | 22 | Run manifest: start/finish status; rollback deletes recorded objects across tables, strips the recorded shortcode, reverts XP and clears play history, rejects a mismatched instance; rollback strips several recorded shortcodes from different activities while rebuilding the course cache only once, not once per shortcode; rollback deletes recorded trades and chapters (with their `trade_reqs` and `story_nodes`) through the same bulk paths `bulk_delete_trades()`/`bulk_delete_chapters()` give the trades/chapters controllers, exercised end to end via `wizard::rollback()` rather than the controller methods directly; active-runs listing with counts and a limit; per-module "already generated" detection incl. stale runs without content, manifest-only items, AI-logged-only items and Ranking's config-only check; `ensure_config_flag` turns a flag on without touching sibling config and is a no-op when already on; `require_course_matches_instance()` accepts the block instance's real course and rejects a courseid belonging to any other course |
 | `xp_budget_test.php` | 15 | Item/mission/chapter counts per journey size incl. fallback to short; `distribute_share` divides a gap evenly, spreads the remainder on the first elements, caps at the gap when elements outnumber it, edge cases; suggested max-levels mapping; balanced-mission round-robin across types, order preservation within a type, all-selected when the limit covers them, edge cases |
-| **Subtotal** | **108** | |
+| **Subtotal** | **127** | |
 
 ### Web Services Tests (`tests/external/`)
 
@@ -104,6 +107,7 @@ These cover the business logic extracted from `manage.php` into the controllers 
 
 | Test file | Cases | What is covered |
 |-----------|------:|----------------|
+| `admin/diagnostics_test.php` | 6 | Diagnostics page data: every figure gets a card, windowed ones say so and AI requests list their providers; the Dashboard card appears only when such blocks exist; orphans whose course still exists start unticked; the real template renders the cleanup form, the loose rows in words and the copy list, or the 'nothing found' message; a partial orphan list says how many are shown |
 | `chapters_escaping_test.php` | 8 | Names escaped exactly once: chapter titles in the teacher's and student's chapter lists, the scene editor's title and flag badges, and the class and item names a story choice sends to the player script as plain text |
 | `manage/item_delete_confirm_test.php` | 12 | Item-deletion confirmation context: single vs bulk action and id payload, singular/plural/simple confirm labels, surviving-only and orphaned+surviving sections; XP-impact warning shown for a single deletion with a disable-instead link, never shown for a bulk deletion even with a toggle URL supplied, and omitted entirely when there is no XP impact |
 | `manage/item_disable_confirm_test.php` | 3 | Item-disable confirmation context: lists the affected quests by role and posts the confirmed toggle; a role with no quests leaves its block off; names are filtered to plain text |
@@ -113,7 +117,7 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `manage/tab_items_escaping_test.php` | 7 | Names escaped exactly once: the items list (including the delete confirmation), the all-drops list and the distribute screen, with `formatstringstriptags` on and off |
 | `manage/tab_items_test.php` | 3 | Items tab late-penalty lookups: only the course's own activities with an enabled rule are offered, and the rules query is restricted to the course's activity ids instead of reading the whole site |
 | `manage/tab_quests_test.php` | 4 | Quest form processing: a pasted modal skeleton in the description is sanitized before saving; basic formatting in the description is preserved; the reward-item select escapes a malicious item name |
-| `manage/tab_reports_test.php` | 13 | Reports tab: an instance with no players/items/quests still exports a well-formed summary with the audit drill-down inactive; `display()` renders real HTML end to end through the global `$OUTPUT`; more than 30 AI log rows only export the first page (30) by default, newest first, and `ai_showall=1` returns every row; the audit drill-down's `inventory.source` fallback is handed to the template raw as `detail_text` when no matching `report_src_*` lang string exists, and `tab_reports.mustache` is proven to escape it via double-mustache on render; `tab_reports.mustache` renders the `xp_gained`/`qty` badges itself from plain ints plus positive/negative flags (all three states: positive, negative, and the neutral "-" fallback), closing the same triple-mustache escape gap the `detail_text` fix closed; the student-selector export omits a student's email when hidden by the site's identity policy; the "most collected item" KPI and each student's total-items figure both sum across both storage generations |
+| `manage/tab_reports_test.php` | 22 | Reports tab: an instance with no players/items/quests still exports a well-formed summary with the audit drill-down inactive; `display()` renders real HTML end to end through the global `$OUTPUT`; more than 30 AI log rows only export the first page (30) by default, newest first, and `ai_showall=1` returns every row; the audit drill-down's `inventory.source` fallback is handed to the template raw as `detail_text` when no matching `report_src_*` lang string exists, and `tab_reports.mustache` is proven to escape it via double-mustache on render; `tab_reports.mustache` renders the `xp_gained`/`qty` badges itself from plain ints plus positive/negative flags (all three states: positive, negative, and the neutral "-" fallback), closing the same triple-mustache escape gap the `detail_text` fix closed; the student-selector export omits a student's email when hidden by the site's identity policy; the "most collected item" KPI and each student's total-items figure both sum across both storage generations; the students table is paged 50 per page with the counter following the offset, sorting applies across pages, a page past the end is clamped, the name search matches in either name order and escapes `LIKE` wildcards, the paging URL keeps search and sort, the student dropdown is withheld above 200 players (real template render), and item totals stay right on a later page both when sorted by XP (page ids first) and by items |
 | `player_screens_escaping_test.php` | 18 | Names escaped exactly once: the student's collection and profile, the classes tab, the drops page and the leaderboard groups; names that suggestions and the wizard save (quest and trade suggestions, a drop renamed after its activity) stay plain text and the suggestion forms escape them when printing |
 | `profile_content_test.php` | 1 | `export_for_template()` strips tags from the item image content field |
 | `quests_escaping_test.php` | 5 | Names escaped exactly once: quest, reward, required item, trade and chapter names in the teacher's quest list and the student's quest tab |
@@ -123,12 +127,12 @@ These cover the business logic extracted from `manage.php` into the controllers 
 | `view/tab_chapters_test.php` | 6 | Chapters tab: no chapters renders the empty state instead of crashing; an unlocked, uncompleted chapter is listed as available; a chapter recorded in the player's `completed_chapters` list renders as completed; a chapter with a future unlock date renders as locked; a chapter above the player's `required_level` also renders as locked, matching what the server now enforces |
 | `view/tab_history_test.php` | 4 | Log tab: a player with no logged events still exports a well-formed empty state, with all 5 sortable column headers present; the `inventory.source` fallback is handed to the template raw as `detail_text` when no matching `report_src_*` lang string exists, and `tab_history.mustache` is proven to escape it via double-mustache on render; `tab_history.mustache` renders the `xp_gained`/`qty` badges itself from plain ints plus positive/negative flags (all three states: positive, negative, and the neutral "-" fallback), closing the same triple-mustache escape gap the `detail_text` fix closed |
 | `view/tab_quests_test.php` | 6 | Quests tab: no quests renders the empty notification instead of crashing; a completed, unclaimed quest is listed with a claim action; a quest already claimed shows its claimed date instead of a claim action; `get_type_label()` maps every quest type constant to a label and falls back for an unrecognised type |
-| `view/tab_ranking_test.php` | 4 | Ranking tab: disabled in block config short-circuits before touching any player data; a visible student sees the leaderboard content; a hidden student sees their own privacy toggle but not the leaderboard; a teacher always sees content with teacher-only filter controls active |
+| `view/tab_ranking_test.php` | 13 | Ranking tab: disabled in block config short-circuits before touching any player data; a visible student sees the leaderboard content; a hidden student sees their own privacy toggle but not the leaderboard; a teacher always sees content with teacher-only filter controls active; `paginate()` slices 50 per page, clamps out-of-range pages and pins the viewer's own row (with its real rank) only when it is off the page; end to end, a student ranked 87th of 120 sees ranks 1–50 plus their pinned row with its display name, a teacher's second page has no pinned row and the hide/show link keeps the page and filter; the real template renders the pinned row and the paging bar |
 | `view/tab_rules_test.php` | 2 | Rules/help tab: a config with no `help_content` falls back to the system default template, carrying the enabled-feature flags for the default help cards; custom `help_content` with `use_default_help` disabled renders the teacher's own content instead |
 | `view/tab_shop_test.php` | 4 | Shop tab: no trades renders the empty state instead of crashing; a student holding enough of the required item can afford the trade; a student with none of the required item cannot afford it; a one-time trade already completed is marked as such |
-| **Subtotal** | **123** | |
+| **Subtotal** | **147** | |
 
-| **Grand Total** | **926** | |
+| **Grand Total** | **972** | |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
@@ -138,16 +142,17 @@ vendor/bin/phpunit --testsuite block_playerhud
 
 | Class | Line coverage |
 |-------|:-------------:|
-| `ai\generator` | 15% |
+| `ai\chat` | 10% |
+| `ai\generator` | 65% |
 | `controller\aikeys` | 100% |
 | `controller\chapters` | 63% |
 | `controller\classes` | 67% |
 | `controller\collect` | 100% |
 | `controller\drops` | 91% |
-| `controller\export` | 91% |
+| `controller\export` | 92% |
 | `controller\items` | 95% |
-| `controller\quests` | 97% |
-| `controller\scenes` | 45% |
+| `controller\quests` | 99% |
+| `controller\scenes` | 75% |
 | `controller\suggestions` | 100% |
 | `controller\trades` | 79% |
 | `drop_guard` | 100% |
@@ -161,62 +166,74 @@ vendor/bin/phpunit --testsuite block_playerhud
 | `external\create_avatar_pack` | 85% |
 | `external\create_class_pack` | 80% |
 | `external\create_playercoin` | 91% |
-| `external\execute_chat_action` | 28% |
+| `external\execute_chat_action` | 54% |
 | `external\generate_ai_content` | 78% |
 | `external\generate_class_oracle` | 68% |
 | `external\generate_story` | 72% |
 | `external\insert_drop_shortcode` | 94% |
 | `external\load_recap` | 100% |
-| `external\load_scene` | 79% |
+| `external\load_scene` | 80% |
 | `external\make_choice` | 79% |
 | `external\remove_drop_shortcode` | 92% |
-| `external\setup_playercoin_drop` | 90% |
+| `external\setup_playercoin_drop` | 91% |
 | `external\use_item` | 82% |
 | `external\wizard_apply_suggested_levels` | 83% |
 | `external\wizard_generate` | 85% |
 | `external\wizard_list_runs` | 100% |
 | `external\wizard_rollback` | 100% |
 | `external\wizard_run_step` | 86% |
-| `external\wizard_start` | 99% |
-| `form\edit_item_form` | 74% |
-| `game` | 94% |
+| `external\wizard_start` | 100% |
+| `form\edit_item_form` | 75% |
+| `form\edit_scene_form` | 98% |
+| `form\suggest_quests_form` | 94% |
+| `form\suggest_trades_form` | 95% |
+| `game` | 95% |
 | `instance_cleanup` | 100% |
 | `local\analytics` | 92% |
 | `local\audit_log` | 80% |
+| `local\diagnostics\integrity` | 94% |
+| `local\diagnostics\report` | 100% |
+| `local\diagnostics\usage` | 100% |
 | `local\drop_distribution` | 74% |
-| `local\external_items` | 94% |
+| `local\external_items` | 95% |
+| `local\latepenalty_bridge` | 50% |
 | `local\rpg_archetypes` | 92% |
 | `local\wizard` | 97% |
 | `local\xp_budget` | 98% |
+| `output\admin\diagnostics` | 100% |
 | `output\manage\item_delete_confirm` | 100% |
+| `output\manage\item_disable_confirm` | 100% |
 | `output\manage\quest_delete_confirm` | 100% |
-| `output\manage\tab_chapters` | 7% |
-| `output\manage\tab_config` | 81% |
-| `output\manage\tab_quests` | 24% |
-| `output\manage\tab_reports` | 87% |
+| `output\manage\tab_chapters` | 99% |
+| `output\manage\tab_classes` | 87% |
+| `output\manage\tab_config` | 82% |
+| `output\manage\tab_items` | 75% |
+| `output\manage\tab_quests` | 85% |
+| `output\manage\tab_reports` | 97% |
+| `output\manage\tab_trades` | 90% |
 | `output\profile_content` | 86% |
 | `output\view\header` | 95% |
 | `output\view\tab_chapters` | 100% |
 | `output\view\tab_collection` | 88% |
-| `output\view\tab_history` | 81% |
-| `output\view\tab_quests` | 79% |
-| `output\view\tab_ranking` | 64% |
+| `output\view\tab_history` | 90% |
+| `output\view\tab_quests` | 91% |
+| `output\view\tab_ranking` | 83% |
 | `output\view\tab_rules` | 78% |
 | `output\view\tab_shop` | 92% |
 | `privacy\provider` | 97% |
-| `quest` | 95% |
-| `story_manager` | 77% |
-| `trade_manager` | 90% |
-| `utils` | 61% |
-| **Overall** | **67%** |
+| `quest` | 96% |
+| `story_manager` | 79% |
+| `trade_manager` | 89% |
+| `utils` | 63% |
+| **Overall** | **81%** |
 
-70 of the plugin's 85 classes are listed above — the rest (mostly exception classes, event
+83 of the plugin's 91 classes are listed above — the rest (mostly exception classes, event
 subscribers and thin output wrappers never `require`'d during this suite's run) carry no
 coverage data at all and are omitted rather than shown as a misleading 0%.
 
 The lowest figures in the table reflect structural limits rather than untested logic:
 
-- `ai\generator` (15%) and the AI branches of `chat_message`/`execute_chat_action` call real
+- `ai\generator` (65%) and the AI branches of `chat_message`/`execute_chat_action` call real
   external providers over curl, with no HTTP mock layer.
 - The AJAX half of `collect::execute()` ends in `die()`, real `moodleform` submissions depend
   on a browser, and JavaScript-driven behaviour has no server-side existence — all of which the
@@ -263,7 +280,10 @@ instrumented and folded into the **Overall** figure; measured on their own inste
 | `block_playerhud_celebrations.feature` | 2 | Huddy introduction shown once on the dashboard; first-quest nudge shown once when a reward is claimable |
 | `block_playerhud_wizard.feature` | 6 | Wizard opens showing the generation form; Help and External recommendations side views; generating PlayerCoin end-to-end shows the success report; the PlayerCoin card locks after being generated; undoing a run from the History view unlocks it again |
 | `block_playerhud_manage_crud.feature` | 7 | The management screens the PHP-level tests reach only in isolation: the Trades, Characters and Story tabs render on a real request; the item library links through to the drops screen; a drop is created through the real `moodleform`, appears in the listing and shows a success notification (locking the `redirect()` notification-type regression); a character is created through the real form (file-manager fields included); the bulk-selection master checkbox checks and clears every row (JavaScript) |
-| **Total** | **36** | |
+| `block_playerhud_manage_js.feature` | 9 | The JavaScript of the character, settings and quest screens: deleting a character after confirming in the modal, or cancelling and keeping it; revealing and hiding an API key; deleting a quest after confirming or keeping it when declined; the bulk delete button counts the selected quests, goes back to disabled when the selection is cleared, and deletes the selection after confirming |
+| `block_playerhud_pagination.feature` | 5 | With 61 ranked players: a student below the first page sees their own row pinned under it; the second page lists the next players and no longer pins the student who is on it; a teacher hiding a student stays on the same page; the reports table shows its second page; the name search finds one student |
+| `block_playerhud_diagnostics.feature` | 3 | The administrator finds the usage and diagnostics page under Reports and sees the figures; nothing is deleted without ticking the confirmation; confirming deletes the data left by a removed block and lists the saved copy |
+| **Total** | **53** | |
 
 ```bash
 php admin/tool/behat/cli/init.php
