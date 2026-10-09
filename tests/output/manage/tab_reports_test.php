@@ -849,4 +849,62 @@ final class tab_reports_test extends advanced_testcase {
         $this->assertStringContainsString('name="s_name"', $html);
         $this->assertStringNotContainsString('id="r_userid"', $html);
     }
+
+    /**
+     * Gives each student (i % 4) units of an item: inventory rows, plus one stacked unit for every
+     * fourth student so both storage generations are summed.
+     *
+     * @param array $students Students in creation order.
+     * @return array Expected item total keyed by full name.
+     */
+    private function give_items(array $students): array {
+        global $DB;
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Gem', 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $expected = [];
+        $inventory = [];
+        foreach ($students as $i => $student) {
+            $units = ($i + 1) % 4;
+            for ($u = 0; $u < $units; $u++) {
+                $inventory[] = ['userid' => $student->id, 'itemid' => $itemid, 'source' => 'map', 'timecreated' => time()];
+            }
+            if (($i + 1) % 4 === 0) {
+                $DB->insert_record('block_playerhud_stack', (object) [
+                    'userid' => $student->id, 'itemid' => $itemid, 'qty' => 1, 'timemodified' => time(),
+                ]);
+                $units++;
+            }
+            $expected[fullname($student)] = $units;
+        }
+        $DB->insert_records('block_playerhud_inventory', $inventory);
+        return $expected;
+    }
+
+    /**
+     * On a later page the item totals belong to the students shown, whichever order is used:
+     * by XP (page ids first, totals afterwards) and by items (totals computed in one query).
+     */
+    public function test_item_totals_on_a_later_page(): void {
+        $expected = $this->give_items($this->create_students([], 60));
+        $_GET['page'] = '1';
+
+        $tab = new tab_reports($this->instanceid, $this->course->id, 'xp', 'DESC');
+        $rows = $tab->export_for_template($this->mock_output())['students'];
+        $this->assertCount(10, $rows);
+        $this->assertSame('Student051 Tester', $rows[0]['fullname']);
+        foreach ($rows as $row) {
+            $this->assertEquals($expected[$row['fullname']], $row['total_items'], $row['fullname']);
+        }
+
+        $tab = new tab_reports($this->instanceid, $this->course->id, 'items', 'DESC');
+        $rows = $tab->export_for_template($this->mock_output())['students'];
+        $this->assertCount(10, $rows);
+        $previous = PHP_INT_MAX;
+        foreach ($rows as $row) {
+            $this->assertEquals($expected[$row['fullname']], $row['total_items'], $row['fullname']);
+            $this->assertLessThanOrEqual($previous, (int) $row['total_items']);
+            $previous = (int) $row['total_items'];
+        }
+    }
 }
