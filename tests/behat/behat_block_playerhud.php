@@ -417,16 +417,24 @@ class behat_block_playerhud extends behat_base {
     }
 
     /**
-     * Creates a one-scene story chapter whose single choice ends the chapter, and turns on the
-     * block's RPG mode so the Story tab is offered to students.
+     * Creates a two-scene story chapter: a starting scene whose single choice leads to an ending
+     * scene with no choices (which is what finishes a chapter). Also turns on the block's RPG mode
+     * so the Story tab is offered to students.
      *
      * @param string $title Chapter title.
      * @param string $scene Text of the starting scene.
-     * @param string $choice Text of the choice that ends the chapter.
+     * @param string $choice Text of the choice that leads to the ending.
+     * @param string $ending Text of the ending scene.
      * @param string $shortname Course shortname.
-     * @Given a PlayerHUD story chapter :title with scene :scene and choice :choice exists in course :shortname
+     * @Given a PlayerHUD story chapter :title with scene :scene, choice :choice and ending :ending exists in course :shortname
      */
-    public function playerhud_story_chapter_exists(string $title, string $scene, string $choice, string $shortname): void {
+    public function playerhud_story_chapter_exists(
+        string $title,
+        string $scene,
+        string $choice,
+        string $ending,
+        string $shortname
+    ): void {
         global $DB;
 
         $instance = $this->get_playerhud_instance($shortname);
@@ -444,17 +452,12 @@ class behat_block_playerhud extends behat_base {
             'timecreated'     => time(),
             'timemodified'    => time(),
         ]);
-        $nodeid = $DB->insert_record('block_playerhud_story_nodes', (object) [
-            'chapterid'    => $chapterid,
-            'content'      => $scene,
-            'is_start'     => 1,
-            'timecreated'  => time(),
-            'timemodified' => time(),
-        ]);
+        $startid = $this->insert_story_scene($chapterid, $scene, true);
+        $endingid = $this->insert_story_scene($chapterid, $ending, false);
         $DB->insert_record('block_playerhud_choices', (object) [
-            'nodeid'        => $nodeid,
+            'nodeid'        => $startid,
             'text'          => $choice,
-            'next_nodeid'   => 0,
+            'next_nodeid'   => $endingid,
             'req_class_id'  => 0,
             'req_karma_min' => 0,
             'karma_delta'   => 0,
@@ -463,6 +466,56 @@ class behat_block_playerhud extends behat_base {
             'cost_item_qty' => 0,
             'timecreated'   => time(),
             'timemodified'  => time(),
+        ]);
+    }
+
+    /**
+     * Inserts one story scene.
+     *
+     * @param int $chapterid Chapter the scene belongs to.
+     * @param string $content Scene text.
+     * @param bool $isstart Whether this is the chapter's starting scene.
+     * @return int The scene id.
+     */
+    private function insert_story_scene(int $chapterid, string $content, bool $isstart): int {
+        global $DB;
+
+        return (int) $DB->insert_record('block_playerhud_story_nodes', (object) [
+            'chapterid'    => $chapterid,
+            'content'      => $content,
+            'is_start'     => $isstart ? 1 : 0,
+            'timecreated'  => time(),
+            'timemodified' => time(),
+        ]);
+    }
+
+    /**
+     * Marks the mascot introduction as already shown to a student, so the overlay it opens on the
+     * first visit to the PlayerHUD page does not cover what the scenario clicks.
+     *
+     * @param string $username Moodle username.
+     * @param string $shortname Course shortname.
+     * @Given :username has already met the PlayerHUD mascot in course :shortname
+     */
+    public function user_has_met_playerhud_mascot(string $username, string $shortname): void {
+        global $DB;
+
+        $instance = $this->get_playerhud_instance($shortname);
+        $userid = $DB->get_field('user', 'id', ['username' => $username], MUST_EXIST);
+        $player = $DB->get_record('block_playerhud_user', ['blockinstanceid' => $instance->id, 'userid' => $userid]);
+        if ($player) {
+            $milestones = (int) $player->milestones | \block_playerhud\game::MILESTONE_INTRO;
+            $DB->set_field('block_playerhud_user', 'milestones', $milestones, ['id' => $player->id]);
+            return;
+        }
+
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid' => $instance->id,
+            'userid'          => $userid,
+            'currentxp'       => 0,
+            'milestones'      => \block_playerhud\game::MILESTONE_INTRO,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
         ]);
     }
 

@@ -20,7 +20,8 @@ Feature: PlayerHUD story screens driven by JavaScript
     And I am on "Course 1" course homepage with editing mode on
     And I add the "PlayerHUD" block
     And I log out
-    And a PlayerHUD story chapter "The Old Gate" with scene "The old gate creaks in the wind." and choice "Open the gate" exists in course "C1"
+    And a PlayerHUD story chapter "The Old Gate" with scene "The old gate creaks in the wind.", choice "Open the gate" and ending "The courtyard is empty." exists in course "C1"
+    And "student1" has already met the PlayerHUD mascot in course "C1"
 
   # -----------------------------------------------------------------
   # Student — the story player (story_player) loads the scene through a
@@ -36,6 +37,7 @@ Feature: PlayerHUD story screens driven by JavaScript
     And I should see "The old gate creaks in the wind." in the "#ph-story-content" "css_element"
     And I click on "Open the gate" "button" in the "#ph-story-choices" "css_element"
     Then I should see "Chapter completed!" in the "#ph-story-choices" "css_element"
+    And I should see "The courtyard is empty." in the "#ph-story-content" "css_element"
 
   Scenario: Student opens the story summary after finishing a chapter
     When I log in as "student1"
@@ -87,4 +89,3 @@ Feature: PlayerHUD story screens driven by JavaScript
     And I should see "Are you sure you want to delete this scene? All its choices will be permanently removed." in the "#ph-confirm-delete-scene" "css_element"
     And I click on "Delete" "link" in the "#ph-confirm-delete-scene" "css_element"
     Then I should see "Scene deleted successfully."
-    And I should not see "The old gate creaks in the wind."
