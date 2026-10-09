@@ -172,7 +172,8 @@ class tab_ranking implements renderable, templatable {
                 $this->instanceid,
                 $this->player->userid,
                 $this->isteacher,
-                $filtergroup
+                $filtergroup,
+                false
             );
 
             $individual = $data['individual'];
@@ -206,6 +207,7 @@ class tab_ranking implements renderable, templatable {
                 'hide_ghosts' => $hideghosts,
             ]);
             $pagingbar = (string) $output->paging_bar($paged['total'], $paged['page'], self::PERPAGE, $pagingurl);
+            $individual = \block_playerhud\game::add_display_fields($individual);
 
             // Enrich each entry with the equipped avatar (fallback to profile picture).
             $individual = $this->enrich_userpictures($individual, $output);

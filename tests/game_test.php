@@ -1484,4 +1484,46 @@ final class game_test extends advanced_testcase {
         $this->assertEquals($tradeid, (int) $reward->tradeid);
         $this->assertEquals($avatar->id, (int) $reward->itemid);
     }
+
+    /**
+     * Without display fields the leaderboard skips the name and date formatting (the costly
+     * part on a large course), and add_display_fields() adds them for the entries shown.
+     */
+    public function test_get_leaderboard_display_fields_on_demand(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course();
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud',
+            'parentcontextid' => \context_course::instance($course->id)->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern' => 'course-view-*',
+            'defaultregion' => 'side-pre',
+            'defaultweight' => 0,
+            'configdata' => '',
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ]);
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $lastgain = time() - 3600;
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid' => $instanceid, 'userid' => $student->id, 'currentxp' => 40,
+            'ranking_visibility' => 1, 'enable_gamification' => 1, 'timecreated' => $lastgain, 'timemodified' => $lastgain,
+        ]);
+
+        $raw = game::get_leaderboard($instanceid, $student->id, false, 0, false);
+        $entry = $raw['individual'][0];
+        $this->assertSame(1, $entry->rank);
+        $this->assertObjectNotHasProperty('fullname', $entry);
+        $this->assertObjectNotHasProperty('last_score_date', $entry);
+
+        game::add_display_fields($raw['individual']);
+        $this->assertSame(fullname($student), $entry->fullname);
+        $this->assertSame(userdate($lastgain, get_string('strftimedatetimeshort', 'langconfig')), $entry->last_score_date);
+
+        $full = game::get_leaderboard($instanceid, $student->id, false);
+        $this->assertSame(fullname($student), $full['individual'][0]->fullname);
+    }
 }

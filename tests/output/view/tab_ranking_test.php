@@ -304,6 +304,8 @@ final class tab_ranking_test extends advanced_testcase {
         $this->assertEquals(87, $pinned->rank);
         $this->assertTrue($pinned->is_pinned);
         $this->assertTrue($pinned->is_me);
+        $this->assertSame(fullname($viewer), $pinned->fullname, 'Rows shown get their display name.');
+        $this->assertNotEmpty($data['individual'][0]->last_score_date);
     }
 
     /**
