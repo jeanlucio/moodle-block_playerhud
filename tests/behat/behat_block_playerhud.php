@@ -262,6 +262,77 @@ class behat_block_playerhud extends behat_base {
     }
 
     /**
+     * Creates a PlayerHUD quest (a "reach level 2" quest rewarding 5 XP) in the given course.
+     *
+     * @param string $questname Display name for the quest.
+     * @param string $shortname Course shortname.
+     * @Given a PlayerHUD quest :questname exists in course :shortname
+     */
+    public function playerhud_quest_exists(string $questname, string $shortname): void {
+        global $DB;
+
+        $instance = $this->get_playerhud_instance($shortname);
+
+        $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $instance->id,
+            'name'            => $questname,
+            'description'     => '',
+            'type'            => \block_playerhud\quest::TYPE_LEVEL,
+            'requirement'     => '2',
+            'req_itemid'      => 0,
+            'reward_xp'       => 5,
+            'reward_itemid'   => 0,
+            'reward_itemqty'  => 1,
+            'required_class_id' => '0',
+            'image_todo'      => '📋',
+            'image_done'      => '🏅',
+            'enabled'         => 1,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+    }
+
+    /**
+     * Creates a PlayerHUD character (RPG class) in the given course.
+     *
+     * @param string $classname Display name for the character.
+     * @param string $shortname Course shortname.
+     * @Given a PlayerHUD character :classname exists in course :shortname
+     */
+    public function playerhud_character_exists(string $classname, string $shortname): void {
+        global $DB;
+
+        $instance = $this->get_playerhud_instance($shortname);
+
+        $DB->insert_record('block_playerhud_classes', (object) [
+            'blockinstanceid' => $instance->id,
+            'name'            => $classname,
+            'base_hp'         => 10,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+    }
+
+    /**
+     * Returns the PlayerHUD block instance placed in a course.
+     *
+     * @param string $shortname Course shortname.
+     * @return \stdClass The block_instances record.
+     */
+    private function get_playerhud_instance(string $shortname): \stdClass {
+        global $DB;
+
+        $course = $DB->get_record('course', ['shortname' => $shortname], '*', MUST_EXIST);
+
+        return $DB->get_record(
+            'block_instances',
+            ['blockname' => 'playerhud', 'parentcontextid' => context_course::instance($course->id)->id],
+            '*',
+            MUST_EXIST
+        );
+    }
+
+    /**
      * Programmatically records a drop collection for a user.
      *
      * @param string $username  Moodle username.
