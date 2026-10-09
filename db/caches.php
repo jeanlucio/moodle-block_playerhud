@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * Cache definitions for block_playerhud.
  *
  * @package    block_playerhud
  * @copyright  2026 Jean Lúcio
@@ -24,9 +24,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'block_playerhud';
-$plugin->version   = 2026100900;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2024100700;        // Requires: Moodle 4.5+.
-$plugin->supported = [405, 503];
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v1.9.5';         // User-friendly version number.
+$definitions = [
+    // Figures of the administrator's diagnostics page; freshness is checked by the caller.
+    'diagnostics' => [
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'staticacceleration' => false,
+    ],
+];
