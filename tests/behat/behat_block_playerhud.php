@@ -154,6 +154,80 @@ class behat_block_playerhud extends behat_base {
         }
     }
 
+    // Step definitions for pagination and search tests (block_playerhud_pagination.feature).
+
+    /**
+     * Creates enrolled students with PlayerHUD player records, ranked by descending XP.
+     *
+     * The students are named "Ranked001 Player", "Ranked002 Player"... and Ranked001 holds the
+     * most XP, so each one's ranking position equals its number.
+     *
+     * @param int $count Number of students to create.
+     * @param string $shortname Course shortname.
+     * @Given :count ranked PlayerHUD players exist in course :shortname
+     */
+    public function ranked_playerhud_players_exist(int $count, string $shortname): void {
+        global $DB;
+
+        $course = $DB->get_record('course', ['shortname' => $shortname], '*', MUST_EXIST);
+        $instance = $this->get_playerhud_instance($shortname);
+        $generator = testing_util::get_data_generator();
+        $now = time();
+
+        $players = [];
+        for ($i = 1; $i <= $count; $i++) {
+            $number = str_pad((string) $i, 3, '0', STR_PAD_LEFT);
+            $user = $generator->create_user([
+                'username'  => 'ranked' . $number,
+                'firstname' => 'Ranked' . $number,
+                'lastname'  => 'Player',
+            ]);
+            $generator->enrol_user($user->id, $course->id, 'student');
+            $players[] = [
+                'blockinstanceid'     => $instance->id,
+                'userid'              => $user->id,
+                'currentxp'           => 10000 - $i,
+                'enable_gamification' => 1,
+                'ranking_visibility'  => 1,
+                'timecreated'         => $now,
+                'timemodified'        => $now,
+            ];
+        }
+        $DB->insert_records('block_playerhud_user', $players);
+    }
+
+    /**
+     * Sets a user's PlayerHUD XP in a course, creating their player record if needed.
+     *
+     * @param string $username Moodle username.
+     * @param int $xp XP to set.
+     * @param string $shortname Course shortname.
+     * @Given :username has :xp PlayerHUD XP in course :shortname
+     */
+    public function user_has_playerhud_xp(string $username, int $xp, string $shortname): void {
+        global $DB;
+
+        $user = $DB->get_record('user', ['username' => $username], '*', MUST_EXIST);
+        $instance = $this->get_playerhud_instance($shortname);
+        $player = $DB->get_record('block_playerhud_user', ['blockinstanceid' => $instance->id, 'userid' => $user->id]);
+
+        if ($player) {
+            $player->currentxp = $xp;
+            $player->timemodified = time();
+            $DB->update_record('block_playerhud_user', $player);
+            return;
+        }
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid'     => $instance->id,
+            'userid'              => $user->id,
+            'currentxp'           => $xp,
+            'enable_gamification' => 1,
+            'ranking_visibility'  => 1,
+            'timecreated'         => time(),
+            'timemodified'        => time(),
+        ]);
+    }
+
     // Step definitions for modal behaviour tests (block_playerhud_modals.feature).
 
     /**
