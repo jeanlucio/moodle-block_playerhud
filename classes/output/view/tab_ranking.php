@@ -222,6 +222,8 @@ class tab_ranking implements renderable, templatable {
                         'tab'          => 'toggle_ranking_user',
                         'targetuserid' => $entry->userid,
                         'group'        => $filtergroup,
+                        'hide_ghosts'  => $hideghosts,
+                        'page'         => $paged['page'],
                         'sesskey'      => sesskey(),
                     ]))->out(false);
                     $entry->is_ranking_visible = $isrankingvisible;

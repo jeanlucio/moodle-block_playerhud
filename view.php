@@ -100,12 +100,15 @@ if ($tab === 'toggle_ranking_user' && confirm_sesskey()) {
     $targetplayer = \block_playerhud\game::get_player($instanceid, $targetuserid);
     $newvis = ($targetplayer->ranking_visibility == 1) ? 0 : 1;
     \block_playerhud\game::toggle_ranking_visibility($instanceid, $targetuserid, $newvis);
+    // Return to the same page and filters the teacher was looking at.
     redirect(
         new moodle_url('/blocks/playerhud/view.php', [
             'id' => $courseid,
             'instanceid' => $instanceid,
             'tab' => 'ranking',
             'group' => optional_param('group', 0, PARAM_INT),
+            'hide_ghosts' => optional_param('hide_ghosts', 0, PARAM_INT),
+            'page' => optional_param('page', 0, PARAM_INT),
         ])
     );
 }

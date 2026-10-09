@@ -327,6 +327,11 @@ final class tab_ranking_test extends advanced_testcase {
         foreach ($data['individual'] as $row) {
             $this->assertObjectNotHasProperty('is_pinned', $row);
         }
+
+        // The hide/show toggle must bring the teacher back to the same page and filter.
+        $toggle = new \moodle_url(html_entity_decode($data['individual'][0]->url_toggle_visibility));
+        $this->assertSame('1', (string) $toggle->get_param('page'));
+        $this->assertSame('0', (string) $toggle->get_param('hide_ghosts'));
     }
 
     /**
