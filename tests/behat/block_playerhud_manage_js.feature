@@ -84,7 +84,7 @@ Feature: PlayerHUD management screens driven by JavaScript
     And I click on "Quests" "link" in the "#ph-manage-tabs" "css_element"
     And I click on "a[aria-label='Delete Reach level two']" "css_element"
     And I should see "Are you sure you want to delete this? 'Reach level two'?"
-    And I click on "Cancel" "button"
+    And I click on "Cancel" "button" in the ".modal.show" "css_element"
     Then I should see "Reach level two"
     And I should not see "Quest deleted."
 
