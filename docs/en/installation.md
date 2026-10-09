@@ -8,3 +8,5 @@
 4. Install the recommended **PlayerHUD Filter** plugin (needed to place item drops via shortcodes in course content).
 5. Visit **Site administration > Notifications** to complete installation.
 6. Add the block to a course.
+
+Administrators can follow how the block is used, and clean data left by removed blocks, at **Site administration > Reports > PlayerHUD usage and diagnostics** — see [Usage & Diagnostics Page](#diagnostics).

@@ -19,9 +19,9 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `edit_form_test.php` | 5 |
 | `form/edit_item_form_test.php` | 8 |
 | `form/edit_scene_form_test.php` | 3 |
-| `game_test.php` | 47 |
+| `game_test.php` | 48 |
 | `gamemaster_test.php` | 6 |
-| `instance_delete_test.php` | 1 |
+| `instance_delete_test.php` | 2 |
 | `item_delete_cascade_test.php` | 25 |
 | `karma_test.php` | 11 |
 | `lib_test.php` | 27 |
@@ -33,8 +33,8 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `template_strings_test.php` | 3 |
 | `trade_test.php` | 12 |
 | `uninstall_test.php` | 2 |
-| `utils_test.php` | 22 |
-| **Subtotal** | **358** |
+| `utils_test.php` | 23 |
+| **Subtotal** | **361** |
 
 ### Local Business-Logic Tests (`tests/local/`)
 
@@ -42,12 +42,15 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 |-----------|------:|
 | `analytics_test.php` | 13 |
 | `audit_log_test.php` | 16 |
+| `diagnostics/integrity_test.php` | 14 |
+| `diagnostics/report_test.php` | 3 |
+| `diagnostics/usage_test.php` | 2 |
 | `drop_distribution_test.php` | 13 |
 | `external_items_test.php` | 27 |
 | `latepenalty_bridge_test.php` | 2 |
 | `wizard_test.php` | 22 |
 | `xp_budget_test.php` | 15 |
-| **Subtotal** | **108** |
+| **Subtotal** | **127** |
 
 ### Web Services Tests (`tests/external/`)
 
@@ -98,6 +101,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 
 | Test file | Cases |
 |-----------|------:|
+| `admin/diagnostics_test.php` | 6 |
 | `chapters_escaping_test.php` | 8 |
 | `manage/item_delete_confirm_test.php` | 12 |
 | `manage/item_disable_confirm_test.php` | 3 |
@@ -107,7 +111,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `manage/tab_items_escaping_test.php` | 7 |
 | `manage/tab_items_test.php` | 3 |
 | `manage/tab_quests_test.php` | 4 |
-| `manage/tab_reports_test.php` | 13 |
+| `manage/tab_reports_test.php` | 22 |
 | `player_screens_escaping_test.php` | 18 |
 | `profile_content_test.php` | 1 |
 | `quests_escaping_test.php` | 5 |
@@ -117,17 +121,17 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `view/tab_chapters_test.php` | 6 |
 | `view/tab_history_test.php` | 4 |
 | `view/tab_quests_test.php` | 6 |
-| `view/tab_ranking_test.php` | 4 |
+| `view/tab_ranking_test.php` | 13 |
 | `view/tab_rules_test.php` | 2 |
 | `view/tab_shop_test.php` | 4 |
-| **Subtotal** | **123** |
+| **Subtotal** | **147** |
 
-| **Grand Total** | **926** |
+| **Grand Total** | **972** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
 ```
 
-**Overall line coverage** (`moodle-coverage`, PHPUnit + Xdebug): **67%**.
+**Overall line coverage** (`moodle-coverage`, PHPUnit + Xdebug): **81%**.
 
 [Full test-by-test breakdown and coverage table →]({{ '/testing.html' | relative_url }})

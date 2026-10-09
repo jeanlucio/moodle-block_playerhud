@@ -41,6 +41,9 @@ engajamento de acordo com seus objetivos pedagógicos.
 <span id="economy-health"></span>
 {% include_relative pt/economy-health.md %}
 
+<span id="diagnostics"></span>
+{% include_relative pt/diagnostics.md %}
+
 <span id="educational-purpose"></span>
 {% include_relative pt/educational-purpose.md %}
 

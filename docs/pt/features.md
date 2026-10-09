@@ -10,7 +10,7 @@
 * 📍 **Sistema de Drops:** Posicione itens nas seções do curso via shortcodes.
 * 🎁 **Distribuição Automática de Drops:** Insira em lote os drops pendentes na atividade do curso com melhor correspondência de nome, com um clique — com desfazer por item.
 * 🏪 **Loja NPC:** Sistema de trocas configurável — itens por recompensas.
-* 🏆 **Ranking:** Classificação com critério de desempate e controle de visibilidade.
+* 🏆 **Ranking:** Classificação com critério de desempate e controle de visibilidade, com 50 jogadores por página; o estudante que está fora da página vê a própria linha fixada abaixo dela, com a posição real.
 * 🔐 **Participação Opcional:** O aluno pode escolher participar ou não da gamificação.
 * ⚡ **Atualização em Tempo Real:** Coleta via `core/ajax`.
 * 🎉 **Pop-ups Comemorativos com o Mascote:** Pop-ups animados com o mascote Huddy marcam momentos-chave — o Huddy **se apresenta** na primeira visita do aluno ao painel, e depois comemora **subir de nível** (mostrando o nível alcançado), **zerar o jogo** (alcançar 100% da pontuação do curso), **concluir a primeira missão** (um aviso único para ir resgatar a recompensa) e **encontrar a primeira PlayerCoin**. Totalmente acessível (foco preso no teclado, devolução de foco, rótulos para leitor de tela). Os pop-ups de apresentação, primeira missão e primeira PlayerCoin aparecem uma única vez cada. Toda a arte do mascote é distribuída em WebP leve. O professor pode desativar todas as animações do mascote nas configurações do bloco (seção Mascote).
@@ -18,7 +18,8 @@
 * 🧙 **Personagens RPG:** Defina personagens com retratos, alinhamento de reputação e imagens de evolução por tier.
 * 📖 **História e Capítulos:** Sistema narrativo ramificado com nós de escolha e caminhos por personagem.
 * ⚖️ **Sistema de Reputação:** Mecânica de alinhamento moral que evolui o retrato do personagem do aluno ao longo do tempo.
-* 📊 **Analytics:** Logs de auditoria, rastreamento da economia do jogo, um histograma de distribuição de níveis e um gráfico de conclusão de missões, além de um painel de Saúde da Economia que sinaliza um orçamento de XP desequilibrado.
+* 📊 **Analytics:** Logs de auditoria, rastreamento da economia do jogo, um histograma de distribuição de níveis e um gráfico de conclusão de missões, além de um painel de Saúde da Economia que sinaliza um orçamento de XP desequilibrado. A tabela de estudantes da aba Relatórios mostra 50 por página e tem busca por nome; a lista de seleção de estudante continua nos cursos com até 200 jogadores.
+* 🩺 **Uso e Diagnóstico (administradores):** uma página do site com números de adoção e engajamento e a limpeza dos dados deixados por blocos removidos, com cópia salva antes — veja [Página de Uso e Diagnóstico](#diagnostics).
 * 🪄 **Assistente de Gamificação:** Um assistente passo a passo que monta a estrutura gamificada do curso inteiro numa única rodada, com progresso ao vivo, nova tentativa em caso de falha e desfazer com um clique por rodada a partir de uma lista de histórico.
   * **Onze mecânicas em três níveis** — Itens, PlayerCoin, Pacote de Avatares, Comércio, Ranking, Missões, Colecionável de Conhecimento, Item de Extensão de Prazo, Item RPG, RPG (personagens + história completa) e um Item Secreto oculto, agrupados em **Básico / Intermediário / Avançado** pela sofisticação da mecânica, não pelo que ela tecnicamente faz.
   * **Orçamento de XP compartilhado** — mantém toda mecânica gerada dentro do teto de níveis do curso.

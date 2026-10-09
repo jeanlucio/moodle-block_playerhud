@@ -8,3 +8,5 @@
 4. Instale o plugin recomendado **Filtro PlayerHUD** (necessário para posicionar drops de itens via shortcodes no conteúdo do curso).
 5. Acesse **Administração do site > Notificações** para concluir a instalação.
 6. Adicione o bloco ao curso.
+
+Administradores podem acompanhar o uso do bloco, e limpar dados deixados por blocos removidos, em **Administração do site > Relatórios > PlayerHUD: uso e diagnóstico** — veja [Página de Uso e Diagnóstico](#diagnostics).
