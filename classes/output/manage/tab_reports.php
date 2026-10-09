@@ -35,6 +35,12 @@ use block_playerhud\utils;
  * @package block_playerhud
  */
 class tab_reports implements renderable, templatable {
+    /** @var int Rows per page in the students table. */
+    public const PERPAGE = 50;
+
+    /** @var int Largest player count for which the one-click student dropdown is still offered. */
+    public const SELECTOR_MAX = 200;
+
     /** @var int The block instance ID. */
     protected $instanceid;
 
@@ -50,6 +56,9 @@ class tab_reports implements renderable, templatable {
     /** @var string Sort direction for main table. */
     protected $dir;
 
+    /** @var string Name search applied to the students table (empty = no filter). */
+    protected $search;
+
     /**
      * Constructor.
      *
@@ -64,6 +73,7 @@ class tab_reports implements renderable, templatable {
         $this->selecteduserid = optional_param('r_userid', 0, PARAM_INT);
         $this->sort = empty($sort) ? 'xp' : $sort;
         $this->dir  = strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC';
+        $this->search = trim(optional_param('s_name', '', PARAM_TEXT));
     }
 
     /**
@@ -92,6 +102,18 @@ class tab_reports implements renderable, templatable {
             'charts'        => $this->get_charts_data($xpperlevel, $maxlevels),
             'quest_stats'   => $this->get_quest_stats_data(),
             'user_selector' => $this->get_user_selector_data(),
+            'student_search' => [
+                'value'      => $this->search,
+                'has_value'  => ($this->search !== ''),
+                'action_url' => (new moodle_url('/blocks/playerhud/manage.php'))->out(false),
+                'courseid'   => $this->courseid,
+                'instanceid' => $this->instanceid,
+                'url_clear'  => (new moodle_url($baseurl))->out(false),
+                'str_label'  => get_string('report_search_label', 'block_playerhud'),
+                'str_button' => get_string('search'),
+                'str_clear'  => get_string('clear'),
+                'str_none'   => get_string('report_search_none', 'block_playerhud'),
+            ],
         ];
 
         if ($this->selecteduserid > 0) {
@@ -232,13 +254,22 @@ class tab_reports implements renderable, templatable {
             $contextdata['showall'] = $showall;
             $contextdata['url_toggle_showall'] = $toggleurl->out(false);
         } else {
+            // Sort links and the paging bar both carry the active search, so neither drops it.
+            $listurl = new moodle_url($baseurl);
+            if ($this->search !== '') {
+                $listurl->param('s_name', $this->search);
+            }
             $contextdata['headers'] = [
-                'student' => $this->get_sort_data('student', get_string('student', 'block_playerhud'), $baseurl),
-                'xp'      => $this->get_sort_data('xp', get_string('report_status_level', 'block_playerhud'), $baseurl),
-                'items'   => $this->get_sort_data('items', get_string('items', 'block_playerhud'), $baseurl),
+                'student' => $this->get_sort_data('student', get_string('student', 'block_playerhud'), $listurl),
+                'xp'      => $this->get_sort_data('xp', get_string('report_status_level', 'block_playerhud'), $listurl),
+                'items'   => $this->get_sort_data('items', get_string('items', 'block_playerhud'), $listurl),
             ];
-            $contextdata['students']     = $this->get_students_data($xpperlevel, $maxlevels);
+            $pagingurl = new moodle_url($listurl, ['sort' => $this->sort, 'dir' => $this->dir]);
+            $studentsdata = $this->get_students_data($xpperlevel, $maxlevels, $output, $pagingurl);
+            $contextdata['students']     = $studentsdata['rows'];
+            $contextdata['paging_bar']   = $studentsdata['paging_bar'];
             $contextdata['has_students'] = !empty($contextdata['students']);
+            $contextdata['is_searching'] = ($this->search !== '');
 
             $contextdata['url_export'] = (new moodle_url('/blocks/playerhud/export.php', [
                 'id' => $this->courseid,
@@ -559,10 +590,17 @@ class tab_reports implements renderable, templatable {
     /**
      * Get user selector dropdown data.
      *
-     * @return array
+     * A dropdown listing every player stops being usable (and makes the page heavy) on large
+     * courses, so above SELECTOR_MAX players it is withheld and the search box is the way in.
+     *
+     * @return array Keys: show (bool) and options (array).
      */
     private function get_user_selector_data(): array {
         global $DB;
+
+        if ($DB->count_records('block_playerhud_user', ['blockinstanceid' => $this->instanceid]) > self::SELECTOR_MAX) {
+            return ['show' => false, 'options' => []];
+        }
 
         $coursecontext = \context_course::instance($this->courseid);
         $showemail = in_array('email', \core_user\fields::get_identity_fields($coursecontext), true);
@@ -603,7 +641,7 @@ class tab_reports implements renderable, templatable {
         ]];
         array_push($options, ...array_values($useroptions));
 
-        return ['options' => $options];
+        return ['show' => true, 'options' => $options];
     }
 
     /**
@@ -643,16 +681,49 @@ class tab_reports implements renderable, templatable {
     }
 
     /**
-     * Get main students table data.
+     * Get one page of the main students table.
      *
      * @param int $xpperlevel
      * @param int $maxlevels
-     * @return array
+     * @param \core\output\core_renderer|\core\output\bootstrap_renderer $output The renderer used to
+     *        build the paging bar. May still be the bootstrap_renderer stand-in at this point, since
+     *        manage.php builds tab content before calling $OUTPUT->header().
+     * @param moodle_url $pagingurl Base URL of the paging bar (keeps sort and search).
+     * @return array Keys: rows (array for the template) and paging_bar (string HTML).
      */
-    private function get_students_data(int $xpperlevel, int $maxlevels): array {
+    private function get_students_data(
+        int $xpperlevel,
+        int $maxlevels,
+        \core\output\core_renderer|\core\output\bootstrap_renderer $output,
+        moodle_url $pagingurl
+    ): array {
         global $DB;
 
         [$populationsql, $populationparams] = $this->student_population_condition('pu');
+
+        $searchsql = '';
+        $searchparams = [];
+        if ($this->search !== '') {
+            $like = '%' . $DB->sql_like_escape($this->search) . '%';
+            $searchsql = ' AND (' . $DB->sql_like($DB->sql_fullname('u.firstname', 'u.lastname'), ':sname1', false, false)
+                . ' OR ' . $DB->sql_like($DB->sql_concat_join("' '", ['u.lastname', 'u.firstname']), ':sname2', false, false)
+                . ')';
+            $searchparams = ['sname1' => $like, 'sname2' => $like];
+        }
+
+        $total = $DB->count_records_sql(
+            "SELECT COUNT(1)
+               FROM {user} u
+               JOIN {block_playerhud_user} pu ON pu.userid = u.id
+              WHERE pu.blockinstanceid = :p2
+                AND $populationsql $searchsql",
+            ['p2' => $this->instanceid] + $populationparams + $searchparams
+        );
+
+        $page = optional_param('page', 0, PARAM_INT);
+        $lastpage = max(0, (int) ceil($total / self::PERPAGE) - 1);
+        $page = min(max(0, $page), $lastpage);
+        $offset = $page * self::PERPAGE;
 
         $userfieldsapi = \core_user\fields::for_name();
         $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
@@ -688,19 +759,19 @@ class tab_reports implements renderable, templatable {
               FROM {user} u
               JOIN {block_playerhud_user} pu ON pu.userid = u.id
              WHERE pu.blockinstanceid = :p2
-               AND $populationsql
+               AND $populationsql $searchsql
           ORDER BY $sortsql";
 
         $params = [
             'p1' => $this->instanceid,
             'p2' => $this->instanceid,
             'p3' => $this->instanceid,
-        ] + $populationparams;
+        ] + $populationparams + $searchparams;
 
-        $users = $DB->get_records_sql($sql, $params);
+        $users = $DB->get_records_sql($sql, $params, $offset, self::PERPAGE);
 
         $results = [];
-        $counter = 1;
+        $counter = $offset + 1;
         if ($users) {
             foreach ($users as $row) {
                 $lastactiondate = userdate($row->timemodified, get_string('strftimedatetime', 'langconfig'));
@@ -731,7 +802,11 @@ class tab_reports implements renderable, templatable {
                 ];
             }
         }
-        return $results;
+
+        return [
+            'rows' => $results,
+            'paging_bar' => (string) $output->paging_bar($total, $page, self::PERPAGE, $pagingurl),
+        ];
     }
 
     /**

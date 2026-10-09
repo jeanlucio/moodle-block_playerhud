@@ -41,7 +41,13 @@
         },
         "kpis": [{"title": "Total XP", "value": "1500", "subtitle": "", "bg_class": "ph-bg-gradient-primary"}],
         "has_students": true,
-        "user_selector": { "options": [{"value": 1, "label": "Jean Lúcio", "selected": true}] },
+        "user_selector": { "show": true, "options": [{"value": 1, "label": "Jean Lúcio", "selected": true}] },
+        "student_search": {
+            "value": "", "has_value": false, "action_url": "#", "courseid": 2, "instanceid": 5, "url_clear": "#",
+            "str_label": "Search student by name", "str_button": "Search", "str_clear": "Clear",
+            "str_none": "No student matches this search."
+        },
+        "paging_bar": "",
         "url_export": "#"
     }
 }}
@@ -138,10 +144,23 @@
 
     </div>
 
-    {{! --- 3. STUDENT SELECTOR --- }}
+    {{! --- 3. STUDENT SEARCH + SELECTOR --- }}
     <div class="card mb-4 shadow-sm">
-        <div class="card-body p-3 bg-light d-flex align-items-center flex-wrap">
-            <strong class="me-3 mb-2 mb-md-0"><i class="fa fa-filter" aria-hidden="true"></i> {{str.audit}}</strong>
+        <div class="card-body p-3 bg-light d-flex align-items-center flex-wrap gap-3">
+            <strong class="mb-0"><i class="fa fa-filter" aria-hidden="true"></i> {{str.audit}}</strong>
+            <form method="get" action="{{student_search.action_url}}" class="d-flex align-items-center flex-wrap gap-2 flex-grow-1 ph-max-w-500">
+                <input type="hidden" name="id" value="{{student_search.courseid}}">
+                <input type="hidden" name="instanceid" value="{{student_search.instanceid}}">
+                <input type="hidden" name="tab" value="reports">
+                <label for="ph-s-name" class="visually-hidden">{{student_search.str_label}}</label>
+                <input type="search" id="ph-s-name" name="s_name" value="{{student_search.value}}"
+                       class="form-control flex-grow-1 w-auto" placeholder="{{student_search.str_label}}">
+                <button type="submit" class="btn btn-primary">{{student_search.str_button}}</button>
+                {{#student_search.has_value}}
+                    <a href="{{student_search.url_clear}}" class="btn btn-outline-secondary">{{student_search.str_clear}}</a>
+                {{/student_search.has_value}}
+            </form>
+            {{#user_selector.show}}
             <div class="flex-grow-1 ph-max-w-500">
                 <label for="r_userid" class="visually-hidden">{{str.audit}}</label>
                 <select id="r_userid" class="form-select w-100">
@@ -150,6 +169,7 @@
                     {{/user_selector.options}}
                 </select>
             </div>
+            {{/user_selector.show}}
         </div>
     </div>
 
@@ -366,9 +386,12 @@
                 </table>
             </div>
         </div>
+        {{{paging_bar}}}
         {{/has_students}}
         {{^has_students}}
-             <div class="alert alert-warning">{{str.no_logs}}</div>
+             <div class="alert alert-warning">
+                 {{#is_searching}}{{student_search.str_none}}{{/is_searching}}{{^is_searching}}{{str.no_logs}}{{/is_searching}}
+             </div>
         {{/has_students}}
     {{/is_audit}}
 

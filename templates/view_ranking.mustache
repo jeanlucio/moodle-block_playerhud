@@ -36,6 +36,8 @@
         "has_players": true,
         "str_tab_individual": "Individual",
         "str_tab_groups": "Groups",
+        "str_your_position": "Your position",
+        "paging_bar": "",
         "individual": [
             {
                 "rank": 1, "medal_emoji": "🥇", "fullname": "Alice", "currentxp": 1000, "is_me": true,
@@ -143,6 +145,11 @@
                             </thead>
                             <tbody>
                                 {{#individual}}
+                                {{#is_pinned}}
+                                <tr class="ph-rank-gap">
+                                    <td colspan="5" class="text-center text-muted small py-1">{{str_your_position}}</td>
+                                </tr>
+                                {{/is_pinned}}
                                 <tr class="{{#is_me}}table-primary border-start border-primary border-4{{/is_me}}">
                                     <td class="text-center fw-bold lead">
                                         {{#medal_emoji}}
@@ -204,6 +211,7 @@
                         </table>
                     </div>
                 </div>
+                {{{paging_bar}}}
                 {{/has_players}}
 
                 {{^has_players}}

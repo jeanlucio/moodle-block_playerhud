@@ -28,6 +28,9 @@ use moodle_url;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class tab_ranking implements renderable, templatable {
+    /** @var int Rows shown per page in the individual ranking. */
+    public const PERPAGE = 50;
+
     /** @var \stdClass Block configuration. */
     protected $config;
 
@@ -111,6 +114,8 @@ class tab_ranking implements renderable, templatable {
         $hasgroups = false;
         $hasplayers = false;
         $showcontent = false;
+        $pagingbar = '';
+        $hideghosts = 0;
 
         // Teacher Filter Logic.
         $teacherfilteractive = false;
@@ -183,6 +188,25 @@ class tab_ranking implements renderable, templatable {
                 $individual = array_values($individual);
             }
 
+            // Only one page is rendered; the viewer's own row is pinned below it when it falls
+            // outside the page. Ranks were already computed over the whole list above, so
+            // slicing here never changes anyone's position.
+            $paged = self::paginate(
+                $individual,
+                optional_param('page', 0, PARAM_INT),
+                self::PERPAGE,
+                $this->isteacher ? 0 : (int) $this->player->userid
+            );
+            $individual = $paged['rows'];
+            $pagingurl = new moodle_url('/blocks/playerhud/view.php', [
+                'id' => $this->courseid,
+                'instanceid' => $this->instanceid,
+                'tab' => 'ranking',
+                'group' => $filtergroup,
+                'hide_ghosts' => $hideghosts,
+            ]);
+            $pagingbar = (string) $output->paging_bar($paged['total'], $paged['page'], self::PERPAGE, $pagingurl);
+
             // Enrich each entry with the equipped avatar (fallback to profile picture).
             $individual = $this->enrich_userpictures($individual, $output);
 
@@ -239,6 +263,8 @@ class tab_ranking implements renderable, templatable {
             'str_hidden_desc' => get_string('hidden_desc', 'block_playerhud'),
 
             'individual' => $individual,
+            'paging_bar' => $pagingbar,
+            'str_your_position' => get_string('ranking_your_position', 'block_playerhud'),
             'groups' => $groups,
             'has_groups' => $hasgroups,
             'has_players' => $hasplayers,
@@ -255,6 +281,41 @@ class tab_ranking implements renderable, templatable {
             'str_col_avg' => get_string('average', 'block_playerhud'),
             'str_col_date' => get_string('str_col_date', 'block_playerhud'),
         ];
+    }
+
+    /**
+     * Slices a ranked list into one page, pinning the viewer's own row when it is off the page.
+     *
+     * The pinned row keeps its real rank (ranks come from the whole list, not from the page)
+     * and is flagged with is_pinned so the template can separate it from the page rows.
+     *
+     * @param array $entries Ranked entries in display order, each exposing ->userid.
+     * @param int $page Requested zero-based page; clamped to the existing pages.
+     * @param int $perpage Rows per page.
+     * @param int $pinuserid User whose row must always be visible, or 0 to pin nobody.
+     * @return array Keys: rows (entries to render), page (the page actually used), total (all entries).
+     */
+    public static function paginate(array $entries, int $page, int $perpage, int $pinuserid): array {
+        $entries = array_values($entries);
+        $total = count($entries);
+        $lastpage = max(0, (int) ceil($total / $perpage) - 1);
+        $page = min(max(0, $page), $lastpage);
+        $rows = array_slice($entries, $page * $perpage, $perpage);
+
+        if ($pinuserid > 0) {
+            $onpage = array_filter($rows, static fn($entry) => (int) $entry->userid === $pinuserid);
+            if (empty($onpage)) {
+                foreach ($entries as $entry) {
+                    if ((int) $entry->userid === $pinuserid) {
+                        $entry->is_pinned = true;
+                        $rows[] = $entry;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return ['rows' => $rows, 'page' => $page, 'total' => $total];
     }
 
     /**
@@ -276,9 +337,20 @@ class tab_ranking implements renderable, templatable {
             return $individual;
         }
 
-        // 1. Bulk-load the equipped avatar preference for every user (single query).
-        $prefname = 'block_playerhud_avatar_' . $this->instanceid;
-        $prefs = $DB->get_records('user_preferences', ['name' => $prefname], '', 'userid, value');
+        // 1. Bulk-load the equipped avatar preference for the listed users only (single query).
+        [$usersql, $userparams] = $DB->get_in_or_equal(
+            array_map(static fn($entry) => (int) $entry->userid, $individual),
+            SQL_PARAMS_NAMED,
+            'pu'
+        );
+        $userparams['prefname'] = 'block_playerhud_avatar_' . $this->instanceid;
+        $prefs = $DB->get_records_select(
+            'user_preferences',
+            "name = :prefname AND userid $usersql",
+            $userparams,
+            '',
+            'userid, value'
+        );
 
         $useravatarids = [];
         foreach ($prefs as $pref) {

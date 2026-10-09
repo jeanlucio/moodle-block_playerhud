@@ -629,4 +629,224 @@ final class tab_reports_test extends advanced_testcase {
         $this->assertCount(1, $revokeurls, 'Only the grant still standing may offer a revoke link.');
         $this->assertStringContainsString('logid=' . $keptid, $revokeurls[0]);
     }
+
+    /**
+     * Creates enrolled students, each with a player row; XP descends with the index.
+     *
+     * @param array $names Optional [firstname, lastname] pairs; when empty, $count generic students.
+     * @param int $count Number of students when no names are given.
+     * @return array The created user objects, best XP first.
+     */
+    private function create_students(array $names = [], int $count = 0): array {
+        global $DB;
+
+        if (empty($names)) {
+            for ($i = 1; $i <= $count; $i++) {
+                $names[] = ['Student' . str_pad((string) $i, 3, '0', STR_PAD_LEFT), 'Tester'];
+            }
+        }
+
+        $students = [];
+        $now = time();
+        foreach ($names as $i => [$first, $last]) {
+            $student = $this->getDataGenerator()->create_user(['firstname' => $first, 'lastname' => $last]);
+            $this->getDataGenerator()->enrol_user($student->id, $this->course->id, 'student');
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid' => $this->instanceid,
+                'userid' => $student->id,
+                'currentxp' => 10000 - $i,
+                'ranking_visibility' => 1,
+                'enable_gamification' => 1,
+                'timecreated' => $now,
+                'timemodified' => $now,
+            ]);
+            $students[] = $student;
+        }
+        return $students;
+    }
+
+    /**
+     * A renderer mock that records every paging_bar() call.
+     *
+     * @param array $calls Receives one [total, page, perpage, url] entry per call.
+     * @return \core_renderer
+     */
+    private function recording_output(array &$calls): \core_renderer {
+        $output = $this->createMock(\core_renderer::class);
+        $output->method('paging_bar')->willReturnCallback(
+            function ($total, $page, $perpage, $url) use (&$calls): string {
+                $calls[] = [$total, $page, $perpage, $url];
+                return '';
+            }
+        );
+        return $output;
+    }
+
+    /**
+     * The students table renders one page, numbers rows from the page offset and builds the
+     * paging bar over the whole student count.
+     */
+    public function test_students_table_is_paged(): void {
+        $this->create_students([], 120);
+        $_GET['page'] = '1';
+
+        $calls = [];
+        $tab = new tab_reports($this->instanceid, $this->course->id, 'xp', 'DESC');
+        $data = $tab->export_for_template($this->recording_output($calls));
+
+        $this->assertCount(50, $data['students']);
+        $this->assertSame(51, $data['students'][0]['counter']);
+        $this->assertSame(100, $data['students'][49]['counter']);
+        $this->assertSame('Student051 Tester', $data['students'][0]['fullname']);
+        $this->assertContains([120, 1, tab_reports::PERPAGE], array_map(static fn($c) => array_slice($c, 0, 3), $calls));
+    }
+
+    /**
+     * The last page holds the remainder, and a page past the end is clamped to it.
+     */
+    public function test_students_table_last_page_and_clamping(): void {
+        $this->create_students([], 120);
+        $_GET['page'] = '99';
+
+        $calls = [];
+        $tab = new tab_reports($this->instanceid, $this->course->id, 'xp', 'DESC');
+        $data = $tab->export_for_template($this->recording_output($calls));
+
+        $this->assertCount(20, $data['students']);
+        $this->assertSame(101, $data['students'][0]['counter']);
+        $this->assertSame(2, $calls[0][1]);
+    }
+
+    /**
+     * Sorting by student name orders the whole list in SQL before paging.
+     */
+    public function test_students_table_sorting_applies_across_pages(): void {
+        $this->create_students([], 60);
+
+        $tab = new tab_reports($this->instanceid, $this->course->id, 'student', 'DESC');
+        $data = $tab->export_for_template($this->mock_output());
+
+        $this->assertSame('Student060 Tester', $data['students'][0]['fullname']);
+        $this->assertCount(50, $data['students']);
+    }
+
+    /**
+     * The name search matches in either name order, ignoring case, and reports an empty match.
+     */
+    public function test_students_search_filters_by_name(): void {
+        $this->create_students([['Ana', 'Silva'], ['Bruno', 'Silva'], ['Carla', 'Souza']]);
+
+        $_GET['s_name'] = 'silva';
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+        $this->assertCount(2, $data['students']);
+        $this->assertTrue($data['is_searching']);
+
+        $_GET['s_name'] = 'SOUZA carla';
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+        $this->assertCount(1, $data['students']);
+        $this->assertSame('Carla Souza', $data['students'][0]['fullname']);
+
+        $_GET['s_name'] = 'nobody';
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+        $this->assertSame([], $data['students']);
+        $this->assertFalse($data['has_students']);
+        $this->assertTrue($data['is_searching']);
+    }
+
+    /**
+     * LIKE wildcards typed by the teacher are matched literally, not as patterns.
+     */
+    public function test_students_search_escapes_wildcards(): void {
+        $this->create_students([['Ana', 'Silva'], ['Bruno', 'Souza']]);
+
+        $_GET['s_name'] = '%';
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+
+        $this->assertSame([], $data['students']);
+    }
+
+    /**
+     * The paging bar URL keeps the active search and sort, so changing page never drops them.
+     */
+    public function test_paging_url_keeps_search_and_sort(): void {
+        $this->create_students([], 3);
+        $_GET['s_name'] = 'Student';
+
+        $calls = [];
+        $tab = new tab_reports($this->instanceid, $this->course->id, 'student', 'ASC');
+        $tab->export_for_template($this->recording_output($calls));
+
+        $url = $calls[0][3];
+        $this->assertSame('Student', $url->get_param('s_name'));
+        $this->assertSame('student', $url->get_param('sort'));
+        $this->assertSame('ASC', $url->get_param('dir'));
+        $this->assertSame('reports', $url->get_param('tab'));
+    }
+
+    /**
+     * The one-click student dropdown is offered on small courses and withheld above the cap,
+     * where the search box takes over.
+     */
+    public function test_user_selector_is_withheld_above_the_cap(): void {
+        global $DB;
+
+        $this->create_students([['Ana', 'Silva']]);
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+        $this->assertTrue($data['user_selector']['show']);
+        $this->assertNotEmpty($data['user_selector']['options']);
+
+        $now = time();
+        for ($i = 1; $i <= tab_reports::SELECTOR_MAX; $i++) {
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid' => $this->instanceid,
+                'userid' => 900000 + $i,
+                'currentxp' => 0,
+                'ranking_visibility' => 1,
+                'enable_gamification' => 1,
+                'timecreated' => $now,
+                'timemodified' => $now,
+            ]);
+        }
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $data = $tab->export_for_template($this->mock_output());
+        $this->assertFalse($data['user_selector']['show']);
+        $this->assertSame([], $data['user_selector']['options']);
+    }
+
+    /**
+     * The real template always offers the search box, and drops the dropdown above the cap.
+     */
+    public function test_template_renders_search_and_hides_dropdown_on_large_courses(): void {
+        global $DB, $PAGE;
+
+        $this->create_students([['Ana', 'Silva']]);
+        $renderer = $PAGE->get_renderer('core');
+
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $html = $renderer->render_from_template('block_playerhud/tab_reports', $tab->export_for_template($this->mock_output()));
+        $this->assertStringContainsString('name="s_name"', $html);
+        $this->assertStringContainsString('id="r_userid"', $html);
+
+        $now = time();
+        for ($i = 1; $i <= tab_reports::SELECTOR_MAX; $i++) {
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid' => $this->instanceid,
+                'userid' => 900000 + $i,
+                'currentxp' => 0,
+                'ranking_visibility' => 1,
+                'enable_gamification' => 1,
+                'timecreated' => $now,
+                'timemodified' => $now,
+            ]);
+        }
+        $tab = new tab_reports($this->instanceid, $this->course->id);
+        $html = $renderer->render_from_template('block_playerhud/tab_reports', $tab->export_for_template($this->mock_output()));
+        $this->assertStringContainsString('name="s_name"', $html);
+        $this->assertStringNotContainsString('id="r_userid"', $html);
+    }
 }
