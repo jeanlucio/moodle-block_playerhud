@@ -228,6 +228,35 @@ class behat_block_playerhud extends behat_base {
         ]);
     }
 
+    /**
+     * Leaves player rows behind for a block instance that no longer exists, as sites that
+     * removed the block before v1.7.0 still have.
+     *
+     * @param int $count Number of players left behind.
+     * @Given a removed PlayerHUD block instance left :count players behind
+     */
+    public function removed_playerhud_instance_left_players(int $count): void {
+        global $DB;
+
+        $instanceid = (int) $DB->get_field_sql('SELECT MAX(id) FROM {block_instances}') + 1000;
+        $generator = testing_util::get_data_generator();
+        $now = time();
+
+        $players = [];
+        for ($i = 1; $i <= $count; $i++) {
+            $players[] = [
+                'blockinstanceid'     => $instanceid,
+                'userid'              => $generator->create_user()->id,
+                'currentxp'           => 10 * $i,
+                'enable_gamification' => 1,
+                'ranking_visibility'  => 1,
+                'timecreated'         => $now,
+                'timemodified'        => $now,
+            ];
+        }
+        $DB->insert_records('block_playerhud_user', $players);
+    }
+
     // Step definitions for modal behaviour tests (block_playerhud_modals.feature).
 
     /**
