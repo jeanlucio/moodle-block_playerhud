@@ -635,14 +635,12 @@ class story_manager {
             return ['node' => $nodedata];
         }
 
-        // Next_nodeid = 0: broken choice from AI generation - reload current node.
-        $currentnode = $DB->get_record(
-            'block_playerhud_story_nodes',
-            ['id' => $choice->nodeid],
-            '*',
-            MUST_EXIST
-        );
-        return ['node' => self::prepare_node_data($instanceid, $currentnode, $userid, true)];
+        // Next_nodeid = 0 is the editor's "End of chapter" choice: the student's reading
+        // (make_choice()) finishes the chapter there, so the preview must too.
+        return [
+            'finished' => true,
+            'message'  => get_string('story_test_finished', 'block_playerhud'),
+        ];
     }
 
     /**

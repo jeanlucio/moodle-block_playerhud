@@ -509,6 +509,70 @@ final class story_manager_test extends advanced_testcase {
     }
 
     /**
+     * The preview ends a chapter on a choice set to "End of chapter" (next_nodeid 0), as the
+     * student's own reading does, instead of reloading the same scene in a loop.
+     */
+    public function test_preview_nav_finishes_when_next_nodeid_is_zero(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Short Story');
+        $nodea = $this->create_node($chapter->id, 'Only node', true);
+        $choice = $this->create_choice($nodea->id, 'End here', 0);
+
+        $result = story_manager::preview_nav($this->instanceid, $user->id, $choice->id);
+
+        $this->assertTrue($result['finished'] ?? false);
+        $this->assertSame(get_string('story_test_finished', 'block_playerhud'), $result['message']);
+        $this->assertFalse($DB->record_exists('block_playerhud_rpg_progress', ['userid' => $user->id]));
+    }
+
+    /**
+     * The preview ends a chapter on a scene without choices, and saves no progress.
+     */
+    public function test_preview_nav_finishes_at_terminal_node(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Chapter');
+        $nodea = $this->create_node($chapter->id, 'Start', true);
+        $nodeend = $this->create_node($chapter->id, 'The End');
+        $choice = $this->create_choice($nodea->id, 'Finish', $nodeend->id);
+
+        $result = story_manager::preview_nav($this->instanceid, $user->id, $choice->id);
+
+        $this->assertTrue($result['finished'] ?? false);
+        $this->assertStringContainsString('The End', $result['node']['content']);
+        $this->assertFalse($DB->record_exists('block_playerhud_rpg_progress', ['userid' => $user->id]));
+    }
+
+    /**
+     * The preview moves to the next scene when it still offers choices.
+     */
+    public function test_preview_nav_advances_to_next_node(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Chapter');
+        $nodea = $this->create_node($chapter->id, 'Start', true);
+        $nodeb = $this->create_node($chapter->id, 'Middle');
+        $this->create_choice($nodeb->id, 'Go on', 0);
+        $choice = $this->create_choice($nodea->id, 'Next', $nodeb->id);
+
+        $result = story_manager::preview_nav($this->instanceid, $user->id, $choice->id);
+
+        $this->assertArrayNotHasKey('finished', $result);
+        $this->assertStringContainsString('Middle', $result['node']['content']);
+    }
+
+    /**
      * make_choice applies the karma_delta from the chosen choice.
      */
     public function test_make_choice_applies_karma_delta(): void {

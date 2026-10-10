@@ -60,10 +60,22 @@ Feature: PlayerHUD story screens driven by JavaScript
     And I am on "Course 1" course homepage
     And I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I click on "Story" "link" in the "#ph-manage-tabs" "css_element"
-    And I click on "button[data-bs-target='#ph-story-test-modal']" "css_element"
+    And I click on "Test The Old Gate" "button"
     And I wait until "#ph-story-test-modal.show" "css_element" exists
     And I should see "The old gate creaks in the wind." in the "#ph-test-content" "css_element"
     And I click on "Open the gate" "button" in the "#ph-test-choices" "css_element"
+    Then I should see "End of preview." in the "#ph-test-content" "css_element"
+
+  Scenario: Teacher previews a chapter that ends on an end-of-chapter choice
+    Given a PlayerHUD story chapter "The Short Road" with scene "The road ends at a cliff." and an end-of-chapter choice "Turn back" exists in course "C1"
+    When I log in as "teacher1"
+    And I am on "Course 1" course homepage
+    And I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
+    And I click on "Story" "link" in the "#ph-manage-tabs" "css_element"
+    And I click on "Test The Short Road" "button"
+    And I wait until "#ph-story-test-modal.show" "css_element" exists
+    And I should see "The road ends at a cliff." in the "#ph-test-content" "css_element"
+    And I click on "Turn back" "button" in the "#ph-test-choices" "css_element"
     Then I should see "End of preview." in the "#ph-test-content" "css_element"
 
   Scenario: Teacher deletes a chapter after confirming in the modal

@@ -28,13 +28,13 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `privacy_provider_test.php` | 26 |
 | `quest_test.php` | 53 |
 | `rpg_classes_test.php` | 3 |
-| `story_manager_test.php` | 31 |
+| `story_manager_test.php` | 34 |
 | `suggest_trades_state_test.php` | 4 |
 | `template_strings_test.php` | 3 |
 | `trade_test.php` | 12 |
 | `uninstall_test.php` | 2 |
 | `utils_test.php` | 23 |
-| **Subtotal** | **361** |
+| **Subtotal** | **364** |
 
 ### Local Business-Logic Tests (`tests/local/`)
 
@@ -126,7 +126,7 @@ PlayerHUD ships with an extensive test suite covering both business logic (PHPUn
 | `view/tab_shop_test.php` | 4 |
 | **Subtotal** | **147** |
 
-| **Grand Total** | **972** |
+| **Grand Total** | **975** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
