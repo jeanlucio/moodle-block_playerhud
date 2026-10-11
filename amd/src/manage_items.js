@@ -62,12 +62,12 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
             $('#ph-item-modal-view').appendTo('body');
 
             // Explicitly handle AI Modal opening to ensure it works even if moved.
-            $('body').on('click', '#btn-open-ai-modal', function(e) {
+            $('body').on('click', '#btn-open-ai-modal', (e) => {
                 e.preventDefault();
                 const modalEl = document.getElementById('ph-ai-modal');
                 if (modalEl) {
                     document.body.appendChild(modalEl);
-                    require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+                    require(['theme_boost/bootstrap/modal'], (BootstrapModal) => {
                         new BootstrapModal(modalEl).show();
                     });
                 }
@@ -82,22 +82,22 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
             });
 
             // Update "Delete Selected" button state.
-            $('body').on('change', '.ph-bulk-check, #ph-select-all', function() {
+            $('body').on('change', '.ph-bulk-check, #ph-select-all', () => {
                 const count = $('.ph-bulk-check:checked').length;
                 const $btn = $('#ph-btn-bulk-delete');
 
                 if (count > 0) {
                     $btn.removeClass('disabled').removeAttr('disabled');
                     const btnText = config.strings.deleteNItems.replace('%d', count);
-                    $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + btnText);
+                    $btn.html(`<i class="fa fa-trash" aria-hidden="true"></i> ${btnText}`);
                 } else {
                     $btn.addClass('disabled').attr('disabled', 'disabled');
-                    $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + config.strings.deleteSelected);
+                    $btn.html(`<i class="fa fa-trash" aria-hidden="true"></i> ${config.strings.deleteSelected}`);
                 }
             });
 
             // Confirm Bulk Delete.
-            $('#ph-btn-bulk-delete').on('click', function(e) {
+            $('#ph-btn-bulk-delete').on('click', (e) => {
                 e.preventDefault();
                 if ($('.ph-bulk-check:checked').length === 0) {
                     return;
@@ -108,7 +108,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                     config.strings.confirmBulk,
                     config.strings.yes,
                     config.strings.cancel,
-                    function() {
+                    () => {
                         $('#bulk-action-form').submit();
                     }
                 );
@@ -126,7 +126,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                 const img = trigger.attr('data-image');
                 const isImg = trigger.attr('data-isimage'); // "1" or "0"
                 const descTarget = trigger.attr('data-desc-target');
-                const descHtml = descTarget ? $('#' + descTarget).html() : '';
+                const descHtml = descTarget ? $(`#${descTarget}`).html() : '';
 
                 // Populate Modal.
                 $('#phModalNameView').text(name);
@@ -144,7 +144,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                 if (descHtml && descHtml.trim() !== '') {
                     $descEl.html(descHtml);
                 } else {
-                    $descEl.html('<i class="text-muted">' + config.strings.noDesc + '</i>');
+                    $descEl.html(`<i class="text-muted">${config.strings.noDesc}</i>`);
                 }
 
                 // Image Handling.
@@ -169,7 +169,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                 const modalEl = document.getElementById('ph-item-modal-view');
 
                 document.body.appendChild(modalEl);
-                require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+                require(['theme_boost/bootstrap/modal'], (BootstrapModal) => {
                     new BootstrapModal(modalEl).show();
                 });
             });
@@ -198,14 +198,14 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                     msg,
                     config.strings.yes,
                     config.strings.cancel,
-                    function() {
+                    () => {
                         window.location.href = targetUrl;
                     }
                 );
             });
 
             // Submit AI form on Enter key.
-            $('#ph-ai-form').on('submit', function(e) {
+            $('#ph-ai-form').on('submit', (e) => {
                 e.preventDefault();
                 $('#ph-btn-conjure').click();
             });
@@ -258,12 +258,12 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                     args: requestArgs
                 };
 
-                Ajax.call([request])[0].done(function(resp) {
+                Ajax.call([request])[0].done((resp) => {
                     $btn.prop('disabled', false).text(originalText).removeAttr('aria-busy');
 
                     if (resp.success) {
                         // Reload page on modal close.
-                        $('#ph-ai-modal').one('hidden.bs.modal', function() {
+                        $('#ph-ai-modal').one('hidden.bs.modal', () => {
                             window.location.reload();
                         });
 
@@ -285,33 +285,33 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                         successHtml += 'class="text-center py-3 ph-animate-fadein" style="outline: none;">';
                         successHtml += '<div class="mb-3 text-success" style="font-size: 3rem;" aria-hidden="true">';
                         successHtml += '<i class="fa fa-check-circle"></i></div>';
-                        successHtml += '<h5 class="text-muted text-uppercase small fw-bold mb-2">' + titleText + '</h5>';
+                        successHtml += `<h5 class="text-muted text-uppercase small fw-bold mb-2">${titleText}</h5>`;
                         successHtml += '<h2 class="fw-bold text-dark mb-4 display-6" id="ph-gen-names-heading"></h2>';
 
                         // Warnings and Info messages (sourced from PHP get_string — trusted).
                         if (resp.warning_msg) {
                             successHtml += '<div class="alert alert-warning small mb-3 text-start">';
                             successHtml += '<i class="fa fa-exclamation-triangle me-2" aria-hidden="true"></i> ';
-                            successHtml += resp.warning_msg + '</div>';
+                            successHtml += `${resp.warning_msg}</div>`;
                         } else if (resp.info_msg) {
                             successHtml += '<div class="alert alert-success small mb-3 text-start ' +
                                 'border-success bg-success-subtle text-success-emphasis">';
                             successHtml += '<i class="fa fa-info-circle me-2" aria-hidden="true"></i> ';
-                            successHtml += resp.info_msg + '</div>';
+                            successHtml += `${resp.info_msg}</div>`;
                         }
 
                         // Drop Code.
                         if (resp.drop_code && count === 1) {
                             successHtml += '<div class="card bg-light border-0 p-3 mx-auto mt-4" style="max-width: 90%;">';
                             successHtml += '<label class="small text-muted mb-1 fw-bold text-start w-100" ';
-                            successHtml += 'for="ph-gen-code-input">' + config.strings.copy + ':</label>';
+                            successHtml += `for="ph-gen-code-input">${config.strings.copy}:</label>`;
                             successHtml += '<div class="input-group">';
                             successHtml += '<input type="text" class="form-control font-monospace text-center ph-code-input" ';
                             successHtml += 'id="ph-gen-code-input" value="" readonly>';
                             successHtml += '<button class="btn btn-primary" type="button" ';
                             successHtml += 'data-action="copytoclipboard" data-clipboard-target="#ph-gen-code-input">';
                             successHtml += '<i class="fa fa-copy" aria-hidden="true"></i> ';
-                            successHtml += config.strings.copy + '</button>';
+                            successHtml += `${config.strings.copy}</button>`;
                             successHtml += '</div></div>';
                         }
 
@@ -322,146 +322,153 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                         // Set AI-generated content safely via .text() to prevent XSS.
                         $('#ph-gen-names-heading').text(items.join(', '));
                         if (resp.drop_code && count === 1) {
-                            $('#ph-gen-code-input').val('[PLAYERHUD_DROP code=' + resp.drop_code + ']');
+                            $('#ph-gen-code-input').val(`[PLAYERHUD_DROP code=${resp.drop_code}]`);
                         }
 
                         // Reload/Close Button.
-                        const $btnReload = $('<button class="btn btn-success w-100 py-2 fw-bold">' +
-                             config.strings.great + '</button>');
-                        $btnReload.on('click', function() {
+                        const $btnReload = $(`<button class="btn btn-success w-100 py-2 fw-bold">${config.strings.great}</button>`);
+                        $btnReload.on('click', () => {
                             window.location.reload();
                         });
 
                         $('#ph-ai-modal .modal-footer').empty().append($btnReload);
 
                         // Accessibility focus.
-                        setTimeout(function() {
+                        setTimeout(() => {
                             $('#ph-success-container').focus();
                         }, 200);
                     } else {
                         ModalError.show('#ph-ai-modal', resp.message);
                     }
-                }).fail(function(ex) {
+                }).fail((ex) => {
                     $btn.prop('disabled', false).text(originalText).removeAttr('aria-busy');
                     Notification.exception(ex);
                 });
             });
 
             // PlayerCoin — one-click creation.
-            $('body').on('click', '#btn-create-playercoin', function() {
+            $('body').on('click', '#btn-create-playercoin', async function() {
                 const $btn = $(this);
                 $btn.prop('disabled', true);
 
-                Ajax.call([{
-                    methodname: 'block_playerhud_create_playercoin',
-                    args: {
-                        instanceid: config.instanceid,
-                        courseid: config.courseid
-                    }
-                }])[0].done(function(resp) {
-                    if (resp.created) {
-                        ModalSaveCancel.create({
-                            title: config.strings.playercoinDropTitle,
-                            body: config.strings.playercoinDropConfirm,
-                            removeOnClose: true,
-                        }).then(function(modal) {
-                            modal.setSaveButtonText(config.strings.playercoinDropYes);
-                            modal.getRoot().find('[data-action="cancel"]').text(
-                                config.strings.playercoinDropNo
-                            );
-
-                            const setupDrop = function() {
-                                Ajax.call([{
-                                    methodname: 'block_playerhud_setup_playercoin_drop',
-                                    args: {
-                                        instanceid: config.instanceid,
-                                        courseid: config.courseid,
-                                        itemid: resp.itemid
-                                    }
-                                }])[0].done(function(dropResp) {
-                                    if (!dropResp.success) {
-                                        Notification.addNotification({
-                                            message: dropResp.message,
-                                            type: 'error'
-                                        });
-                                    }
-                                    window.location.reload();
-                                }).fail(function(ex) {
-                                    Notification.exception(ex);
-                                    window.location.reload();
-                                });
-                            };
-
-                            modal.getRoot().on(ModalEvents.save, function(e) {
-                                e.preventDefault();
-                                modal.hide();
-                                setupDrop();
-                            });
-
-                            modal.getRoot().on(ModalEvents.cancel, function() {
-                                window.location.reload();
-                            });
-
-                            modal.show();
-                            return modal;
-                        }).catch(Notification.exception);
-                    } else {
-                        $btn.prop('disabled', false);
-                        Notification.confirm(
-                            config.strings.confirmTitle,
-                            config.strings.playercoinExists,
-                            config.strings.yes,
-                            config.strings.cancel,
-                            function() {
-                                window.location.href = resp.edit_url;
-                            }
-                        );
-                    }
-                }).fail(function(ex) {
+                let resp;
+                try {
+                    resp = await Ajax.call([{
+                        methodname: 'block_playerhud_create_playercoin',
+                        args: {
+                            instanceid: config.instanceid,
+                            courseid: config.courseid
+                        }
+                    }])[0];
+                } catch (ex) {
                     $btn.prop('disabled', false);
                     Notification.exception(ex);
-                });
+                    return;
+                }
+
+                if (!resp.created) {
+                    $btn.prop('disabled', false);
+                    Notification.confirm(
+                        config.strings.confirmTitle,
+                        config.strings.playercoinExists,
+                        config.strings.yes,
+                        config.strings.cancel,
+                        () => {
+                            window.location.href = resp.edit_url;
+                        }
+                    );
+                    return;
+                }
+
+                // Optionally place a drop for the new coin; the page reloads either way.
+                const setupDrop = async() => {
+                    try {
+                        const dropResp = await Ajax.call([{
+                            methodname: 'block_playerhud_setup_playercoin_drop',
+                            args: {
+                                instanceid: config.instanceid,
+                                courseid: config.courseid,
+                                itemid: resp.itemid
+                            }
+                        }])[0];
+                        if (!dropResp.success) {
+                            Notification.addNotification({
+                                message: dropResp.message,
+                                type: 'error'
+                            });
+                        }
+                    } catch (ex) {
+                        Notification.exception(ex);
+                    }
+                    window.location.reload();
+                };
+
+                try {
+                    const modal = await ModalSaveCancel.create({
+                        title: config.strings.playercoinDropTitle,
+                        body: config.strings.playercoinDropConfirm,
+                        removeOnClose: true,
+                    });
+                    modal.setSaveButtonText(config.strings.playercoinDropYes);
+                    modal.getRoot().find('[data-action="cancel"]').text(
+                        config.strings.playercoinDropNo
+                    );
+                    modal.getRoot().on(ModalEvents.save, (e) => {
+                        e.preventDefault();
+                        modal.hide();
+                        setupDrop();
+                    });
+                    modal.getRoot().on(ModalEvents.cancel, () => {
+                        window.location.reload();
+                    });
+                    modal.show();
+                } catch (ex) {
+                    Notification.exception(ex);
+                }
             });
 
             // Avatar pack — one-click creation.
-            $('body').on('click', '#btn-create-avatar-pack', function() {
+            $('body').on('click', '#btn-create-avatar-pack', async function() {
                 const $btn = $(this);
 
-                Str.get_strings([
-                    {key: 'avatar_pack_confirm', component: 'block_playerhud'},
-                    {key: 'avatar_pack_created', component: 'block_playerhud'},
-                ]).then(function(strings) {
-                    const confirmMsg = strings[0];
-                    const createdMsg = strings[1];
+                let confirmMsg;
+                let createdMsg;
+                try {
+                    [confirmMsg, createdMsg] = await Str.get_strings([
+                        {key: 'avatar_pack_confirm', component: 'block_playerhud'},
+                        {key: 'avatar_pack_created', component: 'block_playerhud'},
+                    ]);
+                } catch (ex) {
+                    Notification.exception(ex);
+                    return;
+                }
 
-                    Notification.confirm(
-                        config.strings.confirmTitle,
-                        confirmMsg,
-                        config.strings.yes,
-                        config.strings.cancel,
-                        function() {
-                            $btn.prop('disabled', true);
-
-                            Ajax.call([{
+                Notification.confirm(
+                    config.strings.confirmTitle,
+                    confirmMsg,
+                    config.strings.yes,
+                    config.strings.cancel,
+                    async() => {
+                        $btn.prop('disabled', true);
+                        try {
+                            const resp = await Ajax.call([{
                                 methodname: 'block_playerhud_create_avatar_pack',
                                 args: {
                                     instanceid: config.instanceid,
                                     courseid: config.courseid
                                 }
-                            }])[0].done(function(resp) {
-                                Notification.addNotification({
-                                    message: createdMsg.replace('{$a}', resp.created),
-                                    type: 'success'
-                                });
-                                window.location.reload();
-                            }).fail(function(ex) {
-                                $btn.prop('disabled', false);
-                                Notification.exception(ex);
+                            }])[0];
+                            Notification.addNotification({
+                                message: createdMsg.replace('{$a}', resp.created),
+                                type: 'success'
                             });
+                            window.location.reload();
+                        } catch (ex) {
+                            $btn.prop('disabled', false);
+                            Notification.exception(ex);
                         }
-                    );
-                    return strings;
-                }).catch(Notification.exception);
+                    }
+                );
             });
         }
     };
