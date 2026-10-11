@@ -250,6 +250,7 @@ $string['custom_ai_model'] = 'Model';
 $string['default_drop_name'] = 'Generated Drop';
 $string['delete'] = 'Delete';
 $string['delete_n_items'] = 'Delete %d items';
+$string['delete_one_item'] = 'Delete 1 item';
 $string['delete_selected'] = 'Delete selected';
 $string['deleted'] = 'Item deleted.';
 $string['deleted_bulk'] = 'Deleted {$a} items successfully.';

@@ -250,6 +250,7 @@ $string['custom_ai_model'] = 'Modelo';
 $string['default_drop_name'] = 'Drop Gerado';
 $string['delete'] = 'Excluir';
 $string['delete_n_items'] = 'Excluir %d itens';
+$string['delete_one_item'] = 'Excluir 1 item';
 $string['delete_selected'] = 'Excluir selecionados';
 $string['deleted'] = 'Item excluído.';
 $string['deleted_bulk'] = '{$a} itens excluídos com sucesso.';

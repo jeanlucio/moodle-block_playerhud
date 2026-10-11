@@ -68,7 +68,9 @@ define(['jquery', 'core/notification'], ($, Notification) => {
 
                 if (count > 0) {
                     $btn.removeClass('disabled').removeAttr('disabled');
-                    const btnText = config.strings.delete_n_items.replace('%d', count);
+                    const btnText = count === 1
+                        ? config.strings.delete_one_item
+                        : config.strings.delete_n_items.replace('%d', count);
                     $btn.html(`<i class="fa fa-trash" aria-hidden="true"></i> ${btnText}`);
                 } else {
                     $btn.addClass('disabled').attr('disabled', 'disabled');

@@ -510,6 +510,7 @@ class tab_items implements renderable {
             'no_description',
             'delete_selected',
             'delete_n_items',
+            'delete_one_item',
             'confirm_bulk_delete',
             'ai_created_count',
             'playercoin_created',

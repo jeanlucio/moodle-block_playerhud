@@ -46,6 +46,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                 noDesc:              M.util.get_string('no_description', 'block_playerhud'),
                 deleteSelected:      M.util.get_string('delete_selected', 'block_playerhud'),
                 deleteNItems:        M.util.get_string('delete_n_items', 'block_playerhud'),
+                deleteOneItem:       M.util.get_string('delete_one_item', 'block_playerhud'),
                 confirmBulk:         M.util.get_string('confirm_bulk_delete', 'block_playerhud'),
                 createdCount:        M.util.get_string('ai_created_count', 'block_playerhud'),
                 playercoinCreated:   M.util.get_string('playercoin_created', 'block_playerhud'),
@@ -88,7 +89,9 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
 
                 if (count > 0) {
                     $btn.removeClass('disabled').removeAttr('disabled');
-                    const btnText = config.strings.deleteNItems.replace('%d', count);
+                    const btnText = count === 1
+                        ? config.strings.deleteOneItem
+                        : config.strings.deleteNItems.replace('%d', count);
                     $btn.html(`<i class="fa fa-trash" aria-hidden="true"></i> ${btnText}`);
                 } else {
                     $btn.addClass('disabled').attr('disabled', 'disabled');

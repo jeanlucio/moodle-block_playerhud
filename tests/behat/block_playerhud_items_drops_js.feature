@@ -109,7 +109,7 @@ Feature: PlayerHUD item library and drops screens driven by JavaScript
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I click on "a[aria-label='Manage Drops for: Golden Key']" "css_element"
     And I click on "#ph-select-all" "css_element"
-    And I should see "Delete 1 items" in the "#ph-btn-bulk-delete" "css_element"
+    And I should see "Delete 1 item" in the "#ph-btn-bulk-delete" "css_element"
     And I click on "#ph-btn-bulk-delete" "css_element"
     And I click on "Yes" "button" in the ".modal.show" "css_element"
     Then "[data-dropcode='GOLD01']" "css_element" should not exist

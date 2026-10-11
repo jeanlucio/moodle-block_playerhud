@@ -481,6 +481,7 @@ class tab_quests implements renderable {
                 'cancel'          => get_string('cancel'),
                 'delete_selected' => get_string('delete_selected', 'block_playerhud'),
                 'delete_n_items'  => get_string('delete_n_items', 'block_playerhud'),
+                'delete_one_item' => get_string('delete_one_item', 'block_playerhud'),
                 'confirm_bulk'    => get_string('confirm_bulk_delete', 'block_playerhud'),
             ],
         ];

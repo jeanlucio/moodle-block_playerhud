@@ -157,7 +157,9 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], ($, Notificati
 
                 if (count > 0) {
                     $btn.removeClass('disabled').removeAttr('disabled');
-                    const btnText = langStrings.delete_n_items.replace('%d', count);
+                    const btnText = count === 1
+                        ? langStrings.delete_one_item
+                        : langStrings.delete_n_items.replace('%d', count);
                     $btn.html(`<i class="fa fa-trash" aria-hidden="true"></i> ${btnText}`);
                 } else {
                     $btn.addClass('disabled').attr('disabled', 'disabled');
