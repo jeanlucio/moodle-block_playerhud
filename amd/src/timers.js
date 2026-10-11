@@ -20,7 +20,7 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['jquery'], function($) {
+define(['jquery'], ($) => {
     return {
         init: function(strings) {
             // Avoid running multiple intervals if init is called multiple times.
@@ -59,12 +59,12 @@ define(['jquery'], function($) {
                         // --- COUNTING ---
                         const m = Math.floor(diff / 60);
                         const s = diff % 60;
-                        const timeString = m + ' ' + strings.min + ' ' + (s < 10 ? '0' : '') + s + ' ' + strings.sec;
+                        const timeString = `${m} ${strings.min} ${s < 10 ? '0' : ''}${s} ${strings.sec}`;
 
                         // Logic: Check if label "Next collection..." should be hidden.
                         // If data-no-label attribute exists, use empty string.
                         const showLabel = !el.attr('data-no-label');
-                        const label = (showLabel && strings.label) ? strings.label + ' ' : '';
+                        const label = (showLabel && strings.label) ? `${strings.label} ` : '';
 
                         el.text(label + timeString);
                     }
