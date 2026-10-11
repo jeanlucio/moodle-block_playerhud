@@ -22,13 +22,13 @@
  */
 define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification, $) {
 
-    var instanceid = 0;
-    var courseid = 0;
-    var strings = {};
+    let instanceid = 0;
+    let courseid = 0;
+    let strings = {};
 
-    var testModal = null;
-    var testContent = null;
-    var testChoices = null;
+    let testModal = null;
+    let testContent = null;
+    let testChoices = null;
 
     /**
      * Open the test/preview modal.
@@ -54,7 +54,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
      * @return {HTMLButtonElement} Close button element.
      */
     function buildCloseBtn() {
-        var btn = document.createElement('button');
+        const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn btn-secondary';
         btn.setAttribute('data-bs-dismiss', 'modal');
@@ -98,7 +98,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
 
         if (data.node.choices && data.node.choices.length > 0) {
             data.node.choices.forEach(function(ch) {
-                var btn = document.createElement('button');
+                const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'btn ' + ch.btnclass + ' m-1 px-4 py-2';
                 btn.textContent = ch.text;
@@ -175,9 +175,9 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
      * Wire up the delete confirmation modal for chapters.
      */
     function initChapterDelete() {
-        var modal = document.getElementById('ph-confirm-delete-chapter');
-        var msgEl = document.getElementById('ph-delete-chapter-msg');
-        var urlEl = document.getElementById('ph-delete-chapter-url');
+        const modal = document.getElementById('ph-confirm-delete-chapter');
+        const msgEl = document.getElementById('ph-delete-chapter-msg');
+        const urlEl = document.getElementById('ph-delete-chapter-url');
 
         if (!msgEl || !urlEl) {
             return;
@@ -226,11 +226,11 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             //   when window.jQuery is present (via its EventHandler layer).
             if (testModal) {
                 $(testModal).on('show.bs.modal', function(e) {
-                    var trigger = e.relatedTarget;
+                    const trigger = e.relatedTarget;
                     if (!trigger) {
                         return;
                     }
-                    var chid = parseInt(trigger.getAttribute('data-chapterid'), 10);
+                    const chid = parseInt(trigger.getAttribute('data-chapterid'), 10);
                     showTestLoader();
                     previewStart(chid);
                 });
@@ -241,9 +241,9 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
          * Initialise the scene delete confirmation on manage_scenes.php.
          */
         initSceneDelete: function() {
-            var modal = document.getElementById('ph-confirm-delete-scene');
-            var msgEl = document.getElementById('ph-delete-scene-msg');
-            var urlEl = document.getElementById('ph-delete-scene-url');
+            const modal = document.getElementById('ph-confirm-delete-scene');
+            const msgEl = document.getElementById('ph-delete-scene-msg');
+            const urlEl = document.getElementById('ph-delete-scene-url');
 
             if (!msgEl || !urlEl) {
                 return;
