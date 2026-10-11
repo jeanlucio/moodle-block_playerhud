@@ -39,19 +39,19 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
 
             // Submit handler for the generate button inside the modal.
             $('body').on('click', '[data-action="ai-oracle-submit"]', function() {
-                var $btn = $(this);
-                var theme = $('#ph-oracle-theme').val().trim();
-                var count = parseInt($('#ph-oracle-count').val(), 10) || 1;
+                const $btn = $(this);
+                const theme = $('#ph-oracle-theme').val().trim();
+                const count = parseInt($('#ph-oracle-count').val(), 10) || 1;
 
                 if (!theme) {
                     Notification.alert(strings.error_title, strings.validation_theme);
                     return;
                 }
 
-                var originalText = $btn.html();
-                var names = [];
-                var errors = [];
-                var current = 0;
+                const originalText = $btn.html();
+                const names = [];
+                const errors = [];
+                let current = 0;
 
                 /**
                  * Update button label showing generation progress.
@@ -99,14 +99,14 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
 
                     if (names.length === 0) {
                         // All calls failed — show the first error message as an alert.
-                        var errMsg = errors.length > 0 ? errors[0] : strings.ai_error_generic;
+                        const errMsg = errors.length > 0 ? errors[0] : strings.ai_error_generic;
                         Notification.alert(strings.error_title, errMsg);
                         return true;
                     }
 
                     // Build result using jQuery DOM methods so AI-returned names are never
                     // treated as markup, regardless of what the model returns.
-                    var $result = $('<div>', {
+                    const $result = $('<div>', {
                         'class': 'text-center py-3 ph-animate-fadein',
                         tabindex: '-1',
                         id: 'ph-oracle-result'
@@ -116,13 +116,13 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                         .appendTo($result);
 
                     if (names.length === 1) {
-                        var successMsg = strings.oracle_success.replace('{$a}', names[0]);
+                        const successMsg = strings.oracle_success.replace('{$a}', names[0]);
                         $('<h5>', {'class': 'fw-bold mb-1'}).text(names[0]).appendTo($result);
                         $('<p>', {'class': 'text-muted small'}).text(successMsg).appendTo($result);
                     } else {
-                        var successMsgMulti = strings.oracle_success_multi.replace('{$a}', names.length);
-                        var $ul = $('<ul>', {'class': 'list-unstyled mb-2'});
-                        for (var i = 0; i < names.length; i++) {
+                        const successMsgMulti = strings.oracle_success_multi.replace('{$a}', names.length);
+                        const $ul = $('<ul>', {'class': 'list-unstyled mb-2'});
+                        for (let i = 0; i < names.length; i++) {
                             $('<li>', {'class': 'fw-bold'}).text(names[i]).appendTo($ul);
                         }
                         $ul.appendTo($result);
@@ -130,7 +130,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                     }
 
                     if (errors.length > 0) {
-                        var warnMsg = strings.oracle_partial_error.replace('{$a}', errors.length);
+                        const warnMsg = strings.oracle_partial_error.replace('{$a}', errors.length);
                         $('<p>', {'class': 'text-warning small mt-2 mb-0'}).text(warnMsg).appendTo($result);
                     }
 
