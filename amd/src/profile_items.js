@@ -64,12 +64,12 @@ define(['jquery'], function($) {
         const date = el.dataset.date || '';
 
         const $m = $(modalEl);
-        $m.find('#phModalNameView').text(name);
-        $m.find('#phModalDescView').html(description);
-        $m.find('#phModalXPView').hide().addClass('ph-display-none');
-        $m.find('#phModalCountBadgeView').hide().addClass('ph-display-none');
+        $m.find('[data-region="ph-modal-name"]').text(name);
+        $m.find('[data-region="ph-modal-desc"]').html(description);
+        $m.find('[data-region="ph-modal-xp"]').hide().addClass('ph-display-none');
+        $m.find('[data-region="ph-modal-count-badge"]').hide().addClass('ph-display-none');
 
-        const imgCont = $m.find('#phModalImageContainerView');
+        const imgCont = $m.find('[data-region="ph-modal-image-container"]');
         imgCont.empty();
 
         if (isimage && imageurl) {
@@ -86,7 +86,7 @@ define(['jquery'], function($) {
             }));
         }
 
-        const dateEl = $m.find('#phModalDateView');
+        const dateEl = $m.find('[data-region="ph-modal-date"]');
         let formattedDate = '';
 
         if (timestamp && timestamp > 0) {
