@@ -21,7 +21,7 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'core/notification'], function($, Notification) {
+define(['jquery', 'core/notification'], ($, Notification) => {
     return {
         /**
          * Initialize the module.
@@ -42,7 +42,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     msg,
                     config.strings.yes,
                     config.strings.cancel,
-                    function() {
+                    () => {
                         window.location.href = targetUrl;
                     }
                 );
@@ -55,29 +55,29 @@ define(['jquery', 'core/notification'], function($, Notification) {
             });
 
             // Suggestion form: toggle all checkboxes.
-            $('body').on('click', '#ph-sug-toggle-all', function() {
+            $('body').on('click', '#ph-sug-toggle-all', () => {
                 const $checks = $('input[type="checkbox"][name^="sug_"]');
                 const allChecked = $checks.length === $checks.filter(':checked').length;
                 $checks.prop('checked', !allChecked);
             });
 
             // Update "Delete Selected" button state.
-            $('body').on('change', '.ph-bulk-check, #ph-select-all', function() {
+            $('body').on('change', '.ph-bulk-check, #ph-select-all', () => {
                 const count = $('.ph-bulk-check:checked').length;
                 const $btn = $('#ph-btn-bulk-delete');
 
                 if (count > 0) {
                     $btn.removeClass('disabled').removeAttr('disabled');
                     const btnText = config.strings.delete_n_items.replace('%d', count);
-                    $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + btnText);
+                    $btn.html(`<i class="fa fa-trash" aria-hidden="true"></i> ${btnText}`);
                 } else {
                     $btn.addClass('disabled').attr('disabled', 'disabled');
-                    $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + config.strings.delete_selected);
+                    $btn.html(`<i class="fa fa-trash" aria-hidden="true"></i> ${config.strings.delete_selected}`);
                 }
             });
 
             // Confirm Bulk Delete.
-            $('#ph-btn-bulk-delete').on('click', function(e) {
+            $('#ph-btn-bulk-delete').on('click', (e) => {
                 e.preventDefault();
                 if ($('.ph-bulk-check:checked').length === 0) {
                     return;
@@ -88,7 +88,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     config.strings.confirm_bulk,
                     config.strings.yes,
                     config.strings.cancel,
-                    function() {
+                    () => {
                         $('#bulk-action-form').submit();
                     }
                 );
