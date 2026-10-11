@@ -24,7 +24,7 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define([], function() {
+define([], () => {
     return {
         /**
          * Initialise: bind delete buttons to the shared confirmation modal.
@@ -37,8 +37,8 @@ define([], function() {
                 return;
             }
 
-            document.querySelectorAll('[data-action="delete-class"]').forEach(function(btn) {
-                btn.addEventListener('click', function() {
+            document.querySelectorAll('[data-action="delete-class"]').forEach((btn) => {
+                btn.addEventListener('click', () => {
                     msgEl.textContent = btn.getAttribute('data-confirm-msg');
                     urlEl.href = btn.getAttribute('data-delete-url');
                 });
