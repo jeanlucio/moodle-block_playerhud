@@ -20,7 +20,7 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification, $) {
+define(['core/ajax', 'core/notification', 'jquery'], (Ajax, Notification, $) => {
 
     let instanceid = 0;
     let courseid = 0;
@@ -39,7 +39,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             contentEl.innerHTML =
                 '<div class="text-center text-muted py-5">' +
                 '<i class="fa fa-circle-o-notch fa-spin fa-3x" aria-hidden="true"></i>' +
-                '<p class="mt-2">' + strings.loading + '</p>' +
+                `<p class="mt-2">${strings.loading}</p>` +
                 '</div>';
         }
         if (choicesEl) {
@@ -75,7 +75,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
 
         // Process events here so they are shown regardless of whether the chapter finishes.
         if (data.events && data.events.length > 0) {
-            data.events.forEach(function(evt) {
+            data.events.forEach((evt) => {
                 Notification.addNotification({
                     message: evt.msg,
                     type: 'info',
@@ -89,25 +89,23 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                 contentEl.innerHTML =
                     '<div class="text-center py-5">' +
                     '<i class="fa fa-check-circle fa-3x text-success" aria-hidden="true"></i>' +
-                    '<h4 class="mt-3">' + strings.completed + '</h4>' +
+                    `<h4 class="mt-3">${strings.completed}</h4>` +
                     '</div>';
             }
             if (choicesEl) {
                 const completionbadge = data.node
                     ? ('<div class="w-100 text-center mb-2">' +
                        '<i class="fa fa-check-circle text-success me-1" aria-hidden="true"></i>' +
-                       '<span class="fw-bold text-success">' + strings.completed + '</span>' +
+                       `<span class="fw-bold text-success">${strings.completed}</span>` +
                        '</div>')
                     : '';
                 let footer = completionbadge;
                 footer += '<button type="button" class="btn btn-secondary me-2"' +
-                          ' data-bs-dismiss="modal" data-dismiss="modal">' +
-                          strings.close + '</button>';
+                          ` data-bs-dismiss="modal" data-dismiss="modal">${strings.close}</button>`;
                 footer += '<button type="button" class="btn btn-outline-info"' +
                           ' data-action="read-recap"' +
-                          ' data-chapterid="' + chapterid + '">' +
-                          '<i class="fa fa-history" aria-hidden="true"></i> ' +
-                          strings.readAgain + '</button>';
+                          ` data-chapterid="${chapterid}">` +
+                          `<i class="fa fa-history" aria-hidden="true"></i> ${strings.readAgain}</button>`;
                 choicesEl.innerHTML = footer;
             }
             updateChapterCardUI(chapterid);
@@ -124,10 +122,10 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
         choicesEl.innerHTML = '';
 
         if (data.node.choices && data.node.choices.length > 0) {
-            data.node.choices.forEach(function(ch) {
+            data.node.choices.forEach((ch) => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'btn ' + ch.btnclass + ' m-1 px-4 py-2 text-start';
+                btn.className = `btn ${ch.btnclass} m-1 px-4 py-2 text-start`;
                 if (ch.disabled) {
                     btn.disabled = true;
                 }
@@ -175,7 +173,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                     btn.appendChild(costLine);
                 }
 
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', () => {
                     makeChoice(ch.id, chapterid);
                 });
                 choicesEl.appendChild(btn);
@@ -237,7 +235,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             recapIcon.className = 'fa fa-history';
             recapIcon.setAttribute('aria-hidden', 'true');
             recapBtn.appendChild(recapIcon);
-            recapBtn.appendChild(document.createTextNode(' ' + strings.readAgain));
+            recapBtn.appendChild(document.createTextNode(` ${strings.readAgain}`));
 
             recapDiv.appendChild(recapBtn);
 
@@ -379,7 +377,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             // - Moodle 5.1 (Bootstrap 5): Bootstrap 5 also triggers a jQuery event
             //   when window.jQuery is present (via its EventHandler layer).
             if (modal) {
-                $(modal).on('show.bs.modal', function(e) {
+                $(modal).on('show.bs.modal', (e) => {
                     const trigger = e.relatedTarget;
                     if (!trigger) {
                         return;
@@ -398,7 +396,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
 
             // The "Read again" button rendered inside the modal footer (by renderNode
             // when a chapter finishes) has no data-toggle — handle it with delegation.
-            document.addEventListener('click', function(e) {
+            document.addEventListener('click', (e) => {
                 const btn = e.target.closest('[data-action="read-recap"]');
                 if (!btn || !modal || !modal.contains(btn)) {
                     return;
