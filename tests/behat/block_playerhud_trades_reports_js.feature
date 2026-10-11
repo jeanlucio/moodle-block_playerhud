@@ -38,11 +38,11 @@ Feature: PlayerHUD trades and reports screens driven by JavaScript
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I click on "Trades (NPC)" "link" in the "#ph-manage-tabs" "css_element"
     And I click on "Suggest Trades" "link"
-    And "input[type='checkbox'][name^='sug_']:checked" "css_element" should exist
+    And all PlayerHUD trade suggestions are checked
     And I click on "#ph-trade-sug-toggle-all" "css_element"
-    And "input[type='checkbox'][name^='sug_']:checked" "css_element" should not exist
+    And all PlayerHUD trade suggestions are unchecked
     And I click on "#ph-trade-sug-toggle-all" "css_element"
-    Then "input[type='checkbox'][name^='sug_']:not(:checked)" "css_element" should not exist
+    Then all PlayerHUD trade suggestions are checked
 
   Scenario: The trade form previews the item picked as a requirement
     Given a PlayerHUD item "Golden Key" with drop code "GOLD01" exists in course "C1"

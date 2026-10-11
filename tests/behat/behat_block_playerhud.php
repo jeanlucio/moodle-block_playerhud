@@ -1227,14 +1227,36 @@ class behat_block_playerhud extends behat_base {
     }
 
     /**
+     * Asserts every checkbox of the trade suggestions form is ticked.
+     *
+     * The "select / deselect all" button changes them in JavaScript, which only the checkbox state
+     * shows: a CSS ":checked" selector would read the unchanged HTML attribute instead.
+     *
+     * @Then all PlayerHUD trade suggestions are checked
+     */
+    public function all_playerhud_trade_suggestions_are_checked(): void {
+        $this->assert_bulk_checkboxes_state(true, 'input[type="checkbox"][name^="sug_"]');
+    }
+
+    /**
+     * Asserts every checkbox of the trade suggestions form is cleared.
+     *
+     * @Then all PlayerHUD trade suggestions are unchecked
+     */
+    public function all_playerhud_trade_suggestions_are_unchecked(): void {
+        $this->assert_bulk_checkboxes_state(false, 'input[type="checkbox"][name^="sug_"]');
+    }
+
+    /**
      * Shared assertion for the bulk-selection checkboxes' expected state.
      *
      * @param bool $expected Whether every row checkbox should be checked.
+     * @param string $selector CSS selector of the checkboxes to check.
      * @throws \Exception If no checkbox is present or any one is in the wrong state.
      */
-    protected function assert_bulk_checkboxes_state(bool $expected): void {
-        $this->spin(function () use ($expected) {
-            $boxes = $this->getSession()->getPage()->findAll('css', 'input[name="bulk_ids[]"]');
+    protected function assert_bulk_checkboxes_state(bool $expected, string $selector = 'input[name="bulk_ids[]"]'): void {
+        $this->spin(function () use ($expected, $selector) {
+            $boxes = $this->getSession()->getPage()->findAll('css', $selector);
             if (empty($boxes)) {
                 return false;
             }
