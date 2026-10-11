@@ -69,7 +69,7 @@ Feature: PlayerHUD drop distribution and character oracle driven by JavaScript
     And I click on "Character Oracle" "button"
     And I wait until "#ph-ai-oracle-modal.show" "css_element" exists
     And I click on "[data-action='ai-oracle-submit']" "css_element"
-    Then I should see "Please enter a theme for the story!" in the "#ph-ai-oracle-modal [data-region='ph-modal-error']" "css_element"
+    Then I should see "Please enter a theme for the characters!" in the "#ph-ai-oracle-modal [data-region='ph-modal-error']" "css_element"
 
   Scenario: The character oracle reports the failure and frees the button when no AI is available
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"

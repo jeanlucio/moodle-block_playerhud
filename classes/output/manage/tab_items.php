@@ -502,7 +502,7 @@ class tab_items implements renderable {
         // 7. JS Initialization — strings preloaded via strings_for_js to avoid the
         // 1024-char js_call_amd argument limit (triggered with longer locales like Spanish).
         $PAGE->requires->strings_for_js([
-            'ai_validation_theme',
+            'ai_validation_theme_item',
             'ai_success',
             'gen_copy',
             'great',

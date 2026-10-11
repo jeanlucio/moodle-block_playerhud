@@ -34,7 +34,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
 
             // Strings preloaded via strings_for_js in PHP (avoids 1024-char js_call_amd limit).
             config.strings = {
-                errTheme:            M.util.get_string('ai_validation_theme', 'block_playerhud'),
+                errTheme:            M.util.get_string('ai_validation_theme_item', 'block_playerhud'),
                 success:             M.util.get_string('ai_success', 'block_playerhud'),
                 copy:                M.util.get_string('gen_copy', 'block_playerhud'),
                 great:               M.util.get_string('great', 'block_playerhud'),
