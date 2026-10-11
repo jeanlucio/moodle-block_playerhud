@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, Notification) {
+define(['jquery', 'core/notification', 'core/copy_to_clipboard'], ($, Notification) => {
 
     /**
      * Manage Drops module.
@@ -46,8 +46,8 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                 const modeRadio = $('input[name="codeMode"]:checked');
                 const mode = modeRadio.length ? modeRadio.val() : 'card';
 
-                const param = 'code=' + currentDropCode;
-                let code = '[PLAYERHUD_DROP ' + param + ']';
+                const param = `code=${currentDropCode}`;
+                let code = `[PLAYERHUD_DROP ${param}]`;
 
                 // Handle visibility and preview generation based on selected mode.
                 if (mode === 'text') {
@@ -57,7 +57,7 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                     const linkTxt = ($inputLinkText.val() && $inputLinkText.val().trim()) ?
                         $inputLinkText.val().trim() : langStrings.defaultText;
 
-                    code = '[PLAYERHUD_DROP ' + param + ' mode=text text="' + linkTxt + '"]';
+                    code = `[PLAYERHUD_DROP ${param} mode=text text="${linkTxt}"]`;
 
                     // Use DOM construction so user-typed linkTxt is never treated as markup.
                     const $link = $('<a>', {
@@ -73,7 +73,7 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                     $groupTextLink.hide();
                     $groupCardOptions.hide();
 
-                    code = '[PLAYERHUD_DROP ' + param + ' mode=image]';
+                    code = `[PLAYERHUD_DROP ${param} mode=image]`;
 
                     // Built via DOM methods (never string concatenation) so a stored item
                     // url/content value can never be interpreted as markup.
@@ -96,13 +96,13 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
 
                     let extraAttrs = '';
                     if (userTxt !== '') {
-                        extraAttrs += ' button_text="' + userTxt + '"';
+                        extraAttrs += ` button_text="${userTxt}"`;
                     }
                     if (userEmo !== '') {
-                        extraAttrs += ' button_emoji="' + userEmo + '"';
+                        extraAttrs += ` button_emoji="${userEmo}"`;
                     }
 
-                    code = '[PLAYERHUD_DROP ' + param + extraAttrs + ']';
+                    code = `[PLAYERHUD_DROP ${param}${extraAttrs}]`;
 
                     // Build card preview with jQuery DOM methods so user-typed text and
                     // server item data are never interpreted as HTML markup.
@@ -119,7 +119,7 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                     const $btn = $('<button>', {'class': 'btn btn-primary btn-sm w-100 shadow-sm', type: 'button'});
                     if (previewEmo) {
                         $('<span>', {'aria-hidden': 'true', 'class': 'me-1'}).text(previewEmo).appendTo($btn);
-                        $btn.append(document.createTextNode(' ' + previewTxt));
+                        $btn.append(document.createTextNode(` ${previewTxt}`));
                     } else {
                         $btn.text(previewTxt);
                     }
@@ -151,21 +151,21 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                 $('.ph-bulk-check').prop('checked', isChecked).trigger('change');
             });
 
-            $('body').on('change', '.ph-bulk-check, #ph-select-all', function() {
+            $('body').on('change', '.ph-bulk-check, #ph-select-all', () => {
                 const count = $('.ph-bulk-check:checked').length;
                 const $btn = $('#ph-btn-bulk-delete');
 
                 if (count > 0) {
                     $btn.removeClass('disabled').removeAttr('disabled');
                     const btnText = langStrings.delete_n_items.replace('%d', count);
-                    $btn.html('<i class="fa fa-trash"></i> ' + btnText);
+                    $btn.html(`<i class="fa fa-trash" aria-hidden="true"></i> ${btnText}`);
                 } else {
                     $btn.addClass('disabled').attr('disabled', 'disabled');
-                    $btn.html('<i class="fa fa-trash"></i> ' + langStrings.delete_selected);
+                    $btn.html(`<i class="fa fa-trash" aria-hidden="true"></i> ${langStrings.delete_selected}`);
                 }
             });
 
-            $('body').on('click', '#ph-btn-bulk-delete', function(e) {
+            $('body').on('click', '#ph-btn-bulk-delete', (e) => {
                 e.preventDefault();
                 const count = $('.ph-bulk-check:checked').length;
                 if (count === 0) {
@@ -177,13 +177,13 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                     langStrings.confirm_bulk,
                     langStrings.yes,
                     langStrings.cancel,
-                    function() {
+                    () => {
                         $('#bulk-action-form').submit();
                     }
                 );
             });
 
-            $('body').on('click', function(e) {
+            $('body').on('click', (e) => {
                 const $target = $(e.target);
 
                 // A. Single Delete Action.
@@ -195,7 +195,7 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                         $deleteBtn.attr('data-confirm-msg'),
                         langStrings.yes,
                         langStrings.cancel,
-                        function() {
+                        () => {
                             window.location.href = $deleteBtn.attr('href');
                         }
                     );
@@ -218,7 +218,7 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                     const modalEl = document.getElementById('ph-codegen-modal');
                     if (modalEl) {
                         document.body.appendChild(modalEl);
-                        require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+                        require(['theme_boost/bootstrap/modal'], (BootstrapModal) => {
                             new BootstrapModal(modalEl).show();
                         });
                     }
