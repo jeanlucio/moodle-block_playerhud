@@ -23,8 +23,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
      * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
      */
 
-    var strings = {};
-    var cfg = {};
+    let strings = {};
+    let cfg = {};
 
     /**
      * Parse the inserted cmids list from a row's data attribute.
@@ -57,21 +57,21 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
      * @param {jQuery} $row
      */
     function updateFieldOptions($row) {
-        var $moduleSelect = $row.find('.ph-select-module');
+        const $moduleSelect = $row.find('.ph-select-module');
         if ($moduleSelect.length === 0) {
             return;
         }
-        var $selected = $('option:selected', $moduleSelect);
-        var modname = $selected.data('modname');
-        var supportsContent = $selected.data('supportsContent') === 1 ||
+        const $selected = $('option:selected', $moduleSelect);
+        const modname = $selected.data('modname');
+        const supportsContent = $selected.data('supportsContent') === 1 ||
             $selected.data('supportsContent') === '1';
-        var isLabel = $selected.data('isLabel') === 1 ||
+        const isLabel = $selected.data('isLabel') === 1 ||
             $selected.data('isLabel') === '1';
 
-        var $fieldSelect = $row.find('.ph-select-field');
+        const $fieldSelect = $row.find('.ph-select-field');
         $fieldSelect.empty();
 
-        var introLabel = isLabel ? strings.field_label : strings.field_intro;
+        const introLabel = isLabel ? strings.field_label : strings.field_intro;
         $fieldSelect.append($('<option>', {value: 'intro', text: introLabel}));
 
         if (supportsContent || modname === 'page') {
@@ -99,11 +99,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
     function markRowInserted($row) {
         $row.addClass('ph-row-inserted');
 
-        var $modSelect = $row.find('.ph-select-module');
-        var activityName = $modSelect.find('option:selected').data('name') ||
+        const $modSelect = $row.find('.ph-select-module');
+        const activityName = $modSelect.find('option:selected').data('name') ||
             $modSelect.find('option:selected').text().trim();
-        var fieldVal = $row.find('.ph-select-field').val();
-        var fieldLabel = (fieldVal === 'content') ? strings.field_content : strings.field_intro;
+        const fieldVal = $row.find('.ph-select-field').val();
+        const fieldLabel = (fieldVal === 'content') ? strings.field_content : strings.field_intro;
 
         // Replace Activity cell with static text.
         $modSelect.closest('td').html(
@@ -134,12 +134,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
      * Insert button counts pending rows checked; Remove button counts inserted rows checked.
      */
     function updateActionButtons() {
-        var insertCount = $('.ph-dist-check:checked[data-inserted="0"]').length;
-        var removeCount = $('.ph-dist-check:checked[data-inserted="1"]').length;
+        const insertCount = $('.ph-dist-check:checked[data-inserted="0"]').length;
+        const removeCount = $('.ph-dist-check:checked[data-inserted="1"]').length;
 
-        var $insertBtn = $('#ph-btn-bulk-insert');
+        const $insertBtn = $('#ph-btn-bulk-insert');
         if (insertCount > 0) {
-            var insertLabel = strings.insert_selected.replace('__N__', insertCount);
+            const insertLabel = strings.insert_selected.replace('__N__', insertCount);
             $insertBtn.removeClass('disabled').removeAttr('disabled')
                 .html('<i class="fa fa-check me-1" aria-hidden="true"></i> ' + insertLabel);
         } else {
@@ -147,9 +147,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
                 .html('<i class="fa fa-check me-1" aria-hidden="true"></i> ' + strings.btn_insert);
         }
 
-        var $removeBtn = $('#ph-btn-bulk-remove');
+        const $removeBtn = $('#ph-btn-bulk-remove');
         if (removeCount > 0) {
-            var removeLabel = strings.undo_selected.replace('__N__', removeCount);
+            const removeLabel = strings.undo_selected.replace('__N__', removeCount);
             $removeBtn.removeClass('disabled').removeAttr('disabled')
                 .html('<i class="fa fa-undo me-1" aria-hidden="true"></i> ' + removeLabel);
         } else {
@@ -169,13 +169,13 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
         $btn.addClass('disabled').attr('disabled', 'disabled')
             .html('<i class="fa fa-spinner fa-spin me-1" aria-hidden="true"></i> ' + strings.removing);
 
-        var requests = [];
+        const requests = [];
 
         $checked.each(function() {
-            var $row = $(this).closest('tr');
-            var cmids = getInsertedCmids($row);
-            var cmid = cmids.length > 0 ? cmids[0] : 0;
-            var field = $row.attr('data-inserted-field') || 'intro';
+            const $row = $(this).closest('tr');
+            const cmids = getInsertedCmids($row);
+            const cmid = cmids.length > 0 ? cmids[0] : 0;
+            const field = $row.attr('data-inserted-field') || 'intro';
 
             requests.push({
                 methodname: 'block_playerhud_remove_drop_shortcode',
@@ -189,8 +189,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
             });
         });
 
-        var calls = Ajax.call(requests);
-        var allOk = true;
+        const calls = Ajax.call(requests);
+        let allOk = true;
 
         calls.forEach(function(promise) {
             promise.fail(function(ex) {
@@ -220,8 +220,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
 
             // Initialise field options for pending rows; set class for inserted rows.
             $('.ph-distribute-row').each(function() {
-                var $row = $(this);
-                var isInserted = $row.data('insertedAnywhere') === 1 ||
+                const $row = $(this);
+                const isInserted = $row.data('insertedAnywhere') === 1 ||
                     $row.data('insertedAnywhere') === '1';
                 if (isInserted) {
                     initInsertedRow($row);
@@ -234,15 +234,15 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
 
             // Select All checkbox.
             $('#ph-dist-select-all').on('change', function() {
-                var checked = $(this).is(':checked');
+                const checked = $(this).is(':checked');
                 $('.ph-dist-check').prop('checked', checked);
                 updateActionButtons();
             });
 
             // Individual checkbox changes.
             $('body').on('change', '.ph-dist-check', function() {
-                var total = $('.ph-dist-check').length;
-                var checkedCount = $('.ph-dist-check:checked').length;
+                const total = $('.ph-dist-check').length;
+                const checkedCount = $('.ph-dist-check:checked').length;
                 $('#ph-dist-select-all').prop('indeterminate', checkedCount > 0 && checkedCount < total);
                 $('#ph-dist-select-all').prop('checked', checkedCount === total && total > 0);
                 updateActionButtons();
@@ -255,12 +255,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
 
             // Bulk Insert button.
             $('#ph-btn-bulk-insert').on('click', function() {
-                var $btn = $(this);
+                const $btn = $(this);
                 if ($btn.hasClass('disabled')) {
                     return;
                 }
 
-                var $checked = $('.ph-dist-check:checked[data-inserted="0"]');
+                const $checked = $('.ph-dist-check:checked[data-inserted="0"]');
                 if ($checked.length === 0) {
                     Notification.addNotification({message: strings.no_selection, type: 'warning'});
                     return;
@@ -270,11 +270,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
                     .html('<i class="fa fa-spinner fa-spin me-1" aria-hidden="true"></i> ' +
                         strings.inserting);
 
-                var requests = [];
-                var $rows = [];
+                const requests = [];
+                const $rows = [];
 
                 $checked.each(function() {
-                    var $row = $(this).closest('tr');
+                    const $row = $(this).closest('tr');
                     $rows.push($row);
                     requests.push({
                         methodname: 'block_playerhud_insert_drop_shortcode',
@@ -289,15 +289,15 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
                     });
                 });
 
-                var calls = Ajax.call(requests);
+                const calls = Ajax.call(requests);
 
                 calls.forEach(function(promise, index) {
-                    var $row = $rows[index];
-                    var cmid = getSelectedCmid($row);
+                    const $row = $rows[index];
+                    const cmid = getSelectedCmid($row);
 
                     promise.done(function(resp) {
                         if (resp.success) {
-                            var list = getInsertedCmids($row);
+                            const list = getInsertedCmids($row);
                             if (list.indexOf(cmid) === -1) {
                                 list.push(cmid);
                             }
@@ -319,12 +319,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
 
             // Bulk Remove button.
             $('#ph-btn-bulk-remove').on('click', function() {
-                var $btn = $(this);
+                const $btn = $(this);
                 if ($btn.hasClass('disabled')) {
                     return;
                 }
 
-                var $checked = $('.ph-dist-check:checked[data-inserted="1"]');
+                const $checked = $('.ph-dist-check:checked[data-inserted="1"]');
                 if ($checked.length === 0) {
                     return;
                 }
