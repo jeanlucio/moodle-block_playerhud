@@ -20,7 +20,7 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification, $) {
+define(['core/ajax', 'core/notification', 'jquery'], (Ajax, Notification, $) => {
 
     let instanceid = 0;
     let courseid = 0;
@@ -74,7 +74,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                 testContent.innerHTML =
                     '<div class="text-center py-5">' +
                     '<i class="fa fa-check-circle fa-3x text-success" aria-hidden="true"></i>' +
-                    '<h4 class="mt-3">' + (data.message || '') + '</h4>' +
+                    `<h4 class="mt-3">${data.message || ''}</h4>` +
                     '</div>';
             }
             if (testChoices) {
@@ -97,15 +97,15 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
         testChoices.innerHTML = '';
 
         if (data.node.choices && data.node.choices.length > 0) {
-            data.node.choices.forEach(function(ch) {
+            data.node.choices.forEach((ch) => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'btn ' + ch.btnclass + ' m-1 px-4 py-2';
+                btn.className = `btn ${ch.btnclass} m-1 px-4 py-2`;
                 btn.textContent = ch.text;
                 if (ch.disabled) {
                     btn.disabled = true;
                 }
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', () => {
                     previewNav(ch.id);
                 });
                 testChoices.appendChild(btn);
@@ -136,7 +136,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             fail: function(ex) {
                 if (testContent) {
                     testContent.innerHTML =
-                        '<div class="alert alert-danger">' + (ex.message || 'Error') + '</div>';
+                        `<div class="alert alert-danger">${ex.message || 'Error'}</div>`;
                 }
                 Notification.exception(ex);
             },
@@ -164,7 +164,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             fail: function(ex) {
                 if (testContent) {
                     testContent.innerHTML =
-                        '<div class="alert alert-danger">' + (ex.message || 'Error') + '</div>';
+                        `<div class="alert alert-danger">${ex.message || 'Error'}</div>`;
                 }
                 Notification.exception(ex);
             },
@@ -188,8 +188,8 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             document.body.appendChild(modal);
         }
 
-        document.querySelectorAll('[data-action="delete-chapter"]').forEach(function(btn) {
-            btn.addEventListener('click', function() {
+        document.querySelectorAll('[data-action="delete-chapter"]').forEach((btn) => {
+            btn.addEventListener('click', () => {
                 msgEl.textContent = btn.getAttribute('data-confirm-msg');
                 urlEl.href = btn.getAttribute('data-delete-url');
             });
@@ -225,7 +225,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             // - Moodle 5.1 (Bootstrap 5): Bootstrap 5 also triggers a jQuery event
             //   when window.jQuery is present (via its EventHandler layer).
             if (testModal) {
-                $(testModal).on('show.bs.modal', function(e) {
+                $(testModal).on('show.bs.modal', (e) => {
                     const trigger = e.relatedTarget;
                     if (!trigger) {
                         return;
@@ -254,8 +254,8 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                 document.body.appendChild(modal);
             }
 
-            document.querySelectorAll('[data-action="delete-scene"]').forEach(function(btn) {
-                btn.addEventListener('click', function() {
+            document.querySelectorAll('[data-action="delete-scene"]').forEach((btn) => {
+                btn.addEventListener('click', () => {
                     msgEl.textContent = btn.getAttribute('data-confirm-msg');
                     urlEl.href = btn.getAttribute('data-delete-url');
                 });
