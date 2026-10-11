@@ -321,13 +321,15 @@ class behat_block_playerhud extends behat_base {
      * @param string $shortname Course shortname.
      * @param string $description Raw item description.
      * @param int $maxusage Maximum number of collection events allowed for this drop.
+     * @param int $respawntime Seconds a student waits before collecting the drop again.
      */
     private function create_playerhud_item_with_drop(
         string $itemname,
         string $dropcode,
         string $shortname,
         string $description,
-        int $maxusage = 1
+        int $maxusage = 1,
+        int $respawntime = 0
     ): void {
         global $DB;
 
@@ -358,7 +360,7 @@ class behat_block_playerhud extends behat_base {
             'itemid'          => $itemid,
             'code'            => strtoupper($dropcode),
             'maxusage'        => $maxusage,
-            'respawntime'     => 0,
+            'respawntime'     => $respawntime,
             'timecreated'     => time(),
             'timemodified'    => time(),
         ]);
@@ -584,6 +586,98 @@ class behat_block_playerhud extends behat_base {
             '*',
             MUST_EXIST
         );
+    }
+
+    /**
+     * Creates a PlayerHUD item with an unlimited drop that makes a student wait before collecting
+     * it again, so the drop card shows a countdown after a collection.
+     *
+     * @param string $itemname Display name for the item.
+     * @param string $dropcode Short alphanumeric code used in the [PLAYERHUD_DROP] shortcode.
+     * @param int $minutes Minutes to wait between collections.
+     * @param string $shortname Course shortname.
+     * @Given a PlayerHUD item :itemname with drop code :dropcode and a cooldown of :minutes minutes exists in course :shortname
+     */
+    public function playerhud_item_with_cooldown_drop_exists(
+        string $itemname,
+        string $dropcode,
+        int $minutes,
+        string $shortname
+    ): void {
+        $this->create_playerhud_item_with_drop($itemname, $dropcode, $shortname, '', 0, $minutes * MINSECS);
+    }
+
+    /**
+     * Creates a centralised PlayerHUD trade that costs one item and gives another, creating both
+     * items.
+     *
+     * @param string $tradename Trade name.
+     * @param string $costitem Name of the item the trade costs.
+     * @param string $rewarditem Name of the item the trade gives.
+     * @param string $shortname Course shortname.
+     * @Given a PlayerHUD trade :tradename that costs :costitem and gives :rewarditem exists in course :shortname
+     */
+    public function playerhud_trade_exists(string $tradename, string $costitem, string $rewarditem, string $shortname): void {
+        global $DB;
+
+        $instance = $this->get_playerhud_instance($shortname);
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $instance->id,
+            'name'            => $tradename,
+            'groupid'         => 0,
+            'centralized'     => 1,
+            'onetime'         => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+        foreach (['block_playerhud_trade_reqs' => $costitem, 'block_playerhud_trade_rewards' => $rewarditem] as $table => $name) {
+            $DB->insert_record($table, (object) [
+                'tradeid'      => $tradeid,
+                'itemid'       => $this->insert_playerhud_item($instance->id, $name, ''),
+                'qty'          => 1,
+                'timecreated'  => time(),
+                'timemodified' => time(),
+            ]);
+        }
+    }
+
+    /**
+     * Creates the PlayerCoin item and two avatar items, which is what the trade suggestions need.
+     *
+     * @param string $shortname Course shortname.
+     * @Given a PlayerHUD PlayerCoin and two avatar items exist in course :shortname
+     */
+    public function playerhud_playercoin_and_avatars_exist(string $shortname): void {
+        $instance = $this->get_playerhud_instance($shortname);
+        $this->insert_playerhud_item($instance->id, 'PlayerCoin', 'playercoin');
+        $this->insert_playerhud_item($instance->id, 'Knight avatar', 'avatar_profile');
+        $this->insert_playerhud_item($instance->id, 'Wizard avatar', 'avatar_profile');
+    }
+
+    /**
+     * Inserts an enabled PlayerHUD item.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param string $name Item name.
+     * @param string $actiontype Item power ('' for none, 'playercoin', 'avatar_profile', ...).
+     * @return int The item id.
+     */
+    private function insert_playerhud_item(int $instanceid, string $name, string $actiontype): int {
+        global $DB;
+
+        return (int) $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $instanceid,
+            'name'            => $name,
+            'description'     => '',
+            'image'           => '🎁',
+            'xp'              => 10,
+            'secret'          => 0,
+            'enabled'         => 1,
+            'tradable'        => 1,
+            'action_type'     => $actiontype,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
     }
 
     /**
