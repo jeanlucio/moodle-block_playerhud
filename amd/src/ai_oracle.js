@@ -38,7 +38,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'block_playerhud/modal_error
             $('#ph-ai-oracle-modal').appendTo('body');
 
             // Submit handler for the generate button inside the modal.
-            $('body').on('click', '[data-action="ai-oracle-submit"]', function() {
+            $('body').on('click', '[data-action="ai-oracle-submit"]', async function() {
                 const $btn = $(this);
                 ModalError.clear('#ph-ai-oracle-modal');
                 const theme = $('#ph-oracle-theme').val().trim();
@@ -52,113 +52,88 @@ define(['jquery', 'core/notification', 'core/ajax', 'block_playerhud/modal_error
                 const originalText = $btn.html();
                 const names = [];
                 const errors = [];
-                let current = 0;
+                $btn.prop('disabled', true).attr('aria-busy', 'true');
 
-                /**
-                 * Update button label showing generation progress.
-                 */
-                function updateProgress() {
-                    $btn.html(
-                        '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> ' +
-                        strings.ai_creating + ' (' + current + '/' + count + ')'
-                    );
-                }
-
-                /**
-                 * Generate the next character and recurse until count is reached.
-                 *
-                 * @returns {Promise}
-                 */
-                function generateNext() {
-                    current++;
-                    updateProgress();
-
-                    return Ajax.call([{
-                        methodname: 'block_playerhud_generate_class_oracle',
-                        args: {
-                            instanceid: instanceid,
-                            courseid:   courseid,
-                            theme:      theme
-                        }
-                    }])[0].then(function(resp) {
+                // One AI call per requested character, in sequence; a network failure stops the run.
+                try {
+                    for (let current = 1; current <= count; current++) {
+                        $btn.html(
+                            '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> ' +
+                            `${strings.ai_creating} (${current}/${count})`
+                        );
+                        const resp = await Ajax.call([{
+                            methodname: 'block_playerhud_generate_class_oracle',
+                            args: {instanceid, courseid, theme},
+                        }])[0];
                         if (resp.success) {
                             names.push(resp.class_name);
                         } else {
                             errors.push(resp.message || strings.ai_error_generic);
                         }
-                        if (current < count) {
-                            return generateNext();
-                        }
-                        return true;
-                    });
-                }
-
-                $btn.prop('disabled', true).attr('aria-busy', 'true');
-
-                generateNext().then(function() {
-                    $btn.prop('disabled', false).html(originalText).removeAttr('aria-busy');
-
-                    if (names.length === 0) {
-                        // All calls failed — show the first error message as an alert.
-                        const errMsg = errors.length > 0 ? errors[0] : strings.ai_error_generic;
-                        ModalError.show('#ph-ai-oracle-modal', errMsg);
-                        return true;
                     }
-
-                    // Build result using jQuery DOM methods so AI-returned names are never
-                    // treated as markup, regardless of what the model returns.
-                    const $result = $('<div>', {
-                        'class': 'text-center py-3 ph-animate-fadein',
-                        tabindex: '-1',
-                        id: 'ph-oracle-result'
-                    });
-                    $('<div>', {'class': 'mb-3 text-success', 'aria-hidden': 'true', css: {'font-size': '3rem'}})
-                        .html('<i class="fa fa-check-circle"></i>')
-                        .appendTo($result);
-
-                    if (names.length === 1) {
-                        const successMsg = strings.oracle_success.replace('{$a}', names[0]);
-                        $('<h5>', {'class': 'fw-bold mb-1'}).text(names[0]).appendTo($result);
-                        $('<p>', {'class': 'text-muted small'}).text(successMsg).appendTo($result);
-                    } else {
-                        const successMsgMulti = strings.oracle_success_multi.replace('{$a}', names.length);
-                        const $ul = $('<ul>', {'class': 'list-unstyled mb-2'});
-                        for (let i = 0; i < names.length; i++) {
-                            $('<li>', {'class': 'fw-bold'}).text(names[i]).appendTo($ul);
-                        }
-                        $ul.appendTo($result);
-                        $('<p>', {'class': 'text-muted small'}).text(successMsgMulti).appendTo($result);
-                    }
-
-                    if (errors.length > 0) {
-                        const warnMsg = strings.oracle_partial_error.replace('{$a}', errors.length);
-                        $('<p>', {'class': 'text-warning small mt-2 mb-0'}).text(warnMsg).appendTo($result);
-                    }
-
-                    $('#ph-ai-oracle-modal .modal-body').empty().append($result);
-                    $('#ph-ai-oracle-modal .modal-footer').html(
-                        '<button type="button" class="btn btn-success fw-bold px-4" ' +
-                        'data-action="oracle-reload">' + strings.ok_reload + '</button>'
-                    );
-
-                    setTimeout(function() {
-                        $('#ph-oracle-result').focus();
-                    }, 200);
-
-                    return true;
-                }).fail(function(ex) {
+                } catch (ex) {
                     $btn.prop('disabled', false).html(originalText).removeAttr('aria-busy');
                     Notification.exception(ex);
+                    return;
+                }
+
+                $btn.prop('disabled', false).html(originalText).removeAttr('aria-busy');
+
+                if (names.length === 0) {
+                    // Every call failed: show the first error inside the modal.
+                    ModalError.show('#ph-ai-oracle-modal', errors.length > 0 ? errors[0] : strings.ai_error_generic);
+                    return;
+                }
+
+                // Build result using jQuery DOM methods so AI-returned names are never
+                // treated as markup, regardless of what the model returns.
+                const $result = $('<div>', {
+                    'class': 'text-center py-3 ph-animate-fadein',
+                    tabindex: '-1',
+                    id: 'ph-oracle-result'
                 });
+                $('<div>', {'class': 'mb-3 text-success', 'aria-hidden': 'true', css: {'font-size': '3rem'}})
+                    .html('<i class="fa fa-check-circle"></i>')
+                    .appendTo($result);
+
+                if (names.length === 1) {
+                    const successMsg = strings.oracle_success.replace('{$a}', names[0]);
+                    $('<h5>', {'class': 'fw-bold mb-1'}).text(names[0]).appendTo($result);
+                    $('<p>', {'class': 'text-muted small'}).text(successMsg).appendTo($result);
+                } else {
+                    const successMsgMulti = strings.oracle_success_multi.replace('{$a}', names.length);
+                    const $ul = $('<ul>', {'class': 'list-unstyled mb-2'});
+                    for (let i = 0; i < names.length; i++) {
+                        $('<li>', {'class': 'fw-bold'}).text(names[i]).appendTo($ul);
+                    }
+                    $ul.appendTo($result);
+                    $('<p>', {'class': 'text-muted small'}).text(successMsgMulti).appendTo($result);
+                }
+
+                if (errors.length > 0) {
+                    const warnMsg = strings.oracle_partial_error.replace('{$a}', errors.length);
+                    $('<p>', {'class': 'text-warning small mt-2 mb-0'}).text(warnMsg).appendTo($result);
+                }
+
+                $('#ph-ai-oracle-modal .modal-body').empty().append($result);
+                $('#ph-ai-oracle-modal .modal-footer').html(
+                    '<button type="button" class="btn btn-success fw-bold px-4" ' +
+                    `data-action="oracle-reload">${strings.ok_reload}</button>`
+                );
+
+                setTimeout(() => {
+                    $('#ph-oracle-result').focus();
+                }, 200);
+
             });
 
             // Reload page when user dismisses after a successful generation.
-            $('body').on('click', '[data-action="oracle-reload"]', function() {
+            $('body').on('click', '[data-action="oracle-reload"]', () => {
                 window.location.reload();
             });
 
             // Reset modal form when it closes (so it is clean for the next use).
-            $('body').on('hidden.bs.modal', '#ph-ai-oracle-modal', function() {
+            $('body').on('hidden.bs.modal', '#ph-ai-oracle-modal', () => {
                 if ($('#ph-oracle-result').length === 0) {
                     return;
                 }
