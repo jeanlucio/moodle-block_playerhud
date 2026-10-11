@@ -71,6 +71,7 @@ Feature: PlayerHUD item library and drops screens driven by JavaScript
 
   Scenario: Teacher creates the PlayerCoin without a drop location
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
+    And I close block drawer if open
     And I click on "button.dropdown-toggle-split[aria-label='Create PlayerCoin']" "css_element"
     And I click on "#btn-create-playercoin" "css_element"
     And I should see "Create PlayerCoin" in the ".modal.show" "css_element"
@@ -79,6 +80,7 @@ Feature: PlayerHUD item library and drops screens driven by JavaScript
 
   Scenario: Teacher creates the avatar pack after confirming
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
+    And I close block drawer if open
     And I click on "button.dropdown-toggle-split[aria-label='Create PlayerCoin']" "css_element"
     And I click on "#btn-create-avatar-pack" "css_element"
     And I should see "Create a pack of 17 pre-defined avatar characters."
