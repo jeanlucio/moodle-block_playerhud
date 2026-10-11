@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-define([], function() {
+define([], () => {
 
     /**
      * Tab config module for PlayerHUD — API key visibility toggle.
@@ -27,8 +27,8 @@ define([], function() {
      * Attach click handlers to all show/hide toggle buttons.
      */
     function init() {
-        document.querySelectorAll('.ph-toggle-key').forEach(function(btn) {
-            btn.addEventListener('click', function() {
+        document.querySelectorAll('.ph-toggle-key').forEach((btn) => {
+            btn.addEventListener('click', () => {
                 const targetId = btn.getAttribute('data-target');
                 const input = document.getElementById(targetId);
                 if (!input) {
