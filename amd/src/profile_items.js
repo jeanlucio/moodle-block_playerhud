@@ -42,7 +42,7 @@ define(['jquery'], function($) {
         }
         document.body.appendChild(modalEl);
         require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
-            var inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(modalEl))
+            const inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(modalEl))
                 || $(modalEl).data('bs.modal')
                 || new BootstrapModal(modalEl);
             inst.show();
