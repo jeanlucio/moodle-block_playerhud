@@ -20,12 +20,12 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['jquery', 'core/notification'], function($, Notification) {
+define(['jquery', 'core/notification'], ($, Notification) => {
     return {
         init: function(config) {
             // User selector for redirection.
             $('#r_userid').on('change', function() {
-                const url = config.baseUrl + '&r_userid=' + $(this).val();
+                const url = `${config.baseUrl}&r_userid=${$(this).val()}`;
                 window.location.href = url;
             });
 
@@ -49,7 +49,7 @@ define(['jquery', 'core/notification'], function($, Notification) {
                     msg,
                     config.strYes,
                     config.strCancel,
-                    function() {
+                    () => {
                         window.location.href = targetUrl;
                     }
                 );
