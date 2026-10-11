@@ -33,9 +33,9 @@ define(['jquery', 'core/notification'], function($, Notification) {
             // Single Delete Button.
             $('body').on('click', '.js-delete-btn', function(e) {
                 e.preventDefault();
-                var $btn = $(this);
-                var targetUrl = $btn.attr('href');
-                var msg = $btn.attr('data-confirm-msg');
+                const $btn = $(this);
+                const targetUrl = $btn.attr('href');
+                const msg = $btn.attr('data-confirm-msg');
 
                 Notification.confirm(
                     config.strings.confirm_title,
@@ -50,25 +50,25 @@ define(['jquery', 'core/notification'], function($, Notification) {
 
             // Select All Checkbox.
             $('#ph-select-all').on('change', function() {
-                var isChecked = $(this).is(':checked');
+                const isChecked = $(this).is(':checked');
                 $('.ph-bulk-check').prop('checked', isChecked).trigger('change');
             });
 
             // Suggestion form: toggle all checkboxes.
             $('body').on('click', '#ph-sug-toggle-all', function() {
-                var $checks = $('input[type="checkbox"][name^="sug_"]');
-                var allChecked = $checks.length === $checks.filter(':checked').length;
+                const $checks = $('input[type="checkbox"][name^="sug_"]');
+                const allChecked = $checks.length === $checks.filter(':checked').length;
                 $checks.prop('checked', !allChecked);
             });
 
             // Update "Delete Selected" button state.
             $('body').on('change', '.ph-bulk-check, #ph-select-all', function() {
-                var count = $('.ph-bulk-check:checked').length;
-                var $btn = $('#ph-btn-bulk-delete');
+                const count = $('.ph-bulk-check:checked').length;
+                const $btn = $('#ph-btn-bulk-delete');
 
                 if (count > 0) {
                     $btn.removeClass('disabled').removeAttr('disabled');
-                    var btnText = config.strings.delete_n_items.replace('%d', count);
+                    const btnText = config.strings.delete_n_items.replace('%d', count);
                     $btn.html('<i class="fa fa-trash" aria-hidden="true"></i> ' + btnText);
                 } else {
                     $btn.addClass('disabled').attr('disabled', 'disabled');
