@@ -23,7 +23,7 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['jquery'], function($) {
+define(['jquery'], ($) => {
 
     let modalEl = null;
     let strings = {};
@@ -41,7 +41,7 @@ define(['jquery'], function($) {
             return;
         }
         document.body.appendChild(modalEl);
-        require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+        require(['theme_boost/bootstrap/modal'], (BootstrapModal) => {
             const inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(modalEl))
                 || $(modalEl).data('bs.modal')
                 || new BootstrapModal(modalEl);
@@ -106,7 +106,7 @@ define(['jquery'], function($) {
         }
 
         if (formattedDate) {
-            const prefix = strings.last_collected ? strings.last_collected + ' ' : '';
+            const prefix = strings.last_collected ? `${strings.last_collected} ` : '';
             dateEl.find('span').text(prefix + formattedDate);
             dateEl.show().removeClass('ph-display-none');
         } else {
