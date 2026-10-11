@@ -30,8 +30,8 @@ define([], function() {
          * Initialise: bind delete buttons to the shared confirmation modal.
          */
         init: function() {
-            var msgEl = document.getElementById('ph-delete-class-msg');
-            var urlEl = document.getElementById('ph-delete-class-url');
+            const msgEl = document.getElementById('ph-delete-class-msg');
+            const urlEl = document.getElementById('ph-delete-class-url');
 
             if (!msgEl || !urlEl) {
                 return;
