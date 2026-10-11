@@ -20,7 +20,7 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, Ajax) {
+define(['jquery', 'core/notification', 'core/ajax'], ($, Notification, Ajax) => {
 
     return {
         /**
@@ -36,13 +36,13 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
             // Char modal — explicit handler (cross-version safe: BS4 + BS5).
             // data-bs-toggle declarative may not fire in Moodle 4.5 if Bootstrap's
             // document-level listener hasn't been registered yet via AMD.
-            $(document).off('click.phcharmodal').on('click.phcharmodal', '[data-ph-modal="ph-char-modal"]', function() {
+            $(document).off('click.phcharmodal').on('click.phcharmodal', '[data-ph-modal="ph-char-modal"]', () => {
                 const el = document.getElementById('ph-char-modal');
                 if (!el) {
                     return;
                 }
                 document.body.appendChild(el);
-                require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+                require(['theme_boost/bootstrap/modal'], (BootstrapModal) => {
                     const inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(el))
                         || $(el).data('bs.modal')
                         || new BootstrapModal(el);
@@ -98,7 +98,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                     msg,
                     config.strings.yes,
                     config.strings.cancel,
-                    function() {
+                    () => {
                         window.location.href = url;
                     }
                 );
@@ -107,8 +107,8 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
             // Initialize tooltips for quest description info buttons.
             const questInfoEls = document.querySelectorAll('.js-ph-quest-info');
             if (questInfoEls.length) {
-                require(['theme_boost/bootstrap/tooltip'], function(BSTooltip) {
-                    questInfoEls.forEach(function(el) {
+                require(['theme_boost/bootstrap/tooltip'], (BSTooltip) => {
+                    questInfoEls.forEach((el) => {
                         const opts = {trigger: 'hover focus', placement: 'bottom'};
                         if (typeof BSTooltip === 'function') {
                             new BSTooltip(el, opts);
@@ -122,8 +122,8 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
             // Initialize popovers for compact shop item icons (> 3 items in trade).
             const shopPopoverEls = document.querySelectorAll('.ph-shop-popover');
             if (shopPopoverEls.length) {
-                require(['theme_boost/bootstrap/popover'], function(BSPopover) {
-                    shopPopoverEls.forEach(function(el) {
+                require(['theme_boost/bootstrap/popover'], (BSPopover) => {
+                    shopPopoverEls.forEach((el) => {
                         // The title is always plain text; pass it as a DOM node so Bootstrap
                         // inserts it directly instead of through the html:true/innerHTML path
                         // that 'content' below still needs (the requirement/reward badge).
@@ -163,7 +163,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                     return;
                 }
                 document.body.appendChild(el);
-                require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+                require(['theme_boost/bootstrap/modal'], (BootstrapModal) => {
                     const inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(el))
                         || $(el).data('bs.modal')
                         || new BootstrapModal(el);
@@ -231,12 +231,12 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                 if (desc && desc.trim() !== '') {
                     descEl.html(desc);
                 } else {
-                    descEl.html('<i class="text-muted">' + config.strings.no_desc + '</i>');
+                    descEl.html(`<i class="text-muted">${config.strings.no_desc}</i>`);
                 }
 
                 const badgeEl = $('#phModalCountBadgeView');
                 if (count && count > 0) {
-                    badgeEl.text('x' + (countDisplay || count)).attr('title', count).show();
+                    badgeEl.text(`x${countDisplay || count}`).attr('title', count).show();
                 } else {
                     badgeEl.hide();
                 }
@@ -245,7 +245,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                 const imgCont = $('#phModalImageContainerView');
                 imgCont.empty();
 
-                if (isImg == '1' || isImg === 'true') {
+                if (isImg === '1' || isImg === 'true') {
                     imgCont.append($('<img>', {
                         src: img,
                         'class': 'ph-modal-img ph-img-contain-120',
@@ -283,7 +283,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
 
                 if (formattedDate) {
                     const prefix = (config.strings && config.strings.last_collected) ?
-                        config.strings.last_collected + ' ' : '';
+                        `${config.strings.last_collected} ` : '';
 
                     dateEl.find('span').text(prefix + formattedDate);
                     dateEl.show();
@@ -368,8 +368,8 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                     left = window.innerWidth - cr.width - 8;
                 }
 
-                card.style.top = top + 'px';
-                card.style.left = left + 'px';
+                card.style.top = `${top}px`;
+                card.style.left = `${left}px`;
 
                 setTimeout(() => {
                     document.addEventListener('click', function dismissOverflow() {
@@ -412,7 +412,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                         itemid: parseInt($btn.data('itemid'), 10),
                         targetcmid: 0
                     }
-                }])[0].done(function(resp) {
+                }])[0].done((resp) => {
                     if (resp.success) {
                         // Update all userpicture containers in the page.
                         if (resp.avatar_html) {
@@ -424,7 +424,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                         $btn.prop('disabled', false);
                         Notification.addNotification({message: resp.message, type: 'error'});
                     }
-                }).fail(function(ex) {
+                }).fail((ex) => {
                     $btn.prop('disabled', false);
                     Notification.exception(ex);
                 });
@@ -432,7 +432,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
 
             // Prevent select click from bubbling up to the card trigger.
             $(document).off('click.phlpselect mousedown.phlpselect')
-                .on('click.phlpselect mousedown.phlpselect', '.ph-lp-activity-select', function(e) {
+                .on('click.phlpselect mousedown.phlpselect', '.ph-lp-activity-select', (e) => {
                     e.stopPropagation();
                 });
 
@@ -464,11 +464,9 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                 }
                 const daysstr = $btn.attr('data-daysstr') || '';
                 if (actname) {
-                    confirmMsg += '<br><small class="text-muted">'
-                        + config.strings.item_use_confirm_activity
-                        + ' <strong>' + escHtml(actname) + '</strong>'
-                        + (daysstr ? ' — ' + escHtml(daysstr) : '')
-                        + '</small>';
+                    const daysnote = daysstr ? ` — ${escHtml(daysstr)}` : '';
+                    confirmMsg += `<br><small class="text-muted">${config.strings.item_use_confirm_activity} ` +
+                        `<strong>${escHtml(actname)}</strong>${daysnote}</small>`;
                 }
 
                 Notification.confirm(
@@ -476,7 +474,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                     confirmMsg,
                     config.strings.yes,
                     config.strings.cancel,
-                    function() {
+                    () => {
                         $btn.prop('disabled', true);
                         Ajax.call([{
                             methodname: 'block_playerhud_use_item',
@@ -486,7 +484,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                                 itemid: parseInt($btn.data('itemid'), 10),
                                 targetcmid: targetcmid
                             }
-                        }])[0].done(function(resp) {
+                        }])[0].done((resp) => {
                             if (resp.success) {
                                 Notification.addNotification({message: resp.message, type: 'success'});
                                 window.location.reload();
@@ -494,7 +492,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                                 $btn.prop('disabled', false);
                                 Notification.addNotification({message: resp.message, type: 'error'});
                             }
-                        }).fail(function(ex) {
+                        }).fail((ex) => {
                             $btn.prop('disabled', false);
                             Notification.exception(ex);
                         });
