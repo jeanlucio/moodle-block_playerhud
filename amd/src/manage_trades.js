@@ -21,7 +21,7 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, Notification) {
+define(['jquery', 'core/notification', 'core/copy_to_clipboard'], ($, Notification) => {
     return {
         /**
          * Initialize the module.
@@ -32,8 +32,8 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
             // Initialize popovers for compact trade item icons (> 3 items).
             const shopPopoverEls = document.querySelectorAll('.ph-shop-popover');
             if (shopPopoverEls.length) {
-                require(['theme_boost/bootstrap/popover'], function(BSPopover) {
-                    shopPopoverEls.forEach(function(el) {
+                require(['theme_boost/bootstrap/popover'], (BSPopover) => {
+                    shopPopoverEls.forEach((el) => {
                         // The title is always plain text; pass it as a DOM node so Bootstrap
                         // inserts it directly instead of through the html:true/innerHTML path
                         // that 'content' below still needs (tab_shop's requirement badge).
@@ -56,7 +56,7 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
             }
 
             // Toggle-all for trade suggestion checkboxes.
-            $('body').on('click', '#ph-trade-sug-toggle-all', function() {
+            $('body').on('click', '#ph-trade-sug-toggle-all', () => {
                 const $checks = $('input[type="checkbox"][name^="sug_"]');
                 const allChecked = $checks.length === $checks.filter(':checked').length;
                 $checks.prop('checked', !allChecked);
@@ -74,7 +74,7 @@ define(['jquery', 'core/notification', 'core/copy_to_clipboard'], function($, No
                     msg,
                     config.strings.yes,
                     config.strings.cancel,
-                    function() {
+                    () => {
                         window.location.href = targetUrl;
                     }
                 );
