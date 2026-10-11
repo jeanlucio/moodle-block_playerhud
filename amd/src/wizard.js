@@ -23,7 +23,7 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(Ajax, Str, WizardOctalysis) {
+define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], (Ajax, Str, WizardOctalysis) => {
     'use strict';
 
     /**
@@ -667,7 +667,7 @@ define(['core/ajax', 'core/str', 'block_playerhud/wizard_octalysis'], function(A
 
             let text = await formatTotals(totals);
             [...stepMessages, economyMessage].filter(Boolean).forEach((message) => {
-                text += ' — ' + message;
+                text += ` — ${message}`;
             });
             progressReportTextEl.textContent = text;
             progressReportEl.classList.remove('ph-display-none');
