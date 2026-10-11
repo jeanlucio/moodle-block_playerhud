@@ -92,7 +92,7 @@ const updateStash = (itemData) => {
             'role': 'button',
             'tabindex': '0',
             'data-name': itemData.name,
-            'data-xp': itemData.xp + ' ' + (appStrings.xp || 'XP'),
+            'data-xp': `${itemData.xp} ${appStrings.xp}`,
             'data-image': itemData.image,
             'data-isimage': itemData.isimage,
             'data-date': itemData.date,
@@ -193,7 +193,7 @@ const toggleLoading = (trigger, isLoading, originalHtml = '') => {
     if (isLoading) {
         trigger.addClass('disabled').attr('aria-disabled', 'true');
         if (mode === 'card') {
-            trigger.css('width', trigger.outerWidth() + 'px');
+            trigger.css('width', `${trigger.outerWidth()}px`);
             trigger.html('<i class="fa fa-spinner fa-spin" aria-hidden="true"></i>');
         } else {
             trigger.addClass('ph-opacity-50').css('pointer-events', 'none');
@@ -363,14 +363,14 @@ const handleCollectionSuccess = (trigger, resp, originalHtml, strings) => {
             card.attr('data-timestamp', resp.item_data.timestamp);
 
             // Update XP attribute in DOM so modal reads the new value.
-            card.attr('data-xp', resp.item_data.xp + ' ' + (appStrings.xp || 'XP'));
+            card.attr('data-xp', `${resp.item_data.xp} ${appStrings.xp}`);
         }
 
         if (mode === 'image') {
             trigger.closest('.ph-drop-image-container').attr({
                 'data-date': resp.item_data.date,
                 'data-timestamp': resp.item_data.timestamp,
-                'data-xp': resp.item_data.xp + ' ' + (appStrings.xp || 'XP')
+                'data-xp': `${resp.item_data.xp} ${appStrings.xp}`
             });
         }
     }
@@ -527,25 +527,26 @@ export const init = () => {
     // Wrapped in try/catch: if Str.get_strings is unavailable for any reason (e.g.
     // core/str interop differs between Moodle versions), execution continues and the
     // synchronous M.util values above are used as-is.
-    try {
-        Str.get_strings([
-            {key: 'collected', component: 'block_playerhud'},
-            {key: 'drop_cooldown_badge', component: 'block_playerhud'},
-            {key: 'drops_immediate', component: 'block_playerhud'},
-            {key: 'single_collection', component: 'block_playerhud'},
-            {key: 'error_connection', component: 'block_playerhud'},
-            {key: 'last_collected', component: 'block_playerhud'},
-            {key: 'level', component: 'block_playerhud'},
-            {key: 'xp', component: 'block_playerhud'},
-            {key: 'no_description', component: 'block_playerhud'},
-            {key: 'confirmation', component: 'admin'},
-            {key: 'yes', component: 'moodle'},
-            {key: 'cancel', component: 'moodle'},
-            {key: 'error', component: 'moodle'},
-            {key: 'ok', component: 'moodle'},
-        ]).then(([collected, cooldownBadge, immediate, singleCollection,
-                  strError, lastCollected, level, xp, noDescription,
-                  confirmTitle, yes, cancel, errorTitle, ok]) => {
+    (async() => {
+        try {
+            const [collected, cooldownBadge, immediate, singleCollection,
+                strError, lastCollected, level, xp, noDescription,
+                confirmTitle, yes, cancel, errorTitle, ok] = await Str.get_strings([
+                {key: 'collected', component: 'block_playerhud'},
+                {key: 'drop_cooldown_badge', component: 'block_playerhud'},
+                {key: 'drops_immediate', component: 'block_playerhud'},
+                {key: 'single_collection', component: 'block_playerhud'},
+                {key: 'error_connection', component: 'block_playerhud'},
+                {key: 'last_collected', component: 'block_playerhud'},
+                {key: 'level', component: 'block_playerhud'},
+                {key: 'xp', component: 'block_playerhud'},
+                {key: 'no_description', component: 'block_playerhud'},
+                {key: 'confirmation', component: 'admin'},
+                {key: 'yes', component: 'moodle'},
+                {key: 'cancel', component: 'moodle'},
+                {key: 'error', component: 'moodle'},
+                {key: 'ok', component: 'moodle'},
+            ]);
             appStrings.collected = collected;
             appStrings.cooldownBadge = cooldownBadge;
             appStrings.immediate = immediate;
@@ -560,11 +561,10 @@ export const init = () => {
             appStrings.cancel = cancel;
             appStrings.errorTitle = errorTitle;
             appStrings.ok = ok;
-            return;
-        }).catch(() => { /* Keep M.util fallbacks. */ });
-    } catch (e) {
-        // Str.get_strings unavailable; M.util fallbacks remain active.
-    }
+        } catch (e) {
+            // Str.get_strings unavailable or failed; the M.util fallbacks remain active.
+        }
+    })();
 
     // Modal HTML is delivered via $PAGE->requires->data_for_js (no AMD arg size limit).
     // Injecting from JS into <body> bypasses HTML Purifier and ensures the modal is
@@ -781,7 +781,7 @@ export const init = () => {
 
         const modalEl = modalEls.root[0];
         document.body.appendChild(modalEl);
-        require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
+        require(['theme_boost/bootstrap/modal'], (BootstrapModal) => {
             const inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(modalEl))
                 || $(modalEl).data('bs.modal')
                 || new BootstrapModal(modalEl);
@@ -803,7 +803,7 @@ export const init = () => {
     });
 
     // ACTION: COLLECT ITEM.
-    $('body').off('click.phaction').on('click.phaction', '.ph-action-collect', function(e) {
+    $('body').off('click.phaction').on('click.phaction', '.ph-action-collect', async function(e) {
         e.preventDefault();
         const trigger = $(this);
 
@@ -832,10 +832,11 @@ export const init = () => {
             return;
         }
 
-        Ajax.call([{
-            methodname: 'block_playerhud_collect_item',
-            args: params
-        }])[0].then((resp) => {
+        try {
+            const resp = await Ajax.call([{
+                methodname: 'block_playerhud_collect_item',
+                args: params
+            }])[0];
             if (resp.success) {
                 handleCollectionSuccess(trigger, resp, originalHtml, appStrings);
                 return;
@@ -847,12 +848,10 @@ export const init = () => {
             // call — a moodle_exception thrown by a business rule the student can legitimately
             // hit (e.g. the collection limit) reaches this branch as resp.success === false, and
             // must never be able to fail itself just to report that outcome.
-            // eslint-disable-next-line consistent-return
-            return Notification.alert(appStrings.errorTitle, resp.message, appStrings.ok);
-
-        }).catch((ex) => {
+            await Notification.alert(appStrings.errorTitle, resp.message, appStrings.ok);
+        } catch (ex) {
             toggleLoading(trigger, false, originalHtml);
             Notification.exception(ex);
-        });
+        }
     });
 };
