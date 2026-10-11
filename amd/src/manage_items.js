@@ -14,8 +14,8 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_clipboard',
-        'core/modal_save_cancel', 'core/modal_events'],
-function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
+        'core/modal_save_cancel', 'core/modal_events', 'block_playerhud/modal_error'],
+($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents, ModalError) => {
 
     /**
      * Manage Items module for PlayerHUD.
@@ -213,6 +213,7 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
             // AI Logic using Core AJAX.
             $('#ph-btn-conjure').on('click', function(e) {
                 e.preventDefault();
+                ModalError.clear('#ph-ai-modal');
                 const $btn = $(this);
 
                 if ($btn.prop('disabled')) {
@@ -221,13 +222,7 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
 
                 const theme = $('#ai-theme').val();
                 if (!theme) {
-                    Str.get_strings([
-                        {key: 'error', component: 'core'},
-                        {key: 'ok', component: 'core'}
-                    ]).then(function(strs) {
-                        Notification.alert(strs[0], config.strings.errTheme, strs[1]);
-                        return true;
-                    }).catch(Notification.exception);
+                    ModalError.show('#ph-ai-modal', config.strings.errTheme);
                     return;
                 }
 
@@ -344,13 +339,7 @@ function($, Notification, Ajax, Str, _clipboard, ModalSaveCancel, ModalEvents) {
                             $('#ph-success-container').focus();
                         }, 200);
                     } else {
-                        Str.get_strings([
-                            {key: 'error', component: 'core'},
-                            {key: 'ok', component: 'core'}
-                        ]).then(function(strs) {
-                            Notification.alert(strs[0], resp.message, strs[1]);
-                            return true;
-                        }).catch(Notification.exception);
+                        ModalError.show('#ph-ai-modal', resp.message);
                     }
                 }).fail(function(ex) {
                     $btn.prop('disabled', false).text(originalText).removeAttr('aria-busy');

@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, Ajax) {
+define(['jquery', 'core/notification', 'core/ajax', 'block_playerhud/modal_error'], ($, Notification, Ajax, ModalError) => {
 
     /**
      * Class Oracle AI module for PlayerHUD.
@@ -40,11 +40,12 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
             // Submit handler for the generate button inside the modal.
             $('body').on('click', '[data-action="ai-oracle-submit"]', function() {
                 const $btn = $(this);
+                ModalError.clear('#ph-ai-oracle-modal');
                 const theme = $('#ph-oracle-theme').val().trim();
                 const count = parseInt($('#ph-oracle-count').val(), 10) || 1;
 
                 if (!theme) {
-                    Notification.alert(strings.error_title, strings.validation_theme);
+                    ModalError.show('#ph-ai-oracle-modal', strings.validation_theme);
                     return;
                 }
 
@@ -100,7 +101,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                     if (names.length === 0) {
                         // All calls failed — show the first error message as an alert.
                         const errMsg = errors.length > 0 ? errors[0] : strings.ai_error_generic;
-                        Notification.alert(strings.error_title, errMsg);
+                        ModalError.show('#ph-ai-oracle-modal', errMsg);
                         return true;
                     }
 

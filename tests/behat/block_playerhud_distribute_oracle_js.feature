@@ -63,13 +63,13 @@ Feature: PlayerHUD drop distribution and character oracle driven by JavaScript
   # A successful generation needs a real provider and is not covered here.
   # -----------------------------------------------------------------
 
-  Scenario: The character oracle asks for a theme before calling the AI
+  Scenario: The character oracle asks for a theme inside its own modal before calling the AI
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
     And I click on "Characters" "link" in the "#ph-manage-tabs" "css_element"
     And I click on "Character Oracle" "button"
     And I wait until "#ph-ai-oracle-modal.show" "css_element" exists
     And I click on "[data-action='ai-oracle-submit']" "css_element"
-    Then I should see "Please enter a theme for the story!"
+    Then I should see "Please enter a theme for the story!" in the "#ph-ai-oracle-modal [data-region='ph-modal-error']" "css_element"
 
   Scenario: The character oracle reports the failure and frees the button when no AI is available
     When I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
@@ -79,6 +79,6 @@ Feature: PlayerHUD drop distribution and character oracle driven by JavaScript
     And I set the field "Theme / Description" to "Pirates"
     And I click on "[data-action='ai-oracle-submit']" "css_element"
     And I wait until "[data-action='ai-oracle-submit'][aria-busy]" "css_element" does not exist
-    Then I should see "Error"
+    Then "#ph-ai-oracle-modal [data-region='ph-modal-error']:not([hidden])" "css_element" should exist
     And "[data-action='ai-oracle-submit'][disabled]" "css_element" should not exist
     And "#ph-oracle-result" "css_element" should not exist

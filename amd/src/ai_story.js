@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/notification', 'core/ajax', 'core/str'], ($, Notification, Ajax, Str) => {
+define(['jquery', 'core/notification', 'core/ajax', 'block_playerhud/modal_error'], ($, Notification, Ajax, ModalError) => {
     /**
      * Story Generation AI module for PlayerHUD.
      *
@@ -47,24 +47,6 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], ($, Notificatio
     };
 
     /**
-     * Shows an error alert with Moodle's own localised title and button.
-     *
-     * @param {string} message Message to show.
-     * @returns {Promise<void>}
-     */
-    const showError = async(message) => {
-        try {
-            const [title, ok] = await Str.get_strings([
-                {key: 'error', component: 'core'},
-                {key: 'ok', component: 'core'},
-            ]);
-            Notification.alert(title, message, ok);
-        } catch (error) {
-            Notification.exception(error);
-        }
-    };
-
-    /**
      * Initialize the Story Generation module.
      *
      * @param {number} instanceid Block instance ID.
@@ -77,11 +59,12 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], ($, Notificatio
 
         // Submit handler for the generate button inside the modal.
         $('body').on('click', '[data-action="ai-story-submit"]', async(event) => {
+            ModalError.clear('#ph-ai-story-modal');
             const $btn = $(event.currentTarget);
             const theme = $('#ph-story-theme').val().trim();
 
             if (!theme) {
-                await showError(strings.validation_theme);
+                ModalError.show('#ph-ai-story-modal', strings.validation_theme);
                 return;
             }
 
@@ -106,7 +89,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], ($, Notificatio
                 $btn.prop('disabled', false).html(originalText).removeAttr('aria-busy');
 
                 if (!resp.success) {
-                    await showError(resp.message);
+                    ModalError.show('#ph-ai-story-modal', resp.message);
                     return;
                 }
 
