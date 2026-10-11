@@ -29,12 +29,12 @@ define([], function() {
     function init() {
         document.querySelectorAll('.ph-toggle-key').forEach(function(btn) {
             btn.addEventListener('click', function() {
-                var targetId = btn.getAttribute('data-target');
-                var input = document.getElementById(targetId);
+                const targetId = btn.getAttribute('data-target');
+                const input = document.getElementById(targetId);
                 if (!input) {
                     return;
                 }
-                var isPassword = input.type === 'password';
+                const isPassword = input.type === 'password';
                 input.type = isPassword ? 'text' : 'password';
                 btn.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
             });
