@@ -22,14 +22,14 @@
  */
 define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification, $) {
 
-    var instanceid = 0;
-    var courseid = 0;
-    var strings = {};
+    let instanceid = 0;
+    let courseid = 0;
+    let strings = {};
 
-    var modal = null;
-    var contentEl = null;
-    var choicesEl = null;
-    var titleEl = null;
+    let modal = null;
+    let contentEl = null;
+    let choicesEl = null;
+    let titleEl = null;
 
     /**
      * Show the loading spinner inside the modal body.
@@ -93,13 +93,13 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                     '</div>';
             }
             if (choicesEl) {
-                var completionbadge = data.node
+                const completionbadge = data.node
                     ? ('<div class="w-100 text-center mb-2">' +
                        '<i class="fa fa-check-circle text-success me-1" aria-hidden="true"></i>' +
                        '<span class="fw-bold text-success">' + strings.completed + '</span>' +
                        '</div>')
                     : '';
-                var footer = completionbadge;
+                let footer = completionbadge;
                 footer += '<button type="button" class="btn btn-secondary me-2"' +
                           ' data-bs-dismiss="modal" data-dismiss="modal">' +
                           strings.close + '</button>';
@@ -125,14 +125,14 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
 
         if (data.node.choices && data.node.choices.length > 0) {
             data.node.choices.forEach(function(ch) {
-                var btn = document.createElement('button');
+                const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'btn ' + ch.btnclass + ' m-1 px-4 py-2 text-start';
                 if (ch.disabled) {
                     btn.disabled = true;
                 }
 
-                var textSpan = document.createElement('span');
+                const textSpan = document.createElement('span');
                 textSpan.textContent = ch.text;
                 btn.appendChild(textSpan);
 
@@ -181,7 +181,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                 choicesEl.appendChild(btn);
             });
         } else {
-            var closeBtn = document.createElement('button');
+            const closeBtn = document.createElement('button');
             closeBtn.type = 'button';
             closeBtn.className = 'btn btn-secondary';
             closeBtn.setAttribute('data-bs-dismiss', 'modal');
@@ -197,12 +197,12 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
      * @param {number} chapterid Chapter ID.
      */
     function updateChapterCardUI(chapterid) {
-        var card = document.querySelector('[data-action="open-chapter"][data-chapterid="' + chapterid + '"]');
+        const card = document.querySelector(`[data-action="open-chapter"][data-chapterid="${chapterid}"]`);
         if (!card) {
             return;
         }
         // Capture the title before stripping data-* attrs used for modal targeting.
-        var chapterTitle = card.getAttribute('data-title') || '';
+        const chapterTitle = card.getAttribute('data-title') || '';
 
         card.classList.remove('list-group-item-action', 'ph-chapter-item--available');
         card.classList.add('ph-chapter-item--completed');
@@ -214,13 +214,13 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
         card.removeAttribute('role');
         card.removeAttribute('tabindex');
 
-        var icon = card.querySelector('i.fa');
+        const icon = card.querySelector('i.fa');
         if (icon) {
             icon.className = 'fa fa-check-circle text-success ph-chapter-status-icon';
         }
         if (!card.querySelector('[data-action="read-recap"]')) {
-            var footerEl = card.querySelector('.mt-auto.w-100.text-center');
-            var recapDiv = document.createElement('div');
+            const footerEl = card.querySelector('.mt-auto.w-100.text-center');
+            const recapDiv = document.createElement('div');
             recapDiv.className = 'ph-chapter-recap-wrap';
 
             const recapBtn = document.createElement('button');
@@ -269,7 +269,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             },
             fail: function(ex) {
                 if (contentEl) {
-                    var errDiv = document.createElement('div');
+                    const errDiv = document.createElement('div');
                     errDiv.className = 'alert alert-danger';
                     errDiv.textContent = ex.message || strings.error;
                     contentEl.replaceChildren(errDiv);
@@ -300,7 +300,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             },
             fail: function(ex) {
                 if (contentEl) {
-                    var errDiv = document.createElement('div');
+                    const errDiv = document.createElement('div');
                     errDiv.className = 'alert alert-danger';
                     errDiv.textContent = ex.message || strings.error;
                     contentEl.replaceChildren(errDiv);
@@ -329,7 +329,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
                     contentEl.innerHTML = data.html;
                 }
                 if (choicesEl) {
-                    var closeBtn = document.createElement('button');
+                    const closeBtn = document.createElement('button');
                     closeBtn.type = 'button';
                     closeBtn.className = 'btn btn-secondary';
                     closeBtn.setAttribute('data-bs-dismiss', 'modal');
@@ -341,7 +341,7 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             },
             fail: function(ex) {
                 if (contentEl) {
-                    var errDiv = document.createElement('div');
+                    const errDiv = document.createElement('div');
                     errDiv.className = 'alert alert-danger';
                     errDiv.textContent = ex.message || strings.error;
                     contentEl.replaceChildren(errDiv);
@@ -380,12 +380,12 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             //   when window.jQuery is present (via its EventHandler layer).
             if (modal) {
                 $(modal).on('show.bs.modal', function(e) {
-                    var trigger = e.relatedTarget;
+                    const trigger = e.relatedTarget;
                     if (!trigger) {
                         return;
                     }
-                    var chid = parseInt(trigger.getAttribute('data-chapterid'), 10);
-                    var title = trigger.getAttribute('data-title') || '';
+                    const chid = parseInt(trigger.getAttribute('data-chapterid'), 10);
+                    const title = trigger.getAttribute('data-title') || '';
                     updateTitle(title);
                     showLoader();
                     if (trigger.getAttribute('data-action') === 'read-recap') {
@@ -399,11 +399,11 @@ define(['core/ajax', 'core/notification', 'jquery'], function(Ajax, Notification
             // The "Read again" button rendered inside the modal footer (by renderNode
             // when a chapter finishes) has no data-toggle — handle it with delegation.
             document.addEventListener('click', function(e) {
-                var btn = e.target.closest('[data-action="read-recap"]');
+                const btn = e.target.closest('[data-action="read-recap"]');
                 if (!btn || !modal || !modal.contains(btn)) {
                     return;
                 }
-                var chid = parseInt(btn.getAttribute('data-chapterid'), 10);
+                const chid = parseInt(btn.getAttribute('data-chapterid'), 10);
                 showLoader();
                 loadRecap(chid);
             });
