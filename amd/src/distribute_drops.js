@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Ajax, Notification, Str) {
+define(['jquery', 'core/ajax', 'core/notification', 'core/str'], ($, Ajax, Notification, Str) => {
 
     /**
      * Distribute Drops module for PlayerHUD.
@@ -107,12 +107,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
 
         // Replace Activity cell with static text.
         $modSelect.closest('td').html(
-            '<span class="fw-semibold">' + $('<span>').text(activityName).html() + '</span>'
+            `<span class="fw-semibold">${$('<span>').text(activityName).html()}</span>`
         );
 
         // Replace Field cell with static text.
         $row.find('.ph-select-field').closest('td').html(
-            '<span>' + $('<span>').text(fieldLabel).html() + '</span>'
+            `<span>${$('<span>').text(fieldLabel).html()}</span>`
         );
 
         // Replace Position cell with dash.
@@ -126,7 +126,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
         // Update status badge.
         $row.find('.ph-dist-status')
             .html('<span class="badge bg-success text-white"><i class="fa fa-check me-1" aria-hidden="true"></i>' +
-                strings.inserted + '</span>');
+                `${strings.inserted}</span>`);
     }
 
     /**
@@ -141,20 +141,20 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
         if (insertCount > 0) {
             const insertLabel = strings.insert_selected.replace('__N__', insertCount);
             $insertBtn.removeClass('disabled').removeAttr('disabled')
-                .html('<i class="fa fa-check me-1" aria-hidden="true"></i> ' + insertLabel);
+                .html(`<i class="fa fa-check me-1" aria-hidden="true"></i> ${insertLabel}`);
         } else {
             $insertBtn.addClass('disabled').attr('disabled', 'disabled')
-                .html('<i class="fa fa-check me-1" aria-hidden="true"></i> ' + strings.btn_insert);
+                .html(`<i class="fa fa-check me-1" aria-hidden="true"></i> ${strings.btn_insert}`);
         }
 
         const $removeBtn = $('#ph-btn-bulk-remove');
         if (removeCount > 0) {
             const removeLabel = strings.undo_selected.replace('__N__', removeCount);
             $removeBtn.removeClass('disabled').removeAttr('disabled')
-                .html('<i class="fa fa-undo me-1" aria-hidden="true"></i> ' + removeLabel);
+                .html(`<i class="fa fa-undo me-1" aria-hidden="true"></i> ${removeLabel}`);
         } else {
             $removeBtn.addClass('disabled').attr('disabled', 'disabled')
-                .html('<i class="fa fa-undo me-1" aria-hidden="true"></i> ' + strings.remove);
+                .html(`<i class="fa fa-undo me-1" aria-hidden="true"></i> ${strings.remove}`);
         }
     }
 
@@ -167,7 +167,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
      */
     function processBulkRemove($btn, $checked) {
         $btn.addClass('disabled').attr('disabled', 'disabled')
-            .html('<i class="fa fa-spinner fa-spin me-1" aria-hidden="true"></i> ' + strings.removing);
+            .html(`<i class="fa fa-spinner fa-spin me-1" aria-hidden="true"></i> ${strings.removing}`);
 
         const requests = [];
 
@@ -192,14 +192,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
         const calls = Ajax.call(requests);
         let allOk = true;
 
-        calls.forEach(function(promise) {
-            promise.fail(function(ex) {
+        calls.forEach((promise) => {
+            promise.fail((ex) => {
                 allOk = false;
                 Notification.exception(ex);
             });
         });
 
-        $.when.apply($, calls).always(function() {
+        $.when.apply($, calls).always(() => {
             if (allOk) {
                 window.location.reload();
             } else {
@@ -240,7 +240,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
             });
 
             // Individual checkbox changes.
-            $('body').on('change', '.ph-dist-check', function() {
+            $('body').on('change', '.ph-dist-check', () => {
                 const total = $('.ph-dist-check').length;
                 const checkedCount = $('.ph-dist-check:checked').length;
                 $('#ph-dist-select-all').prop('indeterminate', checkedCount > 0 && checkedCount < total);
@@ -267,8 +267,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
                 }
 
                 $btn.addClass('disabled').attr('disabled', 'disabled')
-                    .html('<i class="fa fa-spinner fa-spin me-1" aria-hidden="true"></i> ' +
-                        strings.inserting);
+                    .html(`<i class="fa fa-spinner fa-spin me-1" aria-hidden="true"></i> ${strings.inserting}`);
 
                 const requests = [];
                 const $rows = [];
@@ -291,11 +290,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
 
                 const calls = Ajax.call(requests);
 
-                calls.forEach(function(promise, index) {
+                calls.forEach((promise, index) => {
                     const $row = $rows[index];
                     const cmid = getSelectedCmid($row);
 
-                    promise.done(function(resp) {
+                    promise.done((resp) => {
                         if (resp.success) {
                             const list = getInsertedCmids($row);
                             if (list.indexOf(cmid) === -1) {
@@ -307,18 +306,18 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
                         } else {
                             Notification.addNotification({message: resp.message, type: 'error'});
                         }
-                    }).fail(function(ex) {
+                    }).fail((ex) => {
                         Notification.exception(ex);
                     });
                 });
 
-                $.when.apply($, calls).always(function() {
+                $.when.apply($, calls).always(() => {
                     updateActionButtons();
                 });
             });
 
             // Bulk Remove button.
-            $('#ph-btn-bulk-remove').on('click', function() {
+            $('#ph-btn-bulk-remove').on('click', async function() {
                 const $btn = $(this);
                 if ($btn.hasClass('disabled')) {
                     return;
@@ -329,24 +328,18 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str'], function($, Aja
                     return;
                 }
 
-                Str.get_strings([
-                    {key: 'confirm', component: 'core'},
-                    {key: 'yes', component: 'core'},
-                    {key: 'no', component: 'core'}
-                ]).then(function(strs) {
-                    Notification.confirm(
-                        strs[0],
-                        strings.remove_confirm,
-                        strs[1],
-                        strs[2],
-                        function() {
-                            processBulkRemove($btn, $checked);
-                        }
-                    );
-                    return;
-                }).catch(function(ex) {
+                try {
+                    const [title, yes, no] = await Str.get_strings([
+                        {key: 'confirm', component: 'core'},
+                        {key: 'yes', component: 'core'},
+                        {key: 'no', component: 'core'}
+                    ]);
+                    Notification.confirm(title, strings.remove_confirm, yes, no, () => {
+                        processBulkRemove($btn, $checked);
+                    });
+                } catch (ex) {
                     Notification.exception(ex);
-                });
+                }
             });
         }
     };
