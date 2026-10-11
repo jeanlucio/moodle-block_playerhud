@@ -5,6 +5,86 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.10.0] — 2026-10-11
+
+### Added
+- **Usage and diagnostics page for administrators** (Site administration > Reports >
+  PlayerHUD usage and diagnostics). It shows how the block is used across the site: courses
+  and features in use, players, opted-out players, XP held, and the items, quests, trades,
+  AI requests and assistant runs of the last 90 days. Everything is counted on the site and
+  nothing leaves it.
+- **Cleanup of data left by removed blocks.** Sites that removed the block before v1.7.0
+  still hold its rows. The page lists them in words, shows each removed instance's course
+  when it is known, and deletes only what is ticked, after a confirmation, in one
+  transaction. A JSON copy of every deleted row is saved first and can be downloaded or
+  deleted from the same page.
+- **The ranking and the reports' students table are paginated** (50 rows per page). A
+  student whose row is outside the page still sees it, pinned below the page with the real
+  rank. On courses with more than 200 players the reports' student dropdown gives way to a
+  name search. With 5,000 players the ranking fell from 8 MB of HTML to a few hundred
+  kilobytes, and the reports page from 1.5 seconds to about a quarter of a second.
+- **Quests that depend on a disabled or deleted item are hidden from students** instead of
+  showing an objective that can no longer be reached. Before an item is disabled or deleted,
+  the teacher now gets a confirmation that lists the quests and trades it affects, and the
+  quest list marks the hidden ones.
+- Teacher manual: a section on what removing the block deletes, and how hiding it differs.
+- Other plugins can ask for an item's name as plain text (`external_items::get_name_plain()`).
+
+### Security
+- Claiming a quest reward, pausing the gamification and changing the ranking preference now
+  require the `block/playerhud:interact` capability, like the other write actions.
+- AI answers are validated before they are saved: the item, scene and chapter data have to
+  have the expected shape, there is exactly one starting scene, and titles are kept as plain
+  text and cut by characters. The story generator shows the chapter title as text, never as
+  markup.
+- Reading a story as a user who cannot interact no longer saves reading progress.
+- The personal-key level of the AI key ladder now asks the AI hub whether the user may use
+  personal keys. A key saved before personal keys were turned off, or before the teacher lost
+  the permission, is no longer used.
+- The block is no longer offered on the Dashboard: every page of the plugin needs a course,
+  so there it showed an empty block or links ending in "access denied". Instances left there
+  by earlier releases can still be deleted, and the now useless `block/playerhud:myaddinstance`
+  capability was removed (Moodle drops it and its role assignments on upgrade).
+
+### Fixed
+- **Names with an ampersand, quotes or other special characters no longer appear as
+  `&amp;`** in the item and quest lists, the collection, the profile, the shop, the trades,
+  the chapters, the scene editor, the reports, the history, the ranking groups, the drops
+  page and the shortcode previews. Names that suggestions and the Wizard save are stored as
+  typed, not as HTML.
+- A quest or a trade can no longer announce a reward that was not delivered: a disabled item
+  is refused, and a reward that could not be granted rolls the claim back. Quest progress
+  stays correct when an item is deleted.
+- Taking XP back from a player no longer moves the date that breaks ties in the ranking.
+- The item form refuses a negative XP, and items already saved with one count as zero in the
+  balance and on the collection card, instead of emptying the game's total. The block
+  settings require an "XP per level" of at least 1, and the grades export no longer fails
+  with values saved by earlier releases.
+- The leader and total-XP cards and the level chart count the same players as the students
+  table: active students who do not manage the block. Teachers who tested the block,
+  administrators, suspended students and people who left the course are left out.
+- The story preview ends on a choice set to "End of chapter", as the student's reading
+  does, instead of reloading the same scene.
+- Errors of the character oracle, the story generator and the item generator appear inside
+  their window instead of in a second window on top of it. The generators ask for a theme in
+  words that fit them.
+- Delete confirmations of items and quests are one complete sentence with the name in it,
+  and the bulk delete button says "Delete 1 item" for a single row.
+- The course profile no longer repeats the ids of the item window.
+- Accessibility: the item and quantity fields of the trade form have labels, and the
+  shortcode generator's groups are named for screen readers.
+- Restoring a course restores each item image once. The character oracle accepts answers
+  wrapped by the model, and the AI log cuts long messages by characters.
+- Undoing a Wizard run also deletes the portraits it created for characters.
+- Writing a drop shortcode into an activity announces the change to Moodle, so logs and
+  search see it.
+- The items tab looks up Late Penalty rules only for the course's own activities.
+- The block configuration is read safely when a block was created without one.
+- The scene editor's "next scene" labels no longer cut a character in half, and the texts
+  that were written straight into templates now come from language strings.
+
+---
+
 ## [v1.9.5] — 2026-10-06
 
 ### Fixed
