@@ -37,13 +37,13 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
             // data-bs-toggle declarative may not fire in Moodle 4.5 if Bootstrap's
             // document-level listener hasn't been registered yet via AMD.
             $(document).off('click.phcharmodal').on('click.phcharmodal', '[data-ph-modal="ph-char-modal"]', function() {
-                var el = document.getElementById('ph-char-modal');
+                const el = document.getElementById('ph-char-modal');
                 if (!el) {
                     return;
                 }
                 document.body.appendChild(el);
                 require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
-                    var inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(el))
+                    const inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(el))
                         || $(el).data('bs.modal')
                         || new BootstrapModal(el);
                     inst.show();
@@ -53,19 +53,19 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
             // Hoist the history/help shortcut buttons into the block's title row
             // so they appear on the same line as "PlayerHUD".
             (function() {
-                var sidebar = document.querySelector('.block_playerhud_sidebar');
+                const sidebar = document.querySelector('.block_playerhud_sidebar');
                 if (!sidebar) {
                     return;
                 }
-                var btnRow = sidebar.querySelector('.ph-header-actions');
+                const btnRow = sidebar.querySelector('.ph-header-actions');
                 if (!btnRow) {
                     return;
                 }
-                var block = sidebar.closest('.block_playerhud');
+                const block = sidebar.closest('.block_playerhud');
                 if (!block) {
                     return;
                 }
-                var titleEl = block.querySelector('.card-title');
+                const titleEl = block.querySelector('.card-title');
                 if (!titleEl) {
                     return;
                 }
@@ -164,7 +164,7 @@ define(['jquery', 'core/notification', 'core/ajax'], function($, Notification, A
                 }
                 document.body.appendChild(el);
                 require(['theme_boost/bootstrap/modal'], function(BootstrapModal) {
-                    var inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(el))
+                    const inst = (BootstrapModal.getInstance && BootstrapModal.getInstance(el))
                         || $(el).data('bs.modal')
                         || new BootstrapModal(el);
                     inst.show();
