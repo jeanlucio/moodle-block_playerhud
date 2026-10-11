@@ -50,7 +50,7 @@ Feature: PlayerHUD trades and reports screens driven by JavaScript
     And I click on "Trades (NPC)" "link" in the "#ph-manage-tabs" "css_element"
     And I click on "New Trade Offer" "link"
     And "#preview_req_0.border-success" "css_element" should not exist
-    And I set the field "req_itemid_0" to "Golden Key"
+    And I set the field "Requirement 1: item" to "Golden Key"
     Then "#preview_req_0.border-success" "css_element" should exist
 
   # -----------------------------------------------------------------

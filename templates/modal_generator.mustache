@@ -63,8 +63,8 @@
           <div class="row">
                <div class="col-md-7 border-end">
                   <form>
-                      <div class="mb-3">
-                          <label class="fw-bold text-dark mb-3">{{#str}} gen_style, block_playerhud {{/str}}</label>
+                      <div class="mb-3" role="radiogroup" aria-labelledby="ph-gen-style-label">
+                          <p class="fw-bold text-dark mb-3" id="ph-gen-style-label">{{#str}} gen_style, block_playerhud {{/str}}</p>
                            <div class="form-check mb-2">
                               <input type="radio" id="modeCard" name="codeMode" class="form-check-input js-mode-trigger" value="card" checked>
                               <label class="form-check-label" for="modeCard">
@@ -88,8 +88,8 @@
                           </div>
                       </div>
 
-                       <div id="cardCustomOptions" class="mt-3 pt-3 border-top">
-                          <label class="form-label fw-bold small text-uppercase text-muted mb-2">{{#str}} visual_content, block_playerhud {{/str}}</label>
+                       <div id="cardCustomOptions" class="mt-3 pt-3 border-top" role="group" aria-labelledby="ph-gen-visual-label">
+                          <p class="form-label fw-bold small text-uppercase text-muted mb-2" id="ph-gen-visual-label">{{#str}} visual_content, block_playerhud {{/str}}</p>
                           <div class="row">
                               <div class="col-8">
                                   <label for="customBtnText" class="form-label small mb-1">{{#str}} choice_text, block_playerhud {{/str}}</label>
@@ -104,7 +104,7 @@
                       </div>
 
                       <div class="mb-3 mt-4 ph-alert-warning-box ph-display-none" id="textInputGroup">
-                          <label class="fw-bold text-dark">{{#str}} gen_link_label, block_playerhud {{/str}}</label>
+                          <label class="fw-bold text-dark" for="customText">{{#str}} gen_link_label, block_playerhud {{/str}}</label>
                            <input type="text" class="form-control" id="customText" placeholder="{{#str}} gen_link_placeholder, block_playerhud {{/str}}">
                           <small class="text-muted">{{#str}} gen_link_help, block_playerhud {{/str}}</small>
                       </div>

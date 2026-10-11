@@ -128,7 +128,7 @@ class edit_trade_form extends \moodleform {
             $group[] = $mform->createElement(
                 'select',
                 "req_itemid_$i",
-                '',
+                get_string('trade_req_item_n', 'block_playerhud', $i + 1),
                 $itemoptions,
                 ['class' => 'ph-item-selector', 'data-target' => "preview_req_$i"]
             );
@@ -137,7 +137,7 @@ class edit_trade_form extends \moodleform {
             $group[] = $mform->createElement(
                 'text',
                 "req_qty_$i",
-                '',
+                get_string('trade_req_qty_n', 'block_playerhud', $i + 1),
                 ['type' => 'number', 'min' => 1, 'class' => 'ph-input-qty']
             );
             $mform->setType("req_qty_$i", PARAM_INT);
@@ -182,7 +182,7 @@ class edit_trade_form extends \moodleform {
             $group[] = $mform->createElement(
                 'select',
                 "give_itemid_$i",
-                '',
+                get_string('trade_give_item_n', 'block_playerhud', $i + 1),
                 $itemoptions,
                 ['class' => 'ph-item-selector', 'data-target' => "preview_give_$i"]
             );
@@ -191,7 +191,7 @@ class edit_trade_form extends \moodleform {
             $group[] = $mform->createElement(
                 'text',
                 "give_qty_$i",
-                '',
+                get_string('trade_give_qty_n', 'block_playerhud', $i + 1),
                 ['type' => 'number', 'min' => 1, 'class' => 'ph-input-qty']
             );
             $mform->setType("give_qty_$i", PARAM_INT);

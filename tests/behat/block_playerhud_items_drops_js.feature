@@ -99,7 +99,7 @@ Feature: PlayerHUD item library and drops screens driven by JavaScript
     And I wait until "#ph-codegen-modal.show" "css_element" exists
     And the field "finalCode" matches value "[PLAYERHUD_DROP code=GOLD01]"
     And I click on "#modeText" "css_element"
-    And I set the field "customText" to "Grab the key"
+    And I set the field "Link Text" to "Grab the key"
     And the field "finalCode" matches value "[PLAYERHUD_DROP code=GOLD01 mode=text text=\"Grab the key\"]"
     And I click on "#modeImage" "css_element"
     Then the field "finalCode" matches value "[PLAYERHUD_DROP code=GOLD01 mode=image]"
