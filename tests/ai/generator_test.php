@@ -441,6 +441,60 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * The class name column holds 100 characters: a longer answer is cut instead of failing the
+     * insert on PostgreSQL, and an array where the emoji belongs is dropped instead of raising a
+     * TypeError.
+     */
+    public function test_generate_class_fits_the_columns_and_ignores_a_non_text_emoji(): void {
+        global $DB;
+
+        $json = json_encode(['name' => str_repeat('ê', 150), 'description' => 'x', 'emoji' => ['🧙']]);
+
+        $result = $this->make_generator_answering($json)->generate_class('wizards');
+
+        $this->assertTrue($result['success']);
+        $class = $DB->get_record('block_playerhud_classes', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
+        $this->assertSame(100, \core_text::strlen($class->name));
+        $this->assertEmpty($class->emoji_tier1);
+    }
+
+    /**
+     * The item emoji and the drop location come from the AI: an oversized emoji is cut to the
+     * column, and a location that is not text falls back to the default drop name.
+     */
+    public function test_generate_items_fits_the_columns_and_defaults_a_non_text_location(): void {
+        global $DB;
+
+        $json = json_encode(['name' => 'Espada', 'emoji' => str_repeat('a', 400), 'location_name' => ['Forja']]);
+
+        $this->make_generator_answering($json)->generate('item', 'armas', 10, true, ['drop_max' => 1]);
+
+        $item = $DB->get_record('block_playerhud_items', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
+        $this->assertSame(255, \core_text::strlen($item->image));
+        $drop = $DB->get_record('block_playerhud_drops', ['itemid' => $item->id], '*', MUST_EXIST);
+        $this->assertSame(get_string('default_drop_name', 'block_playerhud'), $drop->name);
+    }
+
+    /**
+     * The story outline: "beats" must be a list of text. A string used to fail inside count(),
+     * and entries that are not text would have been passed on as prompt material.
+     */
+    public function test_generate_story_outline_accepts_only_a_list_of_text(): void {
+        $outline = $this->make_generator_answering('{"beats":["Um",["x"],"Dois","  ","Tres"]}')
+            ->generate_story_outline('guerra', 3);
+        $this->assertSame(['Um', 'Dois', 'Tres'], $outline['beats']);
+
+        foreach (['{"beats":"Um"}', '{"beats":["Um",{"a":1}]}'] as $json) {
+            try {
+                $this->make_generator_answering($json)->generate_story_outline('guerra', 2);
+                $this->fail('Expected a parsing error for ' . $json);
+            } catch (\moodle_exception $e) {
+                $this->assertSame('ai_error_parsing', $e->errorcode);
+            }
+        }
+    }
+
+    /**
      * Regression test for the security-audit TLS finding: the request that carries the provider
      * API key must refuse a server whose certificate is not trusted. Moodle's curl class turns
      * peer verification off by default, so without the explicit options a self-signed server

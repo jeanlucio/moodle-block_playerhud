@@ -96,6 +96,7 @@ class generator {
         array $extraoptions = [],
         int $amount = 1
     ): array {
+        global $DB;
 
         // 2. Infinite Rule.
         $isinfinitedrop = $createdrop &&
@@ -170,6 +171,8 @@ class generator {
             $createddropids = [];
             $lastdropcode = '';
 
+            // All-or-nothing: a failure on the third item must not leave the first two behind.
+            $transaction = $DB->start_delegated_transaction();
             foreach ($itemstosave as $singleitemdata) {
                 if (count($creatednames) >= $amount) {
                     break;
@@ -189,6 +192,7 @@ class generator {
                 }
                 $lastdropcode = $saved['drop_code'];
             }
+            $transaction->allow_commit();
 
             $response = [
                 'success' => true,
@@ -260,7 +264,7 @@ class generator {
         $item->blockinstanceid = $this->instanceid;
         $item->name = \core_text::substr((string) $data['name'], 0, 255);
         $item->description = \block_playerhud\utils::sanitize_rich_description((string) ($data['description'] ?? ''));
-        $item->image = clean_param((string) ($data['emoji'] ?? ''), PARAM_TEXT);
+        $item->image = \core_text::substr(clean_param($this->scalar_text($data['emoji'] ?? ''), PARAM_TEXT), 0, 255);
         $item->xp = $targetxp;
 
         $item->enabled = 1;
@@ -284,8 +288,12 @@ class generator {
             $drop->code = $dropcode;
 
             // Use default_drop_name if location_name is not provided by AI.
-            $fallbackname = $data['location_name'] ?? get_string('default_drop_name', 'block_playerhud');
-            $drop->name = !empty($options['drop_location']) ? $options['drop_location'] : $fallbackname;
+            $fallbackname = clean_param($this->scalar_text($data['location_name'] ?? ''), PARAM_TEXT);
+            if ($fallbackname === '') {
+                $fallbackname = get_string('default_drop_name', 'block_playerhud');
+            }
+            $dropname = !empty($options['drop_location']) ? (string) $options['drop_location'] : $fallbackname;
+            $drop->name = \core_text::substr($dropname, 0, 255);
 
             $drop->maxusage = (int)($options['drop_max'] ?? 0);
             $drop->value = max(1, (int)($options['drop_value'] ?? 1));
@@ -968,12 +976,21 @@ class generator {
         $cleanjson = preg_replace('/^\x60{3}json|\x60{3}$/m', '', $result['data']);
         $aidata = json_decode($cleanjson, true);
 
-        if (!$aidata || empty($aidata['beats']) || count($aidata['beats']) < $chaptercount) {
+        if (!is_array($aidata) || empty($aidata['beats']) || !is_array($aidata['beats'])) {
+            throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
+        }
+
+        // Every beat becomes prompt text later, so keep only plain strings.
+        $beats = array_values(array_filter(
+            array_map(fn($beat) => trim($this->scalar_text($beat)), $aidata['beats']),
+            static fn(string $beat) => $beat !== ''
+        ));
+        if (count($beats) < $chaptercount) {
             throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
         }
 
         return [
-            'beats' => array_slice(array_values($aidata['beats']), 0, $chaptercount),
+            'beats' => array_slice($beats, 0, $chaptercount),
             'provider' => $result['provider'],
         ];
     }
@@ -1010,15 +1027,15 @@ class generator {
 
         $class = new \stdClass();
         $class->blockinstanceid = $this->instanceid;
-        $class->name            = clean_param((string) $aidata['name'], PARAM_TEXT);
+        $class->name            = \core_text::substr(clean_param($this->scalar_text($aidata['name']), PARAM_TEXT), 0, 100);
         $class->description     = \block_playerhud\utils::sanitize_rich_description((string) ($aidata['description'] ?? ''));
         $class->base_hp         = isset($aidata['hp']) ? max(1, (int)$aidata['hp']) : 100;
         $class->timecreated     = time();
         $class->timemodified    = time();
 
-        $emoji = trim($aidata['emoji'] ?? '');
+        $emoji = trim($this->scalar_text($aidata['emoji'] ?? ''));
         if (!empty($emoji) && strpos($emoji, 'http') !== 0) {
-            $class->emoji_tier1 = $emoji;
+            $class->emoji_tier1 = \core_text::substr(clean_param($emoji, PARAM_TEXT), 0, 255);
         }
 
         $DB->insert_record('block_playerhud_classes', $class);
@@ -1154,6 +1171,19 @@ class generator {
             'node_ids'      => array_values($idxmap),
             'choice_ids'    => $choiceids,
         ];
+    }
+
+    /**
+     * Returns a value from the AI's JSON as a string, or an empty string when it is not a scalar.
+     *
+     * The answer is untrusted: an array or object where text was expected must not reach a
+     * string cast, which would only raise a notice and produce the word "Array".
+     *
+     * @param mixed $value The decoded JSON value.
+     * @return string The value as a string, or '' for arrays, objects and null.
+     */
+    private function scalar_text(mixed $value): string {
+        return is_scalar($value) ? (string) $value : '';
     }
 
     /**
