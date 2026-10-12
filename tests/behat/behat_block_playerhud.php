@@ -257,6 +257,29 @@ class behat_block_playerhud extends behat_base {
         $DB->insert_records('block_playerhud_user', $players);
     }
 
+    /**
+     * Ticks the cleanup checkbox of the removed block instance on the diagnostics page. A removed
+     * instance whose course cannot be found in the log starts unselected, so the administrator has
+     * to choose it.
+     *
+     * @Given I include the removed PlayerHUD block instance in the cleanup
+     */
+    public function i_include_removed_playerhud_instance_in_cleanup(): void {
+        global $DB;
+
+        $instanceid = (int) $DB->get_field_sql(
+            'SELECT MAX(pu.blockinstanceid)
+               FROM {block_playerhud_user} pu
+          LEFT JOIN {block_instances} bi ON bi.id = pu.blockinstanceid
+              WHERE bi.id IS NULL'
+        );
+
+        $this->execute('behat_forms::i_set_the_field_to', [
+            get_string('diag_select_instance', 'block_playerhud', $instanceid),
+            '1',
+        ]);
+    }
+
     // Step definitions for modal behaviour tests (block_playerhud_modals.feature).
 
     /**

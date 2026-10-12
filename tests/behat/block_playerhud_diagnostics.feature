@@ -38,6 +38,7 @@ Feature: PlayerHUD usage and diagnostics page
   Scenario: The administrator deletes the leftover data and keeps a copy
     When I log in as "admin"
     And I navigate to "Reports > PlayerHUD usage and diagnostics" in site administration
+    And I include the removed PlayerHUD block instance in the cleanup
     And I set the field "I confirm that I want to delete this data" to "1"
     And I press "Delete leftover data"
     Then I should see "Leftover data deleted: 1 instances and 3 rows."
