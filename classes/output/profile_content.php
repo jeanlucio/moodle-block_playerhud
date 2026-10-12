@@ -78,7 +78,8 @@ class profile_content implements \renderable, \templatable {
         $currentxp = (int)$player->currentxp;
         $totalgamexp = (int)$stats['total_game_xp'];
         $levelprogress = (int)$stats['progress'];
-        $xpdisplay = $totalgamexp > 0 ? $currentxp . ' / ' . $totalgamexp . ' XP' : $currentxp . ' XP';
+        $xpunit = get_string('xp', 'block_playerhud');
+        $xpdisplay = $totalgamexp > 0 ? $currentxp . ' / ' . $totalgamexp . ' ' . $xpunit : $currentxp . ' ' . $xpunit;
 
         $allitems = $this->get_recent_items(self::ITEM_LIMIT + self::OVERFLOW_LIMIT);
         $totalitems = $this->count_unique_items();

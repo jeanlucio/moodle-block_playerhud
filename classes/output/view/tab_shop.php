@@ -70,14 +70,12 @@ class tab_shop implements renderable, templatable {
 
         // 1. Get user RPG class (if module exists/enabled).
         $myclassid = 0;
-        if ($DB->get_manager()->table_exists('block_playerhud_rpg_progress')) {
-            $prog = $DB->get_record('block_playerhud_rpg_progress', [
-                'userid' => $this->player->userid,
-                'blockinstanceid' => $this->instanceid,
-            ]);
-            if ($prog) {
-                $myclassid = $prog->classid;
-            }
+        $prog = $DB->get_record('block_playerhud_rpg_progress', [
+            'userid' => $this->player->userid,
+            'blockinstanceid' => $this->instanceid,
+        ]);
+        if ($prog) {
+            $myclassid = $prog->classid;
         }
 
         // 2. Fetch Trades using our optimized method.

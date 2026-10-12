@@ -484,7 +484,7 @@ class tab_reports implements renderable, templatable {
             [
                 'title'    => get_string('report_leader', 'block_playerhud'),
                 'value'    => $topstudent ? fullname($topstudent) : '-',
-                'subtitle' => $topstudent ? $topstudent->currentxp . ' XP' : '',
+                'subtitle' => $topstudent ? $topstudent->currentxp . ' ' . get_string('xp', 'block_playerhud') : '',
                 'bg_class' => 'ph-bg-gradient-success',
             ],
             [

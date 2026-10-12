@@ -361,7 +361,7 @@ class tab_items implements renderable {
 
                     // Preview data-* attributes rendered individually via {{...}} in template.
                     'preview_data_name' => $item->name,
-                    'preview_data_xp' => $item->xp . ' XP',
+                    'preview_data_xp' => $item->xp . ' ' . get_string('xp', 'block_playerhud'),
                     'preview_data_image' => $mediadata['is_image']
                         ? $mediadata['url']
                         : strip_tags($mediadata['content']),

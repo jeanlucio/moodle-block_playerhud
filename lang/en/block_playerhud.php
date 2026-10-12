@@ -635,6 +635,7 @@ $string['no_items_selected'] = 'No items selected.';
 $string['no_ranking_data'] = 'No ranking data yet.';
 $string['none'] = 'None';
 $string['one_time_trade'] = 'One-time trade?';
+$string['one_time_trade_badge'] = 'One-time';
 $string['openai_apikey'] = 'Custom AI (OpenAI-compatible) API Key';
 $string['openai_apikey_desc'] = 'API key for a provider compatible with the OpenAI standard (e.g. OpenAI, DeepSeek, Alibaba Qwen, Mistral, OpenRouter). This is the institution-wide default key used when teachers do not provide their own.';
 $string['openai_baseurl'] = 'Custom AI Endpoint URL';

@@ -635,6 +635,7 @@ $string['no_items_selected'] = 'Nenhum item selecionado.';
 $string['no_ranking_data'] = 'Sem dados de ranking ainda.';
 $string['none'] = 'Nenhum';
 $string['one_time_trade'] = 'Troca única?';
+$string['one_time_trade_badge'] = 'Troca única';
 $string['openai_apikey'] = 'Chave de API de IA Personalizada (compatível com OpenAI)';
 $string['openai_apikey_desc'] = 'Chave de API para um provedor compatível com o padrão OpenAI (ex.: OpenAI, DeepSeek, Alibaba Qwen, Mistral, OpenRouter). Esta é a chave padrão da instituição, usada quando os professores não fornecem a própria.';
 $string['openai_baseurl'] = 'URL do Endpoint da IA Personalizada';

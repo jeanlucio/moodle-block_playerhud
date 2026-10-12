@@ -103,6 +103,37 @@ final class header_test extends advanced_testcase {
     }
 
     /**
+     * The XP unit comes from the language pack, not from the code: a language that calls it
+     * something else shows its own word.
+     */
+    public function test_xp_display_uses_the_language_unit(): void {
+        global $CFG;
+
+        $langdir = $CFG->dataroot . '/lang/zz';
+        make_writable_directory($langdir);
+        file_put_contents(
+            $langdir . '/langconfig.php',
+            "<?php\n\$string['parentlanguage'] = 'en';\n\$string['thislanguage'] = 'Test';\n"
+        );
+        file_put_contents($langdir . '/block_playerhud.php', "<?php\n\$string['xp'] = 'PE';\n");
+        get_string_manager()->reset_caches(true);
+        get_string_manager(true);
+        force_current_language('zz');
+
+        $player = (object) ['blockinstanceid' => $this->instanceid, 'userid' => $this->user->id, 'currentxp' => 150];
+        $output = $this->createMock(\core_renderer::class);
+        $output->method('user_picture')->willReturn('');
+        $data = (new header(new \stdClass(), $player, $this->user, $this->course->id))->export_for_template($output);
+
+        force_current_language('');
+        remove_dir($langdir);
+        get_string_manager()->reset_caches(true);
+
+        $this->assertStringContainsString('PE', $data['xp_display']);
+        $this->assertStringNotContainsString('XP', $data['xp_display']);
+    }
+
+    /**
      * An equipped avatar item replaces the standard user picture.
      */
     public function test_export_for_template_with_equipped_avatar(): void {

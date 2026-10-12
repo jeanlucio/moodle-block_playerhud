@@ -70,7 +70,8 @@ class header implements renderable, templatable {
 
         // 2. Prepare XP Display.
         $xptotalgame = isset($stats['total_game_xp']) ? $stats['total_game_xp'] : 0;
-        $xpdisplay = $this->player->currentxp . ' / ' . $xptotalgame . ' XP';
+        $xpunit = get_string('xp', 'block_playerhud');
+        $xpdisplay = $this->player->currentxp . ' / ' . $xptotalgame . ' ' . $xpunit;
 
         if ($this->player->currentxp >= $xptotalgame && $xptotalgame > 0) {
             $xpdisplay .= ' 🏆';

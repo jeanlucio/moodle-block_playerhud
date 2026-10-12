@@ -128,15 +128,14 @@ class tab_collection implements renderable, templatable {
 
         // Check player class for visibility.
         $myclassid = 0;
-        if ($DB->get_manager()->table_exists('block_playerhud_rpg_progress')) {
-            $prog = $DB->get_record('block_playerhud_rpg_progress', [
-                'userid' => $this->player->userid,
-                'blockinstanceid' => $this->instanceid,
-            ]);
-            if ($prog) {
-                $myclassid = $prog->classid;
-            }
+        $prog = $DB->get_record('block_playerhud_rpg_progress', [
+            'userid' => $this->player->userid,
+            'blockinstanceid' => $this->instanceid,
+        ]);
+        if ($prog) {
+            $myclassid = $prog->classid;
         }
+        $xpunit = get_string('xp', 'block_playerhud');
 
         // BULK FETCH: Check which items have infinite drops (Zero N+1 Optimization).
         $sqlinf = "SELECT DISTINCT itemid, 1 as is_inf
@@ -215,7 +214,7 @@ class tab_collection implements renderable, templatable {
                         $itemobj['data_image_payload'] = '❓';
                     } else {
                         $itemobj['name'] = $visiblename;
-                        $itemobj['xp_text'] = (max(0, (int) $item->xp) . ' XP');
+                        $itemobj['xp_text'] = (max(0, (int) $item->xp) . ' ' . $xpunit);
                         $itemobj['description'] = format_text($item->description, FORMAT_HTML, ['context' => $context]);
                         $itemobj['is_image'] = $media['is_image'];
                         $itemobj['image_url'] = $media['is_image'] ? $media['url'] : '';
@@ -227,7 +226,7 @@ class tab_collection implements renderable, templatable {
                     $itemobj = [
                         'card_class' => 'ph-owned',
                         'name' => $visiblename,
-                        'xp_text' => (max(0, (int) $item->xp) . ' XP'),
+                        'xp_text' => (max(0, (int) $item->xp) . ' ' . $xpunit),
                         'description' => format_text($item->description, FORMAT_HTML, ['context' => $context]),
                         'is_image' => $media['is_image'],
                         'image_url' => $media['is_image'] ? $media['url'] : '',

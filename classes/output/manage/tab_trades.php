@@ -184,7 +184,7 @@ class tab_trades implements renderable, templatable {
             'instanceid' => $this->instanceid,
         ]);
 
-        $stronetime = str_replace('?', '', get_string('one_time_trade', 'block_playerhud'));
+        $stronetime = get_string('one_time_trade_badge', 'block_playerhud');
 
         $jsvars = [
             'strings' => [

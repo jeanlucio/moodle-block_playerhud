@@ -92,14 +92,12 @@ class trade_manager {
         }
 
         $myclassid = 0;
-        if ($DB->get_manager()->table_exists('block_playerhud_rpg_progress')) {
-            $rpgprog = $DB->get_record('block_playerhud_rpg_progress', [
-                'userid' => $userid,
-                'blockinstanceid' => $instanceid,
-            ]);
-            if ($rpgprog) {
-                $myclassid = $rpgprog->classid;
-            }
+        $rpgprog = $DB->get_record('block_playerhud_rpg_progress', [
+            'userid' => $userid,
+            'blockinstanceid' => $instanceid,
+        ]);
+        if ($rpgprog) {
+            $myclassid = $rpgprog->classid;
         }
 
         if ($rewards) {
