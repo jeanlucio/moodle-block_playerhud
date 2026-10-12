@@ -262,24 +262,15 @@ class behat_block_playerhud extends behat_base {
      * instance whose course cannot be found in the log starts unselected, so the administrator has
      * to choose it.
      *
+     * The scenario runs without JavaScript, where the browser driver cannot click a checkbox, and
+     * the checkbox is labelled through aria-label, which Moodle's field selector does not read. It
+     * is therefore set through its field name; the scenario leaves a single removed instance, so
+     * the name picks exactly that one.
+     *
      * @Given I include the removed PlayerHUD block instance in the cleanup
      */
     public function i_include_removed_playerhud_instance_in_cleanup(): void {
-        global $DB;
-
-        $instanceid = (int) $DB->get_field_sql(
-            'SELECT MAX(pu.blockinstanceid)
-               FROM {block_playerhud_user} pu
-          LEFT JOIN {block_instances} bi ON bi.id = pu.blockinstanceid
-              WHERE bi.id IS NULL'
-        );
-
-        // The checkbox is labelled through aria-label, which Moodle's field selector does not read,
-        // so it is found by the instance id it submits.
-        $this->execute('behat_general::i_click_on', [
-            "input[name='instances[]'][value='{$instanceid}']",
-            'css_element',
-        ]);
+        $this->execute('behat_forms::i_set_the_field_to', ['instances[]', '1']);
     }
 
     // Step definitions for modal behaviour tests (block_playerhud_modals.feature).
