@@ -439,4 +439,61 @@ final class generator_test extends external_base_testcase {
     public function test_is_safe_url_rejects_a_non_canonical_ip_literal(): void {
         $this->assertFalse($this->call_is_safe_url('https://127.000.000.1/v1'));
     }
+
+    /**
+     * Regression test for the security-audit TLS finding: the request that carries the provider
+     * API key must refuse a server whose certificate is not trusted. Moodle's curl class turns
+     * peer verification off by default, so without the explicit options a self-signed server
+     * would answer 200 and receive the key.
+     */
+    public function test_curl_request_refuses_an_untrusted_certificate(): void {
+        $privatekey = openssl_pkey_new(['private_key_bits' => 2048]);
+        $csr = $privatekey ? openssl_csr_new(['commonName' => 'localhost'], $privatekey) : false;
+        $x509 = $csr ? openssl_csr_sign($csr, null, $privatekey, 1) : false;
+        if (!$x509) {
+            $this->markTestSkipped('A self-signed certificate could not be generated here.');
+        }
+        openssl_x509_export($x509, $certpem);
+        openssl_pkey_export($privatekey, $keypem);
+        $pemfile = make_request_directory() . '/server.pem';
+        file_put_contents($pemfile, $certpem . $keypem);
+
+        $probe = stream_socket_server('tcp://127.0.0.1:0');
+        $name = stream_socket_get_name($probe, false);
+        $port = (int) substr($name, strrpos($name, ':') + 1);
+        fclose($probe);
+
+        // A throwaway TLS server that answers 200 to whoever completes the handshake.
+        $serverscript = '$c = stream_context_create(["ssl" => ["local_cert" => $argv[1], "verify_peer" => false]]);'
+            . '$s = stream_socket_server("ssl://127.0.0.1:" . $argv[2], $e, $m, STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, $c);'
+            . 'while ($k = @stream_socket_accept($s, 10)) {'
+            . '  fread($k, 8192);'
+            . '  fwrite($k, "HTTP/1.1 200 OK\\r\\nContent-Length: 2\\r\\nConnection: close\\r\\n\\r\\n{}");'
+            . '  fclose($k);'
+            . '}';
+        $process = proc_open(
+            [PHP_BINARY, '-r', $serverscript, $pemfile, (string) $port],
+            [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes
+        );
+        usleep(500000);
+
+        try {
+            $generator = new generator($this->instanceid);
+            $method = new \ReflectionMethod($generator, 'curl_request');
+            $method->setAccessible(true);
+            $result = $method->invoke(
+                $generator,
+                'https://localhost:' . $port . '/v1',
+                '{}',
+                ['Authorization: Bearer secret'],
+                'test'
+            );
+        } finally {
+            proc_terminate($process);
+            proc_close($process);
+        }
+
+        $this->assertFalse($result['success']);
+    }
 }

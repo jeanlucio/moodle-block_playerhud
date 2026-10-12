@@ -1176,9 +1176,17 @@ class generator {
         // Sets the headers using the Moodle API (array).
         $curl->setHeader($headers);
 
+        // Moodle's curl class turns peer verification off by default, but this request carries the
+        // provider API key in its headers: a certificate that is not verified would let anyone on
+        // the network path read it. Both options are set explicitly.
+        $options = [
+            'CURLOPT_SSL_VERIFYPEER' => true,
+            'CURLOPT_SSL_VERIFYHOST' => 2,
+        ];
+
         // Executes the POST request.
         // The post() method returns the response body directly.
-        $response = $curl->post($url, $payload);
+        $response = $curl->post($url, $payload, $options);
 
         // Get HTTP status code and errors from the object properties.
         $info = $curl->get_info();
