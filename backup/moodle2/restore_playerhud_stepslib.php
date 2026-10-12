@@ -86,6 +86,15 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
     private array $deferredquestchapters = [];
 
     /**
+     * Deferred story-progress remap: new rpg_progress ID => [old current_nodes, old completed_chapters].
+     * The progress row can come before the chapters and scenes it points at in the XML, so the
+     * JSON is remapped in after_execute() once both mappings exist.
+     *
+     * @var array<int,array{0:?string,1:?string}>
+     */
+    private array $deferredprogress = [];
+
+    /**
      * Define the structure of the restore step.
      *
      * @return array Array of restore_path_element.
@@ -668,9 +677,8 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
 
     /**
      * Process RPG progress records (karma, class, story positions) per user.
-     * current_nodes and completed_chapters are JSON fields containing chapter/node IDs
-     * that cannot be safely remapped without full JSON parsing. They are reset to null
-     * so affected users simply restart story progress; karma and class are preserved.
+     * current_nodes and completed_chapters hold chapter and scene IDs inside JSON, so they are
+     * inserted empty and remapped in after_execute(), once the chapters and scenes exist.
      *
      * @param array $data
      */
@@ -691,7 +699,8 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
             $data->classid = $this->get_mappingid('playerhud_class', $data->classid) ?: 0;
         }
 
-        // Reset story-position JSON since embedded node/chapter IDs cannot be remapped safely.
+        $oldnodes     = $data->current_nodes ?? null;
+        $oldcompleted = $data->completed_chapters ?? null;
         $data->current_nodes      = null;
         $data->completed_chapters = null;
 
@@ -702,8 +711,68 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
             'blockinstanceid' => $data->blockinstanceid,
         ]);
         if (!$exists) {
-            $DB->insert_record('block_playerhud_rpg_progress', $data);
+            $newid = $DB->insert_record('block_playerhud_rpg_progress', $data);
+            $this->deferredprogress[$newid] = [$oldnodes, $oldcompleted];
         }
+    }
+
+    /**
+     * Remaps the saved story path: chapter IDs (keys) and scene IDs (values) to the restored ones.
+     *
+     * An entry whose chapter was not restored is dropped, and so is a scene that was not, so a
+     * student never resumes on an ID that belongs to something else.
+     *
+     * @param string|null $json The backed-up current_nodes JSON.
+     * @return string|null The remapped JSON, or null when nothing survives.
+     */
+    protected function remap_current_nodes(?string $json): ?string {
+        $map = ($json === null || $json === '') ? null : json_decode($json, true);
+        if (!is_array($map)) {
+            return null;
+        }
+
+        $result = [];
+        foreach ($map as $oldchapterid => $path) {
+            $newchapterid = $this->get_mappingid('playerhud_chapter', (int) $oldchapterid);
+            if (!$newchapterid) {
+                continue;
+            }
+            $newpath = [];
+            foreach ((is_array($path) ? $path : [$path]) as $oldnodeid) {
+                $newnodeid = $this->get_mappingid('playerhud_node', (int) $oldnodeid);
+                if ($newnodeid) {
+                    $newpath[] = (int) $newnodeid;
+                }
+            }
+            if ($newpath) {
+                $result[$newchapterid] = $newpath;
+            }
+        }
+
+        return $result ? json_encode($result) : null;
+    }
+
+    /**
+     * Remaps the list of completed chapter IDs to the restored chapters.
+     *
+     * @param string|null $json The backed-up completed_chapters JSON.
+     * @return string|null The remapped JSON list, or null when no chapter survives.
+     */
+    protected function remap_completed_chapters(?string $json): ?string {
+        $list = ($json === null || $json === '') ? null : json_decode($json, true);
+        if (!is_array($list)) {
+            return null;
+        }
+
+        $result = [];
+        foreach ($list as $oldchapterid) {
+            $newchapterid = $this->get_mappingid('playerhud_chapter', (int) $oldchapterid);
+            if ($newchapterid) {
+                $result[] = (int) $newchapterid;
+            }
+        }
+
+        return $result ? json_encode($result) : null;
     }
 
     /**
@@ -717,6 +786,14 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
             if ($newnodeid) {
                 $DB->set_field('block_playerhud_choices', 'next_nodeid', $newnodeid, ['id' => $choiceid]);
             }
+        }
+
+        foreach ($this->deferredprogress as $progressid => [$oldnodes, $oldcompleted]) {
+            $DB->update_record('block_playerhud_rpg_progress', (object) [
+                'id'                 => $progressid,
+                'current_nodes'      => $this->remap_current_nodes($oldnodes),
+                'completed_chapters' => $this->remap_completed_chapters($oldcompleted),
+            ]);
         }
 
         foreach ($this->deferredtradequests as $questid => $oldtradeid) {

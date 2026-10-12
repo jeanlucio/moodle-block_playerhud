@@ -230,7 +230,7 @@ final class backup_restore_test extends advanced_testcase {
             'sortorder'       => 1,
         ]);
 
-        $DB->insert_record('block_playerhud_story_nodes', (object) [
+        $nodeid = $DB->insert_record('block_playerhud_story_nodes', (object) [
             'chapterid' => $chapterid,
             'content'   => 'It was a dark and stormy night.',
             'is_start'  => 1,
@@ -281,6 +281,19 @@ final class backup_restore_test extends advanced_testcase {
             $coindropid
         );
         $DB->set_field('block_playerhud_stack_log', 'timerevoked', 1700000000, ['id' => $coinlogid]);
+
+        // Story progress holds chapter and scene IDs inside JSON; a chapter that is not part of the
+        // course (99999) must be dropped instead of surviving as a dangling ID.
+        $DB->insert_record('block_playerhud_rpg_progress', (object) [
+            'blockinstanceid'    => $instanceid,
+            'userid'             => $student->id,
+            'classid'            => 0,
+            'karma'              => 3,
+            'current_nodes'      => json_encode([$chapterid => [$nodeid], 99999 => [88888]]),
+            'completed_chapters' => json_encode([$chapterid, 99999]),
+            'timecreated'        => time(),
+            'timemodified'       => time(),
+        ]);
 
         // 3. Backup.
         $bc = new \backup_controller(
@@ -553,6 +566,30 @@ final class backup_restore_test extends advanced_testcase {
             (int) $restoredchapter->id,
             (int) $restoredchapterquest->requirement,
             'TYPE_CHAPTER quest requirement must be remapped to the restored chapter, not the old id.'
+        );
+
+        $restorednode = $DB->get_record(
+            'block_playerhud_story_nodes',
+            ['chapterid' => $restoredchapter->id, 'is_start' => 1],
+            '*',
+            MUST_EXIST
+        );
+        $progress = $DB->get_record(
+            'block_playerhud_rpg_progress',
+            ['blockinstanceid' => $restoredblock->id, 'userid' => $student->id],
+            '*',
+            MUST_EXIST
+        );
+        $this->assertSame(3, (int) $progress->karma);
+        $this->assertSame(
+            [(int) $restoredchapter->id => [(int) $restorednode->id]],
+            json_decode($progress->current_nodes, true),
+            'Story path must follow the restored chapter and scene, and drop what was not restored.'
+        );
+        $this->assertSame(
+            [(int) $restoredchapter->id],
+            json_decode($progress->completed_chapters, true),
+            'Completed chapters must follow the restored chapter.'
         );
     }
 }
