@@ -597,7 +597,8 @@ class generator {
         if (!$parsed || ($parsed['scheme'] ?? '') !== 'https') {
             return false;
         }
-        $host = $parsed['host'] ?? '';
+        // An IPv6 literal comes out of parse_url() wrapped in brackets, which filter_var() rejects.
+        $host = trim($parsed['host'] ?? '', '[]');
         if (empty($host)) {
             return false;
         }
@@ -612,7 +613,7 @@ class generator {
                 FILTER_VALIDATE_IP,
                 FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
             );
-            if ($ispublic === false) {
+            if ($ispublic === false || $this->is_special_purpose_ip($ip)) {
                 return false;
             }
         } else {
@@ -650,7 +651,7 @@ class generator {
                     FILTER_VALIDATE_IP,
                     FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
                 );
-                if ($ispublic === false) {
+                if ($ispublic === false || $this->is_special_purpose_ip($resolvedip)) {
                     return false;
                 }
             }
@@ -1174,6 +1175,31 @@ class generator {
     }
 
     /**
+     * Tells whether an IP address belongs to a range that is not the public internet but that
+     * FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE does not always cover, depending on
+     * the PHP version: carrier-grade NAT, benchmarking and documentation networks, and IPv6
+     * addresses that embed an IPv4 one.
+     *
+     * @param string $ip A valid IPv4 or IPv6 address.
+     * @return bool True when the address is in one of those ranges.
+     */
+    private function is_special_purpose_ip(string $ip): bool {
+        $ranges = [
+            '100.64.0.0/10',
+            '192.0.0.0/24',
+            '192.0.2.0/24',
+            '198.18.0.0/15',
+            '198.51.100.0/24',
+            '203.0.113.0/24',
+            '::ffff:0:0/96',
+            '64:ff9b::/96',
+            '2002::/16',
+        ];
+
+        return address_in_subnet($ip, implode(',', $ranges));
+    }
+
+    /**
      * Returns a value from the AI's JSON as a string, or an empty string when it is not a scalar.
      *
      * The answer is untrusted: an array or object where text was expected must not reach a
@@ -1212,6 +1238,9 @@ class generator {
         $options = [
             'CURLOPT_SSL_VERIFYPEER' => true,
             'CURLOPT_SSL_VERIFYHOST' => 2,
+            // The providers answer directly: a redirect would only move the request, and the key
+            // with it, to a host that is_safe_url() never looked at.
+            'CURLOPT_FOLLOWLOCATION' => false,
         ];
 
         // Executes the POST request.

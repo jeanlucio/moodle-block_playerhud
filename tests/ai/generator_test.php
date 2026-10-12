@@ -495,6 +495,36 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * Addresses outside the public internet that the PHP filter flags may miss (carrier-grade NAT,
+     * benchmarking and documentation networks, IPv6 forms that carry an IPv4 address) are refused,
+     * while an ordinary public address is accepted.
+     *
+     * @dataProvider special_purpose_url_provider
+     * @param string $url The URL to check.
+     * @param bool $expected Whether it is considered safe.
+     */
+    public function test_is_safe_url_covers_special_purpose_ranges(string $url, bool $expected): void {
+        $this->assertSame($expected, $this->call_is_safe_url($url));
+    }
+
+    /**
+     * URLs with literal addresses, so the check needs no DNS.
+     *
+     * @return array
+     */
+    public static function special_purpose_url_provider(): array {
+        return [
+            'carrier-grade NAT' => ['https://100.64.0.10/v1', false],
+            'benchmarking' => ['https://198.18.0.1/v1', false],
+            'documentation' => ['https://203.0.113.9/v1', false],
+            'IPv4-mapped loopback' => ['https://[::ffff:127.0.0.1]/v1', false],
+            'IPv6 unique local' => ['https://[fd00::1]/v1', false],
+            'public address' => ['https://8.8.8.8/v1', true],
+            'public IPv6 address' => ['https://[2606:4700:4700::1111]/v1', true],
+        ];
+    }
+
+    /**
      * Regression test for the security-audit TLS finding: the request that carries the provider
      * API key must refuse a server whose certificate is not trusted. Moodle's curl class turns
      * peer verification off by default, so without the explicit options a self-signed server
