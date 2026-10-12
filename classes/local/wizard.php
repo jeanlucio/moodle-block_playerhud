@@ -172,7 +172,10 @@ class wizard {
      * Returns the most recent still-active runs for an instance, with object
      * counts per table so the caller can build a human-readable summary.
      *
-     * Only 'done' runs are returned: a rolledback run has nothing left to undo.
+     * 'done' runs are returned, and so are runs left 'running' for over an hour (the browser was
+     * closed or the connection dropped mid-run): they created objects too, and without this
+     * they could never be undone. A rolledback run has nothing left to undo, and a run that
+     * started minutes ago may still be working, so neither is listed.
      *
      * @param int $blockinstanceid The block instance ID.
      * @param int $limit Maximum number of runs to return.
@@ -181,9 +184,11 @@ class wizard {
     public static function get_active_runs(int $blockinstanceid, int $limit = 10): array {
         global $DB;
 
-        $runs = $DB->get_records(
+        $runs = $DB->get_records_select(
             'block_playerhud_wizard_runs',
-            ['blockinstanceid' => $blockinstanceid, 'status' => 'done'],
+            "blockinstanceid = :instanceid
+             AND (status = 'done' OR (status = 'running' AND timemodified < :abandoned))",
+            ['instanceid' => $blockinstanceid, 'abandoned' => time() - HOURSECS],
             'timecreated DESC',
             'id, timecreated',
             0,

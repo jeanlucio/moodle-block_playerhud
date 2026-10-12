@@ -364,6 +364,25 @@ final class wizard_test extends advanced_testcase {
     }
 
     /**
+     * A run left 'running' for over an hour created objects that can still be undone, so it is
+     * listed; one that started minutes ago may still be working and is not.
+     */
+    public function test_get_active_runs_lists_abandoned_running_runs(): void {
+        global $DB, $USER;
+
+        $abandoned = wizard::start_run($this->instanceid, (int) $USER->id, ['items']);
+        wizard::record_objects($abandoned, 'block_playerhud_items', [$this->create_item()]);
+        $DB->set_field('block_playerhud_wizard_runs', 'timemodified', time() - (2 * HOURSECS), ['id' => $abandoned]);
+
+        $recent = wizard::start_run($this->instanceid, (int) $USER->id, ['items']);
+        wizard::record_objects($recent, 'block_playerhud_items', [$this->create_item()]);
+
+        $runs = wizard::get_active_runs($this->instanceid);
+
+        $this->assertSame([$abandoned], array_map(static fn($run) => $run->id, $runs));
+    }
+
+    /**
      * The limit parameter caps the number of runs returned, newest first.
      */
     public function test_get_active_runs_respects_limit(): void {
