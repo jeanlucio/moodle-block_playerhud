@@ -525,20 +525,88 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * Builds a generator whose DNS answer is fixed, so address pinning can be checked offline.
+     *
+     * @param string[] $ips The addresses every host name resolves to.
+     * @return generator
+     */
+    private function make_generator_resolving(array $ips): generator {
+        return new class ($this->instanceid, $ips) extends generator {
+            /** @var string[] Addresses returned for every host. */
+            private array $ips;
+
+            /**
+             * Stores the fixed answer.
+             *
+             * @param int $instanceid Block instance ID.
+             * @param string[] $ips The addresses every host name resolves to.
+             */
+            public function __construct(int $instanceid, array $ips) {
+                parent::__construct($instanceid);
+                $this->ips = $ips;
+            }
+
+            #[\Override]
+            protected function resolve_host_ips(string $host): array {
+                return $this->ips;
+            }
+
+            /**
+             * Exposes the protected pinning helper to the test.
+             *
+             * @param string $url The request URL.
+             * @return array|null
+             */
+            public function pin(string $url): ?array {
+                return $this->pinned_resolve_entries($url);
+            }
+        };
+    }
+
+    /**
+     * The host is pinned to the public addresses it has now, so curl cannot resolve it again to
+     * something else; a non-public answer is dropped, and when nothing public is left the request
+     * must not go out (empty array). An IP address in the URL needs no pinning.
+     */
+    public function test_requests_are_pinned_to_the_public_addresses_just_resolved(): void {
+        $mixed = $this->make_generator_resolving(['93.184.216.34', '10.0.0.5', '2606:4700:4700::1111']);
+        $this->assertSame(
+            ['api.example.com:443:93.184.216.34,2606:4700:4700::1111'],
+            $mixed->pin('https://api.example.com/v1/chat')
+        );
+        $this->assertSame(
+            ['api.example.com:8443:93.184.216.34,2606:4700:4700::1111'],
+            $mixed->pin('https://api.example.com:8443/v1')
+        );
+
+        $this->assertSame([], $this->make_generator_resolving(['127.0.0.1', '10.0.0.5'])->pin('https://evil.example/v1'));
+        $this->assertSame([], $this->make_generator_resolving([])->pin('https://unresolvable.example/v1'));
+        $this->assertNull($mixed->pin('https://8.8.8.8/v1'));
+    }
+
+    /**
      * Regression test for the security-audit TLS finding: the request that carries the provider
      * API key must refuse a server whose certificate is not trusted. Moodle's curl class turns
      * peer verification off by default, so without the explicit options a self-signed server
      * would answer 200 and receive the key.
      */
     public function test_curl_request_refuses_an_untrusted_certificate(): void {
-        $privatekey = openssl_pkey_new(['private_key_bits' => 2048]);
-        $csr = $privatekey ? openssl_csr_new(['commonName' => 'localhost'], $privatekey) : false;
-        $x509 = $csr ? openssl_csr_sign($csr, null, $privatekey, 1) : false;
+        // The certificate names the IP address the request goes to, so a client that skipped the
+        // verification would accept it: only the missing trust can make the request fail.
+        $confpath = make_request_directory() . '/openssl.cnf';
+        file_put_contents(
+            $confpath,
+            "[req]\ndistinguished_name = dn\n[dn]\n[v3]\nsubjectAltName = IP:127.0.0.1\n"
+        );
+        $conf = ['config' => $confpath, 'x509_extensions' => 'v3'];
+        $privatekey = openssl_pkey_new(['private_key_bits' => 2048, 'config' => $confpath]);
+        $csr = $privatekey ? openssl_csr_new(['commonName' => '127.0.0.1'], $privatekey, $conf) : false;
+        $x509 = $csr ? openssl_csr_sign($csr, null, $privatekey, 1, $conf) : false;
         if (!$x509) {
             $this->markTestSkipped('A self-signed certificate could not be generated here.');
         }
         openssl_x509_export($x509, $certpem);
-        openssl_pkey_export($privatekey, $keypem);
+        openssl_pkey_export($privatekey, $keypem, null, ['config' => $confpath]);
         $pemfile = make_request_directory() . '/server.pem';
         file_put_contents($pemfile, $certpem . $keypem);
 
@@ -568,7 +636,7 @@ final class generator_test extends external_base_testcase {
             $method->setAccessible(true);
             $result = $method->invoke(
                 $generator,
-                'https://localhost:' . $port . '/v1',
+                'https://127.0.0.1:' . $port . '/v1',
                 '{}',
                 ['Authorization: Bearer secret'],
                 'test'

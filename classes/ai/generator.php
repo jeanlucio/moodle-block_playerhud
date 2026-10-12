@@ -619,23 +619,7 @@ class generator {
         } else {
             // Hostname: resolve all A/AAAA records and re-apply the private/reserved check
             // to prevent DNS rebinding attacks where a public domain resolves to an internal IP.
-            $resolvedips = [];
-            $arecords = dns_get_record($host, DNS_A);
-            if (is_array($arecords)) {
-                foreach ($arecords as $r) {
-                    if (!empty($r['ip'])) {
-                        $resolvedips[] = $r['ip'];
-                    }
-                }
-            }
-            $aaaarecords = dns_get_record($host, DNS_AAAA);
-            if (is_array($aaaarecords)) {
-                foreach ($aaaarecords as $r) {
-                    if (!empty($r['ipv6'])) {
-                        $resolvedips[] = $r['ipv6'];
-                    }
-                }
-            }
+            $resolvedips = $this->resolve_host_ips($host);
             if (empty($resolvedips)) {
                 // Fail closed: a host that does not resolve to any A/AAAA record must never be
                 // treated as safe. Without this, a non-canonical IP-literal string that
@@ -646,12 +630,7 @@ class generator {
                 return false;
             }
             foreach ($resolvedips as $resolvedip) {
-                $ispublic = filter_var(
-                    $resolvedip,
-                    FILTER_VALIDATE_IP,
-                    FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
-                );
-                if ($ispublic === false || $this->is_special_purpose_ip($resolvedip)) {
+                if (!$this->is_public_ip($resolvedip)) {
                     return false;
                 }
             }
@@ -1175,6 +1154,71 @@ class generator {
     }
 
     /**
+     * Resolves a host name to every A and AAAA address it currently has.
+     *
+     * @param string $host The host name.
+     * @return string[] Addresses; empty when the name does not resolve.
+     */
+    protected function resolve_host_ips(string $host): array {
+        $ips = [];
+        foreach ([DNS_A => 'ip', DNS_AAAA => 'ipv6'] as $type => $field) {
+            $records = dns_get_record($host, $type);
+            foreach (is_array($records) ? $records : [] as $record) {
+                if (!empty($record[$field])) {
+                    $ips[] = $record[$field];
+                }
+            }
+        }
+
+        return $ips;
+    }
+
+    /**
+     * Tells whether an address is on the public internet.
+     *
+     * @param string $ip A valid IPv4 or IPv6 address.
+     * @return bool False for private, reserved and special-purpose addresses.
+     */
+    private function is_public_ip(string $ip): bool {
+        $ispublic = filter_var(
+            $ip,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        );
+
+        return $ispublic !== false && !$this->is_special_purpose_ip($ip);
+    }
+
+    /**
+     * Builds the CURLOPT_RESOLVE entry that pins a host to the public addresses it has right now.
+     *
+     * is_safe_url() resolves the name once to judge it, and curl would resolve it again to
+     * connect: a name that answers with a public address first and an internal one second would
+     * pass the check and still be contacted at the internal address. Handing curl the addresses
+     * that were just judged removes the second resolution.
+     *
+     * @param string $url The request URL.
+     * @return array|null The CURLOPT_RESOLVE entries; an empty array when the host resolves only to
+     *                    non-public addresses (the request must not go out); null when there is
+     *                    nothing to pin because the URL already holds an IP address.
+     */
+    protected function pinned_resolve_entries(string $url): ?array {
+        $parts = parse_url($url);
+        $host = trim($parts['host'] ?? '', '[]');
+        if ($host === '' || filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return null;
+        }
+
+        $public = array_values(array_filter($this->resolve_host_ips($host), fn(string $ip): bool => $this->is_public_ip($ip)));
+        if (!$public) {
+            return [];
+        }
+        $port = (int) ($parts['port'] ?? 443);
+
+        return [$host . ':' . $port . ':' . implode(',', $public)];
+    }
+
+    /**
      * Tells whether an IP address belongs to a range that is not the public internet but that
      * FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE does not always cover, depending on
      * the PHP version: carrier-grade NAT, benchmarking and documentation networks, and IPv6
@@ -1242,6 +1286,18 @@ class generator {
             // with it, to a host that is_safe_url() never looked at.
             'CURLOPT_FOLLOWLOCATION' => false,
         ];
+
+        $pinned = $this->pinned_resolve_entries($url);
+        if ($pinned === []) {
+            return [
+                'success' => false,
+                'message' => get_string('error_connection', 'block_playerhud'),
+                'provider' => $source,
+            ];
+        }
+        if ($pinned !== null) {
+            $options['CURLOPT_RESOLVE'] = $pinned;
+        }
 
         // Executes the POST request.
         // The post() method returns the response body directly.
