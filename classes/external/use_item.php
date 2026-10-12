@@ -178,50 +178,71 @@ class use_item extends external_api {
                 ];
             }
 
-            // Atomically consume the item before touching the override. Two concurrent
-            // requests both pass the record_exists_select() ownership check above (it is
-            // read-only and not locked), so without this gate both could compute and apply
-            // their own deadline extension while only one inventory row ever gets marked
-            // consumed. consume() takes a per-user-per-item lock internally and only one
-            // caller can ever win it for the single available unit, so the loser is turned
-            // away here instead of racing the override read-modify-write below.
-            $consumed = external_items::consume($instanceid, $itemid, $USER->id, 1);
-            if ($consumed !== true) {
+            // Two requests for the same student and activity must run one after the other: with
+            // two units of the item, both would consume a unit, read the same override and
+            // write the same deadline (one extension lost), or both insert and the second hits
+            // the unique cmid/userid key after its unit was already spent. The lock covers
+            // consuming the item and writing the override, and the transaction hands the unit
+            // back if the write fails.
+            $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
+            $lock = $lockfactory->get_lock('deadline_usr_' . $USER->id . '_cm_' . $cmid, 5);
+            if (!$lock) {
                 return [
                     'action'       => 'deadline_extension',
                     'equipped'     => false,
                     'avatar_html'  => '',
                     'success'      => false,
-                    'message'      => get_string('itemnotfound', 'block_playerhud'),
+                    'message'      => get_string('error_use_lock', 'block_playerhud'),
                     'new_deadline' => '',
                 ];
             }
 
-            $override = $DB->get_record('local_latepenalty_overrides', ['cmid' => $cmid, 'userid' => $USER->id]);
-            if ($override && $override->deadline !== null) {
-                $base = (int)$override->deadline;
-            } else {
-                $cmrec = $cm->get_course_module_record();
-                $cmrec->modname = $cm->modname;
-                $base  = latepenalty_bridge::get_deadline($cmrec, (int) $USER->id) ?? time();
-            }
+            try {
+                $transaction = $DB->start_delegated_transaction();
 
-            $newdeadline = $base + ($days * DAYSECS);
+                $consumed = external_items::consume($instanceid, $itemid, $USER->id, 1);
+                if ($consumed !== true) {
+                    $transaction->allow_commit();
+                    return [
+                        'action'       => 'deadline_extension',
+                        'equipped'     => false,
+                        'avatar_html'  => '',
+                        'success'      => false,
+                        'message'      => get_string('itemnotfound', 'block_playerhud'),
+                        'new_deadline' => '',
+                    ];
+                }
 
-            if ($override) {
-                $override->deadline      = $newdeadline;
-                $override->timemodified  = time();
-                $DB->update_record('local_latepenalty_overrides', $override);
-            } else {
-                $DB->insert_record('local_latepenalty_overrides', (object)[
-                    'cmid'          => $cmid,
-                    'userid'        => $USER->id,
-                    'deadline'      => $newdeadline,
-                    'daily_penalty' => null,
-                    'max_penalty'   => null,
-                    'timecreated'   => time(),
-                    'timemodified'  => time(),
-                ]);
+                $override = $DB->get_record('local_latepenalty_overrides', ['cmid' => $cmid, 'userid' => $USER->id]);
+                if ($override && $override->deadline !== null) {
+                    $base = (int)$override->deadline;
+                } else {
+                    $cmrec = $cm->get_course_module_record();
+                    $cmrec->modname = $cm->modname;
+                    $base  = latepenalty_bridge::get_deadline($cmrec, (int) $USER->id) ?? time();
+                }
+
+                $newdeadline = $base + ($days * DAYSECS);
+
+                if ($override) {
+                    $override->deadline      = $newdeadline;
+                    $override->timemodified  = time();
+                    $DB->update_record('local_latepenalty_overrides', $override);
+                } else {
+                    $DB->insert_record('local_latepenalty_overrides', (object)[
+                        'cmid'          => $cmid,
+                        'userid'        => $USER->id,
+                        'deadline'      => $newdeadline,
+                        'daily_penalty' => null,
+                        'max_penalty'   => null,
+                        'timecreated'   => time(),
+                        'timemodified'  => time(),
+                    ]);
+                }
+
+                $transaction->allow_commit();
+            } finally {
+                $lock->release();
             }
 
             \local_latepenalty\recalculator::recalculate_for_student(
