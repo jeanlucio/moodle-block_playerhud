@@ -274,9 +274,11 @@ class behat_block_playerhud extends behat_base {
               WHERE bi.id IS NULL'
         );
 
-        $this->execute('behat_forms::i_set_the_field_to', [
-            get_string('diag_select_instance', 'block_playerhud', $instanceid),
-            '1',
+        // The checkbox is labelled through aria-label, which Moodle's field selector does not read,
+        // so it is found by the instance id it submits.
+        $this->execute('behat_general::i_click_on', [
+            "input[name='instances[]'][value='{$instanceid}']",
+            'css_element',
         ]);
     }
 
