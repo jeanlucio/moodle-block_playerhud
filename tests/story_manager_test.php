@@ -413,23 +413,18 @@ final class story_manager_test extends advanced_testcase {
     }
 
     /**
-     * make_choice acquires and releases its per-user lock around a normal call, and still
-     * returns the expected result — regression test for the security-audit finding that
-     * make_choice() had no lock, unlike every other reward-granting path
-     * (game::process_collection(), trade_manager::execute_trade(), quest::claim_quest()).
+     * make_choice takes its per-user lock — regression test for the security-audit finding that
+     * make_choice() had no lock, unlike every other reward-granting path (game::process_collection(),
+     * trade_manager::execute_trade(), quest::claim_quest()).
      *
-     * True lock *contention* is not exercised here: this plugin's lock factory is
-     * postgres_lock_factory (pg_advisory_lock), which is reentrant within the same database
-     * session — the single connection PHPUnit runs on can always re-acquire its own advisory
-     * lock, so a same-process "acquire then call" test would pass regardless of whether
-     * make_choice() actually takes the lock. None of the sibling reward-granting paths test
-     * their own lock rejection for the same reason; this is a live/manual-verification
-     * concern, not a unit-testable one. What IS verified here is that the lock key is
-     * available and released cleanly (no hung lock leaking into the next test).
+     * The site's PostgreSQL lock factory is reentrant inside one session, so asking it for the
+     * same key afterwards proves nothing: it succeeds whether or not make_choice() locked. The
+     * test therefore selects a factory that records the keys it is asked for.
      */
-    public function test_make_choice_leaves_no_lock_held_after_a_normal_call(): void {
+    public function test_make_choice_takes_its_per_user_lock(): void {
         $this->resetAfterTest(true);
         $this->setup_block_instance();
+        \block_playerhud\tests\recording_lock_factory::start();
 
         $user = $this->getDataGenerator()->create_user();
         $chapter = $this->create_chapter('Chapter');
@@ -439,15 +434,9 @@ final class story_manager_test extends advanced_testcase {
 
         story_manager::make_choice($this->instanceid, $user->id, $choice->id);
 
-        // If make_choice() failed to release its lock, re-acquiring the same key here (same
-        // session, so reentrancy is not the question — a leaked lock object that was never
-        // released is) would still succeed under postgres_lock_factory, but the call proves
-        // no exception/hang occurs and the lock is free to be taken again immediately after.
-        $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
-        $lockkey = 'story_usr_' . $user->id . '_inst_' . $this->instanceid;
-        $lock = $lockfactory->get_lock($lockkey, 10);
-        $this->assertNotFalse($lock, 'Lock key should be immediately acquirable after make_choice() returns.');
-        $lock->release();
+        $this->assertTrue(\block_playerhud\tests\recording_lock_factory::was_requested(
+            'story_usr_' . $user->id . '_inst_' . $this->instanceid
+        ));
     }
 
     /**

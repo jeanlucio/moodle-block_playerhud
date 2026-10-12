@@ -686,8 +686,12 @@ final class game_test extends advanced_testcase {
             'id' => $stale->id, 'currentxp' => 100, 'ranking_visibility' => 0,
         ]);
 
+        \block_playerhud\tests\recording_lock_factory::start();
         $applied = game::change_xp($stale, 30, $this->instanceid);
 
+        $this->assertTrue(\block_playerhud\tests\recording_lock_factory::was_requested(
+            'xp_usr_' . $stale->userid . '_inst_' . $this->instanceid
+        ));
         $this->assertSame(30, $applied);
         $stored = $DB->get_record('block_playerhud_user', ['id' => $stale->id], '*', MUST_EXIST);
         $this->assertSame(130, (int) $stored->currentxp);

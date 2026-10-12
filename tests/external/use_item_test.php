@@ -257,9 +257,13 @@ final class use_item_test extends external_base_testcase {
         $item  = $this->create_deadline_item(2, 0);
         $invid = $this->give_item_to_user((int) $USER->id, $item->id);
 
+        \block_playerhud\tests\recording_lock_factory::start();
         $result = use_item::execute($this->instanceid, $this->course->id, $item->id, $assign->cmid);
 
         $this->assertTrue($result['success'], 'use_item failed: ' . $result['message']);
+        $this->assertTrue(\block_playerhud\tests\recording_lock_factory::was_requested(
+            'deadline_usr_' . $USER->id . '_cm_' . $assign->cmid
+        ));
         $this->assertEquals('deadline_extension', $result['action']);
         $this->assertNotEmpty($result['new_deadline']);
 

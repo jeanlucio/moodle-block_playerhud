@@ -199,9 +199,6 @@ class tab_quests implements renderable {
             $questsdata[] = [
                 'id'               => $q->id,
                 'name'             => utils::plain_string($q->name),
-                'description_html'  => !empty($q->description)
-                    ? format_text($q->description, FORMAT_HTML, ['filter' => false])
-                    : '',
                 // Plain text for a title attribute: entities decoded, left unescaped for the template.
                 'description_plain' => !empty($q->description)
                     ? trim(html_to_text(format_text($q->description, FORMAT_HTML, ['filter' => false]), 0, false))

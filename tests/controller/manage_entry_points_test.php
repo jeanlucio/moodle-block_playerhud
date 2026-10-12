@@ -714,8 +714,16 @@ final class manage_entry_points_test extends advanced_testcase {
             'sesskey'    => sesskey(),
         ];
 
-        $this->expectException(\moodle_exception::class);
-        (new collect())->execute();
+        // Under PHPUnit redirect() also throws a moodle_exception, so the error code is what
+        // tells the courseid check apart from a collection that went ahead and then redirected.
+        try {
+            (new collect())->execute();
+            $this->fail('Expected the mismatched courseid to be rejected.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('accessdenied', $e->errorcode);
+        }
+
+        $this->assert_nothing_granted((int) $student->id);
     }
 
     /**
