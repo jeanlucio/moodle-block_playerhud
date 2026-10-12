@@ -240,6 +240,31 @@ final class utils_test extends advanced_testcase {
     }
 
     /**
+     * The decimal separator follows the user's language: a language that writes 1,5 gets 1,5k.
+     */
+    public function test_format_compact_number_uses_the_language_decimal_separator(): void {
+        global $CFG;
+        $this->resetAfterTest();
+
+        // A throwaway language pack whose only difference from English is the separators.
+        $langdir = $CFG->dataroot . '/lang/zz';
+        make_writable_directory($langdir);
+        file_put_contents(
+            $langdir . '/langconfig.php',
+            "<?php\n\$string['decsep'] = ',';\n\$string['thousandssep'] = '.';\n"
+            . "\$string['parentlanguage'] = 'en';\n\$string['thislanguage'] = 'Test';\n"
+        );
+        get_string_manager()->reset_caches();
+        $this->setUser($this->getDataGenerator()->create_user(['lang' => 'zz']));
+
+        $this->assertSame('1,5k', utils::format_compact_number(1500));
+        $this->assertSame('1,2M', utils::format_compact_number(1200000));
+
+        remove_dir($langdir);
+        get_string_manager()->reset_caches();
+    }
+
+    /**
      * A negative value keeps its sign in front of the compacted magnitude.
      */
     public function test_format_compact_number_preserves_negative_sign(): void {

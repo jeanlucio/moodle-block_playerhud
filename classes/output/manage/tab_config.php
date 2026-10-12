@@ -87,7 +87,7 @@ class tab_config implements renderable, templatable {
         $a = new \stdClass();
         $a->total = $totalitemsxp;
         $a->req = $xpceiling;
-        $a->ratio = number_format($health->ratio, 1);
+        $a->ratio = format_float($health->ratio, 1);
 
         switch ($health->status) {
             case 'empty':

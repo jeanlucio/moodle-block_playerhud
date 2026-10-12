@@ -472,7 +472,12 @@ class tab_reports implements renderable, templatable {
         return [
             [
                 'title'    => get_string('report_total_xp', 'block_playerhud'),
-                'value'    => number_format((float)$totalxp ?: 0, 0, ',', '.') . ' ' . get_string('xp', 'block_playerhud'),
+                'value'    => number_format(
+                    (float) $totalxp,
+                    0,
+                    get_string('decsep', 'langconfig'),
+                    get_string('thousandssep', 'langconfig')
+                ) . ' ' . get_string('xp', 'block_playerhud'),
                 'subtitle' => '',
                 'bg_class' => 'ph-bg-gradient-primary',
             ],

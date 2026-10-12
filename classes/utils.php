@@ -416,12 +416,12 @@ class utils {
         $sign = $value < 0 ? '-' : '';
 
         if ($abs >= 1000000) {
-            $short = rtrim(rtrim(number_format($abs / 1000000, 1), '0'), '.');
+            $short = format_float($abs / 1000000, 1, true, true);
             return $sign . $short . 'M';
         }
 
         if ($abs >= 1000) {
-            $short = rtrim(rtrim(number_format($abs / 1000, 1), '0'), '.');
+            $short = format_float($abs / 1000, 1, true, true);
             return $sign . $short . 'k';
         }
 
