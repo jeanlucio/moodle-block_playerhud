@@ -214,40 +214,39 @@ class integrity {
      * @return array Course id keyed by block instance id; instances not found are absent.
      */
     private static function find_courses_in_log(array $players): array {
-        global $DB;
-
-        if (empty($players) || !$DB->get_manager()->table_exists('logstore_standard_log')) {
+        $readers = get_log_manager()->get_readers('\core\log\sql_reader');
+        if (empty($players) || empty($readers)) {
             return [];
         }
 
-        $conditions = [];
-        $params = ['blocklevel' => CONTEXT_BLOCK];
-        $index = 0;
+        // Any enabled log reader can answer, not only the standard store, and none of them is
+        // queried by table name. One lookup per instance, and the number of instances is capped
+        // by MAXLISTED, so the cost is bounded.
+        $reader = reset($readers);
+        $courses = [];
         foreach ($players as $stats) {
             if ((int) $stats->lastactivity <= 0) {
                 continue;
             }
-            $conditions[] = "(l.contextinstanceid = :bid{$index} AND l.timecreated BETWEEN :from{$index} AND :to{$index})";
-            $params['bid' . $index] = (int) $stats->blockinstanceid;
-            $params['from' . $index] = (int) $stats->lastactivity - self::LOG_WINDOW;
-            $params['to' . $index] = (int) $stats->lastactivity + self::LOG_WINDOW;
-            $index++;
-        }
-        if (empty($conditions)) {
-            return [];
+            $events = $reader->get_events_select(
+                'contextlevel = :blocklevel AND contextinstanceid = :bid AND courseid > 0'
+                . ' AND timecreated BETWEEN :from AND :to',
+                [
+                    'blocklevel' => CONTEXT_BLOCK,
+                    'bid' => (int) $stats->blockinstanceid,
+                    'from' => (int) $stats->lastactivity - self::LOG_WINDOW,
+                    'to' => (int) $stats->lastactivity + self::LOG_WINDOW,
+                ],
+                'timecreated DESC',
+                0,
+                1
+            );
+            if ($events) {
+                $courses[(int) $stats->blockinstanceid] = (int) reset($events)->courseid;
+            }
         }
 
-        $rows = $DB->get_records_sql_menu(
-            "SELECT l.contextinstanceid, MAX(l.courseid)
-               FROM {logstore_standard_log} l
-              WHERE l.contextlevel = :blocklevel
-                AND l.courseid > 0
-                AND (" . implode(' OR ', $conditions) . ")
-           GROUP BY l.contextinstanceid",
-            $params
-        );
-
-        return array_map('intval', $rows);
+        return $courses;
     }
 
     /**
@@ -446,6 +445,7 @@ class integrity {
         $filename = 'orphans-' . date('Ymd-His') . '-' . bin2hex(random_bytes(2)) . '.json';
         return [self::get_backup_dir() . '/' . $filename, $filename];
     }
+
     /**
      * Deletes the backup files older than the retention period.
      *
@@ -464,7 +464,6 @@ class integrity {
 
         return $deleted;
     }
-
 
     /**
      * Lists the backup files, newest first.

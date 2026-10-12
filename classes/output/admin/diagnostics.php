@@ -229,7 +229,7 @@ class diagnostics implements renderable, templatable {
             'deletedusers' => $orphan->deletedusers,
             'course' => $course,
             'courseexists' => $orphan->courseexists === true,
-            'checked' => $orphan->courseexists !== true,
+            'checked' => $orphan->courseexists === false,
             'selectlabel' => get_string('diag_select_instance', 'block_playerhud', $orphan->id),
         ];
     }

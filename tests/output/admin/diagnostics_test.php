@@ -103,7 +103,8 @@ final class diagnostics_test extends advanced_testcase {
     }
 
     /**
-     * Orphans whose course still exists start unselected; deleted or unknown ones start selected.
+     * Only orphans whose course is confirmed deleted start selected; an existing course, or one that
+     * could not be found in the log, leaves the row unselected.
      */
     public function test_orphan_rows_preselection(): void {
         $this->resetAfterTest(true);
@@ -119,7 +120,7 @@ final class diagnostics_test extends advanced_testcase {
         $this->assertTrue($rows[100]['courseexists']);
         $this->assertTrue($rows[101]['checked']);
         $this->assertSame(get_string('diag_course_deleted', 'block_playerhud'), $rows[101]['course']);
-        $this->assertTrue($rows[102]['checked']);
+        $this->assertFalse($rows[102]['checked'], 'An unknown course is never preselected for deletion.');
         $this->assertSame(get_string('diag_course_unknown', 'block_playerhud'), $rows[102]['course']);
     }
 
