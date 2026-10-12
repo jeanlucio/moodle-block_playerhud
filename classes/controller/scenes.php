@@ -44,6 +44,65 @@ class scenes {
     }
 
     /**
+     * Deletes a scene and leaves nothing pointing at it.
+     *
+     * Choices of other scenes that led to the deleted one now end the chapter (next_nodeid 0),
+     * and any student whose saved path went through it loses that step, so the chapter resumes
+     * from the previous scene instead of failing with "scene not found".
+     *
+     * @param int $nodeid The scene to delete.
+     * @param int $chapterid The chapter the scene must belong to.
+     * @param int $instanceid The owning block instance ID.
+     * @return bool True when a scene was deleted.
+     */
+    public function delete_scene(int $nodeid, int $chapterid, int $instanceid): bool {
+        global $DB;
+
+        $chapter = $DB->get_record(
+            'block_playerhud_chapters',
+            ['id' => $chapterid, 'blockinstanceid' => $instanceid]
+        );
+        $node = $chapter ? $DB->get_record('block_playerhud_story_nodes', ['id' => $nodeid, 'chapterid' => $chapterid]) : false;
+        if (!$node) {
+            return false;
+        }
+
+        $transaction = $DB->start_delegated_transaction();
+
+        $DB->delete_records('block_playerhud_choices', ['nodeid' => $nodeid]);
+        $DB->set_field('block_playerhud_choices', 'next_nodeid', 0, ['next_nodeid' => $nodeid]);
+        $DB->delete_records('block_playerhud_story_nodes', ['id' => $nodeid]);
+
+        // The saved path is JSON, so a text match only narrows the rows and the exact check
+        // happens on the decoded map.
+        $candidates = $DB->get_records_select(
+            'block_playerhud_rpg_progress',
+            'blockinstanceid = :instanceid AND ' . $DB->sql_like('current_nodes', ':nodeid'),
+            ['instanceid' => $instanceid, 'nodeid' => '%' . $nodeid . '%']
+        );
+        foreach ($candidates as $progress) {
+            $map = json_decode((string) $progress->current_nodes, true);
+            $path = is_array($map) ? ($map[$chapterid] ?? null) : null;
+            $path = is_array($path) ? $path : (($path === null) ? [] : [$path]);
+            if (!in_array($nodeid, array_map('intval', $path), true)) {
+                continue;
+            }
+
+            $path = array_values(array_filter($path, static fn($id) => (int) $id !== $nodeid));
+            if ($path) {
+                $map[$chapterid] = $path;
+            } else {
+                unset($map[$chapterid]);
+            }
+            $DB->set_field('block_playerhud_rpg_progress', 'current_nodes', json_encode($map), ['id' => $progress->id]);
+        }
+
+        $transaction->allow_commit();
+
+        return true;
+    }
+
+    /**
      * Renders the scene management list for a chapter.
      *
      * @return string HTML output.
@@ -84,14 +143,7 @@ class scenes {
         $PAGE->set_pagelayout('incourse');
 
         if ($action === 'delete_scene' && $nodeid && confirm_sesskey()) {
-            $node = $DB->get_record(
-                'block_playerhud_story_nodes',
-                ['id' => $nodeid, 'chapterid' => $chapterid]
-            );
-            if ($node) {
-                $DB->delete_records('block_playerhud_choices', ['nodeid' => $nodeid]);
-                $DB->delete_records('block_playerhud_story_nodes', ['id' => $nodeid]);
-            }
+            $this->delete_scene($nodeid, $chapterid, $instanceid);
             redirect(
                 $baseurl,
                 get_string('scene_deleted', 'block_playerhud'),

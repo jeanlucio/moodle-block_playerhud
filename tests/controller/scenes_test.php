@@ -249,4 +249,111 @@ final class scenes_test extends advanced_testcase {
         $this->assertStringContainsString('Say "Nami"', $newnode->content);
         $this->assertStringNotContainsString('&quot;', $newnode->content);
     }
+
+    /**
+     * Creates a choice that leads from one scene to another.
+     *
+     * @param int $nodeid Scene the choice belongs to.
+     * @param int $nextnodeid Scene the choice leads to.
+     * @return int The new choice ID.
+     */
+    protected function make_choice_to(int $nodeid, int $nextnodeid): int {
+        global $DB;
+
+        return (int) $DB->insert_record('block_playerhud_choices', (object) [
+            'nodeid'      => $nodeid,
+            'text'        => 'Go on',
+            'next_nodeid' => $nextnodeid,
+        ]);
+    }
+
+    /**
+     * Stores a student's saved story path.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $userid Student ID.
+     * @param array $nodes Map of chapter ID to the list of scene IDs visited.
+     * @return int The new progress ID.
+     */
+    protected function make_progress(int $instanceid, int $userid, array $nodes): int {
+        global $DB;
+
+        return (int) $DB->insert_record('block_playerhud_rpg_progress', (object) [
+            'blockinstanceid'    => $instanceid,
+            'userid'             => $userid,
+            'classid'            => 0,
+            'karma'              => 0,
+            'current_nodes'      => json_encode($nodes),
+            'completed_chapters' => '[]',
+            'timecreated'        => time(),
+            'timemodified'       => time(),
+        ]);
+    }
+
+    /**
+     * Deleting a scene removes its own choices and turns the choices that led to it into
+     * chapter endings instead of leaving them pointing at a scene that no longer exists.
+     */
+    public function test_delete_scene_unlinks_choices_that_led_to_it(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$instanceid, $chapterid, $doomed] = $this->make_scene();
+        $first = $this->make_node($chapterid);
+        $other = $this->make_node($chapterid);
+        $ownchoice = $this->make_choice_to($doomed, $other);
+        $incoming = $this->make_choice_to($first, $doomed);
+        $unrelated = $this->make_choice_to($first, $other);
+
+        $this->assertTrue((new scenes())->delete_scene($doomed, $chapterid, $instanceid));
+
+        $this->assertFalse($DB->record_exists('block_playerhud_story_nodes', ['id' => $doomed]));
+        $this->assertFalse($DB->record_exists('block_playerhud_choices', ['id' => $ownchoice]));
+        $this->assertEquals(0, $DB->get_field('block_playerhud_choices', 'next_nodeid', ['id' => $incoming]));
+        $this->assertEquals($other, $DB->get_field('block_playerhud_choices', 'next_nodeid', ['id' => $unrelated]));
+    }
+
+    /**
+     * A student who was on the deleted scene goes back to the previous one, and a student
+     * whose path never touched it keeps the path untouched.
+     */
+    public function test_delete_scene_repairs_saved_student_paths(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$instanceid, $chapterid, $doomed] = $this->make_scene();
+        $previous = $this->make_node($chapterid);
+        $otherchapter = $this->make_chapter($instanceid);
+        $keep = $this->make_node($otherchapter);
+        $users = [];
+        for ($i = 0; $i < 3; $i++) {
+            $users[] = $this->getDataGenerator()->create_user()->id;
+        }
+        $onit = $this->make_progress($instanceid, $users[0], [$chapterid => [$previous, $doomed], $otherchapter => [$keep]]);
+        $onlyit = $this->make_progress($instanceid, $users[1], [$chapterid => [$doomed]]);
+        $untouched = $this->make_progress($instanceid, $users[2], [$chapterid => [$previous]]);
+
+        (new scenes())->delete_scene($doomed, $chapterid, $instanceid);
+
+        $path = json_decode($DB->get_field('block_playerhud_rpg_progress', 'current_nodes', ['id' => $onit]), true);
+        $this->assertEquals([$previous], $path[$chapterid]);
+        $this->assertEquals([$keep], $path[$otherchapter]);
+
+        $path = json_decode($DB->get_field('block_playerhud_rpg_progress', 'current_nodes', ['id' => $onlyit]), true);
+        $this->assertArrayNotHasKey($chapterid, $path);
+
+        $path = json_decode($DB->get_field('block_playerhud_rpg_progress', 'current_nodes', ['id' => $untouched]), true);
+        $this->assertEquals([$previous], $path[$chapterid]);
+    }
+
+    /**
+     * A scene id that belongs to another chapter of the page is not deleted.
+     */
+    public function test_delete_scene_ignores_a_scene_from_another_chapter(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$instanceid, $chapterid, $nodeid] = $this->make_scene();
+        $otherchapter = $this->make_chapter($instanceid);
+
+        $this->assertFalse((new scenes())->delete_scene($nodeid, $otherchapter, $instanceid));
+        $this->assertTrue($DB->record_exists('block_playerhud_story_nodes', ['id' => $nodeid]));
+    }
 }
