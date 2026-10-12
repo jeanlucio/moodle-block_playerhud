@@ -148,6 +148,9 @@ class game {
      * earliest to reach an XP wins). A loss is a correction by the game master, so the player
      * keeps the date they reached their XP instead of falling behind everyone they tied with.
      *
+     * The balance is read again under a per-player lock, so a stale $player never overwrites an
+     * XP change made since it was loaded; on return $player carries the saved currentxp.
+     *
      * @param \stdClass $player Player record (block_playerhud_user) with id, userid, currentxp.
      * @param int $delta Signed XP change (positive to award, negative to deduct).
      * @param int $instanceid Block instance ID (source of the event context and course).
@@ -156,18 +159,36 @@ class game {
     public static function change_xp(\stdClass $player, int $delta, int $instanceid): int {
         global $DB;
 
-        $old = (int)$player->currentxp;
-        $new = max(0, $old + $delta);
-        $applied = $new - $old;
-        if ($applied === 0) {
-            return 0;
+        // Callers read the player row earlier, some under other locks, so adding the delta to
+        // that copy and saving the whole row would overwrite an XP change made in between (and
+        // any other column changed since). The balance is read again under a lock of its own
+        // and only the XP columns are written.
+        $lockfactory = \core\lock\lock_config::get_lock_factory('block_playerhud');
+        $lock = $lockfactory->get_lock('xp_usr_' . (int) $player->userid . '_inst_' . $instanceid, 10);
+        if (!$lock) {
+            throw new \moodle_exception('error_xp_lock', 'block_playerhud');
         }
 
-        $player->currentxp = $new;
-        if ($applied > 0) {
-            $player->timemodified = time();
+        try {
+            $old = (int) $DB->get_field('block_playerhud_user', 'currentxp', ['id' => $player->id], MUST_EXIST);
+            $new = max(0, $old + $delta);
+            $applied = $new - $old;
+
+            $player->currentxp = $old;
+            if ($applied === 0) {
+                return 0;
+            }
+
+            $update = (object) ['id' => (int) $player->id, 'currentxp' => $new];
+            if ($applied > 0) {
+                $update->timemodified = time();
+                $player->timemodified = $update->timemodified;
+            }
+            $DB->update_record('block_playerhud_user', $update);
+            $player->currentxp = $new;
+        } finally {
+            $lock->release();
         }
-        $DB->update_record('block_playerhud_user', $player);
 
         $context = \context_block::instance($instanceid);
         $coursectx = $context->get_course_context(false);

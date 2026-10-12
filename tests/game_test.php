@@ -670,6 +670,32 @@ final class game_test extends advanced_testcase {
     }
 
     /**
+     * change_xp works from the balance stored now, not from the copy of the player the caller
+     * loaded earlier: an XP change made in between is kept, and so is a column changed since.
+     */
+    public function test_change_xp_does_not_overwrite_changes_made_since_the_player_was_loaded(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $stale = game::get_player($this->instanceid, $user->id);
+
+        // Another request awards 100 XP and the student hides from the ranking after $stale was read.
+        $DB->update_record('block_playerhud_user', (object) [
+            'id' => $stale->id, 'currentxp' => 100, 'ranking_visibility' => 0,
+        ]);
+
+        $applied = game::change_xp($stale, 30, $this->instanceid);
+
+        $this->assertSame(30, $applied);
+        $stored = $DB->get_record('block_playerhud_user', ['id' => $stale->id], '*', MUST_EXIST);
+        $this->assertSame(130, (int) $stored->currentxp);
+        $this->assertSame(0, (int) $stored->ranking_visibility);
+        $this->assertSame(130, (int) $stale->currentxp);
+    }
+
+    /**
      * Test that get_leaderboard excludes users with the block/playerhud:manage capability.
      */
     public function test_get_leaderboard_excludes_managers(): void {
