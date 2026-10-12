@@ -108,6 +108,12 @@ class setup_playercoin_drop extends external_api {
             ];
         }
 
+        // The news forum's description is rewritten below: the forum itself can forbid editing
+        // through a role override even when the course allows it.
+        if (!\block_playerhud\utils::can_edit_activity((int) $forum->cmid)) {
+            return \block_playerhud\utils::activity_permission_failure();
+        }
+
         $code = \block_playerhud\utils::generate_drop_code($instanceid);
 
         $dropid = $DB->insert_record('block_playerhud_drops', (object) [

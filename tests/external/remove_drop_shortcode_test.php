@@ -87,6 +87,27 @@ final class remove_drop_shortcode_test extends external_base_testcase {
     }
 
     /**
+     * Removing a shortcode from an activity the user is forbidden to edit (role override on the
+     * activity) is refused and leaves the text untouched.
+     */
+    public function test_remove_refuses_an_activity_the_user_may_not_edit(): void {
+        global $DB;
+
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid, $code] = $this->create_drop($item->id);
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course'  => $this->course->id,
+            'content' => '[PLAYERHUD_DROP code=' . $code . ']',
+        ]);
+        $this->setUser($this->create_teacher_forbidden_to_edit($page->cmid));
+
+        $result = remove_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $page->cmid, 'content');
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString($code, $DB->get_field('page', 'content', ['id' => $page->id]));
+    }
+
+    /**
      * Removing the shortcode announces the activity change too, like inserting it does.
      */
     public function test_remove_triggers_course_module_updated(): void {

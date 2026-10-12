@@ -87,6 +87,27 @@ final class insert_drop_shortcode_test extends external_base_testcase {
     }
 
     /**
+     * A teacher who may manage the course's activities but is forbidden to edit one of them by a
+     * role override on that activity cannot add a shortcode to it; the other activities still work.
+     */
+    public function test_insert_refuses_an_activity_the_user_may_not_edit(): void {
+        global $DB;
+
+        $locked = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'content' => 'Locked']);
+        $open = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id, 'content' => 'Open']);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid] = $this->create_drop($item->id);
+        $this->setUser($this->create_teacher_forbidden_to_edit($locked->cmid));
+
+        $result = insert_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $locked->cmid, 'content', 'top');
+        $this->assertFalse($result['success']);
+        $this->assertSame('Locked', $DB->get_field('page', 'content', ['id' => $locked->id]));
+
+        $result = insert_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $open->cmid, 'content', 'top');
+        $this->assertTrue($result['success']);
+    }
+
+    /**
      * Rewriting an activity's text announces the change to Moodle like any other edit of the
      * activity, so logs, observers and the search indexer hear about it. The text used to be
      * written straight to the table with no event.

@@ -257,6 +257,38 @@ class utils {
     }
 
     /**
+     * Tells whether the current user may edit one activity, checked in that activity's own context.
+     *
+     * Checking moodle/course:manageactivities in the course is not enough to rewrite an activity:
+     * a role override on the activity itself can still forbid it, and Moodle's own editing
+     * actions honour that override.
+     *
+     * @param int $cmid Course module ID.
+     * @return bool True when the user holds moodle/course:manageactivities in the activity context.
+     */
+    public static function can_edit_activity(int $cmid): bool {
+        $context = \context_module::instance($cmid, IGNORE_MISSING);
+
+        return $context && has_capability('moodle/course:manageactivities', $context);
+    }
+
+    /**
+     * Builds the failure result returned when the user may not edit the targeted activity.
+     *
+     * @return array Result structure with success false and the missing-capability message.
+     */
+    public static function activity_permission_failure(): array {
+        return [
+            'success' => false,
+            'message' => get_string(
+                'nopermissions',
+                'error',
+                get_capability_string('moodle/course:manageactivities')
+            ),
+        ];
+    }
+
+    /**
      * Returns a stored name or title as plain text, ready for a double-mustache template.
      *
      * The string filters (multilang, ...) are applied, then markup is stripped and entities are

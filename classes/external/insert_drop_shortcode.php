@@ -277,6 +277,12 @@ class insert_drop_shortcode extends external_api {
             return ['success' => false, 'message' => get_string('invalidrecord', 'error')];
         }
 
+        // The course-level capability was checked once for the call; the activity being rewritten
+        // can still forbid editing through a role override of its own.
+        if (!\block_playerhud\utils::can_edit_activity($cmid)) {
+            return \block_playerhud\utils::activity_permission_failure();
+        }
+
         $modname = $cm->modname;
 
         // Verify the field exists in the module table. Cached per modname so a batch of many

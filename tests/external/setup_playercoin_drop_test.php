@@ -200,6 +200,28 @@ final class setup_playercoin_drop_test extends external_base_testcase {
     }
 
     /**
+     * A teacher forbidden to edit the news forum by a role override on it cannot put the drop in its
+     * description, and no drop is created.
+     */
+    public function test_setup_playercoin_drop_refuses_a_forum_the_user_may_not_edit(): void {
+        global $DB;
+
+        $forum = $this->getDataGenerator()->create_module('forum', [
+            'course' => $this->course->id,
+            'type'   => 'news',
+            'intro'  => 'Welcome',
+        ]);
+        $item = $this->create_item($this->instanceid, 'PlayerCoin');
+        $this->setUser($this->create_teacher_forbidden_to_edit($forum->cmid));
+
+        $result = setup_playercoin_drop::execute($this->instanceid, $this->course->id, $item->id);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('Welcome', $DB->get_field('forum', 'intro', ['id' => $forum->id]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
      * A student without block/playerhud:manage must not be able to setup a drop.
      */
     public function test_setup_playercoin_drop_requires_manage_capability(): void {

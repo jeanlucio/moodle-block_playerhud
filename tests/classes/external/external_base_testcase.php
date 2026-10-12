@@ -165,6 +165,29 @@ abstract class external_base_testcase extends advanced_testcase {
     }
 
     /**
+     * Create a teacher who may manage the block and the course's activities, except the given one,
+     * where a role override prohibits moodle/course:manageactivities.
+     *
+     * @param int $cmid Course module the teacher is forbidden to edit.
+     * @return \stdClass The created user record.
+     */
+    protected function create_teacher_forbidden_to_edit(int $cmid): \stdClass {
+        global $DB;
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $this->course->id, 'editingteacher');
+        $role = $DB->get_record('role', ['shortname' => 'editingteacher'], '*', MUST_EXIST);
+        assign_capability(
+            'moodle/course:manageactivities',
+            CAP_PROHIBIT,
+            $role->id,
+            \context_module::instance($cmid)->id,
+            true
+        );
+        accesslib_clear_all_caches_for_unit_testing();
+        return $teacher;
+    }
+
+    /**
      * Insert a story chapter for the shared block instance.
      *
      * @param string $title Chapter title.
