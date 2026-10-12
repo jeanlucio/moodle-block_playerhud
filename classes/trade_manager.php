@@ -158,13 +158,7 @@ class trade_manager {
                 $available = $availablemap[$reqitemid] ?? 0;
 
                 if ($available < $needed) {
-                    $itemname = isset($itemsmap[$reqitemid]) ?
-                        format_string($itemsmap[$reqitemid]->name) : get_string('item', 'block_playerhud');
-
-                    $a = new \stdClass();
-                    $a->missing = $needed - $available;
-                    $a->name = $itemname;
-                    throw new \moodle_exception('error_trade_insufficient', 'block_playerhud', '', $a);
+                    throw self::insufficient_items_exception($itemsmap[$reqitemid] ?? null, $needed - $available);
                 }
             }
 
@@ -184,7 +178,13 @@ class trade_manager {
                         // check and this write (e.g. a concurrent external grant/consume on the
                         // same item) — treat it as insufficient rather than silently short the
                         // requirement and still hand over the reward.
-                        throw new \moodle_exception('error_trade_insufficient', 'block_playerhud');
+                        $balance = \block_playerhud\local\external_items::get_available_quantities_bulk(
+                            $instanceid,
+                            [(int) $req->itemid],
+                            $userid
+                        );
+                        $missing = max(1, (int) $req->qty - (int) ($balance[$req->itemid] ?? 0));
+                        throw self::insufficient_items_exception($itemsmap[$req->itemid] ?? null, $missing);
                     }
                 }
             }
@@ -242,5 +242,21 @@ class trade_manager {
         } finally {
             $lock->release();
         }
+    }
+
+    /**
+     * Builds the error for a requirement the student cannot cover, with the item and the amount
+     * that is missing filled in, so the message never shows its raw placeholders.
+     *
+     * @param \stdClass|null $item The required item, or null when it is no longer known.
+     * @param int $missing How many units the student is short.
+     * @return \moodle_exception
+     */
+    private static function insufficient_items_exception(?\stdClass $item, int $missing): \moodle_exception {
+        $a = new \stdClass();
+        $a->missing = $missing;
+        $a->name = $item ? format_string($item->name) : get_string('item', 'block_playerhud');
+
+        return new \moodle_exception('error_trade_insufficient', 'block_playerhud', '', $a);
     }
 }

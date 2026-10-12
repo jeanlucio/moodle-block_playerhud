@@ -186,7 +186,24 @@ final class trade_test extends advanced_testcase {
             $this->fail('Expected moodle_exception due to insufficient funds.');
         } catch (\moodle_exception $e) {
             $this->assertEquals('error_trade_insufficient', $e->errorcode);
+            $this->assertStringContainsString('2x Coin', $e->getMessage());
         }
+    }
+
+    /**
+     * The error raised when a balance changes between the check and the write names the item and
+     * the units still missing; with no arguments the message showed its raw placeholders.
+     */
+    public function test_insufficient_items_exception_fills_in_its_placeholders(): void {
+        $method = new \ReflectionMethod(trade_manager::class, 'insufficient_items_exception');
+        $method->setAccessible(true);
+
+        $known = $method->invoke(null, (object) ['name' => 'Coin'], 3);
+        $this->assertStringContainsString('3x Coin', $known->getMessage());
+
+        $unknown = $method->invoke(null, null, 2);
+        $this->assertStringContainsString('2x ' . get_string('item', 'block_playerhud'), $unknown->getMessage());
+        $this->assertStringNotContainsString('{$a', $unknown->getMessage());
     }
 
     /**
