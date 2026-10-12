@@ -227,6 +227,20 @@ class game {
             throw new \moodle_exception('itemnotfound', 'block_playerhud');
         }
 
+        // An item reserved for some characters is hidden from the others on the page and in the
+        // filter, but hiding is not enforcement: the collection endpoint is reachable with any
+        // drop id, so the restriction has to be applied here, as trade_manager does for rewards.
+        if (!empty($item->required_class_id) && $item->required_class_id !== '0') {
+            $classid = (int) $DB->get_field(
+                'block_playerhud_rpg_progress',
+                'classid',
+                ['userid' => $userid, 'blockinstanceid' => $instanceid]
+            );
+            if (!utils::is_visible_for_class((string) $item->required_class_id, $classid)) {
+                throw new \moodle_exception('itemnotfound', 'block_playerhud');
+            }
+        }
+
         // 2. Serialize concurrent collections of this drop by this user, mirroring the
         // lock trade_manager::execute_trade() uses to prevent two simultaneous requests
         // from both passing the maxusage/cooldown check before either one writes.
@@ -316,9 +330,11 @@ class game {
         $milestone = '';
         $iscoin = (isset($item->action_type) && $item->action_type === 'playercoin');
         if ($iscoin && !((int)$player->milestones & self::MILESTONE_COIN)) {
+            // Only the bitmask is written. timemodified is the ranking's tie-breaker and moves only
+            // with an XP gain, and saving the whole row would overwrite what a concurrent request
+            // changed since $player was read.
             $player->milestones = (int)$player->milestones | self::MILESTONE_COIN;
-            $player->timemodified = time();
-            $DB->update_record('block_playerhud_user', $player);
+            $DB->set_field('block_playerhud_user', 'milestones', $player->milestones, ['id' => $player->id]);
             $milestone = 'coin';
         }
 

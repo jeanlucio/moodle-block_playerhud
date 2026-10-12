@@ -302,6 +302,66 @@ final class game_test extends advanced_testcase {
     }
 
     /**
+     * An item reserved for a character cannot be collected by a player of another character (or of
+     * none), even when the drop id is sent directly; a player of the right character collects it.
+     */
+    public function test_process_collection_enforces_the_required_class(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $wizard = $DB->insert_record('block_playerhud_classes', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Wizard', 'description' => '', 'base_hp' => 80,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $item = $this->create_dummy_item('Wizard Staff', 10);
+        $DB->set_field('block_playerhud_items', 'required_class_id', (string) $wizard, ['id' => $item->id]);
+        $drop = $this->create_dummy_drop($item->id, 5);
+
+        $outsider = $this->getDataGenerator()->create_user();
+        try {
+            game::process_collection($this->instanceid, $drop->id, $outsider->id);
+            $this->fail('A player without the character must not collect the item.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('itemnotfound', $e->errorcode);
+        }
+        $this->assertFalse(game::has_item($outsider->id, $item->id));
+
+        $member = $this->getDataGenerator()->create_user();
+        $DB->insert_record('block_playerhud_rpg_progress', (object) [
+            'blockinstanceid' => $this->instanceid, 'userid' => $member->id, 'classid' => $wizard, 'karma' => 0,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $this->assertTrue(game::process_collection($this->instanceid, $drop->id, $member->id)['success']);
+        $this->assertTrue(game::has_item($member->id, $item->id));
+    }
+
+    /**
+     * The first-PlayerCoin milestone sets its bit without touching timemodified, which is the
+     * ranking's tie-breaker and moves only with an XP gain.
+     */
+    public function test_first_playercoin_milestone_keeps_the_ranking_tiebreaker(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $player = game::get_player($this->instanceid, $user->id);
+        $DB->set_field('block_playerhud_user', 'timemodified', 1700000000, ['id' => $player->id]);
+
+        $coin = $this->create_dummy_item('PlayerCoin', 0);
+        $DB->set_field('block_playerhud_items', 'action_type', 'playercoin', ['id' => $coin->id]);
+        $drop = $this->create_dummy_drop($coin->id, 0);
+
+        $result = game::process_collection($this->instanceid, $drop->id, $user->id);
+
+        $this->assertSame('coin', $result['milestone']);
+        $stored = $DB->get_record('block_playerhud_user', ['id' => $player->id], '*', MUST_EXIST);
+        $this->assertSame(game::MILESTONE_COIN, (int) $stored->milestones & game::MILESTONE_COIN);
+        $this->assertSame(1700000000, (int) $stored->timemodified);
+    }
+
+    /**
      * Test strict limit enforcement (maxusage).
      */
     public function test_process_collection_maxusage_limit(): void {
