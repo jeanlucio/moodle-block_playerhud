@@ -376,6 +376,47 @@ final class integrity_test extends advanced_testcase {
     }
 
     /**
+     * Backups older than the retention period are deleted; recent ones, and files that are not
+     * backups, are left alone.
+     */
+    public function test_expired_backups_are_purged(): void {
+        $old = integrity::cleanup([$this->orphanid])['file'];
+        $dir = integrity::get_backup_dir();
+        $expired = time() - ((integrity::BACKUP_RETENTION_DAYS + 1) * DAYSECS);
+        touch($dir . '/' . $old, $expired);
+
+        $recent = 'orphans-20260101-000000-abcd.json';
+        file_put_contents($dir . '/' . $recent, '{}');
+        file_put_contents($dir . '/notes.txt', 'keep');
+        touch($dir . '/notes.txt', $expired);
+
+        $this->assertSame(1, integrity::purge_expired_backups());
+
+        $this->assertFileDoesNotExist($dir . '/' . $old);
+        $this->assertFileExists($dir . '/' . $recent);
+        $this->assertFileExists($dir . '/notes.txt');
+
+        unlink($dir . '/' . $recent);
+        unlink($dir . '/notes.txt');
+    }
+
+    /**
+     * The scheduled task runs the purge.
+     */
+    public function test_purge_task_deletes_expired_backups(): void {
+        $file = integrity::cleanup([$this->orphanid])['file'];
+        touch(
+            integrity::get_backup_dir() . '/' . $file,
+            time() - ((integrity::BACKUP_RETENTION_DAYS + 1) * DAYSECS)
+        );
+
+        (new \block_playerhud\task\purge_orphan_backups())->execute();
+
+        $this->assertSame([], integrity::list_backups());
+        $this->assertNotEmpty((new \block_playerhud\task\purge_orphan_backups())->get_name());
+    }
+
+    /**
      * Player rows of every orphan are counted, beyond the listed ones.
      */
     public function test_count_orphan_players(): void {

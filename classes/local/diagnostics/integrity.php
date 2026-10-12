@@ -76,6 +76,9 @@ class integrity {
     /** @var int Seconds searched on each side of an orphan's last XP change to find its course in the log. */
     public const LOG_WINDOW = 300;
 
+    /** @var int Days a cleanup backup is kept before the scheduled task deletes it. */
+    public const BACKUP_RETENTION_DAYS = 30;
+
     /** @var string Pattern of the backup file names written before a cleanup. */
     private const BACKUP_PATTERN = '/^orphans-\d{8}-\d{6}-[0-9a-f]{4}\.json$/';
 
@@ -443,6 +446,25 @@ class integrity {
         $filename = 'orphans-' . date('Ymd-His') . '-' . bin2hex(random_bytes(2)) . '.json';
         return [self::get_backup_dir() . '/' . $filename, $filename];
     }
+    /**
+     * Deletes the backup files older than the retention period.
+     *
+     * @return int How many files were deleted.
+     */
+    public static function purge_expired_backups(): int {
+        $limit = time() - (self::BACKUP_RETENTION_DAYS * DAYSECS);
+        $dir = self::get_backup_dir();
+        $deleted = 0;
+        foreach (scandir($dir) ?: [] as $name) {
+            $path = $dir . '/' . $name;
+            if (preg_match(self::BACKUP_PATTERN, $name) && filemtime($path) < $limit && unlink($path)) {
+                $deleted++;
+            }
+        }
+
+        return $deleted;
+    }
+
 
     /**
      * Lists the backup files, newest first.

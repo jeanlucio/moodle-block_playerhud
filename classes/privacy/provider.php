@@ -140,6 +140,12 @@ class provider implements
             'timemodified' => 'privacy:metadata:timemodified',
         ], 'privacy:metadata:wizard_runs');
 
+        // Copies of the rows removed by the administrator's orphan cleanup, kept in the data directory.
+        $collection->add_external_location_link('orphan_backups', [
+            'userid' => 'privacy:metadata:orphan_backups:userid',
+            'data' => 'privacy:metadata:orphan_backups:data',
+        ], 'privacy:metadata:orphan_backups');
+
         // Declaration for Moodle Privacy Subsystem (External APIs).
         $collection->add_external_location_link('google_gemini', [
             'prompt' => 'privacy:metadata:external:prompt',

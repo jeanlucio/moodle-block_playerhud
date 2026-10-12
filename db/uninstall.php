@@ -30,18 +30,21 @@
  * drops every table declared in db/install.xml and removes all admin settings,
  * so neither is repeated here. User preferences live in the core
  * {user_preferences} table, which core never touches, so the plugin must clean
- * its own here (personal AI keys, chosen avatar, etc.).
+ * its own here (personal AI keys, chosen avatar, etc.). The same goes for the orphan cleanup
+ * backups kept in the data directory, which hold personal data and which core never removes.
  *
  * @return bool
  */
 function xmldb_block_playerhud_uninstall(): bool {
-    global $DB;
+    global $CFG, $DB;
 
     $DB->delete_records_select(
         'user_preferences',
         $DB->sql_like('name', ':prefix'),
         ['prefix' => 'block_playerhud_%']
     );
+
+    remove_dir($CFG->dataroot . '/block_playerhud');
 
     return true;
 }

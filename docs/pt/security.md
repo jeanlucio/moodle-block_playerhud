@@ -5,7 +5,7 @@
 - Proteção com `require_sesskey()`
 - Compatível com a API externa do Moodle
 - Participação no ranking com controle de privacidade
-- Página de Uso e Diagnóstico: só números agregados, contados no próprio site — nada é enviado para fora dele. A limpeza salva antes uma cópia JSON dos registros apagados, que contém dados pessoais (identificadores de usuários e XP), em `moodledata/block_playerhud/orphan_backups/`; ela fica lá até um administrador apagá-la pela página
+- Página de Uso e Diagnóstico: só números agregados, contados no próprio site — nada é enviado para fora dele. A limpeza salva antes uma cópia JSON dos registros apagados, que contém dados pessoais (identificadores de usuários e XP), em `moodledata/block_playerhud/orphan_backups/`; ela é apagada automaticamente após 30 dias, antes se um administrador a apagar pela página, e quando o plugin é desinstalado
 
 ## 🔎 Divulgação de Serviço de Terceiros
 
