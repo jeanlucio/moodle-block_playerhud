@@ -44,6 +44,23 @@ class scenes {
     }
 
     /**
+     * Builds the plain-text preview of a scene shown in the scene list.
+     *
+     * The result is plain text, not HTML: the template escapes it once. Entities that the
+     * editor stored (&amp;, &nbsp;, &#039;) are decoded first so they do not show up literally,
+     * and the cut counts characters, not bytes, so a multibyte letter is never split.
+     *
+     * @param string $content The stored scene HTML.
+     * @return string Up to 100 characters of text.
+     */
+    public static function snippet(string $content): string {
+        $text = html_entity_decode(strip_tags($content), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = trim(preg_replace('/\s+/u', ' ', $text));
+
+        return \core_text::substr($text, 0, 100);
+    }
+
+    /**
      * Deletes a scene and leaves nothing pointing at it.
      *
      * Choices of other scenes that led to the deleted one now end the chapter (next_nodeid 0),
@@ -199,7 +216,7 @@ class scenes {
                 'id_label'        => get_string('scene_number', 'block_playerhud', (int) $scene->id),
                 'is_start'        => (bool) $scene->is_start,
                 'str_start_badge' => get_string('scene_start_badge', 'block_playerhud'),
-                'snippet'         => s(substr(strip_tags($scene->content), 0, 100)),
+                'snippet'         => self::snippet($scene->content),
                 'choice_count'    => count($choices),
                 'str_choices'     => get_string('choices_hdr', 'block_playerhud'),
                 'flag_badges'     => $flagbadges,

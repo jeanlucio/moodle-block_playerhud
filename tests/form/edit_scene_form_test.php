@@ -40,9 +40,10 @@ final class edit_scene_form_test extends advanced_testcase {
      * Renders the form for a chapter holding the given scenes.
      *
      * @param string[] $contents HTML content of each existing scene.
+     * @param array $currentdata Values the form is pre-filled with, such as choice_text_0.
      * @return string The rendered form HTML.
      */
-    private function render_form_for(array $contents): string {
+    private function render_form_for(array $contents, array $currentdata = []): string {
         global $DB, $PAGE;
 
         $course = $this->getDataGenerator()->create_course();
@@ -68,7 +69,9 @@ final class edit_scene_form_test extends advanced_testcase {
         }
 
         $PAGE->set_url('/blocks/playerhud/manage.php');
-        $form = new edit_scene_form(null, ['chapterid' => $chapterid, 'instanceid' => $instanceid]);
+        $form = new edit_scene_form(null, [
+            'chapterid' => $chapterid, 'instanceid' => $instanceid, 'current_data' => $currentdata,
+        ]);
         ob_start();
         $form->display();
         return ob_get_clean();
@@ -114,5 +117,19 @@ final class edit_scene_form_test extends advanced_testcase {
 
         $this->assertStringNotContainsString('Curta...', $html);
         $this->assertStringContainsString('palavra palavra palavra palavra ...', $html);
+    }
+
+    /**
+     * A saved choice text is escaped once: the template escapes it, so the form must hand it over
+     * raw. An ampersand used to reach the input as "&amp;amp;" and grew a level on every save.
+     */
+    public function test_choice_text_is_escaped_once(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $html = $this->render_form_for(['Cena'], ['choice_text_0' => 'Tom & "Jerry" <b>']);
+
+        $this->assertStringContainsString('Tom &amp; &quot;Jerry&quot; &lt;b&gt;', $html);
+        $this->assertStringNotContainsString('&amp;amp;', $html);
     }
 }

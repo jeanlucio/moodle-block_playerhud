@@ -137,7 +137,7 @@ class edit_scene_form extends \moodleform {
             $templatedata = array_merge($strmap, [
                 'idx'          => $i,
                 'choice_title' => $strmap['choice_title_prefix'] . ' #' . ($i + 1),
-                'val_text'     => s($valtext),
+                'val_text'     => $valtext,
                 'val_req_karma' => $valreqkarma,
                 'val_karma'    => $valkarma,
                 'val_cost_qty' => $valqty,

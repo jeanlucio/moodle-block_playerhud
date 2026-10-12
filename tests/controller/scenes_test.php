@@ -356,4 +356,19 @@ final class scenes_test extends advanced_testcase {
         $this->assertFalse((new scenes())->delete_scene($nodeid, $otherchapter, $instanceid));
         $this->assertTrue($DB->record_exists('block_playerhud_story_nodes', ['id' => $nodeid]));
     }
+
+    /**
+     * The list preview is plain text: entities are decoded (the template escapes it once), tags
+     * are dropped, whitespace is collapsed and the cut counts characters, not bytes.
+     */
+    public function test_snippet_is_plain_text_cut_by_characters(): void {
+        $this->assertSame(
+            "Tom & Jerry's mundo",
+            scenes::snippet("<p>Tom &amp; Jerry&#039;s&nbsp;\n mundo</p>")
+        );
+
+        $snippet = scenes::snippet(str_repeat('ê', 150));
+        $this->assertSame(100, \core_text::strlen($snippet));
+        $this->assertTrue(mb_check_encoding($snippet, 'UTF-8'));
+    }
 }
