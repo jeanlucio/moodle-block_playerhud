@@ -455,6 +455,40 @@ final class lib_test extends advanced_testcase {
     }
 
     /**
+     * The teacher turning the ranking off does not hide the profile section either: the profile
+     * does not depend on the leaderboard, only on the student's own gamification opt-out.
+     */
+    public function test_myprofile_navigation_shows_profile_when_the_ranking_is_disabled(): void {
+        global $DB;
+
+        $DB->set_field(
+            'block_instances',
+            'configdata',
+            base64_encode(serialize((object) ['enable_ranking' => 0])),
+            ['id' => $this->instanceid]
+        );
+        $DB->insert_record('block_playerhud_user', (object) [
+            'blockinstanceid'     => $this->instanceid,
+            'userid'              => 2,
+            'currentxp'           => 30,
+            'enable_gamification' => 1,
+            'ranking_visibility'  => 1,
+            'timecreated'         => time(),
+            'timemodified'        => time(),
+        ]);
+
+        $viewer = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($viewer->id, $this->course->id, 'student');
+        $this->resolve_real_renderer();
+        $this->setUser($viewer);
+
+        $tree = new tree();
+        block_playerhud_myprofile_navigation($tree, (object) ['id' => 2], false, $this->course);
+
+        $this->assertArrayHasKey('playerhud', $tree->categories);
+    }
+
+    /**
      * The owner viewing their own profile sees their section even when hidden from the
      * leaderboard.
      */

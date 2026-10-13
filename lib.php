@@ -143,9 +143,11 @@ function block_playerhud_myprofile_navigation(
         return;
     }
 
-    // The student's own opt-outs are enable_gamification (checked above), which takes them out of
-    // the profile and the leaderboard alike, and ranking_visibility, which hides only their
-    // position in the leaderboard. Hiding from the ranking therefore does not hide the profile.
+    // Deliberate product decision: the profile does not depend on the leaderboard. Neither the
+    // teacher turning the ranking off (enable_ranking) nor a student hiding from it
+    // (ranking_visibility, the owner's or the viewer's) changes who sees the profile section.
+    // The one opt-out that removes a student from it is enable_gamification, checked above,
+    // which takes them out of the profile and the leaderboard alike.
 
     $content = new \block_playerhud\output\profile_content((int)$instance->id, (int)$user->id);
     $data = $content->export_for_template($OUTPUT);
