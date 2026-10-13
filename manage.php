@@ -160,7 +160,8 @@ if ($action === 'delete' && $itemid && confirm_sesskey()) {
         $survivingtrades = \block_playerhud\controller\items::find_affected_surviving_trades($instanceid, [$itemid]);
         $xpimpact        = \block_playerhud\controller\items::find_xp_impact([$itemid]);
         $questimpact     = \block_playerhud\controller\items::find_affected_quests($instanceid, [$itemid]);
-        $hasquestimpact  = !empty($questimpact['requirement']) || !empty($questimpact['reward']);
+        $hasquestimpact  = !empty($questimpact['requirement']) || !empty($questimpact['reward'])
+            || !empty($questimpact['choices']);
 
         if (!empty($orphanedtrades) || !empty($survivingtrades) || $xpimpact->studentcount > 0 || $hasquestimpact) {
             $itemsurl = new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]);
@@ -238,7 +239,8 @@ if ($action === 'bulk_delete' && confirm_sesskey()) {
             $survivingtrades = \block_playerhud\controller\items::find_affected_surviving_trades($instanceid, $itemids);
             $xpimpact        = \block_playerhud\controller\items::find_xp_impact($itemids);
             $questimpact     = \block_playerhud\controller\items::find_affected_quests($instanceid, $itemids);
-            $hasquestimpact  = !empty($questimpact['requirement']) || !empty($questimpact['reward']);
+            $hasquestimpact  = !empty($questimpact['requirement']) || !empty($questimpact['reward'])
+            || !empty($questimpact['choices']);
 
             if (!empty($orphanedtrades) || !empty($survivingtrades) || $xpimpact->studentcount > 0 || $hasquestimpact) {
                 $itemsurl = new moodle_url($baseurl, ['tab' => 'items', 'sort' => $sort, 'dir' => $dir]);
