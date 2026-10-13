@@ -529,6 +529,7 @@ $string['intro_desc'] = 'Boas-vindas à área do jogador! Aqui você encontra it
 $string['intro_title'] = 'Oi, eu sou o Huddy!';
 $string['item'] = 'Item';
 $string['item_archived'] = 'Arquivado';
+$string['item_delete_choice_cost'] = 'Estas escolhas da história cobram este item. Depois de excluí-lo elas deixam de cobrar e passam a ser gratuitas.';
 $string['item_delete_confirm'] = 'Tem certeza que deseja excluir o item "{$a}"?';
 $string['item_delete_confirm_simple'] = 'Excluir item';
 $string['item_delete_confirm_trade'] = 'Excluir item e 1 troca';

@@ -243,6 +243,75 @@ final class item_delete_cascade_test extends advanced_testcase {
         );
     }
 
+    /**
+     * Seeds a story choice that charges an item, in the given instance.
+     *
+     * @param int $instanceid Block instance owning the chapter.
+     * @param int $itemid Item the choice charges.
+     * @param string $text Choice text.
+     * @return int The new choice ID.
+     */
+    private function make_costly_choice(int $instanceid, int $itemid, string $text): int {
+        global $DB;
+
+        $chapter = $DB->insert_record('block_playerhud_chapters', (object) [
+            'blockinstanceid' => $instanceid, 'title' => 'Chapter', 'sortorder' => 1,
+        ]);
+        $node = $DB->insert_record('block_playerhud_story_nodes', (object) [
+            'chapterid' => $chapter, 'content' => 'Scene', 'is_start' => 1,
+        ]);
+
+        return (int) $DB->insert_record('block_playerhud_choices', (object) [
+            'nodeid' => $node, 'text' => $text, 'cost_itemid' => $itemid, 'cost_item_qty' => 3,
+        ]);
+    }
+
+    /**
+     * Deleting an item stops the story choices of its instance from charging it, instead of
+     * leaving them blocked for every student; choices that charge other items, and choices of
+     * other instances, are untouched.
+     */
+    public function test_delete_item_stops_story_choices_from_charging_it(): void {
+        global $DB;
+
+        $doomed = $this->make_item('Doomed');
+        $kept = $this->make_item('Kept');
+        $otherinstance = $this->create_block_instance();
+        $charging = $this->make_costly_choice($this->instanceid, $doomed->id, 'Charges doomed');
+        $other = $this->make_costly_choice($this->instanceid, $kept->id, 'Charges kept');
+        $foreign = $this->make_costly_choice($otherinstance, $doomed->id, 'Foreign instance');
+
+        items::delete_item($doomed, $this->instanceid, $this->context);
+
+        $this->assertEquals(0, $DB->get_field('block_playerhud_choices', 'cost_itemid', ['id' => $charging]));
+        $this->assertEquals(1, $DB->get_field('block_playerhud_choices', 'cost_item_qty', ['id' => $charging]));
+        $this->assertEquals($kept->id, $DB->get_field('block_playerhud_choices', 'cost_itemid', ['id' => $other]));
+        $this->assertEquals(3, $DB->get_field('block_playerhud_choices', 'cost_item_qty', ['id' => $other]));
+        $this->assertEquals($doomed->id, $DB->get_field('block_playerhud_choices', 'cost_itemid', ['id' => $foreign]));
+    }
+
+    /**
+     * The bulk delete does the same for every selected item, and the confirmation finder lists
+     * the choices before anything is deleted.
+     */
+    public function test_bulk_delete_stops_story_choices_from_charging_the_items(): void {
+        global $DB;
+
+        $a = $this->make_item('A');
+        $b = $this->make_item('B');
+        $first = $this->make_costly_choice($this->instanceid, $a->id, 'Charges A');
+        $second = $this->make_costly_choice($this->instanceid, $b->id, 'Charges B');
+
+        $affected = items::find_affected_quests($this->instanceid, [$a->id, $b->id]);
+        $this->assertEqualsCanonicalizing(['Charges A', 'Charges B'], array_column($affected['choices'], 'name'));
+
+        items::bulk_delete_items([$a->id => $a, $b->id => $b], $this->instanceid, $this->context);
+
+        $this->assertEquals(0, $DB->get_field('block_playerhud_choices', 'cost_itemid', ['id' => $first]));
+        $this->assertEquals(0, $DB->get_field('block_playerhud_choices', 'cost_itemid', ['id' => $second]));
+        $this->assertSame([], items::find_affected_quests($this->instanceid, [$a->id, $b->id])['choices']);
+    }
+
     // Tests for bulk_delete_items() — database state assertions.
 
     /**

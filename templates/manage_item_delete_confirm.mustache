@@ -35,6 +35,9 @@
     * has_quest_reward - Whether any quest gives the item as a reward.
     * quest_reward_warning - Impact message for quests that reward the item.
     * quest_reward_list - Array of those quests, each with a name.
+    * has_choice_cost - Whether any story choice charges the item.
+    * choice_cost_warning - Impact message for the story choices that charge the item.
+    * choice_cost_list - Array of those choices, each with a name (the choice text).
     * has_xp_impact - Whether any student would lose recorded XP.
     * xp_impact_warning - Aggregate XP impact message (student count + total XP).
     * has_disable_link - Whether to show the "disable instead" link (single item only).
@@ -72,6 +75,9 @@
         "has_quest_reward": true,
         "quest_reward_warning": "These quests give this item as a reward. After it is deleted they will only give their XP.",
         "quest_reward_list": [{"name": "Finish the maze"}],
+        "has_choice_cost": true,
+        "choice_cost_warning": "These story choices charge this item. After it is deleted they become free.",
+        "choice_cost_list": [{"name": "Open the sealed door"}],
         "has_xp_impact": true,
         "xp_impact_warning": "This item has already been earned by 3 student(s), totalling 300 XP. Deleting it will permanently take that XP back.",
         "has_disable_link": true,
@@ -127,6 +133,14 @@
             {{/quest_reward_list}}
         </ul>
     {{/has_quest_reward}}
+    {{#has_choice_cost}}
+        <div class="alert alert-warning" role="alert">{{choice_cost_warning}}</div>
+        <ul class="mb-3">
+            {{#choice_cost_list}}
+                <li>{{name}}</li>
+            {{/choice_cost_list}}
+        </ul>
+    {{/has_choice_cost}}
     {{#has_xp_impact}}
         <div class="alert alert-warning" role="alert">
             {{xp_impact_warning}}

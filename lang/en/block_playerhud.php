@@ -529,6 +529,7 @@ $string['intro_desc'] = 'Welcome to your player area! Here you\'ll find items, q
 $string['intro_title'] = 'Hi, I\'m Huddy!';
 $string['item'] = 'Item';
 $string['item_archived'] = 'Archived';
+$string['item_delete_choice_cost'] = 'These story choices charge this item. After it is deleted they stop charging it and become free.';
 $string['item_delete_confirm'] = 'Are you sure you want to delete the item "{$a}"?';
 $string['item_delete_confirm_simple'] = 'Delete item';
 $string['item_delete_confirm_trade'] = 'Delete item and 1 trade';

@@ -121,6 +121,33 @@ final class item_delete_confirm_test extends advanced_testcase {
     }
 
     /**
+     * Story choices that charge the item are listed, with the text escaped once, and the flag is
+     * off when there are none.
+     */
+    public function test_build_context_lists_the_story_choices_that_charge_the_item(): void {
+        $this->resetAfterTest();
+        $build = fn(array $impact) => item_delete_confirm::build_context(
+            'Gem',
+            [],
+            [],
+            $this->noimpact(),
+            false,
+            [5],
+            $this->urls(),
+            'id',
+            'DESC',
+            $impact
+        );
+
+        $ctx = $build(['choices' => [(object) ['name' => 'Open the "sealed" door']]]);
+
+        $this->assertTrue($ctx['has_choice_cost']);
+        $this->assertSame([['name' => 'Open the "sealed" door']], $ctx['choice_cost_list']);
+        $this->assertSame(get_string('item_delete_choice_cost', 'block_playerhud'), $ctx['choice_cost_warning']);
+        $this->assertFalse($build([])['has_choice_cost']);
+    }
+
+    /**
      * Quests that use the item are listed by role, and alone they are enough to need the
      * confirmation (no trade impact flag, no XP impact).
      */

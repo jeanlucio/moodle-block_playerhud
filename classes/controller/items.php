@@ -326,16 +326,18 @@ class items {
      * 'requirement' lists specific-item quests that need one of the items to be completed;
      * 'reward' lists quests that hand one of them out. Both are what a teacher must hear about
      * before deleting or disabling an item, since the quest then cannot be completed (or loses
-     * its item reward) and is hidden from students.
+     * its item reward) and is hidden from students. 'choices' lists the story choices that charge
+     * one of the items: once it is deleted they stop charging it.
      *
      * @param int $instanceid Block instance ID.
      * @param int[] $itemids Item IDs being deleted or disabled.
-     * @return array{requirement: \stdClass[], reward: \stdClass[]} Quest records (id, name) keyed by ID.
+     * @return array{requirement: \stdClass[], reward: \stdClass[], choices: \stdClass[]} Records
+     *         (id, name) keyed by ID; for choices the name is the choice text.
      */
     public static function find_affected_quests(int $instanceid, array $itemids): array {
         global $DB;
 
-        $result = ['requirement' => [], 'reward' => []];
+        $result = ['requirement' => [], 'reward' => [], 'choices' => []];
         if (empty($itemids)) {
             return $result;
         }
@@ -361,7 +363,47 @@ class items {
             'id, name'
         );
 
+        [$chsql, $chparams] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED, 'qc');
+        $chparams['iid'] = $instanceid;
+        $result['choices'] = $DB->get_records_sql(
+            "SELECT ch.id, ch.text AS name
+               FROM {block_playerhud_choices} ch
+               JOIN {block_playerhud_story_nodes} n ON n.id = ch.nodeid
+               JOIN {block_playerhud_chapters} c ON c.id = n.chapterid
+              WHERE c.blockinstanceid = :iid AND ch.cost_itemid $chsql
+           ORDER BY ch.text ASC",
+            $chparams
+        );
+
         return $result;
+    }
+
+    /**
+     * Stops the story choices of the instance from charging items that are being deleted.
+     *
+     * A choice that still charged a deleted item could never be afforded (the balance of a
+     * deleted item is always 0), so every student would be stuck behind it. It becomes free,
+     * which is also what saving the scene again does with an item that no longer exists.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int[] $itemids Item IDs being deleted.
+     */
+    private static function clear_story_choice_costs(int $instanceid, array $itemids): void {
+        global $DB;
+
+        if (empty($itemids)) {
+            return;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED, 'sc');
+        $inparams['iid'] = $instanceid;
+        $select = "nodeid IN (SELECT n.id
+                                FROM {block_playerhud_story_nodes} n
+                                JOIN {block_playerhud_chapters} c ON c.id = n.chapterid
+                               WHERE c.blockinstanceid = :iid)
+                   AND cost_itemid $insql";
+        $DB->set_field_select('block_playerhud_choices', 'cost_item_qty', 1, $select, $inparams);
+        $DB->set_field_select('block_playerhud_choices', 'cost_itemid', 0, $select, $inparams);
     }
 
     /**
@@ -527,6 +569,7 @@ class items {
 
         self::delete_orphaned_trades($tradeids, $instanceid);
         self::clear_quest_rewards($instanceid, [$itemid]);
+        self::clear_story_choice_costs($instanceid, [$itemid]);
 
         // Remove each holder's recorded XP for this item (both storage generations).
         $holders = self::get_xp_holders([$itemid]);
@@ -575,6 +618,7 @@ class items {
 
         self::delete_orphaned_trades($tradeids, $instanceid);
         self::clear_quest_rewards($instanceid, $itemids);
+        self::clear_story_choice_costs($instanceid, $itemids);
 
         $holders = self::get_xp_holders($itemids);
         if ($holders) {

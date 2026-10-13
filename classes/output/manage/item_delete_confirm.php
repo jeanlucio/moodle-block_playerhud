@@ -48,8 +48,9 @@ class item_delete_confirm {
      * @param array $urls URL strings keyed 'form', 'cancel', 'edit' and (single only) 'toggle'.
      * @param string $sort Current sort column, carried through the form.
      * @param string $dir Current sort direction, carried through the form.
-     * @param array $questimpact Quests affected by the deletion: 'requirement' and 'reward' lists
-     *        (each entry with ->name), from items::find_affected_quests().
+     * @param array $questimpact What the deletion affects: the 'requirement' and 'reward' quest lists
+     *        and the 'choices' list of story choices that charge the item (each entry with ->name),
+     *        from items::find_affected_quests().
      * @return array The template context.
      */
     public static function build_context(
@@ -68,6 +69,7 @@ class item_delete_confirm {
         $plainname = static fn($record): array => ['name' => \block_playerhud\utils::plain_string($record->name)];
         $questrequirement = array_values(array_map($plainname, $questimpact['requirement'] ?? []));
         $questreward = array_values(array_map($plainname, $questimpact['reward'] ?? []));
+        $choicecost = array_values(array_map($plainname, $questimpact['choices'] ?? []));
 
         $orphanedcount = count($orphanedtrades);
 
@@ -119,6 +121,9 @@ class item_delete_confirm {
             'has_quest_reward'       => !empty($questreward),
             'quest_reward_warning'   => get_string('item_delete_quest_reward', 'block_playerhud'),
             'quest_reward_list'      => $questreward,
+            'has_choice_cost'        => !empty($choicecost),
+            'choice_cost_warning'    => get_string('item_delete_choice_cost', 'block_playerhud'),
+            'choice_cost_list'       => $choicecost,
             'has_xp_impact'          => $hasxpimpact,
             'xp_impact_warning'      => $xpwarning,
             'has_disable_link'       => $hasdisablelink,
