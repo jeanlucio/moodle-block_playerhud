@@ -579,13 +579,11 @@ class game {
         // 4. AND are still actively enrolled in the course.
         $enrolledclause = '';
         if ($courseid > 0) {
-            $enrolledclause = "AND userid IN (
-                SELECT ue.userid
-                  FROM {user_enrolments} ue
-                  JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = :enrol_courseid
-                 WHERE ue.status = 0 AND e.status = 0
-            )";
-            $params['enrol_courseid'] = $courseid;
+            // The core's own definition of "enrolled and active": status, enrolment method and
+            // the start and end dates, the same rule is_enrolled(..., true) applies.
+            [$esql, $eparams] = get_enrolled_sql(\context_course::instance($courseid), '', 0, true);
+            $enrolledclause = "AND userid IN ($esql)";
+            $params = array_merge($params, $eparams);
         }
 
         $sql = "SELECT COUNT(id)
@@ -711,16 +709,16 @@ class game {
         // SQL Modification:
         // Sort by XP (Descending) and then by DATE (Ascending - first comes first wins).
         // Only include users actively enrolled in the course.
+        [$esql, $eparams] = get_enrolled_sql($coursecontext, '', 0, true);
         $sql = "SELECT $userfields, u.id as userid,
                        pu.currentxp, pu.ranking_visibility, pu.enable_gamification, pu.timemodified
                   FROM {block_playerhud_user} pu
                   JOIN {user} u ON pu.userid = u.id
-                  JOIN {user_enrolments} ue ON ue.userid = u.id AND ue.status = 0
-                  JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = :enrolcourseid AND e.status = 0
+                  JOIN ($esql) je ON je.id = u.id
                  WHERE pu.blockinstanceid = :pid
               ORDER BY pu.currentxp DESC, pu.timemodified ASC, u.lastname ASC";
 
-        $rawusers = $DB->get_records_sql($sql, ['pid' => $blockinstanceid, 'enrolcourseid' => $courseid]);
+        $rawusers = $DB->get_records_sql($sql, ['pid' => $blockinstanceid] + $eparams);
 
         // Membership set for the teacher's group filter, built once from the map already
         // loaded above instead of a groups_is_member() DB call per ranked user.

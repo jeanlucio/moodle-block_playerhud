@@ -88,6 +88,8 @@ class export {
         // 3. Bulk Query (Zero N+1 Queries) to fetch all relevant student data. total_items sums
         // current active holdings across both storage generations, mirroring
         // output/manage/tab_reports.php's own students table query.
+        // Only users the core counts as actively enrolled: status, method and enrolment dates.
+        [$esql, $eparams] = get_enrolled_sql($coursecontext, '', 0, true);
         $sql = "SELECT u.id, $userfields $emailfield, pu.currentxp, pu.timemodified,
                        (SELECT COUNT(inv.id)
                           FROM {block_playerhud_inventory} inv
@@ -103,13 +105,12 @@ class export {
                            AND it2.blockinstanceid = :p3) AS total_items
                   FROM {user} u
                   JOIN {block_playerhud_user} pu ON pu.userid = u.id
-                  JOIN {user_enrolments} ue ON ue.userid = u.id AND ue.status = 0
-                  JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = :enrolcourseid AND e.status = 0
+                  JOIN ($esql) je ON je.id = u.id
                  WHERE pu.blockinstanceid = :p2
                    $excludeclause
               ORDER BY pu.currentxp DESC, pu.timemodified ASC, u.lastname ASC";
 
-        $params = ['p1' => $instanceid, 'p2' => $instanceid, 'p3' => $instanceid, 'enrolcourseid' => $courseid];
+        $params = ['p1' => $instanceid, 'p2' => $instanceid, 'p3' => $instanceid] + $eparams;
         if (!empty($excludeparams)) {
             $params = array_merge($params, $excludeparams);
         }

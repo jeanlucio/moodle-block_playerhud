@@ -303,6 +303,29 @@ final class export_test extends advanced_testcase {
     }
 
     /**
+     * An enrolment that has ended, or that starts in the future, does not count as enrolled: the
+     * status column stays 0 in both cases, so the export has to look at the dates too.
+     */
+    public function test_build_export_excludes_expired_and_not_yet_started_enrolments(): void {
+        $this->make_instance();
+        $generator = $this->getDataGenerator();
+
+        $active = $generator->create_user(['email' => 'active@example.com']);
+        $generator->enrol_user($active->id, $this->course->id, 'student');
+        $expired = $generator->create_user(['email' => 'expired@example.com']);
+        $generator->enrol_user($expired->id, $this->course->id, 'student', 'manual', time() - (2 * DAYSECS), time() - DAYSECS);
+        $future = $generator->create_user(['email' => 'future@example.com']);
+        $generator->enrol_user($future->id, $this->course->id, 'student', 'manual', time() + DAYSECS);
+        foreach ([$active, $expired, $future] as $user) {
+            $this->seed_player($user->id, 100);
+        }
+
+        [, $rows] = (new export())->build_export($this->course->id, $this->instanceid);
+
+        $this->assertSame(['active@example.com'], array_column($rows, 2));
+    }
+
+    /**
      * Players tied on XP are ordered by their last-action time, oldest first.
      */
     public function test_build_export_breaks_xp_ties_by_timemodified(): void {

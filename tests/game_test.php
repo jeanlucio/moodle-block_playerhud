@@ -864,6 +864,43 @@ final class game_test extends advanced_testcase {
     }
 
     /**
+     * The ranking counts only actively enrolled players: one whose enrolment has ended still has
+     * status 0, but must neither be listed nor push the others down.
+     */
+    public function test_ranking_ignores_expired_enrolments(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course();
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => \context_course::instance($course->id)->id,
+            'showinsubcontexts' => 0, 'pagetypepattern' => 'course-view-*', 'subpagepattern' => null,
+            'defaultregion' => 'side-pre', 'defaultweight' => 0,
+            'configdata' => base64_encode(serialize(new \stdClass())),
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $generator = $this->getDataGenerator();
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+        $expired = $generator->create_user();
+        $generator->enrol_user($expired->id, $course->id, 'student', 'manual', time() - (2 * DAYSECS), time() - DAYSECS);
+        $now = time();
+        foreach ([$student->id => 100, $expired->id => 500] as $uid => $xp) {
+            $DB->insert_record('block_playerhud_user', (object) [
+                'blockinstanceid' => $instanceid, 'userid' => $uid, 'currentxp' => $xp,
+                'ranking_visibility' => 1, 'enable_gamification' => 1,
+                'timecreated' => $now, 'timemodified' => $now,
+            ]);
+        }
+
+        $result = game::get_leaderboard($instanceid, $student->id, false);
+        $listed = array_map('intval', array_column($result['individual'], 'userid'));
+
+        $this->assertSame([(int) $student->id], $listed);
+        $this->assertSame(1, game::get_user_rank($instanceid, $student->id, 100));
+    }
+
+    /**
      * Regression test for the security-audit finding: the group ranking must honor
      * SEPARATEGROUPS the same way the individual ranking already does — a student must not see
      * another group's name, member count or aggregate XP.
