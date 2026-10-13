@@ -358,7 +358,7 @@ class quest {
                 $current = $currentxp;
                 $status->completed = ($current >= $target);
                 $status->progress = ($target > 0) ? min(100, floor(($current / $target) * 100)) : 100;
-                $status->label = "{$current} / {$target} XP";
+                $status->label = $current . ' / ' . $target . ' ' . get_string('xp', 'block_playerhud');
                 break;
 
             case self::TYPE_UNIQUE_ITEMS:
@@ -635,7 +635,7 @@ class quest {
                 // XP Reward.
                 if ($quest->reward_xp > 0) {
                     \block_playerhud\game::change_xp($player, (int)$quest->reward_xp, $blockinstanceid);
-                    $rewardstxt[] = "+{$quest->reward_xp} XP";
+                    $rewardstxt[] = '+' . $quest->reward_xp . ' ' . get_string('xp', 'block_playerhud');
                 }
 
                 // Item Reward. The item's own xp value is never paid here — only reward_xp

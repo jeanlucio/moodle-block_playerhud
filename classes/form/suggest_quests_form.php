@@ -60,7 +60,8 @@ class suggest_quests_form extends \moodleform {
             foreach ($suggestions as $sug) {
                 $label = '<span aria-hidden="true" class="fs-5 me-2">' . $sug['image_done'] . '</span> ' .
                          '<span class="fw-bold text-dark">' . s($sug['name']) . '</span> ' .
-                         '<span class="badge bg-success text-white ms-2 shadow-sm">+' . $sug['reward_xp'] . ' XP</span>';
+                         '<span class="badge bg-success text-white ms-2 shadow-sm">+' . $sug['reward_xp'] . ' '
+                         . get_string('xp', 'block_playerhud') . '</span>';
 
                 $mform->addElement('advcheckbox', 'sug_' . $sug['uid'], '', $label, null, [0, 1]);
                 $mform->setDefault('sug_' . $sug['uid'], 1);

@@ -35,7 +35,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         $items = new backup_nested_element('items');
         $item = new backup_nested_element('item', ['id'], [
             'name', 'description', 'image', 'xp', 'enabled',
-            'maxusage', 'respawntime', 'tradable', 'secret',
+            'tradable', 'secret',
             'required_class_id', 'action_type', 'action_value',
             'timecreated', 'timemodified',
         ]);

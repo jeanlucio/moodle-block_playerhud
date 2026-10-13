@@ -64,6 +64,28 @@ final class backup_restore_test extends advanced_testcase {
     }
 
     /**
+     * Every column the item backup declares exists in the items table, and the other way round.
+     *
+     * A declared column that is not in the table is silently saved as empty, and a table column
+     * missing from the list is silently lost on restore. A per-column assertion would not notice
+     * either after a schema change, so the two sets are compared whole.
+     */
+    public function test_item_backup_attributes_match_the_items_table(): void {
+        global $CFG, $DB;
+
+        $source = file_get_contents($CFG->dirroot . '/blocks/playerhud/backup/moodle2/backup_playerhud_stepslib.php');
+        $this->assertSame(1, preg_match("/new backup_nested_element\('item', \['id'\], \[(.*?)\]\);/s", $source, $match));
+        preg_match_all("/'([a-z_]+)'/", $match[1], $found);
+
+        $tablecolumns = array_diff(array_keys($DB->get_columns('block_playerhud_items')), ['id', 'blockinstanceid']);
+
+        $declared = $found[1];
+        sort($declared);
+        sort($tablecolumns);
+        $this->assertSame(array_values($tablecolumns), $declared);
+    }
+
+    /**
      * Verify that the restore stepslib includes every RPG table as a restore step.
      */
     public function test_restore_stepslib_covers_rpg_tables(): void {

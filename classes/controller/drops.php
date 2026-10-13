@@ -293,7 +293,7 @@ class drops {
                 'isImage' => $mediadata['is_image'],
                 'url' => $mediadata['is_image'] ? $mediadata['url'] : '',
                 'content' => $mediadata['is_image'] ? '' : strip_tags($mediadata['content']),
-                'xp' => "+{$item->xp} XP",
+                'xp' => ('+' . $item->xp . ' ' . get_string('xp', 'block_playerhud')),
             ],
             'strings' => [
                 'defaultText' => get_string('gen_link_placeholder', 'block_playerhud'),

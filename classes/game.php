@@ -294,7 +294,7 @@ class game {
         // 5. Prepare Response Data.
         $msgparams = new \stdClass();
         $msgparams->name = format_string($item->name);
-        $msgparams->xp = ($earnedxp > 0) ? " (+{$earnedxp} XP)" : "";
+        $msgparams->xp = ($earnedxp > 0) ? ' (+' . $earnedxp . ' ' . get_string('xp', 'block_playerhud') . ')' : '';
         $message = get_string('collected_msg', 'block_playerhud', $msgparams);
 
         // Grant() already applied any XP change internally; fetch the player fresh for its
