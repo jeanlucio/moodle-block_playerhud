@@ -363,6 +363,7 @@ $string['drop_max_qty'] = 'Qtd Máxima';
 $string['drop_name_default'] = 'Ex: dentro do castelo';
 $string['drop_name_label'] = 'Localização / Nome';
 $string['drop_new_title'] = 'Nova Localização';
+$string['drop_not_found'] = 'Este drop não existe mais. Ele pode ter sido excluído em outra aba ou por outro professor.';
 $string['drop_progress_badge'] = '{$a->count} de {$a->maxusage}';
 $string['drop_progress_badge_infinite'] = '{$a} de ∞';
 $string['drop_progress_count'] = 'Coleta {$a->count} de {$a->maxusage}';

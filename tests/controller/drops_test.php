@@ -454,6 +454,45 @@ final class drops_test extends advanced_testcase {
     }
 
     /**
+     * Opening the edit form of a drop that no longer exists sends the teacher back to the drops
+     * list instead of showing an empty form that would save as a new drop. (Under PHPUnit
+     * redirect() throws before queuing its message, so the warning text is checked live.)
+     */
+    public function test_handle_edit_form_redirects_when_the_drop_is_gone(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $instanceid = $DB->insert_record('block_instances', (object) [
+            'blockname'         => 'playerhud',
+            'parentcontextid'   => \context_course::instance($course->id)->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern'   => 'course-view-*',
+            'defaultregion'     => 'side-pre',
+            'defaultweight'     => 0,
+            'configdata'        => base64_encode(serialize(new stdClass())),
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ]);
+        $itemid = $this->make_item($instanceid);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'editingteacher'));
+
+        $_GET['instanceid'] = $instanceid;
+        $_GET['courseid'] = $course->id;
+        $_GET['itemid'] = $itemid;
+        $_GET['dropid'] = 987654;
+
+        try {
+            (new drops())->handle_edit_form();
+            $this->fail('Expected a redirect.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('redirecterrordetected', $e->errorcode);
+        }
+
+        $this->assertSame(0, $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $instanceid]));
+    }
+
+    /**
      * handle_edit_form() renders the (empty, unsubmitted) new-drop form end to end.
      */
     public function test_handle_edit_form_renders_new_form(): void {

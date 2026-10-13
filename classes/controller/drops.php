@@ -356,7 +356,21 @@ class drops {
                   WHERE d.id = :dropid AND i.blockinstanceid = :instanceid",
                 ['dropid' => $dropid, 'instanceid' => $instanceid]
             );
-            $data = $drop ? (array) $drop : [];
+            if (!$drop) {
+                // Deleted since the link was opened (another tab or teacher), or not of this
+                // instance: going on would open an empty form that saves as a brand-new drop.
+                redirect(
+                    new moodle_url('/blocks/playerhud/manage_drops.php', [
+                        'instanceid' => $instanceid,
+                        'id' => $courseid,
+                        'itemid' => $itemid,
+                    ]),
+                    get_string('drop_not_found', 'block_playerhud'),
+                    null,
+                    \core\output\notification::NOTIFY_WARNING
+                );
+            }
+            $data = (array) $drop;
             $data['unlimited'] = ($drop->maxusage == 0) ? 1 : 0;
             $data['maxusage']  = ($drop->maxusage == 0) ? 1 : $drop->maxusage;
             $data['instanceid'] = $instanceid;

@@ -363,6 +363,7 @@ $string['drop_max_qty'] = 'Max Quantity';
 $string['drop_name_default'] = 'Ex: inside the castle';
 $string['drop_name_label'] = 'Location / Name';
 $string['drop_new_title'] = 'New Location';
+$string['drop_not_found'] = 'This drop no longer exists. It may have been deleted in another tab or by another teacher.';
 $string['drop_progress_badge'] = '{$a->count} of {$a->maxusage}';
 $string['drop_progress_badge_infinite'] = '{$a} of ∞';
 $string['drop_progress_count'] = 'Collection {$a->count} of {$a->maxusage}';
