@@ -45,6 +45,8 @@ class edit_class_form extends \moodleform {
         $mform->addElement('text', 'name', get_string('class_name', 'block_playerhud'));
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
+        // The column holds 100 characters; a longer name used to fail the insert with a database error.
+        $mform->addRule('name', get_string('maximumchars', '', 100), 'maxlength', 100, 'client');
 
         // Description.
         $mform->addElement('textarea', 'description', get_string('class_desc', 'block_playerhud'), [

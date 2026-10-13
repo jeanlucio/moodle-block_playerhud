@@ -620,6 +620,87 @@ final class manage_entry_points_test extends advanced_testcase {
         $this->assertStringContainsString('<strong>hidden passage</strong>', $node->content);
     }
 
+    /**
+     * Saving a scene with an oversized choice text keeps it within the column instead of failing
+     * the insert, and the scene is saved with the choice.
+     */
+    public function test_scenes_edit_form_cuts_an_oversized_choice_text(): void {
+        global $DB;
+
+        $this->setAdminUser();
+        $chapterid = $this->make_chapter($this->instanceid);
+        [$nodeid] = $this->make_node_with_choice($chapterid);
+
+        $formidentifier = str_replace('\\', '_', \block_playerhud\form\edit_scene_form::class);
+        $_POST = [
+            'courseid'                => $this->course->id,
+            'instanceid'              => $this->instanceid,
+            'chapterid'               => $chapterid,
+            'nodeid'                  => $nodeid,
+            'content'                 => ['text' => '<p>Scene</p>', 'format' => FORMAT_HTML],
+            'is_start'                => 1,
+            'repeats'                 => 1,
+            'choice_text_0'           => str_repeat('ê', 300),
+            'sesskey'                 => sesskey(),
+            '_qf__' . $formidentifier => 1,
+        ];
+
+        $this->assert_redirects(fn() => (new scenes())->handle_edit_form());
+
+        $choices = $DB->get_records('block_playerhud_choices', ['nodeid' => $nodeid]);
+        $this->assertCount(1, $choices);
+        $this->assertSame(255, \core_text::strlen(reset($choices)->text));
+    }
+
+    /**
+     * A failure while the new choices are written leaves the scene with the choices it had: the
+     * old ones used to be deleted first, with nothing to bring them back.
+     */
+    public function test_scenes_edit_form_keeps_the_old_choices_when_saving_fails(): void {
+        global $DB;
+        $this->preventResetByRollback();
+
+        $this->setAdminUser();
+        $chapterid = $this->make_chapter($this->instanceid);
+        [$nodeid, $choiceid] = $this->make_node_with_choice($chapterid);
+
+        $formidentifier = str_replace('\\', '_', \block_playerhud\form\edit_scene_form::class);
+        $_POST = [
+            'courseid'                => $this->course->id,
+            'instanceid'              => $this->instanceid,
+            'chapterid'               => $chapterid,
+            'nodeid'                  => $nodeid,
+            'content'                 => ['text' => '<p>Changed</p>', 'format' => FORMAT_HTML],
+            'is_start'                => 1,
+            'repeats'                 => 1,
+            'choice_text_0'           => 'New choice',
+            'sesskey'                 => sesskey(),
+            '_qf__' . $formidentifier => 1,
+        ];
+
+        // The old choices are deleted before save_choices() runs; making it fail stands in for
+        // an insert that the database refuses.
+        $failing = new class extends scenes {
+            #[\Override]
+            public function save_choices(int $nodeid, int $chapterid, int $instanceid, array $submittedchoices): void {
+                throw new \dml_write_exception('simulated insert failure');
+            }
+        };
+
+        try {
+            $failing->handle_edit_form();
+            $this->fail('Expected the save to fail.');
+        } catch (\dml_write_exception $e) {
+            $this->assertStringContainsString('simulated insert failure', $e->getMessage());
+        }
+
+        $this->assertTrue($DB->record_exists('block_playerhud_choices', ['id' => $choiceid]));
+        $this->assertStringNotContainsString(
+            'Changed',
+            $DB->get_field('block_playerhud_story_nodes', 'content', ['id' => $nodeid])
+        );
+    }
+
     // Collect — the non-AJAX pickup path.
 
     /**

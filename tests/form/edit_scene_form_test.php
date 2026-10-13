@@ -132,4 +132,16 @@ final class edit_scene_form_test extends advanced_testcase {
         $this->assertStringContainsString('Tom &amp; &quot;Jerry&quot; &lt;b&gt;', $html);
         $this->assertStringNotContainsString('&amp;amp;', $html);
     }
+
+    /**
+     * The choice text field carries the column's own limit, so the browser stops the typing.
+     */
+    public function test_choice_text_field_has_a_maxlength(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $html = $this->render_form_for(['Cena'], ['choice_text_0' => 'Go']);
+
+        $this->assertMatchesRegularExpression('/name="choice_text_0"[^>]*maxlength="255"/s', $html);
+    }
 }

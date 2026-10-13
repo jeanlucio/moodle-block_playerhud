@@ -31,6 +31,9 @@ class scenes {
     /** @var int Upper bound for a client-supplied 'repeats' counter — see the two read points below. */
     const MAX_REPEATS = 50;
 
+    /** @var int Length of the choice text column (block_playerhud_choices.text). */
+    const CHOICE_TEXT_MAX = 255;
+
     /**
      * Clamps a client-supplied 'repeats' counter so it can never drive an unbounded loop —
      * shared by both read points in this class, since a form re-render and a real submission
@@ -386,42 +389,50 @@ class scenes {
             $record->content   = \block_playerhud\utils::sanitize_rich_description($data->content['text']);
             $record->is_start  = (int) $data->is_start;
 
-            if ($data->nodeid) {
-                // Verify the node belongs to the validated chapter before updating.
-                $DB->get_record(
-                    'block_playerhud_story_nodes',
-                    ['id' => $data->nodeid, 'chapterid' => $chapterid],
-                    'id',
-                    MUST_EXIST
-                );
-                $record->id    = $data->nodeid;
-                $DB->update_record('block_playerhud_story_nodes', $record);
-                $currentnodeid = $data->nodeid;
-                $DB->delete_records('block_playerhud_choices', ['nodeid' => $currentnodeid]);
-            } else {
-                $currentnodeid = $DB->insert_record('block_playerhud_story_nodes', $record);
+            // The scene, its starting flag and its choices are replaced together: a failure
+            // half-way must not leave the scene without the choices it had.
+            $transaction = $DB->start_delegated_transaction();
+            try {
+                if ($data->nodeid) {
+                    // Verify the node belongs to the validated chapter before updating.
+                    $DB->get_record(
+                        'block_playerhud_story_nodes',
+                        ['id' => $data->nodeid, 'chapterid' => $chapterid],
+                        'id',
+                        MUST_EXIST
+                    );
+                    $record->id    = $data->nodeid;
+                    $DB->update_record('block_playerhud_story_nodes', $record);
+                    $currentnodeid = $data->nodeid;
+                    $DB->delete_records('block_playerhud_choices', ['nodeid' => $currentnodeid]);
+                } else {
+                    $currentnodeid = $DB->insert_record('block_playerhud_story_nodes', $record);
+                }
+
+                // Clamped for the same reason as the add_choice_btn branch above — the sesskey
+                // check inside get_data() guards against CSRF, not against an oversized value from
+                // the form's own authenticated submitter.
+                $repeatscount = self::clamp_repeats(optional_param('repeats', 0, PARAM_INT));
+
+                $submittedchoices = [];
+                for ($i = 0; $i < $repeatscount; $i++) {
+                    $submittedchoices[] = [
+                        'text'          => optional_param("choice_text_$i", '', PARAM_TEXT),
+                        'next_nodeid'   => optional_param("choice_next_$i", 0, PARAM_INT),
+                        'req_class_id'  => optional_param("choice_req_class_$i", 0, PARAM_INT),
+                        'req_karma_min' => optional_param("choice_req_karma_$i", 0, PARAM_INT),
+                        'karma_delta'   => optional_param("choice_karma_$i", 0, PARAM_INT),
+                        'set_class_id'  => optional_param("choice_set_class_$i", 0, PARAM_INT),
+                        'cost_itemid'   => optional_param("choice_cost_$i", 0, PARAM_INT),
+                        'cost_item_qty' => optional_param("choice_cost_qty_$i", 1, PARAM_INT),
+                    ];
+                }
+
+                $this->save_choices($currentnodeid, $chapterid, $instanceid, $submittedchoices);
+                $transaction->allow_commit();
+            } catch (\Throwable $e) {
+                $transaction->rollback($e);
             }
-
-            // Clamped for the same reason as the add_choice_btn branch above — the sesskey
-            // check inside get_data() guards against CSRF, not against an oversized value from
-            // the form's own authenticated submitter.
-            $repeatscount = self::clamp_repeats(optional_param('repeats', 0, PARAM_INT));
-
-            $submittedchoices = [];
-            for ($i = 0; $i < $repeatscount; $i++) {
-                $submittedchoices[] = [
-                    'text'          => optional_param("choice_text_$i", '', PARAM_TEXT),
-                    'next_nodeid'   => optional_param("choice_next_$i", 0, PARAM_INT),
-                    'req_class_id'  => optional_param("choice_req_class_$i", 0, PARAM_INT),
-                    'req_karma_min' => optional_param("choice_req_karma_$i", 0, PARAM_INT),
-                    'karma_delta'   => optional_param("choice_karma_$i", 0, PARAM_INT),
-                    'set_class_id'  => optional_param("choice_set_class_$i", 0, PARAM_INT),
-                    'cost_itemid'   => optional_param("choice_cost_$i", 0, PARAM_INT),
-                    'cost_item_qty' => optional_param("choice_cost_qty_$i", 1, PARAM_INT),
-                ];
-            }
-
-            $this->save_choices($currentnodeid, $chapterid, $instanceid, $submittedchoices);
 
             if (isset($data->add_choice_btn)) {
                 redirect(new moodle_url('/blocks/playerhud/edit_scene.php', [
@@ -486,7 +497,9 @@ class scenes {
         $previousdestid = 0;
 
         foreach ($submittedchoices as $submitted) {
-            $textval = $submitted['text'] ?? '';
+            // Cut to the column: the form limits the field too, but a request can bypass it, and
+            // an oversized value would fail the insert after the old choices were deleted.
+            $textval = \core_text::substr((string) ($submitted['text'] ?? ''), 0, self::CHOICE_TEXT_MAX);
             if (empty($textval)) {
                 continue;
             }
