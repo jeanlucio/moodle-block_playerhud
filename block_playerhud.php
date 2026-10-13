@@ -96,6 +96,8 @@ class block_playerhud extends block_base {
 
             $stats = \block_playerhud\game::get_game_stats($config, $this->instance->id, $player->currentxp);
 
+            $xpunit = get_string('xp', 'block_playerhud');
+
             // Recent Items Logic (Stash) — only when items feature is enabled.
             $recentitems = [];
             $stashhasmore = false;
@@ -136,7 +138,7 @@ class block_playerhud extends block_base {
                     $media = $allmedia[$invitem->id];
                     $recentitems[] = [
                         'name' => format_string($invitem->name),
-                        'xp' => $invitem->xp . ' XP',
+                        'xp' => $invitem->xp . ' ' . $xpunit,
                         'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
                         'isimage' => $media['is_image'],
                         'description' => !empty($invitem->description)
@@ -169,7 +171,7 @@ class block_playerhud extends block_base {
             }
 
             $xptotalgame = isset($stats['total_game_xp']) ? $stats['total_game_xp'] : 0;
-            $xpdisplay = $player->currentxp . ' / ' . $xptotalgame . ' XP';
+            $xpdisplay = $player->currentxp . ' / ' . $xptotalgame . ' ' . $xpunit;
             if ($player->currentxp >= $xptotalgame && $xptotalgame > 0) {
                 $xpdisplay .= ' 🏆';
             }
