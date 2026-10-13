@@ -167,7 +167,7 @@ const updateHud = (data, itemData) => {
             if (data.xp_target > 0) {
                 xpString += ` / ${data.xp_target}`;
             }
-            xpString += ' XP';
+            xpString += ` ${appStrings.xp}`;
             if (data.is_win) {
                 xpString += ' 🏆';
             }
@@ -643,12 +643,12 @@ export const init = () => {
 
         modalEls.name.text(data.name);
 
-        if (data.xp && data.xp !== '0' && String(data.xp).trim() !== '0 XP') {
+        if (data.xp && data.xp !== '0' && String(data.xp).trim() !== `0 ${appStrings.xp}`) {
             const xpStr = String(data.xp);
             if (xpStr.indexOf('???') === -1) {
                 const isNum = !isNaN(parseFloat(data.xp)) && isFinite(data.xp);
-                // Ensure text contains " XP" if it is just a number.
-                const xpText = isNum ? `${data.xp} XP` : data.xp;
+                // Ensure the text carries the XP unit if it is just a number.
+                const xpText = isNum ? `${data.xp} ${appStrings.xp}` : data.xp;
 
                 modalEls.xp.text(xpText).removeClass('d-none').show();
 
