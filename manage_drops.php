@@ -24,33 +24,12 @@
 
 require_once('../../config.php');
 
-// 1. Get Parameters.
-// We prioritize instanceid (Block ID) to deduce the context.
-$instanceid = required_param('instanceid', PARAM_INT);
-$courseid   = optional_param('courseid', 0, PARAM_INT);
+// 1. Parameters: every link to this page carries the course as 'id' (the controller requires it too).
+$courseid = required_param('id', PARAM_INT);
 
-// 2. Deduce Course ID if missing.
-if (!$courseid) {
-    // Try standard 'id' param often used for courseid.
-    $courseid = optional_param('id', 0, PARAM_INT);
-}
-
-if (!$courseid) {
-    // Fetch from Block Instance parent context.
-    $bi = $DB->get_record('block_instances', ['id' => $instanceid], '*', MUST_EXIST);
-    $parentcontext = context::instance_by_id($bi->parentcontextid);
-
-    if ($parentcontext->contextlevel == CONTEXT_COURSE) {
-        $courseid = $parentcontext->instanceid;
-    } else {
-        // Fallback for Dashboard or Frontpage (use Site ID as safer default).
-        $courseid = SITEID;
-    }
-}
-
-// 3. Security Check.
+// 2. Security Check.
 require_login($courseid);
 
-// 4. Delegate logic to Controller.
+// 3. Delegate logic to Controller.
 $controller = new \block_playerhud\controller\drops();
 echo $controller->view_manage_page();
