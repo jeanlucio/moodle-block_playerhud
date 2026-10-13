@@ -409,6 +409,18 @@ class scenes {
                     $currentnodeid = $DB->insert_record('block_playerhud_story_nodes', $record);
                 }
 
+                // A chapter has one starting scene: marking this one as the start takes the mark
+                // off the others, otherwise students begin at whichever the database returns first.
+                if ($record->is_start) {
+                    $DB->set_field_select(
+                        'block_playerhud_story_nodes',
+                        'is_start',
+                        0,
+                        'chapterid = :chapterid AND id <> :nodeid',
+                        ['chapterid' => $chapterid, 'nodeid' => $currentnodeid]
+                    );
+                }
+
                 // Clamped for the same reason as the add_choice_btn branch above — the sesskey
                 // check inside get_data() guards against CSRF, not against an oversized value from
                 // the form's own authenticated submitter.

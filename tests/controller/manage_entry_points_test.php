@@ -701,6 +701,68 @@ final class manage_entry_points_test extends advanced_testcase {
         );
     }
 
+    /**
+     * Posts the scene form for a new scene of a chapter.
+     *
+     * @param int $chapterid The chapter.
+     * @param int $start Value of the starting-scene field.
+     */
+    private function save_new_scene(int $chapterid, int $start): void {
+        $formidentifier = str_replace('\\', '_', \block_playerhud\form\edit_scene_form::class);
+        $_POST = [
+            'courseid'                => $this->course->id,
+            'instanceid'              => $this->instanceid,
+            'chapterid'               => $chapterid,
+            'nodeid'                  => 0,
+            'content'                 => ['text' => '<p>New opening</p>', 'format' => FORMAT_HTML],
+            'is_start'                => $start,
+            'sesskey'                 => sesskey(),
+            '_qf__' . $formidentifier => 1,
+        ];
+
+        $this->assert_redirects(fn() => (new scenes())->handle_edit_form());
+    }
+
+    /**
+     * Marking a scene as the start takes the mark off the chapter's other scenes, so there is
+     * one starting scene; other chapters keep theirs.
+     */
+    public function test_scenes_edit_form_keeps_a_single_starting_scene(): void {
+        global $DB;
+
+        $this->setAdminUser();
+        $chapterid = $this->make_chapter($this->instanceid);
+        [$oldstart] = $this->make_node_with_choice($chapterid);
+        [$foreignstart] = $this->make_node_with_choice($this->make_chapter($this->instanceid));
+
+        $this->save_new_scene($chapterid, 1);
+
+        $starts = $DB->get_fieldset_select(
+            'block_playerhud_story_nodes',
+            'id',
+            'chapterid = ? AND is_start = 1',
+            [$chapterid]
+        );
+        $this->assertCount(1, $starts);
+        $this->assertNotEquals($oldstart, $starts[0]);
+        $this->assertEquals(1, $DB->get_field('block_playerhud_story_nodes', 'is_start', ['id' => $foreignstart]));
+    }
+
+    /**
+     * Saving a scene that is not marked as the start leaves the chapter's starting scene alone.
+     */
+    public function test_scenes_edit_form_without_the_start_mark_keeps_the_existing_start(): void {
+        global $DB;
+
+        $this->setAdminUser();
+        $chapterid = $this->make_chapter($this->instanceid);
+        [$oldstart] = $this->make_node_with_choice($chapterid);
+
+        $this->save_new_scene($chapterid, 0);
+
+        $this->assertEquals(1, $DB->get_field('block_playerhud_story_nodes', 'is_start', ['id' => $oldstart]));
+    }
+
     // Collect — the non-AJAX pickup path.
 
     /**
