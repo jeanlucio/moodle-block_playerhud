@@ -277,6 +277,35 @@ class utils {
     }
 
     /**
+     * The items of an instance as select options, disabled ones included and marked as such.
+     *
+     * A trade or quest can still reference an item that was disabled for a while. If the form
+     * offered only enabled items, opening such a trade or quest would show an empty select for
+     * that line and saving it would silently drop the item. The server accepts any item of the
+     * instance, so the form now lists them all.
+     *
+     * @param int $instanceid Block instance ID.
+     * @return string[] Display names keyed by item ID, in name order.
+     */
+    public static function get_item_select_options(int $instanceid): array {
+        global $DB;
+
+        $items = $DB->get_records(
+            'block_playerhud_items',
+            ['blockinstanceid' => $instanceid],
+            'name ASC',
+            'id, name, enabled'
+        );
+        $options = [];
+        foreach ($items as $item) {
+            $name = format_string($item->name);
+            $options[$item->id] = $item->enabled ? $name : get_string('item_option_disabled', 'block_playerhud', $name);
+        }
+
+        return $options;
+    }
+
+    /**
      * The sentence that tells a teacher which quests were switched off by a deletion.
      *
      * @param \stdClass[] $quests The quests that were switched off (each with a name).

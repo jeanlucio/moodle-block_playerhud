@@ -561,6 +561,7 @@ $string['item_lp_warning'] = 'Nenhuma atividade com penalidade de atraso ativa n
 $string['item_n'] = 'Item {$a}';
 $string['item_name'] = 'Nome do Item';
 $string['item_new'] = 'Novo Item';
+$string['item_option_disabled'] = '{$a} (desativado)';
 $string['item_power'] = 'Poder do Item';
 $string['item_power_avatar'] = 'Avatar de Perfil';
 $string['item_power_avatar_note'] = 'A imagem deste item será exibida como avatar do estudante na interface do PlayerHUD ao equipar.';

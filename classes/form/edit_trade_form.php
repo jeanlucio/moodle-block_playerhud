@@ -74,13 +74,8 @@ class edit_trade_form extends \moodleform {
         $mform->setConstant('repeats_give', $repeatsgive);
 
         // Fetch Items for Dropdown.
-        $allitems = $DB->get_records_menu(
-            'block_playerhud_items',
-            ['blockinstanceid' => $instanceid, 'enabled' => 1],
-            'name ASC',
-            'id, name'
-        );
-        $itemoptions = [0 => '--- ' . get_string('select') . ' ---'] + array_map('format_string', $allitems ?: []);
+        $itemoptions = [0 => '--- ' . get_string('select') . ' ---']
+            + \block_playerhud\utils::get_item_select_options((int) $instanceid);
 
         // Fetch Groups.
         $groups = groups_get_all_groups($courseid);

@@ -46,14 +46,8 @@ class edit_quest_form extends \moodleform {
         $courseid   = $this->_customdata['courseid'];
 
         // Items for reward/accumulator selects.
-        $allitems    = $DB->get_records_menu(
-            'block_playerhud_items',
-            ['blockinstanceid' => $instanceid, 'enabled' => 1],
-            'name ASC',
-            'id, name'
-        );
         $nooption    = [0 => '— ' . get_string('none', 'block_playerhud') . ' —'];
-        $itemoptions = $nooption + array_map('format_string', $allitems ?: []);
+        $itemoptions = $nooption + \block_playerhud\utils::get_item_select_options((int) $instanceid);
 
         // Trades for specific trade quest.
         $alltrades   = $DB->get_records_menu(
