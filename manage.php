@@ -459,10 +459,13 @@ if ($action == 'delete_trade' && $tradeid && confirm_sesskey()) {
 if ($action == 'delete_class') {
     $classid = optional_param('classid', 0, PARAM_INT);
     if ($classid && confirm_sesskey()) {
-        (new \block_playerhud\controller\classes())->delete_class($classid, $instanceid, $context);
+        $released = (new \block_playerhud\controller\classes())->delete_class($classid, $instanceid, $context);
+        $notice = array_sum($released) > 0
+            ? ' ' . get_string('class_deleted_released', 'block_playerhud', (object) $released)
+            : '';
         redirect(
             new moodle_url($baseurl, ['tab' => 'classes']),
-            get_string('class_deleted', 'block_playerhud'),
+            get_string('class_deleted', 'block_playerhud') . $notice,
             null,
             \core\output\notification::NOTIFY_SUCCESS
         );

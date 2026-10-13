@@ -402,6 +402,20 @@ final class utils_test extends advanced_testcase {
     }
 
     /**
+     * Taking a class out of an allowed list keeps the others, turns an emptied list into the
+     * public marker, and leaves a list that is already public alone.
+     */
+    public function test_remove_class_from_list(): void {
+        $this->assertSame('3,9', utils::remove_class_from_list('3,7,9', 7));
+        $this->assertSame('3', utils::remove_class_from_list('3, 7', 7));
+        $this->assertSame('0', utils::remove_class_from_list('7', 7));
+        $this->assertSame('3', utils::remove_class_from_list('3', 7));
+        $this->assertSame('0', utils::remove_class_from_list('0', 7));
+        $this->assertSame('0,7', utils::remove_class_from_list('0,7', 7));
+        $this->assertSame('17', utils::remove_class_from_list('17', 7), 'Ids are compared whole, not by prefix.');
+    }
+
+    /**
      * The notice that follows a deletion names the quests that were switched off, escaped once,
      * and is empty when no quest was affected.
      */

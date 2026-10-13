@@ -257,6 +257,26 @@ class utils {
     }
 
     /**
+     * Removes one class id from a comma-separated list of allowed class ids.
+     *
+     * An empty result means no restriction is left, which the plugin writes as '0' (public). A
+     * list that already contains '0' is public and is returned unchanged.
+     *
+     * @param string $csv The stored list, e.g. "3,7" or "0".
+     * @param int $classid The class id to remove.
+     * @return string The list without that id, or '0' when nothing is left.
+     */
+    public static function remove_class_from_list(string $csv, int $classid): string {
+        $ids = array_filter(array_map('trim', explode(',', $csv)), static fn(string $id): bool => $id !== '');
+        if (in_array('0', $ids, true)) {
+            return $csv;
+        }
+        $kept = array_values(array_filter($ids, static fn(string $id): bool => (int) $id !== $classid));
+
+        return $kept ? implode(',', $kept) : '0';
+    }
+
+    /**
      * The sentence that tells a teacher which quests were switched off by a deletion.
      *
      * @param \stdClass[] $quests The quests that were switched off (each with a name).

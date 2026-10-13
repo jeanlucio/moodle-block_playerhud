@@ -193,16 +193,21 @@ class classes {
     }
 
     /**
-     * Deletes an RPG class together with all of its tier portrait images.
+     * Deletes an RPG class together with all of its tier portrait images, and releases
+     * everything that pointed at it.
      *
-     * The class must belong to the given block instance.
+     * The class must belong to the given block instance. Items and quests restricted to the
+     * class lose that restriction (a list left empty becomes public), story choices that
+     * required or granted it stop doing so, and the players who had it are left with no class.
+     * Without this, those items and paths stayed unreachable for good and a choice could grant
+     * a class that no longer existed.
      *
      * @param int $classid The class to delete.
      * @param int $instanceid The owning block instance ID.
      * @param context_block $context The block context holding the image files.
-     * @return void
+     * @return array{items: int, quests: int, choices: int, players: int} What was released.
      */
-    public function delete_class(int $classid, int $instanceid, context_block $context): void {
+    public function delete_class(int $classid, int $instanceid, context_block $context): array {
         global $DB;
 
         $DB->get_record(
@@ -216,6 +221,102 @@ class classes {
         for ($tier = 1; $tier <= 5; $tier++) {
             $fs->delete_area_files($context->id, 'block_playerhud', 'class_image_' . $tier, $classid);
         }
+
+        $transaction = $DB->start_delegated_transaction();
+        $released = [
+            'items' => $this->release_class_list('block_playerhud_items', $instanceid, $classid),
+            'quests' => $this->release_class_list('block_playerhud_quests', $instanceid, $classid),
+            'choices' => $this->release_story_choices($instanceid, $classid),
+            'players' => 0,
+        ];
+        $released['players'] = $DB->count_records(
+            'block_playerhud_rpg_progress',
+            ['blockinstanceid' => $instanceid, 'classid' => $classid]
+        );
+        $DB->set_field(
+            'block_playerhud_rpg_progress',
+            'classid',
+            0,
+            ['blockinstanceid' => $instanceid, 'classid' => $classid]
+        );
         $DB->delete_records('block_playerhud_classes', ['id' => $classid, 'blockinstanceid' => $instanceid]);
+        $transaction->allow_commit();
+
+        return $released;
+    }
+
+    /**
+     * Takes a class out of the required_class_id list of every item or quest of the instance.
+     *
+     * @param string $table Either block_playerhud_items or block_playerhud_quests.
+     * @param int $instanceid The owning block instance ID.
+     * @param int $classid The class being deleted.
+     * @return int How many rows changed.
+     */
+    private function release_class_list(string $table, int $instanceid, int $classid): int {
+        global $DB;
+
+        $rows = $DB->get_records_select(
+            $table,
+            "blockinstanceid = :iid AND required_class_id <> '0' AND required_class_id <> ''",
+            ['iid' => $instanceid],
+            '',
+            'id, required_class_id'
+        );
+
+        // Rows are grouped by the list they end up with, so each distinct result is one query.
+        $byresult = [];
+        foreach ($rows as $row) {
+            $new = \block_playerhud\utils::remove_class_from_list((string) $row->required_class_id, $classid);
+            if ($new !== (string) $row->required_class_id) {
+                $byresult[$new][] = (int) $row->id;
+            }
+        }
+        $changed = 0;
+        foreach ($byresult as $new => $ids) {
+            [$insql, $inparams] = $DB->get_in_or_equal($ids);
+            $DB->set_field_select($table, 'required_class_id', (string) $new, "id $insql", $inparams);
+            $changed += count($ids);
+        }
+
+        return $changed;
+    }
+
+    /**
+     * Clears the class requirement and the class grant of the story choices of the instance.
+     *
+     * @param int $instanceid The owning block instance ID.
+     * @param int $classid The class being deleted.
+     * @return int How many choices changed.
+     */
+    private function release_story_choices(int $instanceid, int $classid): int {
+        global $DB;
+
+        $own = "nodeid IN (SELECT n.id
+                             FROM {block_playerhud_story_nodes} n
+                             JOIN {block_playerhud_chapters} c ON c.id = n.chapterid
+                            WHERE c.blockinstanceid = :iid)";
+        $params = ['iid' => $instanceid, 'cid1' => $classid, 'cid2' => $classid];
+        $changed = $DB->count_records_select(
+            'block_playerhud_choices',
+            "$own AND (req_class_id = :cid1 OR set_class_id = :cid2)",
+            $params
+        );
+        $DB->set_field_select(
+            'block_playerhud_choices',
+            'req_class_id',
+            0,
+            "$own AND req_class_id = :cid1",
+            ['iid' => $instanceid, 'cid1' => $classid]
+        );
+        $DB->set_field_select(
+            'block_playerhud_choices',
+            'set_class_id',
+            0,
+            "$own AND set_class_id = :cid1",
+            ['iid' => $instanceid, 'cid1' => $classid]
+        );
+
+        return $changed;
     }
 }

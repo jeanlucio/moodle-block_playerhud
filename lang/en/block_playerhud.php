@@ -196,6 +196,7 @@ $string['choose_class_cta'] = 'Choose your character →';
 $string['class_base_hp'] = 'Base HP';
 $string['class_delete_confirm'] = 'Delete this character? Students who have selected it will lose their character selection.';
 $string['class_deleted'] = 'Character deleted.';
+$string['class_deleted_released'] = 'The character restriction was removed from {$a->items} item(s), {$a->quests} quest(s) and {$a->choices} story choice(s); {$a->players} student(s) now have no character.';
 $string['class_desc'] = 'Description / Lore';
 $string['class_edit'] = 'Edit';
 $string['class_emoji_tier'] = 'Emoji or URL (optional)';
