@@ -257,6 +257,22 @@ class utils {
     }
 
     /**
+     * The sentence that tells a teacher which quests were switched off by a deletion.
+     *
+     * @param \stdClass[] $quests The quests that were switched off (each with a name).
+     * @param string $stringkey Language string that takes the list of names as its parameter.
+     * @return string A space followed by the sentence, or '' when no quest was affected.
+     */
+    public static function disabled_quests_notice(array $quests, string $stringkey): string {
+        if (!$quests) {
+            return '';
+        }
+        $names = array_map(static fn(\stdClass $quest): string => s(self::plain_string($quest->name)), $quests);
+
+        return ' ' . get_string($stringkey, 'block_playerhud', implode(', ', $names));
+    }
+
+    /**
      * Tells whether the current user may edit one activity, checked in that activity's own context.
      *
      * Checking moodle/course:manageactivities in the course is not enough to rewrite an activity:

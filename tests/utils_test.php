@@ -402,6 +402,21 @@ final class utils_test extends advanced_testcase {
     }
 
     /**
+     * The notice that follows a deletion names the quests that were switched off, escaped once,
+     * and is empty when no quest was affected.
+     */
+    public function test_disabled_quests_notice_lists_the_names_once_escaped(): void {
+        $this->assertSame('', utils::disabled_quests_notice([], 'quests_disabled_trade'));
+
+        $quests = [(object) ['name' => 'Cafe & Co'], (object) ['name' => 'Second']];
+        $notice = utils::disabled_quests_notice($quests, 'quests_disabled_trade');
+
+        $this->assertStringStartsWith(' ', $notice);
+        $this->assertStringContainsString('Cafe &amp; Co, Second', $notice);
+        $this->assertStringNotContainsString('&amp;amp;', $notice);
+    }
+
+    /**
      * A name for a double-mustache template is plain text, whichever way the site formats strings:
      * with the setting off, format_string() runs the text through the HTML cleaner and returns
      * "&amp;" even when asked not to escape, which the template then escaped a second time.

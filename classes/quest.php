@@ -66,6 +66,42 @@ class quest {
     const UNAVAILABLE_REWARD = 'reward';
 
     /**
+     * Disables the quests that track a trade or a chapter that is being deleted.
+     *
+     * A "specific trade" quest keeps the trade id in req_itemid and a "chapter" quest keeps the
+     * chapter id in requirement. Once that trade or chapter is gone nothing can ever complete
+     * the quest, so it is switched off: students no longer see a goal they cannot reach (a
+     * quest already claimed stays visible as archived), and the teacher can re-point or delete it.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $type TYPE_SPECIFIC_TRADE or TYPE_CHAPTER.
+     * @param int[] $targetids Ids of the trades or chapters being deleted.
+     * @return \stdClass[] The quests that were switched off (id, name), by name.
+     */
+    public static function disable_for_removed_targets(int $instanceid, int $type, array $targetids): array {
+        global $DB;
+
+        if (empty($targetids) || !in_array($type, [self::TYPE_SPECIFIC_TRADE, self::TYPE_CHAPTER], true)) {
+            return [];
+        }
+
+        // The chapter id lives in a character column: comparing it with integer parameters
+        // fails on PostgreSQL, so the ids are passed as strings.
+        $column = $type === self::TYPE_CHAPTER ? 'requirement' : 'req_itemid';
+        $values = $type === self::TYPE_CHAPTER ? array_map('strval', $targetids) : array_map('intval', $targetids);
+        [$insql, $inparams] = $DB->get_in_or_equal($values, SQL_PARAMS_NAMED, 'tg');
+        $select = "blockinstanceid = :iid AND type = :type AND enabled = 1 AND $column $insql";
+        $params = ['iid' => $instanceid, 'type' => $type] + $inparams;
+
+        $quests = $DB->get_records_select('block_playerhud_quests', $select, $params, 'name ASC', 'id, name');
+        if ($quests) {
+            $DB->set_field_select('block_playerhud_quests', 'enabled', 0, $select, $params);
+        }
+
+        return $quests;
+    }
+
+    /**
      * Finds the quests that students cannot currently see or claim because an item they depend on
      * is unavailable, the same rule the shop applies to trades: a disabled required or reward
      * item, or a required item that no longer exists, hides the quest. A reward item that no

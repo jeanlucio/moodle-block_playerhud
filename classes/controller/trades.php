@@ -257,13 +257,14 @@ class trades {
     /**
      * Deletes a trade together with its requirements, rewards and log entries.
      *
-     * The trade must belong to the given block instance.
+     * The trade must belong to the given block instance. Quests that tracked the trade are
+     * switched off, since nothing can complete them any more.
      *
      * @param int $tradeid The trade to delete.
      * @param int $instanceid The owning block instance ID.
-     * @return void
+     * @return \stdClass[] The quests that were switched off (id, name).
      */
-    public function delete_trade(int $tradeid, int $instanceid): void {
+    public function delete_trade(int $tradeid, int $instanceid): array {
         global $DB;
 
         $DB->get_record(
@@ -279,7 +280,14 @@ class trades {
             $DB->delete_records('block_playerhud_trade_rewards', ['tradeid' => $tradeid]);
             $DB->delete_records('block_playerhud_trade_log', ['tradeid' => $tradeid]);
             $DB->delete_records('block_playerhud_trades', ['id' => $tradeid, 'blockinstanceid' => $instanceid]);
+            $disabled = \block_playerhud\quest::disable_for_removed_targets(
+                $instanceid,
+                \block_playerhud\quest::TYPE_SPECIFIC_TRADE,
+                [$tradeid]
+            );
             $transaction->allow_commit();
+
+            return $disabled;
         } catch (\Exception $e) {
             $transaction->rollback($e);
         }
@@ -318,6 +326,11 @@ class trades {
         $DB->delete_records_select('block_playerhud_trade_rewards', "tradeid $tinsql", $tinparams);
         $DB->delete_records_select('block_playerhud_trade_log', "tradeid $tinsql", $tinparams);
         $DB->delete_records_select('block_playerhud_trades', "id $tinsql", $tinparams);
+        \block_playerhud\quest::disable_for_removed_targets(
+            $instanceid,
+            \block_playerhud\quest::TYPE_SPECIFIC_TRADE,
+            $validids
+        );
         $transaction->allow_commit();
 
         return count($validids);

@@ -26,6 +26,7 @@
 namespace block_playerhud\controller;
 
 use advanced_testcase;
+use block_playerhud\quest;
 use stdClass;
 
 /**
@@ -94,6 +95,78 @@ final class trades_test extends advanced_testcase {
             'name'            => $name,
             'timecreated'     => time(),
         ]);
+    }
+
+    /**
+     * Inserts a quest of the given type.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param string $name Quest name.
+     * @param int $type Quest type.
+     * @param string $requirement Value of the requirement column.
+     * @param int $reqitemid Value of the req_itemid column.
+     * @param int $enabled Whether the quest starts enabled.
+     * @return int The new quest ID.
+     */
+    protected function seed_quest(
+        int $instanceid,
+        string $name,
+        int $type,
+        string $requirement,
+        int $reqitemid = 0,
+        int $enabled = 1
+    ): int {
+        global $DB;
+
+        return (int) $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $instanceid, 'name' => $name, 'type' => $type, 'requirement' => $requirement,
+            'req_itemid' => $reqitemid, 'enabled' => $enabled, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+    }
+
+    /**
+     * Deleting a trade switches off the quests that tracked it, tells the caller which ones, and
+     * leaves quests of other trades, other types and other instances alone.
+     */
+    public function test_delete_trade_disables_the_quests_that_tracked_it(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $other = $this->make_instance();
+        $doomed = $this->seed_trade($instanceid, 'Doomed');
+        $kept = $this->seed_trade($instanceid, 'Kept');
+        $tracking = $this->seed_quest($instanceid, 'Tracks doomed', quest::TYPE_SPECIFIC_TRADE, '3', $doomed);
+        $siblings = $this->seed_quest($instanceid, 'Tracks kept', quest::TYPE_SPECIFIC_TRADE, '3', $kept);
+        $sametid = $this->seed_quest($instanceid, 'Item quest same id', quest::TYPE_SPECIFIC_ITEM, '1', $doomed);
+        $foreign = $this->seed_quest($other, 'Foreign', quest::TYPE_SPECIFIC_TRADE, '3', $doomed);
+
+        $disabled = (new trades())->delete_trade($doomed, $instanceid);
+
+        $this->assertSame(['Tracks doomed'], array_values(array_map(static fn($q) => $q->name, $disabled)));
+        $this->assertEquals(0, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $tracking]));
+        $this->assertEquals(1, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $siblings]));
+        $this->assertEquals(1, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $sametid]));
+        $this->assertEquals(1, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $foreign]));
+    }
+
+    /**
+     * The bulk delete used by the wizard rollback disables the same quests.
+     */
+    public function test_bulk_delete_trades_disables_the_quests_that_tracked_them(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $a = $this->seed_trade($instanceid, 'A');
+        $b = $this->seed_trade($instanceid, 'B');
+        $qa = $this->seed_quest($instanceid, 'QA', quest::TYPE_SPECIFIC_TRADE, '1', $a);
+        $qb = $this->seed_quest($instanceid, 'QB', quest::TYPE_SPECIFIC_TRADE, '1', $b);
+        $keep = $this->seed_quest($instanceid, 'QK', quest::TYPE_SPECIFIC_TRADE, '1', $b + 1000);
+
+        trades::bulk_delete_trades([$a, $b], $instanceid);
+
+        $this->assertEquals(0, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $qa]));
+        $this->assertEquals(0, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $qb]));
+        $this->assertEquals(1, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $keep]));
     }
 
     /**

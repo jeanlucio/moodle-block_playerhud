@@ -525,7 +525,7 @@ class items {
         $itemid = $item->id;
         $transaction = $DB->start_delegated_transaction();
 
-        self::delete_orphaned_trades($tradeids);
+        self::delete_orphaned_trades($tradeids, $instanceid);
         self::clear_quest_rewards($instanceid, [$itemid]);
 
         // Remove each holder's recorded XP for this item (both storage generations).
@@ -573,7 +573,7 @@ class items {
 
         $transaction = $DB->start_delegated_transaction();
 
-        self::delete_orphaned_trades($tradeids);
+        self::delete_orphaned_trades($tradeids, $instanceid);
         self::clear_quest_rewards($instanceid, $itemids);
 
         $holders = self::get_xp_holders($itemids);
@@ -598,11 +598,13 @@ class items {
     }
 
     /**
-     * Deletes orphaned trade records and all their req/reward rows.
+     * Deletes orphaned trade records and all their req/reward/log rows, and switches off the
+     * quests that tracked them.
      *
      * @param int[] $tradeids Trade IDs to delete.
+     * @param int $instanceid Block instance ID.
      */
-    private static function delete_orphaned_trades(array $tradeids): void {
+    private static function delete_orphaned_trades(array $tradeids, int $instanceid): void {
         global $DB;
 
         if (empty($tradeids)) {
@@ -612,7 +614,13 @@ class items {
         [$tdsql, $tdparams] = $DB->get_in_or_equal($tradeids);
         $DB->delete_records_select('block_playerhud_trade_reqs', "tradeid $tdsql", $tdparams);
         $DB->delete_records_select('block_playerhud_trade_rewards', "tradeid $tdsql", $tdparams);
+        $DB->delete_records_select('block_playerhud_trade_log', "tradeid $tdsql", $tdparams);
         $DB->delete_records_select('block_playerhud_trades', "id $tdsql", $tdparams);
+        \block_playerhud\quest::disable_for_removed_targets(
+            $instanceid,
+            \block_playerhud\quest::TYPE_SPECIFIC_TRADE,
+            $tradeids
+        );
     }
 
     /**

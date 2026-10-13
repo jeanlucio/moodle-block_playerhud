@@ -26,6 +26,7 @@
 namespace block_playerhud\controller;
 
 use advanced_testcase;
+use block_playerhud\quest;
 use stdClass;
 
 /**
@@ -215,6 +216,76 @@ final class chapters_test extends advanced_testcase {
         $this->assertFalse($DB->record_exists('block_playerhud_chapters', ['id' => $chapterid]));
         $this->assertFalse($DB->record_exists('block_playerhud_story_nodes', ['id' => $nodeid]));
         $this->assertFalse($DB->record_exists('block_playerhud_choices', ['id' => $choiceid]));
+    }
+
+    /**
+     * Inserts a quest of the given type.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param string $name Quest name.
+     * @param int $type Quest type.
+     * @param string $requirement Value of the requirement column.
+     * @param int $reqitemid Value of the req_itemid column.
+     * @param int $enabled Whether the quest starts enabled.
+     * @return int The new quest ID.
+     */
+    protected function seed_quest(
+        int $instanceid,
+        string $name,
+        int $type,
+        string $requirement,
+        int $reqitemid = 0,
+        int $enabled = 1
+    ): int {
+        global $DB;
+
+        return (int) $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $instanceid, 'name' => $name, 'type' => $type, 'requirement' => $requirement,
+            'req_itemid' => $reqitemid, 'enabled' => $enabled, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+    }
+
+    /**
+     * Deleting a chapter switches off the quests that required it. The chapter id sits in a
+     * character column, so this also proves the comparison works on every database.
+     */
+    public function test_delete_chapter_disables_the_quests_that_required_it(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $other = $this->make_instance();
+        $doomed = $this->seed_chapter($instanceid, 'Doomed');
+        $kept = $this->seed_chapter($instanceid, 'Kept', 2);
+        $tracking = $this->seed_quest($instanceid, 'Needs doomed', quest::TYPE_CHAPTER, (string) $doomed);
+        $sibling = $this->seed_quest($instanceid, 'Needs kept', quest::TYPE_CHAPTER, (string) $kept);
+        $level = $this->seed_quest($instanceid, 'Level, same number', quest::TYPE_LEVEL, (string) $doomed);
+        $foreign = $this->seed_quest($other, 'Foreign', quest::TYPE_CHAPTER, (string) $doomed);
+
+        $disabled = (new chapters())->delete_chapter($doomed, $instanceid);
+
+        $this->assertSame(['Needs doomed'], array_values(array_map(static fn($q) => $q->name, $disabled)));
+        $this->assertEquals(0, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $tracking]));
+        $this->assertEquals(1, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $sibling]));
+        $this->assertEquals(1, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $level]));
+        $this->assertEquals(1, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $foreign]));
+    }
+
+    /**
+     * The bulk delete used by the wizard rollback disables the same quests.
+     */
+    public function test_bulk_delete_chapters_disables_the_quests_that_required_them(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $a = $this->seed_chapter($instanceid, 'A');
+        $b = $this->seed_chapter($instanceid, 'B', 2);
+        $qa = $this->seed_quest($instanceid, 'QA', quest::TYPE_CHAPTER, (string) $a);
+        $qb = $this->seed_quest($instanceid, 'QB', quest::TYPE_CHAPTER, (string) $b);
+
+        chapters::bulk_delete_chapters([$a, $b], $instanceid);
+
+        $this->assertEquals(0, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $qa]));
+        $this->assertEquals(0, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $qb]));
     }
 
     /**

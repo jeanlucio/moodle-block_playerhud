@@ -203,13 +203,14 @@ class chapters {
     /**
      * Deletes a chapter together with its scenes and their choices.
      *
-     * The chapter must belong to the given block instance.
+     * The chapter must belong to the given block instance. Quests that required finishing the
+     * chapter are switched off, since nothing can complete them any more.
      *
      * @param int $chapterid The chapter to delete.
      * @param int $instanceid The owning block instance ID.
-     * @return void
+     * @return \stdClass[] The quests that were switched off (id, name).
      */
-    public function delete_chapter(int $chapterid, int $instanceid): void {
+    public function delete_chapter(int $chapterid, int $instanceid): array {
         global $DB;
 
         $chapter = $DB->get_record(
@@ -225,12 +226,22 @@ class chapters {
             'chapterid = ?',
             [$chapter->id]
         );
+
+        $transaction = $DB->start_delegated_transaction();
         if ($sceneids) {
             [$insql, $inparams] = $DB->get_in_or_equal($sceneids);
             $DB->delete_records_select('block_playerhud_choices', "nodeid $insql", $inparams);
         }
         $DB->delete_records('block_playerhud_story_nodes', ['chapterid' => $chapter->id]);
         $DB->delete_records('block_playerhud_chapters', ['id' => $chapter->id, 'blockinstanceid' => $instanceid]);
+        $disabled = \block_playerhud\quest::disable_for_removed_targets(
+            $instanceid,
+            \block_playerhud\quest::TYPE_CHAPTER,
+            [(int) $chapter->id]
+        );
+        $transaction->allow_commit();
+
+        return $disabled;
     }
 
     /**
@@ -270,6 +281,11 @@ class chapters {
         }
         $DB->delete_records_select('block_playerhud_story_nodes', "chapterid $cinsql", $cinparams);
         $DB->delete_records_select('block_playerhud_chapters', "id $cinsql", $cinparams);
+        \block_playerhud\quest::disable_for_removed_targets(
+            $instanceid,
+            \block_playerhud\quest::TYPE_CHAPTER,
+            $validids
+        );
         $transaction->allow_commit();
 
         return count($validids);

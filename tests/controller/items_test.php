@@ -753,4 +753,33 @@ final class items_test extends advanced_testcase {
         $this->assertSame(0, $impact->studentcount);
         $this->assertSame(0, $impact->totalxp);
     }
+
+    /**
+     * Deleting an item that orphans a trade removes the trade's log as well and switches off the
+     * quests that tracked that trade; the log rows used to be left behind with no parent.
+     */
+    public function test_delete_item_cleans_the_orphaned_trade_log_and_its_quests(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $itemid = $this->make_item($instanceid);
+        $tradeid = $this->seed_trade_with($instanceid, [$itemid], []);
+        $student = $this->getDataGenerator()->create_user();
+        $DB->insert_record('block_playerhud_trade_log', (object) [
+            'tradeid' => $tradeid, 'userid' => $student->id, 'timecreated' => time(),
+        ]);
+        $questid = (int) $DB->insert_record('block_playerhud_quests', (object) [
+            'blockinstanceid' => $instanceid, 'name' => 'Tracks the trade',
+            'type' => \block_playerhud\quest::TYPE_SPECIFIC_TRADE, 'requirement' => '1',
+            'req_itemid' => $tradeid, 'enabled' => 1, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $item = $DB->get_record('block_playerhud_items', ['id' => $itemid], '*', MUST_EXIST);
+        $context = \context_block::instance($instanceid);
+
+        items::delete_item($item, $instanceid, $context, [$tradeid]);
+
+        $this->assertFalse($DB->record_exists('block_playerhud_trades', ['id' => $tradeid]));
+        $this->assertFalse($DB->record_exists('block_playerhud_trade_log', ['tradeid' => $tradeid]));
+        $this->assertEquals(0, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $questid]));
+    }
 }

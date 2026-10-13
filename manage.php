@@ -437,10 +437,11 @@ if ($action === 'bulk_delete_quests_force' && confirm_sesskey()) {
 // Action: Delete Trade.
 if ($action == 'delete_trade' && $tradeid && confirm_sesskey()) {
     try {
-        (new \block_playerhud\controller\trades())->delete_trade($tradeid, $instanceid);
+        $disabled = (new \block_playerhud\controller\trades())->delete_trade($tradeid, $instanceid);
         redirect(
             new moodle_url($baseurl, ['tab' => 'trades']),
-            get_string('changessaved', 'block_playerhud'),
+            get_string('changessaved', 'block_playerhud')
+                . \block_playerhud\utils::disabled_quests_notice($disabled, 'quests_disabled_trade'),
             null,
             \core\output\notification::NOTIFY_SUCCESS
         );
@@ -472,10 +473,11 @@ if ($action == 'delete_class') {
 if ($action == 'delete_chapter') {
     $chapterid = optional_param('chapterid', 0, PARAM_INT);
     if ($chapterid && confirm_sesskey()) {
-        (new \block_playerhud\controller\chapters())->delete_chapter($chapterid, $instanceid);
+        $disabled = (new \block_playerhud\controller\chapters())->delete_chapter($chapterid, $instanceid);
         redirect(
             new moodle_url($baseurl, ['tab' => 'chapters']),
-            get_string('chapter_deleted', 'block_playerhud'),
+            get_string('chapter_deleted', 'block_playerhud')
+                . \block_playerhud\utils::disabled_quests_notice($disabled, 'quests_disabled_chapter'),
             null,
             \core\output\notification::NOTIFY_SUCCESS
         );
