@@ -51,12 +51,21 @@ class drop_distribution {
      * `$includelabels = false`: a label is usually an inline banner of images/video on the course
      * page, where an auto-planted drop card reads as visual clutter rather than a reward.
      *
+     * The manual distribution screen passes `$includenewsforum = true`: there the teacher picks
+     * every destination on purpose, so the news forum is offered too (it is where the PlayerCoin
+     * and the Secret Item go when they are not placed by the wizard).
+     *
      * @param int $courseid Course ID.
      * @param bool $includelabels Whether label modules count as eligible (default true).
+     * @param bool $includenewsforum Whether the course's news forum counts as eligible (default false).
      * @return array<int, array{cmid: int, instance: int, name: string, modname: string,
      *     modname_translated: string, supports_content: bool, is_label: bool}>
      */
-    public static function get_eligible_modules(int $courseid, bool $includelabels = true): array {
+    public static function get_eligible_modules(
+        int $courseid,
+        bool $includelabels = true,
+        bool $includenewsforum = false
+    ): array {
         global $DB;
 
         $course = get_course($courseid);
@@ -68,7 +77,7 @@ class drop_distribution {
             if (!empty($cm->deletioninprogress)) {
                 continue;
             }
-            if ($newsforumcmid !== null && (int) $cm->id === $newsforumcmid) {
+            if (!$includenewsforum && $newsforumcmid !== null && (int) $cm->id === $newsforumcmid) {
                 continue;
             }
             if (!$includelabels && $cm->modname === 'label') {

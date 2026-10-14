@@ -105,6 +105,20 @@ final class drop_distribution_test extends advanced_testcase {
     }
 
     /**
+     * The manual distribution screen asks for the news forum too, so a drop the wizard left
+     * unplaced can go where it belongs.
+     */
+    public function test_get_eligible_modules_can_include_the_news_forum(): void {
+        $news = $this->getDataGenerator()->create_module('forum', ['course' => $this->course->id, 'type' => 'news']);
+        $newscm = get_coursemodule_from_instance('forum', $news->id, $this->course->id);
+
+        $modules = drop_distribution::get_eligible_modules($this->course->id, true, true);
+
+        $this->assertSame([(int) $newscm->id], array_map(static fn($mod) => (int) $mod['cmid'], $modules));
+        $this->assertSame([], drop_distribution::get_eligible_modules($this->course->id, true, false));
+    }
+
+    /**
      * A course with no activities returns an empty eligible-modules list.
      */
     public function test_get_eligible_modules_returns_empty_for_activity_less_course(): void {

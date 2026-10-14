@@ -632,8 +632,11 @@ class tab_items implements renderable {
               ORDER BY i.name ASC, d.name ASC";
         $drops = $DB->get_records_sql($sql, ['instanceid' => $this->instanceid]);
 
-        // 2. Load all course modules that have editable text fields.
-        $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($this->courseid);
+        // 2. Load all course modules that have editable text fields, the news forum included:
+        // the teacher chooses each destination here, and a drop the wizard left unplaced for the
+        // PlayerCoin or the Secret Item belongs in that forum.
+        $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($this->courseid, true, true);
+        $newsforumcmid = \block_playerhud\utils::find_news_forum_cmid($this->courseid);
         foreach ($modules as &$mod) {
             // Mustache-friendly int flags alongside the booleans, for this view only.
             $mod['supports_content_int'] = $mod['supports_content'] ? 1 : 0;
@@ -672,9 +675,14 @@ class tab_items implements renderable {
             if ($insertedanywhere) {
                 $suggestedcmid = $insertedinfo['first_cmid'];
             } else {
+                // The forum is offered but never suggested: on a bare course it would be the only
+                // candidate for every drop.
                 $suggested = \block_playerhud\local\drop_distribution::suggest_module(
                     $drop->drop_name . ' ' . $drop->item_name,
-                    $modules
+                    array_values(array_filter(
+                        $modules,
+                        static fn(array $mod): bool => $newsforumcmid === null || (int) $mod['cmid'] !== (int) $newsforumcmid
+                    ))
                 );
                 $suggestedcmid = $suggested ? $suggested['cmid'] : null;
             }

@@ -124,6 +124,21 @@ final class tab_items_escaping_test extends escaping_testcase {
     }
 
     /**
+     * The distribute screen offers the news forum as a destination, without ever preselecting it:
+     * the PlayerCoin and the Secret Item are placed there, and a drop the wizard left unplaced
+     * must be able to follow.
+     */
+    public function test_distribute_view_offers_the_news_forum_without_preselecting_it(): void {
+        $news = $this->getDataGenerator()->create_module('forum', ['course' => $this->course->id, 'type' => 'news']);
+        $newscmid = (int) $news->cmid;
+
+        $html = $this->render('render_distribute_view');
+
+        $this->assertMatchesRegularExpression('/<option[^>]*value="' . $newscmid . '"/', $html);
+        $this->assertDoesNotMatchRegularExpression('/<option[^>]*value="' . $newscmid . '"[^>]*selected/', $html);
+    }
+
+    /**
      * Provides both values of the site setting that changes what format_string() returns.
      *
      * @return array
