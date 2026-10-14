@@ -165,6 +165,23 @@ abstract class external_base_testcase extends advanced_testcase {
     }
 
     /**
+     * Create a student enrolled in the course who has the plugin's own capabilities but whom the
+     * teacher hid the block from, by prohibiting moodle/block:view for the student role on it.
+     *
+     * @return \stdClass The created user record.
+     */
+    protected function create_student_with_block_hidden(): \stdClass {
+        global $DB;
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $this->course->id, 'student');
+        $studentrole = $DB->get_record('role', ['shortname' => 'student'], '*', MUST_EXIST);
+        $blockcontext = \context_block::instance($this->instanceid);
+        assign_capability('moodle/block:view', CAP_PROHIBIT, $studentrole->id, $blockcontext->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+        return $student;
+    }
+
+    /**
      * Create a teacher who may manage the block and the course's activities, except the given one,
      * where a role override prohibits moodle/course:manageactivities.
      *

@@ -322,6 +322,27 @@ class utils {
     }
 
     /**
+     * Requires a block/playerhud capability and that the block is not hidden from the user.
+     *
+     * Denying moodle/block:view on the instance is Moodle's way of hiding a block from a role.
+     * The profile section and the file serving already treat it that way; the student area, the
+     * collection and trade pages and the student web services must too, or a student the teacher
+     * hid the block from could still read the ranking and keep playing. Whoever may manage the
+     * instance is not locked out, since the teacher needs to see the game to run it.
+     *
+     * @param \context_block $context The block instance context.
+     * @param string $capability The block/playerhud capability the entry point needs.
+     * @return void
+     * @throws \required_capability_exception When either capability is missing.
+     */
+    public static function require_block_access(\context_block $context, string $capability): void {
+        require_capability($capability, $context);
+        if (!has_capability('block/playerhud:manage', $context)) {
+            require_capability('moodle/block:view', $context);
+        }
+    }
+
+    /**
      * Tells whether the current user may edit one activity, checked in that activity's own context.
      *
      * Checking moodle/course:manageactivities in the course is not enough to rewrite an activity:

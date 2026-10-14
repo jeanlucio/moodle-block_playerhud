@@ -71,7 +71,7 @@ class collect_item extends external_api {
 
         $context = \context_block::instance($params['instanceid']);
         self::validate_context($context);
-        require_capability('block/playerhud:interact', $context);
+        \block_playerhud\utils::require_block_access($context, 'block/playerhud:interact');
         wizard::require_course_matches_instance($context, $params['courseid']);
 
         try {

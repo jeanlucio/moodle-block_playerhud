@@ -78,7 +78,7 @@ class use_item extends external_api {
 
         $context = \context_block::instance($instanceid);
         self::validate_context($context);
-        require_capability('block/playerhud:interact', $context);
+        \block_playerhud\utils::require_block_access($context, 'block/playerhud:interact');
 
         // Verify the block instance actually belongs to the supplied course, so an item
         // bound to this block's economy cannot be spent against an unrelated course.

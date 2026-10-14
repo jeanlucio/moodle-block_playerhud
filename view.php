@@ -37,7 +37,7 @@ require_login($course);
 $context = context_block::instance($instanceid);
 
 // Check permissions.
-require_capability('block/playerhud:view', $context);
+\block_playerhud\utils::require_block_access($context, 'block/playerhud:view');
 
 // Verify the block instance actually belongs to the supplied course, so a student enrolled
 // in a second, unrelated course cannot use its id to bypass this instance's group-based

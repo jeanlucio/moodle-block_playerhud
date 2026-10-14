@@ -73,7 +73,7 @@ class load_scene extends external_api {
 
         $context = context_block::instance($params['instanceid']);
         self::validate_context($context);
-        require_capability('block/playerhud:view', $context);
+        \block_playerhud\utils::require_block_access($context, 'block/playerhud:view');
 
         if ($params['preview']) {
             require_capability('block/playerhud:manage', $context);
