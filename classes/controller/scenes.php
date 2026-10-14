@@ -446,15 +446,6 @@ class scenes {
                 $transaction->rollback($e);
             }
 
-            if (isset($data->add_choice_btn)) {
-                redirect(new moodle_url('/blocks/playerhud/edit_scene.php', [
-                    'courseid'   => $courseid,
-                    'instanceid' => $instanceid,
-                    'chapterid'  => $chapterid,
-                    'nodeid'     => $currentnodeid,
-                ]));
-            }
-
             redirect(
                 $scenesurl,
                 get_string('scene_saved', 'block_playerhud'),

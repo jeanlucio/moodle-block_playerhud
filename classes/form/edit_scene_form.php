@@ -101,7 +101,10 @@ class edit_scene_form extends \moodleform {
         $dbchoicescount = $this->_customdata['db_choices_count'] ?? 0;
         $repeats = max(3, $dbchoicescount);
         if (optional_param('add_choice_btn', false, PARAM_BOOL)) {
-            $repeats++;
+            // Grow from the slots already on screen, not from the saved choices: slots added earlier in this
+            // visit are not in the database yet, so counting from there would add the same single slot again.
+            $displayed = min(\block_playerhud\controller\scenes::MAX_REPEATS, optional_param('repeats', 0, PARAM_INT));
+            $repeats = min(\block_playerhud\controller\scenes::MAX_REPEATS, max($repeats, $displayed + 1));
         }
 
         $mform->addElement('hidden', 'repeats');
@@ -163,7 +166,7 @@ class edit_scene_form extends \moodleform {
             $mform->setType("choice_cost_qty_$i", PARAM_INT);
         }
 
-        $mform->addElement('submit', 'add_choice_btn', get_string('save_and_add', 'block_playerhud'));
+        $mform->addElement('submit', 'add_choice_btn', get_string('add_choice', 'block_playerhud'));
         $mform->registerNoSubmitButton('add_choice_btn');
 
         // Hidden fields.

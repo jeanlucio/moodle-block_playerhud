@@ -144,4 +144,39 @@ final class edit_scene_form_test extends advanced_testcase {
 
         $this->assertMatchesRegularExpression('/name="choice_text_0"[^>]*maxlength="255"/s', $html);
     }
+
+    /**
+     * Each press of "Add choice" adds one slot to those already on screen, even when the earlier
+     * ones were never saved: it used to count from the saved choices and so added the same slot again.
+     *
+     * @dataProvider add_choice_provider
+     * @param int|null $displayed Slots on screen when the button is pressed, null if it is not pressed.
+     * @param int $expected Slots in the re-rendered form.
+     */
+    public function test_add_choice_grows_from_the_slots_on_screen(?int $displayed, int $expected): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        if ($displayed !== null) {
+            $_POST['add_choice_btn'] = 'Add choice';
+            $_POST['repeats'] = (string) $displayed;
+        }
+
+        $html = $this->render_form_for([]);
+
+        $this->assertSame($expected, preg_match_all('/name="choice_text_\d+"/', $html));
+    }
+
+    /**
+     * Cases for the add-choice button.
+     *
+     * @return array[] Slots on screen and slots expected after rendering.
+     */
+    public static function add_choice_provider(): array {
+        return [
+            'button not pressed' => [null, 3],
+            'first press' => [3, 4],
+            'second press' => [4, 5],
+            'a tampered counter is capped' => [100000, \block_playerhud\controller\scenes::MAX_REPEATS],
+        ];
+    }
 }

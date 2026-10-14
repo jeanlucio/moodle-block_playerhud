@@ -27,6 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 // phpcs:disable moodle.Files.LineLength
 
 $string['actions'] = 'Ações';
+$string['add_choice'] = 'Adicionar escolha';
 $string['add_cost_item'] = 'Adicionar item de requisito';
 $string['add_reward_item'] = 'Adicionar item de recompensa';
 $string['add_trade'] = 'Nova Oferta de Negociação';
@@ -947,7 +948,6 @@ $string['rpg_scifi_node2'] = 'No laboratório de bioadaptação, três protocolo
 $string['rpg_scifi_node3'] = 'Os implantes de blindagem se ativam, e você sente o peso da armadura como uma segunda pele. Está pronto para a linha de frente.';
 $string['rpg_scifi_node4'] = 'As interfaces neurais sincronizam com sua mente, abrindo caminhos que ninguém mais consegue ver. Os sistemas sussurram para você.';
 $string['rpg_scifi_node5'] = 'O rifle de precisão se ajusta automaticamente à sua fisiologia. Cada alvo, a partir de agora, é uma certeza.';
-$string['save_and_add'] = 'Salvar e adicionar escolha';
 $string['save_keys'] = 'Salvar Minhas Chaves';
 $string['save_trade'] = 'Salvar troca';
 $string['savechanges'] = 'Salvar alterações';
