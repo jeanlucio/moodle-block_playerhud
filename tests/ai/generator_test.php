@@ -258,6 +258,27 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * A choice longer than its 255-character column is cut instead of making the insert throw, which
+     * used to roll the whole generated chapter back. The cut is by characters, so a multibyte text is
+     * never split in the middle of one.
+     */
+    public function test_generate_story_cuts_a_choice_longer_than_its_column(): void {
+        global $DB;
+
+        $long = str_repeat('ç', 300);
+        $json = '{"title":"Longa","nodes":['
+            . '{"index":0,"content":"Início","is_start":true,"choices":[{"text":"' . $long . '","target_index":1}]},'
+            . '{"index":1,"content":"Fim"}]}';
+
+        $result = $this->make_generator_answering($json)->generate_story('longa');
+
+        $this->assertCount(1, $result['choice_ids']);
+        $stored = $DB->get_field('block_playerhud_choices', 'text', ['id' => $result['choice_ids'][0]], MUST_EXIST);
+        $this->assertSame(255, \core_text::strlen($stored));
+        $this->assertSame(1, preg_match('//u', $stored), 'The stored text must be valid UTF-8.');
+    }
+
+    /**
      * Without any scene flagged as the start the chapter would never show up for students, so the
      * first scene becomes the start; and only one scene keeps the flag.
      */

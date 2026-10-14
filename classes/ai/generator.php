@@ -1129,7 +1129,13 @@ class generator {
                 $choiceitemid         = (int)($options['item_id'] ?? 0);
                 $choice               = new \stdClass();
                 $choice->nodeid       = $nodeid;
-                $choice->text         = clean_param((string) $choicedata['text'], PARAM_TEXT);
+                // The answer is untrusted and the column holds 255 characters: a longer choice would make
+                // the insert throw and roll the whole generated chapter back.
+                $choice->text         = \core_text::substr(
+                    clean_param($this->scalar_text($choicedata['text']), PARAM_TEXT),
+                    0,
+                    255
+                );
                 $choice->next_nodeid  = $nextnodeid;
                 $choice->req_class_id = 0;
                 $choice->req_karma_min = 0;
