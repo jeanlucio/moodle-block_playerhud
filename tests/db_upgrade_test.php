@@ -312,4 +312,65 @@ final class db_upgrade_test extends advanced_testcase {
         $this->assertTrue($dbman->field_exists($table, $field));
         $this->assertSame(0, (int) $DB->get_field('block_playerhud_stack_log', 'timerevoked', ['id' => $logid]));
     }
+
+    /**
+     * Every index the install declares exists on a fresh install, and the upgrade step creates the
+     * ones a site installed before them is missing, without failing when run again.
+     */
+    public function test_upgrade_adds_the_indexes_of_the_filtered_columns(): void {
+        global $DB;
+
+        $dbman = $DB->get_manager();
+        $declared = $this->declared_indexes();
+        $this->assertNotEmpty($declared);
+        foreach ($declared as [$tablename, $name, $fields]) {
+            $this->assertTrue(
+                $dbman->index_exists(new \xmldb_table($tablename), new \xmldb_index($name, XMLDB_INDEX_NOTUNIQUE, $fields)),
+                "{$tablename}.{$name} is missing after install."
+            );
+        }
+
+        // A site from before the step: drop the indexes the step adds, then run it.
+        $added = array_filter($declared, fn(array $i): bool => !in_array($i[0], [
+            'block_playerhud_user', 'block_playerhud_drops', 'block_playerhud_inventory', 'block_playerhud_stack',
+            'block_playerhud_stack_log', 'block_playerhud_wizard_objects', 'block_playerhud_wizard_shortcodes',
+        ], true));
+        foreach ($added as [$tablename, $name, $fields]) {
+            $dbman->drop_index(new \xmldb_table($tablename), new \xmldb_index($name, XMLDB_INDEX_NOTUNIQUE, $fields));
+        }
+
+        $this->set_current_version(2026101200);
+        xmldb_block_playerhud_upgrade(2026101200);
+
+        foreach ($added as [$tablename, $name, $fields]) {
+            $this->assertTrue(
+                $dbman->index_exists(new \xmldb_table($tablename), new \xmldb_index($name, XMLDB_INDEX_NOTUNIQUE, $fields)),
+                "{$tablename}.{$name} was not recreated by the upgrade."
+            );
+        }
+
+        $this->set_current_version(2026101200);
+        xmldb_block_playerhud_upgrade(2026101200);
+    }
+
+    /**
+     * The non-unique indexes install.xml declares.
+     *
+     * @return array[] Table name, index name and fields of each.
+     */
+    private function declared_indexes(): array {
+        $xml = simplexml_load_file(__DIR__ . '/../db/install.xml');
+        $declared = [];
+        foreach ($xml->TABLES->TABLE as $table) {
+            foreach ($table->INDEXES->INDEX ?? [] as $index) {
+                if ((string) $index['UNIQUE'] === 'false') {
+                    $declared[] = [
+                        (string) $table['NAME'], (string) $index['NAME'],
+                        array_map('trim', explode(',', (string) $index['FIELDS'])),
+                    ];
+                }
+            }
+        }
+        return $declared;
+    }
 }

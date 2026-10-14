@@ -466,5 +466,45 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026092200, 'playerhud');
     }
 
+    if ($oldversion < 2026101400) {
+        // Indexes for the columns the quest, shop, story and report pages filter on. The logs grow
+        // with users x quests and users x trades across every course, and the content tables are
+        // always read by blockinstanceid, so each page render used to scan them whole.
+        $indexes = [
+            'block_playerhud_items' => ['blockinstanceid' => ['blockinstanceid']],
+            'block_playerhud_classes' => ['blockinstanceid' => ['blockinstanceid']],
+            'block_playerhud_rpg_progress' => ['blockinstanceid_userid' => ['blockinstanceid', 'userid']],
+            'block_playerhud_quests' => ['blockinstanceid' => ['blockinstanceid']],
+            'block_playerhud_quest_log' => [
+                'questid_userid' => ['questid', 'userid'],
+                'userid' => ['userid'],
+            ],
+            'block_playerhud_chapters' => ['blockinstanceid' => ['blockinstanceid']],
+            'block_playerhud_story_nodes' => ['chapterid' => ['chapterid']],
+            'block_playerhud_choices' => ['nodeid' => ['nodeid']],
+            'block_playerhud_trades' => ['blockinstanceid' => ['blockinstanceid']],
+            'block_playerhud_trade_reqs' => ['tradeid' => ['tradeid']],
+            'block_playerhud_trade_rewards' => ['tradeid' => ['tradeid']],
+            'block_playerhud_trade_log' => [
+                'userid_tradeid' => ['userid', 'tradeid'],
+                'tradeid' => ['tradeid'],
+            ],
+            'block_playerhud_ai_logs' => ['blockinstanceid_timecreated' => ['blockinstanceid', 'timecreated']],
+            'block_playerhud_wizard_runs' => ['blockinstanceid' => ['blockinstanceid']],
+        ];
+
+        foreach ($indexes as $tablename => $tableindexes) {
+            $table = new \xmldb_table($tablename);
+            foreach ($tableindexes as $name => $fields) {
+                $index = new \xmldb_index($name, XMLDB_INDEX_NOTUNIQUE, $fields);
+                if (!$dbman->index_exists($table, $index)) {
+                    $dbman->add_index($table, $index);
+                }
+            }
+        }
+
+        upgrade_block_savepoint(true, 2026101400, 'playerhud');
+    }
+
     return true;
 }
