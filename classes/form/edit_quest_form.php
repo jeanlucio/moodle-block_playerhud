@@ -184,10 +184,12 @@ class edit_quest_form extends \moodleform {
 
         $mform->addElement('text', 'image_todo', get_string('quest_icon_todo', 'block_playerhud'));
         $mform->setType('image_todo', PARAM_TEXT);
+        $mform->addRule('image_todo', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
         $mform->setDefault('image_todo', '🎯');
 
         $mform->addElement('text', 'image_done', get_string('quest_icon_done', 'block_playerhud'));
         $mform->setType('image_done', PARAM_TEXT);
+        $mform->addRule('image_done', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
         $mform->setDefault('image_done', '🏅');
 
         $mform->addElement('selectyesno', 'enabled', get_string('enabled', 'block_playerhud'));

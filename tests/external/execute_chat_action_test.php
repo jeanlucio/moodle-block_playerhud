@@ -152,4 +152,25 @@ final class execute_chat_action_test extends external_base_testcase {
         $this->assertSame($name, $logged);
         $this->assertSame(1, preg_match('//u', $logged), 'The logged name must be valid UTF-8.');
     }
+
+    /**
+     * A quest name longer than its column, as an AI answer can carry, is cut instead of failing the
+     * insert and leaving the teacher with an error page.
+     */
+    public function test_create_quest_cuts_a_name_longer_than_the_column(): void {
+        global $DB;
+
+        $result = execute_chat_action::execute(
+            $this->instanceid,
+            $this->course->id,
+            'create_quest',
+            json_encode([
+                'name' => str_repeat('ç', 300), 'type' => \block_playerhud\quest::TYPE_LEVEL, 'target_value' => 2,
+            ])
+        );
+
+        $this->assertTrue($result['success']);
+        $stored = $DB->get_field('block_playerhud_quests', 'name', ['blockinstanceid' => $this->instanceid], MUST_EXIST);
+        $this->assertSame(255, \core_text::strlen($stored));
+    }
 }

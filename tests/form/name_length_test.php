@@ -112,4 +112,66 @@ final class name_length_test extends advanced_testcase {
         $class::mock_submit([$field => str_repeat('a', 256)] + $others);
         $this->assertNull((new $class(null, $customdata))->get_data(), 'A 256-character name is refused.');
     }
+
+    /**
+     * Forms whose emoji or image URL field is stored in a 255-character column.
+     *
+     * @return array[] Form class, field, other submitted fields, customdata.
+     */
+    public static function image_fields_provider(): array {
+        $itemdata = ['instanceid' => 0, 'lp_activities' => [], 'itemid' => 0];
+        $questdata = ['instanceid' => 0, 'courseid' => 0];
+        return [
+            'item image' => [edit_item_form::class, 'image', ['name' => 'N', 'xp' => 1], $itemdata],
+            'class tier emoji' => [edit_class_form::class, 'emoji_tier3', ['name' => 'N'], ['classid' => 0]],
+            'quest todo icon' => [edit_quest_form::class, 'image_todo',
+                ['name' => 'N', 'target_value' => 1, 'reward_xp' => 1, 'type' => 1], $questdata],
+            'quest done icon' => [edit_quest_form::class, 'image_done',
+                ['name' => 'N', 'target_value' => 1, 'reward_xp' => 1, 'type' => 1], $questdata],
+        ];
+    }
+
+    /**
+     * An emoji or image URL longer than its column is refused by the form, not by the database.
+     *
+     * @dataProvider image_fields_provider
+     * @param string $class Form class.
+     * @param string $field Field under test.
+     * @param array $others Other submitted fields.
+     * @param array $customdata Form customdata.
+     */
+    public function test_image_field_longer_than_the_column_is_refused(
+        string $class,
+        string $field,
+        array $others,
+        array $customdata
+    ): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $instanceid = (int) $DB->insert_record('block_instances', (object) [
+            'blockname'         => 'playerhud',
+            'parentcontextid'   => \context_course::instance($course->id)->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern'   => 'course-view-*',
+            'defaultregion'     => 'side-pre',
+            'defaultweight'     => 0,
+            'configdata'        => base64_encode(serialize(new \stdClass())),
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ]);
+        foreach (['instanceid' => $instanceid, 'courseid' => (int) $course->id] as $key => $value) {
+            if (array_key_exists($key, $customdata)) {
+                $customdata[$key] = $value;
+            }
+        }
+
+        $class::mock_submit([$field => str_repeat('a', 255)] + $others);
+        $this->assertNotNull((new $class(null, $customdata))->get_data(), 'A 255-character value is valid.');
+
+        $class::mock_submit([$field => str_repeat('a', 256)] + $others);
+        $this->assertNull((new $class(null, $customdata))->get_data(), 'A 256-character value is refused.');
+    }
 }

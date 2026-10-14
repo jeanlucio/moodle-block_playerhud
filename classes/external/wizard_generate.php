@@ -1294,7 +1294,8 @@ class wizard_generate {
             $namestringkey = "wizard_mission_name_{$typekey}_fantasy";
         }
 
-        return get_string($namestringkey, 'block_playerhud', $placeholder);
+        // The placeholder can be an activity name of up to 255 characters, so the sentence around it may not fit.
+        return \core_text::substr(get_string($namestringkey, 'block_playerhud', $placeholder), 0, 255);
     }
 
     /**

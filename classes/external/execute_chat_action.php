@@ -240,7 +240,7 @@ class execute_chat_action extends external_api {
         $now = time();
         $quest = new \stdClass();
         $quest->blockinstanceid  = $instanceid;
-        $quest->name             = $name;
+        $quest->name             = \core_text::substr($name, 0, 255);
         $quest->description      = $description;
         $quest->type             = $type;
         $quest->requirement      = (string)$targetvalue;

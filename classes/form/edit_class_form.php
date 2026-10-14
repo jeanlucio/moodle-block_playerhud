@@ -84,6 +84,7 @@ class edit_class_form extends \moodleform {
             $mform->addElement('filemanager', 'image_tier' . $tier, $tierlabels[$tier], null, $fileoptions);
             $mform->addElement('text', 'emoji_tier' . $tier, get_string('class_emoji_tier', 'block_playerhud'));
             $mform->setType('emoji_tier' . $tier, PARAM_TEXT);
+            $mform->addRule('emoji_tier' . $tier, get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
             $mform->addHelpButton('emoji_tier' . $tier, 'class_emoji_tier', 'block_playerhud');
         }
 

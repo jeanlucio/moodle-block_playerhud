@@ -434,4 +434,22 @@ final class wizard_generate_helpers_test extends external_base_testcase {
             'distribute_secret' => true,
         ], $overrides);
     }
+
+    /**
+     * A mission named after an activity must still fit the 255-character name column: the activity
+     * name can fill it on its own, and the sentence around it used to push the mission name past it.
+     */
+    public function test_resolve_mission_name_fits_the_name_column_for_a_long_activity_name(): void {
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id, 'name' => str_repeat('ç', 255),
+        ]);
+        $method = new \ReflectionMethod(wizard_generate::class, 'resolve_mission_name');
+
+        $name = $method->invoke(null, [
+            'type' => \block_playerhud\quest::TYPE_ACTIVITY, 'requirement' => (string) $page->cmid, 'name' => 'x',
+        ], (int) $this->course->id, 'fantasy');
+
+        $this->assertLessThanOrEqual(255, \core_text::strlen($name));
+        $this->assertSame(1, preg_match('//u', $name), 'The cut must not split a character.');
+    }
 }

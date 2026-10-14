@@ -89,6 +89,7 @@ class edit_item_form extends \moodleform {
         // 4. Emoji (Restored field).
         $mform->addElement('text', 'image', get_string('itemimage_emoji', 'block_playerhud'));
         $mform->setType('image', PARAM_TEXT);
+        $mform->addRule('image', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
         $mform->setDefault('image', '🎁');
         $mform->addHelpButton('image', 'itemimage_emoji', 'block_playerhud');
 
