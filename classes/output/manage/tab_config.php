@@ -170,9 +170,10 @@ class tab_config implements renderable, templatable {
             'widget_code_tip_html' => get_string('widget_code_tip', 'block_playerhud'),
             'action_url' => $actionurl->out(false),
             'sesskey' => sesskey(),
-            'val_gemini' => get_user_preferences('block_playerhud_gemini_key', ''),
-            'val_groq' => get_user_preferences('block_playerhud_groq_key', ''),
-            'val_openai' => get_user_preferences('block_playerhud_openai_key', ''),
+            // The keys are write-only: the page only learns whether one is saved, never its value.
+            'gemini_set' => get_user_preferences('block_playerhud_gemini_key', '') !== '',
+            'groq_set' => get_user_preferences('block_playerhud_groq_key', '') !== '',
+            'openai_set' => get_user_preferences('block_playerhud_openai_key', '') !== '',
             'val_openai_url' => get_user_preferences('block_playerhud_openai_url', ''),
             'val_openai_model' => get_user_preferences('block_playerhud_openai_model', ''),
             'placeholder_openai_url' => $defaulturl,

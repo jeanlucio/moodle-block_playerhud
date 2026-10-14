@@ -56,9 +56,9 @@
         "widget_code_tip_html": "Tip: Paste this code...",
         "action_url": "#",
         "sesskey": "12345",
-        "val_gemini": "",
-        "val_groq": "",
-        "val_openai": "",
+        "gemini_set": true,
+        "groq_set": false,
+        "openai_set": false,
         "val_openai_url": "",
         "val_openai_model": "",
         "placeholder_openai_url": "https://api.openai.com/v1/chat/completions",
@@ -225,11 +225,12 @@
                             <span class="badge bg-dark me-1" aria-hidden="true">1°</span>
                             {{#str}} gemini_apikey, block_playerhud {{/str}}
                         </label>
+                        {{#gemini_set}}<span class="badge bg-success ms-1">{{#str}} api_key_saved, block_playerhud {{/str}}</span>{{/gemini_set}}{{^gemini_set}}<span class="badge bg-light text-dark border ms-1">{{#str}} api_key_not_set, block_playerhud {{/str}}</span>{{/gemini_set}}
                         <div class="input-group ph-key-input-group">
                             <span class="input-group-text"><i class="fa fa-google" aria-hidden="true"></i></span>
                             <input type="password" class="form-control" name="gemini_key" id="gemini_key"
-                                   value="{{val_gemini}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}"
-                                   autocomplete="new-password">
+                                   value="" autocomplete="new-password" spellcheck="false"
+                                   placeholder="{{#gemini_set}}{{#str}} api_key_saved_hint, block_playerhud {{/str}}{{/gemini_set}}{{^gemini_set}}{{#str}} api_key_placeholder, block_playerhud {{/str}}{{/gemini_set}}">
                             <button type="button" class="btn btn-outline-secondary ph-toggle-key"
                                     data-target="gemini_key"
                                     aria-label="{{#str}} show_hide_key, block_playerhud {{/str}}"
@@ -237,6 +238,12 @@
                                 <span aria-hidden="true">&#128065;</span>
                             </button>
                         </div>
+                        {{#gemini_set}}
+                        <div class="form-check mt-1">
+                            <input type="checkbox" class="form-check-input" id="gemini_key_remove" name="remove_gemini" value="1">
+                            <label class="form-check-label small" for="gemini_key_remove">{{#str}} api_key_remove, block_playerhud {{/str}}</label>
+                        </div>
+                        {{/gemini_set}}
                     </div>
 
                     <div class="mb-3">
@@ -244,11 +251,12 @@
                             <span class="badge bg-dark me-1" aria-hidden="true">2°</span>
                             {{#str}} groq_apikey, block_playerhud {{/str}}
                         </label>
+                        {{#groq_set}}<span class="badge bg-success ms-1">{{#str}} api_key_saved, block_playerhud {{/str}}</span>{{/groq_set}}{{^groq_set}}<span class="badge bg-light text-dark border ms-1">{{#str}} api_key_not_set, block_playerhud {{/str}}</span>{{/groq_set}}
                         <div class="input-group ph-key-input-group">
                             <span class="input-group-text"><i class="fa fa-bolt" aria-hidden="true"></i></span>
                             <input type="password" class="form-control" name="groq_key" id="groq_key"
-                                   value="{{val_groq}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}"
-                                   autocomplete="new-password">
+                                   value="" autocomplete="new-password" spellcheck="false"
+                                   placeholder="{{#groq_set}}{{#str}} api_key_saved_hint, block_playerhud {{/str}}{{/groq_set}}{{^groq_set}}{{#str}} api_key_placeholder, block_playerhud {{/str}}{{/groq_set}}">
                             <button type="button" class="btn btn-outline-secondary ph-toggle-key"
                                     data-target="groq_key"
                                     aria-label="{{#str}} show_hide_key, block_playerhud {{/str}}"
@@ -256,6 +264,12 @@
                                 <span aria-hidden="true">&#128065;</span>
                             </button>
                         </div>
+                        {{#groq_set}}
+                        <div class="form-check mt-1">
+                            <input type="checkbox" class="form-check-input" id="groq_key_remove" name="remove_groq" value="1">
+                            <label class="form-check-label small" for="groq_key_remove">{{#str}} api_key_remove, block_playerhud {{/str}}</label>
+                        </div>
+                        {{/groq_set}}
                     </div>
 
                     <div class="mb-3">
@@ -263,11 +277,12 @@
                             <span class="badge bg-dark me-1" aria-hidden="true">3°</span>
                             {{#str}} custom_ai_apikey, block_playerhud {{/str}}
                         </label>
+                        {{#openai_set}}<span class="badge bg-success ms-1">{{#str}} api_key_saved, block_playerhud {{/str}}</span>{{/openai_set}}{{^openai_set}}<span class="badge bg-light text-dark border ms-1">{{#str}} api_key_not_set, block_playerhud {{/str}}</span>{{/openai_set}}
                         <div class="input-group ph-key-input-group">
                             <span class="input-group-text"><i class="fa fa-plug" aria-hidden="true"></i></span>
                             <input type="password" class="form-control" name="openai_key" id="openai_key"
-                                   value="{{val_openai}}" placeholder="{{#str}} api_key_placeholder, block_playerhud {{/str}}"
-                                   autocomplete="new-password">
+                                   value="" autocomplete="new-password" spellcheck="false"
+                                   placeholder="{{#openai_set}}{{#str}} api_key_saved_hint, block_playerhud {{/str}}{{/openai_set}}{{^openai_set}}{{#str}} api_key_placeholder, block_playerhud {{/str}}{{/openai_set}}">
                             <button type="button" class="btn btn-outline-secondary ph-toggle-key"
                                     data-target="openai_key"
                                     aria-label="{{#str}} show_hide_key, block_playerhud {{/str}}"
@@ -275,6 +290,12 @@
                                 <span aria-hidden="true">&#128065;</span>
                             </button>
                         </div>
+                        {{#openai_set}}
+                        <div class="form-check mt-1">
+                            <input type="checkbox" class="form-check-input" id="openai_key_remove" name="remove_openai" value="1">
+                            <label class="form-check-label small" for="openai_key_remove">{{#str}} api_key_remove, block_playerhud {{/str}}</label>
+                        </div>
+                        {{/openai_set}}
                     </div>
 
                     <div class="mb-3">

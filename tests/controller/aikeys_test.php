@@ -90,9 +90,36 @@ final class aikeys_test extends advanced_testcase {
     }
 
     /**
-     * A missing field is stored as an empty preference.
+     * The keys are write-only: a field left empty keeps the saved key, a typed one replaces it, and
+     * only the remove flag deletes it (even when text is typed in the same field). The endpoint and
+     * the model are not secrets, so an empty value still clears them.
      */
-    public function test_save_stores_empty_for_missing_field(): void {
+    public function test_save_keeps_replaces_and_removes_secret_keys(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $instance = $this->make_instance();
+        $uid = (int) $user->id;
+        aikeys::save([
+            'gemini_key' => 'gem-old', 'groq_key' => 'groq-old', 'openai_key' => 'oa-old',
+            'openai_url' => 'https://example.com/v1', 'openai_model' => 'gpt-x',
+        ], $instance, $uid);
+
+        aikeys::save([
+            'gemini_key' => '', 'groq_key' => 'groq-new', 'openai_key' => 'ignored', 'remove_openai' => 1,
+            'openai_url' => '', 'openai_model' => '',
+        ], $instance, $uid);
+
+        $this->assertSame('gem-old', get_user_preferences('block_playerhud_gemini_key', '', $uid));
+        $this->assertSame('groq-new', get_user_preferences('block_playerhud_groq_key', '', $uid));
+        $this->assertSame('', get_user_preferences('block_playerhud_openai_key', 'fallback', $uid));
+        $this->assertSame('', get_user_preferences('block_playerhud_openai_url', 'fallback', $uid));
+        $this->assertSame('', get_user_preferences('block_playerhud_openai_model', 'fallback', $uid));
+    }
+
+    /**
+     * A field missing from the submission leaves the saved key alone.
+     */
+    public function test_save_leaves_a_missing_key_field_alone(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $instance = $this->make_instance();
@@ -100,7 +127,7 @@ final class aikeys_test extends advanced_testcase {
         aikeys::save(['gemini_key' => 'only-gemini'], $instance, (int) $user->id);
 
         $this->assertSame('only-gemini', get_user_preferences('block_playerhud_gemini_key', '', $user->id));
-        $this->assertSame('', get_user_preferences('block_playerhud_groq_key', 'fallback', $user->id));
+        $this->assertSame('fallback', get_user_preferences('block_playerhud_groq_key', 'fallback', $user->id));
     }
 
     /**

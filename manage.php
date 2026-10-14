@@ -537,6 +537,9 @@ if ($action === 'save_keys' && confirm_sesskey()) {
         'openai_key'   => optional_param('openai_key', '', PARAM_TEXT),
         'openai_url'   => clean_param($typedurl, PARAM_URL),
         'openai_model' => optional_param('openai_model', '', PARAM_TEXT),
+        'remove_gemini' => optional_param('remove_gemini', 0, PARAM_BOOL),
+        'remove_groq'   => optional_param('remove_groq', 0, PARAM_BOOL),
+        'remove_openai' => optional_param('remove_openai', 0, PARAM_BOOL),
     ], $bi, $USER->id);
 
     redirect(

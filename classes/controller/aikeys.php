@@ -52,21 +52,44 @@ class aikeys {
     ];
 
     /**
+     * The secret fields and the field that asks to delete the key saved for each.
+     *
+     * @var string[]
+     */
+    private const SECRET_FIELDS = [
+        'gemini_key' => 'remove_gemini',
+        'groq_key'   => 'remove_groq',
+        'openai_key' => 'remove_openai',
+    ];
+
+    /**
      * Saves the submitted AI keys for a user and strips any legacy keys from
      * the block configuration.
      *
-     * Each value is trimmed before being stored. Legacy keys that may have been
+     * Each value is trimmed before being stored. The three keys are write-only: the page never shows
+     * a saved key, so an empty field means "keep the saved one", and only the matching remove_*
+     * flag deletes it (that flag wins over text typed in the same field). The endpoint and the model
+     * are not secrets and keep their meaning: empty clears them. Legacy keys that may have been
      * saved into the block config in older versions are removed so the
      * credentials only ever live in user preferences.
      *
-     * @param array $values Submitted values keyed by field name (see PREFERENCES).
+     * @param array $values Submitted values keyed by field name (see PREFERENCES), plus the remove_*
+     *                      flags of the keys (see SECRET_FIELDS).
      * @param \stdClass $blockinstance The block_instances record to clean.
      * @param int $userid The owning user ID.
      * @return void
      */
     public static function save(array $values, \stdClass $blockinstance, int $userid): void {
         foreach (self::PREFERENCES as $field => $pref) {
-            set_user_preference($pref, trim((string) ($values[$field] ?? '')), $userid);
+            $typed = trim((string) ($values[$field] ?? ''));
+            if (isset(self::SECRET_FIELDS[$field])) {
+                if (!empty($values[self::SECRET_FIELDS[$field]])) {
+                    $typed = '';
+                } else if ($typed === '') {
+                    continue;
+                }
+            }
+            set_user_preference($pref, $typed, $userid);
         }
 
         $block = \block_instance_by_id((int) $blockinstance->id);

@@ -76,6 +76,31 @@ final class tab_config_test extends advanced_testcase {
     }
 
     /**
+     * The saved keys never reach the page: the markup carries no trace of them, the status badge
+     * says which ones are saved, and the remove checkbox exists only for those.
+     */
+    public function test_saved_keys_are_never_rendered(): void {
+        global $USER, $OUTPUT;
+
+        set_user_preference('block_playerhud_gemini_key', 'AIzaSECRET-gemini-key', $USER->id);
+        set_user_preference('block_playerhud_openai_key', 'sk-SECRET-openai-key', $USER->id);
+
+        $data = (new tab_config($this->instanceid, $this->course->id))
+            ->export_for_template($this->createMock(\renderer_base::class));
+        $html = $OUTPUT->render_from_template('block_playerhud/tab_config', $data);
+
+        $this->assertStringNotContainsString('SECRET', $html);
+        $this->assertTrue($data['gemini_set']);
+        $this->assertFalse($data['groq_set']);
+        $this->assertTrue($data['openai_set']);
+        $this->assertStringContainsString('name="remove_gemini"', $html);
+        $this->assertStringNotContainsString('name="remove_groq"', $html);
+        $this->assertStringContainsString('name="remove_openai"', $html);
+        $this->assertSame(2, substr_count($html, get_string('api_key_saved', 'block_playerhud')));
+        $this->assertSame(1, substr_count($html, '>' . get_string('api_key_not_set', 'block_playerhud') . '<'));
+    }
+
+    /**
      * An instance with no items or quests still exports a well-formed empty summary,
      * instead of crashing on the economy_health() call.
      */
