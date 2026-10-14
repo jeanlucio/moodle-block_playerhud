@@ -160,4 +160,41 @@ final class aikeys_test extends advanced_testcase {
         $this->assertArrayNotHasKey('apikey_groq', $config);
         $this->assertSame(10, (int) $config['max_levels']);
     }
+
+    /**
+     * Provides typed endpoints and the reason each one is refused ('' when it is fine).
+     *
+     * @return array[] Typed value and the lang key that explains the refusal.
+     */
+    public static function endpoint_provider(): array {
+        return [
+            'nothing typed means no endpoint' => ['', ''],
+            'only spaces' => ['   ', ''],
+            'a public address over https' => ['https://8.8.8.8/v1', ''],
+            'an IPv6 address in brackets cannot be read as a URL' => [
+                'https://[2606:4700:4700::1111]/v1', 'ai_keys_endpoint_unreadable'],
+            'an IPv4-compatible loopback in brackets' => ['https://[::7f00:1]/v1', 'ai_keys_endpoint_unreadable'],
+            'a scheme that is not a URL' => ['javascript:alert(1)', 'ai_keys_endpoint_unreadable'],
+            'plain http' => ['http://8.8.8.8/v1', 'ai_keys_endpoint_refused'],
+            'a private network' => ['https://10.0.0.5/v1', 'ai_keys_endpoint_refused'],
+            'localhost' => ['https://localhost/v1', 'ai_keys_endpoint_refused'],
+            'a host that does not resolve' => ['https://nonexistent-host-xyz.invalid/v1', 'ai_keys_endpoint_refused'],
+        ];
+    }
+
+    /**
+     * A typed endpoint that cannot be read or that a request would refuse is turned down with the
+     * reason, instead of being cleaned to nothing, which used to erase the saved one while the page
+     * said the keys were saved.
+     *
+     * @dataProvider endpoint_provider
+     * @param string $typed What was typed.
+     * @param string $expected The lang key of the refusal, or '' when accepted.
+     */
+    public function test_endpoint_problem(string $typed, string $expected): void {
+        $this->resetAfterTest();
+        $instance = $this->make_instance();
+
+        $this->assertSame($expected, aikeys::endpoint_problem($typed, (int) $instance->id));
+    }
 }

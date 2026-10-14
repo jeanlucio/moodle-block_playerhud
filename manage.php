@@ -519,11 +519,23 @@ if ($action === 'move_chapter_down' && confirm_sesskey()) {
 
 // Action: Save API Keys.
 if ($action === 'save_keys' && confirm_sesskey()) {
+    $typedurl = optional_param('openai_url', '', PARAM_RAW_TRIMMED);
+    $problem = \block_playerhud\controller\aikeys::endpoint_problem($typedurl, $instanceid);
+    if ($problem !== '') {
+        // Nothing is saved: neither the other keys nor the endpoint that was already stored.
+        redirect(
+            new moodle_url($baseurl, ['tab' => 'config']),
+            get_string($problem, 'block_playerhud'),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
+    }
+
     \block_playerhud\controller\aikeys::save([
         'gemini_key'   => optional_param('gemini_key', '', PARAM_TEXT),
         'groq_key'     => optional_param('groq_key', '', PARAM_TEXT),
         'openai_key'   => optional_param('openai_key', '', PARAM_TEXT),
-        'openai_url'   => optional_param('openai_url', '', PARAM_URL),
+        'openai_url'   => clean_param($typedurl, PARAM_URL),
         'openai_model' => optional_param('openai_model', '', PARAM_TEXT),
     ], $bi, $USER->id);
 

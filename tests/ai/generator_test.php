@@ -678,4 +678,55 @@ final class generator_test extends external_base_testcase {
 
         $this->assertFalse($result['success']);
     }
+
+    /**
+     * Provides provider responses and whether they carry an answer.
+     *
+     * @return array[] Provider, raw response body, whether it is a success, text expected in the message.
+     */
+    public static function provider_response_provider(): array {
+        return [
+            'Gemini with text' => ['Gemini', '{"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}', true, ''],
+            'OpenAI-compatible with text' => ['Custom', '{"choices":[{"message":{"content":"ok"}}]}', true, ''],
+            'Gemini blocked prompt' => ['Gemini', '{"promptFeedback":{"blockReason":"SAFETY"}}', false, 'SAFETY'],
+            'Gemini stopped without text' => [
+                'Gemini', '{"candidates":[{"finishReason":"MAX_TOKENS","content":{"parts":[{}]}}]}', false, 'MAX_TOKENS'],
+            'compatible, filtered' => [
+                'Custom', '{"choices":[{"message":{"content":""},"finish_reason":"content_filter"}]}', false, 'content_filter'],
+            'compatible, only spaces' => ['Custom', '{"choices":[{"message":{"content":"  \n"}}]}', false, ''],
+            'gateway error page' => ['Custom', '<html>502</html>', false, ''],
+            'error object' => ['Custom', '{"error":{"message":"overloaded"}}', false, 'overloaded'],
+        ];
+    }
+
+    /**
+     * An answer with no text is a failure that names the provider, so the chain goes on to the next
+     * one; it used to be an empty success that stopped the chain.
+     *
+     * @dataProvider provider_response_provider
+     * @param string $source Provider name.
+     * @param string $body Raw response body.
+     * @param bool $success Whether it carries an answer.
+     * @param string $reason Text the failure message must contain.
+     */
+    public function test_an_answer_with_no_text_is_a_failure(
+        string $source,
+        string $body,
+        bool $success,
+        string $reason
+    ): void {
+        $generator = new generator($this->instanceid);
+        $method = new \ReflectionMethod($generator, 'answer_from_response');
+
+        $result = $method->invoke($generator, $body, $source);
+
+        $this->assertSame($success, $result['success']);
+        $this->assertSame($source, $result['provider']);
+        if ($success) {
+            $this->assertSame('ok', $result['data']);
+            return;
+        }
+        $this->assertStringContainsString(get_string('ai_error_empty_answer', 'block_playerhud', $source), $result['message']);
+        $this->assertStringContainsString($reason, $result['message']);
+    }
 }

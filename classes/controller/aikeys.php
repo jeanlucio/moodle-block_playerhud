@@ -24,6 +24,8 @@
 
 namespace block_playerhud\controller;
 
+use block_playerhud\ai\generator;
+
 /**
  * Persists the AI provider keys as user preferences.
  *
@@ -74,5 +76,29 @@ class aikeys {
             unset($config->apikey_gemini, $config->apikey_groq);
             $block->instance_config_save($config);
         }
+    }
+
+    /**
+     * Explains why a typed personal endpoint cannot be saved, or returns '' when it can.
+     *
+     * The field is cleaned as a URL, and what the cleaner cannot read (an IP address in brackets, for
+     * one) comes back empty, which the page used to take for "forget the endpoint": the saved one was
+     * erased and the page said the keys were saved. The typed value is checked before it is cleaned.
+     *
+     * @param string $typed What the teacher typed in the endpoint field.
+     * @param int $instanceid The block instance, for the address check.
+     * @return string The lang string key that explains the refusal; empty when the value is fine.
+     */
+    public static function endpoint_problem(string $typed, int $instanceid): string {
+        $typed = trim($typed);
+        if ($typed === '') {
+            return '';
+        }
+        $url = clean_param($typed, PARAM_URL);
+        if ($url === '') {
+            return 'ai_keys_endpoint_unreadable';
+        }
+
+        return (new generator($instanceid))->is_endpoint_allowed($url) ? '' : 'ai_keys_endpoint_refused';
     }
 }

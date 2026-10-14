@@ -584,6 +584,20 @@ class generator {
     }
 
     /**
+     * Tells whether a URL may be saved as a personal OpenAI-compatible endpoint.
+     *
+     * The same check that every request applies, so an endpoint a request would refuse (plain http,
+     * localhost, a private network, a host that does not resolve) is refused when it is typed instead
+     * of being saved and then ignored without a word.
+     *
+     * @param string $url The endpoint as it would be stored.
+     * @return bool True when requests may be sent to it.
+     */
+    public function is_endpoint_allowed(string $url): bool {
+        return $this->is_safe_url($url);
+    }
+
+    /**
      * Returns true only if the URL is safe to use as an external AI endpoint.
      *
      * Enforces HTTPS and blocks loopback, link-local, and RFC-1918 private addresses
@@ -1348,6 +1362,17 @@ class generator {
         }
 
         // 3. Process Success.
+        return $this->answer_from_response((string) $response, $source);
+    }
+
+    /**
+     * Turns the body of a successful HTTP response into the provider answer.
+     *
+     * @param string $response The raw response body.
+     * @param string $source The provider name ('Gemini' or the OpenAI-compatible label).
+     * @return array The answer: success with the text, or a failure that names the reason.
+     */
+    protected function answer_from_response(string $response, string $source): array {
         $decoded = json_decode($response, true);
         $content = '';
 
@@ -1355,6 +1380,22 @@ class generator {
             $content = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? '';
         } else {
             $content = $decoded['choices'][0]['message']['content'] ?? '';
+        }
+
+        // An answer with no text (a blocked prompt, an interrupted generation, a gateway's error page)
+        // is a failure that names the reason, so the next provider is tried instead of the chain
+        // stopping on an empty success.
+        if (trim((string) $content) === '') {
+            $reason = $source === 'Gemini'
+                ? ($decoded['promptFeedback']['blockReason'] ?? ($decoded['candidates'][0]['finishReason'] ?? ''))
+                : ($decoded['choices'][0]['finish_reason'] ?? ($decoded['error']['message'] ?? ''));
+            $reason = is_scalar($reason) ? clean_param((string) $reason, PARAM_TEXT) : '';
+            return [
+                'success' => false,
+                'message' => get_string('ai_error_empty_answer', 'block_playerhud', $source)
+                    . ($reason !== '' ? ' (' . $reason . ')' : ''),
+                'provider' => $source,
+            ];
         }
 
         return ['success' => true, 'data' => $content, 'provider' => $source];
