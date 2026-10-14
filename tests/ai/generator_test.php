@@ -540,6 +540,9 @@ final class generator_test extends external_base_testcase {
             'documentation' => ['https://203.0.113.9/v1', false],
             'IPv4-mapped loopback' => ['https://[::ffff:127.0.0.1]/v1', false],
             'IPv6 unique local' => ['https://[fd00::1]/v1', false],
+            'IPv4-compatible loopback' => ['https://[::7f00:1]/v1', false],
+            'IPv4-compatible metadata address' => ['https://[::a9fe:a9fe]/v1', false],
+            'deprecated site-local' => ['https://[fec0::1]/v1', false],
             'public address' => ['https://8.8.8.8/v1', true],
             'public IPv6 address' => ['https://[2606:4700:4700::1111]/v1', true],
         ];
@@ -601,6 +604,12 @@ final class generator_test extends external_base_testcase {
         );
 
         $this->assertSame([], $this->make_generator_resolving(['127.0.0.1', '10.0.0.5'])->pin('https://evil.example/v1'));
+        // A name whose AAAA record is an IPv4-compatible internal address must not be pinned either.
+        $this->assertSame(
+            ['evil.example:443:93.184.216.34'],
+            $this->make_generator_resolving(['93.184.216.34', '::7f00:1', '::a9fe:a9fe'])->pin('https://evil.example/v1')
+        );
+        $this->assertSame([], $this->make_generator_resolving(['::7f00:1'])->pin('https://evil.example/v1'));
         $this->assertSame([], $this->make_generator_resolving([])->pin('https://unresolvable.example/v1'));
         $this->assertNull($mixed->pin('https://8.8.8.8/v1'));
     }

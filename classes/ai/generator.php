@@ -1227,8 +1227,11 @@ class generator {
     /**
      * Tells whether an IP address belongs to a range that is not the public internet but that
      * FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE does not always cover, depending on
-     * the PHP version: carrier-grade NAT, benchmarking and documentation networks, and IPv6
-     * addresses that embed an IPv4 one.
+     * the PHP version: carrier-grade NAT, benchmarking and documentation networks, the deprecated
+     * site-local IPv6 range, and IPv6 addresses that embed an IPv4 one (IPv4-compatible ::/96,
+     * IPv4-mapped, NAT64 and 6to4). PHP lets ::7f00:1 (::127.0.0.1) and ::a9fe:a9fe
+     * (::169.254.169.254) through, and a host whose AAAA record answers one of them would otherwise
+     * be pinned and contacted at the internal address.
      *
      * @param string $ip A valid IPv4 or IPv6 address.
      * @return bool True when the address is in one of those ranges.
@@ -1241,9 +1244,11 @@ class generator {
             '198.18.0.0/15',
             '198.51.100.0/24',
             '203.0.113.0/24',
+            '::/96',
             '::ffff:0:0/96',
             '64:ff9b::/96',
             '2002::/16',
+            'fec0::/10',
         ];
 
         return address_in_subnet($ip, implode(',', $ranges));
