@@ -769,6 +769,8 @@ class provider implements
      * @param int $userid The userid of the user whose data is to be exported.
      */
     public static function export_user_preferences(int $userid) {
+        // There is no deletion counterpart on purpose: the Privacy API has no hook for user
+        // preferences, and core removes all of a user's preferences when the account is deleted.
         $geminikey = get_user_preferences('block_playerhud_gemini_key', null, $userid);
         if ($geminikey !== null) {
             writer::with_context(\context_system::instance())->export_user_preference(
@@ -839,28 +841,6 @@ class provider implements
                     $value,
                     get_string('privacy:metadata:preference:avatar', 'block_playerhud')
                 );
-            }
-        }
-    }
-
-    /**
-     * Delete all use preferences for the plugin.
-     *
-     * @param int $userid The userid of the user whose data is to be deleted.
-     */
-    public static function delete_user_preferences(int $userid) {
-        unset_user_preference('block_playerhud_gemini_key', $userid);
-        unset_user_preference('block_playerhud_groq_key', $userid);
-        unset_user_preference('block_playerhud_openai_key', $userid);
-        unset_user_preference('block_playerhud_openai_model', $userid);
-        unset_user_preference('block_playerhud_openai_url', $userid);
-        unset_user_preference('block_playerhud_celebration', $userid);
-
-        // Equipped avatar preferences (one dynamic key per block instance).
-        $allprefs = get_user_preferences(null, null, $userid);
-        foreach ($allprefs as $name => $value) {
-            if (str_starts_with($name, 'block_playerhud_avatar_')) {
-                unset_user_preference($name, $userid);
             }
         }
     }

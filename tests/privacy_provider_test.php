@@ -361,40 +361,6 @@ final class privacy_provider_test extends advanced_testcase {
     }
 
     /**
-     * Test that user preferences (API keys and equipped avatar) are deleted correctly.
-     * Ensure GDPR compliance by removing preference traces upon user deletion.
-     */
-    public function test_delete_user_preferences(): void {
-        $this->resetAfterTest(true);
-        $user = $this->getDataGenerator()->create_user();
-        $avatarkey = 'block_playerhud_avatar_' . $this->instanceid;
-
-        // Simulate a teacher saving every API key plus a student equipping an avatar.
-        set_user_preference('block_playerhud_gemini_key', 'AIza_test_key', $user->id);
-        set_user_preference('block_playerhud_groq_key', 'gsk_test_key', $user->id);
-        set_user_preference('block_playerhud_openai_key', 'sk_test_key', $user->id);
-        set_user_preference('block_playerhud_openai_url', 'https://api.example.com', $user->id);
-        set_user_preference('block_playerhud_openai_model', 'gpt-test', $user->id);
-        set_user_preference($avatarkey, '777', $user->id);
-
-        // Verify preferences are stored before deletion.
-        $this->assertEquals('AIza_test_key', get_user_preferences('block_playerhud_gemini_key', null, $user->id));
-        $this->assertEquals('sk_test_key', get_user_preferences('block_playerhud_openai_key', null, $user->id));
-        $this->assertEquals('777', get_user_preferences($avatarkey, null, $user->id));
-
-        // Execute the privacy provider deletion method.
-        provider::delete_user_preferences($user->id);
-
-        // Assert that every preference is now null (removed from DB).
-        $this->assertNull(get_user_preferences('block_playerhud_gemini_key', null, $user->id));
-        $this->assertNull(get_user_preferences('block_playerhud_groq_key', null, $user->id));
-        $this->assertNull(get_user_preferences('block_playerhud_openai_key', null, $user->id));
-        $this->assertNull(get_user_preferences('block_playerhud_openai_url', null, $user->id));
-        $this->assertNull(get_user_preferences('block_playerhud_openai_model', null, $user->id));
-        $this->assertNull(get_user_preferences($avatarkey, null, $user->id));
-    }
-
-    /**
      * Test that user preferences (API keys and equipped avatar) are exported correctly.
      */
     public function test_export_user_preferences(): void {
@@ -421,9 +387,9 @@ final class privacy_provider_test extends advanced_testcase {
 
     /**
      * The one-time celebration flag set when a quest claim levels the user up is a stored user
-     * preference, so it must be declared, exported and removed like the others.
+     * preference, so it must be declared and exported like the others (core removes it with the account).
      */
-    public function test_celebration_preference_is_declared_exported_and_deleted(): void {
+    public function test_celebration_preference_is_declared_and_exported(): void {
         $this->resetAfterTest(true);
         $user = $this->getDataGenerator()->create_user();
 
@@ -437,9 +403,6 @@ final class privacy_provider_test extends advanced_testcase {
         provider::export_user_preferences($user->id);
         $prefs = writer::with_context(\context_system::instance())->get_user_preferences('block_playerhud');
         $this->assertEquals('levelup:3', $prefs->block_playerhud_celebration->value);
-
-        provider::delete_user_preferences($user->id);
-        $this->assertNull(get_user_preferences('block_playerhud_celebration', null, $user->id));
     }
 
     /**
