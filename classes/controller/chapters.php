@@ -71,6 +71,7 @@ class chapters {
         $nextposition = $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $instanceid]) + 1;
         $mform = new \block_playerhud\form\edit_chapter_form(null, [
             'chapterid'    => $chapterid,
+            'instanceid'   => $instanceid,
             'nextposition' => $nextposition,
         ]);
 

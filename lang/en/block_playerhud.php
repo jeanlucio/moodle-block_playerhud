@@ -184,6 +184,7 @@ $string['chapter_saved'] = 'Chapter saved successfully.';
 $string['chapter_sortorder'] = 'Sort Order';
 $string['chapter_title'] = 'Chapter Title';
 $string['chapter_unlock_date'] = 'Unlock Date';
+$string['chapter_validate_required_level'] = 'The required level must be between 0 and the block maximum of {$a} levels.';
 $string['chapters_empty'] = 'No chapters have been created for this story yet.';
 $string['chapters_summary'] = 'You have {$a} chapter(s) created.';
 $string['chapters_summary_hint'] = 'Each chapter is made up of scenes with text, images, and choices. Students progress through the story by selecting options, and each choice can grant XP, alter Reputation, or require an item as a cost. Use the "Generate with AI" button to automatically create a full chapter.';

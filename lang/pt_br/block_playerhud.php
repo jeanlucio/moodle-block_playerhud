@@ -184,6 +184,7 @@ $string['chapter_saved'] = 'Capítulo salvo com sucesso.';
 $string['chapter_sortorder'] = 'Ordem de Exibição';
 $string['chapter_title'] = 'Título do Capítulo';
 $string['chapter_unlock_date'] = 'Data de Liberação';
+$string['chapter_validate_required_level'] = 'O nível exigido deve ficar entre 0 e o máximo do bloco, de {$a} níveis.';
 $string['chapters_empty'] = 'Nenhum capítulo foi criado para esta história ainda.';
 $string['chapters_summary'] = 'Você tem {$a} capítulo(s) criado(s).';
 $string['chapters_summary_hint'] = 'Cada capítulo é composto por cenas com texto, imagem e escolhas. O estudante avança pela história ao selecionar opções, e cada escolha pode conceder XP, alterar a Reputação ou exigir um item como custo. Use o botão "Gerar com IA" para criar um capítulo completo automaticamente.';

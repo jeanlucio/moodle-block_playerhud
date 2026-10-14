@@ -1653,4 +1653,16 @@ final class game_test extends advanced_testcase {
         $full = game::get_leaderboard($instanceid, $student->id, false);
         $this->assertSame(fullname($student), $full['individual'][0]->fullname);
     }
+
+    /**
+     * Karma values are limited to the range a player can reach, and values inside it are untouched.
+     */
+    public function test_clamp_karma_limits_to_the_range_a_player_can_reach(): void {
+        $this->assertSame(999, game::clamp_karma(1000));
+        $this->assertSame(-999, game::clamp_karma(-1000));
+        $this->assertSame(999, game::clamp_karma(999));
+        $this->assertSame(-999, game::clamp_karma(-999));
+        $this->assertSame(0, game::clamp_karma(0));
+        $this->assertSame(-42, game::clamp_karma(-42));
+    }
 }

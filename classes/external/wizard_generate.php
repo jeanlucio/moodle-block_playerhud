@@ -697,7 +697,7 @@ class wizard_generate {
                 $choice->next_nodeid = $nodeids[$choicedata['target']];
                 $choice->req_class_id = 0;
                 $choice->req_karma_min = 0;
-                $choice->karma_delta = $choicedata['karma_delta'] ?? 0;
+                $choice->karma_delta = \block_playerhud\game::clamp_karma((int) ($choicedata['karma_delta'] ?? 0));
                 $choice->set_class_id = isset($choicedata['class_role'])
                     ? $classidsbyrole[$choicedata['class_role']]
                     : 0;

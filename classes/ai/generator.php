@@ -1153,7 +1153,7 @@ class generator {
                 $choice->next_nodeid  = $nextnodeid;
                 $choice->req_class_id = 0;
                 $choice->req_karma_min = 0;
-                $choice->karma_delta  = (int)($choicedata['karma_delta'] ?? 0);
+                $choice->karma_delta  = \block_playerhud\game::clamp_karma((int)($choicedata['karma_delta'] ?? 0));
                 $choice->set_class_id = 0;
                 $choice->cost_itemid  = ($choiceitemid > 0 && $choiceitemqty > 0) ? $choiceitemid : 0;
                 $choice->cost_item_qty = ($choiceitemid > 0 && $choiceitemqty > 0) ? $choiceitemqty : 1;

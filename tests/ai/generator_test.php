@@ -279,6 +279,29 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * The model decides each choice's karma change, so an absurd value is stored inside what a
+     * player's karma can reach instead of as typed.
+     */
+    public function test_generate_story_keeps_the_karma_change_inside_the_karma_range(): void {
+        global $DB;
+
+        $json = '{"title":"Karma","nodes":['
+            . '{"index":0,"content":"Início","is_start":true,"choices":['
+            . '{"text":"Alto","target_index":1,"karma_delta":50000},'
+            . '{"text":"Baixo","target_index":1,"karma_delta":-50000}]},'
+            . '{"index":1,"content":"Fim"}]}';
+
+        $result = $this->make_generator_answering($json)->generate_story('karma');
+
+        $deltas = array_map(
+            fn($id) => (int) $DB->get_field('block_playerhud_choices', 'karma_delta', ['id' => $id], MUST_EXIST),
+            $result['choice_ids']
+        );
+        sort($deltas);
+        $this->assertSame([-999, 999], $deltas);
+    }
+
+    /**
      * Without any scene flagged as the start the chapter would never show up for students, so the
      * first scene becomes the start; and only one scene keeps the flag.
      */

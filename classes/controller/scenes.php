@@ -533,8 +533,9 @@ class scenes {
             $setclassid        = (int) ($submitted['set_class_id'] ?? 0);
             $costitemid        = (int) ($submitted['cost_itemid'] ?? 0);
             $ch->req_class_id  = in_array($reqclassid, $validclassids, true) ? $reqclassid : 0;
-            $ch->req_karma_min = (int) ($submitted['req_karma_min'] ?? 0);
-            $ch->karma_delta   = (int) ($submitted['karma_delta'] ?? 0);
+            // Karma stops at +-999, so a requirement beyond that could never be met.
+            $ch->req_karma_min = \block_playerhud\game::clamp_karma((int) ($submitted['req_karma_min'] ?? 0));
+            $ch->karma_delta   = \block_playerhud\game::clamp_karma((int) ($submitted['karma_delta'] ?? 0));
             $ch->set_class_id  = in_array($setclassid, $validclassids, true) ? $setclassid : 0;
             $ch->cost_itemid   = in_array($costitemid, $validitemids, true) ? $costitemid : 0;
             $ch->cost_item_qty = max(1, (int) ($submitted['cost_item_qty'] ?? 1));

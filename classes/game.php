@@ -35,6 +35,22 @@ class game {
     /** @var int Milestone bitmask: mascot introduction shown. */
     const MILESTONE_INTRO = 4;
 
+    /** @var int Lowest karma a player can have. */
+    const KARMA_MIN = -999;
+
+    /** @var int Highest karma a player can have. */
+    const KARMA_MAX = 999;
+
+    /**
+     * Bring a karma value (a player's, a choice's requirement or its change) inside the range a player can reach.
+     *
+     * @param int $value The raw value.
+     * @return int The value limited to KARMA_MIN..KARMA_MAX.
+     */
+    public static function clamp_karma(int $value): int {
+        return max(self::KARMA_MIN, min(self::KARMA_MAX, $value));
+    }
+
     /**
      * Get or create a player record.
      *
@@ -936,7 +952,7 @@ class game {
     }
 
     /**
-     * Adjust a player's karma by delta, clamped to [-999, 999].
+     * Adjust a player's karma by delta, clamped to [KARMA_MIN, KARMA_MAX].
      *
      * @param int $blockinstanceid The block instance ID.
      * @param int $userid The user ID.
@@ -952,7 +968,7 @@ class game {
         if (!$progress) {
             return 0;
         }
-        $newkarma = max(-999, min(999, (int) $progress->karma + $delta));
+        $newkarma = self::clamp_karma((int) $progress->karma + $delta);
         $DB->set_field('block_playerhud_rpg_progress', 'karma', $newkarma, ['id' => $progress->id]);
         return $newkarma;
     }

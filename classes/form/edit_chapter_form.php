@@ -62,10 +62,11 @@ class edit_chapter_form extends \moodleform {
         ]);
         $mform->setDefault('unlock_date', 0);
 
-        // Required level.
+        // Required level, up to the highest level a player can reach in this block.
         $mform->addElement('text', 'required_level', get_string('chapter_required_level', 'block_playerhud'), [
             'type' => 'number',
             'min'  => '0',
+            'max'  => (string) $this->max_levels(),
         ]);
         $mform->setType('required_level', PARAM_INT);
         $mform->setDefault('required_level', 0);
@@ -89,5 +90,33 @@ class edit_chapter_form extends \moodleform {
         $mform->setType('chapterid', PARAM_INT);
 
         $this->add_action_buttons();
+    }
+
+    /**
+     * The highest level a player can reach in the block this chapter belongs to.
+     *
+     * @return int The block's maximum level.
+     */
+    private function max_levels(): int {
+        return \block_playerhud\utils::get_max_levels((int) ($this->_customdata['instanceid'] ?? 0));
+    }
+
+    /**
+     * A chapter that asks for a level above the block maximum would stay locked for every student.
+     *
+     * @param array $data Submitted data.
+     * @param array $files Submitted files.
+     * @return array Errors keyed by field name.
+     */
+    public function validation($data, $files): array {
+        $errors = parent::validation($data, $files);
+
+        $maxlevels = $this->max_levels();
+        $required = (int) ($data['required_level'] ?? 0);
+        if ($required < 0 || $required > $maxlevels) {
+            $errors['required_level'] = get_string('chapter_validate_required_level', 'block_playerhud', $maxlevels);
+        }
+
+        return $errors;
     }
 }

@@ -146,6 +146,21 @@ final class edit_scene_form_test extends advanced_testcase {
     }
 
     /**
+     * The karma fields stop at the range a player's karma can reach, so the browser warns before a
+     * requirement nobody can meet is typed.
+     */
+    public function test_karma_fields_carry_the_karma_range(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $html = $this->render_form_for(['Cena'], ['choice_text_0' => 'Go']);
+
+        foreach (['choice_req_karma_0', 'choice_karma_0'] as $name) {
+            $this->assertMatchesRegularExpression('/name="' . $name . '"[^>]*min="-999"[^>]*max="999"/s', $html);
+        }
+    }
+
+    /**
      * Each press of "Add choice" adds one slot to those already on screen, even when the earlier
      * ones were never saved: it used to count from the saved choices and so added the same slot again.
      *

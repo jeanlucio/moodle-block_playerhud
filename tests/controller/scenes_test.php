@@ -159,6 +159,26 @@ final class scenes_test extends advanced_testcase {
     }
 
     /**
+     * Karma stops at +-999, so a requirement or a change beyond that is stored at the limit: a
+     * requirement of 1000 would otherwise lock the choice for every student.
+     */
+    public function test_save_choices_keeps_karma_inside_the_range_a_player_can_reach(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$instanceid, $chapterid, $nodeid] = $this->make_scene();
+
+        (new scenes())->save_choices($nodeid, $chapterid, $instanceid, [
+            ['text' => 'High', 'req_karma_min' => 5000, 'karma_delta' => 5000],
+            ['text' => 'Low', 'req_karma_min' => -5000, 'karma_delta' => -5000],
+            ['text' => 'Inside', 'req_karma_min' => 999, 'karma_delta' => 10],
+        ]);
+
+        $rows = $DB->get_records('block_playerhud_choices', ['nodeid' => $nodeid], 'id');
+        $pairs = array_map(fn($r) => [(int) $r->req_karma_min, (int) $r->karma_delta], array_values($rows));
+        $this->assertSame([[999, 999], [-999, -999], [999, 10]], $pairs);
+    }
+
+    /**
      * A granted class belonging to another instance is rejected (stored as zero).
      */
     public function test_save_choices_zeroes_a_foreign_class(): void {
