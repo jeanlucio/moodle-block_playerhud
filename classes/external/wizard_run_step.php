@@ -397,6 +397,12 @@ class wizard_run_step extends external_api {
         $economymessage = '';
         if ($params['is_last_step']) {
             \block_playerhud\local\wizard::finish_run($params['runid'], 'done');
+            // The distribution step already explains a course with no activities; otherwise say
+            // that drops are still waiting, since their XP is not obtainable until they are placed.
+            $unplaced = \block_playerhud\local\wizard::count_unplaced_drops($params['runid']);
+            if ($unplaced > 0 && $message === '') {
+                $message = get_string('wizard_pending_drops_note', 'block_playerhud', $unplaced);
+            }
             if ($params['report_economy']) {
                 [$xpperlevel, $maxlevels] = wizard_generate::resolve_xp_settings($config);
                 $health = \block_playerhud\local\analytics::economy_health($params['instanceid'], $xpperlevel, $maxlevels);

@@ -997,6 +997,45 @@ final class wizard_run_step_test extends external_base_testcase {
     }
 
     /**
+     * The last step of a run says how many of the run's drops are still unplaced, because their
+     * XP is not obtainable until they are: with the distribute flag off the PlayerCoin's drop
+     * waits, and the report must say so. A run whose drops were all placed adds no such note.
+     */
+    public function test_last_step_reports_the_drops_that_are_still_unplaced(): void {
+        $this->getDataGenerator()->create_module('forum', ['course' => $this->course->id, 'type' => 'news', 'intro' => '']);
+        $result = wizard_run_step::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            runid: $this->start_empty_run(),
+            steptype: 'playercoin',
+            theme: '',
+            islaststep: true,
+            distribute: false
+        );
+
+        $this->assertSame(get_string('wizard_pending_drops_note', 'block_playerhud', 1), $result['message']);
+    }
+
+    /**
+     * When the drop was placed there is nothing left to say.
+     */
+    public function test_last_step_adds_no_note_when_every_drop_was_placed(): void {
+        $this->getDataGenerator()->create_module('forum', ['course' => $this->course->id, 'type' => 'news', 'intro' => '']);
+
+        $result = wizard_run_step::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            runid: $this->start_empty_run(),
+            steptype: 'playercoin',
+            theme: '',
+            islaststep: true,
+            distribute: true
+        );
+
+        $this->assertSame('', $result['message']);
+    }
+
+    /**
      * Undoing a run whose drops were never placed removes them as well: they are in the run's
      * manifest although no shortcode points at them.
      */

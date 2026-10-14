@@ -152,6 +152,30 @@ class wizard {
     }
 
     /**
+     * Counts the drops a run created that were not placed in any activity or forum.
+     *
+     * These are the drops the teacher still has to place with "Distribute Drops": until then
+     * students cannot collect their items, so the XP they promise is not obtainable yet.
+     *
+     * @param int $runid The run ID.
+     * @return int How many of the run's drops have no recorded shortcode.
+     */
+    public static function count_unplaced_drops(int $runid): int {
+        global $DB;
+
+        return (int) $DB->count_records_sql(
+            "SELECT COUNT(1)
+               FROM {block_playerhud_wizard_objects} o
+              WHERE o.runid = :runid
+                AND o.objecttable = 'block_playerhud_drops'
+                AND NOT EXISTS (SELECT 1
+                                  FROM {block_playerhud_wizard_shortcodes} s
+                                 WHERE s.runid = o.runid AND s.dropid = o.objectid)",
+            ['runid' => $runid]
+        );
+    }
+
+    /**
      * Marks a run as finished.
      *
      * @param int $runid The run ID.

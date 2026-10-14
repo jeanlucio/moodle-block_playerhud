@@ -383,6 +383,25 @@ final class wizard_test extends advanced_testcase {
     }
 
     /**
+     * The drops of a run that no shortcode points at are counted as unplaced; a placed drop, a
+     * drop of another run and objects of other tables are not.
+     */
+    public function test_count_unplaced_drops(): void {
+        global $USER;
+
+        $runid = wizard::start_run($this->instanceid, (int) $USER->id, ['items']);
+        $otherrunid = wizard::start_run($this->instanceid, (int) $USER->id, ['items']);
+        wizard::record_objects($runid, 'block_playerhud_drops', [101, 102, 103]);
+        wizard::record_objects($runid, 'block_playerhud_items', [201]);
+        wizard::record_objects($otherrunid, 'block_playerhud_drops', [104]);
+        wizard::record_shortcode($runid, 102, 5000, 'intro');
+
+        $this->assertSame(2, wizard::count_unplaced_drops($runid));
+        $this->assertSame(1, wizard::count_unplaced_drops($otherrunid));
+        $this->assertSame(0, wizard::count_unplaced_drops($runid + 1000));
+    }
+
+    /**
      * The limit parameter caps the number of runs returned, newest first.
      */
     public function test_get_active_runs_respects_limit(): void {
