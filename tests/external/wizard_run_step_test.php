@@ -78,22 +78,24 @@ final class wizard_run_step_test extends external_base_testcase {
             'blockinstanceid' => $this->instanceid,
             'action_type' => 'playercoin',
         ]));
+        // The item and its unplaced drop (there is no news forum to insert it into).
         $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $runid]);
-        $this->assertCount(1, $manifest);
+        $this->assertCount(2, $manifest);
     }
 
     /**
      * The "playercoin" step's own "distribute" flag reaches generate_playercoin() the same way
      * it does through the single-call execute() — even with a news forum available, passing
-     * distribute: false must still create the item without a drop.
+     * distribute: false must still create the item and its drop, but leave the drop out of the
+     * forum so it waits in "Distribute drops".
      */
     public function test_playercoin_step_respects_distribute_false(): void {
         global $DB;
 
-        $this->getDataGenerator()->create_module('forum', [
+        $forum = $this->getDataGenerator()->create_module('forum', [
             'course' => $this->course->id,
             'type'   => 'news',
-            'intro'  => '',
+            'intro'  => 'Welcome',
         ]);
 
         $runid = $this->start_empty_run();
@@ -108,7 +110,29 @@ final class wizard_run_step_test extends external_base_testcase {
 
         $this->assertTrue($result['success']);
         $this->assertSame(1, $result['counts']['items']);
-        $this->assertEquals(0, $DB->count_records('block_playerhud_drops'));
+
+        $drop = $DB->get_record('block_playerhud_drops', [], '*', MUST_EXIST);
+        $this->assertSame(0, (int) $drop->maxusage);
+        $this->assertSame('Welcome', $DB->get_field('forum', 'intro', ['id' => $forum->id]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]));
+        $this->assertTrue($DB->record_exists('block_playerhud_wizard_objects', [
+            'runid' => $runid, 'objecttable' => 'block_playerhud_drops', 'objectid' => $drop->id,
+        ]));
+    }
+
+    /**
+     * With no news forum to insert it into, the PlayerCoin still gets its drop, waiting in
+     * "Distribute drops" instead of being lost.
+     */
+    public function test_playercoin_step_keeps_a_pending_drop_without_a_news_forum(): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute($this->instanceid, $this->course->id, $runid, 'playercoin', '');
+
+        $this->assertTrue($result['success']);
+        $this->assertEquals(1, $DB->count_records('block_playerhud_drops'));
+        $this->assertSame(0, $DB->count_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]));
     }
 
     /**
@@ -596,11 +620,13 @@ final class wizard_run_step_test extends external_base_testcase {
             'action_type' => 'playercoin',
         ]));
 
+        // The items, plus the PlayerCoin's drop: with no news forum it waits unplaced, but it is
+        // part of the run and is recorded so that undoing the run removes it.
         $manifest = $DB->get_records('block_playerhud_wizard_objects', ['runid' => $runid]);
-        $this->assertCount(count($items), $manifest);
-        foreach ($manifest as $entry) {
-            $this->assertSame('block_playerhud_items', $entry->objecttable);
-        }
+        $this->assertCount(count($items) + 1, $manifest);
+        $tables = array_count_values(array_column($manifest, 'objecttable'));
+        $this->assertSame(count($items), $tables['block_playerhud_items']);
+        $this->assertSame(1, $tables['block_playerhud_drops']);
     }
 
     /**
@@ -854,14 +880,17 @@ final class wizard_run_step_test extends external_base_testcase {
     }
 
     /**
-     * Unchecking Pill's own "distribute into activities" flag still creates both items, but
-     * skips the quota-scatter across course activities entirely — proving distribute actually
-     * gates generate_pill()'s own placement, independent of every other module.
+     * Unchecking Pill's own "distribute into activities" flag still creates both items and the
+     * drops the quotas call for, but places none of them in the activities — proving distribute
+     * gates only generate_pill()'s own placement, independent of every other module.
      */
-    public function test_pill_step_distribute_false_skips_activity_scatter(): void {
+    public function test_pill_step_distribute_false_creates_drops_without_placing_them(): void {
         global $DB;
 
-        $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id,
+            'content' => 'Original body.',
+        ]);
 
         $runid = $this->start_empty_run();
         $result = wizard_run_step::execute(
@@ -877,7 +906,51 @@ final class wizard_run_step_test extends external_base_testcase {
 
         $this->assertTrue($result['success']);
         $this->assertSame(2, $result['counts']['items']);
-        $this->assertEquals(0, $DB->count_records('block_playerhud_drops'));
+
+        // One eligible activity: one drop carrying the whole quota, not placed anywhere.
+        $drops = $DB->get_records('block_playerhud_drops');
+        $this->assertCount(1, $drops);
+        $this->assertSame(11, (int) reset($drops)->maxusage);
+        $this->assertSame('Original body.', $DB->get_field('page', 'content', ['id' => $page->id]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]));
+    }
+
+    /**
+     * A course with no activities yet still gets the Pill's drops, six of them summing to the
+     * course total of eleven, whether or not distribute is on: there is nowhere to place them.
+     *
+     * @dataProvider distribute_flag_provider
+     * @param bool $distribute Value of the Pill card's checkbox.
+     */
+    public function test_pill_step_without_activities_keeps_six_pending_drops(bool $distribute): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            runid: $runid,
+            steptype: 'pill',
+            theme: '',
+            tonekey: 'academic',
+            pillbonusxp: 150,
+            distribute: $distribute
+        );
+
+        $this->assertTrue($result['success']);
+        $uses = array_map(static fn($drop) => (int) $drop->maxusage, $DB->get_records('block_playerhud_drops'));
+        rsort($uses);
+        $this->assertSame([2, 2, 2, 2, 2, 1], $uses);
+        $this->assertSame(0, $DB->count_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]));
+    }
+
+    /**
+     * Both values of a card's distribute checkbox.
+     *
+     * @return array
+     */
+    public static function distribute_flag_provider(): array {
+        return ['distribute on' => [true], 'distribute off' => [false]];
     }
 
     /**
@@ -921,6 +994,35 @@ final class wizard_run_step_test extends external_base_testcase {
         $this->assertEquals(0, $DB->count_records('block_playerhud_trades', ['blockinstanceid' => $this->instanceid]));
         $content = $DB->get_field('page', 'content', ['id' => $page->id]);
         $this->assertSame('Original body.', $content);
+    }
+
+    /**
+     * Undoing a run whose drops were never placed removes them as well: they are in the run's
+     * manifest although no shortcode points at them.
+     */
+    public function test_run_with_unplaced_drops_can_be_rolled_back(): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        foreach (['pill' => 'academic', 'secret_drops' => 'academic', 'playercoin' => ''] as $step => $tone) {
+            $result = wizard_run_step::execute(
+                instanceid: $this->instanceid,
+                courseid: $this->course->id,
+                runid: $runid,
+                steptype: $step,
+                theme: '',
+                tonekey: $tone,
+                pillbonusxp: 150,
+                distribute: false
+            );
+            $this->assertTrue($result['success'], $step);
+        }
+        $this->assertGreaterThan(6, $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid]));
+
+        \block_playerhud\local\wizard::rollback($runid, $this->instanceid, $this->course->id);
+
+        $this->assertEquals(0, $DB->count_records('block_playerhud_items', ['blockinstanceid' => $this->instanceid]));
+        $this->assertEquals(0, $DB->count_records('block_playerhud_drops', ['blockinstanceid' => $this->instanceid]));
     }
 
     /**
@@ -1076,10 +1178,10 @@ final class wizard_run_step_test extends external_base_testcase {
     }
 
     /**
-     * When the course has no news forum, the item is still created but no drop is planted —
-     * same tolerance as generate_playercoin()'s own "no forum" case.
+     * When the course has no news forum, the item is still created with its drop, which waits
+     * in "Distribute drops" — same tolerance as generate_playercoin()'s own "no forum" case.
      */
-    public function test_secret_drops_step_creates_item_but_no_drop_without_news_forum(): void {
+    public function test_secret_drops_step_keeps_a_pending_drop_without_news_forum(): void {
         global $DB;
 
         $runid = $this->start_empty_run();
@@ -1087,20 +1189,21 @@ final class wizard_run_step_test extends external_base_testcase {
 
         $this->assertTrue($result['success']);
         $this->assertSame(1, $result['counts']['items']);
-        $this->assertEquals(0, $DB->count_records('block_playerhud_drops'));
+        $this->assertEquals(1, $DB->count_records('block_playerhud_drops'));
+        $this->assertSame(0, $DB->count_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]));
     }
 
     /**
-     * Unchecking Secret Drops' own "distribute into activities" flag still creates the item, but
-     * skips planting its drop in the news forum entirely.
+     * Unchecking Secret Drops' own "distribute into activities" flag still creates the item and
+     * its drop, but does not plant the drop in the news forum.
      */
-    public function test_secret_drops_step_distribute_false_skips_forum_drop(): void {
+    public function test_secret_drops_step_distribute_false_keeps_the_drop_out_of_the_forum(): void {
         global $DB;
 
-        $this->getDataGenerator()->create_module('forum', [
+        $forum = $this->getDataGenerator()->create_module('forum', [
             'course' => $this->course->id,
             'type'   => 'news',
-            'intro'  => '',
+            'intro'  => 'Welcome',
         ]);
 
         $runid = $this->start_empty_run();
@@ -1115,7 +1218,9 @@ final class wizard_run_step_test extends external_base_testcase {
 
         $this->assertTrue($result['success']);
         $this->assertSame(1, $result['counts']['items']);
-        $this->assertEquals(0, $DB->count_records('block_playerhud_drops'));
+        $this->assertEquals(1, $DB->count_records('block_playerhud_drops'));
+        $this->assertSame('Welcome', $DB->get_field('forum', 'intro', ['id' => $forum->id]));
+        $this->assertSame(0, $DB->count_records('block_playerhud_wizard_shortcodes', ['runid' => $runid]));
     }
 
     /**

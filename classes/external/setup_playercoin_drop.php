@@ -51,6 +51,35 @@ class setup_playercoin_drop extends external_api {
     }
 
     /**
+     * Creates the PlayerCoin's infinite drop without placing it anywhere.
+     *
+     * Shared by execute(), which then writes its shortcode into the news forum, and by the
+     * wizard, which creates the drop even when it is told not to place it, so the item always
+     * has a drop waiting in "Distribute drops". Callers check permissions and ownership first.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param int $itemid PlayerCoin item ID, already verified to belong to the instance.
+     * @return array{dropid: int, code: string} The new drop and its code.
+     */
+    public static function create_drop(int $instanceid, int $itemid): array {
+        global $DB;
+
+        $code = \block_playerhud\utils::generate_drop_code($instanceid);
+        $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $instanceid,
+            'itemid'          => $itemid,
+            'name'            => get_string('playercoin_drop_name', 'block_playerhud'),
+            'maxusage'        => 0,
+            'respawntime'     => 3600,
+            'code'            => $code,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        return ['dropid' => $dropid, 'code' => $code];
+    }
+
+    /**
      * Create an infinite drop for the PlayerCoin in the course news forum.
      *
      * @param int $instanceid Block instance ID.
@@ -114,18 +143,7 @@ class setup_playercoin_drop extends external_api {
             return \block_playerhud\utils::activity_permission_failure();
         }
 
-        $code = \block_playerhud\utils::generate_drop_code($instanceid);
-
-        $dropid = $DB->insert_record('block_playerhud_drops', (object) [
-            'blockinstanceid' => $instanceid,
-            'itemid'          => $itemid,
-            'name'            => get_string('playercoin_drop_name', 'block_playerhud'),
-            'maxusage'        => 0,
-            'respawntime'     => 3600,
-            'code'            => $code,
-            'timecreated'     => time(),
-            'timemodified'    => time(),
-        ]);
+        ['dropid' => $dropid, 'code' => $code] = self::create_drop($instanceid, $itemid);
 
         $shortcode = '[PLAYERHUD_DROP code=' . $code . ']';
         $newintro  = $shortcode . ($forum->intro ? '<br>' . $forum->intro : '');

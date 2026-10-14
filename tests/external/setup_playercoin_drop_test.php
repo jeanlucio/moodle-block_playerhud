@@ -222,6 +222,30 @@ final class setup_playercoin_drop_test extends external_base_testcase {
     }
 
     /**
+     * create_drop() makes the PlayerCoin's infinite drop and returns its code, without touching
+     * the news forum: the wizard uses it to leave the drop waiting in "Distribute drops".
+     */
+    public function test_create_drop_makes_an_unplaced_infinite_drop(): void {
+        global $DB;
+
+        $forum = $this->getDataGenerator()->create_module('forum', [
+            'course' => $this->course->id,
+            'type'   => 'news',
+            'intro'  => 'Welcome',
+        ]);
+        $item = $this->create_item($this->instanceid, 'PlayerCoin');
+
+        $created = setup_playercoin_drop::create_drop($this->instanceid, $item->id);
+
+        $drop = $DB->get_record('block_playerhud_drops', ['id' => $created['dropid']], '*', MUST_EXIST);
+        $this->assertSame($created['code'], $drop->code);
+        $this->assertSame(0, (int) $drop->maxusage);
+        $this->assertSame(3600, (int) $drop->respawntime);
+        $this->assertSame((int) $item->id, (int) $drop->itemid);
+        $this->assertSame('Welcome', $DB->get_field('forum', 'intro', ['id' => $forum->id]));
+    }
+
+    /**
      * A student without block/playerhud:manage must not be able to setup a drop.
      */
     public function test_setup_playercoin_drop_requires_manage_capability(): void {

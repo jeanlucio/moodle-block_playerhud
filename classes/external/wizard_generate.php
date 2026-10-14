@@ -433,7 +433,9 @@ class wizard_generate {
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      * @param int $runid Wizard run ID.
-     * @param bool $distribute Whether to also insert the drop into the course news forum.
+     * @param bool $distribute Whether to also insert the drop into the course news forum. The drop is
+     *     created either way: without a news forum, or when told not to place it, it waits in
+     *     "Distribute drops".
      * @return string[] Names of the created items (empty if PlayerCoin already existed).
      */
     public static function generate_playercoin(int $instanceid, int $courseid, int $runid, bool $distribute = true): array {
@@ -445,6 +447,7 @@ class wizard_generate {
 
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$result['itemid']]);
 
+        $placed = false;
         if ($distribute) {
             $dropresult = \block_playerhud\external\setup_playercoin_drop::execute(
                 $instanceid,
@@ -452,6 +455,7 @@ class wizard_generate {
                 $result['itemid']
             );
             if (!empty($dropresult['success']) && !empty($dropresult['dropid'])) {
+                $placed = true;
                 \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', [$dropresult['dropid']]);
                 \block_playerhud\local\wizard::record_shortcode(
                     $runid,
@@ -460,6 +464,11 @@ class wizard_generate {
                     'intro'
                 );
             }
+        }
+
+        if (!$placed) {
+            $pending = \block_playerhud\external\setup_playercoin_drop::create_drop($instanceid, $result['itemid']);
+            \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', [$pending['dropid']]);
         }
 
         return ['PlayerCoin'];
@@ -793,6 +802,9 @@ class wizard_generate {
     /** @var int Total Knowledge Pill quantity across the whole course, whatever its size. */
     private const PILL_TARGET = 11;
 
+    /** @var int How many drops the Pill gets when the course has no activity to spread them over. */
+    private const PILL_PENDING_SPOTS = 6;
+
     /**
      * Creates the Knowledge Pill and Book items (paired, tone-specific names/emoji) and spreads
      * the Pill's drops across course activities via
@@ -810,14 +822,15 @@ class wizard_generate {
      *
      * Idempotent per tone: if a Pill with this tone's name already exists, the whole module is
      * skipped, mirroring the progress item's own idempotency check. A course with no eligible
-     * activities yet still gets the items — same tolerant behaviour as the general
-     * auto-distribute step.
+     * activities yet still gets the items and PILL_PENDING_SPOTS unplaced drops, for the teacher
+     * to place once the course has activities.
      *
      * @param int $instanceid Block instance ID.
      * @param int $courseid Course ID.
      * @param string $tonekey Narrative tone key.
      * @param int $runid Wizard run ID.
-     * @param bool $distribute Whether to also spread the Pill's drops across course activities.
+     * @param bool $distribute Whether to also place the Pill's drops in the course activities. The drops
+     *     are created either way and wait in "Distribute drops" when they are not placed.
      * @return string[] Names of the created items (empty when the module was skipped as
      *     already done).
      */
@@ -872,33 +885,36 @@ class wizard_generate {
         ]);
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$pillid, $bookid]);
 
-        if ($distribute) {
-            $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid, false);
-            $quotas = \block_playerhud\local\drop_distribution::compute_activity_quotas(
-                self::PILL_TARGET,
-                count($modules)
-            );
+        // The Pill's drops are created whether or not they are placed: one per eligible activity
+        // with the quotas spread as before, or PILL_PENDING_SPOTS drops when the course has no
+        // activities yet. Not placing them leaves them waiting in "Distribute drops".
+        $modules = \block_playerhud\local\drop_distribution::get_eligible_modules($courseid, false);
+        $quotas = \block_playerhud\local\drop_distribution::compute_activity_quotas(
+            self::PILL_TARGET,
+            $modules ? count($modules) : self::PILL_PENDING_SPOTS
+        );
 
-            $dropids = [];
-            $items = [];
-            foreach ($quotas as $i => $quota) {
-                if ($quota === 0) {
-                    // More eligible activities than PILL_TARGET: the evenly-spread quotas leave
-                    // some activities at 0 — skip them rather than plant a maxusage-0 drop.
-                    continue;
-                }
-                $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
-                    'blockinstanceid' => $instanceid,
-                    'itemid' => $pillid,
-                    'name' => $pillname,
-                    'maxusage' => $quota,
-                    'respawntime' => 3600,
-                    'code' => \block_playerhud\utils::generate_drop_code($instanceid),
-                    'timecreated' => $now,
-                    'timemodified' => $now,
-                ]);
-                $dropids[] = $dropid;
+        $dropids = [];
+        $items = [];
+        foreach ($quotas as $i => $quota) {
+            if ($quota === 0) {
+                // More eligible activities than PILL_TARGET: the evenly-spread quotas leave
+                // some activities at 0 — skip them rather than plant a maxusage-0 drop.
+                continue;
+            }
+            $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
+                'blockinstanceid' => $instanceid,
+                'itemid' => $pillid,
+                'name' => $pillname,
+                'maxusage' => $quota,
+                'respawntime' => 3600,
+                'code' => \block_playerhud\utils::generate_drop_code($instanceid),
+                'timecreated' => $now,
+                'timemodified' => $now,
+            ]);
+            $dropids[] = $dropid;
 
+            if ($distribute && $modules) {
                 // Page modules never show their intro unless the teacher explicitly enabled
                 // "Display page description" — their content, in contrast, is always shown on
                 // the page's own view. Every other eligible module type shows its intro
@@ -912,7 +928,9 @@ class wizard_generate {
                     'position' => 'top',
                 ];
             }
+        }
 
+        if ($items) {
             // One call for the whole batch instead of one insert_drop_shortcode::execute()
             // (and one rebuild_course_cache()) per drop.
             $results = \block_playerhud\external\insert_drop_shortcode::execute_batch($instanceid, $courseid, $items);
@@ -926,10 +944,10 @@ class wizard_generate {
                     );
                 }
             }
+        }
 
-            if (!empty($dropids)) {
-                \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', $dropids);
-            }
+        if (!empty($dropids)) {
+            \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', $dropids);
         }
 
         return [$pillname, $bookname];
@@ -939,8 +957,8 @@ class wizard_generate {
     private const SECRET_DROP_EMOJI = '💻';
 
     /**
-     * Creates a tone-specific secret collectible (`secret = 1`) and, if the course has a news
-     * forum, plants a single one-time drop for it there, disguised as a plain emoji blended into
+     * Creates a tone-specific secret collectible (`secret = 1`) with a single one-time drop and,
+     * if told to and the course has a news forum, plants that drop there, disguised as a plain emoji blended into
      * whatever the forum's own intro already says — rendered in mode=text (see
      * insert_drop_shortcode's `mode`/`customtext` params) instead of a card, since a card would
      * show a name and an icon and give the game away instantly.
@@ -959,7 +977,8 @@ class wizard_generate {
      * @param int $courseid Course ID.
      * @param string $tonekey Narrative tone key.
      * @param int $runid Wizard run ID.
-     * @param bool $distribute Whether to also plant the collectible's drop in the news forum.
+     * @param bool $distribute Whether to also plant the collectible's drop in the news forum. The drop is
+     *     created either way and waits in "Distribute drops" when it is not placed.
      * @return string[] Names of the created items (empty if the item already existed).
      */
     public static function generate_secret_drops(
@@ -994,36 +1013,34 @@ class wizard_generate {
         ]);
         \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_items', [$itemid]);
 
-        if ($distribute) {
-            // No news forum yet (e.g. it was deleted): the item still exists, just with nowhere
-            // planted — same tolerance as generate_playercoin()'s own forum-not-found case.
-            $forumcmid = \block_playerhud\utils::find_news_forum_cmid($courseid);
-            if ($forumcmid !== null) {
-                $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
-                    'blockinstanceid' => $instanceid,
-                    'itemid' => $itemid,
-                    'name' => $itemname,
-                    'maxusage' => 1,
-                    'respawntime' => 0,
-                    'code' => \block_playerhud\utils::generate_drop_code($instanceid),
-                    'timecreated' => $now,
-                    'timemodified' => $now,
-                ]);
-                \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', [$dropid]);
+        // The drop is created either way: without a news forum, or when told not to place it,
+        // it waits in "Distribute drops" for the teacher to put it somewhere.
+        $dropid = (int) $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $instanceid,
+            'itemid' => $itemid,
+            'name' => $itemname,
+            'maxusage' => 1,
+            'respawntime' => 0,
+            'code' => \block_playerhud\utils::generate_drop_code($instanceid),
+            'timecreated' => $now,
+            'timemodified' => $now,
+        ]);
+        \block_playerhud\local\wizard::record_objects($runid, 'block_playerhud_drops', [$dropid]);
 
-                $result = \block_playerhud\external\insert_drop_shortcode::execute(
-                    $instanceid,
-                    $courseid,
-                    $dropid,
-                    $forumcmid,
-                    'intro',
-                    'top',
-                    'text',
-                    self::SECRET_DROP_EMOJI
-                );
-                if ($result['success']) {
-                    \block_playerhud\local\wizard::record_shortcode($runid, $dropid, $forumcmid, 'intro');
-                }
+        $forumcmid = $distribute ? \block_playerhud\utils::find_news_forum_cmid($courseid) : null;
+        if ($forumcmid !== null) {
+            $result = \block_playerhud\external\insert_drop_shortcode::execute(
+                $instanceid,
+                $courseid,
+                $dropid,
+                $forumcmid,
+                'intro',
+                'top',
+                'text',
+                self::SECRET_DROP_EMOJI
+            );
+            if ($result['success']) {
+                \block_playerhud\local\wizard::record_shortcode($runid, $dropid, $forumcmid, 'intro');
             }
         }
 
