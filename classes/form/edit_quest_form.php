@@ -95,6 +95,7 @@ class edit_quest_form extends \moodleform {
         $mform->addElement('text', 'name', get_string('quest_name', 'block_playerhud'));
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
+        $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
         $mform->addElement('editor', 'description', get_string('description', 'block_playerhud'));
         $mform->setType('description', PARAM_RAW);

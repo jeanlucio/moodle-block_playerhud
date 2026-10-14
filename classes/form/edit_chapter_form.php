@@ -45,6 +45,7 @@ class edit_chapter_form extends \moodleform {
         $mform->addElement('text', 'title', get_string('chapter_title', 'block_playerhud'), ['size' => 60]);
         $mform->setType('title', PARAM_TEXT);
         $mform->addRule('title', null, 'required', null, 'client');
+        $mform->addRule('title', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
         // Intro text.
         $mform->addElement(

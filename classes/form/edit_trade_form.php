@@ -99,6 +99,7 @@ class edit_trade_form extends \moodleform {
         $mform->addElement('text', 'name', get_string('trade_name', 'block_playerhud'));
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
+        $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
         $mform->setDefault('name', get_string('trade_default_name', 'block_playerhud'));
 
         // Section: Student pays.

@@ -47,6 +47,7 @@ class edit_drop_form extends \moodleform {
 
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
+        $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
         // Collection Rules.
         $mform->addElement('header', 'rules', get_string('drop_rules_header', 'block_playerhud'));
