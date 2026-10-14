@@ -237,6 +237,14 @@ class edit_quest_form extends \moodleform {
             }
         }
 
+        // The player level stops at the block's maximum, so a higher target could never be reached.
+        if ($type === \block_playerhud\quest::TYPE_LEVEL && !isset($errors['target_value'])) {
+            $maxlevels = \block_playerhud\utils::get_max_levels((int) ($this->_customdata['instanceid'] ?? 0));
+            if ((int) $data['target_value'] > $maxlevels) {
+                $errors['target_value'] = get_string('quest_validate_target_level', 'block_playerhud', $maxlevels);
+            }
+        }
+
         if ($type === \block_playerhud\quest::TYPE_SPECIFIC_ITEM && empty($data['req_itemid'])) {
             $errors['req_itemid'] = get_string('required');
         }

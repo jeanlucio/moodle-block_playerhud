@@ -590,4 +590,20 @@ class utils {
         $config = ($raw !== false && $raw !== '') ? unserialize_object($raw) : null;
         return is_object($config) ? $config : new \stdClass();
     }
+
+    /**
+     * The highest level a player of the instance can reach, 20 when the block was never configured.
+     *
+     * @param int $instanceid Block instance ID.
+     * @return int The configured maximum level, at least 1.
+     */
+    public static function get_max_levels(int $instanceid): int {
+        global $DB;
+
+        $blockinstance = $DB->get_record('block_instances', ['id' => $instanceid]);
+        $config = $blockinstance ? self::get_block_config($blockinstance) : new \stdClass();
+        $maxlevels = (int) ($config->max_levels ?? 20);
+
+        return $maxlevels > 0 ? $maxlevels : 20;
+    }
 }

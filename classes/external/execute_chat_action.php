@@ -227,6 +227,10 @@ class execute_chat_action extends external_api {
         $description = isset($p['description']) ? clean_param($p['description'], PARAM_TEXT) : '';
         $type        = isset($p['type']) ? (int)$p['type'] : 0;
         $targetvalue = isset($p['target_value']) ? max(1, (int)$p['target_value']) : 1;
+        if ($type === \block_playerhud\quest::TYPE_LEVEL) {
+            // The player level stops at the block's maximum, so a higher target could never be reached.
+            $targetvalue = min($targetvalue, \block_playerhud\utils::get_max_levels($instanceid));
+        }
         $rewardxp    = isset($p['reward_xp']) ? max(0, (int)$p['reward_xp']) : 0;
 
         if ($name === '' || !in_array($type, $allowedtypes, true)) {

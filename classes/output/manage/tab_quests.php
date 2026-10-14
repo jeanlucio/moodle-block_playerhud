@@ -397,6 +397,8 @@ class tab_quests implements renderable {
             quest::UNAVAILABLE_REWARD => get_string('quest_hidden_item_reward', 'block_playerhud'),
         ];
 
+        $maxlevels = utils::get_max_levels($this->instanceid);
+
         $questsdata = [];
         $counter = ($page * $perpage) + 1;
         foreach ($quests as $q) {
@@ -429,6 +431,7 @@ class tab_quests implements renderable {
                 'image_todo'       => !empty($q->image_todo) ? $q->image_todo : '📋',
                 'name'             => utils::plain_string($q->name),
                 'hidden_reason'    => $hiddenlabels[$hiddenreasons[$q->id] ?? ''] ?? '',
+                'level_warning_text' => $this->level_warning_text($q, $maxlevels),
                 'type_label'       => $typelabels[$q->type] ?? '-',
                 'type_badge_class' => $typebadges[$q->type] ?? 'bg-secondary text-white',
                 'requirement_text' => $requirementtext,
@@ -528,5 +531,26 @@ class tab_quests implements renderable {
         ];
 
         return $OUTPUT->render_from_template('block_playerhud/manage_quests', $templatedata);
+    }
+
+    /**
+     * Explains why a level quest can never be completed, or gives an empty string when it can.
+     *
+     * The player level stops at the block's maximum, so a quest asking for more stays at its
+     * progress bar forever; this also catches a maximum lowered after the quest was created.
+     *
+     * @param \stdClass $quest The quest row.
+     * @param int $maxlevels The block's configured maximum level.
+     * @return string The warning text, empty when the quest is reachable.
+     */
+    protected function level_warning_text(\stdClass $quest, int $maxlevels): string {
+        if ((int) $quest->type !== quest::TYPE_LEVEL || (int) $quest->requirement <= $maxlevels) {
+            return '';
+        }
+
+        return get_string('quest_level_warning', 'block_playerhud', (object) [
+            'required' => (int) $quest->requirement,
+            'max'      => $maxlevels,
+        ]);
     }
 }

@@ -173,4 +173,27 @@ final class execute_chat_action_test extends external_base_testcase {
         $stored = $DB->get_field('block_playerhud_quests', 'name', ['blockinstanceid' => $this->instanceid], MUST_EXIST);
         $this->assertSame(255, \core_text::strlen($stored));
     }
+
+    /**
+     * A level quest the assistant asks for above the block's maximum level is brought down to it,
+     * because the player level stops there and a higher target could never be reached.
+     */
+    public function test_create_quest_caps_a_level_target_at_the_block_maximum(): void {
+        global $DB;
+
+        $DB->set_field('block_instances', 'configdata', base64_encode(serialize((object) ['max_levels' => 5])), [
+            'id' => $this->instanceid,
+        ]);
+
+        $result = execute_chat_action::execute(
+            $this->instanceid,
+            $this->course->id,
+            'create_quest',
+            json_encode(['name' => 'Climb', 'type' => \block_playerhud\quest::TYPE_LEVEL, 'target_value' => 25])
+        );
+
+        $this->assertTrue($result['success']);
+        $stored = $DB->get_field('block_playerhud_quests', 'requirement', ['blockinstanceid' => $this->instanceid], MUST_EXIST);
+        $this->assertSame('5', $stored);
+    }
 }

@@ -26,6 +26,7 @@
 namespace block_playerhud\output\manage;
 
 use advanced_testcase;
+use block_playerhud\quest;
 use stdClass;
 
 /**
@@ -250,5 +251,37 @@ final class tab_quests_test extends advanced_testcase {
 
         $this->assertStringNotContainsString('<script>alert(document.cookie)', $html);
         $this->assertStringContainsString('Malicious Item', $html);
+    }
+
+    /**
+     * A level quest above the block's maximum level is flagged in the teacher's list, because nobody
+     * can complete it; one at or below the maximum, and quests of other types, are not.
+     */
+    public function test_display_warns_about_a_level_quest_that_can_never_be_completed(): void {
+        global $DB;
+
+        $DB->set_field('block_instances', 'configdata', base64_encode(serialize((object) ['max_levels' => 10])), [
+            'id' => $this->instanceid,
+        ]);
+        $base = [
+            'blockinstanceid' => $this->instanceid, 'description' => '', 'reward_xp' => 5, 'reward_itemid' => 0,
+            'req_itemid' => 0, 'reward_itemqty' => 1, 'required_class_id' => '0', 'image_todo' => '',
+            'image_done' => '', 'enabled' => 1, 'timecreated' => time(), 'timemodified' => time(),
+        ];
+        $cases = [
+            ['Too high', quest::TYPE_LEVEL, '25'],
+            ['At the cap', quest::TYPE_LEVEL, '10'],
+            ['Big xp', quest::TYPE_XP_TOTAL, '25'],
+        ];
+        foreach ($cases as [$name, $type, $requirement]) {
+            $DB->insert_record('block_playerhud_quests', (object) ($base + [
+                'name' => $name, 'type' => $type, 'requirement' => $requirement,
+            ]));
+        }
+
+        $html = (new tab_quests($this->instanceid, $this->course->id))->display();
+
+        $warning = get_string('quest_level_warning', 'block_playerhud', (object) ['required' => 25, 'max' => 10]);
+        $this->assertSame(1, substr_count($html, $warning));
     }
 }
