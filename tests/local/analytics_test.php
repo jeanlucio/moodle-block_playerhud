@@ -299,6 +299,56 @@ final class analytics_test extends advanced_testcase {
     }
 
     /**
+     * Drops whose code is in no activity and no news forum are counted, with the XP they would
+     * pay: a placed drop, an infinite one (it pays no XP), a drop of a disabled item and a drop
+     * placed in the news forum behave as described.
+     */
+    public function test_unplaced_drops_counts_the_drops_found_nowhere(): void {
+        global $DB;
+
+        $courseid = (int) \context_block::instance($this->instanceid)->get_course_context()->instanceid;
+        $makedrop = function (int $itemid, string $code, int $maxusage, int $value = 1) use ($DB): void {
+            $DB->insert_record('block_playerhud_drops', (object) [
+                'blockinstanceid' => $this->instanceid, 'itemid' => $itemid, 'name' => 'Loc',
+                'maxusage' => $maxusage, 'value' => $value, 'respawntime' => 0, 'code' => $code,
+                'timecreated' => time(), 'timemodified' => time(),
+            ]);
+        };
+        $paid = $this->create_item('Paid', 10);
+        $disabled = $this->create_item('Disabled', 10);
+        $DB->set_field('block_playerhud_items', 'enabled', 0, ['id' => $disabled]);
+
+        $makedrop($paid, 'PLACED1', 3);
+        $makedrop($paid, 'INNEWS1', 1);
+        $makedrop($paid, 'WAITING', 2, 2);
+        $makedrop($paid, 'INFINIT', 0);
+        $makedrop($disabled, 'OFFITEM', 5);
+
+        $this->getDataGenerator()->create_module('page', [
+            'course' => $courseid, 'content' => 'Read this [PLAYERHUD_DROP code=PLACED1] now.',
+        ]);
+        $this->getDataGenerator()->create_module('forum', [
+            'course' => $courseid, 'type' => 'news', 'intro' => '[PLAYERHUD_DROP code=INNEWS1]',
+        ]);
+
+        $result = analytics::unplaced_drops($this->instanceid);
+
+        // WAITING (2 uses x 2 units x 10 XP) and INFINIT (no XP) are the ones found nowhere.
+        $this->assertSame(2, $result->drops);
+        $this->assertSame(40, $result->xp);
+    }
+
+    /**
+     * An instance without drops has nothing unplaced.
+     */
+    public function test_unplaced_drops_is_zero_without_drops(): void {
+        $result = analytics::unplaced_drops($this->instanceid);
+
+        $this->assertSame(0, $result->drops);
+        $this->assertSame(0, $result->xp);
+    }
+
+    /**
      * A non-positive XP-per-level never divides by zero; everyone lands on level 1.
      */
     public function test_level_distribution_guards_zero_xpperlevel(): void {

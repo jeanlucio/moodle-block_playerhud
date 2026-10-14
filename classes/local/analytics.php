@@ -219,6 +219,61 @@ class analytics {
     }
 
     /**
+     * Counts the drops that are in no activity and no news forum, and the XP they would pay.
+     *
+     * The economy figures count every drop, but a drop only pays XP once its shortcode sits
+     * somewhere a student can see it. This looks for each drop's code in the activities' own
+     * description and content fields (the same places the Distribute Drops screen reads, news
+     * forum included), so the panel can say how much of the promised XP is not obtainable yet.
+     * A drop placed elsewhere (a book chapter, a section summary, a forum post) is not seen by
+     * this scan, which is why the panel words it as "not found".
+     *
+     * @param int $instanceid The block instance ID.
+     * @return \stdClass {drops: int, xp: int}: unplaced drops of enabled items, and the XP those
+     *     of them with a finite limit would pay (the same rule as game_xp_totals()).
+     */
+    public static function unplaced_drops(int $instanceid): \stdClass {
+        global $DB;
+
+        $result = (object) ['drops' => 0, 'xp' => 0];
+
+        $drops = $DB->get_records_sql(
+            "SELECT d.id, d.code, d.maxusage, d.value, i.xp
+               FROM {block_playerhud_drops} d
+               JOIN {block_playerhud_items} i ON d.itemid = i.id
+              WHERE i.blockinstanceid = :instanceid AND i.enabled = 1",
+            ['instanceid' => $instanceid]
+        );
+        if (!$drops) {
+            return $result;
+        }
+
+        $blockcontext = \context_block::instance($instanceid, IGNORE_MISSING);
+        $coursecontext = $blockcontext ? $blockcontext->get_course_context(false) : false;
+        $modules = $coursecontext
+            ? drop_distribution::get_eligible_modules((int) $coursecontext->instanceid, true, true)
+            : [];
+
+        $codes = [];
+        foreach ($drops as $drop) {
+            $codes[$drop->id] = $drop->code;
+        }
+        $placed = drop_distribution::find_inserted_cmids($codes, $modules);
+
+        foreach ($drops as $drop) {
+            if (!empty($placed[$drop->id]['cmids'])) {
+                continue;
+            }
+            $result->drops++;
+            if ((int) $drop->maxusage > 0) {
+                $result->xp += max(0, (int) $drop->xp) * (int) $drop->maxusage * max(1, (int) $drop->value);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Computes the XP balance context used to steer AI generation difficulty.
      *
      * Shared by every entry point that asks the AI generator for new items: it tells

@@ -116,6 +116,24 @@ class tab_config implements renderable, templatable {
                 break;
         }
 
+        // Drops that are in no activity yet: the figures above count their XP, but no student
+        // can earn it until they are placed.
+        $unplaced = \block_playerhud\local\analytics::unplaced_drops($this->instanceid);
+        $unplacedmessage = '';
+        if ($unplaced->drops > 0) {
+            $unplacedmessage = get_string(
+                $unplaced->xp > 0 ? 'bal_unplaced_xp' : 'bal_unplaced',
+                'block_playerhud',
+                $unplaced
+            );
+        }
+        $distributeurl = new moodle_url('/blocks/playerhud/manage.php', [
+            'id' => $this->courseid,
+            'instanceid' => $this->instanceid,
+            'tab' => 'items',
+            'action' => 'distribute',
+        ]);
+
         $actionurl = new moodle_url('/blocks/playerhud/manage.php', [
             'id' => $this->courseid,
             'instanceid' => $this->instanceid,
@@ -143,6 +161,10 @@ class tab_config implements renderable, templatable {
             'alert_border_class' => $borderclass,
             'alert_icon' => $icon,
             'balance_message' => $strmessage,
+            'has_unplaced_drops' => $unplaced->drops > 0,
+            'unplaced_message' => $unplacedmessage,
+            'unplaced_distribute_url' => $distributeurl->out(false),
+            'str_unplaced_distribute' => get_string('bal_unplaced_link', 'block_playerhud'),
             'breakdown_rows' => $breakdownrows,
             'breakdown_count' => count($breakdownrows),
             'widget_code_tip_html' => get_string('widget_code_tip', 'block_playerhud'),

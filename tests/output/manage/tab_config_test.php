@@ -91,6 +91,39 @@ final class tab_config_test extends advanced_testcase {
     }
 
     /**
+     * A drop found in no activity makes the panel say how much of the XP is not obtainable yet and
+     * link to the Distribute Drops screen; once the drop is in a page the notice disappears.
+     */
+    public function test_panel_warns_about_unplaced_drops_until_they_are_placed(): void {
+        global $DB;
+
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Gem', 'xp' => 25, 'image' => '', 'description' => '',
+            'enabled' => 1, 'secret' => 0, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_drops', (object) [
+            'blockinstanceid' => $this->instanceid, 'itemid' => $itemid, 'name' => 'Loc', 'maxusage' => 2,
+            'value' => 1, 'respawntime' => 0, 'code' => 'GEMDROP', 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $tab = new tab_config($this->instanceid, $this->course->id);
+        $renderer = $this->createMock(\renderer_base::class);
+
+        $data = $tab->export_for_template($renderer);
+        $this->assertTrue($data['has_unplaced_drops']);
+        $this->assertSame(
+            get_string('bal_unplaced_xp', 'block_playerhud', (object) ['drops' => 1, 'xp' => 50]),
+            $data['unplaced_message']
+        );
+        $this->assertStringContainsString('action=distribute', $data['unplaced_distribute_url']);
+
+        $this->getDataGenerator()->create_module('page', [
+            'course' => $this->course->id, 'content' => '[PLAYERHUD_DROP code=GEMDROP]',
+        ]);
+
+        $this->assertFalse($tab->export_for_template($renderer)['has_unplaced_drops']);
+    }
+
+    /**
      * Item names in the balance breakdown reach the template as plain text, which the template
      * escapes exactly once. They used to be escaped here as well, so "Poção & Elixir" showed as
      * "Poção &amp; Elixir" on the page.

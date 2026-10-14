@@ -28,6 +28,10 @@
         "alert_class": "alert-info",
         "alert_icon": "fa-info-circle",
         "balance_message": "Game economy is balanced.",
+        "has_unplaced_drops": true,
+        "unplaced_message": "2 drop(s) were not found in any activity, page or the news forum, so students cannot collect them yet (150 XP of the total above).",
+        "unplaced_distribute_url": "https://example.com/blocks/playerhud/manage.php?tab=items&action=distribute",
+        "str_unplaced_distribute": "Distribute drops",
         "breakdown_count": 2,
         "breakdown_rows": [
             {
@@ -83,6 +87,12 @@
                             <i class="fa {{alert_icon}} fa-2x me-3" aria-hidden="true"></i>
                             <div>{{{balance_message}}}</div>
                         </div>
+                        {{#has_unplaced_drops}}
+                        <div class="alert alert-warning mt-2 mb-0 small" role="status">
+                            {{unplaced_message}}
+                            <a href="{{unplaced_distribute_url}}" class="alert-link ms-1">{{str_unplaced_distribute}}</a>
+                        </div>
+                        {{/has_unplaced_drops}}
                     </div>
                 </div>
             </div>
