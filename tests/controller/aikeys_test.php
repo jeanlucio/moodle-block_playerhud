@@ -140,4 +140,24 @@ final class aikeys_test extends advanced_testcase {
         $stored = $DB->get_field('block_instances', 'configdata', ['id' => $instance->id]);
         $this->assertSame($original, $stored);
     }
+
+    /**
+     * Stripping legacy keys writes only the configuration, not the whole stale record it was handed.
+     */
+    public function test_save_does_not_overwrite_other_columns_with_a_stale_record(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $instance = $this->make_instance(['apikey_groq' => 'leaked-groq', 'max_levels' => 10]);
+        // The block is moved after the record was read, as a teacher dragging it in another tab would do.
+        $DB->set_field('block_instances', 'defaultweight', 7, ['id' => $instance->id]);
+
+        aikeys::save(['groq_key' => 'new'], $instance, (int) $user->id);
+
+        $stored = $DB->get_record('block_instances', ['id' => $instance->id], '*', MUST_EXIST);
+        $this->assertSame(7, (int) $stored->defaultweight);
+        $config = (array) unserialize_object(base64_decode($stored->configdata));
+        $this->assertArrayNotHasKey('apikey_groq', $config);
+        $this->assertSame(10, (int) $config['max_levels']);
+    }
 }

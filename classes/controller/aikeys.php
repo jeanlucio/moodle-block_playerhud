@@ -63,18 +63,16 @@ class aikeys {
      * @return void
      */
     public static function save(array $values, \stdClass $blockinstance, int $userid): void {
-        global $DB;
-
         foreach (self::PREFERENCES as $field => $pref) {
             set_user_preference($pref, trim((string) ($values[$field] ?? '')), $userid);
         }
 
-        $rawconfig = base64_decode($blockinstance->configdata ?? '', true);
-        $config = ($rawconfig !== false && $rawconfig !== '') ? (array) unserialize_object($rawconfig) : [];
-        if (isset($config['apikey_gemini']) || isset($config['apikey_groq'])) {
-            unset($config['apikey_gemini'], $config['apikey_groq']);
-            $blockinstance->configdata = base64_encode(serialize((object) $config));
-            $DB->update_record('block_instances', $blockinstance);
+        $block = \block_instance_by_id((int) $blockinstance->id);
+        $config = $block->config ?: new \stdClass();
+        if (isset($config->apikey_gemini) || isset($config->apikey_groq)) {
+            // The block's own save keeps its configuration cache and the config-changed handling in step.
+            unset($config->apikey_gemini, $config->apikey_groq);
+            $block->instance_config_save($config);
         }
     }
 }
