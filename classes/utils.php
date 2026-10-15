@@ -591,6 +591,99 @@ class utils {
         return is_object($config) ? $config : new \stdClass();
     }
 
+    /** @var string[] The block setting that turns each student-side feature on or off. */
+    private const FEATURE_FLAGS = [
+        'items'   => 'enable_items',
+        'quests'  => 'enable_quests',
+        'rpg'     => 'enable_rpg',
+        'ranking' => 'enable_ranking',
+    ];
+
+    /** @var string[] The feature each tab of the student area belongs to. */
+    private const TAB_FEATURES = [
+        'collection' => 'items',
+        'shop'       => 'items',
+        'quests'     => 'quests',
+        'chapters'   => 'rpg',
+        'ranking'    => 'ranking',
+    ];
+
+    /** @var string[] Tabs offered as the landing page, in order, when the requested one is not available. */
+    private const LANDING_TABS = ['collection', 'quests', 'chapters', 'ranking', 'history'];
+
+    /**
+     * Tells whether the teacher left a feature turned on in the block settings.
+     *
+     * A setting that was never saved counts as on, like the block's own defaults.
+     *
+     * @param \stdClass $config The block configuration.
+     * @param string $feature One of items, quests, rpg or ranking.
+     * @return bool True when the feature is on.
+     */
+    public static function config_feature_enabled(\stdClass $config, string $feature): bool {
+        $flag = self::FEATURE_FLAGS[$feature];
+        return !isset($config->{$flag}) || !empty($config->{$flag});
+    }
+
+    /**
+     * Tells whether a feature is turned on for a block instance.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param string $feature One of items, quests, rpg or ranking.
+     * @return bool True when the feature is on.
+     */
+    public static function is_feature_enabled(int $instanceid, string $feature): bool {
+        global $DB;
+
+        $blockinstance = $DB->get_record('block_instances', ['id' => $instanceid]);
+        $config = $blockinstance ? self::get_block_config($blockinstance) : new \stdClass();
+
+        return self::config_feature_enabled($config, $feature);
+    }
+
+    /**
+     * Refuses an action of a feature the teacher turned off.
+     *
+     * The tabs of a disabled feature are only hidden from the navigation, which is not enforcement:
+     * the services and pages behind them are reachable with a saved URL or a direct call.
+     *
+     * @param int $instanceid Block instance ID.
+     * @param string $feature One of items, quests, rpg or ranking.
+     * @return void
+     * @throws \moodle_exception When the feature is off.
+     */
+    public static function require_feature(int $instanceid, string $feature): void {
+        if (!self::is_feature_enabled($instanceid, $feature)) {
+            throw new \moodle_exception('error_feature_disabled', 'block_playerhud');
+        }
+    }
+
+    /**
+     * The tab of the student area to show: the requested one, or the first available landing tab
+     * when it was not asked for or belongs to a feature the teacher turned off.
+     *
+     * Values that are not tabs (the ranking privacy toggle) pass through untouched.
+     *
+     * @param string $requested The tab parameter of the request.
+     * @param \stdClass $config The block configuration.
+     * @return string The tab to show.
+     */
+    public static function resolve_student_tab(string $requested, \stdClass $config): string {
+        $feature = self::TAB_FEATURES[$requested] ?? null;
+        if ($requested !== '' && ($feature === null || self::config_feature_enabled($config, $feature))) {
+            return $requested;
+        }
+
+        foreach (self::LANDING_TABS as $tab) {
+            $landingfeature = self::TAB_FEATURES[$tab] ?? null;
+            if ($landingfeature === null || self::config_feature_enabled($config, $landingfeature)) {
+                return $tab;
+            }
+        }
+
+        return 'history';
+    }
+
     /**
      * The highest level a player of the instance can reach, 20 when the block was never configured.
      *

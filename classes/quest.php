@@ -580,6 +580,8 @@ class quest {
     public static function claim_reward(int $questid, int $userid, int $blockinstanceid, int $courseid): string {
         global $DB;
 
+        utils::require_feature($blockinstanceid, 'quests');
+
         // 1. Basic Validation.
         $quest = $DB->get_record('block_playerhud_quests', ['id' => $questid, 'blockinstanceid' => $blockinstanceid]);
         if (!$quest || !$quest->enabled) {

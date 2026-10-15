@@ -27,7 +27,7 @@ require_once('../../config.php');
 // 1. Parameters & Setup.
 $courseid   = required_param('id', PARAM_INT);
 $instanceid = required_param('instanceid', PARAM_INT);
-$tab        = optional_param('tab', 'collection', PARAM_ALPHANUMEXT);
+$tab        = optional_param('tab', '', PARAM_ALPHANUMEXT);
 $action     = optional_param('action', '', PARAM_ALPHANUMEXT);
 
 $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
@@ -55,6 +55,10 @@ $config->enable_items      = isset($config->enable_items) ? $config->enable_item
 $config->enable_quests     = isset($config->enable_quests) ? $config->enable_quests : 1;
 $config->enable_huddy      = isset($config->enable_huddy) ? (int)$config->enable_huddy : 1;
 $config->use_default_help  = isset($config->use_default_help) ? (int)$config->use_default_help : 1;
+
+// A tab of a feature the teacher turned off is not offered, so it is not shown either, and the
+// landing page is the first tab that is on.
+$tab = \block_playerhud\utils::resolve_student_tab($tab, $config);
 
 // 2. Page Setup.
 $PAGE->set_url('/blocks/playerhud/view.php', ['id' => $courseid, 'instanceid' => $instanceid]);

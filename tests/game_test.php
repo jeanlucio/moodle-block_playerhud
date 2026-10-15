@@ -1665,4 +1665,32 @@ final class game_test extends advanced_testcase {
         $this->assertSame(0, game::clamp_karma(0));
         $this->assertSame(-42, game::clamp_karma(-42));
     }
+
+    /**
+     * A drop cannot be collected once the teacher turned Items off: hiding the tabs is not enough,
+     * the collection endpoint is reachable with any drop id.
+     */
+    public function test_process_collection_is_refused_when_items_are_turned_off(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $item = $this->create_dummy_item('Berry', 10);
+        $drop = $this->create_dummy_drop($item->id, 1);
+        $DB->set_field(
+            'block_instances',
+            'configdata',
+            base64_encode(serialize((object) ['enable_items' => 0])),
+            ['id' => $this->instanceid]
+        );
+
+        try {
+            game::process_collection($this->instanceid, $drop->id, $user->id);
+            $this->fail('Expected error_feature_disabled.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('error_feature_disabled', $e->errorcode);
+        }
+        $this->assertFalse(game::has_item($user->id, $item->id));
+    }
 }

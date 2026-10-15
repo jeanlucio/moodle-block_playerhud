@@ -482,4 +482,27 @@ final class use_item_test extends external_base_testcase {
         $this->expectException(\moodle_exception::class);
         use_item::execute($this->instanceid, $this->course->id, $item->id, $foreignassign->cmid);
     }
+
+    /**
+     * An item cannot be used once the teacher turned Items off.
+     */
+    public function test_use_item_is_refused_when_items_are_turned_off(): void {
+        global $DB, $USER;
+
+        $item = $this->create_deadline_item();
+        $this->give_item_to_user((int) $USER->id, $item->id);
+        $DB->set_field(
+            'block_instances',
+            'configdata',
+            base64_encode(serialize((object) ['enable_items' => 0])),
+            ['id' => $this->instanceid]
+        );
+
+        try {
+            use_item::execute($this->instanceid, $this->course->id, $item->id, 0);
+            $this->fail('Expected error_feature_disabled.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('error_feature_disabled', $e->errorcode);
+        }
+    }
 }

@@ -235,6 +235,8 @@ class game {
     public static function process_collection(int $instanceid, int $dropid, int $userid): array {
         global $DB;
 
+        utils::require_feature($instanceid, 'items');
+
         // 1. Validation.
         $drop = $DB->get_record('block_playerhud_drops', ['id' => $dropid, 'blockinstanceid' => $instanceid], '*', MUST_EXIST);
         $item = $DB->get_record('block_playerhud_items', ['id' => $drop->itemid], '*', MUST_EXIST);

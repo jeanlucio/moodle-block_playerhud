@@ -38,6 +38,8 @@ class trade_manager {
     public static function execute_trade(int $tradeid, int $userid, int $instanceid, int $courseid): string {
         global $DB;
 
+        \block_playerhud\utils::require_feature($instanceid, 'items');
+
         $trade = $DB->get_record('block_playerhud_trades', ['id' => $tradeid, 'blockinstanceid' => $instanceid]);
         if (!$trade) {
             throw new \moodle_exception('error_trade_invalid', 'block_playerhud');

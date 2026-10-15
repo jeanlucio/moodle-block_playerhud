@@ -1521,4 +1521,30 @@ final class quest_test extends advanced_testcase {
             'Incomplete activity must not be claimable.'
         );
     }
+
+    /**
+     * A reward cannot be claimed once the teacher turned Quests off, even for a quest that was
+     * already complete: no XP is granted.
+     */
+    public function test_claim_reward_is_refused_when_quests_are_turned_off(): void {
+        global $DB;
+
+        $user  = $this->getDataGenerator()->create_user();
+        $quest = $this->create_quest(quest::TYPE_XP_TOTAL, '50', 100);
+        $this->set_player_xp($user->id, 50);
+        $DB->set_field(
+            'block_instances',
+            'configdata',
+            base64_encode(serialize((object) ['enable_quests' => 0])),
+            ['id' => $this->instanceid]
+        );
+
+        try {
+            quest::claim_reward($quest->id, $user->id, $this->instanceid, $this->course->id);
+            $this->fail('Expected error_feature_disabled.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('error_feature_disabled', $e->errorcode);
+        }
+        $this->assertEquals(50, \block_playerhud\game::get_player($this->instanceid, $user->id)->currentxp);
+    }
 }

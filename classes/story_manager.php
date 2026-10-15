@@ -179,6 +179,8 @@ class story_manager {
     public static function load_scene(int $instanceid, int $userid, int $chapterid, bool $persist = true): array {
         global $DB;
 
+        utils::require_feature($instanceid, 'rpg');
+
         $chapter = $DB->get_record(
             'block_playerhud_chapters',
             ['id' => $chapterid, 'blockinstanceid' => $instanceid],
@@ -252,6 +254,8 @@ class story_manager {
      */
     public static function make_choice(int $instanceid, int $userid, int $choiceid): array {
         global $DB;
+
+        utils::require_feature($instanceid, 'rpg');
 
         // Serialize concurrent choices for this user's story progress in this instance,
         // mirroring the lock trade_manager::execute_trade() uses to prevent two simultaneous
@@ -509,6 +513,8 @@ class story_manager {
      */
     public static function load_recap(int $instanceid, int $userid, int $chapterid): string {
         global $DB;
+
+        utils::require_feature($instanceid, 'rpg');
 
         $progress = self::get_or_create_progress($instanceid, $userid);
 

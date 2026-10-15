@@ -427,6 +427,7 @@ $string['enabled_help'] = 'Se desmarcado, este item não aparecerá no jogo, nã
 $string['err_clipboard'] = 'Não foi possível copiar para a área de transferência. Seu navegador pode estar bloqueando esta ação.';
 $string['error_collect_lock'] = 'Coleta em andamento. Aguarde um momento e tente novamente.';
 $string['error_connection'] = 'Erro de conexão.';
+$string['error_feature_disabled'] = 'Este recurso está desativado neste curso.';
 $string['error_msg'] = 'Erro: {$a}';
 $string['error_quest_already_claimed'] = 'Recompensa já resgatada.';
 $string['error_quest_invalid'] = 'Missão inválida.';

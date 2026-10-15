@@ -486,4 +486,74 @@ final class utils_test extends advanced_testcase {
         $this->assertSame(0, $config->enable_ranking);
         $this->assertSame(150, $config->xp_per_level);
     }
+
+    /**
+     * Provides the requested tab, the block settings and the tab that must be shown.
+     *
+     * @return array[] Requested tab, settings, expected tab.
+     */
+    public static function student_tab_provider(): array {
+        return [
+            'default with everything on' => ['', [], 'collection'],
+            'default with items off' => ['', ['enable_items' => 0], 'quests'],
+            'default with items and quests off' => ['', ['enable_items' => 0, 'enable_quests' => 0], 'chapters'],
+            'default with all three off' => [
+                '', ['enable_items' => 0, 'enable_quests' => 0, 'enable_rpg' => 0], 'ranking',
+            ],
+            'default with everything off' => [
+                '', ['enable_items' => 0, 'enable_quests' => 0, 'enable_rpg' => 0, 'enable_ranking' => 0], 'history',
+            ],
+            'shop with items off' => ['shop', ['enable_items' => 0], 'quests'],
+            'quests with quests off' => ['quests', ['enable_quests' => 0], 'collection'],
+            'chapters with rpg off' => ['chapters', ['enable_rpg' => 0], 'collection'],
+            'ranking with ranking off' => ['ranking', ['enable_ranking' => 0], 'collection'],
+            'a tab that is on is kept' => ['shop', ['enable_quests' => 0], 'shop'],
+            'tabs of no feature are kept' => ['rules', ['enable_items' => 0], 'rules'],
+            'the privacy toggle passes through' => ['toggle_ranking_pref', ['enable_ranking' => 0], 'toggle_ranking_pref'],
+        ];
+    }
+
+    /**
+     * The student area never lands on, or shows, the tab of a feature the teacher turned off.
+     *
+     * @dataProvider student_tab_provider
+     * @param string $requested The tab asked for.
+     * @param array $settings Block settings.
+     * @param string $expected The tab that must be shown.
+     */
+    public function test_resolve_student_tab(string $requested, array $settings, string $expected): void {
+        $this->assertSame($expected, utils::resolve_student_tab($requested, (object) $settings));
+    }
+
+    /**
+     * A setting that was never saved counts as on; 0 and the string 0 turn it off.
+     */
+    public function test_config_feature_enabled(): void {
+        $this->assertTrue(utils::config_feature_enabled(new \stdClass(), 'items'));
+        $this->assertTrue(utils::config_feature_enabled((object) ['enable_items' => 1], 'items'));
+        $this->assertFalse(utils::config_feature_enabled((object) ['enable_items' => 0], 'items'));
+        $this->assertFalse(utils::config_feature_enabled((object) ['enable_quests' => '0'], 'quests'));
+        $this->assertTrue(utils::config_feature_enabled((object) ['enable_items' => 0], 'quests'));
+    }
+
+    /**
+     * The instance-level check reads the saved block settings.
+     */
+    public function test_require_feature_reads_the_block_instance(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $instanceid = (int) $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => \context_course::instance($course->id)->id,
+            'showinsubcontexts' => 0, 'pagetypepattern' => 'course-view-*', 'defaultregion' => 'side-pre',
+            'defaultweight' => 0, 'configdata' => base64_encode(serialize((object) ['enable_rpg' => 0])),
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+
+        utils::require_feature($instanceid, 'items');
+        $this->assertFalse(utils::is_feature_enabled($instanceid, 'rpg'));
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage(get_string('error_feature_disabled', 'block_playerhud'));
+        utils::require_feature($instanceid, 'rpg');
+    }
 }

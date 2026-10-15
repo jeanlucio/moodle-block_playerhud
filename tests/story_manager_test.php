@@ -1117,4 +1117,39 @@ final class story_manager_test extends advanced_testcase {
 
         $this->assertStringContainsString('tale begins', $html);
     }
+
+    /**
+     * The story cannot be played once the teacher turned RPG mode off: opening a chapter, making a
+     * choice and reading the recap are all refused.
+     */
+    public function test_story_is_refused_when_rpg_mode_is_turned_off(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Chapter One');
+        $node = $this->create_node($chapter->id, 'A dark forest awaits...', true);
+        $choice = $this->create_choice($node->id, 'Go on');
+        $DB->set_field(
+            'block_instances',
+            'configdata',
+            base64_encode(serialize((object) ['enable_rpg' => 0])),
+            ['id' => $this->instanceid]
+        );
+
+        $attempts = [
+            fn() => story_manager::load_scene($this->instanceid, $user->id, $chapter->id),
+            fn() => story_manager::make_choice($this->instanceid, $user->id, $choice->id),
+            fn() => story_manager::load_recap($this->instanceid, $user->id, $chapter->id),
+        ];
+        foreach ($attempts as $index => $attempt) {
+            try {
+                $attempt();
+                $this->fail("Attempt $index should have been refused.");
+            } catch (\moodle_exception $e) {
+                $this->assertSame('error_feature_disabled', $e->errorcode, "attempt $index");
+            }
+        }
+    }
 }

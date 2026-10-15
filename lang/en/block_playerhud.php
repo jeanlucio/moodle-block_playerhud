@@ -427,6 +427,7 @@ $string['enabled_help'] = 'If unchecked, this item will not appear in the game, 
 $string['err_clipboard'] = 'Unable to copy to clipboard. Your browser might block this action.';
 $string['error_collect_lock'] = 'Collection in progress. Please wait a moment and try again.';
 $string['error_connection'] = 'Connection error.';
+$string['error_feature_disabled'] = 'This feature is turned off for this course.';
 $string['error_msg'] = 'Error: {$a}';
 $string['error_quest_already_claimed'] = 'Reward already claimed.';
 $string['error_quest_invalid'] = 'Invalid quest.';

@@ -675,4 +675,38 @@ final class trade_test extends advanced_testcase {
             $this->assertEquals('error_trade_group', $e->errorcode);
         }
     }
+
+    /**
+     * A trade cannot be made once the teacher turned Items off, even with a saved link to the
+     * shop: nothing is charged and nothing is delivered.
+     */
+    public function test_execute_trade_is_refused_when_items_are_turned_off(): void {
+        global $DB;
+        $user = $this->getDataGenerator()->create_user();
+        $coin = $this->create_dummy_item('Coin');
+        $potion = $this->create_dummy_item('Health Potion');
+        $this->give_item_to_user($user->id, $coin->id, 5);
+
+        $tradeid = $DB->insert_record('block_playerhud_trades', (object) [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Buy Potion', 'groupid' => 0, 'onetime' => 0,
+            'timecreated' => time(),
+        ]);
+        $DB->insert_record('block_playerhud_trade_reqs', (object) ['tradeid' => $tradeid, 'itemid' => $coin->id, 'qty' => 5]);
+        $DB->insert_record('block_playerhud_trade_rewards', (object) ['tradeid' => $tradeid, 'itemid' => $potion->id, 'qty' => 1]);
+        $DB->set_field(
+            'block_instances',
+            'configdata',
+            base64_encode(serialize((object) ['enable_items' => 0])),
+            ['id' => $this->instanceid]
+        );
+
+        try {
+            trade_manager::execute_trade($tradeid, $user->id, $this->instanceid, $this->course->id);
+            $this->fail('Expected error_feature_disabled.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('error_feature_disabled', $e->errorcode);
+        }
+        $this->assertTrue(game::has_item($user->id, $coin->id));
+        $this->assertFalse(game::has_item($user->id, $potion->id));
+    }
 }
