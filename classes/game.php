@@ -1273,6 +1273,7 @@ class game {
             'onetime'         => 1,
             'timecreated'     => $now,
         ]);
+        utils::assign_trade_code((int) $tradeid);
         $reqid = $DB->insert_record('block_playerhud_trade_reqs', (object) [
             'tradeid' => $tradeid,
             'itemid'  => $sug['cost_itemid'],

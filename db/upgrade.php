@@ -506,5 +506,20 @@ function xmldb_block_playerhud_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026101400, 'playerhud');
     }
 
+    if ($oldversion < 2026101500) {
+        // Trades store their shortcode code: it used to be derived from the id, which a restore changes.
+        $table = new \xmldb_table('block_playerhud_trades');
+        $field = new \xmldb_field('code', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'onetime');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        \block_playerhud\utils::backfill_trade_codes();
+        $index = new \xmldb_index('blockinstance_code', XMLDB_INDEX_NOTUNIQUE, ['blockinstanceid', 'code']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        upgrade_block_savepoint(true, 2026101500, 'playerhud');
+    }
+
     return true;
 }

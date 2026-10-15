@@ -502,6 +502,11 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
             $data->groupid = $newgroupingid ? -$newgroupingid : 0;
         }
 
+        // The code is kept so the shortcodes restored with the content still resolve. A backup made
+        // before codes were stored has none: its shortcodes carry the code derived from the old id.
+        if (empty($data->code)) {
+            $data->code = \block_playerhud\utils::legacy_trade_code((int) $oldid, $data->timecreated ?? null);
+        }
         $newid = $DB->insert_record('block_playerhud_trades', $data);
         $this->set_mapping('playerhud_trade', $oldid, $newid);
     }

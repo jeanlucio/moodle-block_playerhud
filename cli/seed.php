@@ -715,6 +715,7 @@ function seed_upsert_trade(int $instanceid, string $name, array $reqs, array $re
         'timecreated'     => $now,
     ];
     $trade->id = $DB->insert_record('block_playerhud_trades', $trade);
+    \block_playerhud\utils::assign_trade_code((int) $trade->id);
 
     foreach ($reqs as $req) {
         $DB->insert_record('block_playerhud_trade_reqs', (object) [

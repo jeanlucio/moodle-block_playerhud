@@ -134,8 +134,10 @@ class tab_trades implements renderable, templatable {
 
                 $msgraw = get_string('deletecheck', 'moodle', utils::plain_string($trade->name));
 
-                $secureraw = $trade->id . '_' . $trade->timecreated;
-                $securecode = strtoupper(substr(md5($secureraw), 0, 6));
+                $securecode = $trade->code ?? '';
+                if ($securecode === '') {
+                    $securecode = utils::legacy_trade_code((int) $trade->id, $trade->timecreated);
+                }
 
                 $tradesdata[] = [
                     'id' => $trade->id,

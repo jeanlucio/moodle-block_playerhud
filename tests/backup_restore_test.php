@@ -197,6 +197,7 @@ final class backup_restore_test extends advanced_testcase {
             'name'            => 'O Artesão',
             'timecreated'     => time(),
         ]);
+        $tradecode = utils::assign_trade_code((int) $tradeid);
 
         // The groupid column is overloaded: positive references a group, negative references a
         // grouping (security-audit finding: both must be remapped, never left pointing at a
@@ -436,6 +437,12 @@ final class backup_restore_test extends advanced_testcase {
             ['blockinstanceid' => $restoredblock->id, 'name' => 'O Artesão']
         );
         $this->assertNotFalse($restoredtrade, 'Trade must be restored.');
+        $this->assertSame($tradecode, $restoredtrade->code, 'The restore must keep the code the shortcodes use.');
+        $this->assertNotSame(
+            utils::legacy_trade_code((int) $restoredtrade->id, $restoredtrade->timecreated),
+            $restoredtrade->code,
+            'The code must not be derived again from the new id.'
+        );
 
         $restoredscrollitem = $DB->get_record(
             'block_playerhud_items',
@@ -531,6 +538,12 @@ final class backup_restore_test extends advanced_testcase {
             ['blockinstanceid' => $restoredblock->id, 'name' => 'Group-Restricted Trade']
         );
         $this->assertNotFalse($restoredgrouptrade, 'Group-restricted trade must be restored.');
+        // Stored without a code, as in a backup made before codes were stored: its shortcodes carry
+        // the code derived from the source id, so that is the code the restored trade must get.
+        $this->assertSame(
+            utils::legacy_trade_code((int) $grouptradeid, $restoredgrouptrade->timecreated),
+            $restoredgrouptrade->code
+        );
         $this->assertSame(
             (int) $restoredgroup->id,
             (int) $restoredgrouptrade->groupid,

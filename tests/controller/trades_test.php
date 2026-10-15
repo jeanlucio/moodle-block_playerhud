@@ -206,6 +206,8 @@ final class trades_test extends advanced_testcase {
         ]);
 
         $tradeid = (new trades())->save_trade($data, $instanceid);
+        $trade = $DB->get_record('block_playerhud_trades', ['id' => $tradeid]);
+        $this->assertSame(\block_playerhud\utils::legacy_trade_code((int) $tradeid, $trade->timecreated), $trade->code);
 
         $trade = $DB->get_record('block_playerhud_trades', ['id' => $tradeid], '*', MUST_EXIST);
         $this->assertSame($instanceid, (int) $trade->blockinstanceid);

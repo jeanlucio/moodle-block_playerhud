@@ -251,6 +251,34 @@ final class db_upgrade_test extends advanced_testcase {
     }
 
     /**
+     * Trades get the code their shortcodes already use; a code already taken in the block is not reused.
+     */
+    public function test_upgrade_backfills_trade_codes(): void {
+        global $DB;
+
+        $trade = fn(array $f) => (int) $DB->insert_record('block_playerhud_trades', (object) ($f + [
+            'blockinstanceid' => $this->instanceid, 'name' => 'Trade', 'groupid' => 0, 'centralized' => 1,
+            'onetime' => 0, 'timecreated' => 1700000000,
+        ]));
+        $plain = $trade([]);
+        $clash = $trade([]);
+        // A trade already holding the code $clash would derive keeps it: its shortcodes win.
+        $owner = $trade(['code' => utils::legacy_trade_code($clash, 1700000000)]);
+
+        $this->set_current_version(2026101400);
+        xmldb_block_playerhud_upgrade(2026101400);
+
+        $codeof = fn(int $id) => $DB->get_field('block_playerhud_trades', 'code', ['id' => $id]);
+        $this->assertSame(utils::legacy_trade_code($plain, 1700000000), $codeof($plain));
+        $this->assertSame(utils::legacy_trade_code($clash, 1700000000), $codeof($owner));
+        $clashcode = $codeof($clash);
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]{6}$/', $clashcode);
+        $this->assertNotSame(utils::legacy_trade_code($clash, 1700000000), $clashcode);
+
+        $this->assertSame(0, utils::backfill_trade_codes(), 'A second run must find nothing to fill.');
+    }
+
+    /**
      * This step carries no migration logic (unlike every other step in this file) — it is
      * plain schema DDL, covered thoroughly by moodle-check-schema against a real database.
      * The PHPUnit test environment always installs from the current install.xml, so the

@@ -208,6 +208,7 @@ class trades {
         } else {
             $record->timecreated = time();
             $currenttradeid      = $DB->insert_record('block_playerhud_trades', $record);
+            \block_playerhud\utils::assign_trade_code((int) $currenttradeid);
         }
 
         $validitemids = $DB->get_fieldset_select(

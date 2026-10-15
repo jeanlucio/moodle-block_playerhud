@@ -64,7 +64,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
         // Trades Structure.
         $trades = new backup_nested_element('trades');
         $trade = new backup_nested_element('trade', ['id'], [
-            'name', 'groupid', 'centralized', 'onetime', 'timecreated', 'timemodified',
+            'name', 'groupid', 'centralized', 'onetime', 'code', 'timecreated', 'timemodified',
         ]);
 
         $tradereqs = new backup_nested_element('trade_reqs');

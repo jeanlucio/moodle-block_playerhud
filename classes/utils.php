@@ -420,6 +420,74 @@ class utils {
     }
 
     /**
+     * The trade code filter_playerhud derived from the id before codes were stored.
+     *
+     * Kept as the code of every trade that had one this way, so shortcodes already written in course
+     * content keep resolving; the concatenation mirrors the old filter exactly, null included.
+     *
+     * @param int $tradeid Trade ID.
+     * @param int|string|null $timecreated Trade creation time as stored.
+     * @return string 6-character uppercase code.
+     */
+    public static function legacy_trade_code(int $tradeid, $timecreated): string {
+        return strtoupper(substr(md5($tradeid . '_' . $timecreated), 0, 6));
+    }
+
+    /**
+     * Gives a new trade its shortcode code and stores it.
+     *
+     * Uses the id-derived code an older filter_playerhud would compute, so a site running a newer
+     * block with an older filter still resolves new shortcodes; a random one only on a collision.
+     *
+     * @param int $tradeid ID of a trade already inserted.
+     * @return string The stored code.
+     */
+    public static function assign_trade_code(int $tradeid): string {
+        global $DB;
+        $trade = $DB->get_record('block_playerhud_trades', ['id' => $tradeid], 'id, blockinstanceid, timecreated', MUST_EXIST);
+        $code = self::legacy_trade_code((int) $trade->id, $trade->timecreated);
+        $params = ['bi' => $trade->blockinstanceid, 'id' => $trade->id];
+        $taken = 'blockinstanceid = :bi AND code = :code AND id <> :id';
+        while ($DB->record_exists_select('block_playerhud_trades', $taken, $params + ['code' => $code])) {
+            $code = strtoupper(random_string(6));
+        }
+        $DB->set_field('block_playerhud_trades', 'code', $code, ['id' => $trade->id]);
+        return $code;
+    }
+
+    /**
+     * Stores a code on every trade that has none yet.
+     *
+     * Each trade keeps the code its shortcodes already use. Two trades of one block sharing that
+     * code could only ever resolve to the lower id, so that one keeps it and the other gets a new one.
+     *
+     * @return int Number of trades given a code.
+     */
+    public static function backfill_trade_codes(): int {
+        global $DB;
+        $used = [];
+        $table = 'block_playerhud_trades';
+        $hascode = 'code IS NOT NULL AND ' . $DB->sql_isnotempty($table, 'code', true, false);
+        foreach ($DB->get_records_select($table, $hascode, null, '', 'id, blockinstanceid, code') as $t) {
+            $used[$t->blockinstanceid][$t->code] = true;
+        }
+        $count = 0;
+        $nocode = '(code IS NULL OR ' . $DB->sql_isempty($table, 'code', true, false) . ')';
+        $rs = $DB->get_recordset_select($table, $nocode, null, 'id', 'id, blockinstanceid, timecreated');
+        foreach ($rs as $t) {
+            $code = self::legacy_trade_code((int) $t->id, $t->timecreated);
+            while (isset($used[$t->blockinstanceid][$code])) {
+                $code = strtoupper(random_string(6));
+            }
+            $used[$t->blockinstanceid][$code] = true;
+            $DB->set_field($table, 'code', $code, ['id' => $t->id]);
+            $count++;
+        }
+        $rs->close();
+        return $count;
+    }
+
+    /**
      * Finds the course module ID of the course's own news/announcements forum, if one exists.
      *
      * @param int $courseid Course ID.
