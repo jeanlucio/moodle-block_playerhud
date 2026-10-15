@@ -20,7 +20,7 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['core/ajax', 'core/notification', 'jquery'], (Ajax, Notification, $) => {
+define(['core/ajax', 'core/notification', 'jquery', 'block_playerhud/ws_error'], (Ajax, Notification, $, WsError) => {
 
     let instanceid = 0;
     let courseid = 0;
@@ -248,6 +248,28 @@ define(['core/ajax', 'core/notification', 'jquery'], (Ajax, Notification, $) => 
     }
 
     /**
+     * Shows a failed story request inside the modal, in place of the scene.
+     *
+     * A refusal the server raised on purpose (a locked chapter, a choice no longer available, a
+     * missing item) ends there: a dialog on top of the open modal would fight its focus trap.
+     * Anything else is a real failure and also opens the exception dialog.
+     *
+     * @param {Object} ex The failure core/ajax rejected with.
+     */
+    const showFailure = (ex) => {
+        if (contentEl) {
+            const errDiv = document.createElement('div');
+            errDiv.className = 'alert alert-danger';
+            errDiv.setAttribute('role', 'alert');
+            errDiv.textContent = ex.message || strings.error;
+            contentEl.replaceChildren(errDiv);
+        }
+        if (!WsError.isExpected(ex)) {
+            Notification.exception(ex);
+        }
+    };
+
+    /**
      * Load the current or starting scene for a chapter.
      *
      * @param {number} chapterid Chapter ID.
@@ -265,15 +287,7 @@ define(['core/ajax', 'core/notification', 'jquery'], (Ajax, Notification, $) => 
             done: function(data) {
                 renderNode(data, chapterid);
             },
-            fail: function(ex) {
-                if (contentEl) {
-                    const errDiv = document.createElement('div');
-                    errDiv.className = 'alert alert-danger';
-                    errDiv.textContent = ex.message || strings.error;
-                    contentEl.replaceChildren(errDiv);
-                }
-                Notification.exception(ex);
-            },
+            fail: showFailure,
         }]);
     }
 
@@ -296,15 +310,7 @@ define(['core/ajax', 'core/notification', 'jquery'], (Ajax, Notification, $) => 
             done: function(data) {
                 renderNode(data, chapterid);
             },
-            fail: function(ex) {
-                if (contentEl) {
-                    const errDiv = document.createElement('div');
-                    errDiv.className = 'alert alert-danger';
-                    errDiv.textContent = ex.message || strings.error;
-                    contentEl.replaceChildren(errDiv);
-                }
-                Notification.exception(ex);
-            },
+            fail: showFailure,
         }]);
     }
 
@@ -337,15 +343,7 @@ define(['core/ajax', 'core/notification', 'jquery'], (Ajax, Notification, $) => 
                     choicesEl.appendChild(closeBtn);
                 }
             },
-            fail: function(ex) {
-                if (contentEl) {
-                    const errDiv = document.createElement('div');
-                    errDiv.className = 'alert alert-danger';
-                    errDiv.textContent = ex.message || strings.error;
-                    contentEl.replaceChildren(errDiv);
-                }
-                Notification.exception(ex);
-            },
+            fail: showFailure,
         }]);
     }
 

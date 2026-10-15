@@ -20,7 +20,7 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['jquery', 'core/notification', 'core/ajax', 'core/str'], ($, Notification, Ajax, Str) => {
+define(['jquery', 'core/notification', 'core/ajax', 'block_playerhud/ws_error'], ($, Notification, Ajax, WsError) => {
 
     return {
         /**
@@ -398,19 +398,6 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], ($, Notificatio
                 }
             });
 
-            // Errors use_item raises for situations a student reaches through normal use: the item
-            // was already spent or traded, it has no use action, or the teacher turned items off.
-            // They carry a translated message, so they show as a plain alert; anything else is a
-            // real failure and keeps the full exception dialog.
-            const expectedUseErrors = ['itemnotfound', 'item_not_usable', 'error_feature_disabled'];
-            const showUseError = async(ex) => {
-                if (ex && expectedUseErrors.includes(ex.errorcode)) {
-                    Notification.alert(await Str.get_string('error', 'moodle'), ex.message);
-                    return;
-                }
-                Notification.exception(ex);
-            };
-
             // Item powers — Equipar avatar.
             $(document).off('click.phequip').on('click.phequip', '.ph-item-equip-btn', function(e) {
                 e.stopPropagation();
@@ -439,7 +426,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], ($, Notificatio
                     }
                 }).fail((ex) => {
                     $btn.prop('disabled', false);
-                    showUseError(ex);
+                    WsError.show(ex);
                 });
             });
 
@@ -507,7 +494,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str'], ($, Notificatio
                             }
                         }).fail((ex) => {
                             $btn.prop('disabled', false);
-                            showUseError(ex);
+                            WsError.show(ex);
                         });
                     }
                 );

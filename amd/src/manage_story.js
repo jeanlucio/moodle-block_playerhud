@@ -20,7 +20,7 @@
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['core/ajax', 'core/notification', 'jquery'], (Ajax, Notification, $) => {
+define(['core/ajax', 'core/notification', 'jquery', 'block_playerhud/ws_error'], (Ajax, Notification, $, WsError) => {
 
     let instanceid = 0;
     let courseid = 0;
@@ -116,6 +116,28 @@ define(['core/ajax', 'core/notification', 'jquery'], (Ajax, Notification, $) => 
     }
 
     /**
+     * Shows a failed preview request inside the test modal, in place of the scene.
+     *
+     * A refusal the server raised on purpose (an empty chapter, a missing scene) ends there: a
+     * dialog on top of the open modal would fight its focus trap. Anything else is a real failure
+     * and also opens the exception dialog.
+     *
+     * @param {Object} ex The failure core/ajax rejected with.
+     */
+    const showFailure = (ex) => {
+        if (testContent) {
+            const errDiv = document.createElement('div');
+            errDiv.className = 'alert alert-danger';
+            errDiv.setAttribute('role', 'alert');
+            errDiv.textContent = ex.message;
+            testContent.replaceChildren(errDiv);
+        }
+        if (!WsError.isExpected(ex)) {
+            Notification.exception(ex);
+        }
+    };
+
+    /**
      * Load the starting node of a chapter for preview.
      *
      * @param {number} chapterid Chapter ID.
@@ -133,13 +155,7 @@ define(['core/ajax', 'core/notification', 'jquery'], (Ajax, Notification, $) => 
             done: function(data) {
                 renderTestNode(data);
             },
-            fail: function(ex) {
-                if (testContent) {
-                    testContent.innerHTML =
-                        `<div class="alert alert-danger">${ex.message || 'Error'}</div>`;
-                }
-                Notification.exception(ex);
-            },
+            fail: showFailure,
         }]);
     }
 
@@ -161,13 +177,7 @@ define(['core/ajax', 'core/notification', 'jquery'], (Ajax, Notification, $) => 
             done: function(data) {
                 renderTestNode(data);
             },
-            fail: function(ex) {
-                if (testContent) {
-                    testContent.innerHTML =
-                        `<div class="alert alert-danger">${ex.message || 'Error'}</div>`;
-                }
-                Notification.exception(ex);
-            },
+            fail: showFailure,
         }]);
     }
 
