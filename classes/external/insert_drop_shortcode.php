@@ -330,7 +330,12 @@ class insert_drop_shortcode extends external_api {
             $newval = rtrim($currentval) . "\n" . $shortcode;
         }
 
-        // Save the new value.
+        // Save the new value. Written straight to the module's table on purpose, not through
+        // update_moduleinfo(): that call rebuilds the whole activity form, re-runs calendar, grade and
+        // completion updates and validates fields this edit never touches, which is slow for a wizard
+        // batch and can fail on a third-party activity. Only the intro/content text changes, and what
+        // matters of a normal edit is done below: course cache, timemodified and the updated event.
+        // What is skipped is the module's own update hook (e.g. page's revision counter).
         $DB->set_field($modname, $field, $newval, ['id' => $cm->instance]);
 
         // Keep the preloaded cache in sync so a later item in the same batch targeting the same

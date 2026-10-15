@@ -285,6 +285,7 @@ class remove_drop_shortcode extends external_api {
         );
         $newval = trim($newval);
 
+        // Direct write on purpose, like insert_drop_shortcode::insert_one(): see the comment there.
         $DB->set_field($modname, $field, $newval, ['id' => $cm->instance]);
         $changed = true;
 

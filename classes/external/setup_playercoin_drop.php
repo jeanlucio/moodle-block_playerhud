@@ -147,6 +147,7 @@ class setup_playercoin_drop extends external_api {
 
         $shortcode = '[PLAYERHUD_DROP code=' . $code . ']';
         $newintro  = $shortcode . ($forum->intro ? '<br>' . $forum->intro : '');
+        // Direct write on purpose, like insert_drop_shortcode: see the comment there.
         $DB->set_field('forum', 'intro', $newintro, ['id' => $forum->id]);
         $DB->set_field('forum', 'timemodified', time(), ['id' => $forum->id]);
 
