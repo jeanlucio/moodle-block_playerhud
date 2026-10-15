@@ -411,4 +411,27 @@ final class insert_drop_shortcode_test extends external_base_testcase {
         $this->expectException(\required_capability_exception::class);
         insert_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $page->cmid, 'content', 'top');
     }
+
+    /**
+     * An activity that copies its description into a calendar event gets the event refreshed: the
+     * event used to keep the old text, and the next ordinary edit of the activity then copied the
+     * new text over it.
+     */
+    public function test_insert_refreshes_the_calendar_event_of_an_assignment(): void {
+        global $DB;
+
+        $assign = $this->getDataGenerator()->create_module('assign', [
+            'course' => $this->course->id, 'intro' => 'Hand it in', 'duedate' => time() + DAYSECS,
+            'alwaysshowdescription' => 1,
+        ]);
+        $conditions = ['modulename' => 'assign', 'instance' => $assign->id, 'eventtype' => 'due'];
+        $before = $DB->get_field('event', 'description', $conditions, MUST_EXIST);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid] = $this->create_drop($item->id);
+
+        $result = insert_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $assign->cmid, 'intro', 'top');
+
+        $this->assertTrue($result['success']);
+        $this->assertNotSame($before, $DB->get_field('event', 'description', $conditions, MUST_EXIST));
+    }
 }

@@ -354,10 +354,17 @@ class execute_chat_action extends external_api {
      * @return array Result with success, message, redirect_url.
      */
     private static function action_open_tab(int $instanceid, int $courseid, array $p): array {
-        $allowedtabs = ['items', 'quests', 'classes', 'chapters', 'reports', 'config'];
+        $labels = [
+            'items'    => get_string('tab_items', 'block_playerhud'),
+            'quests'   => get_string('tab_quests', 'block_playerhud'),
+            'classes'  => get_string('tab_classes', 'block_playerhud'),
+            'chapters' => get_string('tab_chapters', 'block_playerhud'),
+            'reports'  => get_string('tab_reports', 'block_playerhud'),
+            'config'   => get_string('tab_config', 'block_playerhud'),
+        ];
         $tab = isset($p['tab']) ? clean_param($p['tab'], PARAM_ALPHA) : '';
 
-        if (!in_array($tab, $allowedtabs, true)) {
+        if (!isset($labels[$tab])) {
             $tab = 'items';
         }
 
@@ -369,7 +376,7 @@ class execute_chat_action extends external_api {
 
         return [
             'success'      => true,
-            'message'      => get_string('assistant_action_opening_tab', 'block_playerhud', $tab),
+            'message'      => get_string('assistant_action_opening_tab', 'block_playerhud', $labels[$tab]),
             'redirect_url' => $redirecturl,
         ];
     }

@@ -62,6 +62,25 @@ final class execute_chat_action_test extends external_base_testcase {
     }
 
     /**
+     * The message names the tab the way the management screen labels it, not by its internal
+     * identifier ("config" is the Settings tab, "classes" the Characters tab).
+     */
+    public function test_open_tab_message_uses_the_tab_label(): void {
+        foreach (['config' => 'tab_config', 'classes' => 'tab_classes', 'quests' => 'tab_quests'] as $tab => $key) {
+            $result = execute_chat_action::execute(
+                $this->instanceid,
+                $this->course->id,
+                'open_tab',
+                json_encode(['tab' => $tab])
+            );
+
+            $label = get_string($key, 'block_playerhud');
+            $this->assertSame(get_string('assistant_action_opening_tab', 'block_playerhud', $label), $result['message']);
+            $this->assertNotSame($tab, $label);
+        }
+    }
+
+    /**
      * An action type outside the allow-list is rejected with success=false.
      */
     public function test_unknown_action_type_returns_failure(): void {

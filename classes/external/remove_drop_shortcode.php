@@ -303,6 +303,10 @@ class remove_drop_shortcode extends external_api {
             rebuild_course_cache($courseid, true);
         }
 
+        // An activity that copies its description into calendar events must refresh them too, or a
+        // removed drop would stay in the event's description.
+        \block_playerhud\utils::refresh_activity_events($modname, (int) $cm->id, $courseid);
+
         // The activity's text changed: tell Moodle, as editing it through the form would.
         \core\event\course_module_updated::create_from_cm($cm)->trigger();
 

@@ -334,7 +334,8 @@ class insert_drop_shortcode extends external_api {
         // update_moduleinfo(): that call rebuilds the whole activity form, re-runs calendar, grade and
         // completion updates and validates fields this edit never touches, which is slow for a wizard
         // batch and can fail on a third-party activity. Only the intro/content text changes, and what
-        // matters of a normal edit is done below: course cache, timemodified and the updated event.
+        // matters of a normal edit is done below: course cache, timemodified, calendar events and the
+        // updated event.
         // What is skipped is the module's own update hook (e.g. page's revision counter).
         $DB->set_field($modname, $field, $newval, ['id' => $cm->instance]);
 
@@ -355,6 +356,9 @@ class insert_drop_shortcode extends external_api {
         if (!$deferrebuild) {
             rebuild_course_cache($courseid, true);
         }
+
+        // An activity that copies its description into calendar events must refresh them too.
+        \block_playerhud\utils::refresh_activity_events($modname, (int) $cm->id, $courseid);
 
         // The activity's text changed: tell Moodle, as editing it through the form would, so logs,
         // event observers and the search indexer hear about it.

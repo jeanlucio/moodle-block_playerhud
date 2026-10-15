@@ -591,6 +591,42 @@ class utils {
         return is_object($config) ? $config : new \stdClass();
     }
 
+    /**
+     * Brings an activity's calendar events up to date after its text was changed directly.
+     *
+     * Activities that copy their description into calendar events (assignment, quiz, lesson,
+     * feedback and others) do it in their update hook, which a direct write to the table skips.
+     * Without this the event keeps the old text, and the next ordinary edit of the activity copies
+     * the new text over it. Activities without such a callback have no events to refresh.
+     *
+     * @param string $modname Module name, e.g. assign.
+     * @param int $cmid Course module ID.
+     * @param int $courseid Course ID.
+     * @return void
+     */
+    public static function refresh_activity_events(string $modname, int $cmid, int $courseid): void {
+        global $DB;
+
+        $callback = component_callback_exists('mod_' . $modname, 'refresh_events');
+        if (!$callback) {
+            return;
+        }
+
+        $cm = get_coursemodule_from_id($modname, $cmid, $courseid);
+        $instance = $cm ? $DB->get_record($modname, ['id' => $cm->instance]) : false;
+        if (!$instance) {
+            return;
+        }
+
+        // A failure in another plugin's refresh must not undo the shortcode edit that already happened.
+        try {
+            $callback($courseid, $instance, $cm);
+        } catch (\Throwable $e) {
+            debugging('block_playerhud: refreshing the events of ' . $modname . ' ' . $cmid . ' failed: '
+                . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
     /** @var string[] The block setting that turns each student-side feature on or off. */
     private const FEATURE_FLAGS = [
         'items'   => 'enable_items',

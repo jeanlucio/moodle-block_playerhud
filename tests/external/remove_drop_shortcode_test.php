@@ -290,4 +290,29 @@ final class remove_drop_shortcode_test extends external_base_testcase {
             ['dropid' => $dropid, 'cmid' => $page->cmid, 'field' => 'content'],
         ]);
     }
+
+    /**
+     * Removing a drop from an assignment also takes it out of the calendar event's description,
+     * which used to keep the shortcode.
+     */
+    public function test_remove_refreshes_the_calendar_event_of_an_assignment(): void {
+        global $DB;
+
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid, $code] = $this->create_drop($item->id);
+        $assign = $this->getDataGenerator()->create_module('assign', [
+            'course' => $this->course->id, 'intro' => 'Hand it in', 'duedate' => time() + DAYSECS,
+            'alwaysshowdescription' => 1,
+        ]);
+        $conditions = ['modulename' => 'assign', 'instance' => $assign->id, 'eventtype' => 'due'];
+        $plain = $DB->get_field('event', 'description', $conditions, MUST_EXIST);
+        $DB->set_field('assign', 'intro', "Hand it in\n[PLAYERHUD_DROP code=" . $code . ']', ['id' => $assign->id]);
+        \block_playerhud\utils::refresh_activity_events('assign', (int) $assign->cmid, (int) $this->course->id);
+        $this->assertNotSame($plain, $DB->get_field('event', 'description', $conditions, MUST_EXIST));
+
+        $result = remove_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $assign->cmid, 'intro');
+
+        $this->assertTrue($result['success']);
+        $this->assertSame($plain, $DB->get_field('event', 'description', $conditions, MUST_EXIST));
+    }
 }
