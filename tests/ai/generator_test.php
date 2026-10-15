@@ -302,6 +302,26 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * An item generated with a drop and no collection limit (the Game Master chat asks for it that
+     * way) gets a drop that pays its XP once per student, not an infinite one, which pays nothing.
+     */
+    public function test_generate_item_with_a_drop_and_no_limit_pays_its_xp(): void {
+        global $DB;
+
+        $user = $this->getDataGenerator()->create_user();
+        $json = '{"name":"Moeda Pirata","description":"Brilha.","emoji":"🪙","location_name":"Baú"}';
+
+        $result = $this->make_generator_answering($json)->generate('item', 'pirata', 50, true);
+
+        $drop = $DB->get_record('block_playerhud_drops', ['id' => $result['created_drop_ids'][0]], '*', MUST_EXIST);
+        $this->assertSame(1, (int) $drop->maxusage);
+
+        $collected = \block_playerhud\game::process_collection($this->instanceid, (int) $drop->id, (int) $user->id);
+        $this->assertTrue($collected['success']);
+        $this->assertSame(50, (int) \block_playerhud\game::get_player($this->instanceid, (int) $user->id)->currentxp);
+    }
+
+    /**
      * Without any scene flagged as the start the chapter would never show up for students, so the
      * first scene becomes the start; and only one scene keeps the flag.
      */

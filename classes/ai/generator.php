@@ -295,7 +295,10 @@ class generator {
             $dropname = !empty($options['drop_location']) ? (string) $options['drop_location'] : $fallbackname;
             $drop->name = \core_text::substr($dropname, 0, 255);
 
-            $drop->maxusage = (int)($options['drop_max'] ?? 0);
+            // An unset limit means one collection per student, as the balance analysis in generate()
+            // assumes: an infinite drop (0) pays no XP, so defaulting to it would leave an item that
+            // shows its XP and never grants it.
+            $drop->maxusage = (int)($options['drop_max'] ?? 1);
             $drop->value = max(1, (int)($options['drop_value'] ?? 1));
             $minutes = (int)($options['drop_time'] ?? 0);
             $drop->respawntime = $minutes * 60;
