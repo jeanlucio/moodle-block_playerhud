@@ -5,6 +5,61 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.11.0] — 2026-10-15
+
+### Added
+- Trades keep their shortcode code in a new column, so `[PLAYERHUD_TRADE]` shortcodes keep
+  working after a course backup and restore. The upgrade stores on each existing trade the code
+  its shortcodes already use. Needs filter_playerhud 1.8.0 to resolve them by the stored code.
+- Read-only helpers for other plugins: `peek_player()` (reads a player without creating one),
+  `get_class_names()`, `external_items::get_names()`, `level_settings()` and `level_for_xp()`.
+- A scheduled task deletes the cleanup backups of removed blocks after 30 days; they are now
+  declared in the privacy provider and removed on uninstall.
+- The Config tab tells the teacher how much XP is promised by drops that are not placed yet,
+  and Distribute Drops offers the course's news forum as a destination.
+- Indexes on the columns the quest, shop, story and report pages filter on.
+
+### Security
+- The key fields no longer write the saved AI keys into the page; they are write-only, with a
+  badge and a checkbox to remove a saved key.
+- AI requests verify the TLS certificate, connect only to the addresses just judged public, do
+  not follow redirects, and refuse more non-public ranges (carrier-grade NAT, documentation,
+  IPv4-compatible and site-local IPv6). An endpoint that would be refused is rejected when it
+  is typed, with the reason, and nothing is saved.
+- `moodle/block:view` is honoured on the student pages and web services. The Items, Quests and
+  RPG switches are enforced on the server, not only in the navigation. Rewriting another
+  activity's text (drop shortcodes, PlayerCoin) also checks the capability in that activity.
+- XP changes and deadline extensions run under a lock, so concurrent requests can no longer
+  overwrite each other or spend an item twice. Collecting a drop applies the item's character
+  restriction on the server.
+
+### Changed
+- The wizard's "distribute" option only decides placement: the PlayerCoin, the Knowledge Pill
+  and the Secret Item always create their drops. Wizard runs abandoned mid-way can be undone.
+- Hiding from the ranking no longer hides the student from the course profile.
+- The ranking and the grade export count only students whose enrolment is active today.
+- Numbers follow the separators of the page language, and the XP unit comes from a language
+  string.
+
+### Fixed
+- Completed activity quests stay claimable after the activity closes, and claimed ones stay in
+  the quest history.
+- Deleting an item, trade, chapter, scene or character no longer leaves quests, restrictions or
+  story choices pointing at something that no longer exists; the teacher is told what changed.
+- Story progress survives a course restore, a chapter has a single starting scene, scene karma
+  stays within the range a player can reach, and saving a scene is atomic.
+- Texts longer than their column (names, choices, images, emojis, AI answers) are limited
+  instead of failing as a database error, and level quests cannot ask for a level above the
+  block maximum.
+- A drop generated without a limit gives one collection per student, so its XP can be earned.
+- Refusals a student reaches in normal use (an item that cannot be used, story refusals, the
+  PlayerCoin drop) show a readable message instead of a raw error code or an error dialog.
+- Flex rows get their gap spacing on Moodle 4.5, and the calendar events of an activity follow
+  a drop shortcode edit.
+- Diagnostics find an orphan's course through the enabled log reader.
+
+---
+
 ## [v1.10.0] — 2026-10-11
 
 ### Added
