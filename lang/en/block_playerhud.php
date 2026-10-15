@@ -575,6 +575,7 @@ $string['item_lp_warning'] = 'No activity with active late penalty configured in
 $string['item_n'] = 'Item {$a}';
 $string['item_name'] = 'Item Name';
 $string['item_new'] = 'New Item';
+$string['item_not_usable'] = 'This item cannot be used.';
 $string['item_option_disabled'] = '{$a} (disabled)';
 $string['item_power'] = 'Item Power';
 $string['item_power_avatar'] = 'Profile Avatar';

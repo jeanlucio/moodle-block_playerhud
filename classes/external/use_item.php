@@ -264,7 +264,7 @@ class use_item extends external_api {
             ];
         }
 
-        throw new \moodle_exception('errorgeneral', 'error');
+        throw new \moodle_exception('item_not_usable', 'block_playerhud');
     }
 
     /**

@@ -505,4 +505,25 @@ final class use_item_test extends external_base_testcase {
             $this->assertSame('error_feature_disabled', $e->errorcode);
         }
     }
+
+    /**
+     * An item with no use action is refused with the plugin's own message.
+     *
+     * Regression: this path threw an error code core does not have, so the student saw the raw
+     * "error/errorgeneral" instead of a sentence.
+     */
+    public function test_use_item_without_a_use_action_is_refused_with_a_translated_reason(): void {
+        global $USER;
+
+        $item = $this->create_item($this->instanceid, 'Plain Item');
+        $this->give_item_to_user((int) $USER->id, $item->id);
+
+        try {
+            use_item::execute($this->instanceid, $this->course->id, $item->id, 0);
+            $this->fail('Expected item_not_usable.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('item_not_usable', $e->errorcode);
+            $this->assertSame(get_string('item_not_usable', 'block_playerhud'), $e->getMessage());
+        }
+    }
 }
