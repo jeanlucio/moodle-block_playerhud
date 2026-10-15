@@ -314,6 +314,19 @@ class external_items {
     }
 
     /**
+     * Names of every item of a block instance, keyed by id and sorted by name.
+     *
+     * The names are raw: the caller formats them for its own output.
+     *
+     * @param int $blockinstanceid Block instance ID.
+     * @return array Item name keyed by item ID.
+     */
+    public static function get_names(int $blockinstanceid): array {
+        global $DB;
+        return $DB->get_records_menu('block_playerhud_items', ['blockinstanceid' => $blockinstanceid], 'name ASC', 'id, name');
+    }
+
+    /**
      * Returns the display name of an item as plain text, or empty string if it does not belong to
      * $blockinstanceid.
      *

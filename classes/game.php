@@ -41,6 +41,12 @@ class game {
     /** @var int Highest karma a player can have. */
     const KARMA_MAX = 999;
 
+    /** @var int XP per level when the block configuration sets none. */
+    const DEFAULT_XP_PER_LEVEL = 100;
+
+    /** @var int Number of levels when the block configuration sets none. */
+    const DEFAULT_MAX_LEVELS = 20;
+
     /**
      * Bring a karma value (a player's, a choice's requirement or its change) inside the range a player can reach.
      *
@@ -49,6 +55,59 @@ class game {
      */
     public static function clamp_karma(int $value): int {
         return max(self::KARMA_MIN, min(self::KARMA_MAX, $value));
+    }
+
+    /**
+     * A player's record, without creating one for a user who never played.
+     *
+     * For read-only consumers (filters, availability conditions), which must not turn every visitor
+     * into a player the way get_player() does.
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @param int $userid The user ID.
+     * @return \stdClass|false The player record, or false if there is none.
+     */
+    public static function peek_player(int $blockinstanceid, int $userid): \stdClass|false {
+        global $DB;
+        return $DB->get_record('block_playerhud_user', ['blockinstanceid' => $blockinstanceid, 'userid' => $userid]);
+    }
+
+    /**
+     * Names of the character classes of a block instance, keyed by id and sorted by name.
+     *
+     * The names are raw: the caller formats them for its own output.
+     *
+     * @param int $blockinstanceid The block instance ID.
+     * @return array Class name keyed by class ID.
+     */
+    public static function get_class_names(int $blockinstanceid): array {
+        global $DB;
+        return $DB->get_records_menu('block_playerhud_classes', ['blockinstanceid' => $blockinstanceid], 'name ASC', 'id, name');
+    }
+
+    /**
+     * XP per level and number of levels of a block configuration, with the defaults applied.
+     *
+     * @param \stdClass $config The block instance configuration.
+     * @return int[] [XP per level, number of levels].
+     */
+    public static function level_settings(\stdClass $config): array {
+        return [
+            isset($config->xp_per_level) ? (int) $config->xp_per_level : self::DEFAULT_XP_PER_LEVEL,
+            isset($config->max_levels) ? (int) $config->max_levels : self::DEFAULT_MAX_LEVELS,
+        ];
+    }
+
+    /**
+     * The level a given amount of XP reaches under a block configuration.
+     *
+     * @param \stdClass $config The block instance configuration.
+     * @param int $xp Player XP.
+     * @return int Level, between 1 and the configured number of levels.
+     */
+    public static function level_for_xp(\stdClass $config, int $xp): int {
+        [$xpperlevel, $maxlevels] = self::level_settings($config);
+        return self::xp_to_level($xp, $xpperlevel, $maxlevels);
     }
 
     /**
@@ -443,9 +502,7 @@ class game {
      * @return array Stats array.
      */
     public static function get_game_stats(\stdClass $config, int $blockinstanceid, int $currentxp): array {
-        // Settings from block configuration.
-        $xpperlevel = isset($config->xp_per_level) ? (int)$config->xp_per_level : 100;
-        $maxlevels = isset($config->max_levels) ? (int)$config->max_levels : 20;
+        [$xpperlevel, $maxlevels] = self::level_settings($config);
 
         $totalgamexp = analytics::game_xp_totals($blockinstanceid)['total_xp'];
 

@@ -679,4 +679,20 @@ final class external_items_test extends advanced_testcase {
 
         $this->assertSame($few, $many, 'Checking 10x more items must not cost more queries.');
     }
+
+    /**
+     * get_names() lists only the instance's own items, raw and sorted by name.
+     */
+    public function test_get_names_scoped_raw_and_sorted(): void {
+        global $DB;
+        $item = fn(int $bid, string $name) => (int) $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $bid, 'name' => $name, 'xp' => 0, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $instanceid = $this->make_instance();
+        $potion = $item($instanceid, 'Potion & Elixir');
+        $axe = $item($instanceid, 'Axe');
+        $item($this->make_instance(), 'Foreign');
+
+        $this->assertSame([$axe => 'Axe', $potion => 'Potion & Elixir'], external_items::get_names($instanceid));
+    }
 }

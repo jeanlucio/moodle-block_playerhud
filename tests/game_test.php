@@ -1693,4 +1693,54 @@ final class game_test extends advanced_testcase {
         }
         $this->assertFalse(game::has_item($user->id, $item->id));
     }
+
+    /**
+     * peek_player() returns the record when it exists and never creates one.
+     */
+    public function test_peek_player_reads_without_creating(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+
+        $this->assertFalse(game::peek_player($this->instanceid, $user->id));
+        $this->assertFalse($DB->record_exists('block_playerhud_user', ['userid' => $user->id]));
+
+        $created = game::get_player($this->instanceid, $user->id);
+        $this->assertEquals($created->id, game::peek_player($this->instanceid, $user->id)->id);
+    }
+
+    /**
+     * get_class_names() lists only the instance's own classes, raw and sorted by name.
+     */
+    public function test_get_class_names_scoped_raw_and_sorted(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setup_block_instance();
+        $own = $this->instanceid;
+        $this->setup_block_instance();
+        $other = $this->instanceid;
+
+        $class = fn(int $bid, string $name) => (int) $DB->insert_record('block_playerhud_classes', (object) [
+            'blockinstanceid' => $bid, 'name' => $name, 'description' => '', 'base_hp' => 100,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $mage = $class($own, 'Mage & Co');
+        $archer = $class($own, 'Archer');
+        $class($other, 'Other');
+
+        $this->assertSame([$archer => 'Archer', $mage => 'Mage & Co'], game::get_class_names($own));
+    }
+
+    /**
+     * level_for_xp() uses the configured level size and count, or the defaults when unset.
+     */
+    public function test_level_for_xp_with_and_without_settings(): void {
+        $this->assertSame([game::DEFAULT_XP_PER_LEVEL, game::DEFAULT_MAX_LEVELS], game::level_settings(new \stdClass()));
+        $this->assertSame(3, game::level_for_xp(new \stdClass(), 250));
+
+        $config = (object) ['xp_per_level' => 50, 'max_levels' => 4];
+        $this->assertSame(3, game::level_for_xp($config, 100));
+        $this->assertSame(4, game::level_for_xp($config, 1000));
+    }
 }
