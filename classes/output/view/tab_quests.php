@@ -177,8 +177,9 @@ class tab_quests implements renderable {
                 $totals
             );
 
-            // Skip quests whose linked activity is not visible to this user.
-            if ($status->hidden) {
+            // Skip quests whose linked activity is not visible to this user, but never one already
+            // claimed: it is part of the student's history even if the activity has since closed.
+            if ($status->hidden && !$isclaimed) {
                 continue;
             }
 

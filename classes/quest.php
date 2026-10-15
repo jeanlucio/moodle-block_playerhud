@@ -513,21 +513,29 @@ class quest {
                 $cm = $modinfo->get_cm($cmid);
 
                 if ($cm) {
-                    // Hide quest entirely if the activity is not visible to this user.
-                    if (!$cm->uservisible) {
+                    $completion = new \completion_info($modinfo->get_course());
+                    $completiondata = $completion->get_data($cm, false, $userid);
+                    $iscomplete = in_array(
+                        $completiondata->completionstate,
+                        [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS]
+                    );
+
+                    // An activity the user cannot open (an unmet access restriction, whether shown
+                    // greyed out or hidden, or an activity hidden by the teacher) hides the quest only
+                    // while it is not completed. uservisible cannot tell "not open yet" from "already
+                    // closed", so a not-completed quest stays hidden to keep future missions out of
+                    // sight; a completed one stays, so a reward earned before the activity closed can
+                    // still be claimed.
+                    if (!$cm->uservisible && (!$iscomplete || $cm->deletioninprogress)) {
                         $status->hidden = true;
                         return $status;
                     }
 
-                    $status->action_url = $cm->url;
+                    if ($cm->uservisible) {
+                        $status->action_url = $cm->url;
+                    }
 
-                    $completion = new \completion_info($modinfo->get_course());
-                    $completiondata = $completion->get_data($cm, false, $userid);
-
-                    if (
-                        $completiondata->completionstate == COMPLETION_COMPLETE ||
-                        $completiondata->completionstate == COMPLETION_COMPLETE_PASS
-                    ) {
+                    if ($iscomplete) {
                         $status->completed = true;
                         $status->progress = 100;
                         $status->label = get_string('quest_status_completed', 'block_playerhud');
@@ -879,7 +887,9 @@ class quest {
                         break;
                     }
                     $cm = $modinfo->get_cm($cmid);
-                    if (!$cm || !$cm->uservisible) {
+                    // Same rule as check_status(): an activity the user can no longer open still counts
+                    // when it was completed, so only its completion state is checked here.
+                    if (!$cm || $cm->deletioninprogress) {
                         break;
                     }
                     $completion = new \completion_info($modinfo->get_course());
