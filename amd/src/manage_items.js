@@ -383,10 +383,14 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                     return;
                 }
 
-                // Optionally place a drop for the new coin; the page reloads either way.
+                // Optionally place a drop for the new coin. The page reloads to show the coin, but a
+                // refusal (no news forum, editing the forum forbidden) is shown first and the reload
+                // waits until it is closed: reloading at once wiped the message, leaving the teacher
+                // with a coin, no drop and no reason.
                 const setupDrop = async() => {
+                    let dropResp;
                     try {
-                        const dropResp = await Ajax.call([{
+                        dropResp = await Ajax.call([{
                             methodname: 'block_playerhud_setup_playercoin_drop',
                             args: {
                                 instanceid: config.instanceid,
@@ -394,16 +398,17 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'core/copy_to_cl
                                 itemid: resp.itemid
                             }
                         }])[0];
-                        if (!dropResp.success) {
-                            Notification.addNotification({
-                                message: dropResp.message,
-                                type: 'error'
-                            });
-                        }
                     } catch (ex) {
+                        // A real failure: keep its dialog readable instead of reloading under it.
                         Notification.exception(ex);
+                        return;
                     }
-                    window.location.reload();
+                    if (dropResp.success) {
+                        window.location.reload();
+                        return;
+                    }
+                    const alert = await Notification.alert(await Str.get_string('error', 'moodle'), dropResp.message);
+                    alert.getRoot().on(ModalEvents.hidden, () => window.location.reload());
                 };
 
                 try {
