@@ -137,7 +137,7 @@ class block_playerhud extends block_base {
                 foreach ($itemstodisplay as $invitem) {
                     $media = $allmedia[$invitem->id];
                     $recentitems[] = [
-                        'name' => format_string($invitem->name),
+                        'name' => \block_playerhud\utils::plain_string($invitem->name, $context),
                         'xp' => $invitem->xp . ' ' . $xpunit,
                         'image' => $media['is_image'] ? $media['url'] : strip_tags($media['content']),
                         'isimage' => $media['is_image'],
@@ -155,7 +155,7 @@ class block_playerhud extends block_base {
                     foreach ($overflowdisplay as $oid => $ovitem) {
                         $m = $allmedia[$oid] ?? ['is_image' => false, 'url' => '', 'content' => ''];
                         $overflowjsonitems[] = [
-                            'n' => format_string($ovitem->name),
+                            'n' => \block_playerhud\utils::plain_string($ovitem->name, $context),
                             'i' => (int)(bool)$m['is_image'],
                             'u' => $m['is_image'] ? $m['url'] : strip_tags($m['content']),
                         ];
@@ -242,8 +242,8 @@ class block_playerhud extends block_base {
                         }
                         $classdesc = format_text($class->description ?? '', FORMAT_HTML, ['context' => $context]);
                         $classdata = [
-                            'classname'       => format_string($class->name),
-                            'fullname'        => format_string($class->name),
+                            'classname'       => \block_playerhud\utils::plain_string($class->name, $context),
+                            'fullname'        => \block_playerhud\utils::plain_string($class->name, $context),
                             'portrait_url'    => $portraiturl,
                             'portrait_emoji'  => $portraitemoji,
                             'tier'            => $portraittier,
@@ -350,7 +350,7 @@ class block_playerhud extends block_base {
                 'ranking'     => $rankdata,
                 'hasgroup'     => $groupinfo !== null,
                 'groupbadge'   => $groupinfo ? $groupinfo->badge : '',
-                'groupname'    => $groupinfo ? format_string($groupinfo->groupname) : '',
+                'groupname'    => $groupinfo ? \block_playerhud\utils::plain_string($groupinfo->groupname, $context) : '',
                 'groupmembers' => $groupinfo
                     ? $groupinfo->membercount . '/' . $groupinfo->maxmembers
                     : '',
