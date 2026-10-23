@@ -158,7 +158,7 @@ class generator {
         // so a stray string or a nameless entry can neither crash nor create an empty item.
         $itemstosave = array_values(array_filter(
             $itemstosave,
-            static fn($entry) => is_array($entry) && trim((string) ($entry['name'] ?? '')) !== ''
+            fn($entry) => is_array($entry) && trim($this->scalar_text($entry['name'] ?? null)) !== ''
         ));
         if (empty($itemstosave)) {
             throw new \moodle_exception('ai_error_parsing', 'block_playerhud');
@@ -262,8 +262,10 @@ class generator {
         // same defensive pattern already used for AI story text in wizard_run_step.php.
         $item = new \stdClass();
         $item->blockinstanceid = $this->instanceid;
-        $item->name = \core_text::substr((string) $data['name'], 0, 255);
-        $item->description = \block_playerhud\utils::sanitize_rich_description((string) ($data['description'] ?? ''));
+        $item->name = \core_text::substr($this->scalar_text($data['name'] ?? null), 0, 255);
+        $item->description = \block_playerhud\utils::sanitize_rich_description(
+            $this->scalar_text($data['description'] ?? null)
+        );
         $item->image = \core_text::substr(clean_param($this->scalar_text($data['emoji'] ?? ''), PARAM_TEXT), 0, 255);
         $item->xp = $targetxp;
 

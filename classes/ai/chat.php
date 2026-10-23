@@ -222,12 +222,16 @@ class chat extends generator {
 
         $decoded = json_decode($cleaned, true);
 
-        if (is_array($decoded) && array_key_exists('reply', $decoded)) {
+        // A reply that is a list or an object is not a reply: it falls through to the extraction below
+        // instead of showing the word Array in the chat. An explicit null is an empty reply.
+        $replyisusable = is_array($decoded) && array_key_exists('reply', $decoded)
+            && ($decoded['reply'] === null || is_scalar($decoded['reply']));
+        if ($replyisusable) {
             $action = (isset($decoded['action']) && is_array($decoded['action']))
                 ? $decoded['action']
                 : null;
             return [
-                'reply'    => (string) $decoded['reply'],
+                'reply'    => (string) ($decoded['reply'] ?? ''),
                 'action'   => $action,
                 'provider' => $provider,
             ];

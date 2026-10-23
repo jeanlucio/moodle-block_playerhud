@@ -78,4 +78,42 @@ final class chat_test extends external_base_testcase {
         ], MUST_EXIST);
         $this->assertSame(str_repeat('ç', 255), $logged);
     }
+
+    /**
+     * Calls the protected parse_chat_response() method via reflection.
+     *
+     * @param string $raw What the model answered.
+     * @return array The reply, the action and the provider.
+     */
+    private function parse(string $raw): array {
+        $chat = new chat($this->instanceid);
+        $method = new \ReflectionMethod($chat, 'parse_chat_response');
+        $method->setAccessible(true);
+        return $method->invoke($chat, $raw, 'Test');
+    }
+
+    /**
+     * A reply that is a list or an object is not shown as the word Array.
+     *
+     * Regression test: the reply was cast with (string), so a model that answered
+     * {"reply": ["Hello"]} printed Array in the chat and raised a notice.
+     */
+    public function test_a_reply_that_is_not_text_is_not_shown_as_array(): void {
+        foreach ([['Hello'], ['text' => 'Hello']] as $reply) {
+            $result = $this->parse(json_encode(['reply' => $reply, 'action' => null]));
+
+            $this->assertNotSame('Array', $result['reply']);
+            $this->assertStringNotContainsString('Array', $result['reply']);
+        }
+    }
+
+    /**
+     * Ordinary replies keep working: text, a number, and an explicit null as an empty reply.
+     */
+    public function test_ordinary_replies_are_unchanged(): void {
+        $this->assertSame('Hello', $this->parse('{"reply":"Hello"}')['reply']);
+        $this->assertSame('5', $this->parse('{"reply":5}')['reply']);
+        $this->assertSame('', $this->parse('{"reply":null}')['reply']);
+        $this->assertSame(['type' => 'x'], $this->parse('{"reply":"ok","action":{"type":"x"}}')['action']);
+    }
 }

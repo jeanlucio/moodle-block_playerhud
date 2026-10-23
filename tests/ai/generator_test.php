@@ -772,4 +772,47 @@ final class generator_test extends external_base_testcase {
         $this->assertStringContainsString(get_string('ai_error_empty_answer', 'block_playerhud', $source), $result['message']);
         $this->assertStringContainsString($reason, $result['message']);
     }
+
+    /**
+     * A name or description that is a list or an object is empty text, not the word Array.
+     *
+     * Regression test: a (string) cast of a list raised a notice and saved the item as Array.
+     */
+    public function test_save_item_does_not_write_the_word_array(): void {
+        global $DB;
+
+        $generator = new generator($this->instanceid);
+
+        $this->call_save_item($generator, [
+            'name' => ['Potion'],
+            'description' => ['a' => 'b'],
+            'emoji' => '🪙',
+        ]);
+
+        $item = $DB->get_record('block_playerhud_items', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
+        $this->assertSame('', $item->name);
+        $this->assertStringNotContainsString('Array', $item->name . $item->description);
+    }
+
+    /**
+     * An entry whose name is a list is dropped by the answer filter, so no nameless item is created.
+     */
+    public function test_generate_items_drops_entries_whose_name_is_not_text(): void {
+        global $DB;
+
+        $json = json_encode(['items' => [
+            ['name' => ['Potion'], 'description' => 'x'],
+            ['name' => 'Real potion', 'description' => 'y'],
+        ]]);
+
+        $this->make_generator_answering($json)->generate('item', 'armas', 10, false, [], 2);
+
+        $names = array_values($DB->get_fieldset_select(
+            'block_playerhud_items',
+            'name',
+            'blockinstanceid = ?',
+            [$this->instanceid]
+        ));
+        $this->assertSame(['Real potion'], $names);
+    }
 }
