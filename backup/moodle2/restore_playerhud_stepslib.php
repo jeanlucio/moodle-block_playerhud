@@ -631,7 +631,8 @@ class restore_playerhud_block_structure_step extends restore_structure_step {
         unset($data->id);
 
         $newid = $DB->insert_record('block_playerhud_story_nodes', $data);
-        $this->set_mapping('playerhud_node', $oldid, $newid);
+        $this->set_mapping('playerhud_node', $oldid, $newid, true);
+        $this->add_related_files('block_playerhud', 'scene_content', 'playerhud_node', null, $oldid);
     }
 
     /**

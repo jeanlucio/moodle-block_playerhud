@@ -577,7 +577,7 @@ final class manage_entry_points_test extends advanced_testcase {
             'instanceid'              => $this->instanceid,
             'chapterid'               => $chapterid,
             'nodeid'                  => 0,
-            'content'                 => ['text' => $poisoned, 'format' => FORMAT_HTML],
+            'content_editor'          => ['text' => $poisoned, 'format' => FORMAT_HTML],
             'is_start'                => 1,
             'sesskey'                 => sesskey(),
             '_qf__' . $formidentifier => 1,
@@ -608,7 +608,7 @@ final class manage_entry_points_test extends advanced_testcase {
             'instanceid'              => $this->instanceid,
             'chapterid'               => $chapterid,
             'nodeid'                  => 0,
-            'content'                 => ['text' => $html, 'format' => FORMAT_HTML],
+            'content_editor'          => ['text' => $html, 'format' => FORMAT_HTML],
             'is_start'                => 1,
             'sesskey'                 => sesskey(),
             '_qf__' . $formidentifier => 1,
@@ -637,7 +637,7 @@ final class manage_entry_points_test extends advanced_testcase {
             'instanceid'              => $this->instanceid,
             'chapterid'               => $chapterid,
             'nodeid'                  => $nodeid,
-            'content'                 => ['text' => '<p>Scene</p>', 'format' => FORMAT_HTML],
+            'content_editor'          => ['text' => '<p>Scene</p>', 'format' => FORMAT_HTML],
             'is_start'                => 1,
             'repeats'                 => 1,
             'choice_text_0'           => str_repeat('ê', 300),
@@ -670,7 +670,7 @@ final class manage_entry_points_test extends advanced_testcase {
             'instanceid'              => $this->instanceid,
             'chapterid'               => $chapterid,
             'nodeid'                  => $nodeid,
-            'content'                 => ['text' => '<p>Changed</p>', 'format' => FORMAT_HTML],
+            'content_editor'          => ['text' => '<p>Changed</p>', 'format' => FORMAT_HTML],
             'is_start'                => 1,
             'repeats'                 => 1,
             'choice_text_0'           => 'New choice',
@@ -714,7 +714,7 @@ final class manage_entry_points_test extends advanced_testcase {
             'instanceid'              => $this->instanceid,
             'chapterid'               => $chapterid,
             'nodeid'                  => 0,
-            'content'                 => ['text' => '<p>New opening</p>', 'format' => FORMAT_HTML],
+            'content_editor'          => ['text' => '<p>New opening</p>', 'format' => FORMAT_HTML],
             'is_start'                => $start,
             'sesskey'                 => sesskey(),
             '_qf__' . $formidentifier => 1,
@@ -1248,7 +1248,7 @@ final class manage_entry_points_test extends advanced_testcase {
             'instanceid'              => $this->instanceid,
             'chapterid'               => $chapterid,
             'nodeid'                  => $edited,
-            'content'                 => ['text' => '<p>Rewritten</p>', 'format' => FORMAT_HTML],
+            'content_editor'          => ['text' => '<p>Rewritten</p>', 'format' => FORMAT_HTML],
             'is_start'                => 1,
             'repeats'                 => 1,
             'choice_text_0'           => 'Go right',
@@ -1268,5 +1268,108 @@ final class manage_entry_points_test extends advanced_testcase {
         $this->assertEquals(0, $former->is_start);
         $this->assertGreaterThanOrEqual($before, (int) $former->timemodified);
         $this->assertEquals(1000, $DB->get_field('block_playerhud_story_nodes', 'timemodified', ['id' => $bystander]));
+    }
+
+    /**
+     * Puts an image in a fresh draft area of the current user, as the editor does when an image
+     * is uploaded or pasted, and returns the draft item ID with the image's draft URL.
+     *
+     * @param string $filename Image file name.
+     * @return array{0: int, 1: string} The draft item ID and the image URL inside the draft.
+     */
+    private function draft_with_image(string $filename): array {
+        global $USER;
+
+        $draftid = file_get_unused_draft_itemid();
+        $usercontext = \context_user::instance($USER->id);
+        get_file_storage()->create_file_from_string([
+            'contextid' => $usercontext->id,
+            'component' => 'user',
+            'filearea'  => 'draft',
+            'itemid'    => $draftid,
+            'filepath'  => '/',
+            'filename'  => $filename,
+        ], 'image bytes');
+        $url = \moodle_url::make_draftfile_url($draftid, '/', $filename)->out(false);
+
+        return [$draftid, $url];
+    }
+
+    /**
+     * Posts the scene form with the given editor text and draft area.
+     *
+     * @param int $chapterid The chapter.
+     * @param int $nodeid The scene being edited, or 0 for a new one.
+     * @param string $text Editor HTML.
+     * @param int $draftid Draft item ID of the editor.
+     */
+    private function post_scene_content(int $chapterid, int $nodeid, string $text, int $draftid): void {
+        $formidentifier = str_replace('\\', '_', \block_playerhud\form\edit_scene_form::class);
+        $_POST = [
+            'courseid'                => $this->course->id,
+            'instanceid'              => $this->instanceid,
+            'chapterid'               => $chapterid,
+            'nodeid'                  => $nodeid,
+            'content_editor'          => ['text' => $text, 'format' => FORMAT_HTML, 'itemid' => $draftid],
+            'is_start'                => 1,
+            'sesskey'                 => sesskey(),
+            '_qf__' . $formidentifier => 1,
+        ];
+
+        $this->assert_redirects(fn() => (new scenes())->handle_edit_form());
+    }
+
+    /**
+     * An image added in the scene editor is kept: it moves from the editor's draft area to the
+     * scene's own file area and the stored text points at it.
+     */
+    public function test_scenes_edit_form_keeps_an_image_in_the_scene_file_area(): void {
+        global $DB;
+
+        $this->setAdminUser();
+        $chapterid = $this->make_chapter($this->instanceid);
+        [$draftid, $url] = $this->draft_with_image('gate.png');
+
+        $this->post_scene_content($chapterid, 0, '<p>The gate.</p><p><img src="' . $url . '" alt="An old gate"></p>', $draftid);
+
+        $node = $DB->get_record('block_playerhud_story_nodes', ['chapterid' => $chapterid], '*', MUST_EXIST);
+        $this->assertStringContainsString('src="@@PLUGINFILE@@/gate.png"', $node->content);
+        $this->assertStringContainsString('alt="An old gate"', $node->content);
+        $files = get_file_storage()->get_area_files(
+            \context_block::instance($this->instanceid)->id,
+            'block_playerhud',
+            'scene_content',
+            $node->id,
+            'filename',
+            false
+        );
+        $this->assertSame(['gate.png'], array_values(array_map(fn($f) => $f->get_filename(), $files)));
+    }
+
+    /**
+     * Taking the image out of the scene text removes the stored file as well.
+     */
+    public function test_scenes_edit_form_removes_an_image_taken_out_of_the_text(): void {
+        global $DB;
+
+        $this->setAdminUser();
+        $chapterid = $this->make_chapter($this->instanceid);
+        [$nodeid] = $this->make_node_with_choice($chapterid, '<p><img src="@@PLUGINFILE@@/gate.png" alt="Gate"></p>');
+        $contextid = \context_block::instance($this->instanceid)->id;
+        get_file_storage()->create_file_from_string([
+            'contextid' => $contextid,
+            'component' => 'block_playerhud',
+            'filearea'  => 'scene_content',
+            'itemid'    => $nodeid,
+            'filepath'  => '/',
+            'filename'  => 'gate.png',
+        ], 'image bytes');
+
+        $editdraft = 0;
+        file_prepare_draft_area($editdraft, $contextid, 'block_playerhud', 'scene_content', $nodeid);
+        $this->post_scene_content($chapterid, $nodeid, '<p>Only text now.</p>', $editdraft);
+
+        $this->assertTrue(get_file_storage()->is_area_empty($contextid, 'block_playerhud', 'scene_content', $nodeid));
+        $this->assertStringNotContainsString('<img', $DB->get_field('block_playerhud_story_nodes', 'content', ['id' => $nodeid]));
     }
 }

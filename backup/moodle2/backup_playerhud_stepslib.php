@@ -247,6 +247,7 @@ class backup_playerhud_block_structure_step extends backup_block_structure_step 
 
         // 6. File annotations.
         $item->annotate_files('block_playerhud', 'item_image', 'id');
+        $storynode->annotate_files('block_playerhud', 'scene_content', 'id');
         for ($i = 1; $i <= 5; $i++) {
             $class->annotate_files('block_playerhud', 'class_image_' . $i, 'id');
         }

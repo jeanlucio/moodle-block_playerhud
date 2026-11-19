@@ -32,6 +32,9 @@ namespace block_playerhud;
  * @package    block_playerhud
  */
 class utils {
+    /** @var string Inline formatting tags kept by the rich-text sanitizers, in strip_tags() format. */
+    private const RICH_TEXT_TAGS = '<p><br><strong><b><em><i><u><ul><ol><li><a>';
+
     /**
      * Retrieves display data for an array of items in bulk to avoid N+1 queries.
      *
@@ -550,8 +553,24 @@ class utils {
      * @return string Sanitized HTML safe to persist and later render with format_text().
      */
     public static function sanitize_rich_description(string $html): string {
-        $allowedtags = '<p><br><strong><b><em><i><u><ul><ol><li><a>';
-        $stripped = strip_tags($html, $allowedtags);
+        $stripped = strip_tags($html, self::RICH_TEXT_TAGS);
+        return clean_param($stripped, PARAM_CLEANHTML);
+    }
+
+    /**
+     * Sanitize the content of a story scene submitted via its 'editor' form element.
+     *
+     * Same allowlist as sanitize_rich_description() plus images, so a scene can carry an
+     * illustration. div and class stay out, so the pasted modal skeleton that allowlist guards
+     * against is still removed. Run it on the editor text before
+     * file_postupdate_standard_editor(), while image sources are still real draft-file URLs:
+     * PARAM_CLEANHTML drops event handler attributes, javascript: sources and data: images.
+     *
+     * @param string $html Raw HTML submitted by the scene editor.
+     * @return string Sanitized HTML safe to persist and later render with format_text().
+     */
+    public static function sanitize_scene_content(string $html): string {
+        $stripped = strip_tags($html, self::RICH_TEXT_TAGS . '<img>');
         return clean_param($stripped, PARAM_CLEANHTML);
     }
 

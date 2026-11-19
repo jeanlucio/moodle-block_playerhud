@@ -556,4 +556,60 @@ final class utils_test extends advanced_testcase {
         $this->expectExceptionMessage(get_string('error_feature_disabled', 'block_playerhud'));
         utils::require_feature($instanceid, 'rpg');
     }
+
+    /**
+     * A scene keeps an illustration: the image tag survives with its source, text alternative
+     * and size.
+     */
+    public function test_sanitize_scene_content_keeps_an_image(): void {
+        $html = '<p>The gate.</p><p><img src="https://example.com/draftfile.php/5/user/draft/9/gate.png" '
+            . 'alt="An old gate" width="300" height="200"></p>';
+
+        $clean = utils::sanitize_scene_content($html);
+
+        $this->assertStringContainsString('src="https://example.com/draftfile.php/5/user/draft/9/gate.png"', $clean);
+        $this->assertStringContainsString('alt="An old gate"', $clean);
+        $this->assertStringContainsString('width="300"', $clean);
+        $this->assertStringContainsString('height="200"', $clean);
+    }
+
+    /**
+     * An image cannot carry script: event handlers and javascript: sources are removed, and an
+     * image inlined as data: is dropped instead of being stored inside the scene text.
+     */
+    public function test_sanitize_scene_content_removes_unsafe_images(): void {
+        $clean = utils::sanitize_scene_content(
+            '<img src="https://example.com/a.png" alt="a" onerror="alert(1)">'
+            . '<img src="javascript:alert(2)" alt="b">'
+            . '<img src="data:image/png;base64,iVBORw0KGgo=" alt="c">'
+        );
+
+        $this->assertStringNotContainsString('onerror', $clean);
+        $this->assertStringNotContainsString('javascript:', $clean);
+        $this->assertStringNotContainsString('data:', $clean);
+        $this->assertStringContainsString('alt="a"', $clean);
+    }
+
+    /**
+     * Allowing images does not reopen the pasted modal skeleton: scenes still lose div and class.
+     */
+    public function test_sanitize_scene_content_strips_pasted_modal_skeleton(): void {
+        $clean = utils::sanitize_scene_content(
+            '<div class="modal fade show"><div class="modal-content"><p>Scene text</p></div></div>'
+        );
+
+        $this->assertStringNotContainsString('<div', $clean);
+        $this->assertStringNotContainsString('modal', $clean);
+        $this->assertStringContainsString('Scene text', $clean);
+    }
+
+    /**
+     * Images stay a scene-only feature: item, quest and class descriptions keep dropping them.
+     */
+    public function test_sanitize_rich_description_still_drops_images(): void {
+        $clean = utils::sanitize_rich_description('<p>Item</p><img src="https://example.com/a.png" alt="a">');
+
+        $this->assertStringNotContainsString('<img', $clean);
+        $this->assertStringContainsString('Item', $clean);
+    }
 }

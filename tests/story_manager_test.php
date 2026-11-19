@@ -1241,4 +1241,27 @@ final class story_manager_test extends advanced_testcase {
         $this->assertTrue($result['finished']);
         $this->assertGreaterThan(1000, (int) $DB->get_field('block_playerhud_rpg_progress', 'timemodified', ['id' => $progressid]));
     }
+
+    /**
+     * An image stored in a scene is shown from the scene's file area, both when the player is on
+     * the scene and in the recap of a finished chapter.
+     */
+    public function test_scene_images_point_at_the_scene_file_area(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Chapter');
+        $node = $this->create_node($chapter->id, '<p><img src="@@PLUGINFILE@@/gate.png" alt="Gate"></p>', true);
+        $choice = $this->create_choice($node->id, 'Finish');
+        $contextid = \context_block::instance($this->instanceid)->id;
+        $expected = "/pluginfile.php/{$contextid}/block_playerhud/scene_content/{$node->id}/gate.png";
+
+        $scene = story_manager::load_scene($this->instanceid, $user->id, $chapter->id);
+        story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+        $recap = story_manager::load_recap($this->instanceid, $user->id, $chapter->id);
+
+        $this->assertStringContainsString($expected, $scene['node']['content']);
+        $this->assertStringNotContainsString('@@PLUGINFILE@@', $scene['node']['content']);
+        $this->assertStringContainsString($expected, $recap);
+    }
 }

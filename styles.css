@@ -2226,6 +2226,13 @@ div.modal-dialog .visually-hidden {
     min-height: 120px;
 }
 
+/* Scene images: the story modals are moved to <body>, so they are scoped by the modal IDs. */
+#ph-story-modal .ph-story-content img,
+#ph-story-test-modal .ph-story-content img {
+    max-width: 100%;
+    height: auto;
+}
+
 #ph-story-choices .badge {
     white-space: normal;
     font-weight: 600;

@@ -34,6 +34,60 @@ class scenes {
     /** @var int Length of the choice text column (block_playerhud_choices.text). */
     const CHOICE_TEXT_MAX = 255;
 
+    /** @var string File area holding the images of a scene's content, with the scene ID as item ID. */
+    const FILEAREA = 'scene_content';
+
+    /**
+     * Options for the scene content editor: images go to the scene's own file area in the
+     * block context, so they are served by block_playerhud_pluginfile() and follow the block
+     * through backup and restore.
+     *
+     * @param \context $context The block context.
+     * @param int $maxbytes Largest file size allowed, usually the course limit.
+     * @return array Editor options for the form element and the file API.
+     */
+    public static function editor_options(\context $context, int $maxbytes): array {
+        global $CFG;
+
+        // EDITOR_UNLIMITED_FILES lives in formslib.php, which a page only loads with its first
+        // form; the options are built before the scene form exists.
+        require_once($CFG->libdir . '/formslib.php');
+
+        return [
+            'maxfiles'       => EDITOR_UNLIMITED_FILES,
+            'maxbytes'       => $maxbytes,
+            'context'        => $context,
+            'subdirs'        => 0,
+            'noclean'        => false,
+            'accepted_types' => ['web_image'],
+            // Without it, an image taken out of the text stays stored, and is backed up, forever.
+            'removeorphaneddrafts' => true,
+        ];
+    }
+
+    /**
+     * Deletes the images stored in the content of the given scenes.
+     *
+     * @param int $instanceid The block instance the scenes belong to.
+     * @param int[] $sceneids The scenes whose images are removed.
+     * @return void
+     */
+    public static function delete_scene_files(int $instanceid, array $sceneids): void {
+        global $DB;
+
+        if (!$sceneids) {
+            return;
+        }
+        [$insql, $params] = $DB->get_in_or_equal($sceneids, SQL_PARAMS_NAMED, 'scenefile');
+        get_file_storage()->delete_area_files_select(
+            context_block::instance($instanceid)->id,
+            'block_playerhud',
+            self::FILEAREA,
+            $insql,
+            $params
+        );
+    }
+
     /**
      * Clamps a client-supplied 'repeats' counter so it can never drive an unbounded loop —
      * shared by both read points in this class, since a form re-render and a real submission
@@ -94,6 +148,7 @@ class scenes {
         $DB->set_field('block_playerhud_choices', 'timemodified', time(), ['next_nodeid' => $nodeid]);
         $DB->set_field('block_playerhud_choices', 'next_nodeid', 0, ['next_nodeid' => $nodeid]);
         $DB->delete_records('block_playerhud_story_nodes', ['id' => $nodeid]);
+        self::delete_scene_files($instanceid, [$nodeid]);
 
         // The saved path is JSON, so a text match only narrows the rows and the exact check
         // happens on the decoded map.
@@ -354,12 +409,15 @@ class scenes {
             }
         }
 
+        $editoroptions = self::editor_options($context, (int) $course->maxbytes);
+
         $mform = new \block_playerhud\form\edit_scene_form(null, [
             'chapterid'        => $chapterid,
             'instanceid'       => $instanceid,
             'nodeid'           => $nodeid,
             'db_choices_count' => count($existingchoices) + 1,
             'current_data'     => $currentdata,
+            'editoroptions'    => $editoroptions,
         ]);
 
         if ($nodeid && !$mform->is_submitted()) {
@@ -369,30 +427,55 @@ class scenes {
                 '*',
                 MUST_EXIST
             );
+            $node->contentformat = FORMAT_HTML;
+            $node = file_prepare_standard_editor(
+                $node,
+                'content',
+                $editoroptions,
+                $context,
+                'block_playerhud',
+                self::FILEAREA,
+                $nodeid
+            );
             $formdata = array_merge($currentdata, [
-                'courseid'   => $courseid,
-                'instanceid' => $instanceid,
-                'chapterid'  => $chapterid,
-                'nodeid'     => $nodeid,
-                'content'    => ['text' => $node->content, 'format' => FORMAT_HTML],
-                'is_start'   => (int) $node->is_start,
+                'courseid'       => $courseid,
+                'instanceid'     => $instanceid,
+                'chapterid'      => $chapterid,
+                'nodeid'         => $nodeid,
+                'content_editor' => $node->content_editor,
+                'is_start'       => (int) $node->is_start,
             ]);
             $mform->set_data($formdata);
         } else if (!$mform->is_submitted()) {
+            $blank = file_prepare_standard_editor(
+                (object) ['content' => '', 'contentformat' => FORMAT_HTML],
+                'content',
+                $editoroptions,
+                $context,
+                'block_playerhud',
+                self::FILEAREA,
+                null
+            );
             $mform->set_data([
-                'courseid'   => $courseid,
-                'instanceid' => $instanceid,
-                'chapterid'  => $chapterid,
-                'nodeid'     => 0,
+                'courseid'       => $courseid,
+                'instanceid'     => $instanceid,
+                'chapterid'      => $chapterid,
+                'nodeid'         => 0,
+                'content_editor' => $blank->content_editor,
             ]);
         }
 
         if ($mform->is_cancelled()) {
             redirect($scenesurl);
         } else if ($data = $mform->get_data()) {
+            // Cleaned while image sources are still draft-file URLs, before the file API turns
+            // them into @@PLUGINFILE@@ links.
+            $data->content_editor['text'] = \block_playerhud\utils::sanitize_scene_content(
+                (string) $data->content_editor['text']
+            );
+
             $record            = new \stdClass();
             $record->chapterid = $chapterid;
-            $record->content   = \block_playerhud\utils::sanitize_rich_description($data->content['text']);
             $record->is_start  = (int) $data->is_start;
             $record->timemodified = time();
 
@@ -408,14 +491,27 @@ class scenes {
                         'id',
                         MUST_EXIST
                     );
-                    $record->id    = $data->nodeid;
-                    $DB->update_record('block_playerhud_story_nodes', $record);
-                    $currentnodeid = $data->nodeid;
+                    $currentnodeid = (int) $data->nodeid;
                     $DB->delete_records('block_playerhud_choices', ['nodeid' => $currentnodeid]);
                 } else {
+                    $record->content     = '';
                     $record->timecreated = $record->timemodified;
-                    $currentnodeid = $DB->insert_record('block_playerhud_story_nodes', $record);
+                    $currentnodeid = (int) $DB->insert_record('block_playerhud_story_nodes', $record);
                 }
+
+                // The images are saved once the scene has its ID, which is the file area's item ID.
+                $data = file_postupdate_standard_editor(
+                    $data,
+                    'content',
+                    $editoroptions,
+                    $context,
+                    'block_playerhud',
+                    self::FILEAREA,
+                    $currentnodeid
+                );
+                $record->id      = $currentnodeid;
+                $record->content = $data->content;
+                $DB->update_record('block_playerhud_story_nodes', $record);
 
                 // A chapter has one starting scene: marking this one as the start takes the mark
                 // off the others, otherwise students begin at whichever the database returns first.

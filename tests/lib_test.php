@@ -227,6 +227,69 @@ final class lib_test extends advanced_testcase {
         $this->assertFalse($result);
     }
 
+    /**
+     * Stores an image in a scene's file area of the shared block instance.
+     *
+     * @param int $sceneid Scene ID used as the file item ID.
+     * @param string $filename Image file name.
+     */
+    private function store_scene_image(int $sceneid, string $filename): void {
+        get_file_storage()->create_file_from_string([
+            'contextid' => context_block::instance($this->instanceid)->id,
+            'component' => 'block_playerhud',
+            'filearea'  => 'scene_content',
+            'itemid'    => $sceneid,
+            'filepath'  => '/',
+            'filename'  => $filename,
+        ], 'image bytes');
+    }
+
+    /**
+     * A scene can hold several images, so its file area is served by file name: a name the
+     * scene does not have is not answered with another of its files, and the same name under
+     * another scene ID is not found either.
+     */
+    public function test_pluginfile_serves_scene_images_by_name_only(): void {
+        $this->store_scene_image(5, 'gate.png');
+        $blockcontext = context_block::instance($this->instanceid);
+
+        $this->assertFalse(block_playerhud_pluginfile(
+            $this->course,
+            new stdClass(),
+            $blockcontext,
+            'scene_content',
+            ['5', 'other.png'],
+            false
+        ));
+        $this->assertFalse(block_playerhud_pluginfile(
+            $this->course,
+            new stdClass(),
+            $blockcontext,
+            'scene_content',
+            ['6', 'gate.png'],
+            false
+        ));
+    }
+
+    /**
+     * Scene images go through the same capability checks as item and class art.
+     */
+    public function test_pluginfile_rejects_scene_images_when_view_capability_denied(): void {
+        global $DB;
+
+        $this->store_scene_image(5, 'gate.png');
+        $viewer = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($viewer->id, $this->course->id, 'student');
+        $blockcontext = context_block::instance($this->instanceid);
+        $studentrole = $DB->get_record('role', ['shortname' => 'student'], '*', MUST_EXIST);
+        assign_capability('block/playerhud:view', CAP_PROHIBIT, $studentrole->id, $blockcontext->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+        $this->setUser($viewer);
+
+        $this->expectException(\required_capability_exception::class);
+        block_playerhud_pluginfile($this->course, new stdClass(), $blockcontext, 'scene_content', ['5', 'gate.png'], false);
+    }
+
     // Tests for block_playerhud_myprofile_navigation().
 
     /**

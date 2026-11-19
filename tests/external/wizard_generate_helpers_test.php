@@ -452,4 +452,20 @@ final class wizard_generate_helpers_test extends external_base_testcase {
         $this->assertLessThanOrEqual(255, \core_text::strlen($name));
         $this->assertSame(1, preg_match('//u', $name), 'The cut must not split a character.');
     }
+
+    /**
+     * The scene text sent to the model as the previous chapter's context is plain text: the
+     * scene's tags and image links stay out of the prompt.
+     */
+    public function test_resolve_previous_chapter_context_sends_scene_text_without_tags(): void {
+        $chapter = $this->create_chapter('The Gate');
+        $html = '<p>The <strong>old</strong> gate.</p><img src="@@PLUGINFILE@@/gate.png" alt="Gate">';
+        $this->create_node($chapter->id, $html, true);
+
+        $context = wizard_generate::resolve_previous_chapter_context($this->instanceid);
+
+        $this->assertStringContainsString('The old gate.', $context);
+        $this->assertStringNotContainsString('<', $context);
+        $this->assertStringNotContainsString('@@PLUGINFILE@@', $context);
+    }
 }

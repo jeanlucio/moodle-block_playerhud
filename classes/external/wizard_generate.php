@@ -1429,7 +1429,8 @@ class wizard_generate {
             ['chapterid' => $chapter->id, 'is_start' => 1]
         );
         if ($startnode) {
-            $context .= "\n" . $startnode->content;
+            // Plain text only: the scene's tags (and image links) mean nothing to the model.
+            $context .= "\n" . trim(strip_tags($startnode->content));
         }
 
         return $context;

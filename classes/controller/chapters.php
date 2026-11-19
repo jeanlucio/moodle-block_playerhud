@@ -238,6 +238,7 @@ class chapters {
         if ($sceneids) {
             [$insql, $inparams] = $DB->get_in_or_equal($sceneids);
             $DB->delete_records_select('block_playerhud_choices', "nodeid $insql", $inparams);
+            scenes::delete_scene_files($instanceid, $sceneids);
         }
         $DB->delete_records('block_playerhud_story_nodes', ['chapterid' => $chapter->id]);
         $DB->delete_records('block_playerhud_chapters', ['id' => $chapter->id, 'blockinstanceid' => $instanceid]);
@@ -285,6 +286,7 @@ class chapters {
         if ($sceneids) {
             [$sinsql, $sinparams] = $DB->get_in_or_equal($sceneids);
             $DB->delete_records_select('block_playerhud_choices', "nodeid $sinsql", $sinparams);
+            scenes::delete_scene_files($instanceid, $sceneids);
         }
         $DB->delete_records_select('block_playerhud_story_nodes', "chapterid $cinsql", $cinparams);
         $DB->delete_records_select('block_playerhud_chapters', "id $cinsql", $cinparams);

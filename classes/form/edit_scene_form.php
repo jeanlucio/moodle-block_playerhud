@@ -41,9 +41,15 @@ class edit_scene_form extends \moodleform {
 
         // Scene content.
         $mform->addElement('header', 'gen', get_string('scene_content_hdr', 'block_playerhud'));
-        $mform->addElement('editor', 'content', get_string('scene_content', 'block_playerhud'));
-        $mform->setType('content', PARAM_RAW);
-        $mform->addRule('content', null, 'required', null, 'client');
+        $mform->addElement(
+            'editor',
+            'content_editor',
+            get_string('scene_content', 'block_playerhud'),
+            null,
+            $this->_customdata['editoroptions'] ?? []
+        );
+        $mform->setType('content_editor', PARAM_RAW);
+        $mform->addRule('content_editor', null, 'required', null, 'client');
 
         // Start scene flag.
         $hasscenes      = $DB->record_exists('block_playerhud_story_nodes', ['chapterid' => $chapterid]);

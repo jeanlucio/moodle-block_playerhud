@@ -551,7 +551,7 @@ class story_manager {
         foreach ($pathdata as $nid) {
             if (isset($nodes[$nid])) {
                 $scenesdata[] = [
-                    'content' => format_text($nodes[$nid]->content, FORMAT_HTML, ['context' => $context]),
+                    'content' => self::format_scene_content($nodes[$nid], $context),
                 ];
             }
         }
@@ -647,6 +647,25 @@ class story_manager {
     }
 
     /**
+     * Renders a scene's stored content as HTML, with its images pointing at the scene's file area.
+     *
+     * @param \stdClass $node The scene record (id and content).
+     * @param \context_block $context The block context.
+     * @return string HTML ready to show to the player.
+     */
+    protected static function format_scene_content(\stdClass $node, \context_block $context): string {
+        $content = file_rewrite_pluginfile_urls(
+            $node->content,
+            'pluginfile.php',
+            $context->id,
+            'block_playerhud',
+            controller\scenes::FILEAREA,
+            (int) $node->id
+        );
+        return format_text($content, FORMAT_HTML, ['context' => $context]);
+    }
+
+    /**
      * Prepare node data for a JSON web service response.
      *
      * Bulk-fetches all referenced classes and items to avoid N+1 queries.
@@ -665,8 +684,7 @@ class story_manager {
     ): array {
         global $DB;
 
-        $context = \context_block::instance($instanceid);
-        $content = format_text($node->content, FORMAT_HTML, ['context' => $context]);
+        $content = self::format_scene_content($node, \context_block::instance($instanceid));
 
         $choicesraw = $DB->get_records('block_playerhud_choices', ['nodeid' => $node->id], 'id ASC');
 

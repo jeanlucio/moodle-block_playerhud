@@ -49,7 +49,20 @@ function block_playerhud_pluginfile($course, $birecord, $context, $filearea, $ar
     require_capability('block/playerhud:view', $context);
     require_capability('moodle/block:view', $context);
 
-    // 3. Validate File Areas.
+    // 3. Scene images are served by name, since one scene can hold several of them; the other
+    // areas keep a single image per item ID.
+    if ($filearea === \block_playerhud\controller\scenes::FILEAREA) {
+        $itemid = (int) array_shift($args);
+        $filename = array_pop($args);
+        $filepath = $args ? '/' . implode('/', $args) . '/' : '/';
+        $file = get_file_storage()->get_file($context->id, 'block_playerhud', $filearea, $itemid, $filepath, $filename);
+        if (!$file || $file->is_directory()) {
+            return false;
+        }
+        send_stored_file($file, null, 0, $forcedownload, $options);
+    }
+
+    // 4. Validate File Areas.
     $validareas = ['item_image'];
     for ($i = 1; $i <= 5; $i++) {
         $validareas[] = 'class_image_' . $i;
@@ -59,7 +72,7 @@ function block_playerhud_pluginfile($course, $birecord, $context, $filearea, $ar
         return false;
     }
 
-    // 4. Retrieve File.
+    // 5. Retrieve File.
     $itemid = (int)array_shift($args);
 
     $fs = get_file_storage();
@@ -83,7 +96,7 @@ function block_playerhud_pluginfile($course, $birecord, $context, $filearea, $ar
         return false;
     }
 
-    // 5. Serve the file.
+    // 6. Serve the file.
     send_stored_file($filetoserve, 0, 0, true, $options);
 }
 

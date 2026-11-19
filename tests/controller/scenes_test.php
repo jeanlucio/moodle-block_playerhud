@@ -439,4 +439,39 @@ final class scenes_test extends advanced_testcase {
         $this->assertGreaterThan(1000, (int) $DB->get_field('block_playerhud_rpg_progress', 'timemodified', ['id' => $onit]));
         $this->assertEquals(1000, $DB->get_field('block_playerhud_rpg_progress', 'timemodified', ['id' => $elsewhere]));
     }
+
+    /**
+     * Stores an image in a scene's file area.
+     *
+     * @param int $instanceid Block instance the scene belongs to.
+     * @param int $nodeid Scene ID.
+     */
+    protected function store_scene_image(int $instanceid, int $nodeid): void {
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_block::instance($instanceid)->id,
+            'component' => 'block_playerhud',
+            'filearea'  => scenes::FILEAREA,
+            'itemid'    => $nodeid,
+            'filepath'  => '/',
+            'filename'  => 'gate.png',
+        ], 'image bytes');
+    }
+
+    /**
+     * Deleting a scene removes its images and leaves another scene's images alone.
+     */
+    public function test_delete_scene_removes_its_images(): void {
+        $this->resetAfterTest();
+        [$instanceid, $chapterid, $doomed] = $this->make_scene();
+        $kept = $this->make_node($chapterid);
+        $this->store_scene_image($instanceid, $doomed);
+        $this->store_scene_image($instanceid, $kept);
+        $contextid = \context_block::instance($instanceid)->id;
+
+        (new scenes())->delete_scene($doomed, $chapterid, $instanceid);
+
+        $fs = get_file_storage();
+        $this->assertTrue($fs->is_area_empty($contextid, 'block_playerhud', scenes::FILEAREA, $doomed));
+        $this->assertFalse($fs->is_area_empty($contextid, 'block_playerhud', scenes::FILEAREA, $kept));
+    }
 }

@@ -338,4 +338,25 @@ final class instance_delete_test extends advanced_testcase {
             );
         }
     }
+
+    /**
+     * The images stored in scenes live in the block context and go when the block is deleted.
+     */
+    public function test_deleting_instance_removes_scene_images(): void {
+        global $DB;
+
+        $contextid = \context_block::instance($this->instanceid)->id;
+        get_file_storage()->create_file_from_string([
+            'contextid' => $contextid,
+            'component' => 'block_playerhud',
+            'filearea'  => 'scene_content',
+            'itemid'    => 1,
+            'filepath'  => '/',
+            'filename'  => 'gate.png',
+        ], 'image bytes');
+
+        blocks_delete_instance($DB->get_record('block_instances', ['id' => $this->instanceid], '*', MUST_EXIST));
+
+        $this->assertFalse($DB->record_exists('files', ['contextid' => $contextid, 'filearea' => 'scene_content']));
+    }
 }
