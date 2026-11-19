@@ -327,6 +327,57 @@ class external_items {
     }
 
     /**
+     * Names of the enabled items of a block instance, keyed by id and sorted by name: the items a plugin can still
+     * offer, since grant() awards nothing for a disabled one.
+     *
+     * The names are raw: the caller formats them for its own output.
+     *
+     * @param int $blockinstanceid Block instance ID.
+     * @return array Item name keyed by item ID.
+     */
+    public static function get_enabled_names(int $blockinstanceid): array {
+        global $DB;
+        return $DB->get_records_menu(
+            'block_playerhud_items',
+            ['blockinstanceid' => $blockinstanceid, 'enabled' => 1],
+            'name ASC',
+            'id, name'
+        );
+    }
+
+    /**
+     * The XP of several items at once, in one query, for the ones that belong to $blockinstanceid and are enabled:
+     * what granting each would award. An item of another instance, a disabled one or an unknown id is left out, so a
+     * caller treats a missing key as zero.
+     *
+     * Lets an external plugin estimate the XP it can grant (e.g. for playerhud_grant_potential) without reading
+     * block_playerhud_items directly.
+     *
+     * @param int $blockinstanceid Block instance ID every item must belong to.
+     * @param int[] $itemids PlayerHUD item IDs.
+     * @return array XP keyed by item ID.
+     */
+    public static function get_enabled_xp(int $blockinstanceid, array $itemids): array {
+        global $DB;
+
+        $itemids = array_values(array_unique(array_map('intval', $itemids)));
+        if ($itemids === []) {
+            return [];
+        }
+        [$insql, $params] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED);
+        $params['blockinstanceid'] = $blockinstanceid;
+        $xps = $DB->get_records_select_menu(
+            'block_playerhud_items',
+            "blockinstanceid = :blockinstanceid AND enabled = 1 AND id $insql",
+            $params,
+            '',
+            'id, xp'
+        );
+
+        return array_map('intval', $xps);
+    }
+
+    /**
      * Returns the display name of an item as plain text, or empty string if it does not belong to
      * $blockinstanceid.
      *

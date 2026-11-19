@@ -695,4 +695,45 @@ final class external_items_test extends advanced_testcase {
 
         $this->assertSame([$axe => 'Axe', $potion => 'Potion & Elixir'], external_items::get_names($instanceid));
     }
+
+    /**
+     * get_enabled_names() lists only the instance's own enabled items, raw and sorted by name.
+     */
+    public function test_get_enabled_names_leaves_out_disabled_and_foreign_items(): void {
+        global $DB;
+        $item = fn(int $bid, string $name, int $enabled) => (int) $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $bid, 'name' => $name, 'xp' => 0, 'enabled' => $enabled,
+            'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $instanceid = $this->make_instance();
+        $potion = $item($instanceid, 'Potion & Elixir', 1);
+        $axe = $item($instanceid, 'Axe', 1);
+        $item($instanceid, 'Broken shield', 0);
+        $item($this->make_instance(), 'Foreign', 1);
+
+        $this->assertSame([$axe => 'Axe', $potion => 'Potion & Elixir'], external_items::get_enabled_names($instanceid));
+    }
+
+    /**
+     * get_enabled_xp() returns the XP of the instance's own enabled items in one query, leaving out a disabled item,
+     * another instance's and an unknown id.
+     */
+    public function test_get_enabled_xp_maps_own_enabled_items_in_one_query(): void {
+        global $DB;
+        $instanceid = $this->make_instance();
+        $sword = $this->make_item_with_xp($instanceid, 40);
+        $gem = $this->make_item_with_xp($instanceid, 15);
+        $disabled = $this->make_item_with_xp($instanceid, 99, 0);
+        $foreign = $this->make_item_with_xp($this->make_instance(), 70);
+
+        $before = $DB->perf_get_queries();
+        $xps = external_items::get_enabled_xp($instanceid, [$sword, $gem, $gem, $disabled, $foreign, 999999]);
+        $this->assertSame(1, $DB->perf_get_queries() - $before);
+
+        ksort($xps);
+        $expected = [$sword => 40, $gem => 15];
+        ksort($expected);
+        $this->assertSame($expected, $xps);
+        $this->assertSame([], external_items::get_enabled_xp($instanceid, []));
+    }
 }

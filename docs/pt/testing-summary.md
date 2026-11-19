@@ -46,11 +46,11 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `diagnostics/report_test.php` | 3 |
 | `diagnostics/usage_test.php` | 2 |
 | `drop_distribution_test.php` | 13 |
-| `external_items_test.php` | 27 |
+| `external_items_test.php` | 30 |
 | `latepenalty_bridge_test.php` | 2 |
 | `wizard_test.php` | 22 |
 | `xp_budget_test.php` | 15 |
-| **Subtotal** | **127** |
+| **Subtotal** | **130** |
 
 ### Testes de Web Services (`tests/external/`)
 
@@ -126,7 +126,7 @@ O PlayerHUD inclui uma suíte de testes extensa que cobre tanto a lógica de neg
 | `view/tab_shop_test.php` | 4 |
 | **Subtotal** | **147** |
 
-| **Total geral** | **975** |
+| **Total geral** | **978** |
 
 ```bash
 vendor/bin/phpunit --testsuite block_playerhud
