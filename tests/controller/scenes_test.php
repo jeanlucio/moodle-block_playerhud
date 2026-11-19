@@ -391,4 +391,52 @@ final class scenes_test extends advanced_testcase {
         $this->assertSame(100, \core_text::strlen($snippet));
         $this->assertTrue(mb_check_encoding($snippet, 'UTF-8'));
     }
+
+    /**
+     * The choices save_choices() writes and the scene it creates for a "new scene" target carry
+     * their creation time.
+     */
+    public function test_save_choices_stamps_the_choice_and_the_auto_created_scene(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$instanceid, $chapterid, $nodeid] = $this->make_scene();
+        $before = time();
+
+        (new scenes())->save_choices($nodeid, $chapterid, $instanceid, [
+            ['text' => 'Continue', 'next_nodeid' => -1],
+        ]);
+
+        $choice = $DB->get_record('block_playerhud_choices', ['nodeid' => $nodeid], '*', MUST_EXIST);
+        $this->assertGreaterThanOrEqual($before, (int) $choice->timecreated);
+        $this->assertEquals($choice->timecreated, $choice->timemodified);
+
+        $newnode = $DB->get_record('block_playerhud_story_nodes', ['id' => $choice->next_nodeid], '*', MUST_EXIST);
+        $this->assertGreaterThanOrEqual($before, (int) $newnode->timecreated);
+        $this->assertEquals($newnode->timecreated, $newnode->timemodified);
+    }
+
+    /**
+     * Deleting a scene changes the choices that led to it and the paths of the students who were
+     * on it, so those rows get a new timemodified; rows the deletion does not change keep theirs.
+     */
+    public function test_delete_scene_stamps_only_the_rows_it_changes(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$instanceid, $chapterid, $doomed] = $this->make_scene();
+        $first = $this->make_node($chapterid);
+        $other = $this->make_node($chapterid);
+        $incoming = $this->make_choice_to($first, $doomed);
+        $unrelated = $this->make_choice_to($first, $other);
+        $onit = $this->make_progress($instanceid, $this->getDataGenerator()->create_user()->id, [$chapterid => [$doomed]]);
+        $elsewhere = $this->make_progress($instanceid, $this->getDataGenerator()->create_user()->id, [$chapterid => [$first]]);
+        $DB->set_field('block_playerhud_choices', 'timemodified', 1000, []);
+        $DB->set_field('block_playerhud_rpg_progress', 'timemodified', 1000, []);
+
+        (new scenes())->delete_scene($doomed, $chapterid, $instanceid);
+
+        $this->assertGreaterThan(1000, (int) $DB->get_field('block_playerhud_choices', 'timemodified', ['id' => $incoming]));
+        $this->assertEquals(1000, $DB->get_field('block_playerhud_choices', 'timemodified', ['id' => $unrelated]));
+        $this->assertGreaterThan(1000, (int) $DB->get_field('block_playerhud_rpg_progress', 'timemodified', ['id' => $onit]));
+        $this->assertEquals(1000, $DB->get_field('block_playerhud_rpg_progress', 'timemodified', ['id' => $elsewhere]));
+    }
 }

@@ -1152,4 +1152,93 @@ final class story_manager_test extends advanced_testcase {
             }
         }
     }
+
+    /**
+     * Creates the player's progress row with an old timemodified, so a test can tell whether a
+     * story action wrote to it.
+     *
+     * @param int $userid Player ID.
+     * @return int The progress row ID.
+     */
+    protected function make_aged_progress(int $userid): int {
+        global $DB;
+
+        $progress = story_manager::get_or_create_progress($this->instanceid, $userid);
+        $DB->set_field('block_playerhud_rpg_progress', 'timemodified', 1000, ['id' => $progress->id]);
+        return (int) $progress->id;
+    }
+
+    /**
+     * The progress row created on a player's first story action carries its creation time.
+     */
+    public function test_get_or_create_progress_stamps_the_new_record(): void {
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+        $before = time();
+
+        $progress = story_manager::get_or_create_progress($this->instanceid, $user->id);
+
+        $this->assertGreaterThanOrEqual($before, (int) $progress->timecreated);
+        $this->assertEquals($progress->timecreated, $progress->timemodified);
+    }
+
+    /**
+     * Opening a chapter for the first time saves the start scene to the player's path and moves
+     * the progress row's timemodified.
+     */
+    public function test_load_scene_stamps_the_progress_when_it_saves_the_start(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Chapter One');
+        $this->create_node($chapter->id, 'You enter the town.', true);
+        $progressid = $this->make_aged_progress($user->id);
+
+        story_manager::load_scene($this->instanceid, $user->id, $chapter->id);
+
+        $this->assertGreaterThan(1000, (int) $DB->get_field('block_playerhud_rpg_progress', 'timemodified', ['id' => $progressid]));
+    }
+
+    /**
+     * A choice that leads to another scene saves the new path and moves the progress row's
+     * timemodified.
+     */
+    public function test_make_choice_stamps_the_progress_when_it_advances(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Chapter');
+        $nodea = $this->create_node($chapter->id, 'Node A', true);
+        $nodeb = $this->create_node($chapter->id, 'Node B');
+        $choice = $this->create_choice($nodea->id, 'Go to B', $nodeb->id);
+        $this->create_choice($nodeb->id, 'Stay', $nodea->id);
+        $progressid = $this->make_aged_progress($user->id);
+
+        story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+
+        $this->assertGreaterThan(1000, (int) $DB->get_field('block_playerhud_rpg_progress', 'timemodified', ['id' => $progressid]));
+    }
+
+    /**
+     * A choice that ends the chapter records it as completed and moves the progress row's
+     * timemodified.
+     */
+    public function test_make_choice_stamps_the_progress_when_it_completes_the_chapter(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+        $chapter = $this->create_chapter('Chapter');
+        $nodea = $this->create_node($chapter->id, 'The end is near.', true);
+        $choice = $this->create_choice($nodea->id, 'Finish');
+        $progressid = $this->make_aged_progress($user->id);
+
+        $result = story_manager::make_choice($this->instanceid, $user->id, $choice->id);
+
+        $this->assertTrue($result['finished']);
+        $this->assertGreaterThan(1000, (int) $DB->get_field('block_playerhud_rpg_progress', 'timemodified', ['id' => $progressid]));
+    }
 }

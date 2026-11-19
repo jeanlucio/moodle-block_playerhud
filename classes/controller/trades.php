@@ -192,6 +192,7 @@ class trades {
         $record->centralized      = $data->centralized;
         $record->onetime          = $data->onetime;
         $record->groupid          = $data->groupid;
+        $record->timemodified     = time();
 
         if (!empty($data->tradeid)) {
             $DB->get_record(
@@ -206,7 +207,7 @@ class trades {
             $DB->delete_records('block_playerhud_trade_reqs', ['tradeid' => $currenttradeid]);
             $DB->delete_records('block_playerhud_trade_rewards', ['tradeid' => $currenttradeid]);
         } else {
-            $record->timecreated = time();
+            $record->timecreated = $record->timemodified;
             $currenttradeid      = $DB->insert_record('block_playerhud_trades', $record);
             \block_playerhud\utils::assign_trade_code((int) $currenttradeid);
         }
@@ -228,6 +229,8 @@ class trades {
             $req->tradeid = $currenttradeid;
             $req->itemid  = $itemid;
             $req->qty     = max(1, (int)($data->{"req_qty_$i"} ?? 1));
+            $req->timecreated  = $record->timemodified;
+            $req->timemodified = $record->timemodified;
             $reqstoinsert[] = $req;
         }
         if (!empty($reqstoinsert)) {
@@ -244,6 +247,8 @@ class trades {
             $rew->tradeid = $currenttradeid;
             $rew->itemid  = $itemid;
             $rew->qty     = max(1, (int)($data->{"give_qty_$i"} ?? 1));
+            $rew->timecreated  = $record->timemodified;
+            $rew->timemodified = $record->timemodified;
             $rewardstoinsert[] = $rew;
         }
         if (!empty($rewardstoinsert)) {

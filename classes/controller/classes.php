@@ -233,12 +233,10 @@ class classes {
             'block_playerhud_rpg_progress',
             ['blockinstanceid' => $instanceid, 'classid' => $classid]
         );
-        $DB->set_field(
-            'block_playerhud_rpg_progress',
-            'classid',
-            0,
-            ['blockinstanceid' => $instanceid, 'classid' => $classid]
-        );
+        // The timestamp goes first: once classid is zeroed these rows no longer match.
+        $holders = ['blockinstanceid' => $instanceid, 'classid' => $classid];
+        $DB->set_field('block_playerhud_rpg_progress', 'timemodified', time(), $holders);
+        $DB->set_field('block_playerhud_rpg_progress', 'classid', 0, $holders);
         $DB->delete_records('block_playerhud_classes', ['id' => $classid, 'blockinstanceid' => $instanceid]);
         $transaction->allow_commit();
 
@@ -299,6 +297,14 @@ class classes {
         $params = ['iid' => $instanceid, 'cid1' => $classid, 'cid2' => $classid];
         $changed = $DB->count_records_select(
             'block_playerhud_choices',
+            "$own AND (req_class_id = :cid1 OR set_class_id = :cid2)",
+            $params
+        );
+        // The timestamp goes first: once the class ids are zeroed these rows no longer match.
+        $DB->set_field_select(
+            'block_playerhud_choices',
+            'timemodified',
+            time(),
             "$own AND (req_class_id = :cid1 OR set_class_id = :cid2)",
             $params
         );

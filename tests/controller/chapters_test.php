@@ -496,4 +496,52 @@ final class chapters_test extends advanced_testcase {
         $this->assertSame(2, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $a]));
         $this->assertSame(3, (int) $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $b]));
     }
+
+    /**
+     * A new chapter carries its creation time, and editing it moves timemodified while keeping
+     * timecreated.
+     */
+    public function test_save_chapter_stamps_the_chapter(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $before = time();
+
+        $id = (new chapters())->save_chapter((object) ['title' => 'Intro', 'chapterid' => 0], $instanceid);
+
+        $chapter = $DB->get_record('block_playerhud_chapters', ['id' => $id], '*', MUST_EXIST);
+        $this->assertGreaterThanOrEqual($before, (int) $chapter->timecreated);
+        $this->assertEquals($chapter->timecreated, $chapter->timemodified);
+
+        $DB->set_field('block_playerhud_chapters', 'timecreated', 1000, ['id' => $id]);
+        $DB->set_field('block_playerhud_chapters', 'timemodified', 1000, ['id' => $id]);
+        (new chapters())->save_chapter((object) ['title' => 'Renamed', 'chapterid' => $id], $instanceid);
+
+        $chapter = $DB->get_record('block_playerhud_chapters', ['id' => $id], '*', MUST_EXIST);
+        $this->assertEquals(1000, $chapter->timecreated);
+        $this->assertGreaterThanOrEqual($before, (int) $chapter->timemodified);
+    }
+
+    /**
+     * Moving a chapter renumbers the chapters it passes, which get a new timemodified; chapters
+     * whose position does not change keep theirs.
+     */
+    public function test_save_chapter_stamps_only_the_chapters_that_move(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $first = $this->seed_chapter($instanceid, 'A', 1);
+        $second = $this->seed_chapter($instanceid, 'B', 2);
+        $third = $this->seed_chapter($instanceid, 'C', 3);
+        $fourth = $this->seed_chapter($instanceid, 'D', 4);
+        $DB->set_field('block_playerhud_chapters', 'timemodified', 1000, ['blockinstanceid' => $instanceid]);
+
+        (new chapters())->save_chapter((object) ['title' => 'C', 'chapterid' => $third, 'sortorder' => 2], $instanceid);
+
+        $this->assertEquals(2, $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $third]));
+        $this->assertEquals(3, $DB->get_field('block_playerhud_chapters', 'sortorder', ['id' => $second]));
+        $this->assertGreaterThan(1000, (int) $DB->get_field('block_playerhud_chapters', 'timemodified', ['id' => $second]));
+        $this->assertEquals(1000, $DB->get_field('block_playerhud_chapters', 'timemodified', ['id' => $first]));
+        $this->assertEquals(1000, $DB->get_field('block_playerhud_chapters', 'timemodified', ['id' => $fourth]));
+    }
 }

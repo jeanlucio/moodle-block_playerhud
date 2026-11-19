@@ -1206,4 +1206,67 @@ final class manage_entry_points_test extends advanced_testcase {
 
         $this->assert_nothing_granted((int) $student->id);
     }
+
+    /**
+     * A scene saved through the form for the first time carries its creation time.
+     */
+    public function test_scenes_edit_form_stamps_a_new_scene(): void {
+        global $DB;
+
+        $this->setAdminUser();
+        $chapterid = $this->make_chapter($this->instanceid);
+        $before = time();
+
+        $this->save_new_scene($chapterid, 1);
+
+        $node = $DB->get_record('block_playerhud_story_nodes', ['chapterid' => $chapterid], '*', MUST_EXIST);
+        $this->assertGreaterThanOrEqual($before, (int) $node->timecreated);
+        $this->assertEquals($node->timecreated, $node->timemodified);
+    }
+
+    /**
+     * Editing a scene moves its timemodified and keeps its timecreated; its rewritten choices are
+     * new rows with their own creation time. Taking the start mark off the old starting scene
+     * changes that scene too, while a scene that was not the start is left as it was.
+     */
+    public function test_scenes_edit_form_stamps_the_edited_scene_and_the_former_start(): void {
+        global $DB;
+
+        $this->setAdminUser();
+        $chapterid = $this->make_chapter($this->instanceid);
+        [$oldstart] = $this->make_node_with_choice($chapterid);
+        [$edited] = $this->make_node_with_choice($chapterid);
+        [$bystander] = $this->make_node_with_choice($chapterid);
+        $DB->set_field_select('block_playerhud_story_nodes', 'is_start', 0, 'id <> ?', [$oldstart]);
+        $DB->set_field('block_playerhud_story_nodes', 'timecreated', 1000, ['chapterid' => $chapterid]);
+        $DB->set_field('block_playerhud_story_nodes', 'timemodified', 1000, ['chapterid' => $chapterid]);
+        $before = time();
+
+        $formidentifier = str_replace('\\', '_', \block_playerhud\form\edit_scene_form::class);
+        $_POST = [
+            'courseid'                => $this->course->id,
+            'instanceid'              => $this->instanceid,
+            'chapterid'               => $chapterid,
+            'nodeid'                  => $edited,
+            'content'                 => ['text' => '<p>Rewritten</p>', 'format' => FORMAT_HTML],
+            'is_start'                => 1,
+            'repeats'                 => 1,
+            'choice_text_0'           => 'Go right',
+            'sesskey'                 => sesskey(),
+            '_qf__' . $formidentifier => 1,
+        ];
+        $this->assert_redirects(fn() => (new scenes())->handle_edit_form());
+
+        $node = $DB->get_record('block_playerhud_story_nodes', ['id' => $edited], '*', MUST_EXIST);
+        $this->assertEquals(1000, $node->timecreated);
+        $this->assertGreaterThanOrEqual($before, (int) $node->timemodified);
+
+        $choice = $DB->get_record('block_playerhud_choices', ['nodeid' => $edited], '*', MUST_EXIST);
+        $this->assertGreaterThanOrEqual($before, (int) $choice->timecreated);
+
+        $former = $DB->get_record('block_playerhud_story_nodes', ['id' => $oldstart], '*', MUST_EXIST);
+        $this->assertEquals(0, $former->is_start);
+        $this->assertGreaterThanOrEqual($before, (int) $former->timemodified);
+        $this->assertEquals(1000, $DB->get_field('block_playerhud_story_nodes', 'timemodified', ['id' => $bystander]));
+    }
 }

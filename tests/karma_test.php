@@ -236,4 +236,20 @@ final class karma_test extends advanced_testcase {
 
         $this->assertEquals(45, $result);
     }
+
+    /**
+     * Changing a player's karma moves the progress row's timemodified.
+     */
+    public function test_adjust_karma_stamps_the_progress_row(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $user = $this->getDataGenerator()->create_user();
+        $progressid = $this->seed_progress($user->id, 50);
+        $DB->set_field('block_playerhud_rpg_progress', 'timemodified', 1000, ['id' => $progressid]);
+
+        game::adjust_karma($this->instanceid, $user->id, 5);
+
+        $this->assertGreaterThan(1000, (int) $DB->get_field('block_playerhud_rpg_progress', 'timemodified', ['id' => $progressid]));
+    }
 }

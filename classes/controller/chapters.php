@@ -131,6 +131,7 @@ class chapters {
         $record->intro_text      = $data->intro_text ?? '';
         $record->unlock_date     = $data->unlock_date ?? 0;
         $record->required_level  = $data->required_level ?? 0;
+        $record->timemodified    = time();
 
         if (!empty($data->chapterid)) {
             $DB->get_record(
@@ -143,7 +144,8 @@ class chapters {
             $DB->update_record('block_playerhud_chapters', $record);
             $chapterid = (int) $data->chapterid;
         } else {
-            $record->sortorder = 0;
+            $record->sortorder   = 0;
+            $record->timecreated = $record->timemodified;
             $chapterid = (int) $DB->insert_record('block_playerhud_chapters', $record);
         }
 
@@ -192,7 +194,11 @@ class chapters {
                 // actually change, so a reorder writes only the ones that moved instead of
                 // rewriting every chapter of the instance on every call.
                 if ((int) ($oldorder[$id] ?? -1) !== $newsortorder) {
-                    $DB->set_field('block_playerhud_chapters', 'sortorder', $newsortorder, ['id' => $id]);
+                    $DB->update_record('block_playerhud_chapters', (object) [
+                        'id' => $id,
+                        'sortorder' => $newsortorder,
+                        'timemodified' => time(),
+                    ]);
                 }
             }
             $transaction->allow_commit();

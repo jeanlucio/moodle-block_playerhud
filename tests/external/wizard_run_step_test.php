@@ -1887,4 +1887,26 @@ final class wizard_run_step_test extends external_base_testcase {
         $this->expectException(\moodle_exception::class);
         wizard_run_step::execute($this->instanceid, $othercourse->id, $runid, 'playercoin', '');
     }
+
+    /**
+     * The character chapter the RPG step builds, with its scenes and choices, carries its
+     * creation time.
+     */
+    public function test_rpg_stamps_the_chapter_scenes_and_choices_it_creates(): void {
+        global $DB;
+        $before = time();
+
+        wizard_generate::generate_rpg_classes($this->instanceid, $this->course->id, 'fantasy', 0);
+
+        $chapter = $DB->get_record('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid], '*', MUST_EXIST);
+        $nodes = $DB->get_records('block_playerhud_story_nodes', ['chapterid' => $chapter->id]);
+        [$insql, $params] = $DB->get_in_or_equal(array_keys($nodes));
+        $choices = $DB->get_records_select('block_playerhud_choices', "nodeid $insql", $params);
+        $this->assertNotEmpty($nodes);
+        $this->assertNotEmpty($choices);
+        foreach (array_merge([$chapter], $nodes, $choices) as $row) {
+            $this->assertGreaterThanOrEqual($before, (int) $row->timecreated);
+            $this->assertEquals($row->timecreated, $row->timemodified);
+        }
+    }
 }

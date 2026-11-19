@@ -815,4 +815,31 @@ final class generator_test extends external_base_testcase {
         ));
         $this->assertSame(['Real potion'], $names);
     }
+
+    /**
+     * The chapter, scenes and choices of a generated story carry their creation time.
+     */
+    public function test_generate_story_stamps_every_row_it_creates(): void {
+        global $DB;
+
+        $json = '{"title":"Datas","nodes":['
+            . '{"index":0,"content":"Início","is_start":true,"choices":[{"text":"Seguir","target_index":1}]},'
+            . '{"index":1,"content":"Fim"}]}';
+        $before = time();
+
+        $result = $this->make_generator_answering($json)->generate_story('datas');
+
+        $rows = [['block_playerhud_chapters', 'id', $result['chapter_id']]];
+        foreach ($result['choice_ids'] as $choiceid) {
+            $rows[] = ['block_playerhud_choices', 'id', $choiceid];
+        }
+        $rows[] = ['block_playerhud_story_nodes', 'chapterid', $result['chapter_id']];
+        foreach ($rows as [$table, $field, $value]) {
+            foreach ($DB->get_records($table, [$field => $value]) as $row) {
+                $this->assertGreaterThanOrEqual($before, (int) $row->timecreated, $table);
+                $this->assertEquals($row->timecreated, $row->timemodified, $table);
+            }
+        }
+        $this->assertSame(2, $DB->count_records('block_playerhud_story_nodes', ['chapterid' => $result['chapter_id']]));
+    }
 }

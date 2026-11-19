@@ -90,6 +90,8 @@ class scenes {
         $transaction = $DB->start_delegated_transaction();
 
         $DB->delete_records('block_playerhud_choices', ['nodeid' => $nodeid]);
+        // The timestamp goes first: once next_nodeid is zeroed these rows no longer match.
+        $DB->set_field('block_playerhud_choices', 'timemodified', time(), ['next_nodeid' => $nodeid]);
         $DB->set_field('block_playerhud_choices', 'next_nodeid', 0, ['next_nodeid' => $nodeid]);
         $DB->delete_records('block_playerhud_story_nodes', ['id' => $nodeid]);
 
@@ -114,7 +116,11 @@ class scenes {
             } else {
                 unset($map[$chapterid]);
             }
-            $DB->set_field('block_playerhud_rpg_progress', 'current_nodes', json_encode($map), ['id' => $progress->id]);
+            $DB->update_record('block_playerhud_rpg_progress', (object) [
+                'id' => $progress->id,
+                'current_nodes' => json_encode($map),
+                'timemodified' => time(),
+            ]);
         }
 
         $transaction->allow_commit();
@@ -388,6 +394,7 @@ class scenes {
             $record->chapterid = $chapterid;
             $record->content   = \block_playerhud\utils::sanitize_rich_description($data->content['text']);
             $record->is_start  = (int) $data->is_start;
+            $record->timemodified = time();
 
             // The scene, its starting flag and its choices are replaced together: a failure
             // half-way must not leave the scene without the choices it had.
@@ -406,19 +413,19 @@ class scenes {
                     $currentnodeid = $data->nodeid;
                     $DB->delete_records('block_playerhud_choices', ['nodeid' => $currentnodeid]);
                 } else {
+                    $record->timecreated = $record->timemodified;
                     $currentnodeid = $DB->insert_record('block_playerhud_story_nodes', $record);
                 }
 
                 // A chapter has one starting scene: marking this one as the start takes the mark
                 // off the others, otherwise students begin at whichever the database returns first.
+                // Only the scene that actually loses the mark changes, and the timestamp goes first:
+                // once is_start is zeroed the row no longer matches.
                 if ($record->is_start) {
-                    $DB->set_field_select(
-                        'block_playerhud_story_nodes',
-                        'is_start',
-                        0,
-                        'chapterid = :chapterid AND id <> :nodeid',
-                        ['chapterid' => $chapterid, 'nodeid' => $currentnodeid]
-                    );
+                    $otherstart = 'chapterid = :chapterid AND id <> :nodeid AND is_start = 1';
+                    $otherparams = ['chapterid' => $chapterid, 'nodeid' => $currentnodeid];
+                    $DB->set_field_select('block_playerhud_story_nodes', 'timemodified', time(), $otherstart, $otherparams);
+                    $DB->set_field_select('block_playerhud_story_nodes', 'is_start', 0, $otherstart, $otherparams);
                 }
 
                 // Clamped for the same reason as the add_choice_btn branch above — the sesskey
@@ -507,9 +514,11 @@ class scenes {
                 continue;
             }
 
-            $ch         = new \stdClass();
-            $ch->nodeid = $nodeid;
-            $ch->text   = $textval;
+            $ch               = new \stdClass();
+            $ch->nodeid       = $nodeid;
+            $ch->text         = $textval;
+            $ch->timecreated  = time();
+            $ch->timemodified = $ch->timecreated;
 
             $rawnextid = (int) ($submitted['next_nodeid'] ?? 0);
             if ($rawnextid === -1) {
@@ -558,6 +567,8 @@ class scenes {
         $node->chapterid = $chapterid;
         $node->content   = $content;
         $node->is_start  = 0;
+        $node->timecreated  = time();
+        $node->timemodified = $node->timecreated;
 
         return (int) $DB->insert_record('block_playerhud_story_nodes', $node);
     }

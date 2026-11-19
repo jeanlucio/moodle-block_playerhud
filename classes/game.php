@@ -1028,7 +1028,11 @@ class game {
             return 0;
         }
         $newkarma = self::clamp_karma((int) $progress->karma + $delta);
-        $DB->set_field('block_playerhud_rpg_progress', 'karma', $newkarma, ['id' => $progress->id]);
+        $DB->update_record('block_playerhud_rpg_progress', (object) [
+            'id' => $progress->id,
+            'karma' => $newkarma,
+            'timemodified' => time(),
+        ]);
         return $newkarma;
     }
 
@@ -1329,19 +1333,24 @@ class game {
             'centralized'     => 1,
             'onetime'         => 1,
             'timecreated'     => $now,
+            'timemodified'    => $now,
         ]);
         utils::assign_trade_code((int) $tradeid);
         $reqid = $DB->insert_record('block_playerhud_trade_reqs', (object) [
-            'tradeid' => $tradeid,
-            'itemid'  => $sug['cost_itemid'],
-            'qty'     => $sug['cost_qty'],
+            'tradeid'      => $tradeid,
+            'itemid'       => $sug['cost_itemid'],
+            'qty'          => $sug['cost_qty'],
+            'timecreated'  => $now,
+            'timemodified' => $now,
         ]);
         $rewardids = [];
         foreach ($sug['rewards'] as $reward) {
             $rewardids[] = $DB->insert_record('block_playerhud_trade_rewards', (object) [
-                'tradeid' => $tradeid,
-                'itemid'  => $reward['id'],
-                'qty'     => $reward['qty'],
+                'tradeid'      => $tradeid,
+                'itemid'       => $reward['id'],
+                'qty'          => $reward['qty'],
+                'timecreated'  => $now,
+                'timemodified' => $now,
             ]);
         }
 

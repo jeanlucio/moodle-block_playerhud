@@ -151,6 +151,8 @@ class story_manager {
         $newprogress->karma             = 0;
         $newprogress->current_nodes     = json_encode([]);
         $newprogress->completed_chapters = json_encode([]);
+        $newprogress->timecreated       = time();
+        $newprogress->timemodified      = $newprogress->timecreated;
 
         try {
             $id = $DB->insert_record('block_playerhud_rpg_progress', $newprogress);
@@ -215,12 +217,11 @@ class story_manager {
 
             if ($node && $persist) {
                 $savednodesmap[$chapterid] = [(int) $node->id];
-                $DB->set_field(
-                    'block_playerhud_rpg_progress',
-                    'current_nodes',
-                    json_encode($savednodesmap),
-                    ['id' => $progress->id]
-                );
+                $DB->update_record('block_playerhud_rpg_progress', (object) [
+                    'id' => $progress->id,
+                    'current_nodes' => json_encode($savednodesmap),
+                    'timemodified' => time(),
+                ]);
             }
         }
 
@@ -410,12 +411,11 @@ class story_manager {
         // RPG class — the character pick is driven entirely by the Story, never by a
         // standalone selection screen.
         if ($choice->set_class_id > 0) {
-            $DB->set_field(
-                'block_playerhud_rpg_progress',
-                'classid',
-                $choice->set_class_id,
-                ['id' => $progress->id]
-            );
+            $DB->update_record('block_playerhud_rpg_progress', (object) [
+                'id' => $progress->id,
+                'classid' => $choice->set_class_id,
+                'timemodified' => time(),
+            ]);
             event\character_selected::create([
                 'context' => \context_block::instance($instanceid),
                 'objectid' => (int) $progress->id,
@@ -446,12 +446,11 @@ class story_manager {
             $path[] = (int) $choice->next_nodeid;
             $savednodesmap[$chapterid] = $path;
 
-            $DB->set_field(
-                'block_playerhud_rpg_progress',
-                'current_nodes',
-                json_encode($savednodesmap),
-                ['id' => $progress->id]
-            );
+            $DB->update_record('block_playerhud_rpg_progress', (object) [
+                'id' => $progress->id,
+                'current_nodes' => json_encode($savednodesmap),
+                'timemodified' => time(),
+            ]);
 
             $nextnode = $DB->get_record(
                 'block_playerhud_story_nodes',
@@ -468,12 +467,11 @@ class story_manager {
 
                 if (!in_array($chapterid, $completedarr)) {
                     $completedarr[] = $chapterid;
-                    $DB->set_field(
-                        'block_playerhud_rpg_progress',
-                        'completed_chapters',
-                        json_encode($completedarr),
-                        ['id' => $progress->id]
-                    );
+                    $DB->update_record('block_playerhud_rpg_progress', (object) [
+                        'id' => $progress->id,
+                        'completed_chapters' => json_encode($completedarr),
+                        'timemodified' => time(),
+                    ]);
                 }
 
                 $result['finished']  = true;
@@ -487,12 +485,11 @@ class story_manager {
 
             if (!in_array($chapterid, $completedarr)) {
                 $completedarr[] = $chapterid;
-                $DB->set_field(
-                    'block_playerhud_rpg_progress',
-                    'completed_chapters',
-                    json_encode($completedarr),
-                    ['id' => $progress->id]
-                );
+                $DB->update_record('block_playerhud_rpg_progress', (object) [
+                    'id' => $progress->id,
+                    'completed_chapters' => json_encode($completedarr),
+                    'timemodified' => time(),
+                ]);
             }
 
             $result['finished']  = true;

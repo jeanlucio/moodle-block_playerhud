@@ -328,4 +328,51 @@ final class classes_test extends advanced_testcase {
         $this->assertFalse($DB->record_exists('block_playerhud_classes', ['id' => $target->id]));
         $this->assertTrue($DB->record_exists('block_playerhud_classes', ['id' => $sibling->id]));
     }
+
+    /**
+     * The choices and players a class deletion releases get a new timemodified; the ones that
+     * pointed at another class keep theirs.
+     */
+    public function test_delete_class_stamps_only_the_rows_it_releases(): void {
+        global $DB;
+
+        $doomed = $this->seed_class('Doomed', 100);
+        $kept = $this->seed_class('Kept', 100);
+        $chapter = (int) $DB->insert_record('block_playerhud_chapters', (object) [
+            'blockinstanceid' => $this->instanceid, 'title' => 'Chapter', 'sortorder' => 1,
+        ]);
+        $node = (int) $DB->insert_record('block_playerhud_story_nodes', (object) [
+            'chapterid' => $chapter, 'content' => 'Scene', 'is_start' => 1,
+        ]);
+        $choices = [];
+        $pointers = [
+            'requires' => ['req_class_id', $doomed->id],
+            'grants' => ['set_class_id', $doomed->id],
+            'unrelated' => ['req_class_id', $kept->id],
+        ];
+        foreach ($pointers as $key => [$field, $classid]) {
+            $choices[$key] = (int) $DB->insert_record('block_playerhud_choices', (object) [
+                'nodeid' => $node, 'text' => $key, $field => $classid, 'timemodified' => 1000,
+            ]);
+        }
+        $players = [];
+        foreach (['doomed' => $doomed->id, 'kept' => $kept->id] as $key => $classid) {
+            $players[$key] = (int) $DB->insert_record('block_playerhud_rpg_progress', (object) [
+                'blockinstanceid' => $this->instanceid, 'userid' => $this->getDataGenerator()->create_user()->id,
+                'classid' => $classid, 'karma' => 0, 'timecreated' => 1000, 'timemodified' => 1000,
+            ]);
+        }
+
+        (new classes())->delete_class((int) $doomed->id, $this->instanceid, $this->context);
+
+        $choicetime = fn(string $key): int =>
+            (int) $DB->get_field('block_playerhud_choices', 'timemodified', ['id' => $choices[$key]]);
+        $this->assertGreaterThan(1000, $choicetime('requires'));
+        $this->assertGreaterThan(1000, $choicetime('grants'));
+        $this->assertSame(1000, $choicetime('unrelated'));
+        $playertime = fn(string $key): int =>
+            (int) $DB->get_field('block_playerhud_rpg_progress', 'timemodified', ['id' => $players[$key]]);
+        $this->assertGreaterThan(1000, $playertime('doomed'));
+        $this->assertSame(1000, $playertime('kept'));
+    }
 }

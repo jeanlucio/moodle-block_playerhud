@@ -1743,4 +1743,33 @@ final class game_test extends advanced_testcase {
         $this->assertSame(3, game::level_for_xp($config, 100));
         $this->assertSame(4, game::level_for_xp($config, 1000));
     }
+
+    /**
+     * The trade create_trade_from_suggestion() writes and its requirement and reward rows carry
+     * their creation time.
+     */
+    public function test_create_trade_from_suggestion_stamps_the_trade_and_its_rows(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->setup_block_instance();
+        $coin = $this->create_power_item('PlayerCoin', 'playercoin', '🪙');
+        $avatar = $this->create_power_item('Fox', 'avatar_profile', '🦊');
+        $before = time();
+
+        $result = game::create_trade_from_suggestion($this->instanceid, [
+            'name' => 'Fox Avatar', 'cost_itemid' => $coin->id, 'cost_qty' => 5,
+            'rewards' => [['id' => $avatar->id, 'qty' => 1]],
+        ]);
+
+        $rows = [
+            'block_playerhud_trades' => $result['tradeid'],
+            'block_playerhud_trade_reqs' => $result['reqid'],
+            'block_playerhud_trade_rewards' => $result['rewardids'][0],
+        ];
+        foreach ($rows as $table => $id) {
+            $row = $DB->get_record($table, ['id' => $id], '*', MUST_EXIST);
+            $this->assertGreaterThanOrEqual($before, (int) $row->timecreated, $table);
+            $this->assertEquals($row->timecreated, $row->timemodified, $table);
+        }
+    }
 }

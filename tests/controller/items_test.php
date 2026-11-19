@@ -782,4 +782,36 @@ final class items_test extends advanced_testcase {
         $this->assertFalse($DB->record_exists('block_playerhud_trade_log', ['tradeid' => $tradeid]));
         $this->assertEquals(0, $DB->get_field('block_playerhud_quests', 'enabled', ['id' => $questid]));
     }
+
+    /**
+     * Deleting an item clears the cost of the story choices that charged it, and those choices
+     * get a new timemodified; a choice charging another item keeps its own.
+     */
+    public function test_delete_item_stamps_the_choices_whose_cost_it_clears(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $doomed = $this->make_item($instanceid);
+        $kept = $this->make_item($instanceid);
+        $chapter = (int) $DB->insert_record('block_playerhud_chapters', (object) [
+            'blockinstanceid' => $instanceid, 'title' => 'Chapter', 'sortorder' => 1,
+        ]);
+        $node = (int) $DB->insert_record('block_playerhud_story_nodes', (object) [
+            'chapterid' => $chapter, 'content' => 'Scene', 'is_start' => 1,
+        ]);
+        $charged = (int) $DB->insert_record('block_playerhud_choices', (object) [
+            'nodeid' => $node, 'text' => 'Pay', 'cost_itemid' => $doomed, 'cost_item_qty' => 3, 'timemodified' => 1000,
+        ]);
+        $other = (int) $DB->insert_record('block_playerhud_choices', (object) [
+            'nodeid' => $node, 'text' => 'Pay other', 'cost_itemid' => $kept, 'cost_item_qty' => 2, 'timemodified' => 1000,
+        ]);
+        $item = $DB->get_record('block_playerhud_items', ['id' => $doomed], '*', MUST_EXIST);
+
+        items::delete_item($item, $instanceid, \context_block::instance($instanceid));
+
+        $choice = $DB->get_record('block_playerhud_choices', ['id' => $charged], '*', MUST_EXIST);
+        $this->assertEquals(0, $choice->cost_itemid);
+        $this->assertGreaterThan(1000, (int) $choice->timemodified);
+        $this->assertEquals(1000, $DB->get_field('block_playerhud_choices', 'timemodified', ['id' => $other]));
+    }
 }

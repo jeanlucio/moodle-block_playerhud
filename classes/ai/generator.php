@@ -1095,6 +1095,7 @@ class generator {
         }
 
         $transaction = $DB->start_delegated_transaction();
+        $now = time();
 
         $chapter = new \stdClass();
         $chapter->blockinstanceid = $this->instanceid;
@@ -1106,6 +1107,8 @@ class generator {
             'block_playerhud_chapters',
             ['blockinstanceid' => $this->instanceid]
         ) + 1;
+        $chapter->timecreated     = $now;
+        $chapter->timemodified    = $now;
 
         $chapterid = $DB->insert_record('block_playerhud_chapters', $chapter);
 
@@ -1119,6 +1122,8 @@ class generator {
             // to plain text — the AI-authored path must not be more restrictive than the manual one.
             $node->content  = \block_playerhud\utils::sanitize_rich_description((string) $nodedata['content']);
             $node->is_start = !empty($nodedata['is_start']) ? 1 : 0;
+            $node->timecreated  = $now;
+            $node->timemodified = $now;
             $nid = $DB->insert_record('block_playerhud_story_nodes', $node);
             $idxmap[(int)($nodedata['index'] ?? count($idxmap))] = $nid;
         }
@@ -1162,6 +1167,8 @@ class generator {
                 $choice->set_class_id = 0;
                 $choice->cost_itemid  = ($choiceitemid > 0 && $choiceitemqty > 0) ? $choiceitemid : 0;
                 $choice->cost_item_qty = ($choiceitemid > 0 && $choiceitemqty > 0) ? $choiceitemqty : 1;
+                $choice->timecreated  = $now;
+                $choice->timemodified = $now;
                 $choiceids[] = (int) $DB->insert_record('block_playerhud_choices', $choice);
             }
         }

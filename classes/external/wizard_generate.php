@@ -677,6 +677,8 @@ class wizard_generate {
         $chapter->unlock_date = 0;
         $chapter->required_level = 0;
         $chapter->sortorder = $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $instanceid]) + 1;
+        $chapter->timecreated = time();
+        $chapter->timemodified = $chapter->timecreated;
         $chapterid = (int) $DB->insert_record('block_playerhud_chapters', $chapter);
 
         $nodeids = [];
@@ -685,6 +687,8 @@ class wizard_generate {
             $node->chapterid = $chapterid;
             $node->content = $nodedata['content'];
             $node->is_start = $nodedata['is_start'] ? 1 : 0;
+            $node->timecreated = $chapter->timecreated;
+            $node->timemodified = $chapter->timecreated;
             $nodeids[$index] = (int) $DB->insert_record('block_playerhud_story_nodes', $node);
         }
 
@@ -703,6 +707,8 @@ class wizard_generate {
                     : 0;
                 $choice->cost_itemid = 0;
                 $choice->cost_item_qty = 1;
+                $choice->timecreated = $chapter->timecreated;
+                $choice->timemodified = $chapter->timecreated;
                 $choiceids[] = (int) $DB->insert_record('block_playerhud_choices', $choice);
             }
         }

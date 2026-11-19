@@ -402,6 +402,8 @@ class items {
                                 JOIN {block_playerhud_chapters} c ON c.id = n.chapterid
                                WHERE c.blockinstanceid = :iid)
                    AND cost_itemid $insql";
+        // The timestamp goes first: once cost_itemid is zeroed these rows no longer match.
+        $DB->set_field_select('block_playerhud_choices', 'timemodified', time(), $select, $inparams);
         $DB->set_field_select('block_playerhud_choices', 'cost_item_qty', 1, $select, $inparams);
         $DB->set_field_select('block_playerhud_choices', 'cost_itemid', 0, $select, $inparams);
     }

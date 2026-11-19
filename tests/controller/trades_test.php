@@ -415,4 +415,37 @@ final class trades_test extends advanced_testcase {
         $this->resetAfterTest();
         $this->assertSame(0, trades::bulk_delete_trades([], $this->make_instance()));
     }
+
+    /**
+     * A new trade and its requirement and reward rows carry their creation time, and editing the
+     * trade moves its timemodified while keeping timecreated.
+     */
+    public function test_save_trade_stamps_the_trade_and_its_rows(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $instanceid = $this->make_instance();
+        $needitem = $this->make_item($instanceid);
+        $giveitem = $this->make_item($instanceid);
+        $items = ['req_itemid_0' => $needitem, 'req_qty_0' => 1, 'give_itemid_0' => $giveitem, 'give_qty_0' => 1];
+        $before = time();
+
+        $tradeid = (new trades())->save_trade($this->trade_data($items), $instanceid);
+
+        $trade = $DB->get_record('block_playerhud_trades', ['id' => $tradeid], '*', MUST_EXIST);
+        $this->assertGreaterThanOrEqual($before, (int) $trade->timecreated);
+        $this->assertEquals($trade->timecreated, $trade->timemodified);
+        foreach (['block_playerhud_trade_reqs', 'block_playerhud_trade_rewards'] as $table) {
+            $row = $DB->get_record($table, ['tradeid' => $tradeid], '*', MUST_EXIST);
+            $this->assertGreaterThanOrEqual($before, (int) $row->timecreated, $table);
+            $this->assertEquals($row->timecreated, $row->timemodified, $table);
+        }
+
+        $DB->set_field('block_playerhud_trades', 'timecreated', 1000, ['id' => $tradeid]);
+        $DB->set_field('block_playerhud_trades', 'timemodified', 1000, ['id' => $tradeid]);
+        (new trades())->save_trade($this->trade_data($items + ['tradeid' => $tradeid, 'name' => 'Renamed']), $instanceid);
+
+        $trade = $DB->get_record('block_playerhud_trades', ['id' => $tradeid], '*', MUST_EXIST);
+        $this->assertEquals(1000, $trade->timecreated);
+        $this->assertGreaterThanOrEqual($before, (int) $trade->timemodified);
+    }
 }
