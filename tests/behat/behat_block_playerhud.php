@@ -1285,4 +1285,23 @@ class behat_block_playerhud extends behat_base {
             return true;
         });
     }
+
+    /**
+     * Asserts that an image in the story player was served by pluginfile.php and actually loaded.
+     *
+     * Checks the browser's own load result (naturalWidth), so a broken file-serving path fails the
+     * step even though the img tag and its src are in place.
+     *
+     * @param string $alt Text alternative of the image.
+     * @Then the PlayerHUD story image :alt has loaded
+     */
+    public function playerhud_story_image_has_loaded(string $alt): void {
+        $script = '(function(alt) {'
+            . ' const img = Array.from(document.querySelectorAll("#ph-story-content img")).find(i => i.alt === alt);'
+            . ' return !!img && img.complete && img.naturalWidth > 0 && img.src.indexOf("/pluginfile.php/") !== -1;'
+            . '})(' . json_encode($alt) . ')';
+        $this->spin(function () use ($script) {
+            return (bool) $this->evaluate_script($script);
+        });
+    }
 }

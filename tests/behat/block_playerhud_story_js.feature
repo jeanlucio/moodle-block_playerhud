@@ -101,3 +101,26 @@ Feature: PlayerHUD story screens driven by JavaScript
     And I should see "Are you sure you want to delete this scene? All its choices will be permanently removed." in the "#ph-confirm-delete-scene" "css_element"
     And I click on "Delete" "link" in the "#ph-confirm-delete-scene" "css_element"
     Then I should see "Scene deleted successfully."
+
+  Scenario: Teacher illustrates a scene and the student sees the image
+    When I log in as "teacher1"
+    And I am on "Course 1" course homepage
+    And I click on "Game Master Panel" "link" in the "PlayerHUD" "block"
+    And I click on "Story" "link" in the "#ph-manage-tabs" "css_element"
+    And I click on "a[href*='manage_scenes.php']" "css_element"
+    And I click on ".list-group-item:first-child a[href*='edit_scene.php']" "css_element"
+    And I click on the "Image" button for the "Scene Content" TinyMCE editor
+    And I click on "Browse repositories" "button" in the "Insert image" "dialogue"
+    And I upload "lib/editor/tiny/tests/behat/fixtures/moodle-logo.png" to the file picker for TinyMCE
+    And I set the field "altentry" to "An old gate in the fog"
+    And I click on "Save" "button" in the "Image details" "dialogue"
+    And I press "Save changes"
+    And I should see "Scene saved successfully."
+    And I log out
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I click on "a[aria-label='Story']" "css_element"
+    And I click on "[data-action='open-chapter']" "css_element"
+    And I wait until "#ph-story-modal.show" "css_element" exists
+    Then I should see "The old gate creaks in the wind." in the "#ph-story-content" "css_element"
+    And the PlayerHUD story image "An old gate in the fog" has loaded
