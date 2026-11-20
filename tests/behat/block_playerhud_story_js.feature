@@ -102,6 +102,7 @@ Feature: PlayerHUD story screens driven by JavaScript
     And I click on "Delete" "link" in the "#ph-confirm-delete-scene" "css_element"
     Then I should see "Scene deleted successfully."
 
+  @editor_tiny @_file_upload
   Scenario: Teacher illustrates a scene and the student sees the image
     When I log in as "teacher1"
     And I am on "Course 1" course homepage
