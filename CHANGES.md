@@ -5,6 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.12.0] — 2026-11-20
+
+### Added
+- Story scenes can carry images. The scene editor accepts an image that is uploaded, pasted or
+  linked; it is stored with the block, shown only to those who can see the block, fits the width
+  of the story window, goes with course backups and is removed with its scene or chapter. Item,
+  quest and character descriptions keep accepting text formatting only.
+- Read-only helpers for other plugins that leave out disabled items:
+  `external_items::get_enabled_names()` and `external_items::get_enabled_xp()`.
+
+### Changed
+- New block icon, drawn for the Player plugins.
+
+### Fixed
+- Chapters, scenes, choices, trades with their requirements and rewards, and each player's story
+  progress record when they were created and last changed. Most were saved with no date, so a
+  student's data export showed 1970 for the story progress. Rows saved before this version keep
+  no date, since the real one is unknown.
+- Item, character and group names with an ampersand show correctly in the sidebar tooltips and
+  in the list of further items.
+- An AI-generated item or assistant reply that is not text no longer shows up as the word
+  "Array".
+
 ## [v1.11.0] — 2026-10-15
 
 ### Added
