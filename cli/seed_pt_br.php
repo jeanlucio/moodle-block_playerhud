@@ -582,7 +582,7 @@ cli_writeln("Quests prontas: 9 quests criadas.");
  * @return stdClass Chapter record.
  */
 function seed_upsert_chapter(int $instanceid, string $title, string $intro, int $sortorder): stdClass {
-    global $DB;
+    global $DB, $now;
 
     $existing = $DB->get_record('block_playerhud_chapters', [
         'blockinstanceid' => $instanceid,
@@ -599,6 +599,8 @@ function seed_upsert_chapter(int $instanceid, string $title, string $intro, int 
         'unlock_date'     => 0,
         'required_level'  => 0,
         'sortorder'       => $sortorder,
+        'timecreated'     => $now,
+        'timemodified'    => $now,
     ];
     $record->id = $DB->insert_record('block_playerhud_chapters', $record);
     return $record;
@@ -613,12 +615,14 @@ function seed_upsert_chapter(int $instanceid, string $title, string $intro, int 
  * @return stdClass Node record.
  */
 function seed_create_node(int $chapterid, string $content, int $isstart = 0): stdClass {
-    global $DB;
+    global $DB, $now;
 
     $record = (object) [
         'chapterid' => $chapterid,
         'content'   => $content,
         'is_start'  => $isstart,
+        'timecreated'  => $now,
+        'timemodified' => $now,
     ];
     $record->id = $DB->insert_record('block_playerhud_story_nodes', $record);
     return $record;
@@ -634,7 +638,7 @@ function seed_create_node(int $chapterid, string $content, int $isstart = 0): st
  * @return stdClass Choice record.
  */
 function seed_create_choice(int $nodeid, string $text, int $nextnodeid, int $karmadelta = 0): stdClass {
-    global $DB;
+    global $DB, $now;
 
     $record = (object) [
         'nodeid'        => $nodeid,
@@ -646,6 +650,8 @@ function seed_create_choice(int $nodeid, string $text, int $nextnodeid, int $kar
         'set_class_id'  => 0,
         'cost_itemid'   => 0,
         'cost_item_qty' => 1,
+        'timecreated'   => $now,
+        'timemodified'  => $now,
     ];
     $record->id = $DB->insert_record('block_playerhud_choices', $record);
     return $record;
@@ -714,6 +720,7 @@ function seed_upsert_trade(int $instanceid, string $name, array $reqs, array $re
         'centralized'     => 1,
         'onetime'         => 0,
         'timecreated'     => $now,
+        'timemodified'    => $now,
     ];
     $trade->id = $DB->insert_record('block_playerhud_trades', $trade);
     \block_playerhud\utils::assign_trade_code((int) $trade->id);
@@ -800,7 +807,7 @@ function seed_upsert_user_xp(int $instanceid, int $userid, int $xp, ?array $exis
  * @return void
  */
 function seed_upsert_rpg_progress(int $instanceid, int $userid, int $classid, int $karma, ?array $existinguserids = null): void {
-    global $DB;
+    global $DB, $now;
 
     $exists = $existinguserids !== null
         ? isset($existinguserids[$userid])
@@ -816,6 +823,8 @@ function seed_upsert_rpg_progress(int $instanceid, int $userid, int $classid, in
         'karma'              => $karma,
         'current_nodes'      => null,
         'completed_chapters' => null,
+        'timecreated'        => $now,
+        'timemodified'       => $now,
     ]);
 }
 
@@ -1230,6 +1239,7 @@ function seed_create_module(stdClass $course, string $modulename, array $extra):
         'visible'            => 1,
         'intro'              => '',
         'introformat'        => FORMAT_HTML,
+        'cmidnumber'         => '',
         'completion'         => COMPLETION_TRACKING_MANUAL,
         'completionview'     => 0,
         'completionexpected' => 0,
@@ -1519,6 +1529,255 @@ if (class_exists('\mod_playergroup\api\group_info')) {
     }
 } else {
     cli_writeln("mod_playergroup não está instalado — integração de Ranking de Grupos ignorada.");
+}
+
+// 16d. PlayerWords, PlayerCross and PlayerPuzzle integrations (demo for the External Item API).
+//
+// All three activities are optional integrations that spend and grant PlayerHUD items. Every item
+// created here is worth 0 XP on purpose: the Economy Health panel also adds the XP that external
+// activities can grant (through their playerhud_grant_potential callback), so an item with XP
+// would move the demo away from the 100% the ranking table in the docs is built on. Only the
+// starter stock is seeded; the rounds, matches and win grants happen live during the session, so
+// the audit log shows genuine consumption and grants attributed to each activity.
+/**
+ * Grants the starter stock of an item through the block's own External Item API, once.
+ *
+ * The ledger row tagged 'seed' marks an item as already stocked, so running the script
+ * again never refills what the students have spent in the meantime.
+ *
+ * @param int $instanceid Block instance ID.
+ * @param stdClass $item Item record.
+ * @param stdClass[] $students Students to stock.
+ * @param int $qty Units granted to each student.
+ * @return void
+ */
+function seed_stock_item(int $instanceid, stdClass $item, array $students, int $qty): void {
+    global $DB;
+
+    if ($DB->record_exists('block_playerhud_stack_log', ['itemid' => $item->id, 'source' => 'seed'])) {
+        return;
+    }
+    foreach ($students as $student) {
+        \block_playerhud\local\external_items::grant(
+            $instanceid,
+            (int) $item->id,
+            (int) $student->id,
+            $qty,
+            'seed',
+            true
+        );
+    }
+}
+
+$wordsinstalled = $DB->record_exists('modules', ['name' => 'playerwords']);
+$crossinstalled = $DB->record_exists('modules', ['name' => 'playercross']);
+$puzzleinstalled = $DB->record_exists('modules', ['name' => 'playerpuzzle']);
+
+if ($wordsinstalled || $crossinstalled || $puzzleinstalled) {
+    \core\session\manager::set_user(get_admin());
+
+    if ($wordsinstalled || $crossinstalled) {
+        $itemwordkey = seed_upsert_item($instanceid, 'Chave de Palavras', 0, 'Gasta para iniciar uma rodada.', 0, '🔑');
+        $itemwordhint = seed_upsert_item($instanceid, 'Dica Extra', 0, 'Revela a dica escondida da palavra.', 0, '💡');
+        $itemwordmedal = seed_upsert_item($instanceid, 'Medalha de Palavras', 0, 'Concedida a quem vence uma rodada.', 0, '🏅');
+        seed_stock_item($instanceid, $itemwordkey, $students, 6);
+        seed_stock_item($instanceid, $itemwordhint, $students, 4);
+        cli_writeln("Items ready: Chave de Palavras, Dica Extra, Medalha de Palavras (0 XP, starter stock granted).");
+    }
+
+    if ($wordsinstalled) {
+        require_once($CFG->dirroot . '/mod/playerwords/lib.php');
+
+        $cmwords = seed_create_module($course, 'playerwords', [
+            'name'                => 'Missão das Palavras',
+            'intro'               => 'Gaste uma Chave de Palavras para jogar e ganhe medalhas.',
+            'section'             => 2,
+            'completion'          => COMPLETION_TRACKING_NONE,
+            'source_manual'       => 1,
+            'source_glossary'     => 0,
+            'glossaryid'          => 0,
+            'wordmode'            => PLAYERWORDS_WORDMODE_RANDOM,
+            'max_attempts'        => 6,
+            'min_length'          => 4,
+            'max_length'          => 6,
+            'timer_minutes'       => 0,
+            'show_ranking'        => 1,
+            'rankingscoringmode'  => PLAYERWORDS_SCORING_BINARY,
+            'max_rounds'          => 4,
+            'cooldown_amount'     => 1,
+            'cooldown_unit'       => 'hours',
+            'hud_round_cost_item' => $itemwordkey->id,
+            'hud_round_cost_qty'  => 1,
+            'hud_hint_cost_item'  => $itemwordhint->id,
+            'hud_hint_cost_qty'   => 1,
+            'hud_win_grant_item'  => $itemwordmedal->id,
+            'hud_win_grant_qty'   => 1,
+            'grade'               => 100,
+            'grademethod'         => PLAYERWORDS_GRADE_FIRST,
+            'gradescoringmode'    => PLAYERWORDS_SCORING_BINARY,
+        ]);
+
+        if ($cmwords && !$DB->record_exists('playerwords_words', ['playerwordsid' => $cmwords->instance])) {
+            $wordlist = [
+                ['Espada', 'Arma com uma lâmina longa.'],
+                ['Escudo', 'Protege quem enfrenta a batalha.'],
+                ['Magia', 'Uma força sobrenatural.'],
+                ['Reino', 'Terra governada por um rei.'],
+                ['Lobo', 'Animal selvagem que uiva para a lua.'],
+                ['Ouro', 'Metal precioso e brilhante.'],
+                ['Mapa', 'Desenho que mostra o caminho até o tesouro.'],
+                ['Dragão', 'Criatura lendária que cospe fogo.'],
+            ];
+            foreach ($wordlist as [$word, $clue]) {
+                \mod_playerwords\local\words_repository::add_manual_word(
+                    (int) $cmwords->instance,
+                    (int) $teacher->id,
+                    $word,
+                    $clue
+                );
+            }
+            cli_writeln(
+                "Activity 'Missão das Palavras' created: " . count($wordlist)
+                . " words, round cost, hint cost and win grant."
+            );
+        }
+    } else {
+        cli_writeln("mod_playerwords is not installed — word activity skipped.");
+    }
+
+    if ($crossinstalled) {
+        require_once($CFG->dirroot . '/mod/playercross/lib.php');
+
+        $cmcross = seed_create_module($course, 'playercross', [
+            'name'                     => 'Cruzadas da Masmorra',
+            'intro'                    => 'Resolva os termos para revelar a frase misteriosa.',
+            'section'                  => 3,
+            'completion'               => COMPLETION_TRACKING_NONE,
+            'source_manual'            => 1,
+            'source_glossary'          => 0,
+            'glossaryid'               => 0,
+            'min_length'               => 3,
+            'max_length'               => 15,
+            'theme_min_length'         => 6,
+            'theme_max_length'         => 0,
+            'num_terms'                => 5,
+            'reveal_uncovered_slots'   => 1,
+            'win_condition'            => PLAYERCROSS_WINCONDITION_BOTH,
+            'max_attempts_per_term'    => 3,
+            'max_attempts_final_guess' => 3,
+            'timer_minutes'            => 0,
+            'show_ranking'             => 1,
+            'wordmode'                 => PLAYERCROSS_WORDMODE_RANDOM,
+            'max_rounds'               => 3,
+            'hints_enabled'            => 1,
+            'max_hints_per_round'      => 0,
+            'cooldown_amount'          => 1,
+            'cooldown_unit'            => 'hours',
+            'grade'                    => 100,
+            'grademethod'              => PLAYERCROSS_GRADE_HIGHEST,
+            'gradescoringmode'         => PLAYERCROSS_SCORING_BINARY,
+            'rankingscoringmode'       => PLAYERCROSS_SCORING_BINARY,
+            'hud_round_cost_item'      => $itemwordkey->id,
+            'hud_round_cost_qty'       => 1,
+            'hud_hint_cost_item'       => $itemwordhint->id,
+            'hud_hint_cost_qty'        => 1,
+            'hud_win_reward_item'      => $itemwordmedal->id,
+            'hud_win_reward_qty'       => 1,
+        ]);
+
+        if ($cmcross && !$DB->record_exists('playercross_words', ['playercrossid' => $cmcross->instance])) {
+            // Each clue doubles as the mystery phrase when its word is drawn as the round's theme.
+            $crosslist = [
+                ['Dragão', 'O guardião que cospe fogo no cofre'],
+                ['Cavaleiro', 'Guerreiro montado que jurou proteger o reino'],
+                ['Castelo', 'A fortaleza onde o rei recebe a corte'],
+                ['Escudo', 'Erguido para bloquear o golpe'],
+                ['Poção', 'Bebida preparada que devolve a vitalidade'],
+                ['Feiticeiro', 'Mestre de feitiços e pergaminhos antigos'],
+                ['Masmorra', 'O porão escuro sob a torre'],
+                ['Tesouro', 'Ouro e joias escondidos para os corajosos'],
+                ['Estandarte', 'Bandeira erguida à frente do exército'],
+            ];
+            foreach ($crosslist as [$word, $clue]) {
+                \mod_playercross\local\words_repository::add_manual_word(
+                    (int) $cmcross->instance,
+                    (int) $teacher->id,
+                    $word,
+                    $clue
+                );
+            }
+            cli_writeln(
+                "Activity 'Cruzadas da Masmorra' created: " . count($crosslist)
+                . " words, round cost, hint cost and win reward."
+            );
+        }
+    } else {
+        cli_writeln("mod_playercross is not installed — crossword activity skipped.");
+    }
+
+    if ($puzzleinstalled) {
+        // The PlayerCoin item is what a student converts into PuzzleCoin; reuse the one the
+        // block's own "create PlayerCoin" action would have made, if the course already has it.
+        $itemcoin = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $instanceid,
+            'action_type'     => 'playercoin',
+        ]);
+        if (!$itemcoin) {
+            $itemcoin = seed_upsert_item(
+                $instanceid,
+                'PlayerCoin',
+                0,
+                'A PlayerCoin é a moeda oficial do jogo. Colete-as e use para comprar itens na Loja.',
+                0,
+                '🪙'
+            );
+            $DB->set_field('block_playerhud_items', 'action_type', 'playercoin', ['id' => $itemcoin->id]);
+        }
+        $itemretry = seed_upsert_item(
+            $instanceid,
+            'Ficha de Nova Tentativa',
+            0,
+            'Gasta para tentar a arena de novo após uma derrota.',
+            0,
+            '🎟️'
+        );
+        $itemtrophy = seed_upsert_item($instanceid, 'Troféu de Vitória', 0, 'Concedido a cada vitória na arena.', 0, '🏆');
+        seed_stock_item($instanceid, $itemcoin, $students, 30);
+        seed_stock_item($instanceid, $itemretry, $students, 3);
+        cli_writeln("Items ready: PlayerCoin, Ficha de Nova Tentativa, Troféu de Vitória (0 XP, starter stock granted).");
+
+        // The question bank is not seeded, so the minimum-questions rule is switched off: the
+        // match is playable straight away and the item costs can be tried out.
+        seed_create_module($course, 'playerpuzzle', [
+            'name'                => 'Arena de Puzzle',
+            'intro'               => 'Troque peças para lutar contra o chefe. Converta PlayerCoins em PuzzleCoin.',
+            'section'             => 3,
+            'completion'          => COMPLETION_TRACKING_NONE,
+            'gamemode'            => 'campaign',
+            'maxlevels'           => 3,
+            'basestudenthp'       => 100,
+            'basebosshp'          => 100,
+            'bossdamage'          => 10,
+            'coingain'            => 15,
+            'maxattempts'         => 5,
+            'maxcampaigns'        => 0,
+            'minquestions'        => 0,
+            'considererrors'      => 0,
+            'show_ranking'        => 1,
+            'hints_enabled'       => 1,
+            'grade'               => 100,
+            'hud_coin_item'       => $itemcoin->id,
+            'hud_retry_cost_item' => $itemretry->id,
+            'hud_retry_cost_qty'  => 1,
+            'hud_win_grant_item'  => $itemtrophy->id,
+            'hud_win_grant_qty'   => 1,
+        ]);
+        cli_writeln("Activity 'Arena de Puzzle' created: PlayerCoin conversion, retry cost and win grant.");
+    } else {
+        cli_writeln("mod_playerpuzzle is not installed — match-3 activity skipped.");
+    }
+
+    \core\session\manager::set_user($origuser);
 }
 
 // 17. Summary.

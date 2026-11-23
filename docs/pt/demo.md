@@ -19,6 +19,7 @@ O plugin inclui dois scripts CLI de seed que criam um curso de demonstração co
 * 2 ofertas de troca (loja NPC), uma delas já concluída por um aluno
 * Um esquadrão de ranking de grupos (3 dos 5 alunos agrupados, 2 deixados sem grupo de propósito)
 * Um item "Extensão de Prazo" ligado a uma penalidade real já aplicada pelo [Late Penalty](latepenalty.html) — só é semeado se `local_latepenalty` estiver instalado
+* Um jogo de palavras, uma cruzadinha e uma arena Match-3 ligados a itens do PlayerHUD (custo de rodada, custo de dica, prêmio de vitória, conversão de PlayerCoin, custo de nova tentativa), com estoque inicial para cada aluno — cada um só é semeado se `mod_playerwords`, `mod_playercross` ou `mod_playerpuzzle` estiver instalado. Os itens valem 0 XP, então o ranking e o painel de Saúde da Economia continuam como listados abaixo; as rodadas são jogadas ao vivo, e o log de auditoria mostra concessões e consumos reais por atividade
 * Inventário, log de quests e conclusão de atividades pré-populados — o ranking já está pronto para navegar imediatamente
 
 **Ranking resultante após o seed:**

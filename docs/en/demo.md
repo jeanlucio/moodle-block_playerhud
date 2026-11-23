@@ -19,6 +19,7 @@ The plugin includes two CLI seed scripts that create a fully configured demo cou
 * 2 trade offers (NPC shop), one of them already completed by a student
 * A group ranking squad (3 of the 5 students grouped, 2 left ungrouped on purpose)
 * A "Deadline Extension" item wired to a real, already-applied [Late Penalty](latepenalty.html) deduction — only seeded if `local_latepenalty` is installed
+* A word game, a crossword and a Match-3 arena wired to PlayerHUD items (round cost, hint cost, win grant, PlayerCoin conversion, retry cost), with a starter stock for every student — each one only seeded if `mod_playerwords`, `mod_playercross` or `mod_playerpuzzle` is installed. The items are worth 0 XP, so the ranking and the Economy Health panel stay as listed below; the rounds are played live, so the audit log shows real grants and consumption per activity
 * Pre-seeded inventory, quest logs and activity completions — ranking is ready to browse immediately
 
 **Resulting ranking after seed:**
