@@ -24,8 +24,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// phpcs:disable moodle.Files.LineLength
-
 $string['actions'] = 'Ações';
 $string['add_choice'] = 'Adicionar escolha';
 $string['add_cost_item'] = 'Adicionar item de requisito';
