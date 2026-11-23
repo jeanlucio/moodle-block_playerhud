@@ -55,6 +55,9 @@ objectives.
 <span id="latepenalty"></span>
 {% include_relative en/latepenalty.md %}
 
+<span id="studiolms"></span>
+{% include_relative en/studiolms.md %}
+
 <span id="requirements"></span>
 {% include_relative en/requirements.md %}
 

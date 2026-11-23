@@ -56,6 +56,9 @@ engajamento de acordo com seus objetivos pedagógicos.
 <span id="latepenalty"></span>
 {% include_relative pt/latepenalty.md %}
 
+<span id="studiolms"></span>
+{% include_relative pt/studiolms.md %}
+
 <span id="requirements"></span>
 {% include_relative pt/requirements.md %}
 
