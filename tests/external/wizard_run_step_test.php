@@ -916,6 +916,51 @@ final class wizard_run_step_test extends external_base_testcase {
     }
 
     /**
+     * The progress item's icon fits its name in every tone: the Sci-Fi "Neural Capsule" used to be a syringe, which
+     * does not look like a capsule.
+     *
+     * @dataProvider pill_icon_provider
+     * @param string $tonekey The narrative tone.
+     * @param string $emoji The icon the item is created with.
+     */
+    public function test_pill_item_icon_fits_its_name_in_every_tone(string $tonekey, string $emoji): void {
+        global $DB;
+
+        $runid = $this->start_empty_run();
+        $result = wizard_run_step::execute(
+            instanceid: $this->instanceid,
+            courseid: $this->course->id,
+            runid: $runid,
+            steptype: 'pill',
+            theme: '',
+            tonekey: $tonekey,
+            pillbonusxp: 150,
+            distribute: false
+        );
+
+        $this->assertTrue($result['success']);
+        $pill = $DB->get_record('block_playerhud_items', [
+            'blockinstanceid' => $this->instanceid,
+            'action_type' => 'knowledge_pill',
+        ], '*', MUST_EXIST);
+        $this->assertSame($emoji, $pill->image);
+    }
+
+    /**
+     * Tone and the icon of its progress item.
+     *
+     * @return array[] Tone key and emoji.
+     */
+    public static function pill_icon_provider(): array {
+        return [
+            'fantasy, potion' => ['fantasy', '🧪'],
+            'sci-fi, capsule' => ['scifi', '💊'],
+            'mystery, clipping' => ['mystery', '📰'],
+            'academic, pill' => ['academic', '💊'],
+        ];
+    }
+
+    /**
      * A course with no activities yet still gets the Pill's drops, six of them summing to the
      * course total of eleven, whether or not distribute is on: there is nowhere to place them.
      *

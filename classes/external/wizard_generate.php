@@ -1346,7 +1346,7 @@ class wizard_generate {
     protected static function pill_emoji(string $tonekey): string {
         $map = [
             'fantasy' => "\u{1F9EA}",
-            'scifi' => "\u{1F489}",
+            'scifi' => "\u{1F48A}",
             'mystery' => "\u{1F4F0}",
             'academic' => "\u{1F48A}",
         ];
