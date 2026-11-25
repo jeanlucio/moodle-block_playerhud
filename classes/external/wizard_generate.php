@@ -967,7 +967,8 @@ class wizard_generate {
      * if told to and the course has a news forum, plants that drop there, disguised as a plain emoji blended into
      * whatever the forum's own intro already says — rendered in mode=text (see
      * insert_drop_shortcode's `mode`/`customtext` params) instead of a card, since a card would
-     * show a name and an icon and give the game away instantly.
+     * show a name and an icon and give the game away instantly. It goes at the top, in front of the intro's
+     * own words, with the PlayerCoin placed after them (see setup_playercoin_drop).
      *
      * Deliberately just one instance, not several scattered across activities: once a student
      * finds the first one, hunting for more loses its charm — scarcity is the whole point of

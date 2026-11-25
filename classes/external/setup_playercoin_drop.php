@@ -145,8 +145,14 @@ class setup_playercoin_drop extends external_api {
 
         ['dropid' => $dropid, 'code' => $code] = self::create_drop($instanceid, $itemid);
 
-        $shortcode = '[PLAYERHUD_DROP code=' . $code . ']';
-        $newintro  = $shortcode . ($forum->intro ? '<br>' . $forum->intro : '');
+        // Image only: the coin is a single recognisable picture, a full card would crowd the forum's description.
+        $shortcode = '[PLAYERHUD_DROP code=' . $code . ' mode=image]';
+        // After the description, on a line of its own, so a label placed in front of the text (the secret
+        // drop's emoji) stays next to those words whichever of the two is placed first.
+        $currentintro = rtrim((string) $forum->intro);
+        $newintro = $currentintro === ''
+            ? $shortcode
+            : $currentintro . insert_drop_shortcode::separator_after_text($currentintro) . $shortcode;
         // Direct write on purpose, like insert_drop_shortcode: see the comment there.
         $DB->set_field('forum', 'intro', $newintro, ['id' => $forum->id]);
         $DB->set_field('forum', 'timemodified', time(), ['id' => $forum->id]);

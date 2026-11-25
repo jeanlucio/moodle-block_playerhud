@@ -503,6 +503,75 @@ final class insert_drop_shortcode_test extends external_base_testcase {
     }
 
     /**
+     * A text-mode shortcode is a label that blends into the words around it, so unlike a card or an image it
+     * keeps the plain newline, which is only a space in HTML, instead of a <br> that would put it on its own line.
+     *
+     * @dataProvider text_mode_provider
+     * @param string $position Where the shortcode goes: top or bottom.
+     * @param string $expected The text after, with {code} standing for the drop's code.
+     */
+    public function test_insert_text_mode_stays_in_line_with_unwrapped_text(string $position, string $expected): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course'  => $this->course->id,
+            'content' => 'Plain body',
+        ]);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid, $code] = $this->create_drop($item->id);
+
+        insert_drop_shortcode::execute(
+            $this->instanceid,
+            $this->course->id,
+            $dropid,
+            $page->cmid,
+            'content',
+            $position,
+            'text',
+            '💻'
+        );
+
+        $this->assertSame(
+            str_replace('{code}', $code, $expected),
+            $DB->get_field('page', 'content', ['id' => $page->id])
+        );
+    }
+
+    /**
+     * Cases for the text-mode separator.
+     *
+     * @return array[] Position and expected text.
+     */
+    public static function text_mode_provider(): array {
+        $sc = '[PLAYERHUD_DROP code={code} mode=text text="💻"]';
+        return [
+            'top' => ['top', $sc . "\n" . 'Plain body'],
+            'bottom' => ['bottom', 'Plain body' . "\n" . $sc],
+        ];
+    }
+
+    /**
+     * An image-mode shortcode is a box like a card, so it gets the same line break from unwrapped text.
+     */
+    public function test_insert_image_mode_is_separated_from_unwrapped_text(): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course'  => $this->course->id,
+            'content' => 'Plain body',
+        ]);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid, $code] = $this->create_drop($item->id);
+
+        insert_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $page->cmid, 'content', 'top', 'image');
+
+        $this->assertSame(
+            '[PLAYERHUD_DROP code=' . $code . " mode=image]<br>\nPlain body",
+            $DB->get_field('page', 'content', ['id' => $page->id])
+        );
+    }
+
+    /**
      * A second card inserted at the top of text that already has one stays on the cards' line, with
      * the <br> only once, after the last card.
      */

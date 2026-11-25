@@ -694,7 +694,7 @@ final class wizard_run_step_test extends external_base_testcase {
         $drop = $DB->get_record('block_playerhud_drops', ['itemid' => $item->id], '*', MUST_EXIST);
 
         $introafter = $DB->get_field('forum', 'intro', ['id' => $forum->id]);
-        $this->assertStringContainsString('[PLAYERHUD_DROP code=' . $drop->code . ']', $introafter);
+        $this->assertStringContainsString('[PLAYERHUD_DROP code=' . $drop->code . ' mode=image]', $introafter);
 
         $manifesttables = $DB->get_records_menu(
             'block_playerhud_wizard_objects',
@@ -1163,6 +1163,50 @@ final class wizard_run_step_test extends external_base_testcase {
         $this->assertSame('1', $quest->requirement);
         $this->assertSame((int) $trade->id, (int) $quest->req_itemid);
         $this->assertSame(150, (int) $quest->reward_xp);
+    }
+
+    /**
+     * In the news forum's description the secret emoji sits in line in front of the intro's own words and the
+     * PlayerCoin is an image on a line below them, whichever step runs first.
+     *
+     * @dataProvider news_forum_step_order_provider
+     * @param string[] $steps The wizard steps to run, in order.
+     */
+    public function test_news_forum_intro_has_the_emoji_before_the_text_and_the_coin_below(array $steps): void {
+        global $DB;
+
+        $forum = $this->getDataGenerator()->create_module('forum', [
+            'course' => $this->course->id,
+            'type'   => 'news',
+            'intro'  => 'Welcome to the course!',
+        ]);
+
+        $runid = $this->start_empty_run();
+        foreach ($steps as $step) {
+            wizard_run_step::execute($this->instanceid, $this->course->id, $runid, $step, '');
+        }
+
+        $this->assertMatchesRegularExpression(
+            '/^\[PLAYERHUD_DROP code=\w+ mode=text text="💻"\]\nWelcome to the course!<br>'
+                . '\[PLAYERHUD_DROP code=\w+ mode=image\]$/u',
+            $DB->get_field('forum', 'intro', ['id' => $forum->id])
+        );
+
+        \block_playerhud\local\wizard::rollback($runid, $this->instanceid, $this->course->id);
+
+        $this->assertSame('Welcome to the course!', $DB->get_field('forum', 'intro', ['id' => $forum->id]));
+    }
+
+    /**
+     * Both orders of the two steps that write the news forum's description.
+     *
+     * @return array[] The steps to run.
+     */
+    public static function news_forum_step_order_provider(): array {
+        return [
+            'coin then emoji' => [['playercoin', 'secret_drops']],
+            'emoji then coin' => [['secret_drops', 'playercoin']],
+        ];
     }
 
     /**

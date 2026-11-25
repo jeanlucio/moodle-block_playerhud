@@ -214,7 +214,7 @@ class insert_drop_shortcode extends external_api {
      * @param string $currentval Current value of the activity's text field.
      * @return string Separator to put right after the new shortcode.
      */
-    protected static function separator_before_text(string $currentval): string {
+    public static function separator_before_text(string $currentval): string {
         $start = ltrim($currentval);
         if ($start === '' || preg_match('/^(?:<' . self::BLOCK_TAGS . '[\s>\/]|\[PLAYERHUD_)/i', $start)) {
             return "\n";
@@ -230,7 +230,7 @@ class insert_drop_shortcode extends external_api {
      * @param string $currentval Current value of the activity's text field.
      * @return string Separator to put right before the new shortcode.
      */
-    protected static function separator_after_text(string $currentval): string {
+    public static function separator_after_text(string $currentval): string {
         $end = rtrim($currentval);
         $endsinblock = preg_match(
             '/(?:<\/' . self::BLOCK_TAGS . '>|<hr\s*\/?>|\[PLAYERHUD_[^\]]*\])$/i',
@@ -367,10 +367,15 @@ class insert_drop_shortcode extends external_api {
         }
 
         // Insert at chosen position.
+        // A text-mode shortcode is a label that blends into the surrounding words, so it stays in line with
+        // them behind a plain newline; a card or an image is a box that needs its own line.
+        $isbox = $mode !== 'text';
         if ($position === 'top') {
-            $newval = $shortcode . self::separator_before_text($currentval) . $currentval;
+            $separator = $isbox ? self::separator_before_text($currentval) : "\n";
+            $newval = $shortcode . $separator . $currentval;
         } else {
-            $newval = rtrim($currentval) . self::separator_after_text($currentval) . $shortcode;
+            $separator = $isbox ? self::separator_after_text($currentval) : "\n";
+            $newval = rtrim($currentval) . $separator . $shortcode;
         }
 
         // Save the new value. Written straight to the module's table on purpose, not through

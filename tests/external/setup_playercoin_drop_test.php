@@ -69,8 +69,13 @@ final class setup_playercoin_drop_test extends external_base_testcase {
             "SELECT f.intro FROM {forum} f WHERE f.course = :cid AND f.type = 'news'",
             ['cid' => $this->course->id]
         );
-        $this->assertStringStartsWith('[PLAYERHUD_DROP code=', $forum->intro);
+        $this->assertMatchesRegularExpression('/<br>\[PLAYERHUD_DROP code=\w+ mode=image\]$/', $forum->intro);
         $this->assertStringContainsString($drop->code, $forum->intro);
+        $this->assertStringContainsString(
+            '[PLAYERHUD_DROP code=' . $drop->code . ' mode=image]',
+            $forum->intro,
+            'The coin is placed as an image, not as a card.'
+        );
     }
 
     /**
@@ -175,13 +180,16 @@ final class setup_playercoin_drop_test extends external_base_testcase {
     }
 
     /**
-     * When the news forum already has an intro the shortcode is prepended and
-     * the original intro is preserved after a <br>.
+     * When the news forum already has an intro the coin goes after it, on a line of its own: after a
+     * <br> when the text is unwrapped, after a plain newline when it ends in a block element.
+     *
+     * @dataProvider existing_intro_provider
+     * @param string $existingintro The forum's description before the coin is placed.
+     * @param string $separator What is expected between the description and the coin.
      */
-    public function test_setup_playercoin_drop_prepends_to_existing_intro(): void {
+    public function test_setup_playercoin_drop_appends_to_existing_intro(string $existingintro, string $separator): void {
         global $DB;
 
-        $existingintro = '<p>Welcome to the course!</p>';
         $this->getDataGenerator()->create_module('forum', [
             'course' => $this->course->id,
             'type'   => 'news',
@@ -195,8 +203,24 @@ final class setup_playercoin_drop_test extends external_base_testcase {
             "SELECT f.intro FROM {forum} f WHERE f.course = :cid AND f.type = 'news'",
             ['cid' => $this->course->id]
         );
-        $this->assertStringStartsWith('[PLAYERHUD_DROP code=', $forum->intro);
-        $this->assertStringContainsString('<br>' . $existingintro, $forum->intro);
+        $drop = $DB->get_record('block_playerhud_drops', ['itemid' => $item->id], '*', MUST_EXIST);
+        $this->assertSame(
+            $existingintro . $separator . '[PLAYERHUD_DROP code=' . $drop->code . ' mode=image]',
+            $forum->intro
+        );
+    }
+
+    /**
+     * Cases for the coin placement.
+     *
+     * @return array[] Existing description and the separator expected before the coin.
+     */
+    public static function existing_intro_provider(): array {
+        return [
+            'unwrapped text' => ['Notícias e avisos', '<br>'],
+            'paragraph' => ['<p>Welcome to the course!</p>', "\n"],
+            'label in front of the text' => ['[PLAYERHUD_DROP code=ABC mode=text text="💻"]' . "\n" . 'Notícias', '<br>'],
+        ];
     }
 
     /**
