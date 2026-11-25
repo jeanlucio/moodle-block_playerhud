@@ -723,6 +723,70 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * A provider that accepts the connection and never answers (an overloaded Gemini does) must
+     * fail the request once the timeout runs out, so the next provider in the ladder is tried.
+     * Without a limit the request waited for as long as PHP allowed, minutes per wizard step.
+     */
+    public function test_curl_request_gives_up_on_a_provider_that_never_answers(): void {
+        $probe = stream_socket_server('tcp://127.0.0.1:0');
+        $name = stream_socket_get_name($probe, false);
+        $port = (int) substr($name, strrpos($name, ':') + 1);
+        fclose($probe);
+
+        // A throwaway server that takes the request and then stays silent for longer than the test waits.
+        $serverscript = '$s = stream_socket_server("tcp://127.0.0.1:" . $argv[1]);'
+            . '$k = @stream_socket_accept($s, 10);'
+            . 'if ($k) { fread($k, 8192); sleep(8); }';
+        $process = proc_open(
+            [PHP_BINARY, '-r', $serverscript, (string) $port],
+            [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes
+        );
+        usleep(500000);
+
+        try {
+            $generator = new class ($this->instanceid) extends generator {
+                /**
+                 * Shortens the limit so the test does not wait for the real one.
+                 *
+                 * @return int
+                 */
+                protected function http_timeout(): int {
+                    return 1;
+                }
+            };
+            $method = new \ReflectionMethod($generator, 'curl_request');
+            $method->setAccessible(true);
+            $started = microtime(true);
+            $result = $method->invoke($generator, 'http://127.0.0.1:' . $port . '/v1', '{}', [], 'Gemini');
+            $elapsed = microtime(true) - $started;
+        } finally {
+            proc_terminate($process);
+            proc_close($process);
+        }
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('Gemini', $result['provider']);
+        $this->assertStringContainsString('timed out', $result['message']);
+        $this->assertLessThan(6, $elapsed);
+    }
+
+    /**
+     * The real limit is bounded: long enough for a model to write a story chapter, short enough that a
+     * provider that hangs does not hold a wizard step until PHP's own limit (300 seconds).
+     */
+    public function test_the_default_provider_timeout_is_bounded(): void {
+        $generator = new generator($this->instanceid);
+        $method = new \ReflectionMethod($generator, 'http_timeout');
+        $method->setAccessible(true);
+
+        $timeout = $method->invoke($generator);
+
+        $this->assertGreaterThanOrEqual(30, $timeout);
+        $this->assertLessThanOrEqual(120, $timeout);
+    }
+
+    /**
      * Provides provider responses and whether they carry an answer.
      *
      * @return array[] Provider, raw response body, whether it is a success, text expected in the message.

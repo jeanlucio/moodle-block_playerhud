@@ -50,6 +50,14 @@ class generator {
     /** @var string Context hint for rare/high-value items. */
     private const PROMPT_CTX_HARD = 'Context: The game needs high-value (rare/complex) items.';
 
+    /**
+     * @var int Seconds a single provider request may take, answer included. Without a limit a provider that
+     *          accepts the connection and never answers (an overloaded Gemini does) holds the whole step until
+     *          PHP's own limit, with the next provider never tried. Generous because it also covers the time
+     *          the model spends writing a long answer such as a story chapter.
+     */
+    protected const HTTP_TIMEOUT = 90;
+
     /** @var int The block instance ID. */
     protected $instanceid;
 
@@ -1294,6 +1302,15 @@ class generator {
     }
 
     /**
+     * Seconds a single provider request may take. A method rather than the bare constant so a test can shorten it.
+     *
+     * @return int
+     */
+    protected function http_timeout(): int {
+        return static::HTTP_TIMEOUT;
+    }
+
+    /**
      * Executes a HTTP request using Moodle's curl class.
      *
      * @param string $url The target URL.
@@ -1317,6 +1334,7 @@ class generator {
         // provider API key in its headers: a certificate that is not verified would let anyone on
         // the network path read it. Both options are set explicitly.
         $options = [
+            'timeout' => $this->http_timeout(),
             'CURLOPT_SSL_VERIFYPEER' => true,
             'CURLOPT_SSL_VERIFYHOST' => 2,
             // The providers answer directly: a redirect would only move the request, and the key
