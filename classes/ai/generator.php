@@ -795,6 +795,7 @@ class generator {
         // own. Report every attempt after the fact so a hub-borrowed key that keeps
         // failing is visible in the site usage report, not just the one that answered.
         $this->report_hub_attempts($attempts, $keysource, $description);
+        $this->log_failed_attempts($attempts, $keysource, $description);
 
         // Bottom of the ladder: Moodle core_ai, only when no key is configured.
         if (!$result['success'] && $nokeys && $this->has_core_ai_provider()) {
@@ -850,6 +851,37 @@ class generator {
                 (bool) ($attempt['success'] ?? false),
                 (string) ($attempt['message'] ?? '')
             );
+        }
+    }
+
+    /**
+     * Records every provider attempt that failed, whichever tier the key came from.
+     *
+     * The AI Hub's usage log only sees hub-borrowed keys, so a failure with a personal or site key of this
+     * plugin left no trace anywhere and a slow or failing step could not be explained afterwards. The event goes
+     * to Moodle's standard log with the provider, the tier, how many seconds the attempt took and the provider's
+     * own message (cut short); the prompt and the key are never part of it.
+     *
+     * @param array $attempts List of curl_request()-shaped results, one per provider tried.
+     * @param string $keysource Tier that supplied the keys, as returned by load_api_keys().
+     * @param string $description Short label of what was being generated.
+     * @return void
+     */
+    protected function log_failed_attempts(array $attempts, string $keysource, string $description): void {
+        foreach ($attempts as $attempt) {
+            if (!empty($attempt['success'])) {
+                continue;
+            }
+            \block_playerhud\event\ai_attempt_failed::create([
+                'context' => $this->context,
+                'other' => [
+                    'provider' => (string) ($attempt['provider'] ?? ''),
+                    'tier' => $keysource,
+                    'seconds' => (float) ($attempt['seconds'] ?? 0),
+                    'description' => $description,
+                    'message' => \core_text::substr((string) ($attempt['message'] ?? ''), 0, 255),
+                ],
+            ])->trigger();
         }
     }
 
@@ -1311,16 +1343,34 @@ class generator {
     }
 
     /**
-     * Executes a HTTP request using Moodle's curl class.
+     * Executes a HTTP request using Moodle's curl class and times it.
      *
      * @param string $url The target URL.
      * @param string $payload The POST data.
      * @param array $headers Request headers.
      * @param string $source The source identifier.
-     * @return array Result array with success status, data and provider — provider is set
-     *               on both outcomes, so a caller can attribute a failed attempt.
+     * @return array Result array with success status, data, provider and seconds — provider is set
+     *               on both outcomes, so a caller can attribute a failed attempt, and seconds says how
+     *               long the provider took to answer or to give up.
      */
     protected function curl_request(string $url, string $payload, array $headers, string $source): array {
+        $started = microtime(true);
+        $result = $this->send_request($url, $payload, $headers, $source);
+        $result['seconds'] = round(microtime(true) - $started, 1);
+
+        return $result;
+    }
+
+    /**
+     * Sends the request to the provider and turns the answer into a result array.
+     *
+     * @param string $url The target URL.
+     * @param string $payload The POST data.
+     * @param array $headers Request headers.
+     * @param string $source The source identifier.
+     * @return array Result array with success status, data and provider.
+     */
+    private function send_request(string $url, string $payload, array $headers, string $source): array {
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
 

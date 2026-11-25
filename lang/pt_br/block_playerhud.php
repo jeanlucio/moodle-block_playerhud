@@ -444,6 +444,7 @@ $string['error_unknown_mode'] = 'Modo de geração desconhecido.';
 $string['error_use_lock'] = 'Uso em andamento. Aguarde um instante e tente novamente.';
 $string['error_xp_lock'] = 'Outra atualização de XP está em andamento. Aguarde um instante e tente novamente.';
 $string['error_xp_per_level_min'] = 'O XP por nível deve ser um número inteiro maior ou igual a 1.';
+$string['event_ai_attempt_failed'] = 'Falha em requisição de IA do PlayerHUD';
 $string['event_character_selected'] = 'Personagem do PlayerHUD selecionado';
 $string['event_item_collected'] = 'Item do PlayerHUD coletado';
 $string['event_quest_collected'] = 'Recompensa de missão do PlayerHUD resgatada';

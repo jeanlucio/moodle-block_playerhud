@@ -444,6 +444,7 @@ $string['error_unknown_mode'] = 'Unknown generation mode.';
 $string['error_use_lock'] = 'Use in progress. Please wait a moment and try again.';
 $string['error_xp_lock'] = 'Another XP update is in progress. Please wait a moment and try again.';
 $string['error_xp_per_level_min'] = 'XP per level must be a whole number of at least 1.';
+$string['event_ai_attempt_failed'] = 'PlayerHUD AI request failed';
 $string['event_character_selected'] = 'PlayerHUD character selected';
 $string['event_item_collected'] = 'PlayerHUD item collected';
 $string['event_quest_collected'] = 'PlayerHUD quest reward claimed';

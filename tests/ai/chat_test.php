@@ -116,4 +116,33 @@ final class chat_test extends external_base_testcase {
         $this->assertSame('', $this->parse('{"reply":null}')['reply']);
         $this->assertSame(['type' => 'x'], $this->parse('{"reply":"ok","action":{"type":"x"}}')['action']);
     }
+
+    /**
+     * The chat logs a failed attempt like the generator does, whatever tier the key came from.
+     */
+    public function test_chat_logs_a_failed_attempt(): void {
+        set_config('apikey_groq', 'groq-key', 'block_playerhud');
+        $chat = new class ($this->instanceid) extends chat {
+            #[\Override]
+            protected function call_groq_chat(string $systemprompt, array $messages, string $key): array {
+                return ['success' => false, 'message' => 'Overloaded.', 'provider' => 'Groq', 'seconds' => 2.0];
+            }
+        };
+        $sink = $this->redirectEvents();
+
+        try {
+            $chat->send('system', [['role' => 'user', 'content' => 'hi']]);
+            $this->fail('Every provider failed, so send() must throw.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ai_error_offline', $e->errorcode);
+        }
+
+        $events = array_values(array_filter(
+            $sink->get_events(),
+            static fn($event) => $event instanceof \block_playerhud\event\ai_attempt_failed
+        ));
+        $this->assertCount(1, $events);
+        $this->assertSame('chat', $events[0]->other['description']);
+        $this->assertSame('Groq', $events[0]->other['provider']);
+    }
 }

@@ -787,6 +787,77 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * Builds a generator whose Groq attempt fails and whose Custom attempt answers, with the keys of
+     * the site configured so the ladder runs both.
+     *
+     * @return generator
+     */
+    private function make_generator_with_a_failing_groq(): generator {
+        set_config('apikey_groq', 'groq-key', 'block_playerhud');
+        set_config('apikey_openai', 'custom-key', 'block_playerhud');
+        set_config('openai_baseurl', 'https://api.example.com/v1/chat', 'block_playerhud');
+        set_config('openai_model', 'some-model', 'block_playerhud');
+
+        return new class ($this->instanceid) extends generator {
+            #[\Override]
+            protected function resolve_host_ips(string $host): array {
+                return ['93.184.216.34'];
+            }
+
+            #[\Override]
+            protected function call_groq(array $parts, string $key): array {
+                return ['success' => false, 'message' => str_repeat('x', 300), 'provider' => 'Groq', 'seconds' => 1.5];
+            }
+
+            #[\Override]
+            protected function call_openai_compatible(array $parts, string $key, string $baseurl, string $model): array {
+                return ['success' => true, 'data' => '{}', 'provider' => 'Custom AI', 'seconds' => 0.4];
+            }
+        };
+    }
+
+    /**
+     * An attempt that failed is logged, whatever tier the key came from: before, only hub-borrowed keys left a trace,
+     * so a slow or failing step with the plugin's own key could not be explained afterwards. The attempt that answered
+     * is not.
+     */
+    public function test_a_failed_attempt_is_logged_with_provider_tier_and_seconds(): void {
+        $generator = $this->make_generator_with_a_failing_groq();
+        $sink = $this->redirectEvents();
+
+        $method = new \ReflectionMethod($generator, 'call_with_fallback');
+        $method->setAccessible(true);
+        $result = $method->invoke($generator, ['system' => 's', 'user' => 'u'], 'story');
+
+        $this->assertSame('Custom AI', $result['provider']);
+        $events = array_values(array_filter(
+            $sink->get_events(),
+            static fn($event) => $event instanceof \block_playerhud\event\ai_attempt_failed
+        ));
+        $this->assertCount(1, $events);
+        $this->assertSame('Groq', $events[0]->other['provider']);
+        $this->assertSame('own_site', $events[0]->other['tier']);
+        $this->assertSame(1.5, $events[0]->other['seconds']);
+        $this->assertSame('story', $events[0]->other['description']);
+        $this->assertSame(255, \core_text::strlen($events[0]->other['message']), 'The provider message is cut short.');
+    }
+
+    /**
+     * Each request is timed, so the log can tell a provider that refused at once from one that made the step wait.
+     */
+    public function test_curl_request_reports_how_long_the_provider_took(): void {
+        $generator = new generator($this->instanceid);
+        $method = new \ReflectionMethod($generator, 'curl_request');
+        $method->setAccessible(true);
+
+        // A blocked address fails before any network traffic, which is all this needs.
+        $result = $method->invoke($generator, 'https://127.0.0.1:1/v1', '{}', [], 'Gemini');
+
+        $this->assertArrayHasKey('seconds', $result);
+        $this->assertGreaterThanOrEqual(0, $result['seconds']);
+    }
+
+    /**
      * Provides provider responses and whether they carry an answer.
      *
      * @return array[] Provider, raw response body, whether it is a success, text expected in the message.

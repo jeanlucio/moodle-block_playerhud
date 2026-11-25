@@ -75,6 +75,7 @@ class chat extends generator {
         // hub-borrowed key, so the hub's usage report reflects requests it never saw
         // directly, including ones that failed.
         $this->report_hub_attempts($attempts, $keysource, 'chat');
+        $this->log_failed_attempts($attempts, $keysource, 'chat');
 
         // Bottom of the ladder: Moodle core_ai, only when no key is configured.
         // core_ai has no native multi-turn API, so the history is flattened.
