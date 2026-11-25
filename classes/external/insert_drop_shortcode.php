@@ -40,6 +40,10 @@ use context_block;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class insert_drop_shortcode extends external_api {
+    /** @var string Regex alternation of the block-level HTML tags that start a new line on their own. */
+    private const BLOCK_TAGS = '(?:p|div|h[1-6]|ul|ol|dl|table|blockquote|pre|section|article|aside|figure|hr|form|nav'
+        . '|header|footer|details)';
+
     /**
      * Define parameters for insert_drop_shortcode.
      *
@@ -200,6 +204,45 @@ class insert_drop_shortcode extends external_api {
     }
 
     /**
+     * Separator placed between a shortcode inserted at the top and the text that follows it.
+     *
+     * A card renders as an inline-flex box (so several sit side by side), which means text that
+     * is not wrapped in a block element would flow onto the same line as the cards. A newline is
+     * only whitespace in HTML, so in that case a <br> is added; when the text already starts with
+     * a block element or another shortcode, the newline alone keeps the markup as it was.
+     *
+     * @param string $currentval Current value of the activity's text field.
+     * @return string Separator to put right after the new shortcode.
+     */
+    protected static function separator_before_text(string $currentval): string {
+        $start = ltrim($currentval);
+        if ($start === '' || preg_match('/^(?:<' . self::BLOCK_TAGS . '[\s>\/]|\[PLAYERHUD_)/i', $start)) {
+            return "\n";
+        }
+        return "<br>\n";
+    }
+
+    /**
+     * Separator placed between the text that precedes a shortcode inserted at the bottom and
+     * the shortcode itself. Mirrors {@see self::separator_before_text()}: without a <br>, a
+     * card would sit on the same line as the last words of unwrapped text.
+     *
+     * @param string $currentval Current value of the activity's text field.
+     * @return string Separator to put right before the new shortcode.
+     */
+    protected static function separator_after_text(string $currentval): string {
+        $end = rtrim($currentval);
+        $endsinblock = preg_match(
+            '/(?:<\/' . self::BLOCK_TAGS . '>|<hr\s*\/?>|\[PLAYERHUD_[^\]]*\])$/i',
+            $end
+        );
+        if ($end === '' || $endsinblock) {
+            return "\n";
+        }
+        return '<br>';
+    }
+
+    /**
      * Core single-drop insertion logic, shared by execute() and execute_batch().
      *
      * @param int $instanceid Block instance ID.
@@ -325,9 +368,9 @@ class insert_drop_shortcode extends external_api {
 
         // Insert at chosen position.
         if ($position === 'top') {
-            $newval = $shortcode . "\n" . $currentval;
+            $newval = $shortcode . self::separator_before_text($currentval) . $currentval;
         } else {
-            $newval = rtrim($currentval) . "\n" . $shortcode;
+            $newval = rtrim($currentval) . self::separator_after_text($currentval) . $shortcode;
         }
 
         // Save the new value. Written straight to the module's table on purpose, not through

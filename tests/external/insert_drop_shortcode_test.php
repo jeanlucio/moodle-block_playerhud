@@ -434,4 +434,135 @@ final class insert_drop_shortcode_test extends external_base_testcase {
         $this->assertTrue($result['success']);
         $this->assertNotSame($before, $DB->get_field('event', 'description', $conditions, MUST_EXIST));
     }
+
+    /**
+     * Cards are inline-flex boxes, so text that is not wrapped in a block element would flow onto
+     * the cards' line. The shortcode is then separated from it with a <br>; next to a block
+     * element, another shortcode or nothing at all, the plain newline is kept.
+     *
+     * @dataProvider separator_provider
+     * @param string $position Where the shortcode goes: top or bottom.
+     * @param string $original The activity text before the insertion.
+     * @param string $expected The text after, with {code} standing for the drop's code.
+     */
+    public function test_insert_separates_cards_from_unwrapped_text(
+        string $position,
+        string $original,
+        string $expected
+    ): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course'  => $this->course->id,
+            'content' => $original,
+        ]);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid, $code] = $this->create_drop($item->id);
+
+        $result = insert_drop_shortcode::execute(
+            $this->instanceid,
+            $this->course->id,
+            $dropid,
+            $page->cmid,
+            'content',
+            $position
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(
+            str_replace('{code}', $code, $expected),
+            $DB->get_field('page', 'content', ['id' => $page->id])
+        );
+    }
+
+    /**
+     * Cases for the separator choice: unwrapped text gets a <br>, block elements keep the newline.
+     *
+     * @return array[] Position, original text and expected text.
+     */
+    public static function separator_provider(): array {
+        $sc = '[PLAYERHUD_DROP code={code}]';
+        return [
+            'top, unwrapped text' => ['top', 'Plain body', $sc . "<br>\n" . 'Plain body'],
+            'top, inline element first' => ['top', '<b>Bold</b> body', $sc . "<br>\n" . '<b>Bold</b> body'],
+            'top, paragraph' => ['top', '<p>Body</p>', $sc . "\n" . '<p>Body</p>'],
+            'top, heading after whitespace' => ['top', "\n<h3>Title</h3>", $sc . "\n" . "\n<h3>Title</h3>"],
+            'top, other shortcode first' => ['top', '[PLAYERHUD_DROP code=other]', $sc . "\n" . '[PLAYERHUD_DROP code=other]'],
+            'top, empty' => ['top', '', $sc . "\n"],
+            'bottom, unwrapped text' => ['bottom', 'Plain body', 'Plain body<br>' . $sc],
+            'bottom, inline element last' => ['bottom', 'Body <i>end</i>', 'Body <i>end</i><br>' . $sc],
+            'bottom, paragraph' => ['bottom', '<p>Body</p>', '<p>Body</p>' . "\n" . $sc],
+            'bottom, list' => ['bottom', "<ul><li>a</li></ul>\n", '<ul><li>a</li></ul>' . "\n" . $sc],
+            'bottom, other shortcode last' => [
+                'bottom',
+                'Text<br>[PLAYERHUD_DROP code=other]',
+                'Text<br>[PLAYERHUD_DROP code=other]' . "\n" . $sc,
+            ],
+            'bottom, empty' => ['bottom', '', "\n" . $sc],
+        ];
+    }
+
+    /**
+     * A second card inserted at the top of text that already has one stays on the cards' line, with
+     * the <br> only once, after the last card.
+     */
+    public function test_insert_two_cards_at_the_top_of_unwrapped_text_share_one_break(): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course'  => $this->course->id,
+            'content' => 'Plain body',
+        ]);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$firstid, $firstcode] = $this->create_drop($item->id);
+        [$secondid, $secondcode] = $this->create_drop($item->id);
+
+        foreach ([$firstid, $secondid] as $dropid) {
+            insert_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $page->cmid, 'content', 'top');
+        }
+
+        $this->assertSame(
+            '[PLAYERHUD_DROP code=' . $secondcode . "]\n[PLAYERHUD_DROP code=" . $firstcode . "]<br>\nPlain body",
+            $DB->get_field('page', 'content', ['id' => $page->id])
+        );
+    }
+
+    /**
+     * Removing a shortcode that was inserted with a <br> brings the original text back untouched, so
+     * undoing the wizard leaves no stray break behind.
+     *
+     * @dataProvider round_trip_provider
+     * @param string $position Where the shortcode is inserted: top or bottom.
+     * @param string $original The activity text before the insertion.
+     */
+    public function test_insert_then_remove_restores_the_original_text(string $position, string $original): void {
+        global $DB;
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course'  => $this->course->id,
+            'content' => $original,
+        ]);
+        $item = $this->create_item($this->instanceid, 'Gem');
+        [$dropid] = $this->create_drop($item->id);
+
+        insert_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $page->cmid, 'content', $position);
+        $removed = remove_drop_shortcode::execute($this->instanceid, $this->course->id, $dropid, $page->cmid, 'content');
+
+        $this->assertTrue($removed['success']);
+        $this->assertSame($original, $DB->get_field('page', 'content', ['id' => $page->id]));
+    }
+
+    /**
+     * Cases for the insert-then-remove round trip.
+     *
+     * @return array[] Position and original text.
+     */
+    public static function round_trip_provider(): array {
+        return [
+            'top, unwrapped text' => ['top', 'Plain body'],
+            'top, paragraph' => ['top', '<p>Body</p>'],
+            'bottom, unwrapped text' => ['bottom', 'Plain body'],
+            'bottom, paragraph' => ['bottom', '<p>Body</p>'],
+        ];
+    }
 }
