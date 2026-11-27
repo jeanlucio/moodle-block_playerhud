@@ -425,7 +425,8 @@ class wizard_run_step extends external_api {
      * fails more often than the deterministic modules, and a chapter/outline step never writes
      * anything before this succeeds, so retrying in place is safe. This is a per-step,
      * in-request retry, distinct from the browser's own "try again" button, which resumes the
-     * whole failed step from scratch after a click.
+     * whole failed step from scratch after a click. Both callers reuse one generator across the two
+     * runs, which lets it skip a provider that took long to fail the first time.
      *
      * @param callable $callable Callable with no arguments, returning the generation result.
      * @return array The callable's return value.

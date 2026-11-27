@@ -52,9 +52,10 @@ class generator {
 
     /**
      * @var int Seconds a single provider request may take, answer included. Without a limit a provider that
-     *          accepts the connection and never answers (an overloaded Gemini does) holds the whole step until
-     *          PHP's own limit, with the next provider never tried. Generous because it also covers the time
-     *          the model spends writing a long answer such as a story chapter.
+     *          accepts the connection and never answers (an overloaded Gemini does) holds the whole step for as
+     *          long as it keeps the connection open, with the next provider never tried: PHP's max_execution_time
+     *          does not count time spent waiting on Linux. Generous because it also covers the time the model
+     *          spends writing a long answer such as a story chapter.
      */
     protected const HTTP_TIMEOUT = 90;
 
@@ -71,6 +72,9 @@ class generator {
     /** @var int Most times one Groq call is tried again after a "too many requests" answer. */
     protected const MAX_RATE_LIMIT_RETRIES = 2;
 
+    /** @var int A request that takes this many seconds to fail is not sent to that provider again. */
+    protected const SLOW_FAILURE_SECONDS = 30;
+
     /** @var int The block instance ID. */
     protected $instanceid;
 
@@ -79,6 +83,9 @@ class generator {
 
     /** @var \context The context of the page the block instance is added to. */
     protected \context $context;
+
+    /** @var string[] Failure message of each provider that took long to fail, by provider name. */
+    private array $slowfailures = [];
 
     /**
      * Constructor.
@@ -817,6 +824,10 @@ class generator {
      * institutional default and is consulted only when no key is configured at any
      * level, so an explicitly set personal or site key always wins.
      *
+     * A provider that takes SLOW_FAILURE_SECONDS or more to fail is skipped by the later calls of
+     * this object, so the automatic retry of a wizard step does not make the teacher wait for it
+     * again. A quick refusal costs little and may pass the second time, so it is tried again.
+     *
      * @param array $parts Prompt parts with 'system' and 'user' keys.
      * @param string $description Short label of what is being generated, reported to the
      *               AI Hub's usage log when a hub-borrowed key serves the request.
@@ -830,20 +841,39 @@ class generator {
         $result = ['success' => false, 'message' => ''];
         $attempts = [];
 
+        $providers = [];
         if (!empty($geminikey)) {
-            $result = $this->call_gemini($parts, $geminikey);
-            $attempts[] = $result;
+            $providers['Gemini'] = fn(): array => $this->call_gemini($parts, $geminikey);
+        }
+        if (!empty($groqkey)) {
+            $providers['Groq'] = fn(): array => $this->call_groq($parts, $groqkey);
+        }
+        if (!empty($openaikey) && !empty($openaiurl)) {
+            $providers['Custom AI'] = fn(): array => $this->call_openai_compatible(
+                $parts,
+                $openaikey,
+                $openaiurl,
+                $openaimodel
+            );
         }
 
-        if (!$result['success'] && !empty($groqkey)) {
-            $result = $this->call_groq($parts, $groqkey);
+        foreach ($providers as $name => $call) {
+            if (isset($this->slowfailures[$name])) {
+                // The old message is reported only when no provider is asked this time.
+                if (!$attempts) {
+                    $result['message'] = $this->slowfailures[$name];
+                }
+                continue;
+            }
+            $result = $call();
             array_push($attempts, ...($result['earlier'] ?? []));
             $attempts[] = $result;
-        }
-
-        if (!$result['success'] && !empty($openaikey) && !empty($openaiurl)) {
-            $result = $this->call_openai_compatible($parts, $openaikey, $openaiurl, $openaimodel);
-            $attempts[] = $result;
+            if ($result['success']) {
+                break;
+            }
+            if (($result['seconds'] ?? 0) >= self::SLOW_FAILURE_SECONDS) {
+                $this->slowfailures[$name] = (string) ($result['message'] ?? '');
+            }
         }
 
         // This class calls providers directly instead of going through

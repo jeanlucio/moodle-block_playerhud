@@ -1030,7 +1030,7 @@ final class generator_test extends external_base_testcase {
 
     /**
      * The real limit is bounded: long enough for a model to write a story chapter, short enough that a
-     * provider that hangs does not hold a wizard step until PHP's own limit (300 seconds).
+     * provider that hangs does not hold a wizard step for long.
      */
     public function test_the_default_provider_timeout_is_bounded(): void {
         $generator = new generator($this->instanceid);
@@ -1041,6 +1041,194 @@ final class generator_test extends external_base_testcase {
 
         $this->assertGreaterThanOrEqual(30, $timeout);
         $this->assertLessThanOrEqual(120, $timeout);
+    }
+
+    /**
+     * Builds a generator with the three site keys, whose providers give the scripted answers in order and record
+     * each time one of them is asked.
+     *
+     * @param array $answers Provider name => list of curl_request()-shaped results.
+     * @return generator
+     */
+    private function make_generator_with_a_scripted_ladder(array $answers): generator {
+        set_config('apikey_gemini', 'gemini-key', 'block_playerhud');
+        set_config('apikey_groq', 'groq-key', 'block_playerhud');
+        set_config('apikey_openai', 'custom-key', 'block_playerhud');
+        set_config('openai_baseurl', 'https://api.example.com/v1/chat', 'block_playerhud');
+        set_config('openai_model', 'some-model', 'block_playerhud');
+
+        return new class ($this->instanceid, $answers) extends generator {
+            /** @var array Answers still to give, by provider name. */
+            private array $answers;
+
+            /** @var string[] Providers asked, in order. */
+            public array $asked = [];
+
+            /**
+             * Constructor.
+             *
+             * @param int $instanceid The block instance ID.
+             * @param array $answers Provider name => list of results.
+             */
+            public function __construct(int $instanceid, array $answers) {
+                parent::__construct($instanceid);
+                $this->answers = $answers;
+            }
+
+            /**
+             * Gives the next scripted answer of a provider.
+             *
+             * @param string $name Provider name.
+             * @return array The result.
+             */
+            private function answer(string $name): array {
+                $this->asked[] = $name;
+                return array_shift($this->answers[$name]) + ['provider' => $name];
+            }
+
+            #[\Override]
+            protected function resolve_host_ips(string $host): array {
+                return ['93.184.216.34'];
+            }
+
+            #[\Override]
+            protected function call_gemini(array $parts, string $key): array {
+                return $this->answer('Gemini');
+            }
+
+            #[\Override]
+            protected function call_groq(array $parts, string $key): array {
+                return $this->answer('Groq');
+            }
+
+            #[\Override]
+            protected function call_openai_compatible(array $parts, string $key, string $baseurl, string $model): array {
+                return $this->answer('Custom AI');
+            }
+        };
+    }
+
+    /**
+     * Asks the ladder once.
+     *
+     * @param generator $generator The generator.
+     * @return array The answer.
+     */
+    private function ask_the_ladder(generator $generator): array {
+        $method = new \ReflectionMethod($generator, 'call_with_fallback');
+        $method->setAccessible(true);
+
+        return $method->invoke($generator, ['system' => 's', 'user' => 'u'], 'story');
+    }
+
+    /**
+     * How long the first Gemini failure took, and whether the automatic retry asks Gemini again.
+     *
+     * @return array
+     */
+    public static function failure_duration_provider(): array {
+        return [
+            'refused at once' => [0.8, true],
+            'just under the limit' => [29.9, true],
+            'at the limit' => [30.0, false],
+            'timed out' => [90.0, false],
+        ];
+    }
+
+    /**
+     * The retry of a wizard step asks again the providers that refused quickly, but does not wait a second time for
+     * one that took long to fail.
+     *
+     * @dataProvider failure_duration_provider
+     * @param float $seconds How long the first failure took.
+     * @param bool $askedagain Whether the retry asks that provider again.
+     */
+    public function test_the_retry_does_not_wait_again_for_a_slow_failure(float $seconds, bool $askedagain): void {
+        $failure = ['success' => false, 'message' => 'down', 'seconds' => 0.5];
+        $generator = $this->make_generator_with_a_scripted_ladder([
+            'Gemini' => [['success' => false, 'message' => 'down', 'seconds' => $seconds], $failure],
+            'Groq' => [$failure, ['success' => true, 'data' => '{}', 'seconds' => 2.0]],
+            'Custom AI' => [$failure],
+        ]);
+        $retry = new \ReflectionMethod(\block_playerhud\external\wizard_run_step::class, 'generate_with_retry');
+        $retry->setAccessible(true);
+
+        $result = $retry->invoke(null, fn(): array => $this->ask_the_ladder($generator));
+
+        $this->assertSame('Groq', $result['provider']);
+        $second = $askedagain ? ['Gemini', 'Groq'] : ['Groq'];
+        $this->assertSame(array_merge(['Gemini', 'Groq', 'Custom AI'], $second), $generator->asked);
+    }
+
+    /**
+     * With every provider skipped, the retry ends at once with the error of the last one, as the first run did, and
+     * logs nothing new.
+     */
+    public function test_a_retry_with_every_provider_skipped_keeps_the_error(): void {
+        $generator = $this->make_generator_with_a_scripted_ladder([
+            'Gemini' => [['success' => false, 'message' => 'gemini hung', 'seconds' => 90.0]],
+            'Groq' => [['success' => false, 'message' => 'groq hung', 'seconds' => 45.0]],
+            'Custom AI' => [['success' => false, 'message' => 'custom hung', 'seconds' => 90.0]],
+        ]);
+        $sink = $this->redirectEvents();
+        $errors = [];
+
+        for ($run = 0; $run < 2; $run++) {
+            try {
+                $this->ask_the_ladder($generator);
+            } catch (\moodle_exception $e) {
+                $errors[] = [$e->errorcode, $e->a];
+            }
+        }
+
+        $this->assertSame([['ai_error_offline', 'custom hung'], ['ai_error_offline', 'custom hung']], $errors);
+        $this->assertSame(['Gemini', 'Groq', 'Custom AI'], $generator->asked);
+        $this->assertCount(3, array_filter(
+            $sink->get_events(),
+            static fn($event) => $event instanceof \block_playerhud\event\ai_attempt_failed
+        ));
+    }
+
+    /**
+     * When the retry does ask a provider, its error is the one reported, not the old one of a provider skipped after it.
+     */
+    public function test_a_retry_reports_the_error_of_the_provider_it_asked(): void {
+        $generator = $this->make_generator_with_a_scripted_ladder([
+            'Gemini' => [['success' => false, 'message' => 'gemini hung', 'seconds' => 90.0]],
+            'Groq' => [
+                ['success' => false, 'message' => 'groq first', 'seconds' => 1.0],
+                ['success' => false, 'message' => 'groq second', 'seconds' => 1.0],
+            ],
+            'Custom AI' => [['success' => false, 'message' => 'custom hung', 'seconds' => 90.0]],
+        ]);
+        $errors = [];
+
+        for ($run = 0; $run < 2; $run++) {
+            try {
+                $this->ask_the_ladder($generator);
+            } catch (\moodle_exception $e) {
+                $errors[] = $e->a;
+            }
+        }
+
+        $this->assertSame(['custom hung', 'groq second'], $errors);
+    }
+
+    /**
+     * The memory of slow failures belongs to one run of the step: the teacher's own "try again" asks everyone.
+     */
+    public function test_a_new_generator_asks_a_slow_provider_again(): void {
+        $answers = [
+            'Gemini' => [['success' => false, 'message' => 'down', 'seconds' => 90.0]],
+            'Groq' => [['success' => true, 'data' => '{}', 'seconds' => 2.0]],
+        ];
+
+        $first = $this->make_generator_with_a_scripted_ladder($answers);
+        $this->ask_the_ladder($first);
+        $second = $this->make_generator_with_a_scripted_ladder($answers);
+        $this->ask_the_ladder($second);
+
+        $this->assertSame(['Gemini', 'Groq'], $second->asked);
     }
 
     /**
