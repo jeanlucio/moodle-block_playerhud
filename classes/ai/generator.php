@@ -972,6 +972,24 @@ class generator {
     }
 
     /**
+     * Removes a leading "Chapter 2:" from a title the model numbered anyway.
+     *
+     * The model is not told which chapter it is writing, so its numbers repeat and skip. Only the word for
+     * "chapter" in the most common course languages, followed by a number and a separator, counts: a title
+     * that merely begins with such a word, or that would be left empty, is kept as it came.
+     *
+     * @param string $title The title, already cleaned.
+     * @return string
+     */
+    private function without_chapter_number(string $title): string {
+        $pattern = '/^\s*(?:chapter|cap[ií]tulo|cap\.|chapitre|kapitel|capitolo)\s*'
+            . '(?:\d+|(?-i:[IVX]+))\s*(?::|\||–|—|\.(?=\s)|-(?=\s))\s*/iu';
+        $name = trim((string) preg_replace($pattern, '', $title));
+
+        return $name !== '' ? $name : $title;
+    }
+
+    /**
      * Tells whether a generated chapter can be played to an end.
      *
      * Two defects reach students and so refuse the chapter: a choice that leads to a scene the answer does not have
@@ -1069,8 +1087,10 @@ class generator {
             . " concluding text that wraps up that narrative path;"
             . " every branch MUST eventually reach a terminal node — do NOT create cycles or dead ends;"
             . " all target_index values must reference valid indexes in this JSON."
+            . " The title is only the chapter's own name: never number it and never start it with the word"
+            . ' for "chapter", because the course already shows the chapters in order.'
             . " Reply ONLY with valid JSON — no markdown, no extra text."
-            . ' Structure: {"title":"chapter title","intro":"one-line summary","nodes":[{"index":0,'
+            . ' Structure: {"title":"chapter name","intro":"one-line summary","nodes":[{"index":0,'
             . '"content":"scene text (2-3 sentences)","is_start":1,'
             . '"choices":[{"text":"choice label (max 60 chars)","target_index":1}]}]}';
 
@@ -1107,7 +1127,7 @@ class generator {
         if ($previouscontext !== '') {
             $prompt .= "\n\nContinue directly from the previous chapter, which ended like this:\n"
                 . "{$previouscontext}\nKeep character names, tone and setting consistent with it — "
-                . 'this is chapter 2 or later, not a new opening.';
+                . 'this is a later chapter, not a new opening.';
         }
 
         $currentlang = get_string('thislanguage', 'langconfig');
@@ -1289,7 +1309,8 @@ class generator {
 
         $chapter = new \stdClass();
         $chapter->blockinstanceid = $this->instanceid;
-        $chapter->title           = \core_text::substr(clean_param($aidata['title'], PARAM_TEXT), 0, 255);
+        $title                    = $this->without_chapter_number(clean_param($aidata['title'], PARAM_TEXT));
+        $chapter->title           = \core_text::substr($title, 0, 255);
         $chapter->intro_text      = clean_param((string) ($aidata['intro'] ?? ''), PARAM_TEXT);
         $chapter->unlock_date     = 0;
         $chapter->required_level  = 0;

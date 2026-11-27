@@ -258,6 +258,57 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * Titles as the model answers them, and the name that is saved.
+     *
+     * @return array
+     */
+    public static function numbered_title_provider(): array {
+        return [
+            'Portuguese with a colon' => ['Capítulo 2: Sombra de Poluição', 'Sombra de Poluição'],
+            'upper case without the accent' => ['CAPITULO 3 - A Fuga', 'A Fuga'],
+            'English with a long dash' => ['Chapter 4 — The Escape', 'The Escape'],
+            'Spanish with a full stop' => ['Capítulo 5. El regreso', 'El regreso'],
+            'Roman number' => ['Capítulo IV: O Retorno', 'O Retorno'],
+            'abbreviation' => ['Cap. 2: A Torre', 'A Torre'],
+            'number alone is kept' => ['Capítulo 2', 'Capítulo 2'],
+            'nothing after the separator is kept' => ['Chapter 2:', 'Chapter 2:'],
+            'no separator is kept' => ['Chapter 11 Bankruptcy', 'Chapter 11 Bankruptcy'],
+            'a word made of Roman letters is kept' => ['Capítulo Civil: as leis', 'Capítulo Civil: as leis'],
+            'a number that opens a name is kept' => ['Apollo 11: the landing', 'Apollo 11: the landing'],
+            'chapter in the middle is kept' => ['O Capítulo 2: perdido', 'O Capítulo 2: perdido'],
+        ];
+    }
+
+    /**
+     * The model does not know which chapter it is writing, so a number it puts in the title repeats or skips
+     * one: the chapter is saved with its name only.
+     *
+     * @dataProvider numbered_title_provider
+     * @param string $answered The title in the answer.
+     * @param string $expected The title saved.
+     */
+    public function test_generate_story_saves_the_title_without_a_chapter_number(string $answered, string $expected): void {
+        $json = json_encode(['title' => $answered, 'nodes' => [['index' => 0, 'content' => 'Início', 'is_start' => true]]]);
+
+        $result = $this->make_generator_answering($json)->generate_story('torre');
+
+        $this->assertSame($expected, $result['chapter_title']);
+    }
+
+    /**
+     * The request no longer calls a later chapter "chapter 2", which made the model repeat that number.
+     */
+    public function test_the_story_request_does_not_give_a_chapter_number(): void {
+        $method = new \ReflectionMethod(generator::class, 'build_prompt_story');
+        $method->setAccessible(true);
+
+        $prompt = $method->invoke(new generator($this->instanceid), 'torre', ['previous_context' => 'A porta abriu.']);
+
+        $this->assertStringContainsString('never number it', $prompt['user']);
+        $this->assertDoesNotMatchRegularExpression('/chapter\s+\d/i', $prompt['user']);
+    }
+
+    /**
      * A choice longer than its 255-character column is cut instead of making the insert throw, which
      * used to roll the whole generated chapter back. The cut is by characters, so a multibyte text is
      * never split in the middle of one.
