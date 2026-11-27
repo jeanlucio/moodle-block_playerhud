@@ -57,6 +57,7 @@ class chat extends generator {
 
         if (!$result['success'] && !empty($groqkey)) {
             $result = $this->call_groq_chat($systemprompt, $messages, $groqkey);
+            array_push($attempts, ...($result['earlier'] ?? []));
             $attempts[] = $result;
         }
 
@@ -155,14 +156,15 @@ class chat extends generator {
         $data = [
             'model' => 'openai/gpt-oss-120b',
             'messages' => $msgs,
+            'max_completion_tokens' => self::GROQ_MAX_COMPLETION_TOKENS,
         ];
 
-        return $this->curl_request(
+        return $this->with_rate_limit_wait(fn(): array => $this->curl_request(
             $url,
             json_encode($data),
             ['Authorization: Bearer ' . $key, 'Content-Type: application/json'],
             'Groq'
-        );
+        ));
     }
 
     /**

@@ -58,6 +58,19 @@ class generator {
      */
     protected const HTTP_TIMEOUT = 90;
 
+    /**
+     * @var int Output room asked of Groq. Its reasoning model spends this room on thinking before it writes, and with
+     *          the provider's default a story chapter often ran out: an empty answer refused as invalid JSON, or a
+     *          chapter cut in half. Raised rather than lowering the reasoning, which made stories shorter.
+     */
+    protected const GROQ_MAX_COMPLETION_TOKENS = 6000;
+
+    /** @var int Most seconds one Groq call waits, all its retries together, before giving up on it. */
+    protected const MAX_RETRY_WAIT = 60;
+
+    /** @var int Most times one Groq call is tried again after a "too many requests" answer. */
+    protected const MAX_RATE_LIMIT_RETRIES = 2;
+
     /** @var int The block instance ID. */
     protected $instanceid;
 
@@ -433,13 +446,55 @@ class generator {
                 ["role" => "user", "content" => $parts['user']],
             ],
             "response_format" => ["type" => "json_object"],
+            "max_completion_tokens" => self::GROQ_MAX_COMPLETION_TOKENS,
         ];
-        return $this->curl_request(
+        return $this->with_rate_limit_wait(fn(): array => $this->curl_request(
             $url,
             json_encode($data),
             ["Authorization: Bearer $key", "Content-Type: application/json"],
             'Groq'
-        );
+        ));
+    }
+
+    /**
+     * Runs a request and, when the provider answers "too many requests" and says how long to wait, waits that long and
+     * tries again. The free tiers limit tokens per minute, so a few chapters in a row are refused for some seconds
+     * only, and a second refusal can follow a first short wait. All the waits of one call stay within MAX_RETRY_WAIT,
+     * which a per-minute window never exceeds; a longer one (a daily quota) is not honoured and the next provider is
+     * tried.
+     *
+     * @param callable $request Returns a curl_request()-shaped result.
+     * @return array The last result; the refused ones before it are listed under 'earlier' for the log.
+     */
+    protected function with_rate_limit_wait(callable $request): array {
+        $result = $request();
+        $refused = [];
+        $waited = 0;
+        while (empty($result['success']) && count($refused) < self::MAX_RATE_LIMIT_RETRIES) {
+            $wait = (int) ($result['retryafter'] ?? 0);
+            if ($wait < 1 || $waited + $wait > self::MAX_RETRY_WAIT) {
+                break;
+            }
+            $this->pause($wait);
+            $waited += $wait;
+            $refused[] = $result;
+            $result = $request();
+        }
+        if ($refused) {
+            $result['earlier'] = $refused;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Waits before a retry. A method so a test does not have to sleep.
+     *
+     * @param int $seconds Seconds to wait.
+     * @return void
+     */
+    protected function pause(int $seconds): void {
+        sleep($seconds);
     }
 
     /**
@@ -782,6 +837,7 @@ class generator {
 
         if (!$result['success'] && !empty($groqkey)) {
             $result = $this->call_groq($parts, $groqkey);
+            array_push($attempts, ...($result['earlier'] ?? []));
             $attempts[] = $result;
         }
 
@@ -883,6 +939,66 @@ class generator {
                 ],
             ])->trigger();
         }
+    }
+
+    /**
+     * Tells whether a generated chapter can be played to an end.
+     *
+     * Two defects reach students and so refuse the chapter: a choice that leads to a scene the answer does not have
+     * (it used to be dropped without a word, turning its scene into a false ending), and a scene reachable from the
+     * start from which no ending can be reached. Choices without text are ignored here as they are when saved, and a
+     * scene nothing leads to does no harm.
+     *
+     * @param array $scenes Scenes with text, exactly one of them flagged as the start.
+     * @return bool
+     */
+    private function is_story_playable(array $scenes): bool {
+        // Same keys as the ones the scenes are saved under.
+        $links = [];
+        $start = null;
+        foreach ($scenes as $scene) {
+            $index = (int) ($scene['index'] ?? count($links));
+            $targets = [];
+            $choices = is_array($scene['choices'] ?? null) ? $scene['choices'] : [];
+            foreach ($choices as $choice) {
+                if (is_array($choice) && trim((string) $this->scalar_text($choice['text'] ?? null)) !== '') {
+                    $targets[] = (int) ($choice['target_index'] ?? -1);
+                }
+            }
+            $links[$index] = $targets;
+            if (!empty($scene['is_start'])) {
+                $start = $index;
+            }
+        }
+
+        foreach ($links as $targets) {
+            if (array_diff($targets, array_keys($links))) {
+                return false;
+            }
+        }
+
+        // Scenes that can reach an ending: the endings, then whatever leads to one of those.
+        $finishing = array_keys(array_filter($links, static fn(array $targets): bool => !$targets));
+        do {
+            $found = array_keys(array_filter(
+                array_diff_key($links, array_flip($finishing)),
+                static fn(array $targets): bool => (bool) array_intersect($targets, $finishing)
+            ));
+            $finishing = array_merge($finishing, $found);
+        } while ($found);
+
+        $reached = [];
+        $queue = [$start];
+        while ($queue) {
+            $index = array_pop($queue);
+            if ($index === null || isset($reached[$index])) {
+                continue;
+            }
+            $reached[$index] = true;
+            $queue = array_merge($queue, $links[$index] ?? []);
+        }
+
+        return !array_diff(array_keys($reached), $finishing);
     }
 
     /**
@@ -1132,6 +1248,10 @@ class generator {
         }
         if (!$startfound) {
             $scenes[0]['is_start'] = true;
+        }
+
+        if (!$this->is_story_playable($scenes)) {
+            throw new \moodle_exception('ai_error_story_broken', 'block_playerhud');
         }
 
         $transaction = $DB->start_delegated_transaction();
@@ -1438,11 +1558,33 @@ class generator {
                 'block_playerhud',
                 ['service' => $source, 'code' => $code . $errormsg]
             );
-            return ['success' => false, 'message' => $msg, 'provider' => $source];
+            $failure = ['success' => false, 'message' => $msg, 'provider' => $source];
+            if ($code === 429) {
+                $failure['retryafter'] = $this->retry_after_seconds((array) $curl->getResponse());
+            }
+            return $failure;
         }
 
         // 3. Process Success.
         return $this->answer_from_response((string) $response, $source);
+    }
+
+    /**
+     * Reads the Retry-After response header, in whole seconds rounded up.
+     *
+     * @param array $headers Response headers by name, as the curl class returns them.
+     * @return int Seconds to wait, or 0 when the header is absent or is not a number.
+     */
+    private function retry_after_seconds(array $headers): int {
+        foreach ($headers as $name => $value) {
+            if (strcasecmp(trim((string) $name), 'retry-after') !== 0) {
+                continue;
+            }
+            $value = trim((string) (is_array($value) ? end($value) : $value));
+            return is_numeric($value) ? (int) ceil((float) $value) : 0;
+        }
+
+        return 0;
     }
 
     /**
@@ -1474,6 +1616,19 @@ class generator {
                 'success' => false,
                 'message' => get_string('ai_error_empty_answer', 'block_playerhud', $source)
                     . ($reason !== '' ? ' (' . $reason . ')' : ''),
+                'provider' => $source,
+            ];
+        }
+
+        // An answer that stopped at the output limit is incomplete even when it still reads as JSON (a story would be
+        // saved with half of its scenes), so it fails and the next provider is tried.
+        $stop = $source === 'Gemini'
+            ? ($decoded['candidates'][0]['finishReason'] ?? '')
+            : ($decoded['choices'][0]['finish_reason'] ?? '');
+        if ($stop === 'MAX_TOKENS' || $stop === 'length') {
+            return [
+                'success' => false,
+                'message' => get_string('ai_error_truncated', 'block_playerhud', $source),
                 'provider' => $source,
             ];
         }

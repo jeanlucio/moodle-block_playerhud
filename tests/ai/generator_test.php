@@ -372,6 +372,263 @@ final class generator_test extends external_base_testcase {
     }
 
     /**
+     * Answers whose choices a student could not follow to an ending.
+     *
+     * @return array[] The nodes of the story, as JSON.
+     */
+    public static function broken_story_provider(): array {
+        return [
+            'a choice leading to a missing scene' => [
+                '[{"index":0,"content":"A","is_start":true,"choices":[{"text":"Um","target_index":1},'
+                    . '{"text":"Dois","target_index":9}]},{"index":1,"content":"Fim"}]',
+            ],
+            'cut short, every target missing' => [
+                '[{"index":0,"content":"A","is_start":true,"choices":[{"text":"Um","target_index":1},'
+                    . '{"text":"Dois","target_index":2}]}]',
+            ],
+            'a loop with no way out' => [
+                '[{"index":0,"content":"A","is_start":true,"choices":[{"text":"Ir","target_index":1}]},'
+                    . '{"index":1,"content":"B","choices":[{"text":"Voltar","target_index":0}]}]',
+            ],
+            'one path that ends and one trapped in a loop' => [
+                '[{"index":0,"content":"A","is_start":true,"choices":[{"text":"Fim","target_index":1},'
+                    . '{"text":"Armadilha","target_index":2}]},{"index":1,"content":"Fim"},'
+                    . '{"index":2,"content":"C","choices":[{"text":"Ir","target_index":3}]},'
+                    . '{"index":3,"content":"D","choices":[{"text":"Voltar","target_index":2}]}]',
+            ],
+        ];
+    }
+
+    /**
+     * A story a student could not finish is refused before anything is saved. It used to be stored, with the choices
+     * that led nowhere silently dropped and their scenes turned into false endings.
+     *
+     * @dataProvider broken_story_provider
+     * @param string $nodes The nodes of the answer.
+     */
+    public function test_generate_story_refuses_a_story_that_cannot_be_played(string $nodes): void {
+        global $DB;
+
+        $generator = $this->make_generator_answering('{"title":"Quebrada","nodes":' . $nodes . '}');
+        $before = $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]);
+
+        try {
+            $generator->generate_story('x');
+            $this->fail('A story that cannot be played must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ai_error_story_broken', $e->errorcode);
+        }
+
+        $this->assertSame($before, $DB->count_records('block_playerhud_chapters', ['blockinstanceid' => $this->instanceid]));
+    }
+
+    /**
+     * Stories with an unusual shape that a student can still play to an end.
+     *
+     * @return array[] The nodes of the story, as JSON.
+     */
+    public static function playable_story_provider(): array {
+        return [
+            'a loop with a way out' => [
+                '[{"index":0,"content":"A","is_start":true,"choices":[{"text":"Ir","target_index":1}]},'
+                    . '{"index":1,"content":"B","choices":[{"text":"Voltar","target_index":0},'
+                    . '{"text":"Sair","target_index":2}]},{"index":2,"content":"Fim"}]',
+            ],
+            'a scene nothing leads to' => [
+                '[{"index":0,"content":"A","is_start":true,"choices":[{"text":"Ir","target_index":1}]},'
+                    . '{"index":1,"content":"Fim"},{"index":2,"content":"Solta","choices":[{"text":"Ir","target_index":1}]}]',
+            ],
+            'indexes out of order' => [
+                '[{"index":5,"content":"A","is_start":true,"choices":[{"text":"Ir","target_index":2}]},'
+                    . '{"index":2,"content":"Fim"}]',
+            ],
+        ];
+    }
+
+    /**
+     * The check only refuses what a student would feel: these stories are saved.
+     *
+     * @dataProvider playable_story_provider
+     * @param string $nodes The nodes of the answer.
+     */
+    public function test_generate_story_accepts_a_story_that_can_be_played(string $nodes): void {
+        $generator = $this->make_generator_answering('{"title":"Boa","nodes":' . $nodes . '}');
+
+        $result = $generator->generate_story('x');
+
+        $this->assertTrue($result['success']);
+        $this->assertNotEmpty($result['node_ids']);
+    }
+
+    /**
+     * Groq is asked for more output room than its default, which its reasoning used up before the story was written.
+     * The reasoning itself is left as the provider sets it: lowering it made the stories shorter.
+     */
+    public function test_groq_is_asked_for_room_to_reason_and_answer(): void {
+        $generator = $this->make_generator_with_groq_answers([['success' => true, 'data' => '{}', 'provider' => 'Groq']]);
+        $method = new \ReflectionMethod($generator, 'call_groq');
+        $method->setAccessible(true);
+
+        $method->invoke($generator, ['system' => 's', 'user' => 'u'], 'key');
+
+        $payload = json_decode($generator->payloads[0], true);
+        $this->assertSame(6000, $payload['max_completion_tokens']);
+        $this->assertArrayNotHasKey('reasoning_effort', $payload);
+    }
+
+    /**
+     * Answers from Groq and how the request is waited for and tried again.
+     *
+     * @return array[] The answers in order, the waits expected, the number of requests expected and whether it ends well.
+     */
+    public static function rate_limit_provider(): array {
+        $refused = static fn(int $wait): array => [
+            'success' => false, 'message' => 'Rate limit', 'provider' => 'Groq', 'retryafter' => $wait];
+        $answer = ['success' => true, 'data' => '{}', 'provider' => 'Groq'];
+        $error = ['success' => false, 'message' => 'Invalid JSON', 'provider' => 'Groq'];
+        return [
+            'a short wait is honoured' => [[$refused(3), $answer], [3], 2, true],
+            'a whole minute is honoured' => [[$refused(60), $answer], [60], 2, true],
+            'refused again after a short wait' => [[$refused(5), $refused(17), $answer], [5, 17], 3, true],
+            'no third retry' => [[$refused(5), $refused(5), $refused(5), $answer], [5, 5], 3, false],
+            'the waits together stay within a minute' => [[$refused(40), $refused(30), $answer], [40], 2, false],
+            'a daily quota is not waited for' => [[$refused(3600), $answer], [], 1, false],
+            'no wait was given' => [[$refused(0), $answer], [], 1, false],
+            'another error' => [[$error, $answer], [], 1, false],
+            'an answer' => [[$answer], [], 1, true],
+        ];
+    }
+
+    /**
+     * A "too many requests" answer that says to wait some seconds is waited for and tried again, so chapters in a row
+     * do not fail on the per-minute limit of the free tier, without waiting longer than a minute in all.
+     *
+     * @dataProvider rate_limit_provider
+     * @param array[] $answers The answers, in order.
+     * @param int[] $waits The waits expected.
+     * @param int $requests The number of requests expected.
+     * @param bool $success Whether the call ends with an answer.
+     */
+    public function test_groq_waits_when_told_to_and_tries_again(
+        array $answers,
+        array $waits,
+        int $requests,
+        bool $success
+    ): void {
+        $generator = $this->make_generator_with_groq_answers($answers);
+        $method = new \ReflectionMethod($generator, 'call_groq');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($generator, ['system' => 's', 'user' => 'u'], 'key');
+
+        $this->assertSame($waits, $generator->waits);
+        $this->assertCount($requests, $generator->payloads);
+        $this->assertSame($success, $result['success']);
+    }
+
+    /**
+     * The refused attempts stay on record even though a later one answered.
+     */
+    public function test_the_attempt_refused_before_a_wait_is_logged(): void {
+        set_config('apikey_groq', 'groq-key', 'block_playerhud');
+        $generator = $this->make_generator_with_groq_answers([
+            ['success' => false, 'message' => 'Rate limit reached', 'provider' => 'Groq', 'retryafter' => 2],
+            ['success' => false, 'message' => 'Rate limit again', 'provider' => 'Groq', 'retryafter' => 3],
+            ['success' => true, 'data' => '{}', 'provider' => 'Groq'],
+        ]);
+        $sink = $this->redirectEvents();
+        $method = new \ReflectionMethod($generator, 'call_with_fallback');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($generator, ['system' => 's', 'user' => 'u'], 'story');
+
+        $this->assertTrue($result['success']);
+        $events = array_values(array_filter(
+            $sink->get_events(),
+            static fn($event) => $event instanceof \block_playerhud\event\ai_attempt_failed
+        ));
+        $this->assertSame(
+            ['Rate limit reached', 'Rate limit again'],
+            array_map(static fn($event) => $event->other['message'], $events)
+        );
+    }
+
+    /**
+     * The wait is read from the Retry-After header of the real answer, rounded up to whole seconds.
+     */
+    public function test_curl_request_reads_how_long_a_429_asks_to_wait(): void {
+        $probe = stream_socket_server('tcp://127.0.0.1:0');
+        $name = stream_socket_get_name($probe, false);
+        $port = (int) substr($name, strrpos($name, ':') + 1);
+        fclose($probe);
+
+        $serverscript = '$s = stream_socket_server("tcp://127.0.0.1:" . $argv[1]);'
+            . '$k = @stream_socket_accept($s, 10);'
+            . 'if ($k) { fread($k, 8192); fwrite($k, "HTTP/1.1 429 Too Many Requests\r\nRetry-After: 2.2\r\n'
+            . 'Content-Length: 2\r\nConnection: close\r\n\r\n{}"); fclose($k); }';
+        $process = proc_open(
+            [PHP_BINARY, '-r', $serverscript, (string) $port],
+            [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes
+        );
+        usleep(500000);
+
+        try {
+            $generator = new generator($this->instanceid);
+            $method = new \ReflectionMethod($generator, 'curl_request');
+            $method->setAccessible(true);
+            $result = $method->invoke($generator, 'http://127.0.0.1:' . $port . '/v1', '{}', [], 'Groq');
+        } finally {
+            proc_terminate($process);
+            proc_close($process);
+        }
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(3, $result['retryafter']);
+    }
+
+    /**
+     * Builds a generator whose requests are answered from a list, recording what was sent and waited.
+     *
+     * @param array[] $answers curl_request()-shaped results, one per request.
+     * @return generator
+     */
+    private function make_generator_with_groq_answers(array $answers): generator {
+        return new class ($this->instanceid, $answers) extends generator {
+            /** @var string[] Payloads sent, one per request. */
+            public array $payloads = [];
+
+            /** @var int[] Seconds waited. */
+            public array $waits = [];
+
+            /** @var array[] Answers still to give. */
+            private array $answers;
+
+            /**
+             * Stores the answers.
+             *
+             * @param int $instanceid Block instance ID.
+             * @param array[] $answers The answers, in order.
+             */
+            public function __construct(int $instanceid, array $answers) {
+                parent::__construct($instanceid);
+                $this->answers = $answers;
+            }
+
+            #[\Override]
+            protected function curl_request(string $url, string $payload, array $headers, string $source): array {
+                $this->payloads[] = $payload;
+                return array_shift($this->answers);
+            }
+
+            #[\Override]
+            protected function pause(int $seconds): void {
+                $this->waits[] = $seconds;
+            }
+        };
+    }
+
+    /**
      * Runs the protected key ladder for the current user.
      *
      * @return array The ladder's result: [geminikey, groqkey, openaikey, openaiurl, openaimodel, keysource].
@@ -874,6 +1131,8 @@ final class generator_test extends external_base_testcase {
             'compatible, only spaces' => ['Custom', '{"choices":[{"message":{"content":"  \n"}}]}', false, ''],
             'gateway error page' => ['Custom', '<html>502</html>', false, ''],
             'error object' => ['Custom', '{"error":{"message":"overloaded"}}', false, 'overloaded'],
+            'compatible, finished normally' => [
+                'Groq', '{"choices":[{"message":{"content":"ok"},"finish_reason":"stop"}]}', true, ''],
         ];
     }
 
@@ -906,6 +1165,38 @@ final class generator_test extends external_base_testcase {
         }
         $this->assertStringContainsString(get_string('ai_error_empty_answer', 'block_playerhud', $source), $result['message']);
         $this->assertStringContainsString($reason, $result['message']);
+    }
+
+    /**
+     * Answers that stopped at the output limit, with text that still reads as JSON.
+     *
+     * @return array[] Provider and raw response body.
+     */
+    public static function cut_response_provider(): array {
+        return [
+            'Gemini' => ['Gemini', '{"candidates":[{"finishReason":"MAX_TOKENS","content":{"parts":[{"text":"{\\"a\\":1}"}]}}]}'],
+            'Groq' => ['Groq', '{"choices":[{"message":{"content":"{\\"a\\":1}"},"finish_reason":"length"}]}'],
+        ];
+    }
+
+    /**
+     * An answer cut by the output limit is a failure even though it carries text, so the next provider is tried instead
+     * of half a story being saved.
+     *
+     * @dataProvider cut_response_provider
+     * @param string $source Provider name.
+     * @param string $body Raw response body.
+     */
+    public function test_an_answer_cut_at_the_output_limit_is_a_failure(string $source, string $body): void {
+        $generator = new generator($this->instanceid);
+        $method = new \ReflectionMethod($generator, 'answer_from_response');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($generator, $body, $source);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame($source, $result['provider']);
+        $this->assertSame(get_string('ai_error_truncated', 'block_playerhud', $source), $result['message']);
     }
 
     /**

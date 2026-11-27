@@ -145,4 +145,38 @@ final class chat_test extends external_base_testcase {
         $this->assertSame('chat', $events[0]->other['description']);
         $this->assertSame('Groq', $events[0]->other['provider']);
     }
+
+    /**
+     * The chat asks Groq for the same output room as the generator, and waits on a short rate limit too.
+     */
+    public function test_chat_asks_groq_for_room_and_waits_when_told_to(): void {
+        $chat = new class ($this->instanceid) extends chat {
+            /** @var string[] Payloads sent. */
+            public array $payloads = [];
+
+            /** @var int[] Seconds waited. */
+            public array $waits = [];
+
+            #[\Override]
+            protected function curl_request(string $url, string $payload, array $headers, string $source): array {
+                $this->payloads[] = $payload;
+                return count($this->payloads) === 1
+                    ? ['success' => false, 'message' => 'Rate limit', 'provider' => 'Groq', 'retryafter' => 4]
+                    : ['success' => true, 'data' => '{"reply":"ok"}', 'provider' => 'Groq'];
+            }
+
+            #[\Override]
+            protected function pause(int $seconds): void {
+                $this->waits[] = $seconds;
+            }
+        };
+        $method = new \ReflectionMethod($chat, 'call_groq_chat');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($chat, 'system', [['role' => 'user', 'content' => 'hi']], 'key');
+
+        $this->assertTrue($result['success']);
+        $this->assertSame([4], $chat->waits);
+        $this->assertSame(6000, json_decode($chat->payloads[1], true)['max_completion_tokens']);
+    }
 }
